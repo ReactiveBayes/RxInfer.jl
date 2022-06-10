@@ -1,9 +1,19 @@
 name = "RxInfer"
 uuid = "86711068-29c9-4ff7-b620-ae75d7495b3d"
-authors = ["Bagaev Dmitry <bvdmitri@gmail.com> and contributors"]
-version = "0.1.0"
+authors = ["Bagaev Dmitry <d.v.bagaev@tue.nl> and contributors"]
+version = "1.0.0"
+
+[deps]
+GraphPPL = "b3f8163a-e979-4e85-b43e-1f63d8c8b42c"
+ReactiveMP = "a194aa59-28ba-4574-a09c-4a745416d6e3"
+Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
+Rocket = "df971d30-c9d6-4b37-b8ff-e965b2cb3a40"
 
 [compat]
+GraphPPL = "2.0.1"
+ReactiveMP = "2.0.6"
+Reexport = "1.2.0"
+Rocket = "1.3.22"
 julia = "1.6"
 
 [extras]

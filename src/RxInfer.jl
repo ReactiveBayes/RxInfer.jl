@@ -1,5 +1,8 @@
 module RxInfer
 
-# Write your package code here.
+using Reexport
+
+# For now we simply reexport existing functionality from our main packages
+@reexport using ReactiveMP, GraphPPL, Rocket
 
 end
