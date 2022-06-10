@@ -4,7 +4,7 @@ CurrentModule = RxInfer
 
 # RxInfer
 
-Documentation for [RxInfer](https://github.com/biaslab/RxInfer.jl). This package unites different packages for automated Bayesian inference.
+Documentation for [RxInfer](https://github.com/biaslab/RxInfer.jl). This package unites different packages for automated Bayesian inference. Work in progress.
 
 See also:
 - [`ReactiveMP.jl`](https://github.com/biaslab/ReactiveMP.jl)
