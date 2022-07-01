@@ -52,9 +52,4 @@ jobs:
       - uses: julia-actions/julia-docdeploy@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - run: |
-          julia --project=docs -e '
-            using Documenter: DocMeta, doctest
-            using RxInfer
-            DocMeta.setdocmeta!(RxInfer, :DocTestSetup, :(using RxInfer); recursive=true)
-            doctest(RxInfer)'
+      - run: make docs
