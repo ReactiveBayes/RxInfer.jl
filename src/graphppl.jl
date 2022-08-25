@@ -49,15 +49,15 @@ function GraphPPL.write_model_structure(::RxInferBackend,
                 return RxInfer.create_model($ms_name, constraints, meta, $(ms_options), args...; kwargs...)
             end
 
-            function $ms_name(constraints::Union{ ReactiveMP.UnspecifiedConstraints, ReactiveMP.ConstraintsSpecification }, options::ReactiveMP.ModelOptions, args...; kwargs...) 
+            function $ms_name(constraints::Union{ ReactiveMP.UnspecifiedConstraints, ReactiveMP.ConstraintsSpecification }, options::RxInfer.ModelOptions, args...; kwargs...) 
                 return RxInfer.create_model($ms_name, constraints, $(ms_meta), options, args...; kwargs...)
             end
 
-            function $ms_name(meta::Union{ ReactiveMP.UnspecifiedMeta, ReactiveMP.MetaSpecification }, options::ReactiveMP.ModelOptions, args...; kwargs...) 
+            function $ms_name(meta::Union{ ReactiveMP.UnspecifiedMeta, ReactiveMP.MetaSpecification }, options::RxInfer.ModelOptions, args...; kwargs...) 
                 return RxInfer.create_model($ms_name, $(ms_constraints), meta, options, args...; kwargs...)
             end
 
-            function $ms_name(constraints::Union{ ReactiveMP.UnspecifiedConstraints, ReactiveMP.ConstraintsSpecification }, meta::Union{ ReactiveMP.UnspecifiedMeta, ReactiveMP.MetaSpecification }, options::ReactiveMP.ModelOptions, args...; kwargs...) 
+            function $ms_name(constraints::Union{ ReactiveMP.UnspecifiedConstraints, ReactiveMP.ConstraintsSpecification }, meta::Union{ ReactiveMP.UnspecifiedMeta, ReactiveMP.MetaSpecification }, options::RxInfer.ModelOptions, args...; kwargs...) 
                 return RxInfer.create_model($ms_name, constraints, meta, options, args...; kwargs...)
             end
         end
@@ -120,7 +120,7 @@ function GraphPPL.write_broadcasted_make_node_expression(::RxInferBackend, model
 end
 
 function GraphPPL.write_autovar_make_node_expression(::RxInferBackend, model, fform, variables, options, nodeexpr, varexpr, autovarid)
-    return :(($nodeexpr, $varexpr) = ReactiveMP.make_node($model, $options, $fform, ReactiveMP.AutoVar($(GraphPPL.fquote(autovarid))), $(variables...)))
+    return :(($nodeexpr, $varexpr) = ReactiveMP.make_node($model, $options, $fform, RxInfer.AutoVar($(GraphPPL.fquote(autovarid))), $(variables...)))
 end
 
 function GraphPPL.write_check_variable_existence(::RxInferBackend, model, varid, errormsg)

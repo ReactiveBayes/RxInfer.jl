@@ -1,5 +1,8 @@
 export inference, InferenceResult, KeepEach, KeepLast
 
+import ReactiveMP: israndom, isdata, isconst, isproxy, isanonymous
+import ReactiveMP: InfCountingReal
+
 import ProgressMeter
 
 obtain_marginal(variable::AbstractVariable)                   = getmarginal(variable)
@@ -330,7 +333,7 @@ function inference(;
     inference_invoke_callback(callbacks, :before_model_creation)
     fmodel, freturval = create_model(model, constraints, meta, options)
     inference_invoke_callback(callbacks, :after_model_creation, fmodel)
-    vardict = ReactiveMP.getvardict(fmodel)
+    vardict = getvardict(fmodel)
 
     # First what we do - we check if `returnvars` is nothing or one of the two possible values: `KeepEach` and `KeepLast`. 
     # If so, we replace it with either `KeepEach` or `KeepLast` for each random and not-proxied variable in a model
@@ -460,7 +463,7 @@ function inference(;
 
         unsubscribe!(fe_subscription)
 
-        posterior_values = Dict(variable => getdata(getvalues(actor)) for (variable, actor) in pairs(actors))
+        posterior_values = Dict(variable => ReactiveMP.getdata(getvalues(actor)) for (variable, actor) in pairs(actors))
         fe_values        = fe_actor !== nothing ? getvalues(fe_actor) : nothing
 
         inference_invoke_callback(callbacks, :after_inference, fmodel)

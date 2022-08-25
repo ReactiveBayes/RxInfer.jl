@@ -160,6 +160,8 @@ struct FactorGraphModelStats
     FactorGraphModelStats() = new(Set{Symbol}())
 end
 
+import ReactiveMP: as_node_symbol
+
 add!(stats::FactorGraphModelStats, node::AbstractFactorNode) =
     push!(stats.node_ids, as_node_symbol(functionalform(node)))
 
@@ -306,7 +308,9 @@ function add!(model::FactorGraphModel, array::AbstractArray{<:DataVariable})
     return array
 end
 
-function activate!(model::FactorGraphModel)
+import ReactiveMP: activate!
+
+function ReactiveMP.activate!(model::FactorGraphModel)
     filter!(getrandom(model)) do randomvar
         @assert degree(randomvar) !== 0 "Unused random variable has been found $(indexed_name(randomvar))."
         @assert degree(randomvar) !== 1 "Half-edge has been found: $(indexed_name(randomvar)). To terminate half-edges 'Uninformative' node can be used."
@@ -322,14 +326,19 @@ function activate!(model::FactorGraphModel)
     activate!(getconstraints(model), model)
     activate!(getmeta(model), model)
 
+    gpipelinestages = get_pipeline_stages(getoptions(model))
+    gscheduler      = global_reactive_scheduler(getoptions(model))
+
     filter!(c -> isconnected(c), getconstant(model))
-    foreach(r -> activate!(model, r), getrandom(model))
-    foreach(n -> activate!(model, n), getnodes(model))
+    foreach(r -> activate!(r, gscheduler), getrandom(model))
+    foreach(n -> activate!(n, gpipelinestages, gscheduler), getnodes(model))
 end
 
 # Utility functions
 
 ## node
+
+import ReactiveMP: getpipeline
 
 function node_resolve_options(model::FactorGraphModel, options::FactorNodeCreationOptions, fform, variables)
     return FactorNodeCreationOptions(
@@ -365,6 +374,11 @@ node_resolve_meta(model::FactorGraphModel, options::FactorNodeCreationOptions, :
 
 ## randomvar
 
+import ReactiveMP: randomvar_options_set_marginal_form_check_strategy, randomvar_options_set_marginal_form_constraint
+import ReactiveMP: randomvar_options_set_messages_form_check_strategy, randomvar_options_set_messages_form_constraint
+import ReactiveMP: randomvar_options_set_pipeline, randomvar_options_set_prod_constraint
+import ReactiveMP: randomvar_options_set_prod_strategy, randomvar_options_set_proxy_variables
+
 function randomvar_resolve_options(model::FactorGraphModel, options::RandomVariableCreationOptions, name)
     qform, qprod = randomvar_resolve_marginal_form_prod(model, options, name)
     mform, mprod = randomvar_resolve_messages_form_prod(model, options, name)
@@ -380,6 +394,7 @@ end
 
 ## constraints
 
+import ReactiveMP: marginal_form_constraint, messages_form_constraint, prod_constraint
 import ReactiveMP: resolve_marginal_form_prod, resolve_messages_form_prod
 
 randomvar_resolve_marginal_form_prod(model::FactorGraphModel, options::RandomVariableCreationOptions, name)            = randomvar_resolve_marginal_form_prod(model, options, marginal_form_constraint(options), name)
@@ -426,11 +441,13 @@ function constvar(model::FactorGraphModel, name::Symbol, args...)
     return add!(model, constvar(name, args...))
 end
 
-as_variable(model::FactorGraphModel, x)        = add!(model, as_variable(x))
-as_variable(model::FactorGraphModel, t::Tuple) = map((d) -> as_variable(model, d), t)
+import ReactiveMP: as_variable
 
-as_variable(model::FactorGraphModel, v::AbstractVariable) = v
-as_variable(model::FactorGraphModel, v::AbstractVector{<:AbstractVariable}) = v
+ReactiveMP.as_variable(model::FactorGraphModel, x)        = add!(model, ReactiveMP.as_variable(x))
+ReactiveMP.as_variable(model::FactorGraphModel, t::Tuple) = map((d) -> ReactiveMP.as_variable(model, d), t)
+
+ReactiveMP.as_variable(model::FactorGraphModel, v::AbstractVariable) = v
+ReactiveMP.as_variable(model::FactorGraphModel, v::AbstractVector{<:AbstractVariable}) = v
 
 ## node creation
 
@@ -440,11 +457,13 @@ end
 
 ## AutoVar 
 
+import ReactiveMP: name
+
 struct AutoVar
     name::Symbol
 end
 
-name(autovar::AutoVar) = autovar.name
+ReactiveMP.name(autovar::AutoVar) = autovar.name
 
 # This function either returns a saved version of a variable from `vardict`
 # Or creates a new one in two cases:
@@ -477,7 +496,7 @@ function ReactiveMP.make_node(
 )
     proxy     = isdeterministic(sdtype(fform)) ? args : nothing
     rvoptions = ReactiveMP.randomvar_options_set_proxy_variables(ReactiveMP.EmptyRandomVariableCreationOptions, proxy)
-    var       = ReactiveMP.make_autovar(model, rvoptions, ReactiveMP.name(autovar), true) # add! is inside
+    var       = make_autovar(model, rvoptions, ReactiveMP.name(autovar), true) # add! is inside
     node      = ReactiveMP.make_node(model, options, fform, var, args...) # add! is inside
     return node, var
 end
@@ -493,7 +512,7 @@ function ReactiveMP.make_node(
     args::Vararg{<:ReactiveMP.ConstVariable}
 )
     if isstochastic(sdtype(fform))
-        var  = ReactiveMP.make_autovar(model, ReactiveMP.EmptyRandomVariableCreationOptions, ReactiveMP.name(autovar), true)
+        var  = make_autovar(model, ReactiveMP.EmptyRandomVariableCreationOptions, ReactiveMP.name(autovar), true)
         node = ReactiveMP.make_node(model, options, fform, var, args...) # add! is inside
         return node, var
     else
