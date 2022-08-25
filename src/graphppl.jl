@@ -1,32 +1,11 @@
 
-using TupleTools
+using GraphPPL, TupleTools
+
+import MacroTools: @capture, postwalk, prewalk, walk
+
+export @model, @constraints, @meta
 
 struct RxInferBackend end
-
-"""
-
-```julia
-@model [ model_options ] function model_name(model_arguments...; model_keyword_arguments...)
-    # model description
-end
-```
-
-`@model` macro generates a function that returns an equivalent graph-representation of the given probabilistic model description.
-
-## Supported alias in the model specification
-$(begin io = IOBuffer(); show_tilderhs_alias(RxInferBackend(), io); String(take!(io)) end)
-"""
-macro model end
-
-macro model(model_specification)
-    return esc(:(@model [] $model_specification))
-end
-
-macro model(model_options, model_specification)
-    return GraphPPL.generate_model_expression(RxInferBackend(), model_options, model_specification)
-end
-
-using GraphPPL
 
 function GraphPPL.write_model_structure(::RxInferBackend, 
     ms_name, 
@@ -566,4 +545,45 @@ function GraphPPL.write_inject_tilderhs_aliases(::RxInferBackend, model, tilderh
         end
         return _expression
     end
+end
+
+##
+
+"""
+
+```julia
+@model [ model_options ] function model_name(model_arguments...; model_keyword_arguments...)
+    # model description
+end
+```
+
+`@model` macro generates a function that returns an equivalent graph-representation of the given probabilistic model description.
+
+## Supported alias in the model specification
+$(begin io = IOBuffer(); GraphPPL.show_tilderhs_alias(RxInferBackend(), io); String(take!(io)) end)
+"""
+macro model end
+
+macro model(model_specification)
+    return esc(:(@model [] $model_specification))
+end
+
+macro model(model_options, model_specification)
+    return GraphPPL.generate_model_expression(RxInferBackend(), model_options, model_specification)
+end
+
+macro constraints(constraints_specification)
+    return generate_constraints_expression(RxInferBackend(), :([]), constraints_specification)
+end
+
+macro constraints(constraints_options, constraints_specification)
+    return generate_constraints_expression(RxInferBackend(), constraints_options, constraints_specification)
+end
+
+macro meta(meta_specification)
+    return generate_meta_expression(RxInferBackend(), :([]), meta_specification)
+end
+
+macro meta(meta_options, meta_specification)
+    return generate_meta_expression(RxInferBackend(), meta_options, meta_specification)
 end
