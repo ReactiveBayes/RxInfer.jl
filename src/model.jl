@@ -25,7 +25,7 @@ function model_name end
 
 See also: [`inference`](@ref)
 """
-struct ModelGenerator{T, A, K, C, M, O}
+struct ModelGenerator{T, A, K}
     args        :: A
     kwargs      :: K
 
