@@ -171,17 +171,7 @@ function FactorGraphModel(
     M <: Union{UnspecifiedMeta, MetaSpecification},
     O <: ModelOptions
 }
-    return FactorGraphModel{C, M, O}(
-        constraints,
-        meta,
-        options,
-        Vector{FactorNode}(),
-        Vector{RandomVariable}(),
-        Vector{ConstVariable}(),
-        Vector{DataVariable}(),
-        Dict{Symbol, Any}(),
-        FactorGraphModelStats()
-    )
+    return FactorGraphModel{C, M, O}(constraints, meta, options, FactorNodesCollection(), VariablesCollection())
 end
 
 getconstraints(model::FactorGraphModel) = model.constraints
