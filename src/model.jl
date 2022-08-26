@@ -16,8 +16,6 @@ function create_model end
 
 function model_name end
 
-function source_code end
-
 # Model Generator
 
 """
@@ -39,24 +37,12 @@ struct ModelGenerator{T, A, K, C, M, O}
 end
 
 # `ModelGenerator{T, A, K, Nothing, Nothing, Nothing}` is returned from the `Model` function
-function create_model(
-    generator::ModelGenerator{T, A, K, Nothing, Nothing, Nothing},
-    constraints,
-    meta,
-    options
-) where {T, A, K}
+function create_model(generator::ModelGenerator{T, A, K, Nothing, Nothing, Nothing}, constraints, meta, options) where {T, A, K}
     return create_model(T, constraints, meta, options, generator.args...; generator.kwargs...)
 end
 
 function create_model(generator::ModelGenerator{T}) where {T}
-    return create_model(
-        T,
-        generator.constraints,
-        generator.meta,
-        generator.options,
-        generator.args...;
-        generator.kwargs...
-    )
+    return create_model(T, generator.constraints, generator.meta, generator.options, generator.args...; generator.kwargs...)
 end
 
 # Model Options
@@ -194,7 +180,11 @@ FactorGraphModel(meta::Union{UnspecifiedMeta, MetaSpecification}, options::Named
 FactorGraphModel(constraints::Union{UnspecifiedConstraints, ConstraintsSpecification}, meta::Union{UnspecifiedMeta, MetaSpecification})                      = FactorGraphModel(constraints, meta, model_options())
 FactorGraphModel(constraints::Union{UnspecifiedConstraints, ConstraintsSpecification}, meta::Union{UnspecifiedMeta, MetaSpecification}, options::NamedTuple) = FactorGraphModel(constraints, meta, model_options(options))
 
-function FactorGraphModel(constraints::C, meta::M, options::O) where {
+function FactorGraphModel(
+    constraints::C,
+    meta::M,
+    options::O
+) where {
     C <: Union{UnspecifiedConstraints, ConstraintsSpecification},
     M <: Union{UnspecifiedMeta, MetaSpecification},
     O <: ModelOptions
@@ -465,12 +455,7 @@ ReactiveMP.name(autovar::AutoVar) = autovar.name
 # Or creates a new one in two cases:
 # - variable did not exist before
 # - variable exists, but has been declared as anyonymous (only if `rewrite_anonymous` argument is set to true)
-function make_autovar(
-    model::FactorGraphModel,
-    options::RandomVariableCreationOptions,
-    name::Symbol,
-    rewrite_anonymous::Bool = true
-)
+function make_autovar(model::FactorGraphModel, options::RandomVariableCreationOptions, name::Symbol, rewrite_anonymous::Bool = true)
     if haskey(getvardict(model), name)
         var = model[name]
         if rewrite_anonymous && isanonymous(var)
@@ -512,13 +497,7 @@ function ReactiveMP.make_node(
         node = ReactiveMP.make_node(model, options, fform, var, args...) # add! is inside
         return node, var
     else
-        var = add!(
-            model,
-            ReactiveMP.constvar(
-                ReactiveMP.name(autovar),
-                __fform_const_apply(fform, map((d) -> ReactiveMP.getconst(d), args)...)
-            )
-        )
+        var = add!(model, ReactiveMP.constvar(ReactiveMP.name(autovar), __fform_const_apply(fform, map((d) -> ReactiveMP.getconst(d), args)...)))
         return nothing, var
     end
 end

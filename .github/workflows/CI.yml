@@ -11,15 +11,26 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
 jobs:
+format: 
+    name: Julia Formatter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: julia-actions/setup-julia@v1         
+        with:
+          version: '1.8'
+      - run: make lint
   test:
     name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
     runs-on: ${{ matrix.os }}
+    needs: format
     strategy:
       fail-fast: false
       matrix:
         version:
           - '1.6'
           - '1.7'
+          - '1.8'
           - 'nightly'
         os:
           - ubuntu-latest
@@ -41,13 +52,14 @@ jobs:
   docs:
     name: Documentation
     runs-on: ubuntu-latest
+    needs: format
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v2
       - uses: julia-actions/setup-julia@v1
         with:
-          version: '1'
+          version: '1.8'
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-docdeploy@v1
         env:

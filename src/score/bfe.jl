@@ -122,12 +122,12 @@ function score(model::FactorGraphModel, ::Type{T}, objective::BetheFreeEnergy) w
 
     skip_strategy = get_skip_strategy(objective)
     scheduler     = get_scheduler(objective)
-    
+
     node_bound_free_energies = map(getnodes(model)) do node
         return apply_diagnostic_check(objective, node, score(T, FactorBoundFreeEnergy(), node, skip_strategy, scheduler))
     end
 
-    variable_bound_entropies = map(stochastic_variables) do variable 
+    variable_bound_entropies = map(stochastic_variables) do variable
         return apply_diagnostic_check(objective, variable, score(T, VariableBoundEntropy(), variable, skip_strategy, scheduler))
     end
 

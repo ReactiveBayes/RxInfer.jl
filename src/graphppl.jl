@@ -7,18 +7,18 @@ export @model, @constraints, @meta
 
 struct RxInferBackend end
 
-function GraphPPL.write_model_structure(::RxInferBackend, 
-    ms_name, 
+function GraphPPL.write_model_structure(::RxInferBackend,
+    ms_name,
     ms_model,
-    ms_args_checks, 
+    ms_args_checks,
     ms_args_const_init_block,
     ms_args,
     ms_kwargs,
-    ms_constraints, 
+    ms_constraints,
     ms_meta,
     ms_options,
     ms_body
-) 
+)
 
     # We create two variables for type stability
     constraints_in = gensym(Symbol(ms_name, :constraints_in))
@@ -28,42 +28,56 @@ function GraphPPL.write_model_structure(::RxInferBackend,
     options_in     = gensym(Symbol(ms_name, :options_in))
     options        = gensym(Symbol(ms_name, :options))
 
-    return quote 
-
-        struct $ms_name <: RxInfer.AbstractModelSpecification 
+    return quote
+        struct $ms_name <: RxInfer.AbstractModelSpecification
             $ms_name(args...; kwargs...) = RxInfer.create_model($ms_name, $(ms_constraints), $(ms_meta), $(ms_options), args...; kwargs...)
 
-            function $ms_name(constraints::Union{ ReactiveMP.UnspecifiedConstraints, ReactiveMP.ConstraintsSpecification }, args...; kwargs...) 
+            function $ms_name(constraints::Union{ReactiveMP.UnspecifiedConstraints, ReactiveMP.ConstraintsSpecification}, args...; kwargs...)
                 return RxInfer.create_model($ms_name, constraints, $(ms_meta), $(ms_options), args...; kwargs...)
             end
 
-            function $ms_name(meta::Union{ ReactiveMP.UnspecifiedMeta, ReactiveMP.MetaSpecification }, args...; kwargs...) 
+            function $ms_name(meta::Union{ReactiveMP.UnspecifiedMeta, ReactiveMP.MetaSpecification}, args...; kwargs...)
                 return RxInfer.create_model($ms_name, $(ms_constraints), meta, $(ms_options), args...; kwargs...)
             end
 
-            function $ms_name(options::RxInfer.ModelOptions, args...; kwargs...) 
+            function $ms_name(options::RxInfer.ModelOptions, args...; kwargs...)
                 return RxInfer.create_model($ms_name, $(ms_constraints), $(ms_meta), options, args...; kwargs...)
             end
 
-            function $ms_name(constraints::Union{ ReactiveMP.UnspecifiedConstraints, ReactiveMP.ConstraintsSpecification }, meta::Union{ ReactiveMP.UnspecifiedMeta, ReactiveMP.MetaSpecification }, args...; kwargs...) 
+            function $ms_name(
+                constraints::Union{ReactiveMP.UnspecifiedConstraints, ReactiveMP.ConstraintsSpecification},
+                meta::Union{ReactiveMP.UnspecifiedMeta, ReactiveMP.MetaSpecification},
+                args...;
+                kwargs...
+            )
                 return RxInfer.create_model($ms_name, constraints, meta, $(ms_options), args...; kwargs...)
             end
 
-            function $ms_name(constraints::Union{ ReactiveMP.UnspecifiedConstraints, ReactiveMP.ConstraintsSpecification }, options::RxInfer.ModelOptions, args...; kwargs...) 
+            function $ms_name(
+                constraints::Union{ReactiveMP.UnspecifiedConstraints, ReactiveMP.ConstraintsSpecification},
+                options::RxInfer.ModelOptions,
+                args...;
+                kwargs...
+            )
                 return RxInfer.create_model($ms_name, constraints, $(ms_meta), options, args...; kwargs...)
             end
 
-            function $ms_name(meta::Union{ ReactiveMP.UnspecifiedMeta, ReactiveMP.MetaSpecification }, options::RxInfer.ModelOptions, args...; kwargs...) 
+            function $ms_name(meta::Union{ReactiveMP.UnspecifiedMeta, ReactiveMP.MetaSpecification}, options::RxInfer.ModelOptions, args...; kwargs...)
                 return RxInfer.create_model($ms_name, $(ms_constraints), meta, options, args...; kwargs...)
             end
 
-            function $ms_name(constraints::Union{ ReactiveMP.UnspecifiedConstraints, ReactiveMP.ConstraintsSpecification }, meta::Union{ ReactiveMP.UnspecifiedMeta, ReactiveMP.MetaSpecification }, options::RxInfer.ModelOptions, args...; kwargs...) 
+            function $ms_name(
+                constraints::Union{ReactiveMP.UnspecifiedConstraints, ReactiveMP.ConstraintsSpecification},
+                meta::Union{ReactiveMP.UnspecifiedMeta, ReactiveMP.MetaSpecification},
+                options::RxInfer.ModelOptions,
+                args...;
+                kwargs...
+            )
                 return RxInfer.create_model($ms_name, constraints, meta, options, args...; kwargs...)
             end
         end
 
-        function RxInfer.create_model(::Type{ $ms_name }, $constraints_in, $meta_in, $options_in, $(ms_args...); $(ms_kwargs...))
-
+        function RxInfer.create_model(::Type{$ms_name}, $constraints_in, $meta_in, $options_in, $(ms_args...); $(ms_kwargs...))
             $(ms_args_checks...)
 
             $constraints = something($constraints_in, $(ms_constraints))
@@ -74,10 +88,10 @@ function GraphPPL.write_model_structure(::RxInferBackend,
             $(ms_args_const_init_block...)
 
             $ms_body
-        end  
+        end
 
-        RxInfer.model_name(::$ms_name)         = $(QuoteNode(ms_name))
-        RxInfer.model_name(::Type{ $ms_name }) = $(QuoteNode(ms_name))
+        RxInfer.model_name(::$ms_name)       = $(QuoteNode(ms_name))
+        RxInfer.model_name(::Type{$ms_name}) = $(QuoteNode(ms_name))
     end
 end
 
@@ -92,7 +106,7 @@ end
 function GraphPPL.write_datavar_expression(::RxInferBackend, model, varexpr, options, type, arguments)
     errstr    = "The expression `$varexpr = datavar($(type))` is incorrect. datavar(::Type, [ dims... ]) requires `Type` as a first argument, but `$(type)` is not a `Type`."
     checktype = :(GraphPPL.ensure_type($(type)) || error($errstr))
-    return :($checktype; $varexpr = ReactiveMP.datavar($model, $options, $(GraphPPL.fquote(varexpr)), ReactiveMP.PointMass{ $type }, $(arguments...)); $varexpr)
+    return :($checktype; $varexpr = ReactiveMP.datavar($model, $options, $(GraphPPL.fquote(varexpr)), ReactiveMP.PointMass{$type}, $(arguments...)); $varexpr)
 end
 
 function GraphPPL.write_constvar_expression(::RxInferBackend, model, varexpr, arguments)
@@ -180,7 +194,6 @@ function write_pipeline_stage(fform, stage)
     elseif @capture(stage, RequireEverything())
         return :(ReactiveMP.RequireEverythingFunctionalDependencies())
     elseif @capture(stage, (RequireInbound(args__)) | (RequireMessage(args__)) | (RequireMarginal(args__)))
-
         specs = map(args) do arg
             if @capture(arg, name_Symbol)
                 return (name, :nothing)
@@ -191,10 +204,10 @@ function write_pipeline_stage(fform, stage)
             end
         end
 
-        indices  = Expr(:tuple, map(s -> :(ReactiveMP.interface_get_index(Val{ $(GraphPPL.fquote(fform)) }, Val{ $(GraphPPL.fquote(first(s))) })), specs)...)
+        indices  = Expr(:tuple, map(s -> :(ReactiveMP.interface_get_index(Val{$(GraphPPL.fquote(fform))}, Val{$(GraphPPL.fquote(first(s)))})), specs)...)
         initials = Expr(:tuple, map(s -> :($(last(s))), specs)...)
 
-        if @capture(stage, (RequireInbound(args__)) | (RequireMessage(args__)) )
+        if @capture(stage, (RequireInbound(args__)) | (RequireMessage(args__)))
             return :(ReactiveMP.RequireMessageFunctionalDependencies($indices, $initials))
         elseif @capture(stage, RequireMarginal(args__))
             return :(ReactiveMP.RequireMarginalFunctionalDependencies($indices, $initials))
@@ -219,7 +232,10 @@ function factorisation_replace_var_name(varnames, arg::Symbol)
 end
 
 function factorisation_name_to_index(form, name)
-    return :(ReactiveMP.interface_get_index(Val{ $(GraphPPL.fquote(form)) }, Val{ ReactiveMP.interface_get_name(Val{ $(GraphPPL.fquote(form)) }, Val{ $(GraphPPL.fquote(name)) }) }))
+    return :(ReactiveMP.interface_get_index(
+        Val{$(GraphPPL.fquote(form))},
+        Val{ReactiveMP.interface_get_name(Val{$(GraphPPL.fquote(form))}, Val{$(GraphPPL.fquote(name))})}
+    ))
 end
 
 function check_uniqueness(t)
@@ -237,7 +253,7 @@ end
 
 function write_fconstraint_option(form, variables, fconstraint)
     if @capture(fconstraint, (*(factors__)) | (q(names__)))
-        factors = factors === nothing ? [ fconstraint ] : factors
+        factors = factors === nothing ? [fconstraint] : factors
 
         indexed = map(factors) do factor
             @capture(factor, q(names__)) || error("Invalid factorisation constraint: $factor")
@@ -245,7 +261,7 @@ function write_fconstraint_option(form, variables, fconstraint)
         end
 
         factorisation = Expr(:tuple, map(f -> Expr(:tuple, f...), indexed)...)
-        errorstr = """Invalid factorisation constraint: ($fconstraint). Arguments are not unique, check node's interface names and model specification variable names.""" 
+        errorstr = """Invalid factorisation constraint: ($fconstraint). Arguments are not unique, check node's interface names and model specification variable names."""
 
         return :(GraphPPL.check_uniqueness($factorisation) ? GraphPPL.sorted_factorisation($factorisation) : error($errorstr))
     elseif @capture(fconstraint, MeanField())
@@ -275,39 +291,44 @@ function GraphPPL.write_randomvar_options(::RxInferBackend, variable, options)
     marginal_form_check_strategy_option = :(nothing)
     messages_form_constraint_option     = :(nothing)
     messages_form_check_strategy_option = :(nothing)
-    
-    foreach(options) do option 
+
+    foreach(options) do option
         if @capture(option, pipeline = value_)
             !is_pipeline_option_present || error("`pipeline` option $(option) for random variable $(variable) has been redefined.")
             is_pipeline_option_present = true
             pipeline_option = value
-        elseif @capture(option, $(:(prod_constraint)) = value_) 
+        elseif @capture(option, $(:(prod_constraint)) = value_)
             !is_prod_constraint_option_present || error("`prod_constraint` option $(option) for random variable $(variable) has been redefined.")
             is_prod_constraint_option_present = true
             prod_constraint_option = value
-        elseif @capture(option, $(:(prod_strategy)) = value_) 
+        elseif @capture(option, $(:(prod_strategy)) = value_)
             !is_prod_strategy_option_present || error("`prod_strategy` option $(option) for random variable $(variable) has been redefined.")
             is_prod_strategy_option_present = true
             prod_strategy_option = value
-        elseif @capture(option, $(:(marginal_form_constraint)) = value_) 
-            !is_marginal_form_constraint_option_present || error("`marginal_form_constraint` option $(option) for random variable $(variable) has been redefined.")
+        elseif @capture(option, $(:(marginal_form_constraint)) = value_)
+            !is_marginal_form_constraint_option_present ||
+                error("`marginal_form_constraint` option $(option) for random variable $(variable) has been redefined.")
             is_marginal_form_constraint_option_present = true
             marginal_form_constraint_option = value
         elseif @capture(option, $(:(form_constraint)) = value_) # backward compatibility
             @warn "`form_constraint` option is deprecated. Use `marginal_form_constraint` option for variable $(variable) instead."
-            !is_marginal_form_constraint_option_present || error("`marginal_form_constraint` option $(option) for random variable $(variable) has been redefined.")
+            !is_marginal_form_constraint_option_present ||
+                error("`marginal_form_constraint` option $(option) for random variable $(variable) has been redefined.")
             is_marginal_form_constraint_option_present = true
             marginal_form_constraint_option = value
-        elseif @capture(option, $(:(marginal_form_check_strategy)) = value_) 
-            !is_marginal_form_check_strategy_option_present || error("`marginal_form_check_strategy` option $(option) for random variable $(variable) has been redefined.")
+        elseif @capture(option, $(:(marginal_form_check_strategy)) = value_)
+            !is_marginal_form_check_strategy_option_present ||
+                error("`marginal_form_check_strategy` option $(option) for random variable $(variable) has been redefined.")
             is_marginal_form_check_strategy_option_present = true
             marginal_form_check_strategy_option = value
-        elseif @capture(option, $(:(messages_form_constraint)) = value_) 
-            !is_messages_form_constraint_option_present || error("`messages_form_constraint` option $(option) for random variable $(variable) has been redefined.")
+        elseif @capture(option, $(:(messages_form_constraint)) = value_)
+            !is_messages_form_constraint_option_present ||
+                error("`messages_form_constraint` option $(option) for random variable $(variable) has been redefined.")
             is_messages_form_constraint_option_present = true
             messages_form_constraint_option = value
-        elseif @capture(option, $(:(messages_form_check_strategy)) = value_) 
-            !is_messages_form_check_strategy_option_present || error("`messages_form_check_strategy` option $(option) for random variable $(variable) has been redefined.")
+        elseif @capture(option, $(:(messages_form_check_strategy)) = value_)
+            !is_messages_form_check_strategy_option_present ||
+                error("`messages_form_check_strategy` option $(option) for random variable $(variable) has been redefined.")
             is_messages_form_check_strategy_option_present = true
             messages_form_check_strategy_option = value
         else
@@ -335,12 +356,12 @@ function GraphPPL.write_datavar_options(::RxInferBackend, variable, type, option
     subject_option       = :(nothing)
     allow_missing_option = :(Val(false))
 
-    foreach(options) do option 
+    foreach(options) do option
         if @capture(option, subject = value_)
             !is_subject_option_present || error("`subject` option $(option) for data variable $(variable) has been redefined.")
             is_subject_option_present = true
             subject_option = value
-        elseif @capture(option, $(:(allow_missing)) = value_) 
+        elseif @capture(option, $(:(allow_missing)) = value_)
             !is_allow_missing_option_present || error("`allow_missing` option $(option) for data variable $(variable) has been redefined.")
             is_allow_missing_option_present = true
             allow_missing_option = :(Val($value))
@@ -349,7 +370,7 @@ function GraphPPL.write_datavar_options(::RxInferBackend, variable, type, option
         end
     end
 
-    return :(ReactiveMP.DataVariableCreationOptions(ReactiveMP.PointMass{ $type }, $subject_option, $allow_missing_option))
+    return :(ReactiveMP.DataVariableCreationOptions(ReactiveMP.PointMass{$type}, $subject_option, $allow_missing_option))
 end
 
 function GraphPPL.write_default_model_constraints(::RxInferBackend)
@@ -364,18 +385,19 @@ end
 
 ## Factorisations constraints specification language
 
-function GraphPPL.write_constraints_specification(::RxInferBackend, factorisation, marginalsform, messagesform, options) 
+function GraphPPL.write_constraints_specification(::RxInferBackend, factorisation, marginalsform, messagesform, options)
     return :(ReactiveMP.ConstraintsSpecification($factorisation, $marginalsform, $messagesform, $options))
 end
 
 function GraphPPL.write_constraints_specification_options(::RxInferBackend, options)
-    @capture(options, [ entries__ ]) || error("Invalid constraints specification options syntax. Should be `@constraints [ option1 = value1, ... ] ...`, but `$(options)` found.")
-    
+    @capture(options, [entries__]) ||
+        error("Invalid constraints specification options syntax. Should be `@constraints [ option1 = value1, ... ] ...`, but `$(options)` found.")
+
     is_warn_option_present = false
 
     warn_option = :(true)
 
-    foreach(entries) do option 
+    foreach(entries) do option
         if @capture(option, warn = value_)
             !is_warn_option_present || error("`warn` option $(option) for constraints specification has been redefined.")
             is_warn_option_present = true
@@ -389,15 +411,15 @@ function GraphPPL.write_constraints_specification_options(::RxInferBackend, opti
     return :(ReactiveMP.ConstraintsSpecificationOptions($warn_option))
 end
 
-function GraphPPL.write_factorisation_constraint(::RxInferBackend, names, entries) 
+function GraphPPL.write_factorisation_constraint(::RxInferBackend, names, entries)
     return :(ReactiveMP.FactorisationConstraintsSpecification($names, $entries))
 end
 
-function GraphPPL.write_factorisation_constraint_entry(::RxInferBackend, names, entries) 
+function GraphPPL.write_factorisation_constraint_entry(::RxInferBackend, names, entries)
     return :(ReactiveMP.FactorisationConstraintsEntry($names, $entries))
 end
 
-function GraphPPL.write_init_factorisation_not_defined(::RxInferBackend, spec, name) 
+function GraphPPL.write_init_factorisation_not_defined(::RxInferBackend, spec, name)
     return :($spec = ReactiveMP.FactorisationSpecificationNotDefinedYet{$(QuoteNode(name))}())
 end
 
@@ -406,14 +428,14 @@ function GraphPPL.write_check_factorisation_is_not_defined(::RxInferBackend, spe
 end
 
 function GraphPPL.write_factorisation_split(::RxInferBackend, left, right)
-    return :(ReactiveMP.factorisation_split($left, $right)) 
+    return :(ReactiveMP.factorisation_split($left, $right))
 end
 
-function GraphPPL.write_factorisation_combined_range(::RxInferBackend, left, right) 
+function GraphPPL.write_factorisation_combined_range(::RxInferBackend, left, right)
     return :(ReactiveMP.CombinedRange($left, $right))
 end
 
-function GraphPPL.write_factorisation_splitted_range(::RxInferBackend, left, right) 
+function GraphPPL.write_factorisation_splitted_range(::RxInferBackend, left, right)
     return :(ReactiveMP.SplittedRange($left, $right))
 end
 
@@ -421,8 +443,8 @@ function GraphPPL.write_factorisation_functional_index(::RxInferBackend, repr, f
     return :(ReactiveMP.FunctionalIndex{$(QuoteNode(repr))}($fn))
 end
 
-function GraphPPL.write_form_constraint_specification_entry(::RxInferBackend, T, args, kwargs) 
-    return :(ReactiveMP.make_form_constraint($T, $args...; $kwargs...)) 
+function GraphPPL.write_form_constraint_specification_entry(::RxInferBackend, T, args, kwargs)
+    return :(ReactiveMP.make_form_constraint($T, $args...; $kwargs...))
 end
 
 function GraphPPL.write_form_constraint_specification(::RxInferBackend, specification)
@@ -431,18 +453,19 @@ end
 
 ## Meta specification language
 
-function GraphPPL.write_meta_specification(::RxInferBackend, entries, options) 
+function GraphPPL.write_meta_specification(::RxInferBackend, entries, options)
     return :(ReactiveMP.MetaSpecification($entries, $options))
 end
 
 function GraphPPL.write_meta_specification_options(::RxInferBackend, options)
-    @capture(options, [ entries__ ]) || error("Invalid meta specification options syntax. Should be `@meta [ option1 = value1, ... ] ...`, but `$(options)` found.")
-    
+    @capture(options, [entries__]) ||
+        error("Invalid meta specification options syntax. Should be `@meta [ option1 = value1, ... ] ...`, but `$(options)` found.")
+
     is_warn_option_present = false
 
     warn_option = :(true)
 
-    foreach(entries) do option 
+    foreach(entries) do option
         if @capture(option, warn = value_)
             !is_warn_option_present || error("`warn` option $(option) for meta specification has been redefined.")
             is_warn_option_present = true
@@ -456,7 +479,7 @@ function GraphPPL.write_meta_specification_options(::RxInferBackend, options)
     return :(ReactiveMP.MetaSpecificationOptions($warn_option))
 end
 
-function GraphPPL.write_meta_specification_entry(::RxInferBackend, F, N, meta) 
+function GraphPPL.write_meta_specification_entry(::RxInferBackend, F, N, meta)
     return :(ReactiveMP.MetaSpecificationEntry(Val($F), Val($N), $meta))
 end
 
@@ -464,63 +487,108 @@ end
 
 ReactiveMPNodeAliases = (
     (
-        (expression) -> @capture(expression, a_ || b_) ? :(ReactiveMP.OR($a, $b)) : expression,     
+        (expression) -> @capture(expression, a_ || b_) ? :(ReactiveMP.OR($a, $b)) : expression,
         "`a || b`: alias for `OR(a, b)` node (operator precedence between `||`, `&&`, `->` and `!` is the same as in Julia)."
     ),
     (
-        (expression) -> @capture(expression, a_ && b_) ? :(ReactiveMP.AND($a, $b)) : expression,    
+        (expression) -> @capture(expression, a_ && b_) ? :(ReactiveMP.AND($a, $b)) : expression,
         "`a && b`: alias for `AND(a, b)` node (operator precedence `||`, `&&`, `->` and `!` is the same as in Julia)."
-    ), 
+    ),
     (
-        (expression) -> @capture(expression, a_ -> b_) ? :(ReactiveMP.IMPLY($a, $b)) : expression,  
+        (expression) -> @capture(expression, a_ -> b_) ? :(ReactiveMP.IMPLY($a, $b)) : expression,
         "`a -> b`: alias for `IMPLY(a, b)` node (operator precedence `||`, `&&`, `->` and `!` is the same as in Julia)."
     ),
     (
-        (expression) -> @capture(expression, (¬a_) | (!a_)) ? :(ReactiveMP.NOT($a)) : expression,            
+        (expression) -> @capture(expression, (¬a_) | (!a_)) ? :(ReactiveMP.NOT($a)) : expression,
         "`¬a` and `!a`: alias for `NOT(a)` node (Unicode `\\neg`, operator precedence `||`, `&&`, `->` and `!` is the same as in Julia)."
     ),
     (
-        (expression) -> @capture(expression, +(args__)) ? fold_linear_operator_call(expression) : expression, 
+        (expression) -> @capture(expression, +(args__)) ? fold_linear_operator_call(expression) : expression,
         "`a + b + c`: alias for `(a + b) + c`"
     ),
     (
-        (expression) -> @capture(expression, *(args__)) ? fold_linear_operator_call(expression) : expression, 
+        (expression) -> @capture(expression, *(args__)) ? fold_linear_operator_call(expression) : expression,
         "`a * b * c`: alias for `(a * b) * c`"
     ),
     (
-        (expression) -> @capture(expression, (Normal | Gaussian)((μ)|(m)|(mean) = mean_, (σ²)|(τ⁻¹)|(v)|(var)|(variance) = var_)) ? :(NormalMeanVariance($mean, $var)) : expression, 
+        (expression) -> if @capture(expression, (Normal | Gaussian)((μ) | (m) | (mean) = mean_, (σ²) | (τ⁻¹) | (v) | (var) | (variance) = var_))
+            :(NormalMeanVariance($mean, $var))
+        else
+            expression
+        end,
         "`Normal(μ|m|mean = ..., σ²|τ⁻¹|v|var|variance = ...)` alias for `NormalMeanVariance(..., ...)` node. `Gaussian` could be used instead `Normal` too."
     ),
     (
-        (expression) -> @capture(expression, (Normal | Gaussian)((μ)|(m)|(mean) = mean_, (τ)|(γ)|(σ⁻²)|(w)|(p)|(prec)|(precision) = prec_)) ? :(NormalMeanPrecision($mean, $prec)) : expression, 
+        (expression) ->
+            if @capture(expression, (Normal | Gaussian)((μ) | (m) | (mean) = mean_, (τ) | (γ) | (σ⁻²) | (w) | (p) | (prec) | (precision) = prec_))
+                :(NormalMeanPrecision($mean, $prec))
+            else
+                expression
+            end,
         "`Normal(μ|m|mean = ..., τ|γ|σ⁻²|w|p|prec|precision = ...)` alias for `NormalMeanVariance(..., ...)` node. `Gaussian` could be used instead `Normal` too."
     ),
     (
-        (expression) -> @capture(expression, (MvNormal | MvGaussian)((μ)|(m)|(mean) = mean_, (Σ)|(V)|(Λ⁻¹)|(cov)|(covariance) = cov_)) ? :(MvNormalMeanCovariance($mean, $cov)) : expression, 
+        (expression) -> if @capture(expression, (MvNormal | MvGaussian)((μ) | (m) | (mean) = mean_, (Σ) | (V) | (Λ⁻¹) | (cov) | (covariance) = cov_))
+            :(MvNormalMeanCovariance($mean, $cov))
+        else
+            expression
+        end,
         "`MvNormal(μ|m|mean = ..., Σ|V|Λ⁻¹|cov|covariance = ...)` alias for `MvNormalMeanCovariance(..., ...)` node. `MvGaussian` could be used instead `MvNormal` too."
     ),
     (
-        (expression) -> @capture(expression, (MvNormal | MvGaussian)((μ)|(m)|(mean) = mean_, (Λ)|(W)|(Σ⁻¹)|(prec)|(precision) = prec_)) ? :(MvNormalMeanPrecision($mean, $prec)) : expression, 
+        (expression) -> if @capture(expression, (MvNormal | MvGaussian)((μ) | (m) | (mean) = mean_, (Λ) | (W) | (Σ⁻¹) | (prec) | (precision) = prec_))
+            :(MvNormalMeanPrecision($mean, $prec))
+        else
+            expression
+        end,
         "`MvNormal(μ|m|mean = ..., Λ|W|Σ⁻¹|prec|precision = ...)` alias for `MvNormalMeanPrecision(..., ...)` node. `MvGaussian` could be used instead `MvNormal` too."
     ),
     (
-        (expression) -> @capture(expression, (MvNormal | MvGaussian)((μ)|(m)|(mean) = mean_, (τ)|(γ)|(σ⁻²)|(scale_diag_prec)|(scale_diag_precision) = scale_)) ? :(MvNormalMeanScalePrecision($mean, $scale)) : expression, 
+        (expression) ->
+            if @capture(
+                expression,
+                (MvNormal | MvGaussian)((μ) | (m) | (mean) = mean_, (τ) | (γ) | (σ⁻²) | (scale_diag_prec) | (scale_diag_precision) = scale_)
+            )
+                :(MvNormalMeanScalePrecision($mean, $scale))
+            else
+                expression
+            end,
         "`MvNormal(μ|m|mean = ..., τ|γ|σ⁻²|scale_diag_prec|scale_diag_precision = ...)` alias for `MvNormalMeanScalePrecision(..., ...)` node. `MvGaussian` could be used instead `MvNormal` too."
     ),
-    ((expression) -> @capture(expression, (Normal | Gaussian)(args__)) ? :(error("Please use a specific version of the `Normal` (`Gaussian`) distribution (e.g. `NormalMeanVariance` or aliased version `Normal(mean = ..., variance|precision = ...)`).")) : expression, missing),
-    ((expression) -> @capture(expression, (MvNormal | MvGaussian)(args__)) ? :(error("Please use a specific version of the `MvNormal` (`MvGaussian`) distribution (e.g. `MvNormalMeanCovariance` or aliased version `MvNormal(mean = ..., covariance|precision = ...)`).")) : expression, missing),
     (
-        (expression) -> @capture(expression, Gamma((α)|(a)|(shape) = shape_, (θ)|(β⁻¹)|(scale) = scale_)) ? :(GammaShapeScale($shape, $scale)) : expression,
+        (expression) -> if @capture(expression, (Normal | Gaussian)(args__))
+            :(error(
+            "Please use a specific version of the `Normal` (`Gaussian`) distribution (e.g. `NormalMeanVariance` or aliased version `Normal(mean = ..., variance|precision = ...)`)."
+        ))
+        else
+            expression
+        end,
+        missing
+    ),
+    (
+        (expression) -> if @capture(expression, (MvNormal | MvGaussian)(args__))
+            :(error(
+            "Please use a specific version of the `MvNormal` (`MvGaussian`) distribution (e.g. `MvNormalMeanCovariance` or aliased version `MvNormal(mean = ..., covariance|precision = ...)`)."
+        ))
+        else
+            expression
+        end,
+        missing
+    ),
+    (
+        (expression) ->
+            @capture(expression, Gamma((α) | (a) | (shape) = shape_, (θ) | (β⁻¹) | (scale) = scale_)) ? :(GammaShapeScale($shape, $scale)) : expression,
         "`Gamma(α|a|shape = ..., θ|β⁻¹|scale = ...)` alias for `GammaShapeScale(..., ...) node.`"
     ),
     (
-        (expression) -> @capture(expression, Gamma((α)|(a)|(shape) = shape_, (β)|(θ⁻¹)|(rate) = rate_)) ? :(GammaShapeRate($shape, $rate)) : expression,
+        (expression) ->
+            @capture(expression, Gamma((α) | (a) | (shape) = shape_, (β) | (θ⁻¹) | (rate) = rate_)) ? :(GammaShapeRate($shape, $rate)) : expression,
         "`Gamma(α|a|shape = ..., β|θ⁻¹|rate = ...)` alias for `GammaShapeRate(..., ...) node.`"
-    ),
+    )
 )
 
 function GraphPPL.show_tilderhs_alias(::RxInferBackend, io = stdout)
-    foreach(skipmissing(map(last, ReactiveMPNodeAliases))) do alias 
+    foreach(skipmissing(map(last, ReactiveMPNodeAliases))) do alias
         println(io, "- ", alias)
     end
 end
