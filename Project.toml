@@ -13,8 +13,9 @@ Rocket = "df971d30-c9d6-4b37-b8ff-e965b2cb3a40"
 
 [compat]
 Distributions = "0.25"
-ReactiveMP = "3.0.0"
 GraphPPL = "3.0.0"
+ProgressMeter = "1"
+ReactiveMP = "3.0.0"
 Reexport = "1.2.0"
 Rocket = "1.4.0"
 julia = "1.6"
