@@ -17,9 +17,9 @@ using Random
 
         activate!(model)
 
-        objective = BetheFreeEnergy(IncludeAll(), BetheFreeEnergyCheckInfs())
+        objective = BetheFreeEnergy(IncludeAll(), AsapScheduler(), BetheFreeEnergyCheckInfs())
 
-        vbenergy = score(InfCountingReal{Float64}, objective, VariableBoundEntropy(), x, AsapScheduler())
+        vbenergy = score(InfCountingReal{Float64}, objective, VariableBoundEntropy(), x)
 
         events = []
 
@@ -59,9 +59,9 @@ using Random
 
         activate!(model)
 
-        objective = BetheFreeEnergy(IncludeAll(), BetheFreeEnergyCheckNaNs())
+        objective = BetheFreeEnergy(IncludeAll(), AsapScheduler(), BetheFreeEnergyCheckNaNs())
 
-        vbenergy = score(InfCountingReal{Float64}, objective, VariableBoundEntropy(), x, AsapScheduler())
+        vbenergy = score(InfCountingReal{Float64}, objective, VariableBoundEntropy(), x)
 
         events = []
 
@@ -101,9 +101,9 @@ using Random
 
         activate!(model)
 
-        objective = BetheFreeEnergy(IncludeAll(), nothing)
+        objective = BetheFreeEnergy(IncludeAll(), AsapScheduler(), nothing)
 
-        vbenergy = score(InfCountingReal{Float64}, objective, VariableBoundEntropy(), x, AsapScheduler())
+        vbenergy = score(InfCountingReal{Float64}, objective, VariableBoundEntropy(), x)
 
         events = []
 
@@ -143,9 +143,9 @@ using Random
 
         activate!(model)
 
-        objective = BetheFreeEnergy(IncludeAll(), BetheFreeEnergyCheckInfs())
+        objective = BetheFreeEnergy(IncludeAll(), AsapScheduler(), BetheFreeEnergyCheckInfs())
 
-        nbenergy = score(InfCountingReal{Float64}, objective, FactorBoundFreeEnergy(), n1, AsapScheduler())
+        nbenergy = score(InfCountingReal{Float64}, objective, FactorBoundFreeEnergy(), n1)
 
         events = []
 
@@ -194,9 +194,9 @@ using Random
 
         activate!(model)
 
-        objective = BetheFreeEnergy(IncludeAll(), BetheFreeEnergyCheckNaNs())
+        objective = BetheFreeEnergy(IncludeAll(), AsapScheduler(), BetheFreeEnergyCheckNaNs())
 
-        nbenergy = score(InfCountingReal{Float64}, objective, FactorBoundFreeEnergy(), n1, AsapScheduler())
+        nbenergy = score(InfCountingReal{Float64}, objective, FactorBoundFreeEnergy(), n1)
 
         events = []
 
@@ -245,9 +245,9 @@ using Random
 
         activate!(model)
 
-        objective = BetheFreeEnergy(IncludeAll(), nothing)
+        objective = BetheFreeEnergy(IncludeAll(), AsapScheduler(), nothing)
 
-        nbenergy = score(InfCountingReal{Float64}, objective, FactorBoundFreeEnergy(), n1, AsapScheduler())
+        nbenergy = score(InfCountingReal{Float64}, objective, FactorBoundFreeEnergy(), n1)
 
         events = []
 
