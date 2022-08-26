@@ -21,7 +21,7 @@ formatted = all(
 )
 
 if !formatted && !overwrite
-    @error "JuliaFormatter lint has failed. Run `make format` from `ReactiveMP.jl` main directory and commit your changes to fix code style."
+    @error "JuliaFormatter lint has failed. Run `make format` from `RxInfer.jl` main directory and commit your changes to fix code style."
     exit(1)
 elseif !formatted && overwrite
     @info "JuliaFormatter has overwritten files according to style guidelines"
