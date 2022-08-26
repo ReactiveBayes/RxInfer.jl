@@ -210,6 +210,7 @@ end
 
     addtests(testrunner, "constraints/test_form_constraints.jl")
     addtests(testrunner, "constraints/test_factorisation_constraints.jl")
+    addtests(testrunner, "constraints/form/test_form_point_mass.jl")
 
     addtests(testrunner, "test_model.jl")
     addtests(testrunner, "models/test_lgssm.jl")
