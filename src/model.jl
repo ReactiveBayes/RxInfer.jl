@@ -377,6 +377,8 @@ ReactiveMP.as_variable(model::FactorGraphModel, v::AbstractVector{<:AbstractVari
 
 ## node creation
 
+import ReactiveMP: make_node, FactorNodeCreationOptions
+
 function ReactiveMP.make_node(model::FactorGraphModel, options::FactorNodeCreationOptions, fform, args...)
     return push!(model, make_node(fform, node_resolve_options(model, options, fform, args), args...))
 end
