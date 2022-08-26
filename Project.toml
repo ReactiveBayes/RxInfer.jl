@@ -17,6 +17,11 @@ TupleTools = "9d95972d-f1c8-5527-a6e0-b4b365fa01f6"
 Distributions = "0.25"
 Reexport = "1.2.0"
 Rocket = "1.4.0"
+GraphPPL = "3.0.0"
+ReactiveMP = "3.0.0"
+ProgressMeter = "1.0.0"
+TupleTools = "1.2.0"
+MacroTools = "0.5.6"
 julia = "1.6"
 
 [extras]

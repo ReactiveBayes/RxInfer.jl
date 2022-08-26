@@ -5,7 +5,6 @@ using RxInfer
 using Random
 
 @testset "@model macro tests" begin
-    
     @testset "Broadcasting #1" begin
         @model function bsyntax1(n, broadcasting)
             m ~ NormalMeanPrecision(0.0, 1.0)
