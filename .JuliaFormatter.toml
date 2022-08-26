@@ -1,5 +1,5 @@
 indent = 4
-margin = 120
+margin = 160
 always_for_in = true
 whitespace_typedefs = true
 remove_extra_newlines = true

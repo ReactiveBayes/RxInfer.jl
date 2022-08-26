@@ -194,11 +194,7 @@ FactorGraphModel(meta::Union{UnspecifiedMeta, MetaSpecification}, options::Named
 FactorGraphModel(constraints::Union{UnspecifiedConstraints, ConstraintsSpecification}, meta::Union{UnspecifiedMeta, MetaSpecification})                      = FactorGraphModel(constraints, meta, model_options())
 FactorGraphModel(constraints::Union{UnspecifiedConstraints, ConstraintsSpecification}, meta::Union{UnspecifiedMeta, MetaSpecification}, options::NamedTuple) = FactorGraphModel(constraints, meta, model_options(options))
 
-function FactorGraphModel(
-    constraints::C,
-    meta::M,
-    options::O
-) where {
+function FactorGraphModel(constraints::C, meta::M, options::O) where {
     C <: Union{UnspecifiedConstraints, ConstraintsSpecification},
     M <: Union{UnspecifiedMeta, MetaSpecification},
     O <: ModelOptions
@@ -441,7 +437,7 @@ function constvar(model::FactorGraphModel, name::Symbol, args...)
     return add!(model, constvar(name, args...))
 end
 
-import ReactiveMP: as_variable
+import ReactiveMP: as_variable, undo_as_variable
 
 ReactiveMP.as_variable(model::FactorGraphModel, x)        = add!(model, ReactiveMP.as_variable(x))
 ReactiveMP.as_variable(model::FactorGraphModel, t::Tuple) = map((d) -> ReactiveMP.as_variable(model, d), t)

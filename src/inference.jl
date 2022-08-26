@@ -340,10 +340,7 @@ function inference(;
     if returnvars === nothing || returnvars === KeepEach() || returnvars === KeepLast()
         # Checks if the first argument is `nothing`, in which case returns the second argument
         returnoption = something(returnvars, iterations isa Number ? KeepEach() : KeepLast())
-        returnvars =
-            Dict(
-                variable => returnoption for (variable, value) in pairs(vardict) if (israndom(value) && !isproxy(value))
-            )
+        returnvars   = Dict(variable => returnoption for (variable, value) in pairs(vardict) if (israndom(value) && !isproxy(value)))
     end
 
     __inference_check_dicttype(:returnvars, returnvars)
@@ -380,7 +377,8 @@ function inference(;
 
         if is_free_energy
             fe_actor        = ScoreActor(S)
-            fe_subscription = subscribe!(score(T, BetheFreeEnergy(BetheFreeEnergyDefaultMarginalSkipStrategy, free_energy_diagnostics), fmodel), fe_actor)
+            fe_objective    = BetheFreeEnergy(BetheFreeEnergyDefaultMarginalSkipStrategy, AsapScheduler(), free_energy_diagnostics)
+            fe_subscription = subscribe!(score(fmodel, T, fe_objective), fe_actor)
         end
 
         if !isnothing(initmarginals)
