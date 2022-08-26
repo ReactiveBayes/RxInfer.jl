@@ -1,4 +1,6 @@
-export SampleListFormConstraint, LeftProposal, RightProposal
+export LeftProposal, RightProposal
+
+import ReactiveMP: is_point_mass_form_constraint, default_form_check_strategy, default_prod_constraint, make_form_constraint, constrain_form
 
 using Random
 

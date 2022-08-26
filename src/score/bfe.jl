@@ -2,6 +2,7 @@ export BetheFreeEnergyCheckNaNs, BetheFreeEnergyCheckInfs
 export BetheFreeEnergyDefaultMarginalSkipStrategy, BetheFreeEnergyDefaultChecks
 export BetheFreeEnergy
 
+import ReactiveMP: is_point_mass_form_constraint
 import ReactiveMP: InfCountingReal, value_isnan, value_isinf
 import ReactiveMP: score
 

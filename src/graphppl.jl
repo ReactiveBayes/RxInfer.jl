@@ -439,7 +439,7 @@ ReactiveMPNodeAliases = (
         "`a + b + c`: alias for `(a + b) + c`"
     ),
     (
-        (expression) -> @capture(expression, *(args__)) ? fold_linear_operator_call(expression) : expression,
+        (expression) -> @capture(expression, *(args__)) ? GraphPPL.fold_linear_operator_call(expression) : expression,
         "`a * b * c`: alias for `(a * b) * c`"
     ),
     (
@@ -569,17 +569,17 @@ macro model(model_specification)
 end
 
 macro constraints(constraints_specification)
-    return generate_constraints_expression(RxInferBackend(), :([]), constraints_specification)
+    return GraphPPL.generate_constraints_expression(RxInferBackend(), :([]), constraints_specification)
 end
 
 macro constraints(constraints_options, constraints_specification)
-    return generate_constraints_expression(RxInferBackend(), constraints_options, constraints_specification)
+    return GraphPPL.generate_constraints_expression(RxInferBackend(), constraints_options, constraints_specification)
 end
 
 macro meta(meta_specification)
-    return generate_meta_expression(RxInferBackend(), :([]), meta_specification)
+    return GraphPPL.generate_meta_expression(RxInferBackend(), :([]), meta_specification)
 end
 
 macro meta(meta_options, meta_specification)
-    return generate_meta_expression(RxInferBackend(), meta_options, meta_specification)
+    return GraphPPL.generate_meta_expression(RxInferBackend(), meta_options, meta_specification)
 end
