@@ -28,21 +28,18 @@ See also: [`inference`](@ref)
 struct ModelGenerator{T, A, K, C, M, O}
     args        :: A
     kwargs      :: K
-    constraints :: C
-    meta        :: M
-    options     :: O
 
-    ModelGenerator(::Type{T}, args::A, kwargs::K, constraints::C, meta::M, options::O) where {T, A, K, C, M, O} =
-        new{T, A, K, C, M, O}(args, kwargs, constraints, meta, options)
+    ModelGenerator(::Type{T}, args::A, kwargs::K) where {T, A, K} = new{T, A, K}(args, kwargs)
 end
 
-# `ModelGenerator{T, A, K, Nothing, Nothing, Nothing}` is returned from the `Model` function
-function create_model(generator::ModelGenerator{T, A, K, Nothing, Nothing, Nothing}, constraints, meta, options) where {T, A, K}
-    return create_model(T, constraints, meta, options, generator.args...; generator.kwargs...)
-end
+Model(::Type{T}, args...; kwargs...) where {T <: AbstractModelSpecification} = ModelGenerator(T, args, kwargs)
 
-function create_model(generator::ModelGenerator{T}) where {T}
-    return create_model(T, generator.constraints, generator.meta, generator.options, generator.args...; generator.kwargs...)
+function create_model(generator::ModelGenerator{T, A, K}, constraints, meta, options) where {T, A, K}
+    sconstraints = something(constraints, UnspecifiedConstraints())
+    smeta        = something(meta, UnspecifiedMeta())
+    soptions     = something(options, UnspecifiedModelOptions())
+    model        = FactorGraphModel(sconstraints, smeta, soptions)
+    return model, create_model(T, model, generator.args...; generator.kwargs...)
 end
 
 # Model Options
@@ -135,9 +132,7 @@ default_factorisation(options::ModelOptions)     = something(options.default_fac
 
 Base.merge(nt::NamedTuple, options::ModelOptions) = model_options(merge(nt, as_named_tuple(options)))
 
-# Model
-
-Model(::Type{T}, args...; kwargs...) where {T <: AbstractModelSpecification} = ModelGenerator(T, args, kwargs, nothing, nothing, nothing)
+UnspecifiedModelOptions() = model_options()
 
 struct FactorGraphModel{C, M, O}
     constraints :: C

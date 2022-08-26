@@ -14,79 +14,15 @@ function GraphPPL.write_model_structure(::RxInferBackend,
     ms_args_const_init_block,
     ms_args,
     ms_kwargs,
-    ms_constraints,
-    ms_meta,
-    ms_options,
     ms_body
 )
 
-    # We create two variables for type stability
-    constraints_in = gensym(Symbol(ms_name, :constraints_in))
-    constraints    = gensym(Symbol(ms_name, :constraints))
-    meta_in        = gensym(Symbol(ms_name, :meta_in))
-    meta           = gensym(Symbol(ms_name, :meta))
-    options_in     = gensym(Symbol(ms_name, :options_in))
-    options        = gensym(Symbol(ms_name, :options))
-
     return quote
-        struct $ms_name <: RxInfer.AbstractModelSpecification
-            $ms_name(args...; kwargs...) = RxInfer.create_model($ms_name, $(ms_constraints), $(ms_meta), $(ms_options), args...; kwargs...)
+        struct $ms_name <: RxInfer.AbstractModelSpecification end
 
-            function $ms_name(constraints::Union{ReactiveMP.UnspecifiedConstraints, ReactiveMP.ConstraintsSpecification}, args...; kwargs...)
-                return RxInfer.create_model($ms_name, constraints, $(ms_meta), $(ms_options), args...; kwargs...)
-            end
-
-            function $ms_name(meta::Union{ReactiveMP.UnspecifiedMeta, ReactiveMP.MetaSpecification}, args...; kwargs...)
-                return RxInfer.create_model($ms_name, $(ms_constraints), meta, $(ms_options), args...; kwargs...)
-            end
-
-            function $ms_name(options::RxInfer.ModelOptions, args...; kwargs...)
-                return RxInfer.create_model($ms_name, $(ms_constraints), $(ms_meta), options, args...; kwargs...)
-            end
-
-            function $ms_name(
-                constraints::Union{ReactiveMP.UnspecifiedConstraints, ReactiveMP.ConstraintsSpecification},
-                meta::Union{ReactiveMP.UnspecifiedMeta, ReactiveMP.MetaSpecification},
-                args...;
-                kwargs...
-            )
-                return RxInfer.create_model($ms_name, constraints, meta, $(ms_options), args...; kwargs...)
-            end
-
-            function $ms_name(
-                constraints::Union{ReactiveMP.UnspecifiedConstraints, ReactiveMP.ConstraintsSpecification},
-                options::RxInfer.ModelOptions,
-                args...;
-                kwargs...
-            )
-                return RxInfer.create_model($ms_name, constraints, $(ms_meta), options, args...; kwargs...)
-            end
-
-            function $ms_name(meta::Union{ReactiveMP.UnspecifiedMeta, ReactiveMP.MetaSpecification}, options::RxInfer.ModelOptions, args...; kwargs...)
-                return RxInfer.create_model($ms_name, $(ms_constraints), meta, options, args...; kwargs...)
-            end
-
-            function $ms_name(
-                constraints::Union{ReactiveMP.UnspecifiedConstraints, ReactiveMP.ConstraintsSpecification},
-                meta::Union{ReactiveMP.UnspecifiedMeta, ReactiveMP.MetaSpecification},
-                options::RxInfer.ModelOptions,
-                args...;
-                kwargs...
-            )
-                return RxInfer.create_model($ms_name, constraints, meta, options, args...; kwargs...)
-            end
-        end
-
-        function RxInfer.create_model(::Type{$ms_name}, $constraints_in, $meta_in, $options_in, $(ms_args...); $(ms_kwargs...))
+        function RxInfer.create_model(::Type{$ms_name}, $ms_model::RxInfer.FactorGraphModel, $(ms_args...); $(ms_kwargs...))
             $(ms_args_checks...)
-
-            $constraints = something($constraints_in, $(ms_constraints))
-            $meta        = something($meta_in, $(ms_meta))
-            $options     = merge($(ms_options), something($options_in, $(ms_options)))
-            $ms_model    = RxInfer.FactorGraphModel($constraints, $meta, $options)
-
             $(ms_args_const_init_block...)
-
             $ms_body
         end
 
@@ -373,14 +309,6 @@ function GraphPPL.write_datavar_options(::RxInferBackend, variable, type, option
     return :(ReactiveMP.DataVariableCreationOptions(ReactiveMP.PointMass{$type}, $subject_option, $allow_missing_option))
 end
 
-function GraphPPL.write_default_model_constraints(::RxInferBackend)
-    return :(ReactiveMP.UnspecifiedConstraints())
-end
-
-function GraphPPL.write_default_model_meta(::RxInferBackend)
-    return :(ReactiveMP.UnspecifiedMeta())
-end
-
 # Constraints specification language
 
 ## Factorisations constraints specification language
@@ -503,7 +431,7 @@ ReactiveMPNodeAliases = (
         "`¬a` and `!a`: alias for `NOT(a)` node (Unicode `\\neg`, operator precedence `||`, `&&`, `->` and `!` is the same as in Julia)."
     ),
     (
-        (expression) -> @capture(expression, +(args__)) ? fold_linear_operator_call(expression) : expression,
+        (expression) -> @capture(expression, +(args__)) ? GraphPPL.fold_linear_operator_call(expression) : expression,
         "`a + b + c`: alias for `(a + b) + c`"
     ),
     (
@@ -620,7 +548,7 @@ end
 """
 
 ```julia
-@model [ model_options ] function model_name(model_arguments...; model_keyword_arguments...)
+@model function model_name(model_arguments...; model_keyword_arguments...)
     # model description
 end
 ```
@@ -633,11 +561,7 @@ $(begin io = IOBuffer(); GraphPPL.show_tilderhs_alias(RxInferBackend(), io); Str
 macro model end
 
 macro model(model_specification)
-    return esc(:(@model [] $model_specification))
-end
-
-macro model(model_options, model_specification)
-    return GraphPPL.generate_model_expression(RxInferBackend(), model_options, model_specification)
+    return GraphPPL.generate_model_expression(RxInferBackend(), model_specification)
 end
 
 macro constraints(constraints_specification)

@@ -152,7 +152,7 @@ unwrap_free_energy_option(option::Type{T}) where {T <: Real} = (true, T, InfCoun
         initmessages            = nothing,
         constraints             = nothing,
         meta                    = nothing,
-        options                 = (;),
+        options                 = nothing,
         returnvars              = nothing, 
         iterations              = nothing,
         free_energy             = false,
@@ -173,7 +173,7 @@ For more information about some of the arguments, please check below.
 - `initmessages = nothing`: `NamedTuple` or `Dict` with initial messages, optional, defaults to nothing
 - `constraints = nothing`: constraints specification object, optional, see `@constraints`
 - `meta  = nothing`: meta specification object, optional, may be required for some models, see `@meta`
-- `options = (;)`: model creation options, optional, see `model_options`
+- `options = nothing`: model creation options, optional, see `model_options`
 - `returnvars = nothing`: return structure info, optional, defaults to return everything at each iteration, see below for more information
 - `iterations = nothing`: number of iterations, optional, defaults to `nothing`, we do not distinguish between variational message passing or Loopy belief propagation or expectation propagation iterations, see below for more information
 - `free_energy = false`: compute the Bethe free energy, optional, defaults to false. Can be passed a floating point type, e.g. `Float64`, for better efficiency, but disables automatic differentiation packages, such as ForwardDiff.jl
@@ -309,7 +309,7 @@ function inference(;
     # Meta specification object
     meta = nothing,
     # Model creation options
-    options = (;),
+    options = nothing,
     # Return structure info, optional, defaults to return everything at each iteration
     returnvars = nothing,
     # Number of iterations, defaults to 1, we do not distinguish between VMP or Loopy belief or EP iterations
