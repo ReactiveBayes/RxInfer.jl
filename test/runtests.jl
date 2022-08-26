@@ -208,6 +208,9 @@ end
 
     addtests(testrunner, "score/test_bfe.jl")
 
+    addtests(testrunner, "constraints/test_form_constraints.jl")
+    addtests(testrunner, "constraints/test_factorisation_constraints.jl")
+
     addtests(testrunner, "test_model.jl")
     addtests(testrunner, "models/test_lgssm.jl")
     addtests(testrunner, "models/test_hgf.jl")
