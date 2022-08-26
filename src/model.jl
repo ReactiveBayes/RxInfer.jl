@@ -5,7 +5,7 @@ export AutoVar
 export getoptions, getconstraints, getmeta, getstats
 export getnodes, getrandom, getconstant, getdata
 
-import Base: show, getindex, haskey, firstindex, lastindex
+import Base: push!, show, getindex, haskey, firstindex, lastindex
 import ReactiveMP: AbstractFactorNode
 
 # Abstract model specification
@@ -137,32 +137,14 @@ Base.merge(nt::NamedTuple, options::ModelOptions) = model_options(merge(nt, as_n
 
 # Model
 
-Model(::Type{T}, args...; kwargs...) where {T <: AbstractModelSpecification} =
-    ModelGenerator(T, args, kwargs, nothing, nothing, nothing)
-
-struct FactorGraphModelStats
-    node_ids::Set{Symbol}
-
-    FactorGraphModelStats() = new(Set{Symbol}())
-end
-
-import ReactiveMP: as_node_symbol
-
-add!(stats::FactorGraphModelStats, node::AbstractFactorNode) =
-    push!(stats.node_ids, as_node_symbol(functionalform(node)))
-
-hasnodeid(stats::FactorGraphModelStats, nodeid::Symbol) = nodeid ∈ stats.node_ids
+Model(::Type{T}, args...; kwargs...) where {T <: AbstractModelSpecification} = ModelGenerator(T, args, kwargs, nothing, nothing, nothing)
 
 struct FactorGraphModel{C, M, O}
     constraints :: C
     meta        :: M
     options     :: O
-    nodes       :: Vector{AbstractFactorNode}
-    random      :: Vector{RandomVariable}
-    constant    :: Vector{ConstVariable}
-    data        :: Vector{DataVariable}
-    vardict     :: Dict{Symbol, Any}
-    stats       :: FactorGraphModelStats
+    nodes       :: FactorNodesCollection
+    variables   :: VariablesCollection
 end
 
 Base.show(io::IO, ::Type{<:FactorGraphModel}) = print(io, "FactorGraphModel")
@@ -206,91 +188,49 @@ getconstraints(model::FactorGraphModel) = model.constraints
 getmeta(model::FactorGraphModel)        = model.meta
 getoptions(model::FactorGraphModel)     = model.options
 getnodes(model::FactorGraphModel)       = model.nodes
-getrandom(model::FactorGraphModel)      = model.random
-getconstant(model::FactorGraphModel)    = model.constant
-getdata(model::FactorGraphModel)        = model.data
-getvardict(model::FactorGraphModel)     = model.vardict
-getstats(model::FactorGraphModel)       = model.stats
+getvariables(model::FactorGraphModel)   = model.variables
+
+import ReactiveMP: getrandom, getconstant, getdata, getvardict
+
+ReactiveMP.getrandom(model::FactorGraphModel)   = getrandom(getvariables(model))
+ReactiveMP.getconstant(model::FactorGraphModel) = getconstant(getvariables(model))
+ReactiveMP.getdata(model::FactorGraphModel)     = getdata(getvariables(model))
+ReactiveMP.getvardict(model::FactorGraphModel)  = getvardict(getvariables(model))
 
 function Base.getindex(model::FactorGraphModel, symbol::Symbol)
-    vardict = getvardict(model)
-    if !haskey(vardict, symbol)
-        error("Model has no variable/variables named $(symbol).")
-    end
-    return getindex(getvardict(model), symbol)
+    return getindex(getvariables(model), symbol)
 end
 
 function Base.haskey(model::FactorGraphModel, symbol::Symbol)
-    return haskey(getvardict(model), symbol)
+    return haskey(getvariables(model), symbol)
 end
 
-Base.broadcastable(model::FactorGraphModel) = Ref(model)
+Base.broadcastable(model::FactorGraphModel) = (model, )
 
-hasrandomvar(model::FactorGraphModel, symbol::Symbol) = haskey(model, symbol) ? israndom(getindex(model, symbol)) : false
-hasdatavar(model::FactorGraphModel, symbol::Symbol)   = haskey(model, symbol) ? isdata(getindex(model, symbol)) : false
-hasconstvar(model::FactorGraphModel, symbol::Symbol)  = haskey(model, symbol) ? isconst(getindex(model, symbol)) : false
+import ReactiveMP: hasrandomvar, hasdatavar, hasconstvar
 
-firstindex(model::FactorGraphModel, symbol::Symbol) = firstindex(model, getindex(model, symbol))
-lastindex(model::FactorGraphModel, symbol::Symbol)  = lastindex(model, getindex(model, symbol))
+ReactiveMP.hasrandomvar(model::FactorGraphModel, symbol::Symbol) = hasrandomvar(getvariables(model), symbol)
+ReactiveMP.hasdatavar(model::FactorGraphModel, symbol::Symbol)   = hasdatavar(getvariables(model), symbol)
+ReactiveMP.hasconstvar(model::FactorGraphModel, symbol::Symbol)  = hasconstvar(getvariables(model), symbol)
 
-firstindex(::FactorGraphModel, ::AbstractVariable) = typemin(Int64)
-lastindex(::FactorGraphModel, ::AbstractVariable)  = typemax(Int64)
+Base.firstindex(model::FactorGraphModel, symbol::Symbol) = firstindex(getvariables(model), symbol)
+Base.lastindex(model::FactorGraphModel, symbol::Symbol)  = lastindex(getvariables(model), symbol)
 
-firstindex(::FactorGraphModel, variables::AbstractVector{<:AbstractVariable}) = firstindex(variables)
-lastindex(::FactorGraphModel, variables::AbstractVector{<:AbstractVariable})  = lastindex(variables)
+Base.push!(::FactorGraphModel, ::Nothing) = nothing
 
-add!(model::FactorGraphModel, ::Nothing)  = nothing
-add!(vardict::Dict, name::Symbol, entity) = vardict[name] = entity
+Base.push!(model::FactorGraphModel, node::AbstractFactorNode)   = push!(getnodes(model), node)
+Base.push!(model::FactorGraphModel, variable::AbstractVariable) = push!(getvariables(model), variable)
 
-function add!(model::FactorGraphModel, node::AbstractFactorNode)
-    push!(model.nodes, node)
-    add!(getstats(model), node)
-    return node
-end
+Base.push!(model::FactorGraphModel, nodes::AbstractArray{N}) where { N <: AbstractFactorNode }   = push!(getnodes(model), nodes)
+Base.push!(model::FactorGraphModel, variables::AbstractArray{V}) where { V <: AbstractVariable } = push!(getvariables(model), variables)
 
-function add!(model::FactorGraphModel, randomvar::RandomVariable)
-    push!(model.random, randomvar)
-    add!(getvardict(model), name(randomvar), randomvar)
-    return randomvar
-end
-
-function add!(model::FactorGraphModel, constvar::ConstVariable)
-    push!(model.constant, constvar)
-    add!(getvardict(model), name(constvar), constvar)
-    return constvar
-end
-
-function add!(model::FactorGraphModel, datavar::DataVariable)
-    push!(model.data, datavar)
-    add!(getvardict(model), name(datavar), datavar)
-    return datavar
-end
-
-function add!(model::FactorGraphModel, collection::Tuple)
-    foreach((d) -> add!(model, d), collection)
+function Base.push!(model::FactorGraphModel, collection::Tuple)
+    foreach((d) -> push!(model, d), collection)
     return collection
 end
 
-function add!(model::FactorGraphModel, array::AbstractArray)
+function Base.push!(model::FactorGraphModel, array::AbstractArray)
     foreach((d) -> add!(model, d), array)
-    return array
-end
-
-function add!(model::FactorGraphModel, array::AbstractArray{<:RandomVariable})
-    append!(model.random, array)
-    add!(getvardict(model), name(first(array)), array)
-    return array
-end
-
-function add!(model::FactorGraphModel, array::AbstractArray{<:ConstVariable})
-    append!(model.constant, array)
-    add!(getvardict(model), name(first(array)), array)
-    return array
-end
-
-function add!(model::FactorGraphModel, array::AbstractArray{<:DataVariable})
-    append!(model.data, array)
-    add!(getvardict(model), name(first(array)), array)
     return array
 end
 
@@ -309,8 +249,8 @@ function ReactiveMP.activate!(model::FactorGraphModel)
         end
     end
 
-    activate!(getconstraints(model), model)
-    activate!(getmeta(model), model)
+    activate!(getconstraints(model), getnodes(model), getvariables(model))
+    activate!(getmeta(model), getnodes(model), getvariables(model))
 
     gpipelinestages = get_pipeline_stages(getoptions(model))
     gscheduler      = global_reactive_scheduler(getoptions(model))
@@ -345,10 +285,10 @@ node_resolve_factorisation(model::FactorGraphModel, options::FactorNodeCreationO
 node_resolve_factorisation(model::FactorGraphModel, constraints, default, fform, variables)                         = error("Cannot resolve factorisation constrains. Both `constraints` and `default_factorisation` option have been set, which is disallowed.")
 node_resolve_factorisation(model::FactorGraphModel, ::ConstraintsSpecification{Tuple{}}, default, fform, variables) = default
 node_resolve_factorisation(model::FactorGraphModel, ::UnspecifiedConstraints, default, fform, variables)            = default
-node_resolve_factorisation(model::FactorGraphModel, constraints, ::UnspecifiedConstraints, fform, variables)        = resolve_factorisation(constraints, model, fform, variables)
+node_resolve_factorisation(model::FactorGraphModel, constraints, ::UnspecifiedConstraints, fform, variables)        = resolve_factorisation(constraints, getvariables(model), fform, variables)
 
-node_resolve_factorisation(model::FactorGraphModel, ::ConstraintsSpecification{Tuple{}}, ::UnspecifiedConstraints, fform, variables) = resolve_factorisation(UnspecifiedConstraints(), model, fform, variables)
-node_resolve_factorisation(model::FactorGraphModel, ::UnspecifiedConstraints, ::UnspecifiedConstraints, fform, variables)            = resolve_factorisation(UnspecifiedConstraints(), model, fform, variables)
+node_resolve_factorisation(model::FactorGraphModel, ::ConstraintsSpecification{Tuple{}}, ::UnspecifiedConstraints, fform, variables) = resolve_factorisation(UnspecifiedConstraints(), getvariables(model), fform, variables)
+node_resolve_factorisation(model::FactorGraphModel, ::UnspecifiedConstraints, ::UnspecifiedConstraints, fform, variables)            = resolve_factorisation(UnspecifiedConstraints(), getvariables(model), fform, variables)
 
 ## meta 
 
@@ -356,7 +296,7 @@ import ReactiveMP: resolve_meta
 
 node_resolve_meta(model::FactorGraphModel, options::FactorNodeCreationOptions, fform, variables)            = node_resolve_meta(model, options, metadata(options), fform, variables)
 node_resolve_meta(model::FactorGraphModel, options::FactorNodeCreationOptions, something, fform, variables) = something
-node_resolve_meta(model::FactorGraphModel, options::FactorNodeCreationOptions, ::Nothing, fform, variables) = resolve_meta(getmeta(model), model, fform, variables)
+node_resolve_meta(model::FactorGraphModel, options::FactorNodeCreationOptions, ::Nothing, fform, variables) = resolve_meta(getmeta(model), fform, variables)
 
 ## randomvar
 
@@ -388,22 +328,22 @@ randomvar_resolve_marginal_form_prod(model::FactorGraphModel, options::RandomVar
 randomvar_resolve_marginal_form_prod(model::FactorGraphModel, options::RandomVariableCreationOptions, ::Nothing, name) = randomvar_resolve_marginal_form_prod(model, getconstraints(model), name)
 
 randomvar_resolve_marginal_form_prod(model::FactorGraphModel, ::UnspecifiedConstraints, name) = (nothing, nothing)
-randomvar_resolve_marginal_form_prod(model::FactorGraphModel, constraints, name)              = resolve_marginal_form_prod(constraints, model, name)
+randomvar_resolve_marginal_form_prod(model::FactorGraphModel, constraints, name)              = resolve_marginal_form_prod(constraints, name)
 
 randomvar_resolve_messages_form_prod(model::FactorGraphModel, options::RandomVariableCreationOptions, name)            = randomvar_resolve_messages_form_prod(model, options, messages_form_constraint(options), name)
 randomvar_resolve_messages_form_prod(model::FactorGraphModel, options::RandomVariableCreationOptions, something, name) = (something, nothing)
 randomvar_resolve_messages_form_prod(model::FactorGraphModel, options::RandomVariableCreationOptions, ::Nothing, name) = randomvar_resolve_messages_form_prod(model, getconstraints(model), name)
 
 randomvar_resolve_messages_form_prod(model::FactorGraphModel, ::UnspecifiedConstraints, name) = (nothing, nothing)
-randomvar_resolve_messages_form_prod(model::FactorGraphModel, constraints, name)              = resolve_messages_form_prod(constraints, model, name)
+randomvar_resolve_messages_form_prod(model::FactorGraphModel, constraints, name)              = resolve_messages_form_prod(constraints, name)
 
 # We extend `ReactiveMP` functionality here
 import ReactiveMP: RandomVariable, DataVariable, ConstVariable
 import ReactiveMP: RandomVariableCreationOptions, DataVariableCreationOptions
 import ReactiveMP: randomvar, datavar, constvar, make_node
 
-randomvar(model::FactorGraphModel, name::Symbol, args...) = randomvar(model, RandomVariableCreationOptions(), name, args...)
-datavar(model::FactorGraphModel, name::Symbol, args...)   = datavar(model, DataVariableCreationOptions(Any), name, args...)
+ReactiveMP.randomvar(model::FactorGraphModel, name::Symbol, args...) = randomvar(model, RandomVariableCreationOptions(), name, args...)
+ReactiveMP.datavar(model::FactorGraphModel, name::Symbol, args...)   = datavar(model, DataVariableCreationOptions(Any), name, args...)
 
 function __check_variable_existence(model::FactorGraphModel, name::Symbol)
     if haskey(getvardict(model), name)
@@ -412,24 +352,24 @@ function __check_variable_existence(model::FactorGraphModel, name::Symbol)
     end
 end
 
-function randomvar(model::FactorGraphModel, options::RandomVariableCreationOptions, name::Symbol, args...)
+function ReactiveMP.randomvar(model::FactorGraphModel, options::RandomVariableCreationOptions, name::Symbol, args...)
     __check_variable_existence(model, name)
-    return add!(model, randomvar(randomvar_resolve_options(model, options, name), name, args...))
+    return push!(model, randomvar(randomvar_resolve_options(model, options, name), name, args...))
 end
 
-function datavar(model::FactorGraphModel, options::DataVariableCreationOptions, name::Symbol, args...)
+function ReactiveMP.datavar(model::FactorGraphModel, options::DataVariableCreationOptions, name::Symbol, args...)
     __check_variable_existence(model, name)
-    return add!(model, datavar(options, name, args...))
+    return push!(model, datavar(options, name, args...))
 end
 
-function constvar(model::FactorGraphModel, name::Symbol, args...)
+function ReactiveMP.constvar(model::FactorGraphModel, name::Symbol, args...)
     __check_variable_existence(model, name)
-    return add!(model, constvar(name, args...))
+    return push!(model, constvar(name, args...))
 end
 
 import ReactiveMP: as_variable, undo_as_variable
 
-ReactiveMP.as_variable(model::FactorGraphModel, x)        = add!(model, ReactiveMP.as_variable(x))
+ReactiveMP.as_variable(model::FactorGraphModel, x)        = push!(model, ReactiveMP.as_variable(x))
 ReactiveMP.as_variable(model::FactorGraphModel, t::Tuple) = map((d) -> ReactiveMP.as_variable(model, d), t)
 
 ReactiveMP.as_variable(model::FactorGraphModel, v::AbstractVariable) = v
@@ -437,8 +377,8 @@ ReactiveMP.as_variable(model::FactorGraphModel, v::AbstractVector{<:AbstractVari
 
 ## node creation
 
-function make_node(model::FactorGraphModel, options::FactorNodeCreationOptions, fform, args...)
-    return add!(model, make_node(fform, node_resolve_options(model, options, fform, args), args...))
+function ReactiveMP.make_node(model::FactorGraphModel, options::FactorNodeCreationOptions, fform, args...)
+    return push!(model, make_node(fform, node_resolve_options(model, options, fform, args), args...))
 end
 
 ## AutoVar 
@@ -497,7 +437,7 @@ function ReactiveMP.make_node(
         node = ReactiveMP.make_node(model, options, fform, var, args...) # add! is inside
         return node, var
     else
-        var = add!(model, ReactiveMP.constvar(ReactiveMP.name(autovar), __fform_const_apply(fform, map((d) -> ReactiveMP.getconst(d), args)...)))
+        var = push!(model, ReactiveMP.constvar(ReactiveMP.name(autovar), __fform_const_apply(fform, map((d) -> ReactiveMP.getconst(d), args)...)))
         return nothing, var
     end
 end
