@@ -17,17 +17,21 @@ function GraphPPL.write_model_structure(::RxInferBackend,
     ms_body
 )
 
-    return quote
-        struct $ms_name <: RxInfer.AbstractModelSpecification end
+    generator = gensym(ms_name)
 
-        function RxInfer.create_model(::Type{$ms_name}, $ms_model::RxInfer.FactorGraphModel, $(ms_args...); $(ms_kwargs...))
+    return quote
+
+        function ($generator)($ms_model::RxInfer.FactorGraphModel, $(ms_args...); $(ms_kwargs...))
             $(ms_args_checks...)
             $(ms_args_const_init_block...)
             $ms_body
         end
 
-        RxInfer.model_name(::$ms_name)       = $(QuoteNode(ms_name))
-        RxInfer.model_name(::Type{$ms_name}) = $(QuoteNode(ms_name))
+        function $ms_name($(ms_args...); $(ms_kwargs...))
+            return RxInfer.ModelGenerator($generator, ($(ms_args...), ), (; $(ms_kwargs...), ))
+        end
+
+        RxInfer.model_name(::typeof($ms_name)) = $(QuoteNode(ms_name))
     end
 end
 

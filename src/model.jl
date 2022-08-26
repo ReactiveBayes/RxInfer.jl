@@ -1,6 +1,6 @@
 export AbstractModelSpecification
 export ModelOptions, model_options
-export FactorGraphModel, Model
+export FactorGraphModel, create_model, model_name
 export AutoVar
 export getoptions, getconstraints, getmeta, getstats
 export getnodes, getrandom, getconstant, getdata
@@ -8,42 +8,9 @@ export getnodes, getrandom, getconstant, getdata
 import Base: push!, show, getindex, haskey, firstindex, lastindex
 import ReactiveMP: AbstractFactorNode
 
-# Abstract model specification
-
-abstract type AbstractModelSpecification end
-
 function create_model end
 
 function model_name end
-
-# Model Generator
-
-"""
-    ModelGenerator
-
-`ModelGenerator` is a special object that is used in the `inference` function to lazily create model later on given `constraints`, `meta` and `options`.
-
-See also: [`inference`](@ref)
-"""
-struct ModelGenerator{T, A, K}
-    args        :: A
-    kwargs      :: K
-
-    ModelGenerator(::Type{T}, args::A, kwargs::K) where {T, A, K} = new{T, A, K}(args, kwargs)
-end
-
-Model(::Type{T}, args...; kwargs...) where {T <: AbstractModelSpecification} = ModelGenerator(T, args, kwargs)
-
-function create_model(generator::ModelGenerator{T, A, K}, constraints, meta, options) where {T, A, K}
-    sconstraints = something(constraints, UnspecifiedConstraints())
-    smeta        = something(meta, UnspecifiedMeta())
-    soptions     = something(options, UnspecifiedModelOptions())
-    model        = FactorGraphModel(sconstraints, smeta, soptions)
-    returnvars   = create_model(T, model, generator.args...; generator.kwargs...)
-    # `activate!` function creates reactive connections in the factor graph model and finalises model structure
-    activate!(model)
-    return model, returnvars
-end
 
 # Model Options
 
@@ -280,6 +247,51 @@ function randomvar_resolve_options(model::FactorGraphModel, options::RandomVaria
     roptions = randomvar_options_set_prod_constraint(moptions, rprod)
 
     return roptions
+end
+
+# Model Generator
+
+"""
+    ModelGenerator
+
+`ModelGenerator` is a special object that is used in the `inference` function to lazily create model later on given `constraints`, `meta` and `options`.
+
+See also: [`inference`](@ref)
+"""
+struct ModelGenerator{G, A, K}
+    generator   :: G
+    args        :: A
+    kwargs      :: K
+
+    ModelGenerator(generator::G, args::A, kwargs::K) where {G, A, K} = new{G, A, K}(generator, args, kwargs)
+end
+
+function (generator::ModelGenerator)(; constraints = nothing, meta = nothing, options = nothing)
+    return generator(FactorGraphModel(constraints, meta, options))
+end
+
+function (generator::ModelGenerator)(model::FactorGraphModel)
+    return generator.generator(model, generator.args...; generator.kwargs...)
+end
+
+"""
+    create_model(::ModelGenerator, constraints = nothing, meta = nothing, options = nothing)
+
+Creates an instance of `FactorGraphModel` from the given model specification as well as optional `constraints`, `meta` and `options`.
+
+Returns a tuple of 2 values:
+- 1. an instance of `FactorGraphModel`
+- 2. return value from the `@model` macro function definition
+"""
+function create_model(generator::ModelGenerator, constraints = nothing, meta = nothing, options = nothing)
+    sconstraints = something(constraints, UnspecifiedConstraints())
+    smeta        = something(meta, UnspecifiedMeta())
+    soptions     = something(options, UnspecifiedModelOptions())
+    model        = FactorGraphModel(sconstraints, smeta, soptions)
+    returnvars   = generator(model)
+    # `activate!` function creates reactive connections in the factor graph model and finalises model structure
+    activate!(model)
+    return model, returnvars
 end
 
 ## constraints

@@ -9,6 +9,10 @@ include("rocket.jl")
 include("graphppl.jl")
 include("model.jl")
 
+include("constraints/form/form_fixed_marginal.jl")
+include("constraints/form/form_point_mass.jl")
+include("constraints/form/form_sample_list.jl")
+
 include("score/actor.jl")
 include("score/bfe.jl")
 
