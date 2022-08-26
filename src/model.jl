@@ -39,7 +39,10 @@ function create_model(generator::ModelGenerator{T, A, K}, constraints, meta, opt
     smeta        = something(meta, UnspecifiedMeta())
     soptions     = something(options, UnspecifiedModelOptions())
     model        = FactorGraphModel(sconstraints, smeta, soptions)
-    return model, create_model(T, model, generator.args...; generator.kwargs...)
+    returnvars   = create_model(T, model, generator.args...; generator.kwargs...)
+    # `activate!` function creates reactive connections in the factor graph model and finalises model structure
+    activate!(model)
+    return model, returnvars
 end
 
 # Model Options
@@ -157,15 +160,7 @@ FactorGraphModel(meta::Union{UnspecifiedMeta, MetaSpecification}, options::Named
 FactorGraphModel(constraints::Union{UnspecifiedConstraints, ConstraintsSpecification}, meta::Union{UnspecifiedMeta, MetaSpecification})                      = FactorGraphModel(constraints, meta, model_options())
 FactorGraphModel(constraints::Union{UnspecifiedConstraints, ConstraintsSpecification}, meta::Union{UnspecifiedMeta, MetaSpecification}, options::NamedTuple) = FactorGraphModel(constraints, meta, model_options(options))
 
-function FactorGraphModel(
-    constraints::C,
-    meta::M,
-    options::O
-) where {
-    C <: Union{UnspecifiedConstraints, ConstraintsSpecification},
-    M <: Union{UnspecifiedMeta, MetaSpecification},
-    O <: ModelOptions
-}
+function FactorGraphModel(constraints::C, meta::M, options::O) where { C, M, O }
     return FactorGraphModel{C, M, O}(constraints, meta, options, FactorNodesCollection(), VariablesCollection())
 end
 
