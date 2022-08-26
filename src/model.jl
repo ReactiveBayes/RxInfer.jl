@@ -260,27 +260,12 @@ function ReactiveMP.activate!(model::FactorGraphModel)
     foreach(n -> activate!(n, gpipelinestages, gscheduler), getnodes(model))
 end
 
-# Utility functions
-
-## node
-
-import ReactiveMP: getpipeline
-
-function node_resolve_options(model::FactorGraphModel, options::FactorNodeCreationOptions, fform, variables)
-    return FactorNodeCreationOptions(
-        node_resolve_factorisation(model, options, fform, variables),
-        node_resolve_meta(model, options, fform, variables),
-        getpipeline(options)
-    )
-end
-
 ## constraints 
 
 import ReactiveMP: resolve_factorisation
 
-node_resolve_factorisation(model::FactorGraphModel, options::FactorNodeCreationOptions, fform, variables)            = node_resolve_factorisation(model, options, factorisation(options), fform, variables)
-node_resolve_factorisation(model::FactorGraphModel, options::FactorNodeCreationOptions, something, fform, variables) = something
-node_resolve_factorisation(model::FactorGraphModel, options::FactorNodeCreationOptions, ::Nothing, fform, variables) = node_resolve_factorisation(model, getconstraints(model), default_factorisation(getoptions(model)), fform, variables)
+node_resolve_factorisation(model::FactorGraphModel, something, fform, variables) = something
+node_resolve_factorisation(model::FactorGraphModel, ::Nothing, fform, variables) = node_resolve_factorisation(model, getconstraints(model), default_factorisation(getoptions(model)), fform, variables)
 
 node_resolve_factorisation(model::FactorGraphModel, constraints, default, fform, variables)                         = error("Cannot resolve factorisation constrains. Both `constraints` and `default_factorisation` option have been set, which is disallowed.")
 node_resolve_factorisation(model::FactorGraphModel, ::ConstraintsSpecification{Tuple{}}, default, fform, variables) = default
@@ -294,9 +279,8 @@ node_resolve_factorisation(model::FactorGraphModel, ::UnspecifiedConstraints, ::
 
 import ReactiveMP: resolve_meta
 
-node_resolve_meta(model::FactorGraphModel, options::FactorNodeCreationOptions, fform, variables)            = node_resolve_meta(model, options, metadata(options), fform, variables)
-node_resolve_meta(model::FactorGraphModel, options::FactorNodeCreationOptions, something, fform, variables) = something
-node_resolve_meta(model::FactorGraphModel, options::FactorNodeCreationOptions, ::Nothing, fform, variables) = resolve_meta(getmeta(model), fform, variables)
+node_resolve_meta(model::FactorGraphModel, something, fform, variables) = something
+node_resolve_meta(model::FactorGraphModel, ::Nothing, fform, variables) = resolve_meta(getmeta(model), fform, variables)
 
 ## randomvar
 
@@ -378,6 +362,15 @@ ReactiveMP.as_variable(model::FactorGraphModel, v::AbstractVector{<:AbstractVari
 ## node creation
 
 import ReactiveMP: make_node, FactorNodeCreationOptions
+import ReactiveMP: factorisation, metadata, getpipeline
+
+function node_resolve_options(model::FactorGraphModel, options, fform, variables)
+    return FactorNodeCreationOptions(
+        node_resolve_factorisation(model, factorisation(options), fform, variables),
+        node_resolve_meta(model, metadata(options), fform, variables),
+        getpipeline(options)
+    )
+end
 
 function ReactiveMP.make_node(model::FactorGraphModel, options::FactorNodeCreationOptions, fform, args...)
     return push!(model, make_node(fform, node_resolve_options(model, options, fform, args), args...))
