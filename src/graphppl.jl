@@ -558,8 +558,8 @@ ReactiveMPNodeAliases = (
     (
         (expression) -> if @capture(expression, (Normal | Gaussian)(args__))
             :(error(
-            "Please use a specific version of the `Normal` (`Gaussian`) distribution (e.g. `NormalMeanVariance` or aliased version `Normal(mean = ..., variance|precision = ...)`)."
-        ))
+                "Please use a specific version of the `Normal` (`Gaussian`) distribution (e.g. `NormalMeanVariance` or aliased version `Normal(mean = ..., variance|precision = ...)`)."
+            ))
         else
             expression
         end,
@@ -568,8 +568,8 @@ ReactiveMPNodeAliases = (
     (
         (expression) -> if @capture(expression, (MvNormal | MvGaussian)(args__))
             :(error(
-            "Please use a specific version of the `MvNormal` (`MvGaussian`) distribution (e.g. `MvNormalMeanCovariance` or aliased version `MvNormal(mean = ..., covariance|precision = ...)`)."
-        ))
+                "Please use a specific version of the `MvNormal` (`MvGaussian`) distribution (e.g. `MvNormalMeanCovariance` or aliased version `MvNormal(mean = ..., covariance|precision = ...)`)."
+            ))
         else
             expression
         end,
