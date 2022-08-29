@@ -20,7 +20,7 @@ examples: scripts_init ## Precompile examples and put them in the `docs/src/exam
 .PHONY: docs
 
 doc_init:
-	julia --project=docs -e 'ENV["PYTHON"]=""; using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate(); Pkg.build("PyPlot"); using PyPlot;'
+	julia --project=docs -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate();'
 
 docs: doc_init ## Generate documentation
 	julia --startup-file=no --project=docs/ docs/make.jl

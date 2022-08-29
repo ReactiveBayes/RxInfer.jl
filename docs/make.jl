@@ -3,8 +3,15 @@ using Documenter
 
 DocMeta.setdocmeta!(RxInfer, :DocTestSetup, :(using RxInfer); recursive = true)
 
+examplespath = joinpath(@__DIR__, "src", "examples")
+
+# TODO replace with .meta.jl
+Examples = map(filter((f) -> last(split(f, ".")) == "md", readdir(examplespath))) do example 
+    return "$example" => joinpath("examples", example)
+end
+
 makedocs(;
-    modules = [RxInfer],
+    modules = [ RxInfer ],
     authors = "Bagaev Dmitry <d.v.bagaev@tue.nl> and contributors",
     repo = "https://github.com/biaslab/RxInfer.jl/blob/{commit}{path}#{line}",
     sitename = "RxInfer.jl",
@@ -15,7 +22,8 @@ makedocs(;
         assets = String[]
     ),
     pages = [
-        "Home" => "index.md"
+        "Home"     => "index.md",
+        "Examples" => Examples
     ]
 )
 
