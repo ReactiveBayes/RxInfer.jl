@@ -4,7 +4,7 @@ export BetheFreeEnergy
 
 import ReactiveMP: is_point_mass_form_constraint
 import ReactiveMP: InfCountingReal, value_isnan, value_isinf
-import ReactiveMP: score
+import ReactiveMP: score, indexed_name, name
 
 """
     AbstractScoreObjective
@@ -17,7 +17,7 @@ abstract type AbstractScoreObjective end
 
 # Default version is differentiable
 # Specialized versions like score(Float64, ...) are not differentiable, but could be faster
-score(model::FactorGraphModel, objective::AbstractScoreObjective)                              = score(model, Real, objective)
+score(model::FactorGraphModel, objective::AbstractScoreObjective)                              = score(model, InfCountingReal, objective)
 score(model::FactorGraphModel, ::Type{T}, objective::AbstractScoreObjective) where {T <: Real} = score(model, InfCountingReal{T}, objective)
 
 # Bethe Free Energy objective

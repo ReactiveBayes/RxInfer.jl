@@ -213,15 +213,23 @@ end
     addtests(testrunner, "constraints/form/test_form_point_mass.jl")
 
     addtests(testrunner, "test_model.jl")
-    addtests(testrunner, "models/test_lgssm.jl")
-    addtests(testrunner, "models/test_hgf.jl")
-    addtests(testrunner, "models/test_ar.jl")
-    addtests(testrunner, "models/test_gmm.jl")
-    addtests(testrunner, "models/test_hmm.jl")
-    addtests(testrunner, "models/test_linreg.jl")
-    addtests(testrunner, "models/test_mv_iid.jl")
-    addtests(testrunner, "models/test_probit.jl")
-    addtests(testrunner, "models/test_aliases.jl")
+
+    addtests(testrunner, "test/models/aliases/test_aliases_binary.jl")
+    addtests(testrunner, "test/models/aliases/test_aliases_normal.jl")
+    addtests(testrunner, "test/models/autoregressive/test_ar.jl")
+    addtests(testrunner, "test/models/autoregressive/test_lar.jl")
+    addtests(testrunner, "test/models/mixtures/test_gmm_univariate.jl")
+    addtests(testrunner, "test/models/mixtures/test_gmm_multivariate.jl")
+
+    # addtests(testrunner, "models/test_lgssm.jl")
+    # addtests(testrunner, "models/test_hgf.jl")
+    # addtests(testrunner, "models/test_ar.jl")
+    # addtests(testrunner, "models/test_gmm.jl")
+    # addtests(testrunner, "models/test_hmm.jl")
+    # addtests(testrunner, "models/test_linreg.jl")
+    # addtests(testrunner, "models/test_mv_iid.jl")
+    # addtests(testrunner, "models/test_probit.jl")
+    # addtests(testrunner, "models/test_aliases.jl")
 
     run(testrunner)
 end

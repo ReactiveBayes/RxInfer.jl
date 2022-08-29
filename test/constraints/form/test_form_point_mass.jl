@@ -1,11 +1,8 @@
 module RxInferPointMassFormConstraintTest
 
 using Test
-using RxInfer
-using Random
-using LinearAlgebra
-using StableRNGs
-using DomainSets
+using RxInfer, LinearAlgebra
+using Random, StableRNGs, DomainSets
 
 import RxInfer: PointMassFormConstraint, is_point_mass_form_constraint, call_boundaries, call_starting_point, call_optimizer
 

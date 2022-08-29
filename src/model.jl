@@ -3,7 +3,7 @@ export ModelOptions, model_options
 export FactorGraphModel, create_model, model_name
 export AutoVar
 export getoptions, getconstraints, getmeta, getstats
-export getnodes, getrandom, getconstant, getdata
+export getnodes, getvariables, getrandom, getconstant, getdata
 
 import Base: push!, show, getindex, haskey, firstindex, lastindex
 import ReactiveMP: AbstractFactorNode

@@ -1,35 +1,33 @@
 module RxInferFormConstraintsSpecificationTest
 
-using Test
+using Test, Logging
 using RxInfer
 
+import RxInfer: PointMassFormConstraint, SampleListFormConstraint, FixedMarginalFormConstraint
 import ReactiveMP: CompositeFormConstraint
 import ReactiveMP: resolve_marginal_form_prod, resolve_messages_form_prod
 import ReactiveMP: activate!
 
 @testset "Form constraints specification" begin
 
-    # we dont need real model for form constraints resolution
-    model = nothing
-
     @testset "Use case #1" begin
         cs = @constraints begin
             q(x)::PointMass
         end
 
-        @test let (form, prod) = resolve_marginal_form_prod(cs, model, :x)
+        @test let (form, prod) = resolve_marginal_form_prod(cs, :x)
             form === PointMassFormConstraint() && prod === ProdGeneric()
         end
 
-        @test let (form, prod) = resolve_messages_form_prod(cs, model, :x)
+        @test let (form, prod) = resolve_messages_form_prod(cs, :x)
             form === nothing && prod === nothing
         end
 
-        @test let (form, prod) = resolve_marginal_form_prod(cs, model, :y)
+        @test let (form, prod) = resolve_marginal_form_prod(cs, :y)
             form === nothing && prod === nothing
         end
 
-        @test let (form, prod) = resolve_messages_form_prod(cs, model, :y)
+        @test let (form, prod) = resolve_messages_form_prod(cs, :y)
             form === nothing && prod === nothing
         end
     end
@@ -39,19 +37,19 @@ import ReactiveMP: activate!
             q(x)::Nothing
         end
 
-        @test let (form, prod) = resolve_marginal_form_prod(cs, model, :x)
+        @test let (form, prod) = resolve_marginal_form_prod(cs, :x)
             form === UnspecifiedFormConstraint() && prod === ProdAnalytical()
         end
 
-        @test let (form, prod) = resolve_messages_form_prod(cs, model, :x)
+        @test let (form, prod) = resolve_messages_form_prod(cs, :x)
             form === nothing && prod === nothing
         end
 
-        @test let (form, prod) = resolve_marginal_form_prod(cs, model, :y)
+        @test let (form, prod) = resolve_marginal_form_prod(cs, :y)
             form === nothing && prod === nothing
         end
 
-        @test let (form, prod) = resolve_messages_form_prod(cs, model, :y)
+        @test let (form, prod) = resolve_messages_form_prod(cs, :y)
             form === nothing && prod === nothing
         end
     end
@@ -61,19 +59,19 @@ import ReactiveMP: activate!
             q(x)::SampleList(5000, LeftProposal())
         end
 
-        @test let (form, prod) = resolve_marginal_form_prod(cs, model, :x)
+        @test let (form, prod) = resolve_marginal_form_prod(cs, :x)
             typeof(form) <: SampleListFormConstraint && prod === ProdGeneric()
         end
 
-        @test let (form, prod) = resolve_messages_form_prod(cs, model, :x)
+        @test let (form, prod) = resolve_messages_form_prod(cs, :x)
             form === nothing && prod === nothing
         end
 
-        @test let (form, prod) = resolve_marginal_form_prod(cs, model, :y)
+        @test let (form, prod) = resolve_marginal_form_prod(cs, :y)
             form === nothing && prod === nothing
         end
 
-        @test let (form, prod) = resolve_messages_form_prod(cs, model, :y)
+        @test let (form, prod) = resolve_messages_form_prod(cs, :y)
             form === nothing && prod === nothing
         end
     end
@@ -83,19 +81,19 @@ import ReactiveMP: activate!
             q(x)::PointMass(optimizer = "optimizer")
         end
 
-        @test let (form, prod) = resolve_marginal_form_prod(cs, model, :x)
+        @test let (form, prod) = resolve_marginal_form_prod(cs, :x)
             typeof(form) <: PointMassFormConstraint && prod === ProdGeneric()
         end
 
-        @test let (form, prod) = resolve_messages_form_prod(cs, model, :x)
+        @test let (form, prod) = resolve_messages_form_prod(cs, :x)
             form === nothing && prod === nothing
         end
 
-        @test let (form, prod) = resolve_marginal_form_prod(cs, model, :y)
+        @test let (form, prod) = resolve_marginal_form_prod(cs, :y)
             form === nothing && prod === nothing
         end
 
-        @test let (form, prod) = resolve_messages_form_prod(cs, model, :y)
+        @test let (form, prod) = resolve_messages_form_prod(cs, :y)
             form === nothing && prod === nothing
         end
     end
@@ -105,19 +103,19 @@ import ReactiveMP: activate!
             q(x)::SampleList(5000, LeftProposal())::PointMass(optimizer = "optimizer")
         end
 
-        @test let (form, prod) = resolve_marginal_form_prod(cs, model, :x)
+        @test let (form, prod) = resolve_marginal_form_prod(cs, :x)
             typeof(form) <: CompositeFormConstraint && prod === ProdGeneric()
         end
 
-        @test let (form, prod) = resolve_messages_form_prod(cs, model, :x)
+        @test let (form, prod) = resolve_messages_form_prod(cs, :x)
             form === nothing && prod === nothing
         end
 
-        @test let (form, prod) = resolve_marginal_form_prod(cs, model, :y)
+        @test let (form, prod) = resolve_marginal_form_prod(cs, :y)
             form === nothing && prod === nothing
         end
 
-        @test let (form, prod) = resolve_messages_form_prod(cs, model, :y)
+        @test let (form, prod) = resolve_messages_form_prod(cs, :y)
             form === nothing && prod === nothing
         end
     end
@@ -129,35 +127,35 @@ import ReactiveMP: activate!
             end
         end
 
-        @test let (form, prod) = resolve_marginal_form_prod(cs5(true), model, :x)
+        @test let (form, prod) = resolve_marginal_form_prod(cs5(true), :x)
             form === PointMassFormConstraint() && prod === ProdGeneric()
         end
 
-        @test let (form, prod) = resolve_messages_form_prod(cs5(true), model, :x)
+        @test let (form, prod) = resolve_messages_form_prod(cs5(true), :x)
             form === nothing && prod === nothing
         end
 
-        @test let (form, prod) = resolve_marginal_form_prod(cs5(false), model, :x)
+        @test let (form, prod) = resolve_marginal_form_prod(cs5(false), :x)
             form === nothing && prod === nothing
         end
 
-        @test let (form, prod) = resolve_messages_form_prod(cs5(false), model, :x)
+        @test let (form, prod) = resolve_messages_form_prod(cs5(false), :x)
             form === nothing && prod === nothing
         end
 
-        @test let (form, prod) = resolve_marginal_form_prod(cs5(true), model, :y)
+        @test let (form, prod) = resolve_marginal_form_prod(cs5(true), :y)
             form === nothing && prod === nothing
         end
 
-        @test let (form, prod) = resolve_marginal_form_prod(cs5(false), model, :y)
+        @test let (form, prod) = resolve_marginal_form_prod(cs5(false), :y)
             form === nothing && prod === nothing
         end
 
-        @test let (form, prod) = resolve_messages_form_prod(cs5(true), model, :y)
+        @test let (form, prod) = resolve_messages_form_prod(cs5(true), :y)
             form === nothing && prod === nothing
         end
 
-        @test let (form, prod) = resolve_messages_form_prod(cs5(false), model, :y)
+        @test let (form, prod) = resolve_messages_form_prod(cs5(false), :y)
             form === nothing && prod === nothing
         end
     end
@@ -167,19 +165,19 @@ import ReactiveMP: activate!
             μ(x)::PointMass
         end
 
-        @test let (form, prod) = resolve_marginal_form_prod(cs, model, :x)
+        @test let (form, prod) = resolve_marginal_form_prod(cs, :x)
             form === nothing && prod === nothing
         end
 
-        @test let (form, prod) = resolve_messages_form_prod(cs, model, :x)
+        @test let (form, prod) = resolve_messages_form_prod(cs, :x)
             form === PointMassFormConstraint() && prod === ProdGeneric()
         end
 
-        @test let (form, prod) = resolve_marginal_form_prod(cs, model, :y)
+        @test let (form, prod) = resolve_marginal_form_prod(cs, :y)
             form === nothing && prod === nothing
         end
 
-        @test let (form, prod) = resolve_messages_form_prod(cs, model, :y)
+        @test let (form, prod) = resolve_messages_form_prod(cs, :y)
             form === nothing && prod === nothing
         end
     end
@@ -189,19 +187,19 @@ import ReactiveMP: activate!
             μ(x)::Nothing
         end
 
-        @test let (form, prod) = resolve_marginal_form_prod(cs, model, :x)
+        @test let (form, prod) = resolve_marginal_form_prod(cs, :x)
             form === nothing && prod === nothing
         end
 
-        @test let (form, prod) = resolve_messages_form_prod(cs, model, :x)
+        @test let (form, prod) = resolve_messages_form_prod(cs, :x)
             form === UnspecifiedFormConstraint() && prod === ProdAnalytical()
         end
 
-        @test let (form, prod) = resolve_marginal_form_prod(cs, model, :y)
+        @test let (form, prod) = resolve_marginal_form_prod(cs, :y)
             form === nothing && prod === nothing
         end
 
-        @test let (form, prod) = resolve_messages_form_prod(cs, model, :y)
+        @test let (form, prod) = resolve_messages_form_prod(cs, :y)
             form === nothing && prod === nothing
         end
     end
@@ -211,19 +209,19 @@ import ReactiveMP: activate!
             μ(x)::SampleList(5000, LeftProposal())
         end
 
-        @test let (form, prod) = resolve_marginal_form_prod(cs, model, :x)
+        @test let (form, prod) = resolve_marginal_form_prod(cs, :x)
             form === nothing && prod === nothing
         end
 
-        @test let (form, prod) = resolve_messages_form_prod(cs, model, :x)
+        @test let (form, prod) = resolve_messages_form_prod(cs, :x)
             typeof(form) <: SampleListFormConstraint && prod === ProdGeneric()
         end
 
-        @test let (form, prod) = resolve_marginal_form_prod(cs, model, :y)
+        @test let (form, prod) = resolve_marginal_form_prod(cs, :y)
             form === nothing && prod === nothing
         end
 
-        @test let (form, prod) = resolve_messages_form_prod(cs, model, :y)
+        @test let (form, prod) = resolve_messages_form_prod(cs, :y)
             form === nothing && prod === nothing
         end
     end
@@ -233,19 +231,19 @@ import ReactiveMP: activate!
             μ(x)::PointMass(optimizer = "optimizer")
         end
 
-        @test let (form, prod) = resolve_marginal_form_prod(cs, model, :x)
+        @test let (form, prod) = resolve_marginal_form_prod(cs, :x)
             form === nothing && prod === nothing
         end
 
-        @test let (form, prod) = resolve_messages_form_prod(cs, model, :x)
+        @test let (form, prod) = resolve_messages_form_prod(cs, :x)
             typeof(form) <: PointMassFormConstraint && prod === ProdGeneric()
         end
 
-        @test let (form, prod) = resolve_marginal_form_prod(cs, model, :y)
+        @test let (form, prod) = resolve_marginal_form_prod(cs, :y)
             form === nothing && prod === nothing
         end
 
-        @test let (form, prod) = resolve_messages_form_prod(cs, model, :y)
+        @test let (form, prod) = resolve_messages_form_prod(cs, :y)
             form === nothing && prod === nothing
         end
     end
@@ -255,19 +253,19 @@ import ReactiveMP: activate!
             μ(x)::SampleList(5000, LeftProposal())::PointMass(optimizer = "optimizer")
         end
 
-        @test let (form, prod) = resolve_marginal_form_prod(cs, model, :x)
+        @test let (form, prod) = resolve_marginal_form_prod(cs, :x)
             form === nothing && prod === nothing
         end
 
-        @test let (form, prod) = resolve_messages_form_prod(cs, model, :x)
+        @test let (form, prod) = resolve_messages_form_prod(cs, :x)
             typeof(form) <: CompositeFormConstraint && prod === ProdGeneric()
         end
 
-        @test let (form, prod) = resolve_marginal_form_prod(cs, model, :y)
+        @test let (form, prod) = resolve_marginal_form_prod(cs, :y)
             form === nothing && prod === nothing
         end
 
-        @test let (form, prod) = resolve_messages_form_prod(cs, model, :y)
+        @test let (form, prod) = resolve_messages_form_prod(cs, :y)
             form === nothing && prod === nothing
         end
     end
@@ -279,35 +277,35 @@ import ReactiveMP: activate!
             end
         end
 
-        @test let (form, prod) = resolve_marginal_form_prod(cs5(true), model, :x)
+        @test let (form, prod) = resolve_marginal_form_prod(cs5(true), :x)
             form === nothing && prod === nothing
         end
 
-        @test let (form, prod) = resolve_messages_form_prod(cs5(true), model, :x)
+        @test let (form, prod) = resolve_messages_form_prod(cs5(true), :x)
             form === PointMassFormConstraint() && prod === ProdGeneric()
         end
 
-        @test let (form, prod) = resolve_marginal_form_prod(cs5(false), model, :x)
+        @test let (form, prod) = resolve_marginal_form_prod(cs5(false), :x)
             form === nothing && prod === nothing
         end
 
-        @test let (form, prod) = resolve_messages_form_prod(cs5(false), model, :x)
+        @test let (form, prod) = resolve_messages_form_prod(cs5(false), :x)
             form === nothing && prod === nothing
         end
 
-        @test let (form, prod) = resolve_marginal_form_prod(cs5(true), model, :y)
+        @test let (form, prod) = resolve_marginal_form_prod(cs5(true), :y)
             form === nothing && prod === nothing
         end
 
-        @test let (form, prod) = resolve_messages_form_prod(cs5(true), model, :y)
+        @test let (form, prod) = resolve_messages_form_prod(cs5(true), :y)
             form === nothing && prod === nothing
         end
 
-        @test let (form, prod) = resolve_marginal_form_prod(cs5(false), model, :y)
+        @test let (form, prod) = resolve_marginal_form_prod(cs5(false), :y)
             form === nothing && prod === nothing
         end
 
-        @test let (form, prod) = resolve_messages_form_prod(cs5(false), model, :y)
+        @test let (form, prod) = resolve_messages_form_prod(cs5(false), :y)
             form === nothing && prod === nothing
         end
     end
@@ -320,19 +318,19 @@ import ReactiveMP: activate!
             μ(y)::PointMass
         end
 
-        @test let (form, prod) = resolve_marginal_form_prod(cs, model, :x)
+        @test let (form, prod) = resolve_marginal_form_prod(cs, :x)
             form === PointMassFormConstraint() && prod === ProdGeneric()
         end
 
-        @test let (form, prod) = resolve_messages_form_prod(cs, model, :x)
+        @test let (form, prod) = resolve_messages_form_prod(cs, :x)
             typeof(form) <: SampleListFormConstraint && prod === ProdGeneric()
         end
 
-        @test let (form, prod) = resolve_marginal_form_prod(cs, model, :y)
+        @test let (form, prod) = resolve_marginal_form_prod(cs, :y)
             form === UnspecifiedFormConstraint() && prod === ProdAnalytical()
         end
 
-        @test let (form, prod) = resolve_messages_form_prod(cs, model, :y)
+        @test let (form, prod) = resolve_messages_form_prod(cs, :y)
             form === PointMassFormConstraint() && prod === ProdGeneric()
         end
     end
@@ -348,8 +346,8 @@ import ReactiveMP: activate!
             q(x)::PointMass # Unknown variable for marginal
         end
 
-        @test_logs (:warn, r".*q(.*).*no random variable") activate!(cs_with_warn, model)
-        @test_logs min_level = Logging.Warn activate!(cs_without_warn, model)
+        @test_logs (:warn, r".*q(.*).*no random variable") activate!(cs_with_warn, getnodes(model), getvariables(model))
+        @test_logs min_level = Logging.Warn activate!(cs_without_warn, getnodes(model), getvariables(model))
     end
 
     @testset "Warning case #2" begin
@@ -363,8 +361,8 @@ import ReactiveMP: activate!
             μ(x)::PointMass # Unknown variable for marginal
         end
 
-        @test_logs (:warn, r".*μ(.*).*no random variable") activate!(cs_with_warn, model)
-        @test_logs min_level = Logging.Warn activate!(cs_without_warn, model)
+        @test_logs (:warn, r".*μ(.*).*no random variable") activate!(cs_with_warn, getnodes(model), getvariables(model))
+        @test_logs min_level = Logging.Warn activate!(cs_without_warn, getnodes(model), getvariables(model))
     end
 
     @testset "Warning case #3" begin
@@ -380,8 +378,8 @@ import ReactiveMP: activate!
             q(x)::PointMass # Unknown variable for marginal
         end
 
-        @test_logs (:warn, r".*q(.*).*is not a random variable") activate!(cs_with_warn, model)
-        @test_logs min_level = Logging.Warn activate!(cs_without_warn, model)
+        @test_logs (:warn, r".*q(.*).*is not a random variable") activate!(cs_with_warn, getnodes(model), getvariables(model))
+        @test_logs min_level = Logging.Warn activate!(cs_without_warn, getnodes(model), getvariables(model))
     end
 
     @testset "Warning case #4" begin
@@ -397,8 +395,8 @@ import ReactiveMP: activate!
             q(x)::PointMass # Unknown variable for marginal
         end
 
-        @test_logs (:warn, r".*q(.*).*is not a random variable") activate!(cs_with_warn, model)
-        @test_logs min_level = Logging.Warn activate!(cs_without_warn, model)
+        @test_logs (:warn, r".*q(.*).*is not a random variable") activate!(cs_with_warn, getnodes(model), getvariables(model))
+        @test_logs min_level = Logging.Warn activate!(cs_without_warn, getnodes(model), getvariables(model))
     end
 
     @testset "Error case #1" begin
