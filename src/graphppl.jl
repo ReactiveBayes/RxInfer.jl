@@ -197,13 +197,13 @@ function write_fconstraint_option(form, variables, fconstraint)
 
         indexed = map(factors) do factor
             @capture(factor, q(names__)) || error("Invalid factorisation constraint: $factor")
-            return map((n) -> GraphPPL.factorisation_name_to_index(form, n), map((n) -> GraphPPL.factorisation_replace_var_name(variables, n), names))
+            return map((n) -> RxInfer.factorisation_name_to_index(form, n), map((n) -> RxInfer.factorisation_replace_var_name(variables, n), names))
         end
 
         factorisation = Expr(:tuple, map(f -> Expr(:tuple, f...), indexed)...)
         errorstr = """Invalid factorisation constraint: ($fconstraint). Arguments are not unique, check node's interface names and model specification variable names."""
 
-        return :(GraphPPL.check_uniqueness($factorisation) ? GraphPPL.sorted_factorisation($factorisation) : error($errorstr))
+        return :(RxInfer.check_uniqueness($factorisation) ? RxInfer.sorted_factorisation($factorisation) : error($errorstr))
     elseif @capture(fconstraint, MeanField())
         return :(ReactiveMP.MeanField())
     elseif @capture(fconstraint, FullFactorisation())

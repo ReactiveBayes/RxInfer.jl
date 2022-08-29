@@ -5,25 +5,23 @@ using RxInfer, BenchmarkTools, Random, Plots, Dates, LinearAlgebra, StableRNGs
 
 ## Model definition
 ## -------------------------------------------- ##
-@model [default_factorisation = MeanField()] function ar_model(n, order)
+@model function ar_model(n, order)
     x = datavar(Vector{Float64}, n)
     y = datavar(Float64, n)
 
-    γ ~ GammaShapeRate(1.0, 1.0)
-    θ ~ MvNormalMeanPrecision(zeros(order), diageye(order))
+    γ ~ Gamma(shape = 1.0, rate = 1.0)
+    θ ~ MvNormal(mean = zeros(order), precision = diageye(order))
 
     for i in 1:n
-        y[i] ~ NormalMeanPrecision(dot(x[i], θ), γ)
+        y[i] ~ Normal(mean = dot(x[i], θ), precision = γ)
     end
-
-    return x, y, θ, γ
 end
 
-@model [default_factorisation = MeanField()] function lar_model(T::Type{Multivariate}, n, order, c, stype, τ)
+@model function lar_model(::Type{Multivariate}, n, order, c, stype, τ)
 
     # Parameter priors
-    γ ~ GammaShapeRate(1.0, 1.0)
-    θ ~ MvNormalMeanPrecision(zeros(order), diageye(order))
+    γ ~ Gamma(shape = 1.0, rate = 1.0)
+    θ ~ MvNormal(mean = zeros(order), precision = diageye(order))
 
     # We create a sequence of random variables for hidden states
     x = randomvar(n)
@@ -35,7 +33,7 @@ end
     cτ = constvar(τ)
 
     # Prior for first state
-    x0 ~ MvNormalMeanPrecision(zeros(order), diageye(order))
+    x0 ~ MvNormal(mean = zeros(order), precision = diageye(order))
 
     x_prev = x0
 
@@ -44,18 +42,17 @@ end
 
     for i in 1:n
         # Autoregressive node uses structured factorisation assumption between states
-        x[i] ~ AR(x_prev, θ, γ) where {q = q(y, x)q(γ)q(θ), meta = meta}
-        y[i] ~ NormalMeanPrecision(dot(ct, x[i]), cτ)
+        x[i] ~ AR(x_prev, θ, γ) where { q = q(y, x)q(γ)q(θ), meta = meta }
+        y[i] ~ Normal(mean = dot(ct, x[i]), precision = cτ)
         x_prev = x[i]
     end
-
-    return x, y, θ, γ
 end
-@model [default_factorisation = MeanField()] function lar_model(T::Type{Univariate}, n, order, c, stype, τ)
+
+@model function lar_model(::Type{Univariate}, n, order, c, stype, τ)
 
     # Parameter priors
-    γ ~ GammaShapeRate(1.0, 1.0)
-    θ ~ NormalMeanPrecision(0.0, 1.0)
+    γ ~ Gamma(shape = 1.0, rate = 1.0)
+    θ ~ Normal(mean = 0.0, precision = 1.0)
 
     # We create a sequence of random variables for hidden states
     x = randomvar(n)
@@ -67,7 +64,7 @@ end
     cτ = constvar(τ)
 
     # Prior for first state
-    x0 ~ NormalMeanPrecision(0.0, 1.0)
+    x0 ~ Normal(mean = 0.0, precision = 1.0)
 
     x_prev = x0
 
@@ -75,88 +72,52 @@ end
     meta = ARMeta(Univariate, order, stype)
 
     for i in 1:n
-        x[i] ~ AR(x_prev, θ, γ) where {q = q(y, x)q(γ)q(θ), meta = meta}
-        y[i] ~ NormalMeanPrecision(ct * x[i], cτ)
+        x[i] ~ AR(x_prev, θ, γ) where { q = q(y, x)q(γ)q(θ), meta = meta }
+        y[i] ~ Normal(mean = ct * x[i], precision = cτ)
         x_prev = x[i]
     end
-
-    return x, y, θ, γ
 end
 ## -------------------------------------------- ##
 ## Inference definition
 ## -------------------------------------------- ##
 function ar_inference(inputs, outputs, order, niter)
     n = length(outputs)
-
-    model, (x, y, θ, γ) = ar_model(model_options(limit_stack_depth = 500), n, order)
-
-    γ_buffer = keep(Marginal)
-    θ_buffer = keep(Marginal)
-    fe       = keep(Float64)
-
-    γ_sub = subscribe!(getmarginal(γ), γ_buffer)
-    θ_sub = subscribe!(getmarginal(θ), θ_buffer)
-    f_sub = subscribe!(score(Float64, BetheFreeEnergy(), model), fe)
-
-    setmarginal!(γ, GammaShapeRate(1.0, 1.0))
-
-    for _ in 1:niter
-        update!(x, inputs)
-        update!(y, outputs)
-    end
-
-    unsubscribe!((γ_sub, θ_sub, f_sub))
-
-    return γ_buffer, θ_buffer, fe
+    return inference(
+        model         = ar_model(n, order),
+        data          = (x = inputs, y = outputs,),
+        constraints   = MeanField(),
+        options       = model_options(limit_stack_depth = 500),
+        initmarginals = (γ = GammaShapeRate(1.0, 1.0),),
+        returnvars    = (γ = KeepEach(), θ = KeepEach(),),
+        iterations = niter,
+        free_energy = Float64, 
+    )
 end
 
-function lar_init_marginals!(::Type{Multivariate}, order, γ, θ)
-    setmarginal!(γ, GammaShapeRate(1.0, 1.0))
-    setmarginal!(θ, MvNormalMeanPrecision(zeros(order), diageye(order)))
+function lar_init_marginals(::Type{Multivariate}, order)
+    return (γ = GammaShapeRate(1.0, 1.0), θ = MvNormalMeanPrecision(zeros(order), diageye(order)))
 end
 
-function lar_init_marginals!(::Type{Univariate}, order, γ, θ)
-    setmarginal!(γ, GammaShapeRate(1.0, 1.0))
-    setmarginal!(θ, NormalMeanPrecision(0.0, 1.0))
+function lar_init_marginals(::Type{Univariate}, order)
+    return (γ = GammaShapeRate(1.0, 1.0), θ = NormalMeanPrecision(0.0, 1.0))
 end
 
 function lar_inference(data, order, artype, stype, niter, τ)
-
-    # We build a full graph based on nber of observatios
     n = length(data)
-
-    # Depending on the order of AR process `c` is
-    # either a nber or a vector
     c = ReactiveMP.ar_unit(artype, order)
 
-    # Note that to run inference for huge model it might be necessary to pass extra
-    # `model_options(limit_stack_depth = 100)` as a first argument to limit stack depth during recursive inference procedure
-    model, (x, y, θ, γ) = lar_model(artype, n, order, c, stype, τ)
-
-    # We are going to keep `γ` and `θ` estimates for all VMP iterations
-    # But `buffer` only last posterior estimates for a sequence of hidden states `x`
-    # We also will keep Bethe Free Energy in `fe`
-    γ_buffer = keep(Marginal)
-    θ_buffer = keep(Marginal)
-    x_buffer = buffer(Marginal, n)
-    fe       = keep(Float64)
-
-    γsub  = subscribe!(getmarginal(γ), γ_buffer)
-    θsub  = subscribe!(getmarginal(θ), θ_buffer)
-    xsub  = subscribe!(getmarginals(x), x_buffer)
-    fesub = subscribe!(score(Float64, BetheFreeEnergy(), model), fe)
-
-    lar_init_marginals!(artype, order, γ, θ)
-
-    # We update data several times to perform several VMP iterations
-    for i in 1:niter
-        update!(y, data)
-    end
-
-    # It is important to unsubscribe from running observables
-    unsubscribe!((γsub, θsub, xsub, fesub))
-
-    return γ_buffer, θ_buffer, x_buffer, fe
+    return inference(
+        model = lar_model(artype, n, order, c, stype, τ),
+        data  = (y = data, ),
+        initmarginals = lar_init_marginals(artype, order),
+        returnvars = (
+            γ = KeepEach(),
+            θ = KeepEach(),
+            x = KeepLast(),
+        ),
+        iterations = niter,
+        free_energy = Float64
+    )
 end
 
 @testset "Autoregressive model" begin
@@ -179,12 +140,17 @@ end
         ## Inference execution and test inference results
         for order in 1:5
             inputs, outputs = ar_ssm(series, order)
-            γ_buffer, θ_buffer, fe = ar_inference(inputs, outputs, order, 15)
+            result = ar_inference(inputs, outputs, order, 15)
+
+            γ_buffer = result.posteriors[:γ]  
+            θ_buffer = result.posteriors[:θ]  
+            fe = result.free_energy
+
             @test length(γ_buffer) === 15
             @test length(θ_buffer) === 15
             @test length(fe) === 15
             @test last(fe) < first(fe)
-            @test all(filter(e -> abs(e) > 1e-3, diff(getvalues(fe))) .< 0)
+            @test all(filter(e -> abs(e) > 1e-3, diff(fe)) .< 0)
         end
         ## -------------------------------------------- ##
         ## Form debug output
@@ -243,16 +209,24 @@ end
         ## Inference execution
 
         # AR order 1
-        γ, θ, xs, fe = lar_inference(observations, 1, Univariate, ARsafe(), 15, real_τ)
+        result = lar_inference(observations, 1, Univariate, ARsafe(), 15, real_τ)
+        γ = result.posteriors[:γ]
+        θ = result.posteriors[:θ]
+        xs = result.posteriors[:x]
+        fe = result.free_energy
         @test length(xs) === n
         @test length(γ) === 15
         @test length(θ) === 15
         @test length(fe) === 15
         @test abs(last(fe) - 518.9182342) < 0.01
-        @test all(filter(e -> abs(e) > 1e-3, diff(getvalues(fe))) .< 0)
+        @test all(filter(e -> abs(e) > 1e-3, diff(fe)) .< 0)
 
         for i in 1:4
-            γ, θ, xs, fe = lar_inference(observations, i, Multivariate, ARsafe(), 15, real_τ)
+            result = lar_inference(observations, i, Multivariate, ARsafe(), 15, real_τ)
+            γ = result.posteriors[:γ]
+            θ = result.posteriors[:θ]
+            xs = result.posteriors[:x]
+            fe = result.free_energy
             @test length(xs) === n
             @test length(γ) === 15
             @test length(θ) === 15
@@ -260,7 +234,11 @@ end
         end
 
         # AR order 5
-        γ, θ, xs, fe = lar_inference(observations, length(real_θ), Multivariate, ARsafe(), 15, real_τ)
+        result = lar_inference(observations, length(real_θ), Multivariate, ARsafe(), 15, real_τ)
+        γ = result.posteriors[:γ]
+        θ = result.posteriors[:θ]
+        xs = result.posteriors[:x]
+        fe = result.free_energy
 
         ## -------------------------------------------- ##
         ## Test inference results
@@ -269,7 +247,7 @@ end
         @test length(θ) === 15
         @test length(fe) === 15
         @test abs(last(fe) - 514.66086) < 0.01
-        @test all(filter(e -> abs(e) > 1e-1, diff(getvalues(fe))) .< 0)
+        @test all(filter(e -> abs(e) > 1e-1, diff(fe)) .< 0)
         @test (mean(last(γ)) - 3.0std(last(γ)) < real_γ < mean(last(γ)) + 3.0std(last(γ)))
         ## -------------------------------------------- ##
         ## Form debug output
@@ -293,17 +271,14 @@ end
         p2 = plot(mean.(γ), ribbon = std.(γ), label = "Inferred transition precision", legend = :bottomright)
         p2 = plot!([real_γ], seriestype = :hline, label = "Real transition precision")
 
-        p3 = plot(getvalues(fe), label = "Bethe Free Energy")
+        p3 = plot(fe, label = "Bethe Free Energy")
 
         p = plot(p1, p2, p3, layout = @layout([a; b c]))
         savefig(p, plot_output)
         ## -------------------------------------------- ##
         ## Create output benchmarks (skip if CI)
         if get(ENV, "CI", nothing) != "true"
-            benchmark =
-                @benchmark lar_inference(
-                    $observations, length($real_θ), Multivariate, ARsafe(), 15, $real_τ
-                ) seconds = 15
+            benchmark = @benchmark lar_inference($observations, length($real_θ), Multivariate, ARsafe(), 15, $real_τ) seconds = 15
             open(benchmark_output, "w") do io
                 show(io, MIME("text/plain"), benchmark)
                 versioninfo(io)

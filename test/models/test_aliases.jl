@@ -57,7 +57,7 @@ end
 ## -------------------------------------------- ##
 function normal_aliases_inference()
     return inference(
-        model = Model(normal_aliases),
+        model = normal_aliases(),
         data = (d = 1.0,),
         returnvars = (x1 = KeepLast(),),
         free_energy = true
@@ -66,7 +66,7 @@ end
 
 function binary_aliases_inference()
     return inference(
-        model = Model(binary_aliases),
+        model = binary_aliases(),
         data = (y = 0.5,),
         free_energy = true
     )
