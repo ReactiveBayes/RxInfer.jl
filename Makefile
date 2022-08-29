@@ -4,7 +4,7 @@ SHELL = /bin/bash
 .PHONY: lint format
 
 scripts_init:
-	julia --startup-file=no --project=scripts/ -e 'using Pkg; Pkg.instantiate();'
+	julia --startup-file=no --project=scripts/ -e 'using Pkg; Pkg.instantiate(); Pkg.precompile();'
 
 lint: scripts_init ## Code formating check
 	julia --startup-file=no --project=scripts/ scripts/format.jl
@@ -14,13 +14,16 @@ format: scripts_init ## Code formating run
 
 .PHONY: examples
 
-examples: scripts_init ## Precompile examples and put them in the `docs/src/examples` folder
+examples_init:
+	julia --startup-file=no --project=examples/ -e 'using Pkg; Pkg.instantiate(); Pkg.precompile(); using Plots;'
+
+examples: scripts_init examples_init ## Precompile examples and put them in the `docs/src/examples` folder
 	julia --startup-file=no --project=scripts/ scripts/examples.jl
 
 .PHONY: docs
 
 doc_init:
-	julia --project=docs -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate();'
+	julia --project=docs -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate(); Pkg.precompile();'
 
 docs: doc_init ## Generate documentation
 	julia --startup-file=no --project=docs/ docs/make.jl
