@@ -214,12 +214,12 @@ end
 
     addtests(testrunner, "test_model.jl")
 
-    addtests(testrunner, "test/models/aliases/test_aliases_binary.jl")
-    addtests(testrunner, "test/models/aliases/test_aliases_normal.jl")
-    addtests(testrunner, "test/models/autoregressive/test_ar.jl")
-    addtests(testrunner, "test/models/autoregressive/test_lar.jl")
-    addtests(testrunner, "test/models/mixtures/test_gmm_univariate.jl")
-    addtests(testrunner, "test/models/mixtures/test_gmm_multivariate.jl")
+    addtests(testrunner, "models/aliases/test_aliases_binary.jl")
+    addtests(testrunner, "models/aliases/test_aliases_normal.jl")
+    addtests(testrunner, "models/autoregressive/test_ar.jl")
+    addtests(testrunner, "models/autoregressive/test_lar.jl")
+    addtests(testrunner, "models/mixtures/test_gmm_univariate.jl")
+    addtests(testrunner, "models/mixtures/test_gmm_multivariate.jl")
 
     # addtests(testrunner, "models/test_lgssm.jl")
     # addtests(testrunner, "models/test_hgf.jl")
