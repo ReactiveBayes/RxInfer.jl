@@ -1,8 +1,7 @@
-export AbstractModelSpecification
 export ModelOptions, model_options
 export FactorGraphModel, create_model, model_name
 export AutoVar
-export getoptions, getconstraints, getmeta, getstats
+export getoptions, getconstraints, getmeta
 export getnodes, getvariables, getrandom, getconstant, getdata
 
 import Base: push!, show, getindex, haskey, firstindex, lastindex
