@@ -2,10 +2,10 @@ using Distributed
 
 const ExamplesFolder = joinpath(@__DIR__, "..", "examples")
 
+import Pkg; Pkg.activate(ExamplesFolder); Pkg.instantiate();
+
 # Precompile packages on the main node
 using RxInfer, Plots, PyPlots, BenchmarkTools, ProgressMeter, Optim
-
-import Pkg; Pkg.activate(ExamplesFolder); Pkg.instantiate();
 
 addprocs(Sys.CPU_THREADS, exeflags="--project=$(ExamplesFolder)")
 
