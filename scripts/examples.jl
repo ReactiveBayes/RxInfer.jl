@@ -1,6 +1,10 @@
 using Distributed
 
-addprocs(Sys.CPU_THREADS, exeflags="--project=$(joinpath(@__DIR__, "..", "examples"))")
+const ExamplesFolder = joinpath(@__DIR__, "..", "examples")
+
+import Pkg; Pkg.activate(ExamplesFolder); Pkg.instantiate(); Pkg.activate();
+
+addprocs(Sys.CPU_THREADS, exeflags="--project=$(ExamplesFolder)")
 
 const examples = RemoteChannel(() -> Channel(128)); # The number should be larger than number of examples
 const results  = RemoteChannel(() -> Channel(128));
@@ -86,8 +90,10 @@ function main()
         mdtext      = read(mdpath, String)
 
         # Check if example failed with an error
-        if !isnothing(findnext("julia-error", mdtext, 1))
-            @error "`julia-error` block found in the `$(mdpath)` example. Check the logs for more details."
+        # TODO: we might have better heurstic here? But I couldn't find a way to tell `Weave.jl` if an error has occured
+        # TODO: try to improve this later
+        if !isnothing(findnext("```\nError:", mdtext, 1))
+            @error "`Error` block found in the `$(mdpath)` example. Check the logs for more details."
             error(-1)
         end
 
