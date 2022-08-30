@@ -4,9 +4,11 @@ const ExamplesFolder = joinpath(@__DIR__, "..", "examples")
 
 import Pkg; Pkg.activate(ExamplesFolder); Pkg.instantiate();
 
-# Precompile packages on the main node
+# Precompile packages on the main worker
+@info "Precompile packages on the main worker"
 using RxInfer, Plots, PyPlot, BenchmarkTools, ProgressMeter, Optim
 
+@info "Adding $(Sys.CPU_THREADS) workers"
 addprocs(Sys.CPU_THREADS, exeflags="--project=$(ExamplesFolder)")
 
 const examples = RemoteChannel(() -> Channel(128)); # The number should be larger than number of examples
@@ -39,8 +41,31 @@ const results  = RemoteChannel(() -> Channel(128));
 end
 
 function main()
+
+    @info "Reading .meta.jl"
+
     jobs      = include(joinpath(@__DIR__, "..", "examples", ".meta.jl"))
     remaining = length(jobs)
+
+    efolder = joinpath(@__DIR__, "..", "examples")
+    dfolder = joinpath(@__DIR__, "..", "docs", "src", "examples")
+
+    mkpath(dfolder)
+
+    @info "Preparing `examples` environment"
+
+    # `Weave` executes notebooks in the `dst` folder so we need to copy there our environment
+    cp(joinpath(efolder, "Manifest.toml"), joinpath(dfolder, "Manifest.toml"), force = true)
+    cp(joinpath(efolder, "Project.toml"), joinpath(dfolder, "Project.toml"), force = true)
+
+    # We also need to fix relative RxInfer path in the moved `Project.toml`
+    # This is a bit iffy, but does the job (not sure about Windows though?)
+    manifest = read(joinpath(dfolder, "Manifest.toml"), String)  
+    manifest = replace(manifest, "path = \"..\"" => "path = \"../../..\"")
+
+    open(joinpath(dfolder, "Manifest.toml"), "w") do f
+        write(f, manifest)
+    end
 
     foreach((job) -> @info("Adding $(job[:title]) at $(job[:path])."), jobs) 
     foreach((job) -> put!(examples, job), jobs)
@@ -133,13 +158,9 @@ function main()
         write(f, String(take!(io_overview)))
     end
 
-    # TODO: why does empty `Manifest.toml` and `Project.toml` occur in the output? 
-    # TODO: I suspect its some sort of artefact from `Distributed.jl`
-    rm(joinpath(@__DIR__, "..", "docs", "src", "examples", "Manifest.toml"), force = true)
-    rm(joinpath(@__DIR__, "..", "docs", "src", "examples", "Project.toml"), force = true)
-
-    close(examples)
-    close(results)
+    # `Weave` executes notebooks in the `dst` folder so we need to copy there our environment (and remove it)
+    rm(joinpath(dfolder, "Manifest.toml"), force = true)
+    rm(joinpath(dfolder, "Project.toml"), force = true)
 
     @info "Finished."
 end
