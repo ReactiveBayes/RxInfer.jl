@@ -12,7 +12,7 @@
 #                   \end{aligned}$$   <- on the same line
 #            7. Notebooks and plain Julia have different scoping rules for global variables, if it happens so that examples generation fails due to 
 #               `UndefVarError` and scoping issues use `let ... end` blocks to enforce local scoping (see `Gaussian Mixtures Multivariate.ipynb` as an example)
-#            8. All examples must use and activate local `Project.toml`, if you need some package add it to the `(examples)` project
+#            8. All examples must use and activate local `Project.toml` in the second cell (see `1.`), if you need some package add it to the `(examples)` project
 
 return [
     (
