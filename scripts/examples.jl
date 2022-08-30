@@ -78,7 +78,7 @@ function main()
     write(io_overview, "# [Examples overview](@id examples-overview)\n\n")
     write(io_overview, "This section contains a set of examples for Bayesian Inference with `ReactiveMP` package in various probabilistic models.\n\n")
     write(io_overview, "!!! note\n")
-    write(io_overview, "\tAll examples have been pre-generated automatically from the [`examples/`](https://github.com/biaslab/RxInfer.jl/tree/master/examples) folder at GitHub repository.\n\n")
+    write(io_overview, "\tAll examples have been pre-generated automatically from the [`examples/`](https://github.com/biaslab/RxInfer.jl/tree/main/examples) folder at GitHub repository.\n\n")
 
     foreach(jobs) do job
         mdname      = replace(job[:path], ".ipynb" => ".md")
@@ -95,11 +95,16 @@ function main()
         description = job[:description]
         id          = string("examples-", lowercase(join(split(job[:title]), "-")))
 
+        if isnothing(findnext("# $(title)", mdtext, 1))
+            @error "Could not find cell `# $(title)` in the `$(mdpath)`"
+            error(-1)
+        end
+
         open(mdpath, "w") do f
             # In every examples we replace title with its `@id` equivalent, such that 
             # `# Super cool title` becomes `[# Super cool title](@id examples-super-cool-title)`
             # We also fix figure links
-            write(f, replace(mdtext, "# $(title)" => "# [$(title)](@id $(id))", joinpath("..", "assets", "examples") => joinpath("assets", "examples")))
+            write(f, replace(mdtext, "# $(title)" => "# [$(title)](@id $(id))"))
         end
 
         write(io_overview, "- [$(title)](@ref $id): $description")

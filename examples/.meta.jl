@@ -12,8 +12,14 @@ return [
     (
         path  = "Autoregressive model.ipynb", 
         title = "Autoregressive Model", 
-        description = "An example of variational Bayesian Inference on full graph for Autoregressive model.",
+        description = "An example of variational Bayesian Inference on full graph for Autoregressive model. Reference: [Albert Podusenko, Message Passing-Based Inference for Time-Varying Autoregressive Models](https://www.mdpi.com/1099-4300/23/6/683).",
         hidden = false
+    ),
+    (
+        path = "Gaussian Mixtures Multivariate.ipynb",
+        title = "Multivariate Gaussian Mixture Model",
+        description = "This example implements variational Bayesian inference in a multivariate Gaussian mixture model with mean-field assumption.",
+        hidden = false,
     ),
     (
         path  = "Smoothing Benchmark.ipynb", 
