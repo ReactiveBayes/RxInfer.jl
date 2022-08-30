@@ -123,6 +123,9 @@ function main()
         write(f, String(take!(io_overview)))
     end
 
+    # TODO: why does empty `Manifest.toml` occur in the output?
+    rm(joinpath(@__DIR__, "..", "docs", "src", "examples", "Manifest.toml"), force = true)
+
     @info "Finished."
 end
 
