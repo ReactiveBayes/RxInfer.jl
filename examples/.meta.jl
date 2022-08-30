@@ -30,7 +30,8 @@ return [
     (
         path = "Gaussian Linear Dynamical System.ipynb",
         title = "Gaussian Linear Dynamical System",
-        description = "An example of inference procedure for Gaussian Linear Dynamical System with multivariate noisy observations using Belief Propagation (Sum Product) algorithm. Reference: [Simo Sarkka, Bayesian Filtering and Smoothing](https://users.aalto.fi/~ssarkka/pub/cup_book_online_20131111.pdf)."
+        description = "An example of inference procedure for Gaussian Linear Dynamical System with multivariate noisy observations using Belief Propagation (Sum Product) algorithm. Reference: [Simo Sarkka, Bayesian Filtering and Smoothing](https://users.aalto.fi/~ssarkka/pub/cup_book_online_20131111.pdf).",
+        hidden = false
     ),
     (
         path  = "Hidden Markov Model.ipynb",

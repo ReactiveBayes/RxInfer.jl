@@ -2,7 +2,7 @@ using Distributed
 
 const ExamplesFolder = joinpath(@__DIR__, "..", "examples")
 
-import Pkg; Pkg.activate(ExamplesFolder); Pkg.instantiate(); Pkg.activate(".");
+import Pkg; Pkg.activate(ExamplesFolder); Pkg.instantiate();
 
 addprocs(Sys.CPU_THREADS, exeflags="--project=$(ExamplesFolder)")
 
@@ -130,8 +130,10 @@ function main()
         write(f, String(take!(io_overview)))
     end
 
-    # TODO: why does empty `Manifest.toml` occur in the output?
+    # TODO: why does empty `Manifest.toml` and `Project.toml` occur in the output? 
+    # TODO: I suspect its some sort of artefact from `Distributed.jl`
     rm(joinpath(@__DIR__, "..", "docs", "src", "examples", "Manifest.toml"), force = true)
+    rm(joinpath(@__DIR__, "..", "docs", "src", "examples", "Project.toml"), force = true)
 
     @info "Finished."
 end
