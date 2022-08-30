@@ -116,8 +116,9 @@ function main()
         open(mdpath, "w") do f
             # In every examples we replace title with its `@id` equivalent, such that 
             # `# Super cool title` becomes `[# Super cool title](@id examples-super-cool-title)`
-            fixid = replace(mdtext, "# $(title)" => "# [$(title)](@id $(id))")
-            write(f, fixid)
+            fixid  = replace(mdtext, "# $(title)" => "# [$(title)](@id $(id))")
+            output = string("This example has been auto-generated from the [`examples/`](https://github.com/biaslab/RxInfer.jl/tree/main/examples) folder at GitHub repository.\n\n", fixid)
+            write(f, output)
         end
 
         write(io_overview, "- [$(title)](@ref $id): $description\n")
