@@ -58,6 +58,12 @@ return [
         hidden = false,
     ),
     (
+        path = "Global Parameter Optimisation.ipynb",
+        title = "Global Parameter Optimisation",
+        title = "This example shows how to use RxInfer.jl automated inference within other optimisation packages such as Optim.jl.",
+        hidden = false
+    ),
+    (
         path  = "Smoothing Benchmark.ipynb", 
         title = "Smoothing Benchmark", 
         description = "Smoothing Benchmark for Internal testing.",
