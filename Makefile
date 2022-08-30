@@ -32,6 +32,13 @@ docs: doc_init ## Generate documentation
 
 test: ## Run tests 
 	julia --startup-file=no -e 'import Pkg; Pkg.activate("."); Pkg.test()'	
+
+clean: ## Clean documentation build, precompiled examples, benchmark output from tests
+	rm -rf docs/src/examples
+	rm -rf docs/src/assets/examples
+	rm -rf docs/build
+	rm -rf _output
+	rm -rf test/_output
 	
 help:  ## Display this help
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m\033[0m\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-24s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)

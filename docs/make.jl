@@ -6,7 +6,7 @@ DocMeta.setdocmeta!(RxInfer, :DocTestSetup, :(using RxInfer); recursive = true)
 examplespath = joinpath(@__DIR__, "src", "examples")
 
 # TODO replace with .meta.jl
-Examples = map(filter((f) -> last(split(f, ".")) == "md", readdir(examplespath))) do example 
+Examples = map(filter((f) -> f != "overview.md", readdir(examplespath))) do example 
     return "$example" => joinpath("examples", example)
 end
 
@@ -23,7 +23,10 @@ makedocs(;
     ),
     pages = [
         "Home"     => "index.md",
-        "Examples" => Examples
+        "Examples" => [
+            "Overview" => "examples/overview.md",
+            Examples...
+        ]
     ]
 )
 
