@@ -21,7 +21,7 @@ const results  = RemoteChannel(() -> Channel(128));
             ipath  = joinpath(@__DIR__, "..", "examples", path)
             opath  = joinpath(@__DIR__, "..", "docs", "src", "examples")
             fpath  = joinpath("..", "assets", "examples") # relative to `opath`
-            weaved = weave(ipath, out_path = opath, doctype = "multimarkdown", fig_path = fpath)
+            weaved = weave(ipath, out_path = opath, doctype = "github", fig_path = fpath)
 
             put!(results, (pid = pid, error = nothing, path = path, weaved = weaved, example = example))
         catch e 
@@ -83,14 +83,21 @@ function main()
     foreach(jobs) do job
         mdname      = replace(job[:path], ".ipynb" => ".md")
         mdpath      = joinpath(@__DIR__, "..", "docs", "src", "examples", mdname)
+        mdtext      = read(mdpath, String)
 
+        # Check if example failed with an error
+        if !isnothing(findnext("julia-error", mdtext, 1))
+            @error "`julia-error` block found in the `$(mdpath)` example. Check the logs for more details."
+            error(-1)
+        end
+
+        # We simply remove pre-generated `.md` file if it has been marked as hidden
         if job[:hidden]
             @info "Skipping example $(job[:title]) as it has been marked as hidden"
             rm(mdpath, force = true)
             return nothing
         end
 
-        mdtext      = read(mdpath, String)
         title       = job[:title]
         description = job[:description]
         id          = string("examples-", lowercase(join(split(job[:title]), "-")))
@@ -103,8 +110,8 @@ function main()
         open(mdpath, "w") do f
             # In every examples we replace title with its `@id` equivalent, such that 
             # `# Super cool title` becomes `[# Super cool title](@id examples-super-cool-title)`
-            # We also fix figure links
-            write(f, replace(mdtext, "# $(title)" => "# [$(title)](@id $(id))"))
+            fixid = replace(mdtext, "# $(title)" => "# [$(title)](@id $(id))")
+            write(f, fixid)
         end
 
         write(io_overview, "- [$(title)](@ref $id): $description\n")
@@ -112,7 +119,7 @@ function main()
         return nothing
     end
 
-    open(joinpath(@__DIR__, "..", "docs", "src", "examples", "overview.md"), "w") do f
+    open(joinpath(@__DIR__, "..", "docs", "src", "examples", "Overview.md"), "w") do f
         write(f, String(take!(io_overview)))
     end
 
