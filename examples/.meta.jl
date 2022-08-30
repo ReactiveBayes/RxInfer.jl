@@ -16,7 +16,7 @@
 
 return [
     (
-        path = "Coin Toss model.ipynb",
+        path = "Coin Toss Model.ipynb",
         title = "Coin toss model (Beta-Bernoulli)",
         description = "An example of Bayesian inference in Beta-Bernoulli model with IID observations.",
         hidden = false
@@ -28,13 +28,18 @@ return [
         hidden = false
     ),
     (
+        path = "Gaussian Linear Dynamical System.ipynb",
+        title = "Gaussian Linear Dynamical System",
+        description = "An example of inference procedure for Gaussian Linear Dynamical System with multivariate noisy observations using Belief Propagation (Sum Product) algorithm. Reference: [Simo Sarkka, Bayesian Filtering and Smoothing](https://users.aalto.fi/~ssarkka/pub/cup_book_online_20131111.pdf)."
+    ),
+    (
         path  = "Hidden Markov Model.ipynb",
         title = "Ensemble Learning of a Hidden Markov Model",
         description = "An example of structured variational Bayesian inference in Hidden Markov Model with unknown transition and observational matrices.",
         hidden = false
     ),
     (
-        path  = "Autoregressive model.ipynb", 
+        path  = "Autoregressive Model.ipynb", 
         title = "Autoregressive Model", 
         description = "An example of variational Bayesian Inference on full graph for Autoregressive model. Reference: [Albert Podusenko, Message Passing-Based Inference for Time-Varying Autoregressive Models](https://www.mdpi.com/1099-4300/23/6/683).",
         hidden = false
