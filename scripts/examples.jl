@@ -2,7 +2,7 @@ using Distributed
 
 const ExamplesFolder = joinpath(@__DIR__, "..", "examples")
 
-import Pkg; Pkg.activate(ExamplesFolder); Pkg.instantiate(); Pkg.activate();
+import Pkg; Pkg.activate(ExamplesFolder); Pkg.instantiate(); Pkg.activate(".");
 
 addprocs(Sys.CPU_THREADS, exeflags="--project=$(ExamplesFolder)")
 
