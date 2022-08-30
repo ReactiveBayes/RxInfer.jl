@@ -16,6 +16,18 @@
 
 return [
     (
+        path = "Coin Toss model.ipynb",
+        title = "Coin toss model (Beta-Bernoulli)",
+        description = "An example of Bayesian inference in Beta-Bernoulli model with IID observations.",
+        hidden = false
+    ),
+    (
+        path = "Assessing People Skills.ipynb",
+        title = "Assessing People’s Skills",
+        description = "The demo is inspired by the example from Chapter 2 of Bishop's Model-Based Machine Learning book. We are going to perform an exact inference to assess the skills of a student given the results of the test.",
+        hidden = false
+    ),
+    (
         path  = "Autoregressive model.ipynb", 
         title = "Autoregressive Model", 
         description = "An example of variational Bayesian Inference on full graph for Autoregressive model. Reference: [Albert Podusenko, Message Passing-Based Inference for Time-Varying Autoregressive Models](https://www.mdpi.com/1099-4300/23/6/683).",
