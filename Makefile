@@ -15,7 +15,7 @@ format: scripts_init ## Code formating run
 .PHONY: examples
 
 examples_init:
-	julia --startup-file=no --project=examples/ -e 'using Pkg; Pkg.instantiate(); Pkg.precompile(); using Plots;'
+	julia --startup-file=no --project=examples/ -e 'using Pkg; Pkg.instantiate(); Pkg.precompile(); using Plots; using PyPlot;'
 
 examples: scripts_init examples_init ## Precompile examples and put them in the `docs/src/examples` folder
 	julia --startup-file=no --project=scripts/ scripts/examples.jl

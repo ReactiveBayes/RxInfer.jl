@@ -60,7 +60,13 @@ return [
     (
         path = "Global Parameter Optimisation.ipynb",
         title = "Global Parameter Optimisation",
-        title = "This example shows how to use RxInfer.jl automated inference within other optimisation packages such as Optim.jl.",
+        description = "This example shows how to use RxInfer.jl automated inference within other optimisation packages such as Optim.jl.",
+        hidden = false
+    ),
+    (
+        path = "RTS vs BIFM Smoothing.ipynb",
+        title = "RTS vs BIFM Smoothing",
+        description = "This example performs BIFM Kalman smoother on a factor graph using message passing and compares it with the RTS implementation.",
         hidden = false
     ),
     (
