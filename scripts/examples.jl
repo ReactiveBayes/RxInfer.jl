@@ -9,7 +9,7 @@ import Pkg; Pkg.activate(ExamplesFolder); Pkg.instantiate();
 using RxInfer, Plots, PyPlot, BenchmarkTools, ProgressMeter, Optim
 
 @info "Adding $(Sys.CPU_THREADS) workers"
-addprocs(Sys.CPU_THREADS, exeflags="--project=$(ExamplesFolder)")
+addprocs(min(Sys.CPU_THREADS, 4), exeflags="--project=$(ExamplesFolder)")
 
 const examples = RemoteChannel(() -> Channel(128)); # The number should be larger than number of examples
 const results  = RemoteChannel(() -> Channel(128));
@@ -79,6 +79,7 @@ function main()
     # We wait until we process all `remaining` examples
     # We record any failure in `isfailed` variable 
     while remaining > 0 
+        @info "Remaining $(remaining)"
         try 
             result = take!(results)
             pid    = result[:pid]
