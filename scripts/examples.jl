@@ -2,6 +2,9 @@ using Distributed
 
 const ExamplesFolder = joinpath(@__DIR__, "..", "examples")
 
+# Precompile packages on the main node
+using RxInfer, Plots, PyPlots, BenchmarkTools, ProgressMeter, Optim
+
 import Pkg; Pkg.activate(ExamplesFolder); Pkg.instantiate();
 
 addprocs(Sys.CPU_THREADS, exeflags="--project=$(ExamplesFolder)")
@@ -134,6 +137,9 @@ function main()
     # TODO: I suspect its some sort of artefact from `Distributed.jl`
     rm(joinpath(@__DIR__, "..", "docs", "src", "examples", "Manifest.toml"), force = true)
     rm(joinpath(@__DIR__, "..", "docs", "src", "examples", "Project.toml"), force = true)
+
+    close(examples)
+    close(results)
 
     @info "Finished."
 end
