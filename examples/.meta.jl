@@ -28,6 +28,12 @@ return [
         hidden = false
     ),
     (
+        path  = "Hidden Markov Model.ipynb",
+        title = "Ensemble Learning of a Hidden Markov Model",
+        description = "An example of structured variational Bayesian inference in Hidden Markov Model with unknown transition and observational matrices.",
+        hidden = false
+    ),
+    (
         path  = "Autoregressive model.ipynb", 
         title = "Autoregressive Model", 
         description = "An example of variational Bayesian Inference on full graph for Autoregressive model. Reference: [Albert Podusenko, Message Passing-Based Inference for Time-Varying Autoregressive Models](https://www.mdpi.com/1099-4300/23/6/683).",
