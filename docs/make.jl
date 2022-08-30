@@ -7,7 +7,7 @@ examplespath = joinpath(@__DIR__, "src", "examples")
 
 # TODO replace with .meta.jl
 Examples = map(filter((f) -> f != "overview.md", readdir(examplespath))) do example 
-    return "$example" => joinpath("examples", example)
+    return replace(example, ".md" => "") => joinpath("examples", example)
 end
 
 makedocs(;
