@@ -107,7 +107,7 @@ function main()
             write(f, replace(mdtext, "# $(title)" => "# [$(title)](@id $(id))"))
         end
 
-        write(io_overview, "- [$(title)](@ref $id): $description")
+        write(io_overview, "- [$(title)](@ref $id): $description\n")
 
         return nothing
     end
