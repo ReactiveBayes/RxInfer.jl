@@ -1,12 +1,12 @@
-export inference, InferenceResult, KeepEach, KeepLast
+export rxinference, inference, InferenceResult, KeepEach, KeepLast
 
 import ReactiveMP: israndom, isdata, isconst, isproxy, isanonymous
 import ReactiveMP: InfCountingReal
 
 import ProgressMeter
 
-obtain_marginal(variable::AbstractVariable)                   = getmarginal(variable)
-obtain_marginal(variables::AbstractArray{<:AbstractVariable}) = getmarginals(variables)
+obtain_marginal(variable::AbstractVariable, strategy = SkipInitial())                   = getmarginal(variable, strategy)
+obtain_marginal(variables::AbstractArray{<:AbstractVariable}, strategy = SkipInitial()) = getmarginals(variables, strategy)
 
 assign_marginal!(variables::AbstractArray{<:AbstractVariable}, marginals) = setmarginals!(variables, marginals)
 assign_marginal!(variable::AbstractVariable, marginal)                    = setmarginal!(variable, marginal)
@@ -467,6 +467,227 @@ function inference(;
         inference_invoke_callback(callbacks, :after_inference, fmodel)
 
         return InferenceResult(posterior_values, fe_values, fmodel, freturval)
+    catch error
+        __inference_process_error(error)
+    end
+end
+
+
+## WIP TODO
+
+mutable struct RxInferenceResult{P, F, M, R, S, T}
+    posteriors    :: P
+    free_energy   :: F
+    model         :: M
+    returnval     :: R
+    startcallback :: S
+    stopcallback  :: T
+end
+
+function rxinference(;
+    
+    model::ModelGenerator,
+    data,
+    initmarginals = nothing,
+    initmessages = nothing, 
+    redirect = nothing,
+    constraints = nothing,
+    meta = nothing,
+    options = nothing,
+    returnvars = nothing,
+    iterations = nothing,
+    free_energy = false,
+    free_energy_diagnostics = BetheFreeEnergyDefaultChecks,
+    showprogress = false,
+    autostart = true,
+    callbacks = nothing,
+    warn = true
+)
+    __inference_check_dicttype(:data, data)
+    __inference_check_dicttype(:initmarginals, initmarginals)
+    __inference_check_dicttype(:initmessages, initmessages)
+    __inference_check_dicttype(:redirect, redirect)
+
+    inference_invoke_callback(callbacks, :before_model_creation)
+    fmodel, freturval = create_model(model, constraints, meta, options)
+    inference_invoke_callback(callbacks, :after_model_creation, fmodel)
+    vardict = getvardict(fmodel)
+
+    # First what we do - we check if `returnvars` is nothing or one of the two possible values: `KeepEach` and `KeepLast`. 
+    # If so, we replace it with either `KeepEach` or `KeepLast` for each random and not-proxied variable in a model
+    if returnvars === nothing || returnvars === KeepEach() || returnvars === KeepLast()
+        # Checks if the first argument is `nothing`, in which case returns the second argument
+        returnoption = something(returnvars, iterations isa Number ? KeepEach() : KeepLast())
+        returnvars   = Dict(variable => returnoption for (variable, value) in pairs(vardict) if (israndom(value) && !isproxy(value)))
+    end
+
+    __inference_check_dicttype(:returnvars, returnvars)
+
+    # Use `__check_has_randomvar` to filter out unknown or non-random variables in the `returnvar` specification
+    __check_has_randomvar(vardict, variable) = begin
+        haskey_check   = haskey(vardict, variable)
+        israndom_check = haskey_check ? israndom(vardict[variable]) : false
+        if warn && !haskey_check
+            @warn "`returnvars` object has `$(variable)` specification, but model has no variable named `$(variable)`. The `$(variable)` specification is ignored. Use `warn = false` to suppress this warning."
+        elseif warn && haskey_check && !israndom_check
+            @warn "`returnvars` object has `$(variable)` specification, but model has no **random** variable named `$(variable)`. The `$(variable)` specification is ignored. Use `warn = false` to suppress this warning."
+        end
+        return haskey_check && israndom_check
+    end
+
+    # Second, for each random variable entry we create an actor
+    actors = Dict(
+        variable => make_actor(vardict[variable], value) for
+        (variable, value) in pairs(returnvars) if __check_has_randomvar(vardict, variable)
+    )
+
+    # At third, for each random variable entry we create a boolean flag to track their updates
+    updates = Dict(variable => MarginalHasBeenUpdated(false) for (variable, _) in pairs(actors))
+
+    try
+        on_marginal_update = inference_get_callback(callbacks, :on_marginal_update)
+        subscriptions      = Dict(variable => subscribe!(obtain_marginal(vardict[variable]) |> ensure_update(fmodel, on_marginal_update, variable, updates[variable]), actor) for (variable, actor) in pairs(actors))
+
+        fe_actor        = nothing
+        fe_subscription = VoidTeardown()
+
+        is_free_energy, S, T = unwrap_free_energy_option(free_energy)
+
+        if is_free_energy
+            fe_actor        = ScoreActor(S)
+            fe_objective    = BetheFreeEnergy(BetheFreeEnergyDefaultMarginalSkipStrategy, AsapScheduler(), free_energy_diagnostics)
+            fe_subscription = subscribe!(score(fmodel, T, fe_objective), fe_actor)
+        end
+
+        if !isnothing(initmarginals)
+            for (variable, initvalue) in pairs(initmarginals)
+                if haskey(vardict, variable)
+                    assign_marginal!(vardict[variable], initvalue)
+                elseif warn
+                    @warn "`initmarginals` object has `$(variable)` specification, but model has no variable named `$(variable)`. Use `warn = false` to suppress this warning."
+                end
+            end
+        end
+
+        if !isnothing(initmessages)
+            for (variable, initvalue) in pairs(initmessages)
+                if haskey(vardict, variable)
+                    assign_message!(vardict[variable], initvalue)
+                elseif warn
+                    @warn "`initmessages` object has `$(variable)` specification, but model has no variable named `$(variable)`. Use `warn = false` to suppress this warning."
+                end
+            end
+        end
+
+        if isnothing(data) || isempty(data)
+            error("Data is empty. Make sure you used `data` keyword argument with correct value.")
+        else
+            # TODO
+            # foreach(filter(pair -> isdata(last(pair)), pairs(vardict))) do pair
+            #     varname = first(pair)
+            #     haskey(data, varname) || error(
+            #         "Data entry `$(varname)` is missing in `data` argument. Double check `data = ($(varname) = ???, )`"
+            #     )
+            # end
+        end
+
+        inference_invoke_callback(callbacks, :before_inference, fmodel)
+
+        # fdata = filter(pairs(data)) do pair
+        #     hk      = haskey(vardict, first(pair))
+        #     is_data = hk ? isdata(vardict[first(pair)]) : false
+        #     if warn && (!hk || !is_data)
+        #         @warn "`data` object has `$(first(pair))` specification, but model has no data input named `$(first(pair))`. Use `warn = false` to suppress this warning."
+        #     end
+        #     return hk && is_data
+        # end
+
+        _iterations = something(iterations, 1)
+        _iterations isa Integer || error("`iterations` argument must be of type Integer or `nothing`")
+        _iterations > 0 || error("`iterations` arguments must be greater than zero")
+
+        # TODO Main stream 
+        mstream = combineLatest((
+            combineLatest(map((key) -> obtain_marginal(vardict[key], IncludeAll()), keys(redirect)), PushNew()),
+            combineLatest(values(data), PushNew())
+        ), PushNew())
+
+        mexecutor = (event) -> begin
+
+            redirected = event[1]
+            newdata = event[2]
+            
+            for iteration in 1:_iterations
+                inference_invoke_callback(callbacks, :before_iteration, fmodel, iteration)
+                inference_invoke_callback(callbacks, :before_data_update, fmodel, data)
+
+                # TODO
+                index = 1
+                for (key, fn) in pairs(redirect)
+                    q = redirected[index]
+                    unpacked = fn(q)
+                    for (_key, _value) in pairs(unpacked)
+                        update!(vardict[_key], _value)
+                    end
+                    index += 1
+                end
+
+                for (key, value) in zip(keys(data), newdata)
+                    update!(vardict[key], value)
+                end
+
+                inference_invoke_callback(callbacks, :after_data_update, fmodel, data)
+                not_updated = filter((pair) -> !last(pair).updated, updates)
+                if length(not_updated) !== 0
+                    names = join(keys(not_updated), ", ")
+                    error(
+                        """
+                        Variables [ $(names) ] have not been updated after a single inference iteration. 
+                        Therefore, make sure to initialize all required marginals and messages. See `initmarginals` and `initmessages` keyword arguments for the `inference` function. 
+                        """
+                    )
+                end
+                for (_, update_flag) in pairs(updates)
+                    __unset_updated!(update_flag)
+                end
+                inference_invoke_callback(callbacks, :after_iteration, fmodel, iteration)
+            end
+
+        end
+
+        msubscription = Ref{Any}(nothing)
+
+        stopcallback = () -> begin 
+            # unsubscribe!(msubscription[])
+
+            # for (_, subscription) in pairs(subscriptions)
+            #     unsubscribe!(subscription)
+            # end
+
+            # unsubscribe!(fe_subscription)
+        end
+
+        startcallback = () -> begin 
+            # TODO
+            msubscription[] = subscribe!(mstream, lambda(
+                on_next     = mexecutor,
+                on_error    = (e) -> error(e), 
+                on_complete = () -> nothing # stopcallback
+            ))
+        end
+
+        if autostart
+            startcallback()
+        end
+
+        # TODO
+        posterior_values = Dict(variable => actor for (variable, actor) in pairs(actors))
+        fe_values        = fe_actor !== nothing ? getvalues(fe_actor) : nothing
+
+        # TODO
+        # inference_invoke_callback(callbacks, :after_inference, fmodel)
+
+        return RxInferenceResult(posterior_values, fe_values, fmodel, freturval, startcallback, stopcallback)
     catch error
         __inference_process_error(error)
     end
