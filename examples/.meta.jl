@@ -72,7 +72,8 @@ return [
     (
         path = "Gamma Mixture.ipynb",
         title = "Gamma Mixture Model",
-        description = "This example implements one of the Gamma mixture experiments outlined in https://biaslab.github.io/publication/mp-based-inference-in-gmm/ ."
+        description = "This example implements one of the Gamma mixture experiments outlined in https://biaslab.github.io/publication/mp-based-inference-in-gmm/ .",
+        hidden = false
     ),
     (
         path = "Global Parameter Optimisation.ipynb",
