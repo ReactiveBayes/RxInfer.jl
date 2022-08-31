@@ -53,13 +53,21 @@ function Rocket.getvalues(actor::ScoreActor)
         return view(actor.score, (left+1):right)
     end
 
-    maxlength = maximum(length.(columns))
+    lengths = length.(columns)
+
+    if !all(==(first(lengths)), lengths)
+        error("Different number of VMP iterations performed")
+    end
+
+    maxlength = first(lengths)
 
     result = zeros(eltype(actor.score), maxlength)
 
     foreach(columns) do column
-        broadcast!(+, result, result, Iterators.flatten((column, Iterators.repeated(last(column), maxlength - length(column)))))
+        broadcast!(+, result, result, column)
     end
+
+    map!(Base.Fix2(/, maxlength), result, result)
 
     return result
 end

@@ -485,7 +485,6 @@ mutable struct RxInferenceResult{P, F, M, R, S, T}
 end
 
 function rxinference(;
-    
     model::ModelGenerator,
     data,
     initmarginals = nothing,
@@ -498,12 +497,11 @@ function rxinference(;
     iterations = nothing,
     free_energy = false,
     free_energy_diagnostics = BetheFreeEnergyDefaultChecks,
-    showprogress = false,
     autostart = true,
     callbacks = nothing,
     warn = true
 )
-    __inference_check_dicttype(:data, data)
+    # __inference_check_dicttype(:data, data) # TODO
     __inference_check_dicttype(:initmarginals, initmarginals)
     __inference_check_dicttype(:initmessages, initmessages)
     __inference_check_dicttype(:redirect, redirect)
@@ -545,8 +543,10 @@ function rxinference(;
     updates = Dict(variable => MarginalHasBeenUpdated(false) for (variable, _) in pairs(actors))
 
     try
+        tickscheduler = PendingScheduler()
+
         on_marginal_update = inference_get_callback(callbacks, :on_marginal_update)
-        subscriptions      = Dict(variable => subscribe!(obtain_marginal(vardict[variable]) |> ensure_update(fmodel, on_marginal_update, variable, updates[variable]), actor) for (variable, actor) in pairs(actors))
+        subscriptions      = Dict(variable => subscribe!(obtain_marginal(vardict[variable]) |> schedule_on(tickscheduler) |> ensure_update(fmodel, on_marginal_update, variable, updates[variable]), actor) for (variable, actor) in pairs(actors))
 
         fe_actor        = nothing
         fe_subscription = VoidTeardown()
@@ -579,101 +579,103 @@ function rxinference(;
             end
         end
 
-        if isnothing(data) || isempty(data)
-            error("Data is empty. Make sure you used `data` keyword argument with correct value.")
-        else
-            # TODO
-            # foreach(filter(pair -> isdata(last(pair)), pairs(vardict))) do pair
-            #     varname = first(pair)
-            #     haskey(data, varname) || error(
-            #         "Data entry `$(varname)` is missing in `data` argument. Double check `data = ($(varname) = ???, )`"
-            #     )
-            # end
-        end
-
         inference_invoke_callback(callbacks, :before_inference, fmodel)
-
-        # fdata = filter(pairs(data)) do pair
-        #     hk      = haskey(vardict, first(pair))
-        #     is_data = hk ? isdata(vardict[first(pair)]) : false
-        #     if warn && (!hk || !is_data)
-        #         @warn "`data` object has `$(first(pair))` specification, but model has no data input named `$(first(pair))`. Use `warn = false` to suppress this warning."
-        #     end
-        #     return hk && is_data
-        # end
 
         _iterations = something(iterations, 1)
         _iterations isa Integer || error("`iterations` argument must be of type Integer or `nothing`")
         _iterations > 0 || error("`iterations` arguments must be greater than zero")
 
-        # TODO Main stream 
-        mstream = combineLatest((
-            combineLatest(map((key) -> obtain_marginal(vardict[key], IncludeAll()), keys(redirect)), PushNew()),
-            combineLatest(values(data), PushNew())
-        ), PushNew())
+        # This is the `redirect` stream, that listens for all marginals that were defined in the `redirect` keyword argument
+        rstream = combineLatest(map((key) -> obtain_marginal(vardict[key], IncludeAll()), keys(redirect)), PushNew()) |> schedule_on(tickscheduler)
 
+        # This is the main stream of the inference procedure. It combines both `redirect` stream and `data` stream
+        mstream = combineLatest((rstream, data), PushNew())
+
+        # This is the `main` executor of the inference procedure
+        # It listens both for new data and new updated posteriors and is supposed to run indefinitely
         mexecutor = (event) -> begin
 
             redirected = event[1]
+
+            # `newdata` must be in a form of a `NamedTuple` here with keys representing certain datavar's
             newdata = event[2]
+
+            # TODO
+            # __inference_check_dicttype(:data, newdata)
             
             for iteration in 1:_iterations
-                inference_invoke_callback(callbacks, :before_iteration, fmodel, iteration)
-                inference_invoke_callback(callbacks, :before_data_update, fmodel, data)
+                # inference_invoke_callback(callbacks, :before_iteration, fmodel, iteration)
+                # inference_invoke_callback(callbacks, :before_data_update, fmodel, data)
+
+                for ((_, callback), update) in zip(pairs(redirect), redirected)
+                    for (key, value) in pairs(callback(update))
+                        # TODO check existence??
+                        update!(vardict[key], value)
+                    end
+                end
+
+                for (key, value) in pairs(newdata)
+                    hasdv = hasdatavar(fmodel, key)
+                    if warn && !hasdv
+                        @warn "`data` event has entry for `$(first(pair))`, but model has no data input named `$(first(pair))`. Use `warn = false` to suppress this warning."
+                    end
+                    if hasdv
+                        update!(vardict[key], value)
+                    end
+                end
 
                 # TODO
-                index = 1
-                for (key, fn) in pairs(redirect)
-                    q = redirected[index]
-                    unpacked = fn(q)
-                    for (_key, _value) in pairs(unpacked)
-                        update!(vardict[_key], _value)
-                    end
-                    index += 1
-                end
+                # inference_invoke_callback(callbacks, :after_data_update, fmodel, data)
+                # inference_invoke_callback(callbacks, :after_iteration, fmodel, iteration)
+            end
 
-                for (key, value) in zip(keys(data), newdata)
-                    update!(vardict[key], value)
-                end
+            # `release!` on `fe_actor` ensures that free energy sumed up between iterations correctly
+            if is_free_energy
+                release!(fe_actor)
+            end
+            
+            # On this `release!` call we update our priors for the next step and also set `updated` flags
+            release!(tickscheduler)
 
-                inference_invoke_callback(callbacks, :after_data_update, fmodel, data)
-                not_updated = filter((pair) -> !last(pair).updated, updates)
-                if length(not_updated) !== 0
-                    names = join(keys(not_updated), ", ")
-                    error(
-                        """
-                        Variables [ $(names) ] have not been updated after a single inference iteration. 
-                        Therefore, make sure to initialize all required marginals and messages. See `initmarginals` and `initmessages` keyword arguments for the `inference` function. 
-                        """
-                    )
-                end
-                for (_, update_flag) in pairs(updates)
-                    __unset_updated!(update_flag)
-                end
-                inference_invoke_callback(callbacks, :after_iteration, fmodel, iteration)
+            not_updated = filter((pair) -> !last(pair).updated, updates)
+
+            if length(not_updated) !== 0
+                names = join(keys(not_updated), ", ")
+                error(
+                    """
+                    Variables [ $(names) ] have not been updated after an update event. 
+                    Therefore, make sure to initialize all required marginals and messages. See `initmarginals` and `initmessages` keyword arguments for the `inference` function. 
+                    """
+                )
+            end
+
+            for (_, update_flag) in pairs(updates)
+                __unset_updated!(update_flag)
             end
 
         end
 
-        msubscription = Ref{Any}(nothing)
+        msubscription = Ref{Any}(voidTeardown)
 
         stopcallback = () -> begin 
-            # unsubscribe!(msubscription[])
+            unsubscribe!(msubscription[])
 
-            # for (_, subscription) in pairs(subscriptions)
-            #     unsubscribe!(subscription)
-            # end
+            for (_, subscription) in pairs(subscriptions)
+                unsubscribe!(subscription)
+            end
 
-            # unsubscribe!(fe_subscription)
+            unsubscribe!(fe_subscription)
         end
 
         startcallback = () -> begin 
-            # TODO
+            
             msubscription[] = subscribe!(mstream, lambda(
                 on_next     = mexecutor,
                 on_error    = (e) -> error(e), 
                 on_complete = () -> nothing # stopcallback
             ))
+
+            release!(tickscheduler)
         end
 
         if autostart
@@ -682,7 +684,7 @@ function rxinference(;
 
         # TODO
         posterior_values = Dict(variable => actor for (variable, actor) in pairs(actors))
-        fe_values        = fe_actor !== nothing ? getvalues(fe_actor) : nothing
+        fe_values        = fe_actor
 
         # TODO
         # inference_invoke_callback(callbacks, :after_inference, fmodel)
