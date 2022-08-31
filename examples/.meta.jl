@@ -70,6 +70,18 @@ return [
         hidden = false
     ),
     (
+        path = "Handling Missing Data.ipynb",
+        title = "Handling Missing Data",
+        description = "This example shows how to extend the set of builtin rules to support `missing` observations.",
+        hidden = false
+    ),
+    (
+        path = "Custom nonlinear node.ipynb",
+        title = "Custom Nonlinear Node",
+        description = "In this example we create a non-conjugate model and use a nonlinear link function between variables. We show how to extend the functionality of `RxInfer` and to create a custom factor node with arbitrary message passing update rules.",
+        hidden = false
+    ),
+    (
         path = "RTS vs BIFM Smoothing.ipynb",
         title = "RTS vs BIFM Smoothing",
         description = "This example performs BIFM Kalman smoother on a factor graph using message passing and compares it with the RTS implementation.",

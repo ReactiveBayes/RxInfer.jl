@@ -41,15 +41,15 @@ ReactiveMP.default_prod_constraint(::SampleListFormConstraint) = ProdGeneric()
 
 ReactiveMP.make_form_constraint(::Type{SampleList}, args...; kwargs...) = SampleListFormConstraint(args...; kwargs...)
 
-__approximate(constraint::SampleListFormConstraint{N, R, S, M}, left, right) where {N, R, S <: LeftProposal, M}  = approximate_prod_with_sample_list(constraint.rng, constraint.method, left, right, N)
-__approximate(constraint::SampleListFormConstraint{N, R, S, M}, left, right) where {N, R, S <: RightProposal, M} = approximate_prod_with_sample_list(constraint.rng, constraint.method, right, left, N)
+__approximate(constraint::SampleListFormConstraint{N, R, S, M}, left, right) where {N, R, S <: LeftProposal, M}  = ReactiveMP.approximate_prod_with_sample_list(constraint.rng, constraint.method, left, right, N)
+__approximate(constraint::SampleListFormConstraint{N, R, S, M}, left, right) where {N, R, S <: RightProposal, M} = ReactiveMP.approximate_prod_with_sample_list(constraint.rng, constraint.method, right, left, N)
 
 function __approximate(constraint::SampleListFormConstraint{N, R, S, M}, left::ContinuousUnivariateLogPdf, right) where {N, R, S <: AutoProposal, M}
-    return approximate_prod_with_sample_list(constraint.rng, constraint.method, right, left, N)
+    return ReactiveMP.approximate_prod_with_sample_list(constraint.rng, constraint.method, right, left, N)
 end
 
 function __approximate(constraint::SampleListFormConstraint{N, R, S, M}, left, right::ContinuousUnivariateLogPdf) where {N, R, S <: AutoProposal, M}
-    return approximate_prod_with_sample_list(constraint.rng, constraint.method, left, right, N)
+    return ReactiveMP.approximate_prod_with_sample_list(constraint.rng, constraint.method, left, right, N)
 end
 
 function __approximate(constraint::SampleListFormConstraint{N, R, S, M}, left::ContinuousUnivariateLogPdf, right::ContinuousUnivariateLogPdf) where {N, R, S <: AutoProposal, M} 
@@ -61,7 +61,7 @@ function ReactiveMP.constrain_form(::SampleListFormConstraint, something)
 end
 
 function ReactiveMP.constrain_form(constraint::SampleListFormConstraint, product::DistProduct)
-    left  = ReactiveMP.constrain_form(constraint, getleft(product))
-    right = ReactiveMP.constrain_form(constraint, getright(product))
+    left  = ReactiveMP.constrain_form(constraint, ReactiveMP.getleft(product))
+    right = ReactiveMP.constrain_form(constraint, ReactiveMP.getright(product))
     return __approximate(constraint, left, right)
 end
