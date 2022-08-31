@@ -1,5 +1,5 @@
 
-using GraphPPL, TupleTools
+using GraphPPL, TupleTools, MacroTools
 
 import MacroTools: @capture, postwalk, prewalk, walk
 

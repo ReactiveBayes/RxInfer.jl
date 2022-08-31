@@ -58,16 +58,33 @@ return [
         hidden = false
     ),
     (
+        path = "Gaussian Mixture Univariate.ipynb",
+        title = "Univariate Gaussian Mixture Model",
+        description = "This example implements variational Bayesian inference in a univariate Gaussian mixture model with mean-field assumption.",
+        hidden = false
+    ),
+    (
         path = "Gaussian Mixtures Multivariate.ipynb",
         title = "Multivariate Gaussian Mixture Model",
         description = "This example implements variational Bayesian inference in a multivariate Gaussian mixture model with mean-field assumption.",
         hidden = false,
     ),
     (
+        path = "Gamma Mixture.ipynb",
+        title = "Gamma Mixture Model",
+        description = "This example implements one of the Gamma mixture experiments outlined in https://biaslab.github.io/publication/mp-based-inference-in-gmm/ ."
+    ),
+    (
         path = "Global Parameter Optimisation.ipynb",
         title = "Global Parameter Optimisation",
         description = "This example shows how to use RxInfer.jl automated inference within other optimisation packages such as Optim.jl.",
         hidden = false
+    ),
+    (
+        path = "Normalizing Flow Tutorial.ipynb",
+        title = "A tutorial to Normalizing flows",
+        description = "An example of variational Bayesian Inference with Normalizing Flows. Reference: Bard van Erp, Hybrid Inference with Invertible Neural Networks in Factor Graphs",
+        hidden = false  
     ),
     (
         path = "Handling Missing Data.ipynb",
@@ -79,6 +96,12 @@ return [
         path = "Custom nonlinear node.ipynb",
         title = "Custom Nonlinear Node",
         description = "In this example we create a non-conjugate model and use a nonlinear link function between variables. We show how to extend the functionality of `RxInfer` and to create a custom factor node with arbitrary message passing update rules.",
+        hidden = false
+    ),
+    (
+        path = "Probit model (EP).ipynb",
+        title = "Probit model (EP)",
+        description = "In this demo we illustrate EP in the context of state-estimation in a linear state-space model that combines a Gaussian state-evolution model with a discrete observation model.",
         hidden = false
     ),
     (
