@@ -52,6 +52,12 @@ return [
         hidden = false
     ),
     (
+        path = "Identification Problem.ipynb",
+        title = "System Identification Problem",
+        description = "This example attempts to identify and separate two combined signals.",
+        hidden = false
+    ),
+    (
         path = "Gaussian Mixtures Multivariate.ipynb",
         title = "Multivariate Gaussian Mixture Model",
         description = "This example implements variational Bayesian inference in a multivariate Gaussian mixture model with mean-field assumption.",
