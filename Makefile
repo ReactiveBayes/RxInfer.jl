@@ -17,8 +17,8 @@ format: scripts_init ## Code formating run
 examples_init:
 	julia --startup-file=no --project=examples/ -e 'using Pkg; Pkg.instantiate(); Pkg.precompile(); using Plots; using PyPlot;'
 
-examples: scripts_init examples_init ## Precompile examples and put them in the `docs/src/examples` folder
-	julia --startup-file=no --project=scripts/ scripts/examples.jl
+examples: scripts_init examples_init ## Precompile examples and put them in the `docs/src/examples` folder (use specific="<pattern>" to compile a specific example)
+	julia --startup-file=no --project=scripts/ scripts/examples.jl $(specific)
 
 .PHONY: docs
 
@@ -30,8 +30,8 @@ docs: doc_init ## Generate documentation
 
 .PHONY: test
 
-test: ## Run tests 
-	julia --startup-file=no -e 'import Pkg; Pkg.activate("."); Pkg.test()'	
+test: ## Run tests (use testset="folder1:test1 folder2:test2" argument to run reduced testset)
+	julia -e 'import Pkg; Pkg.activate("."); Pkg.test(test_args = split("$(testset)") .|> string)'	
 
 clean: ## Clean documentation build, precompiled examples, benchmark output from tests
 	rm -rf docs/src/examples

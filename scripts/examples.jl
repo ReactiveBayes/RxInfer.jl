@@ -8,51 +8,60 @@ import Pkg; Pkg.activate(ExamplesFolder); Pkg.instantiate();
 @info "Precompile packages on the main worker"
 using RxInfer, Plots, PyPlot, BenchmarkTools, ProgressMeter, Optim
 
-@info "Adding $(Sys.CPU_THREADS) workers"
+@info "Adding $(min(Sys.CPU_THREADS, 4)) workers"
 addprocs(min(Sys.CPU_THREADS, 4), exeflags="--project=$(ExamplesFolder)")
-
-const examples = RemoteChannel(() -> Channel(128)); # The number should be larger than number of examples
-const results  = RemoteChannel(() -> Channel(128));
 
 @everywhere using Weave
 @everywhere using RxInfer
 
-# Each worker listens to the `examples` channel and takes available job as soon as possibles
-@everywhere function process_example(examples, results) 
-    pid = myid()
-    while true
-        try 
-            example = take!(examples)
-            path = example[:path]
-        
-            @info "Started job: `$(path)` on worker `$(pid)`"
+struct ExamplesRunner 
+    specific_example
+    runner_tasks
+    workerpool
+    jobschannel
+    resultschannel
+    exschannel
 
-            ipath  = joinpath(@__DIR__, "..", "examples", path)
-            opath  = joinpath(@__DIR__, "..", "docs", "src", "examples")
-            fpath  = joinpath("..", "assets", "examples") # relative to `opath`
-            weaved = weave(ipath, out_path = opath, doctype = "github", fig_path = fpath)
-
-            put!(results, (pid = pid, error = nothing, path = path, weaved = weaved, example = example))
-        catch e 
-            @error e
-            put!(results, (pid = pid, error = e, path = path, weaved = nothing, example = example))
-        end
+    function ExamplesRunner(ARGS)
+        specific_example = isempty(ARGS) ? nothing : first(ARGS)
+        runner_tasks = []
+        jobschannel = RemoteChannel(() -> Channel(Inf), myid()) # Channel for jobs
+        resultschannel = RemoteChannel(() -> Channel(Inf), myid()) # Channel for results
+        exschannel = RemoteChannel(() -> Channel(Inf), myid()) # Channel for exceptions
+        return new(specific_example, runner_tasks, 2:nprocs(), jobschannel, resultschannel, exschannel)
     end
 end
 
-function main()
+function Base.run(examplesrunner::ExamplesRunner)
 
     @info "Reading .meta.jl"
 
-    jobs      = include(joinpath(@__DIR__, "..", "examples", ".meta.jl"))
-    remaining = length(jobs)
+    examples = include(joinpath(@__DIR__, "..", "examples", ".meta.jl"))
+
+    if !isnothing(examplesrunner.specific_example)
+        @info "Running specific example matching the following pattern: $(examplesrunner.specific_example)"
+        examples = filter(examples) do example
+            return occursin(lowercase(examplesrunner.specific_example), lowercase(example[:path])) || 
+                occursin(lowercase(examplesrunner.specific_example), lowercase(example[:title]))
+        end
+    end
+
+    if isempty(examples)
+        @error "Examples list is empty"
+        exit(-1)
+    end
+
+    foreach(examples) do example
+        @info "Adding $(example[:path]) to the jobs list"
+        put!(examplesrunner.jobschannel, example)
+    end
+
+    @info "Preparing `examples` environment"
 
     efolder = joinpath(@__DIR__, "..", "examples")
     dfolder = joinpath(@__DIR__, "..", "docs", "src", "examples")
 
     mkpath(dfolder)
-
-    @info "Preparing `examples` environment"
 
     # `Weave` executes notebooks in the `dst` folder so we need to copy there our environment
     cp(joinpath(efolder, "Manifest.toml"), joinpath(dfolder, "Manifest.toml"), force = true)
@@ -67,96 +76,140 @@ function main()
         write(f, manifest)
     end
 
-    foreach((job) -> @info("Adding $(job[:title]) at $(job[:path])."), jobs) 
-    foreach((job) -> put!(examples, job), jobs)
+    foreach(examplesrunner.workerpool) do worker
+        # For each worker we create a `nothing` token in the `jobschannel`
+        # This token indicates that there are no other jobs left
+        put!(examplesrunner.jobschannel, nothing)
+        # We create a remote call for another Julia process to execute the example
+        task = remotecall(worker, examplesrunner.jobschannel, examplesrunner.resultschannel, examplesrunner.exschannel) do jobschannel, resultschannel, exschannel
+            pid = myid()
+            finish = false
+            while !finish 
+                # Each worker takes examples sequentially from the shared examples pool 
+                example = take!(jobschannel)
+                if isnothing(example)
+                    finish = true
+                else
+                    try 
+                        path = example[:path]
+                    
+                        @info "Started job: `$(path)` on worker `$(pid)`"
 
-    for p in workers() # Start tasks on the workers to process requests in parallel
-        remote_do(process_example, p, examples, results)
-    end
+                        ipath  = joinpath(@__DIR__, "..", "examples", path)
+                        opath  = joinpath(@__DIR__, "..", "docs", "src", "examples")
+                        fpath  = joinpath("..", "assets", "examples") # relative to `opath`
 
-    isfailed = false
+                        ENV["GKSwstype"]="nul" # Fix for plots
 
-    # We wait until we process all `remaining` examples
-    # We record any failure in `isfailed` variable 
-    while remaining > 0 
-        @info "Remaining $(remaining)"
-        try 
-            result = take!(results)
-            pid    = result[:pid]
-            error  = result[:error]
-            path   = result[:path]
+                        weaved = weave(ipath, out_path = opath, doctype = "github", fig_path = fpath)
 
-            if isnothing(error)
-                @info "Finished `$(path)` on worker `$(pid)`."
-            else
-                @info "Failed to process `$(path) on worker `$(pid)`: $(error)."
+                        put!(resultschannel, (pid = pid, path = path, weaved = weaved, example = example))
+                    catch iexception 
+                        put!(exschannel, iexception)
+                    end
+                end
             end
-        catch e
-            isfailed = true
-            @error e
         end
-        remaining -= 1
+        # We save the created task for later syncronization
+        push!(examplesrunner.runner_tasks, task)
     end
 
-    if isfailed
-        @error "Examples compilation failed."
-        error(-1)
+    # For each remotelly called task we `fetch` its result or save an exception
+    foreach(fetch, examplesrunner.runner_tasks)
+
+    # If exception are not empty we notify the user and force-fail
+    if isready(examplesrunner.exschannel)
+        @error "Tests have failed with the following exceptions: "
+        while isready(examplesrunner.exschannel)
+            exception = take!(examplesrunner.exschannel)
+            showerror(stderr, exception)
+            println(stderr, "\n", "="^80)
+        end
+        exit(-1)
     end
 
-    # If not failed we generate overview report and fix fig links
-    io_overview = IOBuffer()
+    results = []
 
-    @info "Generating overview"
+    # At last we check the output of each example
+    if isready(examplesrunner.resultschannel)
+        @info "Reading results"
 
-    write(io_overview, "# [Examples overview](@id examples-overview)\n\n")
-    write(io_overview, "This section contains a set of examples for Bayesian Inference with `ReactiveMP` package in various probabilistic models.\n\n")
-    write(io_overview, "!!! note\n")
-    write(io_overview, "\tAll examples have been pre-generated automatically from the [`examples/`](https://github.com/biaslab/RxInfer.jl/tree/main/examples) folder at GitHub repository.\n\n")
-
-    foreach(jobs) do job
-        mdname      = replace(job[:path], ".ipynb" => ".md")
-        mdpath      = joinpath(@__DIR__, "..", "docs", "src", "examples", mdname)
-        mdtext      = read(mdpath, String)
-
-        # Check if example failed with an error
-        # TODO: we might have better heurstic here? But I couldn't find a way to tell `Weave.jl` if an error has occured
-        # TODO: try to improve this later
-        if !isnothing(findnext("```\nError:", mdtext, 1))
-            @error "`Error` block found in the `$(mdpath)` example. Check the logs for more details."
-            error(-1)
+        while isready(examplesrunner.resultschannel)
+            result = take!(examplesrunner.resultschannel)
+            pid    = result[:pid]
+            path   = result[:path]
+            @info "Finished `$(path)` on worker `$(pid)`."
+            push!(results, result)
         end
 
-        # We simply remove pre-generated `.md` file if it has been marked as hidden
-        if job[:hidden]
-            @info "Skipping example $(job[:title]) as it has been marked as hidden"
-            rm(mdpath, force = true)
+    else 
+        @error "No example have been generated"
+        exit(-1)
+    end
+
+    close(examplesrunner.exschannel)
+    close(examplesrunner.jobschannel)
+    close(examplesrunner.resultschannel)
+
+    if isnothing(examplesrunner.specific_example)
+
+        # If not failed we generate overview report and fix fig links
+        io_overview = IOBuffer()
+
+        @info "Generating overview"
+
+        write(io_overview, "# [Examples overview](@id examples-overview)\n\n")
+        write(io_overview, "This section contains a set of examples for Bayesian Inference with `ReactiveMP` package in various probabilistic models.\n\n")
+        write(io_overview, "!!! note\n")
+        write(io_overview, "\tAll examples have been pre-generated automatically from the [`examples/`](https://github.com/biaslab/RxInfer.jl/tree/main/examples) folder at GitHub repository.\n\n")
+
+        foreach(examples) do example
+            mdname      = replace(example[:path], ".ipynb" => ".md")
+            mdpath      = joinpath(@__DIR__, "..", "docs", "src", "examples", mdname)
+            mdtext      = read(mdpath, String)
+
+            # Check if example failed with an error
+            # TODO: we might have better heurstic here? But I couldn't find a way to tell `Weave.jl` if an error has occured
+            # TODO: try to improve this later
+            if !isnothing(findnext("```\nError:", mdtext, 1))
+                @error "`Error` block found in the `$(mdpath)` example. Check the logs for more details."
+                error(-1)
+            end
+
+            # We simply remove pre-generated `.md` file if it has been marked as hidden
+            if example[:hidden]
+                @info "Skipping example $(example[:title]) as it has been marked as hidden"
+                rm(mdpath, force = true)
+                return nothing
+            end
+
+            title       = example[:title]
+            description = example[:description]
+            id          = string("examples-", lowercase(join(split(example[:title]), "-")))
+
+            if isnothing(findnext("# $(title)", mdtext, 1))
+                @error "Could not find cell `# $(title)` in the `$(mdpath)`"
+                error(-1)
+            end
+
+            open(mdpath, "w") do f
+                # In every examples we replace title with its `@id` equivalent, such that 
+                # `# Super cool title` becomes `[# Super cool title](@id examples-super-cool-title)`
+                fixid  = replace(mdtext, "# $(title)" => "# [$(title)](@id $(id))")
+                output = string("This example has been auto-generated from the [`examples/`](https://github.com/biaslab/RxInfer.jl/tree/main/examples) folder at GitHub repository.\n\n", fixid)
+                write(f, output)
+            end
+
+            write(io_overview, "- [$(title)](@ref $id): $description\n")
+
             return nothing
         end
 
-        title       = job[:title]
-        description = job[:description]
-        id          = string("examples-", lowercase(join(split(job[:title]), "-")))
-
-        if isnothing(findnext("# $(title)", mdtext, 1))
-            @error "Could not find cell `# $(title)` in the `$(mdpath)`"
-            error(-1)
+        open(joinpath(@__DIR__, "..", "docs", "src", "examples", "Overview.md"), "w") do f
+            write(f, String(take!(io_overview)))
         end
-
-        open(mdpath, "w") do f
-            # In every examples we replace title with its `@id` equivalent, such that 
-            # `# Super cool title` becomes `[# Super cool title](@id examples-super-cool-title)`
-            fixid  = replace(mdtext, "# $(title)" => "# [$(title)](@id $(id))")
-            output = string("This example has been auto-generated from the [`examples/`](https://github.com/biaslab/RxInfer.jl/tree/main/examples) folder at GitHub repository.\n\n", fixid)
-            write(f, output)
-        end
-
-        write(io_overview, "- [$(title)](@ref $id): $description\n")
-
-        return nothing
-    end
-
-    open(joinpath(@__DIR__, "..", "docs", "src", "examples", "Overview.md"), "w") do f
-        write(f, String(take!(io_overview)))
+    else
+        @info "Skip overview generation for a specific example"
     end
 
     # `Weave` executes notebooks in the `dst` folder so we need to copy there our environment (and remove it)
@@ -166,4 +219,6 @@ function main()
     @info "Finished."
 end
 
-main()
+const runner = ExamplesRunner(ARGS)
+
+run(runner)
