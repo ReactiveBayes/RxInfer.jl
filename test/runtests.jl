@@ -213,6 +213,7 @@ end
     addtests(testrunner, "constraints/form/test_form_point_mass.jl")
 
     addtests(testrunner, "test_model.jl")
+    addtests(testrunner, "test_inference.jl")
 
     addtests(testrunner, "models/aliases/test_aliases_binary.jl")
     addtests(testrunner, "models/aliases/test_aliases_normal.jl")

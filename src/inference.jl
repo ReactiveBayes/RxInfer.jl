@@ -134,8 +134,7 @@ end
 __inference_invoke_callback(callback, args...)  = callback(args...)
 __inference_invoke_callback(::Nothing, args...) = begin end
 
-inference_invoke_callback(callbacks, name, args...) =
-    __inference_invoke_callback(inference_get_callback(callbacks, name), args...)
+inference_invoke_callback(callbacks, name, args...) = __inference_invoke_callback(inference_get_callback(callbacks, name), args...)
 inference_invoke_callback(::Nothing, name, args...) = begin end
 
 inference_get_callback(callbacks, name) = get(() -> nothing, callbacks, name)
@@ -473,15 +472,170 @@ function inference(;
 end
 
 
-## WIP TODO
+"""
+    RxInferenceEngine
 
-mutable struct RxInferenceResult{P, F, M, R, S, T}
-    posteriors    :: P
-    free_energy   :: F
-    model         :: M
-    returnval     :: R
-    startcallback :: S
-    stopcallback  :: T
+This is the main heart of the reactive inference procedure implemented in the `rxinference` function.
+"""
+mutable struct RxInferenceEngine{E, N, D, P, H, T, U, S, R, I, FA, FS, FO, M, V, C}
+    datastream :: D
+
+    posteriors        :: P
+    posteriorshistory :: H
+
+    tickscheduler :: T
+
+    datavars    :: NTuple{N, DataVariable}
+    updateflags :: U
+
+    mainsubscription    :: S
+    retvarsubscriptions :: R
+
+    iterations :: I
+
+    # redirect marginals
+    redirectvars         :: NTuple{N, DataVariable}
+    redirectupdate       :: NTuple{N, Marginal}
+    redirectsubscription :: Teardown
+
+    # free energy related
+    fe_actor        :: FA
+    fe_source       :: FS
+    fe_objective    :: FO
+    fe_subscription :: Teardown
+
+    # 
+    model     :: M
+    returnval :: V
+
+    callbacks :: C
+
+    # utility
+    is_running :: Bool
+end
+
+function start(engine::RxInferenceEngine{T})
+
+    if engine.is_running
+        @warn "Engine is already running. Cannot start a single engine twice."
+        return nothing
+    end
+
+    _eventexecutor = RxInferenceEventExecutor(T, engine)
+    _ticksheduler  = engine.tickscheduler
+    _callbacks     = engine.callbacks
+
+    on_marginal_update  = inference_get_callback(_callbacks, :on_marginal_update)
+    retvarsubscriptions = Dict(variable => subscribe!(obtain_marginal(vardict[variable]) |> schedule_on(_ticksheduler) |> ensure_update(fmodel, on_marginal_update, variable, updates[variable]), actor) for (variable, actor) in pairs(actors))
+
+    if !isnothing(engine.fe_actor)
+        engine.fe_subscription = subscribe!(engine.fe_source, engine.fe_actor)
+    end
+
+    engine.mainsubscription = subscribe!(engine.datastream, _eventexecutor)
+
+    release!(_ticksheduler)
+
+    engine.is_running = true
+
+    return nothing
+end
+
+function stop(engine::RxInferenceEngine)
+
+    if !engine.is_running
+        @warn "Engine is not running. Cannot stop an idle engine"
+        return nothing
+    end
+
+    unsubscribe!(engine.mainsubscription)
+    unsubscribe!(engine.retvarsubscriptions)
+    unsubscribe!(engine.redirectsubscription)
+    unsubscribe!(engine.fe_subscription)
+
+    engine.is_running = false
+
+    return nothing
+end
+
+import Rocket: Actor, on_next!, on_error!, on_complete!
+
+struct RxInferenceEventExecutor{T, E} <: Actor{T}
+    engine :: E
+
+    RxInferenceEventExecutor(::Type{T}, engine::E) where {T, E} = new{T, E}(engine)
+end
+
+function Rocket.on_next!(executor::RxInferenceEventExecutor{T}, event::T)
+    # This is the `main` executor of the inference procedure
+    # It listens new data and is supposed to run indefinitely
+
+    # `executor` is defined as mutable 
+    # we extract all variables before the loop so Julia does not extract them every time
+    _tickscheduler  = executor.tickscheduler
+    _iterations     = executor.iterations
+    _model          = executor.model
+    _datavars       = executor.datavars
+    _redirectvars   = executor.redirectvars
+    _redirectupdate = executor.redirectupdate
+    _updateflags    = executor.updateflags
+    _fe_actor       = executor.fe_actor
+    _callbacks      = executor.callbacks
+ 
+    # This loop correspond to the different VMP iterations
+    for iteration in 1:_iterations
+        inference_invoke_callback(_callbacks, :before_iteration, _model, iteration)
+        
+        # First we update all our priors with the fixed values from the `redirectupdate` field
+        inference_invoke_callback(_callbacks, :before_redirect_update, _model, rupdate)
+        for (rdatavar, rupdate) in zip(_redirectvars, _redirectupdate)
+            update!(rdatavar, rupdate)
+        end
+        inference_invoke_callback(_callbacks, :after_redirect_update, _model, rupdate)
+
+        # Second we pass our observations
+        inference_invoke_callback(_callbacks, :before_data_update, _model, event)
+        for (datavar, value) in zip(_datavars, values(newdata))
+            update!(datavar, value)
+        end
+        inference_invoke_callback(_callbacks, :after_data_update, _model, event)
+        
+        inference_invoke_callback(_callbacks, :after_iteration, _model, iteration)
+    end
+
+    # `release!` on `fe_actor` ensures that free energy sumed up between iterations correctly
+    if !isnothing(_fe_actor)
+        release!(_fe_actor)
+    end
+    
+    # On this `release!` call we update our priors for the next step and also set `updated` flags
+    release!(_tickscheduler)
+
+    not_updated = filter((pair) -> !last(pair).updated, _updateflags)
+
+    if any((v) -> !v.updated, values(_updateflags))
+        not_updated = filter((pair) -> !last(pair).updated, _updateflags)
+        names = join(keys(not_updated), ", ")
+        error(
+            """
+            Variables [ $(names) ] have not been updated after an update event. 
+            Therefore, make sure to initialize all required marginals and messages. See `initmarginals` and `initmessages` keyword arguments for the `inference` function. 
+            """
+        )
+    end
+
+    for update_flag in values(_updateflags)
+        __unset_updated!(update_flag)
+    end
+end
+
+function Rocket.on_error!(executor::RxInferenceEventExecutor, err)
+    error(err)
+end
+
+function Rocket.on_complete!(executor::RxInferenceEventExecutor)
+    # TODO completed?
+    return nothing
 end
 
 function rxinference(;
@@ -511,6 +665,8 @@ function rxinference(;
     inference_invoke_callback(callbacks, :after_model_creation, fmodel)
     vardict = getvardict(fmodel)
 
+    # TODO Do we need it??? maybe change to cachevars
+    # See belo too 
     # First what we do - we check if `returnvars` is nothing or one of the two possible values: `KeepEach` and `KeepLast`. 
     # If so, we replace it with either `KeepEach` or `KeepLast` for each random and not-proxied variable in a model
     if returnvars === nothing || returnvars === KeepEach() || returnvars === KeepLast()
@@ -540,23 +696,21 @@ function rxinference(;
     )
 
     # At third, for each random variable entry we create a boolean flag to track their updates
-    updates = Dict(variable => MarginalHasBeenUpdated(false) for (variable, _) in pairs(actors))
+    updateflags = Dict(variable => MarginalHasBeenUpdated(false) for (variable, _) in pairs(actors))
 
     try
         tickscheduler = PendingScheduler()
 
-        on_marginal_update = inference_get_callback(callbacks, :on_marginal_update)
-        subscriptions      = Dict(variable => subscribe!(obtain_marginal(vardict[variable]) |> schedule_on(tickscheduler) |> ensure_update(fmodel, on_marginal_update, variable, updates[variable]), actor) for (variable, actor) in pairs(actors))
-
-        fe_actor        = nothing
-        fe_subscription = VoidTeardown()
+        fe_actor     = nothing
+        fe_objective = nothing
+        fe_source    = nothing
 
         is_free_energy, S, T = unwrap_free_energy_option(free_energy)
 
         if is_free_energy
             fe_actor        = ScoreActor(S)
             fe_objective    = BetheFreeEnergy(BetheFreeEnergyDefaultMarginalSkipStrategy, AsapScheduler(), free_energy_diagnostics)
-            fe_subscription = subscribe!(score(fmodel, T, fe_objective), fe_actor)
+            fe_source       = score(fmodel, T, fe_objective)
         end
 
         if !isnothing(initmarginals)
@@ -579,75 +733,12 @@ function rxinference(;
             end
         end
 
-        inference_invoke_callback(callbacks, :before_inference, fmodel)
+        # TODO
+        # inference_invoke_callback(callbacks, :before_inference, fmodel)
 
         _iterations = something(iterations, 1)
         _iterations isa Integer || error("`iterations` argument must be of type Integer or `nothing`")
         _iterations > 0 || error("`iterations` arguments must be greater than zero")
-
-        # This is the `main` executor of the inference procedure
-        # It listens new data and is supposed to run indefinitely
-        mexecutor = (newdata) -> begin
-
-            # TODO
-            # __inference_check_dicttype(:data, newdata)
-
-            # TODO Probably very inefficient
-            redirected = map(keys(redirect)) do key
-                return redirect[key](Rocket.getrecent(obtain_marginal(vardict[key], IncludeAll())))
-            end
-            
-            for iteration in 1:_iterations
-                # inference_invoke_callback(callbacks, :before_iteration, fmodel, iteration)
-                # inference_invoke_callback(callbacks, :before_data_update, fmodel, data)
-
-                for (key, _redirect) in zip(keys(redirect), redirected)
-                    for (key, value) in pairs(_redirect)
-                        # TODO check existence??
-                        update!(vardict[key], value)
-                    end
-                end
-
-                for (key, value) in pairs(newdata)
-                    hasdv = hasdatavar(fmodel, key)
-                    if warn && !hasdv
-                        @warn "`data` event has entry for `$(first(pair))`, but model has no data input named `$(first(pair))`. Use `warn = false` to suppress this warning."
-                    end
-                    if hasdv
-                        update!(vardict[key], value)
-                    end
-                end
-
-                # TODO
-                # inference_invoke_callback(callbacks, :after_data_update, fmodel, data)
-                # inference_invoke_callback(callbacks, :after_iteration, fmodel, iteration)
-            end
-
-            # `release!` on `fe_actor` ensures that free energy sumed up between iterations correctly
-            if is_free_energy
-                release!(fe_actor)
-            end
-            
-            # On this `release!` call we update our priors for the next step and also set `updated` flags
-            release!(tickscheduler)
-
-            not_updated = filter((pair) -> !last(pair).updated, updates)
-
-            if length(not_updated) !== 0
-                names = join(keys(not_updated), ", ")
-                error(
-                    """
-                    Variables [ $(names) ] have not been updated after an update event. 
-                    Therefore, make sure to initialize all required marginals and messages. See `initmarginals` and `initmessages` keyword arguments for the `inference` function. 
-                    """
-                )
-            end
-
-            for (_, update_flag) in pairs(updates)
-                __unset_updated!(update_flag)
-            end
-
-        end
 
         msubscription = Ref{Any}(voidTeardown)
 
@@ -659,17 +750,6 @@ function rxinference(;
             end
 
             unsubscribe!(fe_subscription)
-        end
-
-        startcallback = () -> begin 
-            
-            msubscription[] = subscribe!(data, lambda(
-                on_next     = mexecutor,
-                on_error    = (e) -> error(e), 
-                on_complete = () -> nothing # stopcallback
-            ))
-
-            release!(tickscheduler)
         end
 
         if autostart
