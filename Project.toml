@@ -4,6 +4,7 @@ authors = ["Bagaev Dmitry <d.v.bagaev@tue.nl> and contributors"]
 version = "2.0.0"
 
 [deps]
+DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 DomainSets = "5b8099bc-c8ec-5219-889f-1d9e522a28bf"
 GraphPPL = "b3f8163a-e979-4e85-b43e-1f63d8c8b42c"
@@ -20,13 +21,10 @@ TupleTools = "9d95972d-f1c8-5527-a6e0-b4b365fa01f6"
 [compat]
 Distributions = "0.25"
 DomainSets = "0.5.2"
-GraphPPL = "2, 3"
 MacroTools = "0.5.6"
 Optim = "1.0.0"
 ProgressMeter = "1.0.0"
-ReactiveMP = "2, 3"
 Reexport = "1.2.0"
-Rocket = "1.4.0"
 TupleTools = "1.2.0"
 julia = "1.6"
 

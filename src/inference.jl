@@ -55,9 +55,24 @@ function __inference_process_error(err::StackOverflowError)
     rethrow(err) # Shows the original stack trace
 end
 
+
+__inference_check_itertype(::Symbol, ::Union{Nothing, Tuple, Vector}) = nothing
+
+function __inference_check_itertype(keyword::Symbol, ::T) where {T}
+    error(
+        """
+        Keyword argument `$(keyword)` expects either `Tuple` or `Vector` as an input, but a value of type `$(T)` has been used.
+        If you specify a `Tuple` with a single entry - make sure you put a trailing comma at then end, e.g. `(something, )`. 
+        Note: Julia's parser interprets `(something)` and (something, ) differently. 
+            The first expression simply ignores parenthesis around `something`. 
+            The second expression defines `Tuple`with `something` as a first (and the last) entry.
+        """
+    )
+end
+
 __inference_check_dicttype(::Symbol, ::Union{Nothing, NamedTuple, Dict}) = nothing
 
-function __inference_check_dicttype(keyword::Symbol, input::T) where {T}
+function __inference_check_dicttype(keyword::Symbol, ::T) where {T}
     error(
         """
         Keyword argument `$(keyword)` expects either `Dict` or `NamedTuple` as an input, but a value of type `$(T)` has been used.
@@ -68,6 +83,7 @@ function __inference_check_dicttype(keyword::Symbol, input::T) where {T}
         """
     )
 end
+
 ##
 
 """
@@ -477,7 +493,7 @@ end
 
 This is the main heart of the reactive inference procedure implemented in the `rxinference` function.
 """
-mutable struct RxInferenceEngine{E, N, D, P, H, T, U, S, R, I, FA, FS, FO, M, V, C}
+mutable struct RxInferenceEngine{E, N, K, D, P, H, T, U, S, R, I, FA, FS, FO, M, V, C}
     datastream :: D
 
     posteriors        :: P
@@ -494,8 +510,8 @@ mutable struct RxInferenceEngine{E, N, D, P, H, T, U, S, R, I, FA, FS, FO, M, V,
     iterations :: I
 
     # redirect marginals
-    redirectvars         :: NTuple{N, DataVariable}
-    redirectupdate       :: NTuple{N, Marginal}
+    redirectvars         :: NTuple{K, DataVariable}
+    redirectupdate       :: NTuple{K, Marginal}
     redirectsubscription :: Teardown
 
     # free energy related
@@ -629,14 +645,9 @@ function Rocket.on_next!(executor::RxInferenceEventExecutor{T}, event::T)
     end
 end
 
-function Rocket.on_error!(executor::RxInferenceEventExecutor, err)
-    error(err)
-end
-
-function Rocket.on_complete!(executor::RxInferenceEventExecutor)
-    # TODO completed?
-    return nothing
-end
+# TODO: do we need to add smth here?
+Rocket.on_error!(executor::RxInferenceEventExecutor, err) = __inference_process_error(err)
+Rocket.on_complete!(executor::RxInferenceEventExecutor)   = begin end
 
 function rxinference(;
     model::ModelGenerator,
@@ -648,6 +659,8 @@ function rxinference(;
     meta = nothing,
     options = nothing,
     returnvars = nothing,
+    historyvars = nothing,
+    keephistory = nothing,
     iterations = nothing,
     free_energy = false,
     free_energy_diagnostics = BetheFreeEnergyDefaultChecks,
@@ -665,106 +678,114 @@ function rxinference(;
     inference_invoke_callback(callbacks, :after_model_creation, fmodel)
     vardict = getvardict(fmodel)
 
-    # TODO Do we need it??? maybe change to cachevars
-    # See belo too 
-    # First what we do - we check if `returnvars` is nothing or one of the two possible values: `KeepEach` and `KeepLast`. 
-    # If so, we replace it with either `KeepEach` or `KeepLast` for each random and not-proxied variable in a model
-    if returnvars === nothing || returnvars === KeepEach() || returnvars === KeepLast()
-        # Checks if the first argument is `nothing`, in which case returns the second argument
-        returnoption = something(returnvars, iterations isa Number ? KeepEach() : KeepLast())
-        returnvars   = Dict(variable => returnoption for (variable, value) in pairs(vardict) if (israndom(value) && !isproxy(value)))
+    if !isnothing(initmarginals)
+        for (variable, initvalue) in pairs(initmarginals)
+            if haskey(vardict, variable)
+                assign_marginal!(vardict[variable], initvalue)
+            elseif warn
+                @warn "`initmarginals` object has `$(variable)` specification, but model has no variable named `$(variable)`. Use `warn = false` to suppress this warning."
+            end
+        end
     end
 
-    __inference_check_dicttype(:returnvars, returnvars)
+    if !isnothing(initmessages)
+        for (variable, initvalue) in pairs(initmessages)
+            if haskey(vardict, variable)
+                assign_message!(vardict[variable], initvalue)
+            elseif warn
+                @warn "`initmessages` object has `$(variable)` specification, but model has no variable named `$(variable)`. Use `warn = false` to suppress this warning."
+            end
+        end
+    end
 
-    # Use `__check_has_randomvar` to filter out unknown or non-random variables in the `returnvar` specification
-    __check_has_randomvar(vardict, variable) = begin
-        haskey_check   = haskey(vardict, variable)
+    _iterations = something(iterations, 1)
+    _iterations isa Integer || error("`iterations` argument must be of type Integer or `nothing`")
+    _iterations > 0 || error("`iterations` arguments must be greater than zero")
+
+    # We check if `returnvars` argument is empty, in which case we return names of all random (non-proxy) variables in the model
+    if isnothing(returnvars)
+        returnvars = [ name(variable) for (variable, value) in pairs(vardict) if (israndom(value) && !isproxy(value)) ]
+    end
+
+    
+    __inference_check_itertype(:returnvars, returnvars)
+    eltype(returnvars) === Symbol || error("`returnvars` must contain a list of symbols")
+
+    _keephistory = something(keephistory, 0)
+    _keephistory isa Integer || error("`keephistory` argument must be of type Integer or `nothing`")
+    _keephistory >= 0 || error("`keephistory` arguments must be greater than or equal to zero")
+
+    # `rxinference` by default does not keep track of marginals updates history
+    # If user specifies `keephistory` keyword argument
+    if _keephistory > 0
+        if isnothing(historyvars)
+            # First what we do - we check if `historyvars` is nothing 
+            # In which case we mirror the `returnvars` specication and use either `KeepLast()` or `KeepEach` (depending on the iterations spec)
+            historyoption = _iterations > 1 ? KeepEach() : KeepLast()
+            historyvars   = Dict(vardict[name] => historyoption for name in returnvars)
+        elseif historyvars === KeepEach() || historyvars === KeepLast()
+            # Second we check if it is one of the two possible global values: `KeepEach` and `KeepLast`. 
+            # If so, we replace it with either `KeepEach` or `KeepLast` for each random and not-proxied variable in a model
+            historyvars = Dict(variable => historyvars for (variable, value) in pairs(vardict) if (israndom(value) && !isproxy(value)))
+        end
+    end
+
+    __inference_check_dicttype(:historyvars, historyvars)
+
+    # Use `__check_has_randomvar` to filter out unknown or non-random variables in the `returnvars` and `historyvars` specification
+    __check_has_randomvar(object, vardict, key) = begin
+        haskey_check   = haskey(vardict, key)
         israndom_check = haskey_check ? israndom(vardict[variable]) : false
         if warn && !haskey_check
-            @warn "`returnvars` object has `$(variable)` specification, but model has no variable named `$(variable)`. The `$(variable)` specification is ignored. Use `warn = false` to suppress this warning."
+            @warn "`$(object)` object has `$(key)` specification, but model has no variable named `$(key)`. The `$(key)` specification is ignored. Use `warn = false` to suppress this warning."
         elseif warn && haskey_check && !israndom_check
-            @warn "`returnvars` object has `$(variable)` specification, but model has no **random** variable named `$(variable)`. The `$(variable)` specification is ignored. Use `warn = false` to suppress this warning."
+            @warn "`$(object)` object has `$(key)` specification, but model has no **random** variable named `$(key)`. The `$(key)` specification is ignored. Use `warn = false` to suppress this warning."
         end
         return haskey_check && israndom_check
     end
 
+    returnvars  = filter((varkey) -> __check_has_randomvar(:returnvars, vardict, varkey), returnvars)
+    historyvars = Dict((varkey => value) for (varkey, value) in pairs(historyvars) if __check_has_randomvar(:historyvars, vardict, variable))
+
     # Second, for each random variable entry we create an actor
     actors = Dict(
-        variable => make_actor(vardict[variable], value) for
-        (variable, value) in pairs(returnvars) if __check_has_randomvar(vardict, variable)
+        variable => make_actor(vardict[variable], value) 
     )
 
     # At third, for each random variable entry we create a boolean flag to track their updates
     updateflags = Dict(variable => MarginalHasBeenUpdated(false) for (variable, _) in pairs(actors))
 
-    try
-        tickscheduler = PendingScheduler()
+    tickscheduler = PendingScheduler()
 
-        fe_actor     = nothing
-        fe_objective = nothing
-        fe_source    = nothing
+    fe_actor     = nothing
+    fe_objective = nothing
+    fe_source    = nothing
 
-        is_free_energy, S, T = unwrap_free_energy_option(free_energy)
+    is_free_energy, S, T = unwrap_free_energy_option(free_energy)
 
-        if is_free_energy
-            fe_actor        = ScoreActor(S)
-            fe_objective    = BetheFreeEnergy(BetheFreeEnergyDefaultMarginalSkipStrategy, AsapScheduler(), free_energy_diagnostics)
-            fe_source       = score(fmodel, T, fe_objective)
-        end
-
-        if !isnothing(initmarginals)
-            for (variable, initvalue) in pairs(initmarginals)
-                if haskey(vardict, variable)
-                    assign_marginal!(vardict[variable], initvalue)
-                elseif warn
-                    @warn "`initmarginals` object has `$(variable)` specification, but model has no variable named `$(variable)`. Use `warn = false` to suppress this warning."
-                end
-            end
-        end
-
-        if !isnothing(initmessages)
-            for (variable, initvalue) in pairs(initmessages)
-                if haskey(vardict, variable)
-                    assign_message!(vardict[variable], initvalue)
-                elseif warn
-                    @warn "`initmessages` object has `$(variable)` specification, but model has no variable named `$(variable)`. Use `warn = false` to suppress this warning."
-                end
-            end
-        end
-
-        # TODO
-        # inference_invoke_callback(callbacks, :before_inference, fmodel)
-
-        _iterations = something(iterations, 1)
-        _iterations isa Integer || error("`iterations` argument must be of type Integer or `nothing`")
-        _iterations > 0 || error("`iterations` arguments must be greater than zero")
-
-        msubscription = Ref{Any}(voidTeardown)
-
-        stopcallback = () -> begin 
-            unsubscribe!(msubscription[])
-
-            for (_, subscription) in pairs(subscriptions)
-                unsubscribe!(subscription)
-            end
-
-            unsubscribe!(fe_subscription)
-        end
-
-        if autostart
-            startcallback()
-        end
-
-        # TODO
-        posterior_values = Dict(variable => actor for (variable, actor) in pairs(actors))
-        fe_values        = fe_actor
-
-        # TODO
-        # inference_invoke_callback(callbacks, :after_inference, fmodel)
-
-        return RxInferenceResult(posterior_values, fe_values, fmodel, freturval, startcallback, stopcallback)
-    catch error
-        __inference_process_error(error)
+    if is_free_energy
+        fe_actor        = ScoreActor(S)
+        fe_objective    = BetheFreeEnergy(BetheFreeEnergyDefaultMarginalSkipStrategy, AsapScheduler(), free_energy_diagnostics)
+        fe_source       = score(fmodel, T, fe_objective)
     end
+
+    
+
+    # TODO
+    # inference_invoke_callback(callbacks, :before_inference, fmodel)
+
+    
+
+    if autostart
+        startcallback()
+    end
+
+    # TODO
+    posterior_values = Dict(variable => actor for (variable, actor) in pairs(actors))
+    fe_values        = fe_actor
+
+    # TODO
+    # inference_invoke_callback(callbacks, :after_inference, fmodel)
+
+    return RxInferenceResult(posterior_values, fe_values, fmodel, freturval, startcallback, stopcallback)
 end
