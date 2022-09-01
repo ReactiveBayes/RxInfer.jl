@@ -585,30 +585,24 @@ function rxinference(;
         _iterations isa Integer || error("`iterations` argument must be of type Integer or `nothing`")
         _iterations > 0 || error("`iterations` arguments must be greater than zero")
 
-        # This is the `redirect` stream, that listens for all marginals that were defined in the `redirect` keyword argument
-        rstream = combineLatest(map((key) -> obtain_marginal(vardict[key], IncludeAll()), keys(redirect)), PushNew()) |> schedule_on(tickscheduler)
-
-        # This is the main stream of the inference procedure. It combines both `redirect` stream and `data` stream
-        mstream = combineLatest((rstream, data), PushNew())
-
         # This is the `main` executor of the inference procedure
-        # It listens both for new data and new updated posteriors and is supposed to run indefinitely
-        mexecutor = (event) -> begin
-
-            redirected = event[1]
-
-            # `newdata` must be in a form of a `NamedTuple` here with keys representing certain datavar's
-            newdata = event[2]
+        # It listens new data and is supposed to run indefinitely
+        mexecutor = (newdata) -> begin
 
             # TODO
             # __inference_check_dicttype(:data, newdata)
+
+            # TODO Probably very inefficient
+            redirected = map(keys(redirect)) do key
+                return redirect[key](Rocket.getrecent(obtain_marginal(vardict[key], IncludeAll())))
+            end
             
             for iteration in 1:_iterations
                 # inference_invoke_callback(callbacks, :before_iteration, fmodel, iteration)
                 # inference_invoke_callback(callbacks, :before_data_update, fmodel, data)
 
-                for ((_, callback), update) in zip(pairs(redirect), redirected)
-                    for (key, value) in pairs(callback(update))
+                for (key, _redirect) in zip(keys(redirect), redirected)
+                    for (key, value) in pairs(_redirect)
                         # TODO check existence??
                         update!(vardict[key], value)
                     end
@@ -669,7 +663,7 @@ function rxinference(;
 
         startcallback = () -> begin 
             
-            msubscription[] = subscribe!(mstream, lambda(
+            msubscription[] = subscribe!(data, lambda(
                 on_next     = mexecutor,
                 on_error    = (e) -> error(e), 
                 on_complete = () -> nothing # stopcallback
