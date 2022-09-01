@@ -508,14 +508,20 @@ end
     RxInferenceEngine
 
 This is the main heart of the reactive inference procedure implemented in the `rxinference` function.
+
+# Fields
+- `datastream`: Data stream that supports `subscribe!` method from `Rocket.jl` package, must produce `NamedTuple` events, where keys refer to `datavar`'s defined in a model
+- `tickscheduler`: Main tick scheduler on which all syncrhonization events occur
+
+
 """
 mutable struct RxInferenceEngine{T, N, K, D, L, P, U, H, I, E, FA, FO, FS, M, V, C}
-    datastream :: D
+    datastream    :: D
     tickscheduler :: L
 
-    posteriors        :: P
-    updateflags       :: U
-    posteriorshistory :: H
+    posteriors  :: P
+    updateflags :: U
+    history     :: H
 
     datavars :: NTuple{N, <:DataVariable}
 
@@ -657,6 +663,10 @@ function Rocket.on_next!(executor::RxInferenceEventExecutor{T}, event::T) where 
     _updateflags    = executor.engine.updateflags
     _fe_actor       = executor.engine.fe_actor
     _callbacks      = executor.engine.callbacks
+
+    rupdates = map(keys(_redirect), values(_redirect)) do key, callback
+        return callback(Rocket.getrecent(getmarginal(_model[key], IncludeAll())))
+    end
  
     # This loop correspond to the different VMP iterations
     for iteration in 1:_iterations
@@ -670,11 +680,10 @@ function Rocket.on_next!(executor::RxInferenceEventExecutor{T}, event::T) where 
         #     update!(rdatavar, rupdate)
         # end
 
-        # TODO: THIS CODE IS WRONG, BUT JUST TO TEST
-        for (key, callback) in pairs(_redirect)
-            update = callback(Rocket.getrecent(getmarginal(_model[key], IncludeAll())))
-            for (_key, _value) in pairs(update)
-                update!(_model[_key], _value)
+        # TODO: THIS CODE IS SLOW, BUT JUST TO TEST
+        foreach(rupdates) do rupdate
+            for (key, value) in pairs(rupdate)
+                update!(_model[key], value)
             end
         end
 
@@ -799,9 +808,9 @@ function rxinference(;
     is_free_energy, S, FE_T = unwrap_free_energy_option(free_energy)
 
     if is_free_energy
-        fe_actor        = ScoreActor(S)
-        fe_objective    = BetheFreeEnergy(BetheFreeEnergyDefaultMarginalSkipStrategy, AsapScheduler(), free_energy_diagnostics)
-        fe_source       = score(fmodel, FE_T, fe_objective)
+        fe_actor     = ScoreActor(S)
+        fe_objective = BetheFreeEnergy(BetheFreeEnergyDefaultMarginalSkipStrategy, AsapScheduler(), free_energy_diagnostics)
+        fe_source    = score(fmodel, FE_T, fe_objective)
     end
 
     # `iterations` might be set to `nothing` in which case we assume `1` iteration
@@ -815,7 +824,7 @@ function rxinference(;
     end
 
     __inference_check_itertype(:returnvars, returnvars)
-    eltype(returnvars) === Symbol || error("`returnvars` must contain a list of symbols")
+    eltype(returnvars) === Symbol || error("`returnvars` must contain a list of symbols") # TODO?
 
     _keephistory = something(keephistory, 0)
     _keephistory isa Integer || error("`keephistory` argument must be of type Integer or `nothing`")
@@ -859,7 +868,7 @@ function rxinference(;
     tickscheduler = PendingScheduler()
 
     # TODO add a comment
-    # For each random variable entry we create a boolean flag to track their updates
+    # For each random variable entry in `returnvars` specification we create a boolean flag to track their updates
     updateflags = Dict(variable => MarginalHasBeenUpdated(false) for variable in returnvars)
 
     # TODO add a comment
