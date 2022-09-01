@@ -503,6 +503,58 @@ function inference(;
     end
 end
 
+## ------------------------------------------------------------------------ ##
+
+struct FromMarginalAutoUpdate end
+struct FromMessageAutoUpdate end # From message is not implemented, for the future
+
+import Base: fetch
+
+Base.fetch(::FromMarginalAutoUpdate, variable) = ReactiveMP.getmarginal(variable, IncludeAll())
+Base.fetch(::FromMessageAutoUpdate, variable)  = error("`FromMessageAutoUpdate` fetch strategy is not implemented")
+
+struct RxInferenceAutoUpdateSpecification{N, F, C}
+    labels   :: NTuple{N, Symbol}
+    from     :: F
+    callback :: C
+    variable :: Symbol
+end
+
+function (specification::RxInferenceAutoUpdateSpecification)(model::FactorGraphModel)
+
+    datavars = map(specification.labels) do label
+        hasdatavar(model, label) || 
+            error("Autoupdate specification defines an update for `$(label)`, but the model has no datavar named `$(label)`")
+        return model[label]
+    end
+
+    # TODO consider supporting not only randomvar?
+    hasrandomvar(model, specification.variable) || 
+        error("Autoupdate specification defines an update from `$(specification.variable)`, but the model has no randomvar named `$(specification.variable)`")
+
+    variable = model[specification.variable]
+
+    return RxInferenceAutoUpdate(datavars, specification.callback, fetch(specification.from, variable))
+end
+
+struct RxInferenceAutoUpdate{N, C, R}
+    datavars :: NTuple{ N, <:DataVariable }
+    callback :: C
+    recent   :: R
+end
+
+import ReactiveMP: update!
+
+update!(autoupdate::RxInferenceAutoUpdate) = update!(autoupdate, ReactiveMP.getdata(Rocket.getrecent(autoupdate.recent)))
+
+function update!(autoupdate::RxInferenceAutoUpdate, something) 
+    # TODO check the performance of this code (most probably should be fine)
+    for (datavar, update) in zip(as_tuple(autoupdate.datavars), as_tuple(autoupdate.callback(something))) 
+        update!(datavar, update)
+    end 
+end
+
+## ------------------------------------------------------------------------ ##
 
 """
     RxInferenceEngine
@@ -515,7 +567,7 @@ This is the main heart of the reactive inference procedure implemented in the `r
 
 
 """
-mutable struct RxInferenceEngine{T, N, K, D, L, P, U, H, I, E, FA, FO, FS, M, V, C}
+mutable struct RxInferenceEngine{T, N, K, D, L, P, U, H, I, A, FA, FO, FS, M, V, C}
     datastream    :: D
     tickscheduler :: L
 
@@ -530,11 +582,8 @@ mutable struct RxInferenceEngine{T, N, K, D, L, P, U, H, I, E, FA, FO, FS, M, V,
 
     iterations :: I
 
-    # redirect marginals
-    redirect             :: E
-    redirectvars         :: NTuple{K, <:DataVariable}
-    redirectupdate       :: NTuple{K, <:Marginal}
-    redirectsubscription :: Teardown
+    # auto updates
+    autoupdates :: A
 
     # free energy related
     fe_actor        :: FA
@@ -562,17 +611,15 @@ mutable struct RxInferenceEngine{T, N, K, D, L, P, U, H, I, E, FA, FO, FS, M, V,
         posteriorshistory::H,
         datavars :: NTuple{N, <:DataVariable},
         iterations :: I,
-        redirect :: E,
-        redirectvars :: NTuple{K, <:DataVariable},
-        redirectupdate :: NTuple{K, <:Marginal},
+        autoupdates :: A,
         fe_actor :: FA,
         fe_objective :: FO,
         fe_source :: FS,
         model     :: M,
         returnval :: V,
         callbacks :: C
-        ) where { T, N, K, D, L, P, U, H, I, E, FA, FO, FS, M, V, C } = begin 
-            return new{T, N, K, D, L, P, U, H, I, E, FA, FO, FS, M, V, C}(
+        ) where { T, N, K, D, L, P, U, H, I, A, FA, FO, FS, M, V, C } = begin 
+            return new{T, N, K, D, L, P, U, H, I, A, FA, FO, FS, M, V, C}(
                 datastream,
                 tickscheduler,
                 posteriors,
@@ -582,10 +629,7 @@ mutable struct RxInferenceEngine{T, N, K, D, L, P, U, H, I, E, FA, FO, FS, M, V,
                 voidTeardown,
                 Teardown[],
                 iterations,
-                redirect, 
-                redirectvars,
-                redirectupdate,
-                voidTeardown,
+                autoupdates,
                 fe_actor,
                 fe_objective,
                 fe_source,
@@ -657,16 +701,10 @@ function Rocket.on_next!(executor::RxInferenceEventExecutor{T}, event::T) where 
     _iterations     = executor.engine.iterations
     _model          = executor.engine.model
     _datavars       = executor.engine.datavars
-    _redirect       = executor.engine.redirect
-    _redirectvars   = executor.engine.redirectvars
-    _redirectupdate = executor.engine.redirectupdate
+    _autoupdates    = executor.engine.autoupdates
     _updateflags    = executor.engine.updateflags
     _fe_actor       = executor.engine.fe_actor
     _callbacks      = executor.engine.callbacks
-
-    rupdates = map(keys(_redirect), values(_redirect)) do key, callback
-        return callback(Rocket.getrecent(getmarginal(_model[key], IncludeAll())))
-    end
  
     # This loop correspond to the different VMP iterations
     for iteration in 1:_iterations
@@ -675,17 +713,7 @@ function Rocket.on_next!(executor::RxInferenceEventExecutor{T}, event::T) where 
         # First we update all our priors with the fixed values from the `redirectupdate` field
         # inference_invoke_callback(_callbacks, :before_redirect_update, _model, rupdate)
 
-        # TODO here !!
-        # for (rdatavar, rupdate) in zip(_redirectvars, _redirectupdate)
-        #     update!(rdatavar, rupdate)
-        # end
-
-        # TODO: THIS CODE IS SLOW, BUT JUST TO TEST
-        foreach(rupdates) do rupdate
-            for (key, value) in pairs(rupdate)
-                update!(_model[key], value)
-            end
-        end
+        foreach(update!, _autoupdates)
 
         # inference_invoke_callback(_callbacks, :after_redirect_update, _model, rupdate)
 
@@ -734,7 +762,7 @@ function rxinference(;
     datastream,
     initmarginals = nothing,
     initmessages = nothing, 
-    redirect = nothing,
+    autoupdates = nothing,
     constraints = nothing,
     meta = nothing,
     options = nothing,
@@ -751,7 +779,6 @@ function rxinference(;
     # __inference_check_dicttype(:data, data) # TODO
     __inference_check_dicttype(:initmarginals, initmarginals)
     __inference_check_dicttype(:initmessages, initmessages)
-    __inference_check_dicttype(:redirect, redirect)
 
     # Unpack data stream as early as possible, we accept a data stream of `NamedTuple`'s (TODO maybe not the most efficient way)
     T = eltype(datastream)
@@ -760,21 +787,20 @@ function rxinference(;
     N            = length(datavarnames) # should be static
 
     inference_invoke_callback(callbacks, :before_model_creation)
-    fmodel, freturnval = create_model(model, constraints, meta, options)
-    inference_invoke_callback(callbacks, :after_model_creation, fmodel)
-    vardict = getvardict(fmodel)
+    _model, _returnval = create_model(model, constraints, meta, options)
+    inference_invoke_callback(callbacks, :after_model_creation, _model)
+    vardict = getvardict(_model)
 
     # At the very beginning we try to preallocate handles for the `datavar` labels that are present in the `T` (from `datastream`)
     # This is not very type-styble-friendly but we do it once and it should pay-off in the inference procedure
     datavars = ntuple(N) do i
         datavarname = datavarnames[i]
-        hasdatavar(fmodel, datavarname) || error("The `datastream` produces data for `$(datavarname)`, but the model does not have a datavar named `$(datavarname)`")
-        return fmodel[datavarname]::DataVariable
+        hasdatavar(_model, datavarname) || error("The `datastream` produces data for `$(datavarname)`, but the model does not have a datavar named `$(datavarname)`")
+        return _model[datavarname]::DataVariable
     end
 
-    # Second we check redirect vars (if any present), as with the `datavars` we try to preallocate `redirectvars` handles
-    # This is not very type-styble-friendly but we do it once and it should pay-off in the inference procedure
-    # TODO this section is not complete yet [WIP]
+    # Second we check autoupdates and pregenerate all necessary structures here
+    _autoupdates = map((autoupdate) -> autoupdate(_model), autoupdates)
 
     # If everything is ok with `datavars` and `redirectvars` next step is to initialise marginals and messages in the model
     # This happens only once at the creation, we do not reinitialise anything if the inference has been stopped and resumed with the `stop` and `start` functions
@@ -810,7 +836,7 @@ function rxinference(;
     if is_free_energy
         fe_actor     = ScoreActor(S)
         fe_objective = BetheFreeEnergy(BetheFreeEnergyDefaultMarginalSkipStrategy, AsapScheduler(), free_energy_diagnostics)
-        fe_source    = score(fmodel, FE_T, fe_objective)
+        fe_source    = score(_model, FE_T, fe_objective)
     end
 
     # `iterations` might be set to `nothing` in which case we assume `1` iteration
@@ -873,7 +899,7 @@ function rxinference(;
 
     # TODO add a comment
     on_marginal_update = inference_get_callback(callbacks, :on_marginal_update)
-    posteriors         = Dict(variable => obtain_marginal(vardict[variable]) |> schedule_on(tickscheduler) |> ensure_update(fmodel, on_marginal_update, variable, updateflags[variable]) for variable in returnvars)
+    posteriors         = Dict(variable => obtain_marginal(vardict[variable]) |> schedule_on(tickscheduler) |> ensure_update(_model, on_marginal_update, variable, updateflags[variable]) for variable in returnvars)
 
     # TODO
     # inference_invoke_callback(callbacks, :before_inference, fmodel)
@@ -884,14 +910,12 @@ function rxinference(;
         nothing, # history todo
         datavars,
         _iterations,
-        redirect,
-        (), # redirect vars todo
-        (), # todo
+        _autoupdates,
         fe_actor,
         fe_objective,
         fe_source,
-        fmodel,
-        freturnval,
+        _model,
+        _returnval,
         callbacks
     )
 
