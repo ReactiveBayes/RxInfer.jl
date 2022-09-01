@@ -606,7 +606,7 @@ function start(engine::RxInferenceEngine{T}) where {T}
         engine.fe_subscription = subscribe!(engine.fe_source, engine.fe_actor)
     end
 
-    engine.retvarsubscriptions = map((posterior) -> subscribe!(posterior, logger()), engine.posteriors)
+    engine.retvarsubscriptions = map((posterior) -> subscribe!(posterior, logger()), values(engine.posteriors))
     engine.mainsubscription = subscribe!(engine.datastream, _eventexecutor)
 
     release!(_ticksheduler)
@@ -645,37 +645,49 @@ function Rocket.on_next!(executor::RxInferenceEventExecutor{T}, event::T) where 
     # This is the `main` executor of the inference procedure
     # It listens new data and is supposed to run indefinitely
 
-    # `executor` is defined as mutable 
+    # `executor.engine` is defined as mutable 
     # we extract all variables before the loop so Julia does not extract them every time
-    _tickscheduler  = executor.tickscheduler
-    _iterations     = executor.iterations
-    _model          = executor.model
-    _datavars       = executor.datavars
-    _redirectvars   = executor.redirectvars
-    _redirectupdate = executor.redirectupdate
-    _updateflags    = executor.updateflags
-    _fe_actor       = executor.fe_actor
-    _callbacks      = executor.callbacks
+    _tickscheduler  = executor.engine.tickscheduler
+    _iterations     = executor.engine.iterations
+    _model          = executor.engine.model
+    _datavars       = executor.engine.datavars
+    _redirect       = executor.engine.redirect
+    _redirectvars   = executor.engine.redirectvars
+    _redirectupdate = executor.engine.redirectupdate
+    _updateflags    = executor.engine.updateflags
+    _fe_actor       = executor.engine.fe_actor
+    _callbacks      = executor.engine.callbacks
  
     # This loop correspond to the different VMP iterations
     for iteration in 1:_iterations
-        inference_invoke_callback(_callbacks, :before_iteration, _model, iteration)
+        # inference_invoke_callback(_callbacks, :before_iteration, _model, iteration)
         
         # First we update all our priors with the fixed values from the `redirectupdate` field
-        inference_invoke_callback(_callbacks, :before_redirect_update, _model, rupdate)
-        for (rdatavar, rupdate) in zip(_redirectvars, _redirectupdate)
-            update!(rdatavar, rupdate)
+        # inference_invoke_callback(_callbacks, :before_redirect_update, _model, rupdate)
+
+        # TODO here !!
+        # for (rdatavar, rupdate) in zip(_redirectvars, _redirectupdate)
+        #     update!(rdatavar, rupdate)
+        # end
+
+        # TODO: THIS CODE IS WRONG, BUT JUST TO TEST
+        for (key, callback) in pairs(_redirect)
+            update = callback(Rocket.getrecent(getmarginal(_model[key], IncludeAll())))
+            for (_key, _value) in pairs(update)
+                update!(_model[_key], _value)
+            end
         end
-        inference_invoke_callback(_callbacks, :after_redirect_update, _model, rupdate)
+
+        # inference_invoke_callback(_callbacks, :after_redirect_update, _model, rupdate)
 
         # Second we pass our observations
-        inference_invoke_callback(_callbacks, :before_data_update, _model, event)
-        for (datavar, value) in zip(_datavars, values(newdata))
+        # inference_invoke_callback(_callbacks, :before_data_update, _model, event)
+        for (datavar, value) in zip(_datavars, values(event))
             update!(datavar, value)
         end
-        inference_invoke_callback(_callbacks, :after_data_update, _model, event)
+        # inference_invoke_callback(_callbacks, :after_data_update, _model, event)
         
-        inference_invoke_callback(_callbacks, :after_iteration, _model, iteration)
+        # inference_invoke_callback(_callbacks, :after_iteration, _model, iteration)
     end
 
     # `release!` on `fe_actor` ensures that free energy sumed up between iterations correctly
@@ -784,12 +796,12 @@ function rxinference(;
 
     # `free_energy` may accept a type specification (e.g. `Float64`) in which case it counts as `true` as well
     # An explicit type specification makes `fe_source` be a bit more efficient, but makes it hard to differentiate the model
-    is_free_energy, S, T = unwrap_free_energy_option(free_energy)
+    is_free_energy, S, FE_T = unwrap_free_energy_option(free_energy)
 
     if is_free_energy
         fe_actor        = ScoreActor(S)
         fe_objective    = BetheFreeEnergy(BetheFreeEnergyDefaultMarginalSkipStrategy, AsapScheduler(), free_energy_diagnostics)
-        fe_source       = score(fmodel, T, fe_objective)
+        fe_source       = score(fmodel, FE_T, fe_objective)
     end
 
     # `iterations` might be set to `nothing` in which case we assume `1` iteration
