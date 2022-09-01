@@ -543,16 +543,10 @@ struct RxInferenceAutoUpdate{N, C, R}
     recent   :: R
 end
 
-import ReactiveMP: update!
+import Base: fetch
 
-update!(autoupdate::RxInferenceAutoUpdate) = update!(autoupdate, ReactiveMP.getdata(Rocket.getrecent(autoupdate.recent)))
-
-function update!(autoupdate::RxInferenceAutoUpdate, something) 
-    # TODO check the performance of this code (most probably should be fine)
-    for (datavar, update) in zip(as_tuple(autoupdate.datavars), as_tuple(autoupdate.callback(something))) 
-        update!(datavar, update)
-    end 
-end
+Base.fetch(autoupdate::RxInferenceAutoUpdate)            = fetch(autoupdate, ReactiveMP.getdata(Rocket.getrecent(autoupdate.recent)))
+Base.fetch(autoupdate::RxInferenceAutoUpdate, something) = zip(as_tuple(autoupdate.datavars), as_tuple(autoupdate.callback(something)))
 
 ## ------------------------------------------------------------------------ ##
 
@@ -567,20 +561,15 @@ This is the main heart of the reactive inference procedure implemented in the `r
 
 
 """
-mutable struct RxInferenceEngine{T, N, K, D, L, P, U, H, I, A, FA, FO, FS, M, V, C}
-    datastream    :: D
-    tickscheduler :: L
+mutable struct RxInferenceEngine{T, D, L, V, P, U, H, A, FA, FO, FS, I, M, N, C}
+    datastream       :: D
+    tickscheduler    :: L
+    mainsubscription :: Teardown
 
+    datavars    :: V
     posteriors  :: P
     updateflags :: U
     history     :: H
-
-    datavars :: NTuple{N, <:DataVariable}
-
-    mainsubscription    :: Teardown
-    retvarsubscriptions :: Vector{Teardown}
-
-    iterations :: I
 
     # auto updates
     autoupdates :: A
@@ -591,49 +580,48 @@ mutable struct RxInferenceEngine{T, N, K, D, L, P, U, H, I, A, FA, FO, FS, M, V,
     fe_source       :: FS
     fe_subscription :: Teardown
 
-    # 
-    model     :: M
-    returnval :: V
-
-    callbacks :: C
-
-    # utility
+    # utility 
+    iterations :: I
+    model      :: M
+    returnval  :: N
+    callbacks  :: C
     is_running :: Bool
 
     RxInferenceEngine(
         ::Type{T}, 
-        ::Val{N}, 
-        ::Val{K}, 
         datastream::D, 
         tickscheduler::L,
+
+        datavars :: V,
         posteriors::P,
         updateflags::U,
-        posteriorshistory::H,
-        datavars :: NTuple{N, <:DataVariable},
-        iterations :: I,
+        history::H,
+        
         autoupdates :: A,
+
         fe_actor :: FA,
         fe_objective :: FO,
         fe_source :: FS,
+
+        iterations :: I,
         model     :: M,
-        returnval :: V,
+        returnval :: N,
         callbacks :: C
-        ) where { T, N, K, D, L, P, U, H, I, A, FA, FO, FS, M, V, C } = begin 
-            return new{T, N, K, D, L, P, U, H, I, A, FA, FO, FS, M, V, C}(
+        ) where { T, D, L, V, P, U, H, A, FA, FO, FS, I, M, N, C } = begin 
+            return new{T, D, L, V, P, U, H, A, FA, FO, FS, I, M, N, C}(
                 datastream,
                 tickscheduler,
+                voidTeardown,
+                datavars,
                 posteriors,
                 updateflags,
-                posteriorshistory,
-                datavars,
-                voidTeardown,
-                Teardown[],
-                iterations,
+                history,
                 autoupdates,
                 fe_actor,
                 fe_objective,
                 fe_source,
                 voidTeardown,
+                iterations,
                 model,
                 returnval,
                 callbacks, 
@@ -656,7 +644,6 @@ function start(engine::RxInferenceEngine{T}) where {T}
         engine.fe_subscription = subscribe!(engine.fe_source, engine.fe_actor)
     end
 
-    engine.retvarsubscriptions = map((posterior) -> subscribe!(posterior, logger()), values(engine.posteriors))
     engine.mainsubscription = subscribe!(engine.datastream, _eventexecutor)
 
     release!(_ticksheduler)
@@ -705,26 +692,29 @@ function Rocket.on_next!(executor::RxInferenceEventExecutor{T}, event::T) where 
     _updateflags    = executor.engine.updateflags
     _fe_actor       = executor.engine.fe_actor
     _callbacks      = executor.engine.callbacks
+
+    fupdates = map(fetch, _autoupdates)
  
     # This loop correspond to the different VMP iterations
     for iteration in 1:_iterations
-        # inference_invoke_callback(_callbacks, :before_iteration, _model, iteration)
+        inference_invoke_callback(_callbacks, :before_iteration, _model, iteration)
         
-        # First we update all our priors with the fixed values from the `redirectupdate` field
-        # inference_invoke_callback(_callbacks, :before_redirect_update, _model, rupdate)
+        # At first we update all our priors (auto updates) with the fixed values from the `redirectupdate` field
+        foreach(fupdates) do fupdate
+            for (datavar, value) in fupdate
+                update!(datavar, value)
+            end
+        end
 
-        foreach(update!, _autoupdates)
+        # At second we pass our observations
+        inference_invoke_callback(_callbacks, :before_data_update, _model, event)
 
-        # inference_invoke_callback(_callbacks, :after_redirect_update, _model, rupdate)
-
-        # Second we pass our observations
-        # inference_invoke_callback(_callbacks, :before_data_update, _model, event)
         for (datavar, value) in zip(_datavars, values(event))
             update!(datavar, value)
         end
-        # inference_invoke_callback(_callbacks, :after_data_update, _model, event)
-        
-        # inference_invoke_callback(_callbacks, :after_iteration, _model, iteration)
+
+        inference_invoke_callback(_callbacks, :after_data_update, _model, event)
+        inference_invoke_callback(_callbacks, :after_iteration, _model, iteration)
     end
 
     # `release!` on `fe_actor` ensures that free energy sumed up between iterations correctly
@@ -734,6 +724,7 @@ function Rocket.on_next!(executor::RxInferenceEventExecutor{T}, event::T) where 
     
     # On this `release!` call we update our priors for the next step and also set `updated` flags
     release!(_tickscheduler)
+    inference_invoke_callback(_callbacks, :on_tick, _model)
 
     not_updated = filter((pair) -> !last(pair).updated, _updateflags)
 
@@ -899,21 +890,23 @@ function rxinference(;
 
     # TODO add a comment
     on_marginal_update = inference_get_callback(callbacks, :on_marginal_update)
-    posteriors         = Dict(variable => obtain_marginal(vardict[variable]) |> schedule_on(tickscheduler) |> ensure_update(_model, on_marginal_update, variable, updateflags[variable]) for variable in returnvars)
+    posteriors         = Dict(variable => obtain_marginal(vardict[variable]) |> schedule_on(tickscheduler) |> map(Any, getdata) |> ensure_update(_model, on_marginal_update, variable, updateflags[variable]) for variable in returnvars)
 
     # TODO
     # inference_invoke_callback(callbacks, :before_inference, fmodel)
     engine = RxInferenceEngine(
-        T, Val(N), Val(0), # K todo
-        datastream, tickscheduler, posteriors,
+        T, 
+        datastream, 
+        tickscheduler, 
+        datavars,
+        posteriors,
         updateflags, 
         nothing, # history todo
-        datavars,
-        _iterations,
         _autoupdates,
         fe_actor,
         fe_objective,
         fe_source,
+        _iterations,
         _model,
         _returnval,
         callbacks
