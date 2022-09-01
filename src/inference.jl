@@ -693,6 +693,7 @@ function Rocket.on_next!(executor::RxInferenceEventExecutor{T}, event::T) where 
     _fe_actor       = executor.engine.fe_actor
     _callbacks      = executor.engine.callbacks
 
+    # Before we start our iterations we 'prefetch' recent values for autoupdates
     fupdates = map(fetch, _autoupdates)
  
     # This loop correspond to the different VMP iterations
