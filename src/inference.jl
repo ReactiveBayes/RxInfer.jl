@@ -39,7 +39,10 @@ ensure_update(model::FactorGraphModel, callback, variable_name::Symbol, updated:
     __set_updated!(updated)
     callback(model, variable_name, update)
 end)
-ensure_update(model::FactorGraphModel, ::Nothing, variable_name::Symbol, updated::MarginalHasBeenUpdated) = tap((_) -> __set_updated!(updated)) # If `callback` is nothing we simply set updated flag
+
+ensure_update(model::FactorGraphModel, ::Nothing, variable_name::Symbol, updated::MarginalHasBeenUpdated) = tap((_) -> begin 
+    __set_updated!(updated) # If `callback` is nothing we simply set updated flag
+end) 
 
 ## Extra error handling
 
@@ -55,6 +58,12 @@ function __inference_process_error(err::StackOverflowError)
     rethrow(err) # Shows the original stack trace
 end
 
+"""
+    __inference_check_itertype(label, container)
+
+This function check is the second argument is of type `Nothing`, `Tuple` or `Vector`. Throws an error otherwise.
+"""
+function __inference_check_itertype end
 
 __inference_check_itertype(::Symbol, ::Union{Nothing, Tuple, Vector}) = nothing
 
@@ -69,6 +78,13 @@ function __inference_check_itertype(keyword::Symbol, ::T) where {T}
         """
     )
 end
+
+"""
+    __inference_check_dicttype(label, container)
+
+This function check is the second argument is of type `Nothing`, `NamedTuple` or `Dict`. Throws an error otherwise.
+"""
+function __inference_check_dicttype end
 
 __inference_check_dicttype(::Symbol, ::Union{Nothing, NamedTuple, Dict}) = nothing
 
@@ -493,7 +509,7 @@ end
 
 This is the main heart of the reactive inference procedure implemented in the `rxinference` function.
 """
-mutable struct RxInferenceEngine{E, N, K, D, P, H, T, U, S, R, I, FA, FS, FO, M, V, C}
+mutable struct RxInferenceEngine{E, N, K, D, P, H, T, U, S, R, I, FA, FO, FS, M, V, C}
     datastream :: D
 
     posteriors        :: P
@@ -516,8 +532,8 @@ mutable struct RxInferenceEngine{E, N, K, D, P, H, T, U, S, R, I, FA, FS, FO, M,
 
     # free energy related
     fe_actor        :: FA
-    fe_source       :: FS
     fe_objective    :: FO
+    fe_source       :: FS
     fe_subscription :: Teardown
 
     # 
@@ -530,7 +546,7 @@ mutable struct RxInferenceEngine{E, N, K, D, P, H, T, U, S, R, I, FA, FS, FO, M,
     is_running :: Bool
 end
 
-function start(engine::RxInferenceEngine{T})
+function start(engine::RxInferenceEngine{T}) where {T}
 
     if engine.is_running
         @warn "Engine is already running. Cannot start a single engine twice."
@@ -582,7 +598,7 @@ struct RxInferenceEventExecutor{T, E} <: Actor{T}
     RxInferenceEventExecutor(::Type{T}, engine::E) where {T, E} = new{T, E}(engine)
 end
 
-function Rocket.on_next!(executor::RxInferenceEventExecutor{T}, event::T)
+function Rocket.on_next!(executor::RxInferenceEventExecutor{T}, event::T) where {T}
     # This is the `main` executor of the inference procedure
     # It listens new data and is supposed to run indefinitely
 
@@ -651,7 +667,7 @@ Rocket.on_complete!(executor::RxInferenceEventExecutor)   = begin end
 
 function rxinference(;
     model::ModelGenerator,
-    data,
+    datastream,
     initmarginals = nothing,
     initmessages = nothing, 
     redirect = nothing,
@@ -673,11 +689,27 @@ function rxinference(;
     __inference_check_dicttype(:initmessages, initmessages)
     __inference_check_dicttype(:redirect, redirect)
 
+    # Unpack data stream as early as possible, we accept a data stream of `NamedTuple`'s (TODO maybe not the most efficient way)
+    T = eltype(datastream)
+
+    datavarnames = fields(T)::NTuple
+    N            = length(datavarnames) # should be static
+
     inference_invoke_callback(callbacks, :before_model_creation)
     fmodel, freturval = create_model(model, constraints, meta, options)
     inference_invoke_callback(callbacks, :after_model_creation, fmodel)
     vardict = getvardict(fmodel)
 
+    # At the very beginning we try to preallocate handles for the `datavar` labels that are present in the `T` (from `datastream`)
+    # This is not very type-styble-friendly but we do it once and it should pay-off in the inference procedure
+    datavars = ntuple(1:N) do i
+        datavarname = datavarnames[i]
+        hasdatavar(fmodel, datavarname) || error("The datastream produces data for `$(datavarname)`, but the model does not have a datavar named `$(datavarname)`")
+        return fmodel[datavarname]::DataVariable
+    end
+
+    # If everything is ok with `datavars` and `redirectvars` next step is to initialise marginals and messages in the model
+    # This happens only once at the creation, we do not reinitialise anything if the inference has been stopped and resumed with the `stop` and `start` functions
     if !isnothing(initmarginals)
         for (variable, initvalue) in pairs(initmarginals)
             if haskey(vardict, variable)
@@ -698,6 +730,22 @@ function rxinference(;
         end
     end
 
+    # Here we prepare our free energy streams (if requested)
+    fe_actor     = nothing
+    fe_objective = nothing
+    fe_source    = nothing
+
+    # `free_energy` may accept a type specification (e.g. `Float64`) in which case it counts as `true` as well
+    # An explicit type specification makes `fe_source` be a bit more efficient, but makes it hard to differentiate the model
+    is_free_energy, S, T = unwrap_free_energy_option(free_energy)
+
+    if is_free_energy
+        fe_actor        = ScoreActor(S)
+        fe_objective    = BetheFreeEnergy(BetheFreeEnergyDefaultMarginalSkipStrategy, AsapScheduler(), free_energy_diagnostics)
+        fe_source       = score(fmodel, T, fe_objective)
+    end
+
+    # `iterations` might be set to `nothing` in which case we assume `1` iteration
     _iterations = something(iterations, 1)
     _iterations isa Integer || error("`iterations` argument must be of type Integer or `nothing`")
     _iterations > 0 || error("`iterations` arguments must be greater than zero")
@@ -706,7 +754,6 @@ function rxinference(;
     if isnothing(returnvars)
         returnvars = [ name(variable) for (variable, value) in pairs(vardict) if (israndom(value) && !isproxy(value)) ]
     end
-
     
     __inference_check_itertype(:returnvars, returnvars)
     eltype(returnvars) === Symbol || error("`returnvars` must contain a list of symbols")
@@ -746,34 +793,27 @@ function rxinference(;
 
     returnvars  = filter((varkey) -> __check_has_randomvar(:returnvars, vardict, varkey), returnvars)
     historyvars = Dict((varkey => value) for (varkey, value) in pairs(historyvars) if __check_has_randomvar(:historyvars, vardict, variable))
+    
+    # At this point we must have properly defined and fixed `returnvars` and `historyvars` objects
+
+    # TODO add a comment
+    tickscheduler = PendingScheduler()
+
+    # TODO add a comment
+    # For each random variable entry we create a boolean flag to track their updates
+    updateflags = Dict(variable => MarginalHasBeenUpdated(false) for (variable, _) in pairs(actors))
+
+    # TODO add a comment
+    on_marginal_update = inference_get_callback(_callbacks, :on_marginal_update)
+    posteriors         = Dict(variable => obtain_marginal(vardict[variable]) |> schedule_on(_ticksheduler) |> ensure_update(fmodel, on_marginal_update, variable, updates[variable]) for (variable, actor) in pairs(actors))
 
     # Second, for each random variable entry we create an actor
     actors = Dict(
         variable => make_actor(vardict[variable], value) 
     )
 
-    # At third, for each random variable entry we create a boolean flag to track their updates
-    updateflags = Dict(variable => MarginalHasBeenUpdated(false) for (variable, _) in pairs(actors))
-
-    tickscheduler = PendingScheduler()
-
-    fe_actor     = nothing
-    fe_objective = nothing
-    fe_source    = nothing
-
-    is_free_energy, S, T = unwrap_free_energy_option(free_energy)
-
-    if is_free_energy
-        fe_actor        = ScoreActor(S)
-        fe_objective    = BetheFreeEnergy(BetheFreeEnergyDefaultMarginalSkipStrategy, AsapScheduler(), free_energy_diagnostics)
-        fe_source       = score(fmodel, T, fe_objective)
-    end
-
-    
-
     # TODO
     # inference_invoke_callback(callbacks, :before_inference, fmodel)
-
     
 
     if autostart

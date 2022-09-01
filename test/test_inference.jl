@@ -4,6 +4,35 @@ using Test
 using RxInfer
 using Random
 
+@testset "__inference_check_itertype" begin 
+    import RxInfer: __inference_check_itertype
+
+    @test __inference_check_itertype(:something, nothing) === nothing
+    @test __inference_check_itertype(:something, (1, )) === nothing
+    @test __inference_check_itertype(:something, (1, 2)) === nothing
+    @test __inference_check_itertype(:something, [ ]) === nothing
+    @test __inference_check_itertype(:something, [ 1, 2 ]) === nothing
+
+    @test_throws ErrorException __inference_check_itertype(:something, 1)
+    @test_throws ErrorException __inference_check_itertype(:something, (1))
+    @test_throws ErrorException __inference_check_itertype(:something, missing)
+end
+
+@testset "__inference_check_dicttype" begin 
+    import RxInfer: __inference_check_dicttype
+
+    @test __inference_check_dicttype(:something, nothing) === nothing
+    @test __inference_check_dicttype(:something, (x = 1, )) === nothing
+    @test __inference_check_dicttype(:something, (x = 1, y = 2)) === nothing
+    @test __inference_check_dicttype(:something, Dict(:x => 1)) === nothing
+    @test __inference_check_dicttype(:something, Dict(:x => 1, :y => 2)) === nothing
+
+    @test_throws ErrorException __inference_check_dicttype(:something, 1)
+    @test_throws ErrorException __inference_check_dicttype(:something, (1))
+    @test_throws ErrorException __inference_check_dicttype(:something, missing)
+    @test_throws ErrorException __inference_check_dicttype(:something, (missing))
+end
+
 @testset "Reactive inference with `rxinference`" begin
 
     # A simple model for testing that resembles a simple kalman filter with

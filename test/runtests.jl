@@ -206,6 +206,8 @@ end
         @test filename_to_key(key_to_filename("message")) == "message"
     end
 
+    addtests(testrunner, "test_helpers.jl")
+
     addtests(testrunner, "score/test_bfe.jl")
 
     addtests(testrunner, "constraints/test_form_constraints.jl")
