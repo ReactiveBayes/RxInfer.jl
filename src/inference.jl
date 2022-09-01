@@ -509,25 +509,25 @@ end
 
 This is the main heart of the reactive inference procedure implemented in the `rxinference` function.
 """
-mutable struct RxInferenceEngine{E, N, K, D, P, H, T, U, S, R, I, FA, FO, FS, M, V, C}
+mutable struct RxInferenceEngine{T, N, K, D, L, P, U, H, I, E, FA, FO, FS, M, V, C}
     datastream :: D
+    tickscheduler :: L
 
     posteriors        :: P
+    updateflags       :: U
     posteriorshistory :: H
 
-    tickscheduler :: T
+    datavars :: NTuple{N, <:DataVariable}
 
-    datavars    :: NTuple{N, DataVariable}
-    updateflags :: U
-
-    mainsubscription    :: S
-    retvarsubscriptions :: R
+    mainsubscription    :: Teardown
+    retvarsubscriptions :: Vector{Teardown}
 
     iterations :: I
 
     # redirect marginals
-    redirectvars         :: NTuple{K, DataVariable}
-    redirectupdate       :: NTuple{K, Marginal}
+    redirect             :: E
+    redirectvars         :: NTuple{K, <:DataVariable}
+    redirectupdate       :: NTuple{K, <:Marginal}
     redirectsubscription :: Teardown
 
     # free energy related
@@ -544,6 +544,52 @@ mutable struct RxInferenceEngine{E, N, K, D, P, H, T, U, S, R, I, FA, FO, FS, M,
 
     # utility
     is_running :: Bool
+
+    RxInferenceEngine(
+        ::Type{T}, 
+        ::Val{N}, 
+        ::Val{K}, 
+        datastream::D, 
+        tickscheduler::L,
+        posteriors::P,
+        updateflags::U,
+        posteriorshistory::H,
+        datavars :: NTuple{N, <:DataVariable},
+        iterations :: I,
+        redirect :: E,
+        redirectvars :: NTuple{K, <:DataVariable},
+        redirectupdate :: NTuple{K, <:Marginal},
+        fe_actor :: FA,
+        fe_objective :: FO,
+        fe_source :: FS,
+        model     :: M,
+        returnval :: V,
+        callbacks :: C
+        ) where { T, N, K, D, L, P, U, H, I, E, FA, FO, FS, M, V, C } = begin 
+            return new{T, N, K, D, L, P, U, H, I, E, FA, FO, FS, M, V, C}(
+                datastream,
+                tickscheduler,
+                posteriors,
+                updateflags,
+                posteriorshistory,
+                datavars,
+                voidTeardown,
+                Teardown[],
+                iterations,
+                redirect, 
+                redirectvars,
+                redirectupdate,
+                voidTeardown,
+                fe_actor,
+                fe_objective,
+                fe_source,
+                voidTeardown,
+                model,
+                returnval,
+                callbacks, 
+                false
+            )
+        end
 end
 
 function start(engine::RxInferenceEngine{T}) where {T}
@@ -555,15 +601,12 @@ function start(engine::RxInferenceEngine{T}) where {T}
 
     _eventexecutor = RxInferenceEventExecutor(T, engine)
     _ticksheduler  = engine.tickscheduler
-    _callbacks     = engine.callbacks
-
-    on_marginal_update  = inference_get_callback(_callbacks, :on_marginal_update)
-    retvarsubscriptions = Dict(variable => subscribe!(obtain_marginal(vardict[variable]) |> schedule_on(_ticksheduler) |> ensure_update(fmodel, on_marginal_update, variable, updates[variable]), actor) for (variable, actor) in pairs(actors))
 
     if !isnothing(engine.fe_actor)
         engine.fe_subscription = subscribe!(engine.fe_source, engine.fe_actor)
     end
 
+    engine.retvarsubscriptions = map((posterior) -> subscribe!(posterior, logger()), engine.posteriors)
     engine.mainsubscription = subscribe!(engine.datastream, _eventexecutor)
 
     release!(_ticksheduler)
@@ -696,17 +739,21 @@ function rxinference(;
     N            = length(datavarnames) # should be static
 
     inference_invoke_callback(callbacks, :before_model_creation)
-    fmodel, freturval = create_model(model, constraints, meta, options)
+    fmodel, freturnval = create_model(model, constraints, meta, options)
     inference_invoke_callback(callbacks, :after_model_creation, fmodel)
     vardict = getvardict(fmodel)
 
     # At the very beginning we try to preallocate handles for the `datavar` labels that are present in the `T` (from `datastream`)
     # This is not very type-styble-friendly but we do it once and it should pay-off in the inference procedure
-    datavars = ntuple(1:N) do i
+    datavars = ntuple(N) do i
         datavarname = datavarnames[i]
-        hasdatavar(fmodel, datavarname) || error("The datastream produces data for `$(datavarname)`, but the model does not have a datavar named `$(datavarname)`")
+        hasdatavar(fmodel, datavarname) || error("The `datastream` produces data for `$(datavarname)`, but the model does not have a datavar named `$(datavarname)`")
         return fmodel[datavarname]::DataVariable
     end
+
+    # Second we check redirect vars (if any present), as with the `datavars` we try to preallocate `redirectvars` handles
+    # This is not very type-styble-friendly but we do it once and it should pay-off in the inference procedure
+    # TODO this section is not complete yet [WIP]
 
     # If everything is ok with `datavars` and `redirectvars` next step is to initialise marginals and messages in the model
     # This happens only once at the creation, we do not reinitialise anything if the inference has been stopped and resumed with the `stop` and `start` functions
@@ -754,7 +801,7 @@ function rxinference(;
     if isnothing(returnvars)
         returnvars = [ name(variable) for (variable, value) in pairs(vardict) if (israndom(value) && !isproxy(value)) ]
     end
-    
+
     __inference_check_itertype(:returnvars, returnvars)
     eltype(returnvars) === Symbol || error("`returnvars` must contain a list of symbols")
 
@@ -782,7 +829,7 @@ function rxinference(;
     # Use `__check_has_randomvar` to filter out unknown or non-random variables in the `returnvars` and `historyvars` specification
     __check_has_randomvar(object, vardict, key) = begin
         haskey_check   = haskey(vardict, key)
-        israndom_check = haskey_check ? israndom(vardict[variable]) : false
+        israndom_check = haskey_check ? israndom(vardict[key]) : false
         if warn && !haskey_check
             @warn "`$(object)` object has `$(key)` specification, but model has no variable named `$(key)`. The `$(key)` specification is ignored. Use `warn = false` to suppress this warning."
         elseif warn && haskey_check && !israndom_check
@@ -792,7 +839,7 @@ function rxinference(;
     end
 
     returnvars  = filter((varkey) -> __check_has_randomvar(:returnvars, vardict, varkey), returnvars)
-    historyvars = Dict((varkey => value) for (varkey, value) in pairs(historyvars) if __check_has_randomvar(:historyvars, vardict, variable))
+    historyvars = Dict((varkey => value) for (varkey, value) in pairs(historyvars) if __check_has_randomvar(:historyvars, vardict, varkey))
     
     # At this point we must have properly defined and fixed `returnvars` and `historyvars` objects
 
@@ -801,31 +848,35 @@ function rxinference(;
 
     # TODO add a comment
     # For each random variable entry we create a boolean flag to track their updates
-    updateflags = Dict(variable => MarginalHasBeenUpdated(false) for (variable, _) in pairs(actors))
+    updateflags = Dict(variable => MarginalHasBeenUpdated(false) for variable in returnvars)
 
     # TODO add a comment
-    on_marginal_update = inference_get_callback(_callbacks, :on_marginal_update)
-    posteriors         = Dict(variable => obtain_marginal(vardict[variable]) |> schedule_on(_ticksheduler) |> ensure_update(fmodel, on_marginal_update, variable, updates[variable]) for (variable, actor) in pairs(actors))
-
-    # Second, for each random variable entry we create an actor
-    actors = Dict(
-        variable => make_actor(vardict[variable], value) 
-    )
+    on_marginal_update = inference_get_callback(callbacks, :on_marginal_update)
+    posteriors         = Dict(variable => obtain_marginal(vardict[variable]) |> schedule_on(tickscheduler) |> ensure_update(fmodel, on_marginal_update, variable, updateflags[variable]) for variable in returnvars)
 
     # TODO
     # inference_invoke_callback(callbacks, :before_inference, fmodel)
-    
+    engine = RxInferenceEngine(
+        T, Val(N), Val(0), # K todo
+        datastream, tickscheduler, posteriors,
+        updateflags, 
+        nothing, # history todo
+        datavars,
+        _iterations,
+        redirect,
+        (), # redirect vars todo
+        (), # todo
+        fe_actor,
+        fe_objective,
+        fe_source,
+        fmodel,
+        freturnval,
+        callbacks
+    )
 
     if autostart
-        startcallback()
+        start(engine)
     end
 
-    # TODO
-    posterior_values = Dict(variable => actor for (variable, actor) in pairs(actors))
-    fe_values        = fe_actor
-
-    # TODO
-    # inference_invoke_callback(callbacks, :after_inference, fmodel)
-
-    return RxInferenceResult(posterior_values, fe_values, fmodel, freturval, startcallback, stopcallback)
+    return engine
 end
