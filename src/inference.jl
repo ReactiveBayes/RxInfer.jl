@@ -1,4 +1,8 @@
-export rxinference, inference, InferenceResult, KeepEach, KeepLast
+export KeepEach, KeepLast
+export inference, InferenceResult
+export rxinference, @autoupdates, RxInferenceEngine
+
+using MacroTools # for `@autoupdates`
 
 import ReactiveMP: israndom, isdata, isconst, isproxy, isanonymous
 import ReactiveMP: InfCountingReal
@@ -508,16 +512,28 @@ end
 struct FromMarginalAutoUpdate end
 struct FromMessageAutoUpdate end # From message is not implemented, for the future
 
+import Base: string
+
+Base.string(::FromMarginalAutoUpdate) = "q"
+Base.string(::FromMessageAutoUpdate) = "μ"
+
 import Base: fetch
 
-Base.fetch(::FromMarginalAutoUpdate, variable) = ReactiveMP.getmarginal(variable, IncludeAll())
-Base.fetch(::FromMessageAutoUpdate, variable)  = error("`FromMessageAutoUpdate` fetch strategy is not implemented")
+# TODO for arrays
+Base.fetch(::FromMarginalAutoUpdate, variable::Union{DataVariable, RandomVariable}) = ReactiveMP.getmarginal(variable, IncludeAll())
+
+Base.fetch(::FromMessageAutoUpdate, variable::RandomVariable) = ReactiveMP.messagein(variable, 1) # Here we assume that predictive message has index `1`
+Base.fetch(::FromMessageAutoUpdate, variable::DataVariable)   = error("`FromMessageAutoUpdate` fetch strategy is not implemented for `DataVariable`")
 
 struct RxInferenceAutoUpdateSpecification{N, F, C}
     labels   :: NTuple{N, Symbol}
     from     :: F
     callback :: C
     variable :: Symbol
+end
+
+function Base.show(io::IO, specification::RxInferenceAutoUpdateSpecification)
+    print(io, join(specification.labels, ","), " = ", string(specification.callback), "(", string(specification.from), "(", specification.variable, "))")
 end
 
 function (specification::RxInferenceAutoUpdateSpecification)(model::FactorGraphModel)
@@ -528,9 +544,8 @@ function (specification::RxInferenceAutoUpdateSpecification)(model::FactorGraphM
         return model[label]
     end
 
-    # TODO consider supporting not only randomvar?
-    hasrandomvar(model, specification.variable) || 
-        error("Autoupdate specification defines an update from `$(specification.variable)`, but the model has no randomvar named `$(specification.variable)`")
+    (hasrandomvar(model, specification.variable) || hasdatavar(model, specification.variable)) ||
+        error("Autoupdate specification defines an update from `$(specification.variable)`, but the model has no randomvar/datavar named `$(specification.variable)`")
 
     variable = model[specification.variable]
 
@@ -545,8 +560,58 @@ end
 
 import Base: fetch
 
+# TODO for arrays
 Base.fetch(autoupdate::RxInferenceAutoUpdate)            = fetch(autoupdate, ReactiveMP.getdata(Rocket.getrecent(autoupdate.recent)))
 Base.fetch(autoupdate::RxInferenceAutoUpdate, something) = zip(as_tuple(autoupdate.datavars), as_tuple(autoupdate.callback(something)))
+
+macro autoupdates(code) 
+    ((code isa Expr) && (code.head === :block)) ||
+        error("Autoupdate requires a block of code `begin ... end` as an input")
+
+    specifications = []
+
+    code = MacroTools.postwalk(code) do expression
+        # We modify all expression of the form `... = callback(q(...))` or `... = callback(μ(...))`
+        if @capture(expression, (lhs_ = callback_(rhs_)) | (lhs_ = callback_(rhs__)))
+            if @capture(rhs, (q(variable_)) | (μ(variable_)))
+                # First we check that `variable` is a plain Symbol
+                (variable isa Symbol) ||
+                    error("Variable in the expression `$(expression)` must be a plain name, but a complex expression `$(variable)` found.")
+                # Next we extract `datavars` specification from the `lhs`                    
+                datavars = if lhs isa Symbol 
+                    (lhs, )
+                elseif lhs isa Expr && lhs.head === :tuple && all(arg -> arg isa Symbol, lhs.args)
+                    Tuple(lhs.args)
+                else
+                    error("Left hand side of the expression `$(expression)` must be a single symbol or a tuple of symbols")
+                end
+                # Only two options are possible within this `if` block
+                from = @capture(rhs, q(smth_)) ? :(RxInfer.FromMarginalAutoUpdate()) : :(RxInfer.FromMessageAutoUpdate()) 
+
+                push!(specifications, :(RxInfer.RxInferenceAutoUpdateSpecification($(datavars..., ), $from, $callback, $(QuoteNode(variable)))))
+
+                return :(nothing)
+            else
+                error("Complex call expression `$(expression)` in the `@autoupdates` macro")
+            end
+        else
+            return expression
+        end
+    end
+
+    isempty(specifications) && 
+        error("`@autoupdates` did not find any auto-updates specifications. Check the documentation for more information.")
+
+    output = quote 
+        begin 
+            $code
+
+            ($(specifications...), )   
+        end
+    end
+
+    return esc(output)
+end
 
 ## ------------------------------------------------------------------------ ##
 
