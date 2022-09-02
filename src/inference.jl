@@ -30,23 +30,45 @@ make_actor(x::AbstractArray{<:RandomVariable}, ::KeepLast) = buffer(Marginal, si
 
 ## Inference ensure update
 
-mutable struct MarginalHasBeenUpdated
+import Rocket: Actor, on_next!, on_error!, on_complete!
+
+# We can use `MarginalHasBeenUpdated` both as an actor in within the `ensure_update` operator
+mutable struct MarginalHasBeenUpdated <: Actor{Any}
     updated::Bool
 end
 
 __unset_updated!(updated::MarginalHasBeenUpdated) = updated.updated = false
 __set_updated!(updated::MarginalHasBeenUpdated)   = updated.updated = true
 
+Rocket.on_next!(updated::MarginalHasBeenUpdated, anything) = __set_updated!(updated)
+Rocket.on_error!(updated::MarginalHasBeenUpdated, err)     = begin end
+Rocket.on_complete!(updated::MarginalHasBeenUpdated)       = begin end
+
 # This creates a `tap` operator that will set the `updated` flag to true. 
 # Later on we check flags and `unset!` them after the `update!` procedure
-ensure_update(model::FactorGraphModel, callback, variable_name::Symbol, updated::MarginalHasBeenUpdated)  = tap((update) -> begin
+ensure_update(model::FactorGraphModel, callback, variable_name::Symbol, updated::MarginalHasBeenUpdated) = tap() do update
     __set_updated!(updated)
     callback(model, variable_name, update)
-end)
+end
 
-ensure_update(model::FactorGraphModel, ::Nothing, variable_name::Symbol, updated::MarginalHasBeenUpdated) = tap((_) -> begin 
+ensure_update(model::FactorGraphModel, ::Nothing, variable_name::Symbol, updated::MarginalHasBeenUpdated) = tap() do _
     __set_updated!(updated) # If `callback` is nothing we simply set updated flag
-end) 
+end
+
+function __check_and_unset_updated!(updates)
+    if all((v) -> v.updated, values(updates))
+        foreach(__unset_updated!, values(updates))
+    else
+        not_updated = filter((pair) -> !last(pair).updated, updates)
+        names = join(keys(not_updated), ", ")
+        error(
+            """
+            Variables [ $(names) ] have not been updated after an update event. 
+            Therefore, make sure to initialize all required marginals and messages. See `initmarginals` and `initmessages` keyword arguments for the inference function. 
+            """
+        )
+    end
+end
 
 ## Extra error handling
 
@@ -471,19 +493,11 @@ function inference(;
                 update!(vardict[key], value)
             end
             inference_invoke_callback(callbacks, :after_data_update, fmodel, data)
-            not_updated = filter((pair) -> !last(pair).updated, updates)
-            if length(not_updated) !== 0
-                names = join(keys(not_updated), ", ")
-                error(
-                    """
-                  Variables [ $(names) ] have not been updated after a single inference iteration. 
-                  Therefore, make sure to initialize all required marginals and messages. See `initmarginals` and `initmessages` keyword arguments for the `inference` function. 
-              """
-                )
-            end
-            for (_, update_flag) in pairs(updates)
-                __unset_updated!(update_flag)
-            end
+
+            # Check that all requested marginals have been updated and unset the `updated` flag
+            # Throws an error if some were not update
+            __check_and_unset_updated!(updates)
+
             if !isnothing(p)
                 ProgressMeter.next!(p)
             end
@@ -626,15 +640,17 @@ This is the main heart of the reactive inference procedure implemented in the `r
 
 
 """
-mutable struct RxInferenceEngine{T, D, L, V, P, U, H, A, FA, FO, FS, I, M, N, C}
+mutable struct RxInferenceEngine{T, D, L, V, P, H, U, A, FA, FO, FS, I, M, N, C}
     datastream       :: D
     tickscheduler    :: L
     mainsubscription :: Teardown
 
     datavars    :: V
     posteriors  :: P
-    updateflags :: U
     history     :: H
+
+    updateflags :: U
+    updatesubscriptions :: Vector{Teardown}
 
     # auto updates
     autoupdates :: A
@@ -672,15 +688,16 @@ mutable struct RxInferenceEngine{T, D, L, V, P, U, H, A, FA, FO, FS, I, M, N, C}
         model     :: M,
         returnval :: N,
         callbacks :: C
-        ) where { T, D, L, V, P, U, H, A, FA, FO, FS, I, M, N, C } = begin 
-            return new{T, D, L, V, P, U, H, A, FA, FO, FS, I, M, N, C}(
+        ) where { T, D, L, V, P, H, U, A, FA, FO, FS, I, M, N, C } = begin 
+            return new{T, D, L, V, P, H, U, A, FA, FO, FS, I, M, N, C}(
                 datastream,
                 tickscheduler,
                 voidTeardown,
                 datavars,
                 posteriors,
-                updateflags,
                 history,
+                updateflags,
+                Teardown[],
                 autoupdates,
                 fe_actor,
                 fe_objective,
@@ -709,11 +726,17 @@ function start(engine::RxInferenceEngine{T}) where {T}
         engine.fe_subscription = subscribe!(engine.fe_source, engine.fe_actor)
     end
 
-    engine.mainsubscription = subscribe!(engine.datastream, _eventexecutor)
+    # This subscription tracks updates of all `posteriors`
+    engine.updatesubscriptions = map(values(engine.posteriors), values(engine.updateflags)) do posterior, updateflag
+        return subscribe!(posterior, updateflag)
+    end
 
     release!(_ticksheduler)
 
     engine.is_running = true
+
+    # After all preparations we finaly can `subscribe!` on the `datastream`
+    engine.mainsubscription = subscribe!(engine.datastream, _eventexecutor)
 
     return nothing
 end
@@ -726,8 +749,7 @@ function stop(engine::RxInferenceEngine)
     end
 
     unsubscribe!(engine.mainsubscription)
-    unsubscribe!(engine.retvarsubscriptions)
-    unsubscribe!(engine.redirectsubscription)
+    unsubscribe!(engine.updatesubscriptions)
     unsubscribe!(engine.fe_subscription)
 
     engine.is_running = false
@@ -781,6 +803,7 @@ function Rocket.on_next!(executor::RxInferenceEventExecutor{T}, event::T) where 
 
         inference_invoke_callback(_callbacks, :after_data_update, _model, event)
         inference_invoke_callback(_callbacks, :after_iteration, _model, iteration)
+
     end
 
     # `release!` on `fe_actor` ensures that free energy sumed up between iterations correctly
@@ -790,24 +813,10 @@ function Rocket.on_next!(executor::RxInferenceEventExecutor{T}, event::T) where 
     
     # On this `release!` call we update our priors for the next step and also set `updated` flags
     release!(_tickscheduler)
+    
     inference_invoke_callback(_callbacks, :on_tick, _model)
 
-    not_updated = filter((pair) -> !last(pair).updated, _updateflags)
-
-    if any((v) -> !v.updated, values(_updateflags))
-        not_updated = filter((pair) -> !last(pair).updated, _updateflags)
-        names = join(keys(not_updated), ", ")
-        error(
-            """
-            Variables [ $(names) ] have not been updated after an update event. 
-            Therefore, make sure to initialize all required marginals and messages. See `initmarginals` and `initmessages` keyword arguments for the `inference` function. 
-            """
-        )
-    end
-
-    for update_flag in values(_updateflags)
-        __unset_updated!(update_flag)
-    end
+    __check_and_unset_updated!(_updateflags)
 end
 
 # TODO: do we need to add smth here?
@@ -947,16 +956,14 @@ function rxinference(;
     
     # At this point we must have properly defined and fixed `returnvars` and `historyvars` objects
 
-    # TODO add a comment
+    # `tickscheduler` defines a moment when we send new posterios in the `posteriors` streams
     tickscheduler = PendingScheduler()
 
-    # TODO add a comment
     # For each random variable entry in `returnvars` specification we create a boolean flag to track their updates
     updateflags = Dict(variable => MarginalHasBeenUpdated(false) for variable in returnvars)
 
-    # TODO add a comment
-    on_marginal_update = inference_get_callback(callbacks, :on_marginal_update)
-    posteriors         = Dict(variable => obtain_marginal(vardict[variable]) |> schedule_on(tickscheduler) |> map(Any, getdata) |> ensure_update(_model, on_marginal_update, variable, updateflags[variable]) for variable in returnvars)
+    # `posteriors` returns a `stream` for each entry in the `returnvars`
+    posteriors = Dict(variable => obtain_marginal(vardict[variable]) |> schedule_on(tickscheduler) |> map(Any, getdata) for variable in returnvars)
 
     # TODO
     # inference_invoke_callback(callbacks, :before_inference, fmodel)
