@@ -649,7 +649,7 @@ This is the main heart of the reactive inference procedure implemented in the `r
 
 
 """
-mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FO, FS, I, M, N, C}
+mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FO, FS, I, M, N, X, E}
     datastream       :: D
     tickscheduler    :: L
     mainsubscription :: Teardown
@@ -677,7 +677,7 @@ mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FO, FS, I, M, N,
     iterations :: I
     model      :: M
     returnval  :: N
-    callbacks  :: C
+    events     :: E
     is_running :: Bool
 
     RxInferenceEngine(
@@ -701,9 +701,10 @@ mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FO, FS, I, M, N,
         iterations :: I,
         model     :: M,
         returnval :: N,
-        callbacks :: C
-        ) where { T, D, L, V, P, H, S, U, A, FA, FO, FS, I, M, N, C } = begin 
-            return new{T, D, L, V, P, H, S, U, A, FA, FO, FS, I, M, N, C}(
+        enabledevents :: Val{X},
+        events    :: E
+        ) where { T, D, L, V, P, H, S, U, A, FA, FO, FS, I, M, N, X, E } = begin 
+            return new{T, D, L, V, P, H, S, U, A, FA, FO, FS, I, M, N, X, E}(
                 datastream,
                 tickscheduler,
                 voidTeardown,
@@ -722,11 +723,13 @@ mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FO, FS, I, M, N,
                 iterations,
                 model,
                 returnval,
-                callbacks, 
+                events, 
                 false
             )
         end
 end
+
+enabled_events(::RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FO, FS, I, M, N, X, E}) where { T, D, L, V, P, H, S, U, A, FA, FO, FS, I, M, N, X, E } = X
 
 function start(engine::RxInferenceEngine{T}) where {T}
 
@@ -803,31 +806,34 @@ function Rocket.on_next!(executor::RxInferenceEventExecutor{T}, event::T) where 
     _history        = executor.engine.history
     _historyactors  = executor.engine.historyactors
     _fe_actor       = executor.engine.fe_actor
-    _callbacks      = executor.engine.callbacks
+    _enabled_events = enabled_events(executor.engine)
+    _events         = executor.engine.events
 
     # Before we start our iterations we 'prefetch' recent values for autoupdates
     fupdates = map(fetch, _autoupdates)
  
     # This loop correspond to the different VMP iterations
     for iteration in 1:_iterations
-        inference_invoke_callback(_callbacks, :before_iteration, _model, iteration)
+        inference_invoke_event(Val(:before_iteration), Val(_enabled_events), _events, _model, iteration)
         
         # At first we update all our priors (auto updates) with the fixed values from the `redirectupdate` field
+        inference_invoke_event(Val(:before_auto_update), Val(_enabled_events), _events, _model, event)
         foreach(fupdates) do fupdate
             for (datavar, value) in fupdate
                 update!(datavar, value)
             end
         end
+        inference_invoke_event(Val(:after_auto_update), Val(_enabled_events), _events, _model, event)
 
         # At second we pass our observations
-        inference_invoke_callback(_callbacks, :before_data_update, _model, event)
+        inference_invoke_event(Val(:before_data_update), Val(_enabled_events), _events, _model, event)
 
         for (datavar, value) in zip(_datavars, values(event))
             update!(datavar, value)
         end
 
-        inference_invoke_callback(_callbacks, :after_data_update, _model, event)
-        inference_invoke_callback(_callbacks, :after_iteration, _model, iteration)
+        inference_invoke_event(Val(:after_data_update), Val(_enabled_events), _events, _model, event)
+        inference_invoke_event(Val(:after_iteration), Val(_enabled_events), _events, _model, iteration)
 
         __check_and_unset_updated!(_updateflags)
     end
@@ -838,20 +844,41 @@ function Rocket.on_next!(executor::RxInferenceEventExecutor{T}, event::T) where 
     end
 
     if !isnothing(_history) && !isnothing(_historyactors)
+        inference_invoke_event(Val(:before_history_save), Val(_enabled_events), _events, _model)
         for (name, actor) in pairs(_historyactors)
             push!(_history[name], getdata(getvalues(actor)))
         end
+        inference_invoke_event(Val(:after_history_save), Val(_enabled_events), _events, _model)
     end
     
-    # On this `release!` call we update our priors for the next step and also set `updated` flags
+    # On this `release!` call we update our priors for the next step
     release!(_tickscheduler)
     
-    inference_invoke_callback(_callbacks, :on_tick, _model)
+    inference_invoke_event(Val(:on_tick), Val(_enabled_events), _events, _model)
 end
 
 # TODO: do we need to add smth here?
 Rocket.on_error!(executor::RxInferenceEventExecutor, err) = __inference_process_error(err)
 Rocket.on_complete!(executor::RxInferenceEventExecutor)   = begin end
+
+## 
+
+struct RxInferenceEvent{T, D}
+    data :: D
+
+    RxInferenceEvent(::Val{T}, data::D) where { T, D } = new{T, D}(data)
+end
+
+Base.show(io::IO, ::RxInferenceEvent{T}) where T = print(io, "RxInferenceEvent(:", T, ")")
+
+function inference_invoke_event(::Val{Event}, ::Val{EnabledEvents}, events, args...) where { Event, EnabledEvents }
+    # Here `E` must be a tuple of symbols
+    if Event ∈ EnabledEvents
+        next!(events, RxInferenceEvent(Val(Event), args))
+    end
+end
+
+##
 
 function rxinference(;
     model::ModelGenerator,
@@ -869,6 +896,7 @@ function rxinference(;
     free_energy = false,
     free_energy_diagnostics = BetheFreeEnergyDefaultChecks,
     autostart = true,
+    events = nothing,
     callbacks = nothing,
     warn = true
 )
@@ -896,7 +924,7 @@ function rxinference(;
     end
 
     # Second we check autoupdates and pregenerate all necessary structures here
-    _autoupdates = map((autoupdate) -> autoupdate(_model), autoupdates)
+    _autoupdates = map((autoupdate) -> autoupdate(_model), something(autoupdates, ()))
 
     # If everything is ok with `datavars` and `redirectvars` next step is to initialise marginals and messages in the model
     # This happens only once at the creation, we do not reinitialise anything if the inference has been stopped and resumed with the `stop` and `start` functions
@@ -1011,7 +1039,15 @@ function rxinference(;
     # `posteriors` returns a `stream` for each entry in the `returnvars`
     posteriors = Dict(variable => obtain_marginal(vardict[variable]) |> schedule_on(tickscheduler) |> map(Any, getdata) for variable in returnvars)
 
-    # TODO
+    _events        = Subject(RxInferenceEvent)
+    _enabledevents = something(events, Val(()))
+
+    if !(_enabledevents isa Val) || !(unval(_enabledevents) isa Tuple)
+        error("`events` keyword argument must be a `Val` of tuple of symbols")
+    elseif length(unval(_enabledevents)) > 0 && !(eltype(unval(_enabledevents)) === Symbol)
+        error("`events` keyword argument must be a `Val` of tuple of symbols")
+    end
+
     # inference_invoke_callback(callbacks, :before_inference, fmodel)
     engine = RxInferenceEngine(
         T, 
@@ -1029,7 +1065,8 @@ function rxinference(;
         _iterations,
         _model,
         _returnval,
-        callbacks
+        _enabledevents,
+        _events
     )
 
     if autostart

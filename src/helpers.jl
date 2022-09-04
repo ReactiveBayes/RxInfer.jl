@@ -11,6 +11,11 @@ nthasfield(field::Symbol, ntuple::Type{ <: NamedTuple }) = field ∈ fields(ntup
 as_tuple(something)    = (something, )
 as_tuple(tuple::Tuple) = tuple
 
+# Val helpers 
+
+unval(::Val{X}) where X = X
+unval(something) = error("Cannot un-val, the value is not `Val`")
+
 # Reduce helpers
 
 sumreduce(array) = reduce(+, array)

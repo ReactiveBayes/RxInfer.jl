@@ -27,4 +27,16 @@ end
     @test as_tuple(("string", )) === ("string", )
 end
 
+@testset "Val helpers" begin 
+    import RxInfer: unval
+
+    @test unval(Val(1)) === 1
+    @test unval(Val(())) === ()
+    @test unval(Val(nothing)) === nothing
+
+    @test_throws ErrorException unval(1)
+    @test_throws ErrorException unval(())
+    @test_throws ErrorException unval(nothing)
+end
+
 end
