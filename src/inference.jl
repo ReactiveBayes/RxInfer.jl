@@ -910,35 +910,6 @@ function rxinference(;
     _iterations isa Integer || error("`iterations` argument must be of type Integer or `nothing`")
     _iterations > 0 || error("`iterations` arguments must be greater than zero")
 
-    # We check if `returnvars` argument is empty, in which case we return names of all random (non-proxy) variables in the model
-    if isnothing(returnvars)
-        returnvars = [ name(variable) for (variable, value) in pairs(vardict) if (israndom(value) && !isproxy(value)) ]
-    end
-
-    __inference_check_itertype(:returnvars, returnvars)
-    eltype(returnvars) === Symbol || error("`returnvars` must contain a list of symbols") # TODO?
-
-    _keephistory = something(keephistory, 0)
-    _keephistory isa Integer || error("`keephistory` argument must be of type Integer or `nothing`")
-    _keephistory >= 0 || error("`keephistory` arguments must be greater than or equal to zero")
-
-    # `rxinference` by default does not keep track of marginals updates history
-    # If user specifies `keephistory` keyword argument
-    if _keephistory > 0
-        if isnothing(historyvars)
-            # First what we do - we check if `historyvars` is nothing 
-            # In which case we mirror the `returnvars` specication and use either `KeepLast()` or `KeepEach` (depending on the iterations spec)
-            historyoption = _iterations > 1 ? KeepEach() : KeepLast()
-            historyvars   = Dict(vardict[name] => historyoption for name in returnvars)
-        elseif historyvars === KeepEach() || historyvars === KeepLast()
-            # Second we check if it is one of the two possible global values: `KeepEach` and `KeepLast`. 
-            # If so, we replace it with either `KeepEach` or `KeepLast` for each random and not-proxied variable in a model
-            historyvars = Dict(variable => historyvars for (variable, value) in pairs(vardict) if (israndom(value) && !isproxy(value)))
-        end
-    end
-
-    __inference_check_dicttype(:historyvars, historyvars)
-
     # Use `__check_has_randomvar` to filter out unknown or non-random variables in the `returnvars` and `historyvars` specification
     __check_has_randomvar(object, vardict, key) = begin
         haskey_check   = haskey(vardict, key)
@@ -951,8 +922,44 @@ function rxinference(;
         return haskey_check && israndom_check
     end
 
-    returnvars  = filter((varkey) -> __check_has_randomvar(:returnvars, vardict, varkey), returnvars)
-    historyvars = Dict((varkey => value) for (varkey, value) in pairs(historyvars) if __check_has_randomvar(:historyvars, vardict, varkey))
+    # We check if `returnvars` argument is empty, in which case we return names of all random (non-proxy) variables in the model
+    if isnothing(returnvars)
+        returnvars = [ name(variable) for (variable, value) in pairs(vardict) if (israndom(value) && !isproxy(value)) ]
+    end
+
+    eltype(returnvars) === Symbol || error("`returnvars` must contain a list of symbols") # TODO?
+
+    returnvars = filter((varkey) -> __check_has_randomvar(:returnvars, vardict, varkey), returnvars)
+
+    __inference_check_itertype(:returnvars, returnvars)
+    
+    _keephistory = something(keephistory, 0)
+    _keephistory isa Integer || error("`keephistory` argument must be of type Integer or `nothing`")
+    _keephistory >= 0 || error("`keephistory` arguments must be greater than or equal to zero")
+
+    # `rxinference` by default does not keep track of marginals updates history
+    # If user specifies `keephistory` keyword argument
+    if _keephistory > 0
+        if isnothing(historyvars)
+            # First what we do - we check if `historyvars` is nothing 
+            # In which case we mirror the `returnvars` specication and use either `KeepLast()` or `KeepEach` (depending on the iterations spec)
+            historyoption = _iterations > 1 ? KeepEach() : KeepLast()
+            historyvars   = Dict(name => historyoption for name in returnvars)
+        elseif historyvars === KeepEach() || historyvars === KeepLast()
+            # Second we check if it is one of the two possible global values: `KeepEach` and `KeepLast`. 
+            # If so, we replace it with either `KeepEach` or `KeepLast` for each random and not-proxied variable in a model
+            historyvars = Dict(name(variable) => historyvars for (variable, value) in pairs(vardict) if (israndom(value) && !isproxy(value)))
+        end
+
+        historyvars = Dict((varkey => value) for (varkey, value) in pairs(historyvars) if __check_has_randomvar(:historyvars, vardict, varkey))
+
+        __inference_check_dicttype(:historyvars, historyvars)
+    else
+        if !isnothing(historyvars) && warn
+            @warn "`historyvars` keyword argument requires `keephistory > 0`. Ignoring `historyvars`. Use `warn = false` to suppress this warning."
+            historyvars = nothing
+        end
+    end
     
     # At this point we must have properly defined and fixed `returnvars` and `historyvars` objects
 
