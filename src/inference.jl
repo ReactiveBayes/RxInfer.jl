@@ -2,6 +2,8 @@ export KeepEach, KeepLast
 export inference, InferenceResult
 export rxinference, @autoupdates, RxInferenceEngine
 
+import DataStructures: CircularBuffer
+
 using MacroTools # for `@autoupdates`
 
 import ReactiveMP: israndom, isdata, isconst, isproxy, isanonymous
@@ -25,8 +27,15 @@ make_actor(::RandomVariable, ::KeepEach)                       = keep(Marginal)
 make_actor(::Array{<:RandomVariable, N}, ::KeepEach) where {N} = keep(Array{Marginal, N})
 make_actor(x::AbstractArray{<:RandomVariable}, ::KeepEach)     = keep(typeof(similar(x, Marginal)))
 
+make_actor(::RandomVariable, ::KeepEach, capacity::Integer)                      = circularkeep(Marginal, capacity)
+make_actor(::Array{<:RandomVariable, N}, ::KeepEach, capcity::Integer) where {N} = circularkeep(Array{Marginal, N}, capacity)
+make_actor(x::AbstractArray{<:RandomVariable}, ::KeepEach, capacity::Integer)    = circularkeep(typeof(similar(x, Marginal)), capacity)
+
 make_actor(::RandomVariable, ::KeepLast)                   = storage(Marginal)
 make_actor(x::AbstractArray{<:RandomVariable}, ::KeepLast) = buffer(Marginal, size(x))
+
+make_actor(::RandomVariable, ::KeepLast, capacity::Integer)                   = storage(Marginal)
+make_actor(x::AbstractArray{<:RandomVariable}, ::KeepLast, capacity::Integer) = buffer(Marginal, size(x))
 
 ## Inference ensure update
 
@@ -640,14 +649,17 @@ This is the main heart of the reactive inference procedure implemented in the `r
 
 
 """
-mutable struct RxInferenceEngine{T, D, L, V, P, H, U, A, FA, FO, FS, I, M, N, C}
+mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FO, FS, I, M, N, C}
     datastream       :: D
     tickscheduler    :: L
     mainsubscription :: Teardown
 
     datavars    :: V
     posteriors  :: P
-    history     :: H
+
+    history       :: H
+    historyactors :: S
+    historysubscriptions :: Vector{Teardown}
 
     updateflags :: U
     updatesubscriptions :: Vector{Teardown}
@@ -676,7 +688,9 @@ mutable struct RxInferenceEngine{T, D, L, V, P, H, U, A, FA, FO, FS, I, M, N, C}
         datavars :: V,
         posteriors::P,
         updateflags::U,
+
         history::H,
+        historyactors::S,
         
         autoupdates :: A,
 
@@ -688,14 +702,16 @@ mutable struct RxInferenceEngine{T, D, L, V, P, H, U, A, FA, FO, FS, I, M, N, C}
         model     :: M,
         returnval :: N,
         callbacks :: C
-        ) where { T, D, L, V, P, H, U, A, FA, FO, FS, I, M, N, C } = begin 
-            return new{T, D, L, V, P, H, U, A, FA, FO, FS, I, M, N, C}(
+        ) where { T, D, L, V, P, H, S, U, A, FA, FO, FS, I, M, N, C } = begin 
+            return new{T, D, L, V, P, H, S, U, A, FA, FO, FS, I, M, N, C}(
                 datastream,
                 tickscheduler,
                 voidTeardown,
                 datavars,
                 posteriors,
                 history,
+                historyactors,
+                Teardown[],
                 updateflags,
                 Teardown[],
                 autoupdates,
@@ -722,13 +738,19 @@ function start(engine::RxInferenceEngine{T}) where {T}
     _eventexecutor = RxInferenceEventExecutor(T, engine)
     _ticksheduler  = engine.tickscheduler
 
-    if !isnothing(engine.fe_actor)
-        engine.fe_subscription = subscribe!(engine.fe_source, engine.fe_actor)
+    # This subscription tracks updates of all `posteriors`
+    engine.updatesubscriptions = map(keys(engine.updateflags), values(engine.updateflags)) do name, updateflag
+        return subscribe!(obtain_marginal(engine.model[name]), updateflag)
     end
 
-    # This subscription tracks updates of all `posteriors`
-    engine.updatesubscriptions = map(values(engine.posteriors), values(engine.updateflags)) do posterior, updateflag
-        return subscribe!(posterior, updateflag)
+    if !isnothing(engine.historyactors) && !isnothing(engine.history)
+        engine.historysubscriptions = map(keys(engine.historyactors), values(engine.historyactors)) do name, actor
+            return subscribe!(obtain_marginal(engine.model[name]), actor)
+        end
+    end
+
+    if !isnothing(engine.fe_actor)
+        engine.fe_subscription = subscribe!(engine.fe_source, engine.fe_actor)
     end
 
     release!(_ticksheduler)
@@ -748,9 +770,10 @@ function stop(engine::RxInferenceEngine)
         return nothing
     end
 
-    unsubscribe!(engine.mainsubscription)
-    unsubscribe!(engine.updatesubscriptions)
     unsubscribe!(engine.fe_subscription)
+    unsubscribe!(engine.historysubscriptions)
+    unsubscribe!(engine.updatesubscriptions)
+    unsubscribe!(engine.mainsubscription)    
 
     engine.is_running = false
 
@@ -777,6 +800,8 @@ function Rocket.on_next!(executor::RxInferenceEventExecutor{T}, event::T) where 
     _datavars       = executor.engine.datavars
     _autoupdates    = executor.engine.autoupdates
     _updateflags    = executor.engine.updateflags
+    _history        = executor.engine.history
+    _historyactors  = executor.engine.historyactors
     _fe_actor       = executor.engine.fe_actor
     _callbacks      = executor.engine.callbacks
 
@@ -804,19 +829,24 @@ function Rocket.on_next!(executor::RxInferenceEventExecutor{T}, event::T) where 
         inference_invoke_callback(_callbacks, :after_data_update, _model, event)
         inference_invoke_callback(_callbacks, :after_iteration, _model, iteration)
 
+        __check_and_unset_updated!(_updateflags)
     end
 
     # `release!` on `fe_actor` ensures that free energy sumed up between iterations correctly
     if !isnothing(_fe_actor)
         release!(_fe_actor)
     end
+
+    if !isnothing(_history) && !isnothing(_historyactors)
+        for (name, actor) in pairs(_historyactors)
+            push!(_history[name], getdata(getvalues(actor)))
+        end
+    end
     
     # On this `release!` call we update our priors for the next step and also set `updated` flags
     release!(_tickscheduler)
     
     inference_invoke_callback(_callbacks, :on_tick, _model)
-
-    __check_and_unset_updated!(_updateflags)
 end
 
 # TODO: do we need to add smth here?
@@ -960,6 +990,15 @@ function rxinference(;
             historyvars = nothing
         end
     end
+
+    # Here we finally create structures for updates history 
+    historyactors = nothing
+    history       = nothing
+
+    if !isnothing(historyvars) && _keephistory > 0
+        historyactors = Dict(name => make_actor(vardict[name], historyoption, _iterations) for (name, historyoption) in pairs(historyvars))
+        history       = Dict(name => CircularBuffer(_keephistory) for (name, _) in pairs(historyvars))
+    end
     
     # At this point we must have properly defined and fixed `returnvars` and `historyvars` objects
 
@@ -981,7 +1020,8 @@ function rxinference(;
         datavars,
         posteriors,
         updateflags, 
-        nothing, # history todo
+        history, 
+        historyactors,
         _autoupdates,
         fe_actor,
         fe_objective,
