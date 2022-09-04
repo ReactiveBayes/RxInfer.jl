@@ -112,9 +112,9 @@ return [
         hidden = false
     ),
     (
-        path  = "Smoothing Benchmark.ipynb", 
-        title = "Smoothing Benchmark", 
-        description = "Smoothing Benchmark for Internal testing.",
+        path  = "Tiny Benchmark.ipynb", 
+        title = "Tiny Benchmark", 
+        description = "Tiny Benchmark for Internal testing.",
         hidden = true
     )
 ]
