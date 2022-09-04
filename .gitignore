@@ -5,10 +5,11 @@ docs/Manifest.toml
 
 scripts/Manifest.toml
 
-demo/.ipynb_checkpoints
-demo/*incomplete.ipynb
-demo/*.jl
-demo/*WIP*
+examples/.ipynb_checkpoints
+examples/*incomplete.ipynb
+examples/*.jl
+examples/*WIP*
+examples/*gif
 
 _output
 test/_output
