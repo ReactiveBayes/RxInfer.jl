@@ -817,25 +817,24 @@ function Rocket.on_next!(executor::RxInferenceEventExecutor{T}, event::T) where 
         inference_invoke_event(Val(:before_iteration), Val(_enabled_events), _events, _model, iteration)
         
         # At first we update all our priors (auto updates) with the fixed values from the `redirectupdate` field
-        inference_invoke_event(Val(:before_auto_update), Val(_enabled_events), _events, _model, event)
+        inference_invoke_event(Val(:before_auto_update), Val(_enabled_events), _events, _model, fupdates)
         foreach(fupdates) do fupdate
             for (datavar, value) in fupdate
                 update!(datavar, value)
             end
         end
-        inference_invoke_event(Val(:after_auto_update), Val(_enabled_events), _events, _model, event)
+        inference_invoke_event(Val(:after_auto_update), Val(_enabled_events), _events, _model, fupdates)
 
         # At second we pass our observations
         inference_invoke_event(Val(:before_data_update), Val(_enabled_events), _events, _model, event)
-
         for (datavar, value) in zip(_datavars, values(event))
             update!(datavar, value)
         end
-
         inference_invoke_event(Val(:after_data_update), Val(_enabled_events), _events, _model, event)
-        inference_invoke_event(Val(:after_iteration), Val(_enabled_events), _events, _model, iteration)
 
         __check_and_unset_updated!(_updateflags)
+
+        inference_invoke_event(Val(:after_iteration), Val(_enabled_events), _events, _model, iteration)
     end
 
     # `release!` on `fe_actor` ensures that free energy sumed up between iterations correctly
@@ -876,6 +875,7 @@ function inference_invoke_event(::Val{Event}, ::Val{EnabledEvents}, events, args
     if Event ∈ EnabledEvents
         next!(events, RxInferenceEvent(Val(Event), args))
     end
+    return nothing
 end
 
 ##
