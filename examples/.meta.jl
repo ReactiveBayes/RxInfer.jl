@@ -52,6 +52,12 @@ return [
         hidden = false
     ),
     (
+        path = "Hierarchical Gaussian Filter.ipynb",
+        title = "Hierarchical Gaussian Filter",
+        description = "An example of online inference procedure for Hierarchical Gaussian Filter with univariate noisy observations using Variational Message Passing algorithm. Reference: [Ismail Senoz, Online Message Passing-based Inference in the Hierarchical Gaussian Filter](https://ieeexplore.ieee.org/document/9173980).",
+        hidden = false
+    ),
+    (
         path = "Identification Problem.ipynb",
         title = "System Identification Problem",
         description = "This example attempts to identify and separate two combined signals.",

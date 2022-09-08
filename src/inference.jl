@@ -649,7 +649,7 @@ This is the main heart of the reactive inference procedure implemented in the `r
 
 
 """
-mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FO, FS, I, M, N, X, E}
+mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E}
     datastream       :: D
     tickscheduler    :: L
     mainsubscription :: Teardown
@@ -669,6 +669,7 @@ mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FO, FS, I, M, N,
 
     # free energy related
     fe_actor        :: FA
+    fe_scheduler    :: FH
     fe_objective    :: FO
     fe_source       :: FS
     fe_subscription :: Teardown
@@ -695,6 +696,7 @@ mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FO, FS, I, M, N,
         autoupdates :: A,
 
         fe_actor :: FA,
+        fe_scheduler :: FH,
         fe_objective :: FO,
         fe_source :: FS,
 
@@ -703,8 +705,8 @@ mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FO, FS, I, M, N,
         returnval :: N,
         enabledevents :: Val{X},
         events    :: E
-        ) where { T, D, L, V, P, H, S, U, A, FA, FO, FS, I, M, N, X, E } = begin 
-            return new{T, D, L, V, P, H, S, U, A, FA, FO, FS, I, M, N, X, E}(
+        ) where { T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E } = begin 
+            return new{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E}(
                 datastream,
                 tickscheduler,
                 voidTeardown,
@@ -717,6 +719,7 @@ mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FO, FS, I, M, N,
                 Teardown[],
                 autoupdates,
                 fe_actor,
+                fe_scheduler,
                 fe_objective,
                 fe_source,
                 voidTeardown,
@@ -729,7 +732,7 @@ mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FO, FS, I, M, N,
         end
 end
 
-enabled_events(::RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FO, FS, I, M, N, X, E}) where { T, D, L, V, P, H, S, U, A, FA, FO, FS, I, M, N, X, E } = X
+enabled_events(::RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E}) where { T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E } = X
 
 function start(engine::RxInferenceEngine{T}) where {T}
 
@@ -806,6 +809,7 @@ function Rocket.on_next!(executor::RxInferenceEventExecutor{T}, event::T) where 
     _history        = executor.engine.history
     _historyactors  = executor.engine.historyactors
     _fe_actor       = executor.engine.fe_actor
+    _fe_scheduler   = executor.engine.fe_scheduler
     _enabled_events = enabled_events(executor.engine)
     _events         = executor.engine.events
 
@@ -833,6 +837,10 @@ function Rocket.on_next!(executor::RxInferenceEventExecutor{T}, event::T) where 
         inference_invoke_event(Val(:after_data_update), Val(_enabled_events), _events, _model, event)
 
         __check_and_unset_updated!(_updateflags)
+
+        if !isnothing(_fe_scheduler)
+            release!(_fe_scheduler)
+        end
 
         inference_invoke_event(Val(:after_iteration), Val(_enabled_events), _events, _model, iteration)
     end
@@ -948,9 +956,13 @@ function rxinference(;
         end
     end
 
+    # `tickscheduler` defines a moment when we send new posterios in the `posteriors` streams
+    tickscheduler = PendingScheduler()
+
     # Here we prepare our free energy streams (if requested)
     fe_actor     = nothing
     fe_objective = nothing
+    fe_scheduler = nothing
     fe_source    = nothing
 
     # `free_energy` may accept a type specification (e.g. `Float64`) in which case it counts as `true` as well
@@ -959,7 +971,8 @@ function rxinference(;
 
     if is_free_energy
         fe_actor     = ScoreActor(S)
-        fe_objective = BetheFreeEnergy(BetheFreeEnergyDefaultMarginalSkipStrategy, AsapScheduler(), free_energy_diagnostics)
+        fe_scheduler = PendingScheduler()
+        fe_objective = BetheFreeEnergy(BetheFreeEnergyDefaultMarginalSkipStrategy, fe_scheduler, free_energy_diagnostics)
         fe_source    = score(_model, FE_T, fe_objective)
     end
 
@@ -1030,9 +1043,6 @@ function rxinference(;
     
     # At this point we must have properly defined and fixed `returnvars` and `historyvars` objects
 
-    # `tickscheduler` defines a moment when we send new posterios in the `posteriors` streams
-    tickscheduler = PendingScheduler()
-
     # For each random variable entry in `returnvars` specification we create a boolean flag to track their updates
     updateflags = Dict(variable => MarginalHasBeenUpdated(false) for variable in returnvars)
 
@@ -1060,6 +1070,7 @@ function rxinference(;
         historyactors,
         _autoupdates,
         fe_actor,
+        fe_scheduler,
         fe_objective,
         fe_source,
         _iterations,
