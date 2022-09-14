@@ -38,9 +38,20 @@ function Rocket.release!(actor::ScoreActor)
     end
 end
 
-function Rocket.getvalues(actor::ScoreActor)
+function score_raw(actor::ScoreActor)
+    return copy(actor.score)
+end
+
+function score_final_only(actor::ScoreActor)
     if length(actor.inds) <= 1
-        return actor.score
+        return score_raw(actor)
+    end
+    return actor.score[actor.inds]
+end
+
+function score_aggreate_iterations(actor::ScoreActor)
+    if length(actor.inds) <= 1
+        return score_raw(actor)
     end
 
     n       = length(actor.inds)

@@ -521,7 +521,7 @@ function inference(;
         unsubscribe!(fe_subscription)
 
         posterior_values = Dict(variable => ReactiveMP.getdata(getvalues(actor)) for (variable, actor) in pairs(actors))
-        fe_values        = fe_actor !== nothing ? getvalues(fe_actor) : nothing
+        fe_values        = fe_actor !== nothing ? score_aggreate_iterations(fe_actor) : nothing
 
         inference_invoke_callback(callbacks, :after_inference, fmodel)
 
@@ -734,6 +734,27 @@ mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M
 end
 
 enabled_events(::RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E}) where { T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E } = X
+
+function Base.getproperty(result::RxInferenceEngine, property::Symbol)
+    if property === :free_energy
+        !isnothing(getfield(result, :fe_source)) ||
+            error("Bethe Free Energy stream has not been created. Use `free_energy = true` keyword argument for the `rxinference` function to compute Bethe Free Energy values.")
+        return getfield(result, :fe_source)
+    elseif property === :free_energy_history 
+        !isnothing(getfield(result, :fe_actor)) ||
+            error("Bethe Free Energy history has not been comptued. Use `free_energy = true` keyword argument for the `rxinference` function to compute Bethe Free Energy values.")
+        return score_aggreate_iterations(getfield(result, :fe_actor))
+    elseif property === :free_energy_final_only_history 
+        !isnothing(getfield(result, :fe_actor)) ||
+            error("Bethe Free Energy history has not been comptued. Use `free_energy = true` keyword argument for the `rxinference` function to compute Bethe Free Energy values.")
+        return score_final_only(getfield(result, :fe_actor))
+    elseif property === :free_energy_raw_history 
+        !isnothing(getfield(result, :fe_actor)) ||
+            error("Bethe Free Energy history has not been comptued. Use `free_energy = true` keyword argument for the `rxinference` function to compute Bethe Free Energy values.")
+        return score_raw(getfield(result, :fe_actor))
+    end
+    return getfield(result, property)
+end
 
 function start(engine::RxInferenceEngine{T}) where {T}
 
