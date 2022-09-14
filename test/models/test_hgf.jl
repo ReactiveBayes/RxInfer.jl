@@ -5,12 +5,15 @@ using RxInfer, BenchmarkTools, Random, Plots, Dates, LinearAlgebra, StableRNGs
 
 ## Model definition
 ## -------------------------------------------- ##
-@model [default_factorisation = MeanField()] function hgf_online_model(real_k, real_w, z_variance, y_variance)
+# We create a single-time step of corresponding state-space process to
+# perform online learning (filtering)
 
+@model function hgf(real_k, real_w, z_variance, y_variance)
+    
     # Priors from previous time step for `z`
     zt_min_mean = datavar(Float64)
     zt_min_var  = datavar(Float64)
-
+    
     # Priors from previous time step for `x`
     xt_min_mean = datavar(Float64)
     xt_min_var  = datavar(Float64)
@@ -18,74 +21,67 @@ using RxInfer, BenchmarkTools, Random, Plots, Dates, LinearAlgebra, StableRNGs
     zt_min ~ NormalMeanVariance(zt_min_mean, zt_min_var)
     xt_min ~ NormalMeanVariance(xt_min_mean, xt_min_var)
 
-    meta = GCVMetadata(GaussHermiteCubature(9))
-
     # Higher layer is modelled as a random walk 
-    zt ~ NormalMeanVariance(zt_min, z_variance) where {q = q(zt, zt_min)q(z_variance), meta = meta}
-
+    zt ~ NormalMeanVariance(zt_min, z_variance)
+    
     # Lower layer is modelled with `GCV` node
-    gcv_node, xt ~ GCV(xt_min, zt, real_k, real_w) where {q = q(xt, xt_min)q(zt)q(κ)q(ω)}
-
+    gcvnode, xt ~ GCV(xt_min, zt, real_k, real_w)
+    
     # Noisy observations 
     y = datavar(Float64)
     y ~ NormalMeanVariance(xt, y_variance)
-
-    return zt, xt, y, gcv_node, xt_min_mean, xt_min_var, zt_min_mean, zt_min_var
+    
+    return gcvnode
 end
+
+@constraints function hgfconstraints() 
+    q(xt, zt, xt_min) = q(xt, xt_min)q(zt)
+end
+
+@meta function hgfmeta()
+    # Lets use 31 approximation points in the Gauss Hermite cubature approximation method
+    GCV(xt_min, xt, zt) -> GCVMetadata(GaussHermiteCubature(31)) 
+end
+
 ## -------------------------------------------- ##
 ## Inference definition
 ## -------------------------------------------- ##
 function hgf_online_inference(data, vmp_iters, real_k, real_w, z_variance, y_variance)
-    n = length(data)
-
-    # We don't want to save all marginals from all VMP iterations
-    # but only last one after all VMP iterations per time step
-    # Rocket.jl exports PendingScheduler() object that postpones 
-    # any update unless manual `resolve!()` has been called
-    ms_scheduler = PendingScheduler()
-
-    mz = keep(Marginal)
-    mx = keep(Marginal)
-    fe = ScoreActor(Float64)
-
-    model, (zt, xt, y, gcv_node, xt_min_mean, xt_min_var, zt_min_mean, zt_min_var) =
-        hgf_online_model(real_k, real_w, z_variance, y_variance)
-
-    # Initial priors
-    current_zt_mean, current_zt_var = 0.0, 10.0
-    current_xt_mean, current_xt_var = 0.0, 10.0
-
-    s_mz = subscribe!(getmarginal(zt) |> schedule_on(ms_scheduler), mz)
-    s_mx = subscribe!(getmarginal(xt) |> schedule_on(ms_scheduler), mx)
-    s_fe = subscribe!(score(Float64, BetheFreeEnergy(), model), fe)
-
-    # Initial marginals to start VMP procedire
-    setmarginal!(gcv_node, :y_x, MvNormalMeanCovariance([0.0, 0.0], [5.0, 5.0]))
-    setmarginal!(gcv_node, :z, NormalMeanVariance(0.0, 5.0))
-
-    # For each observations we perofrm `vmp_iters` VMP iterations
-    for i in 1:n
-        for _ in 1:vmp_iters
-            update!(y, data[i])
-            update!(zt_min_mean, current_zt_mean)
-            update!(zt_min_var, current_zt_var)
-            update!(xt_min_mean, current_xt_mean)
-            update!(xt_min_var, current_xt_var)
-        end
-
-        # After all VMP iterations we release! `PendingScheduler`
-        # as well as release! `ScoreActor` to indicate new time step
-        release!(ms_scheduler)
-        release!(fe)
-
-        current_zt_mean, current_zt_var = mean_var(last(mz))::Tuple{Float64, Float64}
-        current_xt_mean, current_xt_var = mean_var(last(mx))::Tuple{Float64, Float64}
+    autoupdates   = @autoupdates begin
+        zt_min_mean, zt_min_var = mean_var(q(zt))
+        xt_min_mean, xt_min_var = mean_var(q(xt))
     end
 
-    # It is important to unsubscribe at the end of the inference procedure
-    unsubscribe!((s_mz, s_mx, s_fe))
+    result = rxinference(
+        model         = hgf(real_k, real_w, z_variance, y_variance),
+        constraints   = hgfconstraints(),
+        meta          = hgfmeta(),
+        data          = (y = data, ),
+        autoupdates   = autoupdates,
+        keephistory   = length(data),
+        historyvars    = (
+            xt = KeepLast(),
+            zt = KeepLast()
+        ),
+        initmarginals = (
+            zt = NormalMeanVariance(0.0, 5.0),
+            xt = NormalMeanVariance(0.0, 5.0),
+        ), 
+        iterations    = vmp_iters,
+        free_energy   = true,
+        autostart     = true,
+        callbacks     = (
+            after_model_creation = (model, returnval) -> begin 
+                gcvnode = returnval
+                setmarginal!(gcvnode, :y_x, MvNormalMeanCovariance([ 0.0, 0.0 ], [ 5.0, 5.0 ]))
+            end,
+        )
+    )
 
-    return map(getvalues, (mz, mx, fe))
+    mz = result.history[:zt];
+    mx = result.history[:xt];
+    
+    # TODO Free energy history
 end
 ## -------------------------------------------- ##
 

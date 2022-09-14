@@ -351,7 +351,7 @@ The list of all possible callbacks is present below:
 
 - `:on_marginal_update`:    args: (model::FactorGraphModel, name::Symbol, update)
 - `:before_model_creation`: args: ()
-- `:after_model_creation`:  args: (model::FactorGraphModel)
+- `:after_model_creation`:  args: (model::FactorGraphModel, returnval)
 - `:before_inference`:      args: (model::FactorGraphModel)
 - `:before_iteration`:      args: (model::FactorGraphModel, iteration::Int)
 - `:before_data_update`:    args: (model::FactorGraphModel, data)
@@ -395,10 +395,11 @@ function inference(;
     __inference_check_dicttype(:data, data)
     __inference_check_dicttype(:initmarginals, initmarginals)
     __inference_check_dicttype(:initmessages, initmessages)
+    __inference_check_dicttype(:callbacks, callbacks)
 
     inference_invoke_callback(callbacks, :before_model_creation)
     fmodel, freturval = create_model(model, constraints, meta, options)
-    inference_invoke_callback(callbacks, :after_model_creation, fmodel)
+    inference_invoke_callback(callbacks, :after_model_creation, fmodel, freturval)
     vardict = getvardict(fmodel)
 
     # First what we do - we check if `returnvars` is nothing or one of the two possible values: `KeepEach` and `KeepLast`. 
@@ -794,6 +795,9 @@ struct RxInferenceEventExecutor{T, E} <: Actor{T}
     RxInferenceEventExecutor(::Type{T}, engine::E) where {T, E} = new{T, E}(engine)
 end
 
+Base.show(io::IO, executor::RxInferenceEventExecutor)         = print(io, "RxInferenceEventExecutor")
+Base.show(io::IO, executor::Type{<:RxInferenceEventExecutor}) = print(io, "RxInferenceEventExecutor")
+
 function Rocket.on_next!(executor::RxInferenceEventExecutor{T}, event::T) where {T}
     # This is the `main` executor of the inference procedure
     # It listens new data and is supposed to run indefinitely
@@ -890,7 +894,8 @@ end
 
 function rxinference(;
     model::ModelGenerator,
-    datastream,
+    data = nothing,
+    datastream = nothing,
     initmarginals = nothing,
     initmessages = nothing, 
     autoupdates = nothing,
@@ -908,19 +913,37 @@ function rxinference(;
     callbacks = nothing,
     warn = true
 )
-    # __inference_check_dicttype(:data, data) # TODO
-    __inference_check_dicttype(:initmarginals, initmarginals)
-    __inference_check_dicttype(:initmessages, initmessages)
+    __inference_check_dicttype(:callbacks, callbacks)
 
-    # Unpack data stream as early as possible, we accept a data stream of `NamedTuple`'s (TODO maybe not the most efficient way)
-    T = eltype(datastream)
+    # The `rxinference` support both static `data` and dynamic `datastream`
+    if !isnothing(data) && !isnothing(datastream) # Ensure that only one of them set
+        error("`data` and `datastream` keyword arguments cannot be used together")
+    elseif isnothing(data) && isnothing(datastream) # Ensure that at least one of them set
+        error("The `rxinference` function requires either `data` or `datastream` keyword argument to be non-empty.")
+    end
 
-    datavarnames = fields(T)::NTuple
+    # In case if `data` is used we cast to a synchronous `datastream` with zip operator
+    _datastream, _T = if isnothing(datastream) && !isnothing(data)
+        __inference_check_dicttype(:data, data)
+
+        names  = tuple(keys(data)...)
+        items  = tuple(values(data)...)
+        stream = labeled(Val(names), iterable(zip(items...)))
+        etype  = NamedTuple{names, Tuple{eltype.(items)...}}
+
+        stream, etype
+    else 
+        eltype(datastream) <: NamedTuple || 
+            error("`eltype` of the `datastream` must be a `NamedTuple`")
+        datastream, eltype(datastream)
+    end
+
+    datavarnames = fields(_T)::NTuple
     N            = length(datavarnames) # should be static
 
     inference_invoke_callback(callbacks, :before_model_creation)
     _model, _returnval = create_model(model, constraints, meta, options)
-    inference_invoke_callback(callbacks, :after_model_creation, _model)
+    inference_invoke_callback(callbacks, :after_model_creation, _model, _returnval)
     vardict = getvardict(_model)
 
     # At the very beginning we try to preallocate handles for the `datavar` labels that are present in the `T` (from `datastream`)
@@ -933,6 +956,9 @@ function rxinference(;
 
     # Second we check autoupdates and pregenerate all necessary structures here
     _autoupdates = map((autoupdate) -> autoupdate(_model), something(autoupdates, ()))
+
+    __inference_check_dicttype(:initmarginals, initmarginals)
+    __inference_check_dicttype(:initmessages, initmessages)
 
     # If everything is ok with `datavars` and `redirectvars` next step is to initialise marginals and messages in the model
     # This happens only once at the creation, we do not reinitialise anything if the inference has been stopped and resumed with the `stop` and `start` functions
@@ -1060,8 +1086,8 @@ function rxinference(;
 
     # inference_invoke_callback(callbacks, :before_inference, fmodel)
     engine = RxInferenceEngine(
-        T, 
-        datastream, 
+        _T, 
+        _datastream, 
         tickscheduler, 
         datavars,
         posteriors,
