@@ -44,7 +44,7 @@ import Pkg; Pkg.rm("ReactiveMP"); Pkg.add(Pkg.PackageSpec(name = "ReactiveMP", r
 # Example usage of a reduced testset
 # julia --project --color=yes -e 'import Pkg; Pkg.test(test_args = [ "distributions:normal_mean_variance" ])'
 
-addprocs(max(Sys.CPU_THREADS, 4))
+addprocs(min(Sys.CPU_THREADS, 4))
 
 @everywhere using Test, Documenter, RxInfer
 @everywhere using TestSetExtensions

@@ -5,6 +5,9 @@ using RxInfer
 using Random
 
 @testset "@model macro tests" begin
+
+    import RxInfer: create_model
+
     @testset "Broadcasting #1" begin
         @model function bsyntax1(n, broadcasting)
             m ~ NormalMeanPrecision(0.0, 1.0)
@@ -26,8 +29,8 @@ using Random
 
         n = 10
         # Test that both model create without any issues
-        modelb, (nodesb, yb, mb, tb) = bsyntax1(n, true)
-        model, (nodes, y, m, t)      = bsyntax1(n, false)
+        modelb, (nodesb, yb, mb, tb) = create_model(bsyntax1(n, true))
+        model, (nodes, y, m, t)      = create_model(bsyntax1(n, false))
 
         # Test that degrees match
         @test ReactiveMP.degree(mb) === n + 1
@@ -67,7 +70,7 @@ using Random
 
         n = 10
         # Test that model creates without any issues
-        model, (nodes,) = bsyntax2(n)
+        model, (nodes,) = create_model(bsyntax2(n))
 
         @test length(getrandom(model)) === n + n + n + n
 
@@ -87,7 +90,7 @@ using Random
             y .~ NormalMeanVariance(x, 1.0) # <- y has not be defined, but used in broadcasting
         end
 
-        @test_throws ErrorException berror1(10)
+        @test_throws ErrorException create_model(berror1(10))
     end
 
     @testset "Error #2: Fail if variables has been overwritten" begin
@@ -112,14 +115,14 @@ using Random
             y ~ NormalMeanPrecision(x, 1.0)
         end
 
-        @test_throws UndefVarError mymodel1(condition = -1)
-        @test_throws ErrorException mymodel1(condition = 0)
-        @test_throws ErrorException mymodel1(condition = 1)
+        @test_throws UndefVarError create_model(mymodel1(condition = -1))
+        @test_throws ErrorException create_model(mymodel1(condition = 0))
+        @test_throws ErrorException create_model(mymodel1(condition = 1))
 
-        m, _ = mymodel1(condition = 2)
+        m, _ = create_model(mymodel1(condition = 2))
         @test haskey(m, :x) && ReactiveMP.degree(m[:x]) === 2
 
-        m, _ = mymodel1(condition = 3)
+        m, _ = create_model(mymodel1(condition = 3))
         @test haskey(m, :x) && ReactiveMP.degree(m[:x]) === 2
     end
 end
