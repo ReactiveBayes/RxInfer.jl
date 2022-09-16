@@ -1,4 +1,4 @@
-export ModelOptions, model_options
+
 export FactorGraphModel, create_model, model_name
 export AutoVar
 export getoptions, getconstraints, getmeta
@@ -11,22 +11,15 @@ function create_model end
 
 function model_name end
 
-# Model Options
-
-struct ModelOptions{P, F, S}
-    pipeline                  :: P
-    default_factorisation     :: F
-    global_reactive_scheduler :: S
-end
+# Model Inference Options
 
 """
-    model_options(options...)
+    ModelInferenceOptions(; kwargs...)
 
-Creates model options object. The list of available options is present below:
+Creates model inference options object. The list of available options is present below.
 
 ### Options
 
-- `default_factorisation`: specifies default factorisation for all factor nodes, e.g. `MeanField()` or `FullFactorisation`. **Note**: this setting is not compatible with `@constraints`
 - `limit_stack_depth`: limits the stack depth for computing messages, helps with `StackOverflowError` for some huge models, but reduces the performance of inference backend. Accepts integer as an argument that specifies the maximum number of recursive depth. Lower is better for stack overflow error, but worse for performance.
 
 ### Advanced options
@@ -34,43 +27,34 @@ Creates model options object. The list of available options is present below:
 - `pipeline`: changes the default pipeline for each factor node in the graph
 - `global_reactive_scheduler`: changes the scheduler of reactive streams, see Rocket.jl for more info, defaults to no scheduler
 
-See also: [`inference`](@ref)
+See also: [`inference`](@ref), [`rxinference`](@ref)
 """
-function model_options end
+struct ModelInferenceOptions{P, S}
+    pipeline                  :: P
+    global_reactive_scheduler :: S
+end
 
-model_options(; kwargs...) = model_options(kwargs)
-
-model_options(pairs::Base.Iterators.Pairs) = model_options(NamedTuple(pairs))
-
-available_option_names(::Type{<:ModelOptions}) = (
+available_option_names(::Type{ <: ModelInferenceOptions }) = (
     :pipeline,
-    :default_factorisation,
     :global_reactive_scheduler,
     :limit_stack_depth
 )
 
-__as_named_tuple(nt::NamedTuple, arg1::NamedTuple{T, Tuple{Nothing}}, tail...) where {T} = __as_named_tuple(nt, tail...)
-__as_named_tuple(nt::NamedTuple, arg1::NamedTuple, tail...)                              = __as_named_tuple(merge(nt, arg1), tail...)
+import Base: convert
 
-__as_named_tuple(nt::NamedTuple) = nt
+function Base.convert(::Type{ModelInferenceOptions}, options::NamedTuple{keys}) where { keys }
 
-as_named_tuple(options::ModelOptions) = __as_named_tuple((;),
-    (pipeline = options.pipeline,),
-    (default_factorisation = options.default_factorisation,),
-    (global_reactive_scheduler = options.global_reactive_scheduler,)
-)
+    available_options = (:pipeline, :global_reactive_scheduler, :limit_stack_depth)
 
-function model_options(options::NamedTuple)
+    for key in keys
+        key ∈ available_options || error("Unknown model inference options: $(key).")
+    end
+
     pipeline                  = nothing
-    default_factorisation     = nothing
     global_reactive_scheduler = nothing
 
     if haskey(options, :pipeline)
         pipeline = options[:pipeline]
-    end
-
-    if haskey(options, :default_factorisation)
-        default_factorisation = options[:default_factorisation]
     end
 
     if haskey(options, :global_reactive_scheduler) && haskey(options, :limit_stack_depth)
@@ -83,25 +67,13 @@ function model_options(options::NamedTuple)
         global_reactive_scheduler = LimitStackScheduler(options[:limit_stack_depth]...)
     end
 
-    for key::Symbol in
-        setdiff(union(available_option_names(ModelOptions), fields(options)), available_option_names(ModelOptions))
-        @warn "Unknown option key: $key = $(options[key])"
-    end
-
-    return ModelOptions(
-        pipeline,
-        default_factorisation,
-        global_reactive_scheduler
-    )
+    return ModelInferenceOptions(pipeline, global_reactive_scheduler)
 end
 
-global_reactive_scheduler(options::ModelOptions) = something(options.global_reactive_scheduler, AsapScheduler())
-get_pipeline_stages(options::ModelOptions)       = something(options.pipeline, EmptyPipelineStage())
-default_factorisation(options::ModelOptions)     = something(options.default_factorisation, UnspecifiedConstraints())
+global_reactive_scheduler(options::ModelInferenceOptions) = something(options.global_reactive_scheduler, AsapScheduler())
+get_pipeline_stages(options::ModelInferenceOptions)       = something(options.pipeline, EmptyPipelineStage())
 
-Base.merge(nt::NamedTuple, options::ModelOptions) = model_options(merge(nt, as_named_tuple(options)))
-
-UnspecifiedModelOptions() = model_options()
+UnspecifiedModelInferenceOptions() = convert(ModelInferenceOptions, (;))
 
 struct FactorGraphModel{C, M, O}
     constraints :: C
@@ -211,15 +183,10 @@ end
 import ReactiveMP: resolve_factorisation
 
 node_resolve_factorisation(model::FactorGraphModel, something, fform, variables) = something
-node_resolve_factorisation(model::FactorGraphModel, ::Nothing, fform, variables) = node_resolve_factorisation(model, getconstraints(model), default_factorisation(getoptions(model)), fform, variables)
+node_resolve_factorisation(model::FactorGraphModel, ::Nothing, fform, variables) = node_resolve_constraints_factorisation(model, getconstraints(model), fform, variables)
 
-node_resolve_factorisation(model::FactorGraphModel, constraints, default, fform, variables)                         = error("Cannot resolve factorisation constrains. Both `constraints` and `default_factorisation` option have been set, which is disallowed.")
-node_resolve_factorisation(model::FactorGraphModel, ::ConstraintsSpecification{Tuple{}}, default, fform, variables) = default
-node_resolve_factorisation(model::FactorGraphModel, ::UnspecifiedConstraints, default, fform, variables)            = default
-node_resolve_factorisation(model::FactorGraphModel, constraints, ::UnspecifiedConstraints, fform, variables)        = resolve_factorisation(constraints, getvariables(model), fform, variables)
-
-node_resolve_factorisation(model::FactorGraphModel, ::ConstraintsSpecification{Tuple{}}, ::UnspecifiedConstraints, fform, variables) = resolve_factorisation(UnspecifiedConstraints(), getvariables(model), fform, variables)
-node_resolve_factorisation(model::FactorGraphModel, ::UnspecifiedConstraints, ::UnspecifiedConstraints, fform, variables)            = resolve_factorisation(UnspecifiedConstraints(), getvariables(model), fform, variables)
+node_resolve_constraints_factorisation(model::FactorGraphModel, constraints, fform, variables)                         = resolve_factorisation(constraints, getvariables(model), fform, variables)
+node_resolve_constraints_factorisation(model::FactorGraphModel, ::ConstraintsSpecification{Tuple{}}, fform, variables) = resolve_factorisation(UnspecifiedConstraints(), getvariables(model), fform, variables)
 
 ## meta 
 
@@ -285,7 +252,7 @@ Returns a tuple of 2 values:
 function create_model(generator::ModelGenerator, constraints = nothing, meta = nothing, options = nothing)
     sconstraints = something(constraints, UnspecifiedConstraints())
     smeta        = something(meta, UnspecifiedMeta())
-    soptions     = something(options, UnspecifiedModelOptions())
+    soptions     = something(options, UnspecifiedModelInferenceOptions())
     model        = FactorGraphModel(sconstraints, smeta, soptions)
     returnvars   = generator(model)
     # `activate!` function creates reactive connections in the factor graph model and finalises model structure

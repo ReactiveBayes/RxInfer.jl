@@ -5,7 +5,7 @@ using RxInfer, BenchmarkTools, Random, Plots, Dates, LinearAlgebra, StableRNGs
 
 ## Model definition
 ## -------------------------------------------- ##
-@model [default_factorisation = MeanField()] function transition_model(n)
+@model function transition_model(n)
     A ~ MatrixDirichlet(ones(3, 3))
     B ~ MatrixDirichlet([10.0 1.0 1.0; 1.0 10.0 1.0; 1.0 1.0 10.0])
 
@@ -17,7 +17,7 @@ using RxInfer, BenchmarkTools, Random, Plots, Dates, LinearAlgebra, StableRNGs
     s_prev = s_0
 
     for t in 1:n
-        s[t] ~ Transition(s_prev, A) where {q = q(out, in)q(a)}
+        s[t] ~ Transition(s_prev, A) where { q = q(out, in)q(a) }
         x[t] ~ Transition(s[t], B)
         s_prev = s[t]
     end
@@ -29,6 +29,8 @@ end
 ## -------------------------------------------- ##
 function inference(data, vmp_iters)
     n = length(data)
+
+    # TODO: add meanfield
 
     model, (s, x, A, B) = transition_model(model_options(limit_stack_depth = 500), n)
 

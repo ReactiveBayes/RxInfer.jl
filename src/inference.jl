@@ -87,7 +87,7 @@ function __inference_process_error(err::StackOverflowError)
     @error """
     Stack overflow error occurred during the inference procedure. 
     The inference engine may execute message update rules recursively, hence, the model graph size might be causing this error. 
-    To resolve this issue, try using `limit_stack_depth` option for model creation. See `?model_options` and `?inference` documentation for more details.
+    To resolve this issue, try using `limit_stack_depth` inference option for model creation. See `?inference` documentation for more details.
     The `limit_stack_depth` option does not help against over stack overflow errors that might hapenning outside of the model creation or message update rules execution.
     """
     rethrow(err) # Shows the original stack trace
@@ -239,7 +239,7 @@ For more information about some of the arguments, please check below.
 - `initmessages = nothing`: `NamedTuple` or `Dict` with initial messages, optional, defaults to nothing
 - `constraints = nothing`: constraints specification object, optional, see `@constraints`
 - `meta  = nothing`: meta specification object, optional, may be required for some models, see `@meta`
-- `options = nothing`: model creation options, optional, see `model_options`
+- `options = nothing`: model creation options, optional
 - `returnvars = nothing`: return structure info, optional, defaults to return everything at each iteration, see below for more information
 - `iterations = nothing`: number of iterations, optional, defaults to `nothing`, we do not distinguish between variational message passing or Loopy belief propagation or expectation propagation iterations, see below for more information
 - `free_energy = false`: compute the Bethe free energy, optional, defaults to false. Can be passed a floating point type, e.g. `Float64`, for better efficiency, but disables automatic differentiation packages, such as ForwardDiff.jl
@@ -280,7 +280,9 @@ Loopy belief propagation may need some messages in a model to be pre-initialised
 
 - ### `options`
 
-See `?model_options`.
+- `limit_stack_depth`: limits the stack depth for computing messages, helps with `StackOverflowError` for some huge models, but reduces the performance of inference backend. Accepts integer as an argument that specifies the maximum number of recursive depth. Lower is better for stack overflow error, but worse for performance.
+- `pipeline`: changes the default pipeline for each factor node in the graph
+- `global_reactive_scheduler`: changes the scheduler of reactive streams, see Rocket.jl for more info, defaults to no scheduler
 
 - ### `returnvars`
 
