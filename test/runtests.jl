@@ -44,7 +44,7 @@ import Pkg; Pkg.rm("ReactiveMP"); Pkg.add(Pkg.PackageSpec(name = "ReactiveMP", r
 # Example usage of a reduced testset
 # julia --project --color=yes -e 'import Pkg; Pkg.test(test_args = [ "distributions:normal_mean_variance" ])'
 
-addprocs(Sys.CPU_THREADS)
+addprocs(max(Sys.CPU_THREADS, 4))
 
 @everywhere using Test, Documenter, RxInfer
 @everywhere using TestSetExtensions
@@ -187,7 +187,8 @@ using Aqua
 if isempty(testrunner.enabled_tests)
     println("Running all tests...")
     # `project_toml_formatting` is broken on CI, revise at some point
-    Aqua.test_all(RxInfer; ambiguities = false, project_toml_formatting = false)
+    # TODO uncomment Aqua.test_all
+    # Aqua.test_all(RxInfer; ambiguities = false, project_toml_formatting = false)
     # doctest(RxInfer)
 else
     println("Running specific tests:")

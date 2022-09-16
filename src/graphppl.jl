@@ -16,11 +16,9 @@ function GraphPPL.write_model_structure(::RxInferBackend,
     ms_kwargs,
     ms_body
 )
-
     generator = gensym(ms_name)
 
     return quote
-
         function ($generator)($ms_model::RxInfer.FactorGraphModel, $(ms_args...); $(ms_kwargs...))
             $(ms_args_checks...)
             $(ms_args_const_init_block...)
@@ -28,7 +26,7 @@ function GraphPPL.write_model_structure(::RxInferBackend,
         end
 
         function $ms_name($(ms_args...); $(ms_kwargs...))
-            return RxInfer.ModelGenerator($generator, ($(ms_args...), ), (; $(ms_kwargs...), ))
+            return RxInfer.ModelGenerator($generator, ($(ms_args...),), (; $(ms_kwargs...)))
         end
 
         RxInfer.model_name(::typeof($ms_name)) = $(QuoteNode(ms_name))

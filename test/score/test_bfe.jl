@@ -7,23 +7,23 @@ import RxInfer: get_skip_strategy, get_scheduler, apply_diagnostic_check
 import ReactiveMP: InfCountingReal, FactorNodeCreationOptions, make_node, activate!
 
 @testset "BetheFreeEnergy score tests" begin
-
     @testset "Diagnostic check tests" begin
-
         @testset "`BetheFreeEnergyCheckInfs` diagnostic" begin
-
             stream = Subject(Any)
 
-            vbenergy = stream |> map(Float64, entropy) 
+            vbenergy = stream |> map(Float64, entropy)
             vbenergy = apply_diagnostic_check(BetheFreeEnergyCheckInfs(), randomvar(:x), vbenergy)
 
             events = []
 
-            subscription = subscribe!(vbenergy |> safe(), lambda(
-                on_next     = (data) -> push!(events, float(data)),
-                on_error    = (err) -> push!(events, err),
-                on_complete = () -> push!(events, "completed")
-            ))
+            subscription = subscribe!(
+                vbenergy |> safe(),
+                lambda(
+                    on_next     = (data) -> push!(events, float(data)),
+                    on_error    = (err) -> push!(events, err),
+                    on_complete = () -> push!(events, "completed")
+                )
+            )
 
             # First value is ok
             next!(stream, NormalMeanVariance(0.0, 1.0))
@@ -43,19 +43,21 @@ import ReactiveMP: InfCountingReal, FactorNodeCreationOptions, make_node, activa
         end
 
         @testset "`BetheFreeEnergyCheckNaNs` for variable bound energy" begin
-
             stream = Subject(Any)
 
-            vbenergy = stream |> map(Float64, entropy) 
+            vbenergy = stream |> map(Float64, entropy)
             vbenergy = apply_diagnostic_check(BetheFreeEnergyCheckNaNs(), randomvar(:x), vbenergy)
 
             events = []
 
-            subscription = subscribe!(vbenergy |> safe(), lambda(
-                on_next     = (data) -> push!(events, float(data)),
-                on_error    = (err) -> push!(events, err),
-                on_complete = () -> push!(events, "completed")
-            ))
+            subscription = subscribe!(
+                vbenergy |> safe(),
+                lambda(
+                    on_next     = (data) -> push!(events, float(data)),
+                    on_error    = (err) -> push!(events, err),
+                    on_complete = () -> push!(events, "completed")
+                )
+            )
 
             # First value is ok
             next!(stream, NormalMeanVariance(0.0, 1.0))
@@ -75,19 +77,21 @@ import ReactiveMP: InfCountingReal, FactorNodeCreationOptions, make_node, activa
         end
 
         @testset "Empty diagnostic check" begin
-
             stream = Subject(Any)
 
-            vbenergy = stream |> map(Float64, entropy) 
+            vbenergy = stream |> map(Float64, entropy)
             vbenergy = apply_diagnostic_check(nothing, randomvar(:x), vbenergy)
 
             events = []
 
-            subscription = subscribe!(vbenergy |> safe(), lambda(
-                on_next     = (data) -> push!(events, float(data)),
-                on_error    = (err) -> push!(events, err),
-                on_complete = () -> push!(events, "completed")
-            ))
+            subscription = subscribe!(
+                vbenergy |> safe(),
+                lambda(
+                    on_next     = (data) -> push!(events, float(data)),
+                    on_error    = (err) -> push!(events, err),
+                    on_complete = () -> push!(events, "completed")
+                )
+            )
 
             # First value is ok
             next!(stream, NormalMeanVariance(0.0, 1.0))

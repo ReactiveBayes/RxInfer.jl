@@ -52,7 +52,11 @@ function __approximate(constraint::SampleListFormConstraint{N, R, S, M}, left, r
     return ReactiveMP.approximate_prod_with_sample_list(constraint.rng, constraint.method, left, right, N)
 end
 
-function __approximate(constraint::SampleListFormConstraint{N, R, S, M}, left::ContinuousUnivariateLogPdf, right::ContinuousUnivariateLogPdf) where {N, R, S <: AutoProposal, M} 
+function __approximate(
+    constraint::SampleListFormConstraint{N, R, S, M},
+    left::ContinuousUnivariateLogPdf,
+    right::ContinuousUnivariateLogPdf
+) where {N, R, S <: AutoProposal, M}
     return error("Cannot approximate the product of $(left) and $(right) as a sample list.")
 end
 

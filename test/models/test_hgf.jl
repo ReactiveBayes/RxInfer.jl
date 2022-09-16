@@ -9,11 +9,11 @@ using RxInfer, BenchmarkTools, Random, Plots, Dates, LinearAlgebra, StableRNGs
 # perform online learning (filtering)
 
 @model function hgf(real_k, real_w, z_variance, y_variance)
-    
+
     # Priors from previous time step for `z`
     zt_min_mean = datavar(Float64)
     zt_min_var  = datavar(Float64)
-    
+
     # Priors from previous time step for `x`
     xt_min_mean = datavar(Float64)
     xt_min_var  = datavar(Float64)
@@ -23,31 +23,31 @@ using RxInfer, BenchmarkTools, Random, Plots, Dates, LinearAlgebra, StableRNGs
 
     # Higher layer is modelled as a random walk 
     zt ~ NormalMeanVariance(zt_min, z_variance)
-    
+
     # Lower layer is modelled with `GCV` node
     gcvnode, xt ~ GCV(xt_min, zt, real_k, real_w)
-    
+
     # Noisy observations 
     y = datavar(Float64)
     y ~ NormalMeanVariance(xt, y_variance)
-    
+
     return gcvnode
 end
 
-@constraints function hgfconstraints() 
+@constraints function hgfconstraints()
     q(xt, zt, xt_min) = q(xt, xt_min)q(zt)
 end
 
 @meta function hgfmeta()
     # Lets use 31 approximation points in the Gauss Hermite cubature approximation method
-    GCV(xt_min, xt, zt) -> GCVMetadata(GaussHermiteCubature(31)) 
+    GCV(xt_min, xt, zt) -> GCVMetadata(GaussHermiteCubature(31))
 end
 
 ## -------------------------------------------- ##
 ## Inference definition
 ## -------------------------------------------- ##
 function hgf_online_inference(data, vmp_iters, real_k, real_w, z_variance, y_variance)
-    autoupdates   = @autoupdates begin
+    autoupdates = @autoupdates begin
         zt_min_mean, zt_min_var = mean_var(q(zt))
         xt_min_mean, xt_min_var = mean_var(q(xt))
     end
@@ -56,31 +56,31 @@ function hgf_online_inference(data, vmp_iters, real_k, real_w, z_variance, y_var
         model         = hgf(real_k, real_w, z_variance, y_variance),
         constraints   = hgfconstraints(),
         meta          = hgfmeta(),
-        data          = (y = data, ),
+        data          = (y = data,),
         autoupdates   = autoupdates,
         keephistory   = length(data),
-        historyvars    = (
-            xt = KeepLast(),
-            zt = KeepLast()
-        ),
+        historyvars   = (
+        xt = KeepLast(),
+        zt = KeepLast()
+    ),
         initmarginals = (
-            zt = NormalMeanVariance(0.0, 5.0),
-            xt = NormalMeanVariance(0.0, 5.0),
-        ), 
+        zt = NormalMeanVariance(0.0, 5.0),
+        xt = NormalMeanVariance(0.0, 5.0)
+    ),
         iterations    = vmp_iters,
         free_energy   = true,
         autostart     = true,
         callbacks     = (
-            after_model_creation = (model, returnval) -> begin 
-                gcvnode = returnval
-                setmarginal!(gcvnode, :y_x, MvNormalMeanCovariance([ 0.0, 0.0 ], [ 5.0, 5.0 ]))
-            end,
-        )
+        after_model_creation = (model, returnval) -> begin
+            gcvnode = returnval
+            setmarginal!(gcvnode, :y_x, MvNormalMeanCovariance([0.0, 0.0], [5.0, 5.0]))
+        end,
+    )
     )
 
-    mz = result.history[:zt];
-    mx = result.history[:xt];
-    
+    mz = result.history[:zt]
+    mx = result.history[:xt]
+
     # TODO Free energy history
 end
 ## -------------------------------------------- ##

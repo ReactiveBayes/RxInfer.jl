@@ -34,7 +34,9 @@ struct ModelInferenceOptions{P, S}
     global_reactive_scheduler :: S
 end
 
-available_option_names(::Type{ <: ModelInferenceOptions }) = (
+UnspecifiedModelInferenceOptions() = convert(ModelInferenceOptions, (;))
+
+available_option_names(::Type{<:ModelInferenceOptions}) = (
     :pipeline,
     :global_reactive_scheduler,
     :limit_stack_depth
@@ -42,8 +44,11 @@ available_option_names(::Type{ <: ModelInferenceOptions }) = (
 
 import Base: convert
 
-function Base.convert(::Type{ModelInferenceOptions}, options::NamedTuple{keys}) where { keys }
+function Base.convert(::Type{ModelInferenceOptions}, options::Nothing)
+    return UnspecifiedModelInferenceOptions()
+end
 
+function Base.convert(::Type{ModelInferenceOptions}, options::NamedTuple{keys}) where {keys}
     available_options = (:pipeline, :global_reactive_scheduler, :limit_stack_depth)
 
     for key in keys
@@ -73,8 +78,6 @@ end
 global_reactive_scheduler(options::ModelInferenceOptions) = something(options.global_reactive_scheduler, AsapScheduler())
 get_pipeline_stages(options::ModelInferenceOptions)       = something(options.pipeline, EmptyPipelineStage())
 
-UnspecifiedModelInferenceOptions() = convert(ModelInferenceOptions, (;))
-
 struct FactorGraphModel{C, M, O}
     constraints :: C
     meta        :: M
@@ -98,7 +101,7 @@ FactorGraphModel(meta::Union{UnspecifiedMeta, MetaSpecification}, options::Named
 FactorGraphModel(constraints::Union{UnspecifiedConstraints, ConstraintsSpecification}, meta::Union{UnspecifiedMeta, MetaSpecification})                      = FactorGraphModel(constraints, meta, model_options())
 FactorGraphModel(constraints::Union{UnspecifiedConstraints, ConstraintsSpecification}, meta::Union{UnspecifiedMeta, MetaSpecification}, options::NamedTuple) = FactorGraphModel(constraints, meta, model_options(options))
 
-function FactorGraphModel(constraints::C, meta::M, options::O) where { C, M, O }
+function FactorGraphModel(constraints::C, meta::M, options::O) where {C, M, O}
     return FactorGraphModel{C, M, O}(constraints, meta, options, FactorNodesCollection(), VariablesCollection())
 end
 
@@ -123,7 +126,7 @@ function Base.haskey(model::FactorGraphModel, symbol::Symbol)
     return haskey(getvariables(model), symbol)
 end
 
-Base.broadcastable(model::FactorGraphModel) = (model, )
+Base.broadcastable(model::FactorGraphModel) = (model,)
 
 import ReactiveMP: hasrandomvar, hasdatavar, hasconstvar
 
@@ -139,8 +142,8 @@ Base.push!(::FactorGraphModel, ::Nothing) = nothing
 Base.push!(model::FactorGraphModel, node::AbstractFactorNode)   = push!(getnodes(model), node)
 Base.push!(model::FactorGraphModel, variable::AbstractVariable) = push!(getvariables(model), variable)
 
-Base.push!(model::FactorGraphModel, nodes::AbstractArray{N}) where { N <: AbstractFactorNode }   = push!(getnodes(model), nodes)
-Base.push!(model::FactorGraphModel, variables::AbstractArray{V}) where { V <: AbstractVariable } = push!(getvariables(model), variables)
+Base.push!(model::FactorGraphModel, nodes::AbstractArray{N}) where {N <: AbstractFactorNode}   = push!(getnodes(model), nodes)
+Base.push!(model::FactorGraphModel, variables::AbstractArray{V}) where {V <: AbstractVariable} = push!(getvariables(model), variables)
 
 function Base.push!(model::FactorGraphModel, collection::Tuple)
     foreach((d) -> push!(model, d), collection)
@@ -183,7 +186,8 @@ end
 import ReactiveMP: resolve_factorisation
 
 node_resolve_factorisation(model::FactorGraphModel, something, fform, variables) = something
-node_resolve_factorisation(model::FactorGraphModel, ::Nothing, fform, variables) = node_resolve_constraints_factorisation(model, getconstraints(model), fform, variables)
+node_resolve_factorisation(model::FactorGraphModel, ::Nothing, fform, variables) =
+    node_resolve_constraints_factorisation(model, getconstraints(model), fform, variables)
 
 node_resolve_constraints_factorisation(model::FactorGraphModel, constraints, fform, variables)                         = resolve_factorisation(constraints, getvariables(model), fform, variables)
 node_resolve_constraints_factorisation(model::FactorGraphModel, ::ConstraintsSpecification{Tuple{}}, fform, variables) = resolve_factorisation(UnspecifiedConstraints(), getvariables(model), fform, variables)
@@ -225,9 +229,9 @@ end
 See also: [`inference`](@ref)
 """
 struct ModelGenerator{G, A, K}
-    generator   :: G
-    args        :: A
-    kwargs      :: K
+    generator :: G
+    args      :: A
+    kwargs    :: K
 
     ModelGenerator(generator::G, args::A, kwargs::K) where {G, A, K} = new{G, A, K}(generator, args, kwargs)
 end

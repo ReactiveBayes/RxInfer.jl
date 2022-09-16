@@ -15,7 +15,7 @@ using RxInfer, BenchmarkTools, Random, Plots, LinearAlgebra, StableRNGs
     x ~ Bernoulli(y)
 end
 
-function binary_aliases_inference() 
+function binary_aliases_inference()
     return inference(
         model = binary_aliases(),
         data = (y = 0.5,),

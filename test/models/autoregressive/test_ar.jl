@@ -21,13 +21,13 @@ end
 function ar_inference(inputs, outputs, order, niter)
     return inference(
         model         = ar_model(length(outputs), order),
-        data          = (x = inputs, y = outputs,),
+        data          = (x = inputs, y = outputs),
         constraints   = MeanField(),
         options       = model_options(limit_stack_depth = 500),
         initmarginals = (γ = GammaShapeRate(1.0, 1.0),),
-        returnvars    = (γ = KeepEach(), θ = KeepEach(),),
-        iterations = niter,
-        free_energy = Float64, 
+        returnvars    = (γ = KeepEach(), θ = KeepEach()),
+        iterations    = niter,
+        free_energy   = Float64
     )
 end
 
@@ -42,15 +42,14 @@ function ar_ssm(series, order)
 end
 
 @testset "Autoregressive model" begin
-
     rng = StableRNG(1234)
-    
+
     ## Inference execution and test inference results
     for order in 1:5
         series = randn(rng, 1_000)
         inputs, outputs = ar_ssm(series, order)
         result = ar_inference(inputs, outputs, order, 15)
-        qs     = result.posteriors
+        qs = result.posteriors
 
         (γ, θ) = (qs[:γ], qs[:θ])
         fe     = result.free_energy
@@ -61,10 +60,10 @@ end
         @test last(fe) < first(fe)
         @test all(filter(e -> abs(e) > 1e-3, diff(fe)) .< 0)
     end
-    
+
     benchrng          = randn(StableRNG(32), 1_000)
     inputs5, outputs5 = ar_ssm(benchrng, 5)
-    
+
     @test_benchmark "models" "ar" ar_inference($inputs5, $outputs5, 5, 15)
 end
 

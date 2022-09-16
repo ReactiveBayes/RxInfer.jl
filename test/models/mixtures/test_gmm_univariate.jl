@@ -22,24 +22,23 @@ include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
         z[i] ~ Bernoulli(s)
         y[i] ~ NormalMixture(z[i], (m1, m2), (w1, w2))
     end
-
 end
 
-function inference_univariate(data, n_its, constraints) 
+function inference_univariate(data, n_its, constraints)
     return inference(
         model         = univariate_gaussian_mixture_model(length(data)),
-        data          = (y = data, ),
+        data          = (y = data,),
         constraints   = constraints,
         returnvars    = KeepEach(),
         free_energy   = Float64,
-        iterations    = n_its, 
+        iterations    = n_its,
         initmarginals = (
-            s = vague(Beta),
-            m1 = NormalMeanVariance(-2.0, 1e3),
-            m2 = NormalMeanVariance(2.0, 1e3),
-            w1 = vague(GammaShapeRate),
-            w2 = vague(GammaShapeRate),
-        )
+        s = vague(Beta),
+        m1 = NormalMeanVariance(-2.0, 1e3),
+        m2 = NormalMeanVariance(2.0, 1e3),
+        w1 = vague(GammaShapeRate),
+        w2 = vague(GammaShapeRate)
+    )
     )
 end
 
@@ -57,22 +56,22 @@ end
     μ2 = 10.0
     w  = 1.777
 
-    z      = rand(rng, Categorical(switch), n)
-    y      = Vector{Float64}(undef, n)
+    z = rand(rng, Categorical(switch), n)
+    y = Vector{Float64}(undef, n)
 
-    dists = [ Normal(μ1, sqrt(inv(w))), Normal(μ2, sqrt(inv(w))) ]
+    dists = [Normal(μ1, sqrt(inv(w))), Normal(μ2, sqrt(inv(w)))]
 
     for i in 1:n
         y[i] = rand(rng, dists[z[i]])
     end
-    
+
     ## Inference execution
     constraints = @constraints begin
         q(z, s, m1, m2, w1, w2) = q(z)q(s)q(m1)q(w1)q(m2)q(w2)
     end
 
     # Execute inference for different constraints specifications
-    results = map((constraints) -> inference_univariate(y, 10, constraints), [ MeanField(), constraints ])
+    results = map((constraints) -> inference_univariate(y, 10, constraints), [MeanField(), constraints])
 
     fresult = results[begin]
 
@@ -84,12 +83,12 @@ end
     end
 
     mswitch = fresult.posteriors[:s]
-    mm1 = fresult.posteriors[:m1] 
-    mm2 = fresult.posteriors[:m2] 
+    mm1 = fresult.posteriors[:m1]
+    mm2 = fresult.posteriors[:m2]
     mw1 = fresult.posteriors[:w1]
     mw2 = fresult.posteriors[:w2]
     fe = fresult.free_energy
-    
+
     # Test inference results
     @test length(mswitch) === 10
     @test length(mm1) === 10
@@ -116,8 +115,8 @@ end
     foreach(zip(rws, ews)) do (r, e)
         @test abs(r - mean(e)) < 0.2
     end
-    
-    @test_plot "models" "gmm_univariate" begin 
+
+    @test_plot "models" "gmm_univariate" begin
         dim(d) = (a) -> map(r -> r[d], a)
         mp = plot(mean.(mm1), ribbon = var.(mm1) .|> sqrt, label = "m1 prediction")
         mp = plot!(mean.(mm2), ribbon = var.(mm2) .|> sqrt, label = "m2 prediction")

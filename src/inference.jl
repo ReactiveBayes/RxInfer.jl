@@ -55,14 +55,16 @@ Rocket.on_complete!(updated::MarginalHasBeenUpdated)       = begin end
 
 # This creates a `tap` operator that will set the `updated` flag to true. 
 # Later on we check flags and `unset!` them after the `update!` procedure
-ensure_update(model::FactorGraphModel, callback, variable_name::Symbol, updated::MarginalHasBeenUpdated) = tap() do update
-    __set_updated!(updated)
-    callback(model, variable_name, update)
-end
+ensure_update(model::FactorGraphModel, callback, variable_name::Symbol, updated::MarginalHasBeenUpdated) =
+    tap() do update
+        __set_updated!(updated)
+        callback(model, variable_name, update)
+    end
 
-ensure_update(model::FactorGraphModel, ::Nothing, variable_name::Symbol, updated::MarginalHasBeenUpdated) = tap() do _
-    __set_updated!(updated) # If `callback` is nothing we simply set updated flag
-end
+ensure_update(model::FactorGraphModel, ::Nothing, variable_name::Symbol, updated::MarginalHasBeenUpdated) =
+    tap() do _
+        __set_updated!(updated) # If `callback` is nothing we simply set updated flag
+    end
 
 function __check_and_unset_updated!(updates)
     if all((v) -> v.updated, values(updates))
@@ -399,8 +401,10 @@ function inference(;
     __inference_check_dicttype(:initmessages, initmessages)
     __inference_check_dicttype(:callbacks, callbacks)
 
+    _options = convert(ModelInferenceOptions, options)
+
     inference_invoke_callback(callbacks, :before_model_creation)
-    fmodel, freturval = create_model(model, constraints, meta, options)
+    fmodel, freturval = create_model(model, constraints, meta, _options)
     inference_invoke_callback(callbacks, :after_model_creation, fmodel, freturval)
     vardict = getvardict(fmodel)
 
@@ -563,15 +567,16 @@ function Base.show(io::IO, specification::RxInferenceAutoUpdateSpecification)
 end
 
 function (specification::RxInferenceAutoUpdateSpecification)(model::FactorGraphModel)
-
     datavars = map(specification.labels) do label
-        hasdatavar(model, label) || 
+        hasdatavar(model, label) ||
             error("Autoupdate specification defines an update for `$(label)`, but the model has no datavar named `$(label)`")
         return model[label]
     end
 
     (hasrandomvar(model, specification.variable) || hasdatavar(model, specification.variable)) ||
-        error("Autoupdate specification defines an update from `$(specification.variable)`, but the model has no randomvar/datavar named `$(specification.variable)`")
+        error(
+            "Autoupdate specification defines an update from `$(specification.variable)`, but the model has no randomvar/datavar named `$(specification.variable)`"
+        )
 
     variable = model[specification.variable]
 
@@ -579,7 +584,7 @@ function (specification::RxInferenceAutoUpdateSpecification)(model::FactorGraphM
 end
 
 struct RxInferenceAutoUpdate{N, C, R}
-    datavars :: NTuple{ N, <:DataVariable }
+    datavars :: NTuple{N, <:DataVariable}
     callback :: C
     recent   :: R
 end
@@ -590,7 +595,7 @@ import Base: fetch
 Base.fetch(autoupdate::RxInferenceAutoUpdate)            = fetch(autoupdate, ReactiveMP.getdata(Rocket.getrecent(autoupdate.recent)))
 Base.fetch(autoupdate::RxInferenceAutoUpdate, something) = zip(as_tuple(autoupdate.datavars), as_tuple(autoupdate.callback(something)))
 
-macro autoupdates(code) 
+macro autoupdates(code)
     ((code isa Expr) && (code.head === :block)) ||
         error("Autoupdate requires a block of code `begin ... end` as an input")
 
@@ -604,17 +609,17 @@ macro autoupdates(code)
                 (variable isa Symbol) ||
                     error("Variable in the expression `$(expression)` must be a plain name, but a complex expression `$(variable)` found.")
                 # Next we extract `datavars` specification from the `lhs`                    
-                datavars = if lhs isa Symbol 
-                    (lhs, )
+                datavars = if lhs isa Symbol
+                    (lhs,)
                 elseif lhs isa Expr && lhs.head === :tuple && all(arg -> arg isa Symbol, lhs.args)
                     Tuple(lhs.args)
                 else
                     error("Left hand side of the expression `$(expression)` must be a single symbol or a tuple of symbols")
                 end
                 # Only two options are possible within this `if` block
-                from = @capture(rhs, q(smth_)) ? :(RxInfer.FromMarginalAutoUpdate()) : :(RxInfer.FromMessageAutoUpdate()) 
+                from = @capture(rhs, q(smth_)) ? :(RxInfer.FromMarginalAutoUpdate()) : :(RxInfer.FromMessageAutoUpdate())
 
-                push!(specifications, :(RxInfer.RxInferenceAutoUpdateSpecification($(datavars..., ), $from, $callback, $(QuoteNode(variable)))))
+                push!(specifications, :(RxInfer.RxInferenceAutoUpdateSpecification($(datavars...,), $from, $callback, $(QuoteNode(variable)))))
 
                 return :(nothing)
             else
@@ -625,14 +630,14 @@ macro autoupdates(code)
         end
     end
 
-    isempty(specifications) && 
+    isempty(specifications) &&
         error("`@autoupdates` did not find any auto-updates specifications. Check the documentation for more information.")
 
-    output = quote 
-        begin 
+    output = quote
+        begin
             $code
 
-            ($(specifications...), )   
+            ($(specifications...),)
         end
     end
 
@@ -657,18 +662,18 @@ mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M
     tickscheduler    :: L
     mainsubscription :: Teardown
 
-    datavars    :: V
-    posteriors  :: P
+    datavars   :: V
+    posteriors :: P
 
-    history       :: H
-    historyactors :: S
-    historysubscriptions :: Vector{Teardown}
+    history::H
+    historyactors::S
+    historysubscriptions::Vector{Teardown}
 
-    updateflags :: U
-    updatesubscriptions :: Vector{Teardown}
+    updateflags::U
+    updatesubscriptions::Vector{Teardown}
 
     # auto updates
-    autoupdates :: A
+    autoupdates::A
 
     # free energy related
     fe_actor        :: FA
@@ -685,81 +690,79 @@ mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M
     is_running :: Bool
 
     RxInferenceEngine(
-        ::Type{T}, 
-        datastream::D, 
-        tickscheduler::L,
-
-        datavars :: V,
+        ::Type{T},
+        datastream::D,
+        tickscheduler::L, datavars::V,
         posteriors::P,
-        updateflags::U,
-
-        history::H,
-        historyactors::S,
-        
-        autoupdates :: A,
-
-        fe_actor :: FA,
-        fe_scheduler :: FH,
-        fe_objective :: FO,
-        fe_source :: FS,
-
-        iterations :: I,
-        model     :: M,
-        returnval :: N,
-        enabledevents :: Val{X},
-        events    :: E
-        ) where { T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E } = begin 
-            return new{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E}(
-                datastream,
-                tickscheduler,
-                voidTeardown,
-                datavars,
-                posteriors,
-                history,
-                historyactors,
-                Teardown[],
-                updateflags,
-                Teardown[],
-                autoupdates,
-                fe_actor,
-                fe_scheduler,
-                fe_objective,
-                fe_source,
-                voidTeardown,
-                iterations,
-                model,
-                returnval,
-                events, 
-                false
-            )
-        end
+        updateflags::U, history::H,
+        historyactors::S, autoupdates::A, fe_actor::FA,
+        fe_scheduler::FH,
+        fe_objective::FO,
+        fe_source::FS, iterations::I,
+        model::M,
+        returnval::N,
+        enabledevents::Val{X},
+        events::E
+    ) where {T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E} = begin
+        return new{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E}(
+            datastream,
+            tickscheduler,
+            voidTeardown,
+            datavars,
+            posteriors,
+            history,
+            historyactors,
+            Teardown[],
+            updateflags,
+            Teardown[],
+            autoupdates,
+            fe_actor,
+            fe_scheduler,
+            fe_objective,
+            fe_source,
+            voidTeardown,
+            iterations,
+            model,
+            returnval,
+            events,
+            false
+        )
+    end
 end
 
-enabled_events(::RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E}) where { T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E } = X
+enabled_events(::RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E}) where {T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E} =
+    X
 
 function Base.getproperty(result::RxInferenceEngine, property::Symbol)
     if property === :free_energy
         !isnothing(getfield(result, :fe_source)) ||
-            error("Bethe Free Energy stream has not been created. Use `free_energy = true` keyword argument for the `rxinference` function to compute Bethe Free Energy values.")
+            error(
+                "Bethe Free Energy stream has not been created. Use `free_energy = true` keyword argument for the `rxinference` function to compute Bethe Free Energy values."
+            )
         return getfield(result, :fe_source)
-    elseif property === :free_energy_history 
+    elseif property === :free_energy_history
         !isnothing(getfield(result, :fe_actor)) ||
-            error("Bethe Free Energy history has not been comptued. Use `free_energy = true` keyword argument for the `rxinference` function to compute Bethe Free Energy values.")
+            error(
+                "Bethe Free Energy history has not been comptued. Use `free_energy = true` keyword argument for the `rxinference` function to compute Bethe Free Energy values."
+            )
         return score_aggreate_iterations(getfield(result, :fe_actor))
-    elseif property === :free_energy_final_only_history 
+    elseif property === :free_energy_final_only_history
         !isnothing(getfield(result, :fe_actor)) ||
-            error("Bethe Free Energy history has not been comptued. Use `free_energy = true` keyword argument for the `rxinference` function to compute Bethe Free Energy values.")
+            error(
+                "Bethe Free Energy history has not been comptued. Use `free_energy = true` keyword argument for the `rxinference` function to compute Bethe Free Energy values."
+            )
         return score_final_only(getfield(result, :fe_actor))
-    elseif property === :free_energy_raw_history 
+    elseif property === :free_energy_raw_history
         !isnothing(getfield(result, :fe_actor)) ||
-            error("Bethe Free Energy history has not been comptued. Use `free_energy = true` keyword argument for the `rxinference` function to compute Bethe Free Energy values.")
+            error(
+                "Bethe Free Energy history has not been comptued. Use `free_energy = true` keyword argument for the `rxinference` function to compute Bethe Free Energy values."
+            )
         return score_raw(getfield(result, :fe_actor))
     end
     return getfield(result, property)
 end
 
 function start(engine::RxInferenceEngine{T}) where {T}
-
     if engine.is_running
         @warn "Engine is already running. Cannot start a single engine twice."
         return nothing
@@ -794,7 +797,6 @@ function start(engine::RxInferenceEngine{T}) where {T}
 end
 
 function stop(engine::RxInferenceEngine)
-
     if !engine.is_running
         @warn "Engine is not running. Cannot stop an idle engine"
         return nothing
@@ -803,7 +805,7 @@ function stop(engine::RxInferenceEngine)
     unsubscribe!(engine.fe_subscription)
     unsubscribe!(engine.historysubscriptions)
     unsubscribe!(engine.updatesubscriptions)
-    unsubscribe!(engine.mainsubscription)    
+    unsubscribe!(engine.mainsubscription)
 
     engine.is_running = false
 
@@ -813,7 +815,7 @@ end
 import Rocket: Actor, on_next!, on_error!, on_complete!
 
 struct RxInferenceEventExecutor{T, E} <: Actor{T}
-    engine :: E
+    engine::E
 
     RxInferenceEventExecutor(::Type{T}, engine::E) where {T, E} = new{T, E}(engine)
 end
@@ -842,11 +844,11 @@ function Rocket.on_next!(executor::RxInferenceEventExecutor{T}, event::T) where 
 
     # Before we start our iterations we 'prefetch' recent values for autoupdates
     fupdates = map(fetch, _autoupdates)
- 
+
     # This loop correspond to the different VMP iterations
     for iteration in 1:_iterations
         inference_invoke_event(Val(:before_iteration), Val(_enabled_events), _events, _model, iteration)
-        
+
         # At first we update all our priors (auto updates) with the fixed values from the `redirectupdate` field
         inference_invoke_event(Val(:before_auto_update), Val(_enabled_events), _events, _model, fupdates)
         foreach(fupdates) do fupdate
@@ -884,10 +886,10 @@ function Rocket.on_next!(executor::RxInferenceEventExecutor{T}, event::T) where 
         end
         inference_invoke_event(Val(:after_history_save), Val(_enabled_events), _events, _model)
     end
-    
+
     # On this `release!` call we update our priors for the next step
     release!(_tickscheduler)
-    
+
     inference_invoke_event(Val(:on_tick), Val(_enabled_events), _events, _model)
 end
 
@@ -898,14 +900,14 @@ Rocket.on_complete!(executor::RxInferenceEventExecutor)   = begin end
 ## 
 
 struct RxInferenceEvent{T, D}
-    data :: D
+    data::D
 
-    RxInferenceEvent(::Val{T}, data::D) where { T, D } = new{T, D}(data)
+    RxInferenceEvent(::Val{T}, data::D) where {T, D} = new{T, D}(data)
 end
 
-Base.show(io::IO, ::RxInferenceEvent{T}) where T = print(io, "RxInferenceEvent(:", T, ")")
+Base.show(io::IO, ::RxInferenceEvent{T}) where {T} = print(io, "RxInferenceEvent(:", T, ")")
 
-function inference_invoke_event(::Val{Event}, ::Val{EnabledEvents}, events, args...) where { Event, EnabledEvents }
+function inference_invoke_event(::Val{Event}, ::Val{EnabledEvents}, events, args...) where {Event, EnabledEvents}
     # Here `E` must be a tuple of symbols
     if Event ∈ EnabledEvents
         next!(events, RxInferenceEvent(Val(Event), args))
@@ -920,7 +922,7 @@ function rxinference(;
     data = nothing,
     datastream = nothing,
     initmarginals = nothing,
-    initmessages = nothing, 
+    initmessages = nothing,
     autoupdates = nothing,
     constraints = nothing,
     meta = nothing,
@@ -955,8 +957,8 @@ function rxinference(;
         etype  = NamedTuple{names, Tuple{eltype.(items)...}}
 
         stream, etype
-    else 
-        eltype(datastream) <: NamedTuple || 
+    else
+        eltype(datastream) <: NamedTuple ||
             error("`eltype` of the `datastream` must be a `NamedTuple`")
         datastream, eltype(datastream)
     end
@@ -964,8 +966,10 @@ function rxinference(;
     datavarnames = fields(_T)::NTuple
     N            = length(datavarnames) # should be static
 
+    _options = convert(ModelInferenceOptions, options)
+
     inference_invoke_callback(callbacks, :before_model_creation)
-    _model, _returnval = create_model(model, constraints, meta, options)
+    _model, _returnval = create_model(model, constraints, meta, _options)
     inference_invoke_callback(callbacks, :after_model_creation, _model, _returnval)
     vardict = getvardict(_model)
 
@@ -973,7 +977,8 @@ function rxinference(;
     # This is not very type-styble-friendly but we do it once and it should pay-off in the inference procedure
     datavars = ntuple(N) do i
         datavarname = datavarnames[i]
-        hasdatavar(_model, datavarname) || error("The `datastream` produces data for `$(datavarname)`, but the model does not have a datavar named `$(datavarname)`")
+        hasdatavar(_model, datavarname) ||
+            error("The `datastream` produces data for `$(datavarname)`, but the model does not have a datavar named `$(datavarname)`")
         return _model[datavarname]::DataVariable
     end
 
@@ -1044,7 +1049,7 @@ function rxinference(;
 
     # We check if `returnvars` argument is empty, in which case we return names of all random (non-proxy) variables in the model
     if isnothing(returnvars)
-        returnvars = [ name(variable) for (variable, value) in pairs(vardict) if (israndom(value) && !isproxy(value)) ]
+        returnvars = [name(variable) for (variable, value) in pairs(vardict) if (israndom(value) && !isproxy(value))]
     end
 
     eltype(returnvars) === Symbol || error("`returnvars` must contain a list of symbols") # TODO?
@@ -1052,7 +1057,7 @@ function rxinference(;
     returnvars = filter((varkey) -> __check_has_randomvar(:returnvars, vardict, varkey), returnvars)
 
     __inference_check_itertype(:returnvars, returnvars)
-    
+
     _keephistory = something(keephistory, 0)
     _keephistory isa Integer || error("`keephistory` argument must be of type Integer or `nothing`")
     _keephistory >= 0 || error("`keephistory` arguments must be greater than or equal to zero")
@@ -1089,7 +1094,7 @@ function rxinference(;
         historyactors = Dict(name => make_actor(vardict[name], historyoption, _iterations) for (name, historyoption) in pairs(historyvars))
         history       = Dict(name => CircularBuffer(_keephistory) for (name, _) in pairs(historyvars))
     end
-    
+
     # At this point we must have properly defined and fixed `returnvars` and `historyvars` objects
 
     # For each random variable entry in `returnvars` specification we create a boolean flag to track their updates
@@ -1109,13 +1114,13 @@ function rxinference(;
 
     # inference_invoke_callback(callbacks, :before_inference, fmodel)
     engine = RxInferenceEngine(
-        _T, 
-        _datastream, 
-        tickscheduler, 
+        _T,
+        _datastream,
+        tickscheduler,
         datavars,
         posteriors,
-        updateflags, 
-        history, 
+        updateflags,
+        history,
         historyactors,
         _autoupdates,
         fe_actor,

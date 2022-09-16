@@ -39,11 +39,9 @@ include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
         z[i] ~ Categorical(s)
         y[i] ~ NormalMixture(z[i], means, precs)
     end
-
 end
 
 function inference_multivariate(rng, L, nmixtures, data, viters, constraints)
-
     basis_v = [1.0, 0.0]
 
     minitmarginals = []
@@ -65,13 +63,13 @@ function inference_multivariate(rng, L, nmixtures, data, viters, constraints)
     end
 
     return inference(
-        model       = multivariate_gaussian_mixture_model(rng, L, nmixtures, length(data)),
-        data        = (y = data, ),
+        model = multivariate_gaussian_mixture_model(rng, L, nmixtures, length(data)),
+        data = (y = data,),
         constraints = constraints,
-        returnvars  = KeepEach(),
+        returnvars = KeepEach(),
         free_energy = Float64,
-        iterations  = viters,
-        initmarginals = (s = vague(Dirichlet, nmixtures), m = minitmarginals, w = winitmarginals),
+        iterations = viters,
+        initmarginals = (s = vague(Dirichlet, nmixtures), m = minitmarginals, w = winitmarginals)
     )
 end
 
@@ -148,7 +146,7 @@ end
         @test norm(normalize(estimated) .- normalize(real)) < 0.1
     end
 
-    @test_plot "models" "gmm_multivariate" begin 
+    @test_plot "models" "gmm_multivariate" begin
         sdim(n) = (a) -> map(d -> d[n], a)
 
         pe = plot(xlim = (-1.5L, 1.5L), ylim = (-1.5L, 1.5L))

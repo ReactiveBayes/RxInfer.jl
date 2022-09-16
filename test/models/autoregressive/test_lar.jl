@@ -31,7 +31,7 @@ include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
     for i in 1:n
         # Autoregressive node uses structured factorisation assumption between states
-        x[i] ~ AR(x_prev, θ, γ) where { q = q(y, x)q(γ)q(θ), meta = meta }
+        x[i] ~ AR(x_prev, θ, γ) where {q = q(y, x)q(γ)q(θ), meta = meta}
         y[i] ~ Normal(mean = dot(ct, x[i]), precision = cτ)
         x_prev = x[i]
     end
@@ -61,7 +61,7 @@ end
     meta = ARMeta(Univariate, order, stype)
 
     for i in 1:n
-        x[i] ~ AR(x_prev, θ, γ) where { q = q(y, x)q(γ)q(θ), meta = meta }
+        x[i] ~ AR(x_prev, θ, γ) where {q = q(y, x)q(γ)q(θ), meta = meta}
         y[i] ~ Normal(mean = ct * x[i], precision = cτ)
         x_prev = x[i]
     end
@@ -80,9 +80,9 @@ function lar_inference(data, order, artype, stype, niter, τ)
     c = ReactiveMP.ar_unit(artype, order)
     return inference(
         model = lar_model(artype, n, order, c, stype, τ),
-        data  = (y = data, ),
+        data = (y = data,),
         initmarginals = lar_init_marginals(artype, order),
-        returnvars = (γ = KeepEach(), θ = KeepEach(), x = KeepLast(), ),
+        returnvars = (γ = KeepEach(), θ = KeepEach(), x = KeepLast()),
         iterations = niter,
         free_energy = Float64
     )
@@ -129,7 +129,7 @@ end
     fe     = result.free_energy
 
     (γ, θ, xs) = (qs[:γ], qs[:θ], qs[:x])
-    
+
     @test length(xs) === n
     @test length(γ) === 15
     @test length(θ) === 15
@@ -180,7 +180,7 @@ end
 
         p = plot(p1, p2, p3, layout = @layout([a; b c]))
     end
-    
+
     @test_benchmark "models" "lar" lar_inference($observations, length($real_θ), Multivariate, ARsafe(), 15, $real_τ)
 end
 

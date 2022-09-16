@@ -2,19 +2,21 @@ using Distributed
 
 const ExamplesFolder = joinpath(@__DIR__, "..", "examples")
 
-import Pkg; Pkg.activate(ExamplesFolder); Pkg.instantiate();
+import Pkg;
+Pkg.activate(ExamplesFolder);
+Pkg.instantiate();
 
 # Precompile packages on the main worker
 @info "Precompile packages on the main worker"
 using RxInfer, Plots, PyPlot, StatsPlots, BenchmarkTools, ProgressMeter, Optim
 
 @info "Adding $(min(Sys.CPU_THREADS, 4)) workers"
-addprocs(min(Sys.CPU_THREADS, 4), exeflags="--project=$(ExamplesFolder)")
+addprocs(min(Sys.CPU_THREADS, 4), exeflags = "--project=$(ExamplesFolder)")
 
 @everywhere using Weave
 @everywhere using RxInfer
 
-struct ExamplesRunner 
+struct ExamplesRunner
     specific_example
     runner_tasks
     workerpool
@@ -33,7 +35,6 @@ struct ExamplesRunner
 end
 
 function Base.run(examplesrunner::ExamplesRunner)
-
     @info "Reading .meta.jl"
 
     examples = include(joinpath(@__DIR__, "..", "examples", ".meta.jl"))
@@ -41,8 +42,8 @@ function Base.run(examplesrunner::ExamplesRunner)
     if !isnothing(examplesrunner.specific_example)
         @info "Running specific example matching the following pattern: $(examplesrunner.specific_example)"
         examples = filter(examples) do example
-            return occursin(lowercase(examplesrunner.specific_example), lowercase(example[:path])) || 
-                occursin(lowercase(examplesrunner.specific_example), lowercase(example[:title]))
+            return occursin(lowercase(examplesrunner.specific_example), lowercase(example[:path])) ||
+                   occursin(lowercase(examplesrunner.specific_example), lowercase(example[:title]))
         end
     end
 
@@ -69,7 +70,7 @@ function Base.run(examplesrunner::ExamplesRunner)
 
     # We also need to fix relative RxInfer path in the moved `Project.toml`
     # This is a bit iffy, but does the job (not sure about Windows though?)
-    manifest = read(joinpath(dfolder, "Manifest.toml"), String)  
+    manifest = read(joinpath(dfolder, "Manifest.toml"), String)
     manifest = replace(manifest, "path = \"..\"" => "path = \"../../..\"")
 
     open(joinpath(dfolder, "Manifest.toml"), "w") do f
@@ -81,35 +82,36 @@ function Base.run(examplesrunner::ExamplesRunner)
         # This token indicates that there are no other jobs left
         put!(examplesrunner.jobschannel, nothing)
         # We create a remote call for another Julia process to execute the example
-        task = remotecall(worker, examplesrunner.jobschannel, examplesrunner.resultschannel, examplesrunner.exschannel) do jobschannel, resultschannel, exschannel
-            pid = myid()
-            finish = false
-            while !finish 
-                # Each worker takes examples sequentially from the shared examples pool 
-                example = take!(jobschannel)
-                if isnothing(example)
-                    finish = true
-                else
-                    try 
-                        path = example[:path]
-                    
-                        @info "Started job: `$(path)` on worker `$(pid)`"
+        task =
+            remotecall(worker, examplesrunner.jobschannel, examplesrunner.resultschannel, examplesrunner.exschannel) do jobschannel, resultschannel, exschannel
+                pid = myid()
+                finish = false
+                while !finish
+                    # Each worker takes examples sequentially from the shared examples pool 
+                    example = take!(jobschannel)
+                    if isnothing(example)
+                        finish = true
+                    else
+                        try
+                            path = example[:path]
 
-                        ipath  = joinpath(@__DIR__, "..", "examples", path)
-                        opath  = joinpath(@__DIR__, "..", "docs", "src", "examples")
-                        fpath  = joinpath("..", "assets", "examples") # relative to `opath`
+                            @info "Started job: `$(path)` on worker `$(pid)`"
 
-                        ENV["GKSwstype"]="nul" # Fix for plots
+                            ipath = joinpath(@__DIR__, "..", "examples", path)
+                            opath = joinpath(@__DIR__, "..", "docs", "src", "examples")
+                            fpath = joinpath("..", "assets", "examples") # relative to `opath`
 
-                        weaved = weave(ipath, out_path = opath, doctype = "github", fig_path = fpath)
+                            ENV["GKSwstype"] = "nul" # Fix for plots
 
-                        put!(resultschannel, (pid = pid, path = path, weaved = weaved, example = example))
-                    catch iexception 
-                        put!(exschannel, iexception)
+                            weaved = weave(ipath, out_path = opath, doctype = "github", fig_path = fpath)
+
+                            put!(resultschannel, (pid = pid, path = path, weaved = weaved, example = example))
+                        catch iexception
+                            put!(exschannel, iexception)
+                        end
                     end
                 end
             end
-        end
         # We save the created task for later syncronization
         push!(examplesrunner.runner_tasks, task)
     end
@@ -142,7 +144,7 @@ function Base.run(examplesrunner::ExamplesRunner)
             push!(results, result)
         end
 
-    else 
+    else
         @error "No example have been generated"
         exit(-1)
     end
@@ -161,12 +163,15 @@ function Base.run(examplesrunner::ExamplesRunner)
         write(io_overview, "# [Examples overview](@id examples-overview)\n\n")
         write(io_overview, "This section contains a set of examples for Bayesian Inference with `ReactiveMP` package in various probabilistic models.\n\n")
         write(io_overview, "!!! note\n")
-        write(io_overview, "\tAll examples have been pre-generated automatically from the [`examples/`](https://github.com/biaslab/RxInfer.jl/tree/main/examples) folder at GitHub repository.\n\n")
+        write(
+            io_overview,
+            "\tAll examples have been pre-generated automatically from the [`examples/`](https://github.com/biaslab/RxInfer.jl/tree/main/examples) folder at GitHub repository.\n\n"
+        )
 
         foreach(examples) do example
-            mdname      = replace(example[:path], ".ipynb" => ".md")
-            mdpath      = joinpath(@__DIR__, "..", "docs", "src", "examples", mdname)
-            mdtext      = read(mdpath, String)
+            mdname = replace(example[:path], ".ipynb" => ".md")
+            mdpath = joinpath(@__DIR__, "..", "docs", "src", "examples", mdname)
+            mdtext = read(mdpath, String)
 
             # Check if example failed with an error
             # TODO: we might have better heurstic here? But I couldn't find a way to tell `Weave.jl` if an error has occured

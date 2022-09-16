@@ -271,7 +271,8 @@ import ReactiveMP: activate!
         @test ReactiveMP.resolve_factorisation(cs, getvariables(model), fform, (x[1], y[2], x[2], y[3])) === ((1, 2), (3, 4))
         @test ReactiveMP.resolve_factorisation(cs, getvariables(model), fform, (x[1], y[2], x[2], y[3], y[1])) === ((1, 2), (3, 4), (5,))
         @test ReactiveMP.resolve_factorisation(cs, getvariables(model), fform, (y[1], y[2], x[1], x[2], t, r)) === ((1,), (2, 3), (4,), (5, 6))
-        @test ReactiveMP.resolve_factorisation(cs, getvariables(model), fform, (y[1], y[2], y[3], x[1], x[2], x[3], t, r)) === ((1,), (2, 4), (3, 5), (6,), (7, 8))
+        @test ReactiveMP.resolve_factorisation(cs, getvariables(model), fform, (y[1], y[2], y[3], x[1], x[2], x[3], t, r)) ===
+              ((1,), (2, 4), (3, 5), (6,), (7, 8))
     end
 
     @testset "Use case #12" begin

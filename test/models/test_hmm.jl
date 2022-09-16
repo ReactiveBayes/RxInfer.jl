@@ -17,7 +17,7 @@ using RxInfer, BenchmarkTools, Random, Plots, Dates, LinearAlgebra, StableRNGs
     s_prev = s_0
 
     for t in 1:n
-        s[t] ~ Transition(s_prev, A) where { q = q(out, in)q(a) }
+        s[t] ~ Transition(s_prev, A) where {q = q(out, in)q(a)}
         x[t] ~ Transition(s[t], B)
         s_prev = s[t]
     end

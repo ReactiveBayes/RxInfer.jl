@@ -37,7 +37,7 @@ using RxInfer, BenchmarkTools, Random, Plots, LinearAlgebra, StableRNGs
     d ~ Normal(μ = s5, variance = 1.0)
 end
 
-function normal_aliases_inference() 
+function normal_aliases_inference()
     return inference(
         model = normal_aliases(),
         data = (d = 1.0,),
@@ -49,7 +49,7 @@ end
 @testset "aliases for `Normal` family of distributions" begin
     result = normal_aliases_inference()
     # Here we simply test that it ran and gave some output 
-    @test first(mean(result.posteriors[:x1])) ≈ 0.03030314940197132 
+    @test first(mean(result.posteriors[:x1])) ≈ 0.03030314940197132
     @test first(result.free_energy) ≈ 2.6823450222125444
 end
 
