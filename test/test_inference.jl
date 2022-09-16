@@ -168,7 +168,7 @@ end
         datastream = from(observedy)
 
         result = rxinference(
-            model = kalman_filter(),
+            model = test_model1(),
             constraints = MeanField(),
             data = datastream,
             returnvars = KeepEach(),

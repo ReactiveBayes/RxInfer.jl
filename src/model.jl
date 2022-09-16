@@ -36,12 +36,6 @@ end
 
 UnspecifiedModelInferenceOptions() = convert(ModelInferenceOptions, (;))
 
-available_option_names(::Type{<:ModelInferenceOptions}) = (
-    :pipeline,
-    :global_reactive_scheduler,
-    :limit_stack_depth
-)
-
 import Base: convert
 
 function Base.convert(::Type{ModelInferenceOptions}, options::Nothing)
@@ -75,13 +69,15 @@ function Base.convert(::Type{ModelInferenceOptions}, options::NamedTuple{keys}) 
     return ModelInferenceOptions(pipeline, global_reactive_scheduler)
 end
 
+const DefaultModelInferenceOptions = UnspecifiedModelInferenceOptions()
+
 global_reactive_scheduler(options::ModelInferenceOptions) = something(options.global_reactive_scheduler, AsapScheduler())
 get_pipeline_stages(options::ModelInferenceOptions)       = something(options.pipeline, EmptyPipelineStage())
 
-struct FactorGraphModel{C, M, O}
-    constraints :: C
-    meta        :: M
-    options     :: O
+struct FactorGraphModel{Constrains, Meta, Options <: ModelInferenceOptions }
+    constraints :: Constrains
+    meta        :: Meta
+    options     :: Options
     nodes       :: FactorNodesCollection
     variables   :: VariablesCollection
 end
@@ -89,17 +85,7 @@ end
 Base.show(io::IO, ::Type{<:FactorGraphModel}) = print(io, "FactorGraphModel")
 Base.show(io::IO, model::FactorGraphModel)    = print(io, "FactorGraphModel()")
 
-FactorGraphModel() = FactorGraphModel(DefaultConstraints, DefaultMeta, model_options())
-
-FactorGraphModel(constraints::Union{UnspecifiedConstraints, ConstraintsSpecification}) = FactorGraphModel(constraints, DefaultMeta, model_options())
-FactorGraphModel(meta::Union{UnspecifiedMeta, MetaSpecification})                      = FactorGraphModel(DefaultConstraints, meta, model_options())
-FactorGraphModel(options::NamedTuple)                                                  = FactorGraphModel(DefaultConstraints, DefaultMeta, model_options(options))
-
-FactorGraphModel(constraints::Union{UnspecifiedConstraints, ConstraintsSpecification}, options::NamedTuple) = FactorGraphModel(constraints, DefaultMeta, model_options(options))
-FactorGraphModel(meta::Union{UnspecifiedMeta, MetaSpecification}, options::NamedTuple)                      = FactorGraphModel(DefaultConstraints, meta, model_options(options))
-
-FactorGraphModel(constraints::Union{UnspecifiedConstraints, ConstraintsSpecification}, meta::Union{UnspecifiedMeta, MetaSpecification})                      = FactorGraphModel(constraints, meta, model_options())
-FactorGraphModel(constraints::Union{UnspecifiedConstraints, ConstraintsSpecification}, meta::Union{UnspecifiedMeta, MetaSpecification}, options::NamedTuple) = FactorGraphModel(constraints, meta, model_options(options))
+FactorGraphModel() = FactorGraphModel(DefaultConstraints, DefaultMeta, DefaultModelInferenceOptions)
 
 function FactorGraphModel(constraints::C, meta::M, options::O) where {C, M, O}
     return FactorGraphModel{C, M, O}(constraints, meta, options, FactorNodesCollection(), VariablesCollection())
