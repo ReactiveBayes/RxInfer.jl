@@ -540,7 +540,7 @@ end
 ## ------------------------------------------------------------------------ ##
 
 struct FromMarginalAutoUpdate end
-struct FromMessageAutoUpdate end # From message is not implemented, for the future
+struct FromMessageAutoUpdate end 
 
 import Base: string
 
@@ -743,19 +743,19 @@ function Base.getproperty(result::RxInferenceEngine, property::Symbol)
     elseif property === :free_energy_history
         !isnothing(getfield(result, :fe_actor)) ||
             error(
-                "Bethe Free Energy history has not been comptued. Use `free_energy = true` keyword argument for the `rxinference` function to compute Bethe Free Energy values."
+                "Bethe Free Energy history has not been computed. Use `free_energy = true` keyword argument for the `rxinference` function to compute Bethe Free Energy values together with the `keephistory` argument."
             )
         return score_aggreate_iterations(getfield(result, :fe_actor))
     elseif property === :free_energy_final_only_history
         !isnothing(getfield(result, :fe_actor)) ||
             error(
-                "Bethe Free Energy history has not been comptued. Use `free_energy = true` keyword argument for the `rxinference` function to compute Bethe Free Energy values."
+                "Bethe Free Energy history has not been comptued. Use `free_energy = true` keyword argument for the `rxinference` function to compute Bethe Free Energy values together with the `keephistory` argument."
             )
         return score_final_only(getfield(result, :fe_actor))
     elseif property === :free_energy_raw_history
         !isnothing(getfield(result, :fe_actor)) ||
             error(
-                "Bethe Free Energy history has not been comptued. Use `free_energy = true` keyword argument for the `rxinference` function to compute Bethe Free Energy values."
+                "Bethe Free Energy history has not been comptued. Use `free_energy = true` keyword argument for the `rxinference` function to compute Bethe Free Energy values together with the `keephistory` argument."
             )
         return score_raw(getfield(result, :fe_actor))
     end
@@ -1010,6 +1010,10 @@ function rxinference(;
         end
     end
 
+    _keephistory = something(keephistory, 0)
+    _keephistory isa Integer || error("`keephistory` argument must be of type Integer or `nothing`")
+    _keephistory >= 0 || error("`keephistory` arguments must be greater than or equal to zero")
+
     # `tickscheduler` defines a moment when we send new posterios in the `posteriors` streams
     tickscheduler = PendingScheduler()
 
@@ -1024,7 +1028,9 @@ function rxinference(;
     is_free_energy, S, FE_T = unwrap_free_energy_option(free_energy)
 
     if is_free_energy
-        fe_actor     = ScoreActor(S)
+        if _keephistory > 0
+            fe_actor = ScoreActor(S)
+        end
         fe_scheduler = PendingScheduler()
         fe_objective = BetheFreeEnergy(BetheFreeEnergyDefaultMarginalSkipStrategy, fe_scheduler, free_energy_diagnostics)
         fe_source    = score(_model, FE_T, fe_objective)
@@ -1057,10 +1063,6 @@ function rxinference(;
     returnvars = filter((varkey) -> __check_has_randomvar(:returnvars, vardict, varkey), returnvars)
 
     __inference_check_itertype(:returnvars, returnvars)
-
-    _keephistory = something(keephistory, 0)
-    _keephistory isa Integer || error("`keephistory` argument must be of type Integer or `nothing`")
-    _keephistory >= 0 || error("`keephistory` arguments must be greater than or equal to zero")
 
     # `rxinference` by default does not keep track of marginals updates history
     # If user specifies `keephistory` keyword argument

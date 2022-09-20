@@ -165,21 +165,32 @@ end
             prevx = nextx
         end
 
-        datastream = from(observedy)
+        autoupdates = @autoupdates begin 
+            x_t_min_mean, x_t_min_var = mean_var(q(x_t))
+            τ_shape = shape(q(τ))
+            τ_rate = rate(q(τ))
+        end
 
         result = rxinference(
             model = test_model1(),
             constraints = MeanField(),
-            data = datastream,
-            returnvars = KeepEach(),
+            data = (y = observedy, ),
+            returnvars = (:x_t, ),
+            historyvars = (x_t = KeepEach(), τ = KeepEach()),
+            keephistory = 10,
             initmarginals = (x_t = NormalMeanVariance(0.0, 1e3), τ = GammaShapeRate(1.0, 1.0)),
-            iterations = 2,
+            iterations = 5,
             free_energy = true,
-            redirect = (
-                x_t = (q) -> (x_t_min_mean = mean(q), x_t_min_var = var(q)),
-                τ = (q) -> (τ_shape = shape(q), τ_rate = rate(q))
-            )
+            autoupdates = autoupdates
         )
+
+        @test length(result.history[:x_t]) === 10 # Number of `keephistory`
+        @test length(result.history[:x_t][end]) === 5 # Number of iterations
+
+        @test length(result.history[:τ]) === 10 # Number of `keephistory`
+        @test length(result.history[:τ][end]) === 5 # Number of iterations
+
+        @test length(result.free_energy_history) === 5
     end
 end
 
