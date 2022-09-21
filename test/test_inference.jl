@@ -191,6 +191,8 @@ end
         @test length(result.history[:τ][end]) === 5 # Number of iterations
 
         @test length(result.free_energy_history) === 5
+        @test length(result.free_energy_final_only_history) === 10
+        @test length(result.free_energy_raw_history) === 50
     end
 end
 
