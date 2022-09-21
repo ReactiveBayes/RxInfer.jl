@@ -93,10 +93,7 @@ end
 
 function score_snapshot_iterations(actor::ScoreActor)
 
-    raw    = score_snapshot(actor)
-    rows   = getniterations(actor)
-    cols   = div(length(raw), rows)
-    result = vec(sum(reshape(score_snapshot(actor), rows, cols), dims = 2))
+    result = vec(sum(view(actor.score, :, actor.valid), dims = 2))
 
     map!(Base.Fix2(/, sum(actor.valid)), result, result)
 
