@@ -439,6 +439,10 @@ function inference(;
     # At third, for each random variable entry we create a boolean flag to track their updates
     updates = Dict(variable => MarginalHasBeenUpdated(false) for (variable, _) in pairs(actors))
 
+    _iterations = something(iterations, 1)
+    _iterations isa Integer || error("`iterations` argument must be of type Integer or `nothing`")
+    _iterations > 0 || error("`iterations` arguments must be greater than zero")
+
     try
         on_marginal_update = inference_get_callback(callbacks, :on_marginal_update)
         subscriptions      = Dict(variable => subscribe!(obtain_marginal(vardict[variable]) |> ensure_update(fmodel, on_marginal_update, variable, updates[variable]), actor) for (variable, actor) in pairs(actors))
@@ -449,7 +453,7 @@ function inference(;
         is_free_energy, S, T = unwrap_free_energy_option(free_energy)
 
         if is_free_energy
-            fe_actor        = ScoreActor(S)
+            fe_actor        = ScoreActor(S, _iterations, 1)
             fe_objective    = BetheFreeEnergy(BetheFreeEnergyDefaultMarginalSkipStrategy, AsapScheduler(), free_energy_diagnostics)
             fe_subscription = subscribe!(score(fmodel, T, fe_objective), fe_actor)
         end
@@ -496,10 +500,6 @@ function inference(;
             return hk && is_data
         end
 
-        _iterations = something(iterations, 1)
-        _iterations isa Integer || error("`iterations` argument must be of type Integer or `nothing`")
-        _iterations > 0 || error("`iterations` arguments must be greater than zero")
-
         p = showprogress ? ProgressMeter.Progress(_iterations) : nothing
 
         for iteration in 1:_iterations
@@ -524,10 +524,14 @@ function inference(;
             unsubscribe!(subscription)
         end
 
+        if !isnothing(fe_actor)
+            release!(fe_actor)
+        end
+
         unsubscribe!(fe_subscription)
 
         posterior_values = Dict(variable => ReactiveMP.getdata(getvalues(actor)) for (variable, actor) in pairs(actors))
-        fe_values        = fe_actor !== nothing ? score_aggreate_iterations(fe_actor) : nothing
+        fe_values        = fe_actor !== nothing ? score_snapshot_iterations(fe_actor) : nothing
 
         inference_invoke_callback(callbacks, :after_inference, fmodel)
 
@@ -745,19 +749,19 @@ function Base.getproperty(result::RxInferenceEngine, property::Symbol)
             error(
                 "Bethe Free Energy history has not been computed. Use `free_energy = true` keyword argument for the `rxinference` function to compute Bethe Free Energy values together with the `keephistory` argument."
             )
-        return score_aggreate_iterations(getfield(result, :fe_actor))
+        return score_snapshot_iterations(getfield(result, :fe_actor))
     elseif property === :free_energy_final_only_history
         !isnothing(getfield(result, :fe_actor)) ||
             error(
                 "Bethe Free Energy history has not been comptued. Use `free_energy = true` keyword argument for the `rxinference` function to compute Bethe Free Energy values together with the `keephistory` argument."
             )
-        return score_final_only(getfield(result, :fe_actor))
+        return score_snapshot_final(getfield(result, :fe_actor))
     elseif property === :free_energy_raw_history
         !isnothing(getfield(result, :fe_actor)) ||
             error(
                 "Bethe Free Energy history has not been comptued. Use `free_energy = true` keyword argument for the `rxinference` function to compute Bethe Free Energy values together with the `keephistory` argument."
             )
-        return score_raw(getfield(result, :fe_actor))
+        return score_snapshot(getfield(result, :fe_actor))
     end
     return getfield(result, property)
 end
@@ -1010,6 +1014,11 @@ function rxinference(;
         end
     end
 
+    # `iterations` might be set to `nothing` in which case we assume `1` iteration
+    _iterations = something(iterations, 1)
+    _iterations isa Integer || error("`iterations` argument must be of type Integer or `nothing`")
+    _iterations > 0 || error("`iterations` arguments must be greater than zero")
+
     _keephistory = something(keephistory, 0)
     _keephistory isa Integer || error("`keephistory` argument must be of type Integer or `nothing`")
     _keephistory >= 0 || error("`keephistory` arguments must be greater than or equal to zero")
@@ -1029,17 +1038,12 @@ function rxinference(;
 
     if is_free_energy
         if _keephistory > 0
-            fe_actor = ScoreActor(S)
+            fe_actor = ScoreActor(S, _iterations, _keephistory)
         end
         fe_scheduler = PendingScheduler()
         fe_objective = BetheFreeEnergy(BetheFreeEnergyDefaultMarginalSkipStrategy, fe_scheduler, free_energy_diagnostics)
         fe_source    = score(_model, FE_T, fe_objective)
     end
-
-    # `iterations` might be set to `nothing` in which case we assume `1` iteration
-    _iterations = something(iterations, 1)
-    _iterations isa Integer || error("`iterations` argument must be of type Integer or `nothing`")
-    _iterations > 0 || error("`iterations` arguments must be greater than zero")
 
     # Use `__check_has_randomvar` to filter out unknown or non-random variables in the `returnvars` and `historyvars` specification
     __check_has_randomvar(object, vardict, key) = begin
