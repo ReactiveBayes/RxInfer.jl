@@ -236,15 +236,7 @@ end
     addtests(testrunner, "models/iid/test_mv_iid_covariance.jl")
     addtests(testrunner, "models/iid/test_mv_iid_covariance_known_mean.jl")
 
-    # addtests(testrunner, "models/test_lgssm.jl")
-    # addtests(testrunner, "models/test_hgf.jl")
-    # addtests(testrunner, "models/test_ar.jl")
-    # addtests(testrunner, "models/test_gmm.jl")
-    # addtests(testrunner, "models/test_hmm.jl")
-    # addtests(testrunner, "models/test_linreg.jl")
-    # addtests(testrunner, "models/test_mv_iid.jl")
-    # addtests(testrunner, "models/test_probit.jl")
-    # addtests(testrunner, "models/test_aliases.jl")
-
+    addtests(testrunner, "models/regression/test_linreg.jl")
+    
     run(testrunner)
 end
