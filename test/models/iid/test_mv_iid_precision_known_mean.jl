@@ -1,4 +1,4 @@
-module RxInferModelsMvIIDTest
+module RxInferModelsMvIIDPrecisionKnownMeanTest
 
 using Test, InteractiveUtils
 using RxInfer, BenchmarkTools, Random, Plots, Dates, LinearAlgebra, StableRNGs
