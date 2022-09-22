@@ -220,13 +220,21 @@ end
 
     addtests(testrunner, "models/aliases/test_aliases_binary.jl")
     addtests(testrunner, "models/aliases/test_aliases_normal.jl")
+
     addtests(testrunner, "models/autoregressive/test_ar.jl")
     addtests(testrunner, "models/autoregressive/test_lar.jl")
+
     addtests(testrunner, "models/mixtures/test_gmm_univariate.jl")
     addtests(testrunner, "models/mixtures/test_gmm_multivariate.jl")
+
     addtests(testrunner, "models/statespace/test_ulgssm.jl")
     addtests(testrunner, "models/statespace/test_mlgssm.jl")
     addtests(testrunner, "models/statespace/test_hmm.jl")
+
+    addtests(testrunner, "models/iid/test_mv_iid_precision.jl")
+    addtests(testrunner, "models/iid/test_mv_iid_precision_known_mean.jl")
+    addtests(testrunner, "models/iid/test_mv_iid_covariance.jl")
+    addtests(testrunner, "models/iid/test_mv_iid_covariance_known_mean.jl")
 
     # addtests(testrunner, "models/test_lgssm.jl")
     # addtests(testrunner, "models/test_hgf.jl")
