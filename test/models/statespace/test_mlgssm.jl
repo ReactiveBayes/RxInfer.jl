@@ -86,7 +86,6 @@ end
     @test abs(last(fe) - 6275.9015944677) < 0.01
 
     ## Create output plots
-    ## Create output plots
     @test_plot "models" "mlgssm" begin
         slicedim(dim) = (a) -> map(e -> e[dim], a)
 

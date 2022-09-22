@@ -230,6 +230,8 @@ end
     addtests(testrunner, "models/statespace/test_ulgssm.jl")
     addtests(testrunner, "models/statespace/test_mlgssm.jl")
     addtests(testrunner, "models/statespace/test_hmm.jl")
+    addtests(testrunner, "models/statespace/test_probit.jl")
+    addtests(testrunner, "models/statespace/test_hgf.jl")
 
     addtests(testrunner, "models/iid/test_mv_iid_precision.jl")
     addtests(testrunner, "models/iid/test_mv_iid_precision_known_mean.jl")
@@ -237,6 +239,6 @@ end
     addtests(testrunner, "models/iid/test_mv_iid_covariance_known_mean.jl")
 
     addtests(testrunner, "models/regression/test_linreg.jl")
-    
+
     run(testrunner)
 end
