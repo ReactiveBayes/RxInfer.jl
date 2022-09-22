@@ -110,7 +110,7 @@ end
 const BetheFreeEnergyDefaultMarginalSkipStrategy = SkipInitial()
 const BetheFreeEnergyDefaultChecks               = (BetheFreeEnergyCheckNaNs(), BetheFreeEnergyCheckInfs())
 
-BetheFreeEnergy() = BetheFreeEnergy(BetheFreeEnergyDefaultMarginalSkipStrategy, BetheFreeEnergyDefaultChecks)
+BetheFreeEnergy() = BetheFreeEnergy(BetheFreeEnergyDefaultMarginalSkipStrategy, AsapScheduler(), BetheFreeEnergyDefaultChecks)
 
 get_skip_strategy(objective::BetheFreeEnergy) = objective.skip_strategy
 get_scheduler(objective::BetheFreeEnergy)     = objective.scheduler
