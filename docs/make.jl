@@ -22,9 +22,18 @@ makedocs(;
     ),
     pages = [
         "Home"     => "index.md",
+        "Introduction to RxInfer" => [
+            "Background: variational inference" => "intro/inference/background.md",
+            "Inference for static datasets"     => "intro/inference/inference.md",
+            "Inference for real-time datasets"  => "intro/inference/rxinference.md"
+        ],
         "Examples" => [
             "Overview" => "examples/Overview.md", # This must be auto-generated with `make examples`
             Examples...
+        ],
+        "Contributing" => [
+            "Overview" => "contributing/overview.md",
+            "Adding a new example" => "contributing/new-example.md",
         ]
     ]
 )

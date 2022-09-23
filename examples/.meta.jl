@@ -88,9 +88,15 @@ return [
         hidden = false
     ),
     (
-        path = "Normalizing Flow Tutorial.ipynb",
-        title = "A tutorial to Normalizing flows",
-        description = "An example of variational Bayesian Inference with Normalizing Flows. Reference: Bard van Erp, Hybrid Inference with Invertible Neural Networks in Factor Graphs",
+        path = "Invertible Neural Network Tutorial.ipynb",
+        title = "Invertible neural networks: a tutorial",
+        description = "An example of variational Bayesian Inference with invertible neural networks. Reference: Bart van Erp, Hybrid Inference with Invertible Neural Networks in Factor Graphs.",
+        hidden = false  
+    ),
+    (
+        path = "GPRegression by SSM.ipynb",
+        title = "Solve GP regression by SDE",
+        description = "In this notebook, we solve a GP regression problem by using 'Stochastic Differential Equation' (SDE). This method is well described in the dissertation 'Stochastic differential equation methods for spatio-temporal Gaussian process regression.' by Arno Solin and 'Sequential Inference for Latent Temporal Gaussian Process Models' by Jouni Hartikainen.",
         hidden = false  
     ),
     (
