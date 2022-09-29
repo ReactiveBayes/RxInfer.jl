@@ -1,3 +1,8 @@
+# Unregistered GraphPPL and ReactiveMP, do not commit this two lines, but use them to test ReactiveMP locally
+ENV["JULIA_PKG_USE_CLI_GIT"] = true
+import Pkg; Pkg.rm("GraphPPL"); Pkg.add(Pkg.PackageSpec(name = "GraphPPL", rev = "develop-3.0"));
+import Pkg; Pkg.rm("ReactiveMP"); Pkg.add(Pkg.PackageSpec(name = "ReactiveMP", rev = "develop-3.0"));
+
 using RxInfer
 using Documenter
 
@@ -22,10 +27,17 @@ makedocs(;
     ),
     pages = [
         "Home"     => "index.md",
-        "Introduction to RxInfer" => [
-            "Background: variational inference" => "intro/inference/background.md",
-            "Inference for static datasets"     => "intro/inference/inference.md",
-            "Inference for real-time datasets"  => "intro/inference/rxinference.md"
+        "User guide"  => [
+            "Background: variational inference" => "manuals/background.md",
+            "Getting started"           => "manuals/getting-started.md",
+            "Model specification"       => "manuals/model-specification.md",
+            "Constraints specification" => "manuals/constraints-specification.md",
+            "Meta specification"        => "manuals/meta-specification.md",
+            "Inference execution"       => "manuals/inference-execution.md"
+        ],
+        "Library" => [
+            "Built-in functional form constraints" => "library/functional-forms.md",
+            "Exported methods" => "library/exported-methods.md"
         ],
         "Examples" => [
             "Overview" => "examples/Overview.md", # This must be auto-generated with `make examples`

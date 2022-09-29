@@ -1,1 +1,0 @@
-# [Inference for static datasets](@id intro-inference-static)

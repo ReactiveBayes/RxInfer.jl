@@ -1,6 +1,6 @@
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.8.1"
+julia_version = "1.8.0"
 manifest_format = "2.0"
 project_hash = "cb044e00c879316ad7c9b0ea7473d6ef28e302ed"
 
@@ -294,10 +294,10 @@ uuid = "c87230d0-a227-11e9-1b43-d7ebe4e7570a"
 version = "0.4.1"
 
 [[deps.FFMPEG_jll]]
-deps = ["Artifacts", "Bzip2_jll", "FreeType2_jll", "FriBidi_jll", "JLLWrappers", "LAME_jll", "Libdl", "Ogg_jll", "OpenSSL_jll", "Opus_jll", "Pkg", "Zlib_jll", "libaom_jll", "libass_jll", "libfdk_aac_jll", "libvorbis_jll", "x264_jll", "x265_jll"]
-git-tree-sha1 = "ccd479984c7838684b3ac204b716c89955c76623"
+deps = ["Artifacts", "Bzip2_jll", "FreeType2_jll", "FriBidi_jll", "JLLWrappers", "LAME_jll", "Libdl", "Ogg_jll", "OpenSSL_jll", "Opus_jll", "PCRE2_jll", "Pkg", "Zlib_jll", "libaom_jll", "libass_jll", "libfdk_aac_jll", "libvorbis_jll", "x264_jll", "x265_jll"]
+git-tree-sha1 = "74faea50c1d007c85837327f6775bea60b5492dd"
 uuid = "b22a6f82-2f65-5046-a5b2-351ab43fb4e5"
-version = "4.4.2+0"
+version = "4.4.2+2"
 
 [[deps.FastGaussQuadrature]]
 deps = ["LinearAlgebra", "SpecialFunctions", "StaticArrays"]
@@ -410,7 +410,9 @@ version = "2.68.3+2"
 
 [[deps.GraphPPL]]
 deps = ["MacroTools", "TupleTools"]
-path = "/Users/bvdmitri/.julia/dev/GraphPPL.jl/"
+git-tree-sha1 = "c9b1f2f058d26207057b8991af3f919767bc4e14"
+repo-rev = "develop-3.0"
+repo-url = "https://github.com/biaslab/GraphPPL.jl.git"
 uuid = "b3f8163a-e979-4e85-b43e-1f63d8c8b42c"
 version = "3.0.0"
 
@@ -779,6 +781,11 @@ git-tree-sha1 = "85f8e6578bf1f9ee0d11e7bb1b1456435479d47c"
 uuid = "bac558e1-5e72-5ebc-8fee-abe8a469f55d"
 version = "1.4.1"
 
+[[deps.PCRE2_jll]]
+deps = ["Artifacts", "Libdl"]
+uuid = "efcefdf7-47ab-520b-bdef-62a2eaa19f15"
+version = "10.40.0+0"
+
 [[deps.PCRE_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "b2a7af664e098055a7529ad1a900ded962bca488"
@@ -882,7 +889,9 @@ uuid = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 
 [[deps.ReactiveMP]]
 deps = ["DataStructures", "Distributions", "DomainIntegrals", "DomainSets", "FastGaussQuadrature", "ForwardDiff", "HCubature", "LazyArrays", "LinearAlgebra", "LoopVectorization", "MacroTools", "Optim", "PositiveFactorizations", "Random", "Rocket", "SpecialFunctions", "StaticArrays", "StatsBase", "StatsFuns", "TupleTools", "Unrolled"]
-path = "/Users/bvdmitri/.julia/dev/ReactiveMP.jl/"
+git-tree-sha1 = "0bf8dd858b4f04c6920b320881932f438ca40252"
+repo-rev = "develop-3.0"
+repo-url = "https://github.com/biaslab/ReactiveMP.jl.git"
 uuid = "a194aa59-28ba-4574-a09c-4a745416d6e3"
 version = "3.0.0"
 
@@ -934,7 +943,7 @@ version = "1.4.0"
 
 [[deps.RxInfer]]
 deps = ["DataStructures", "Distributions", "DomainSets", "GraphPPL", "LinearAlgebra", "MacroTools", "Optim", "ProgressMeter", "Random", "ReactiveMP", "Reexport", "Rocket", "TupleTools"]
-path = "/Users/bvdmitri/.julia/dev/RxInfer"
+path = "/Users/bvdmitri/.julia/dev/RxInfer.jl"
 uuid = "86711068-29c9-4ff7-b620-ae75d7495b3d"
 version = "2.0.0"
 
