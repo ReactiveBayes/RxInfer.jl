@@ -1,7 +1,8 @@
 # This file contains titles and descriptions for each example in this folder
 # These meta information will be used for our documentation pipeline
 
-# IMPORTANT: 1. Make sure that the very first cell of the notebook contains ONLY `# <title>` in it and has markdown type
+# IMPORTANT: 0. IF YOU MAKE CHANGES TO THIS INSTRUCTION CHANGE THE DOCUMENTATION SECTION AS WELL (`docs/contributing/new-example.md`)
+#            1. Make sure that the very first cell of the notebook contains ONLY `# <title>` in it and has markdown type
 #               This is important for link generation in the documentation
 #            2. Paths must be local and cannot be located in subfolders
 #            3. Description is used to pre-generate an Examples page overview in the documentation

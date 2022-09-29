@@ -20,7 +20,7 @@ We welcome new feature proposals. However, before submitting a feature request, 
 We suggest that you use the `dev` command from the new Julia package manager to
 install `RxInfer` for development purposes. To work on your fork of `RxInfer`, use your fork's URL address in the `dev` command, for example:
 
-```jl
+```
 ] dev git@github.com:your_username/RxInfer.jl.git
 ```
 
@@ -60,7 +60,7 @@ See [Julia's documentation](https://docs.julialang.org/en/v1/manual/documentatio
 
 The tests can be evaluated by running following command in the Julia REPL:
 
-```julia
+```
 ] test RxInfer
 ```
 
