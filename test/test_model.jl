@@ -6,8 +6,6 @@ using Random
 
 @testset "@model macro tests" begin
 
-    import RxInfer: create_model
-
     @testset "Tuple based variables usage #1" begin
 
         @model function mixture_model()
@@ -23,9 +21,7 @@ using Random
             y ~ Normal(mean = mixture, variance = 1.0)
         end
 
-        generator = mixture_model()
-
-        model, _ = generator(; constraints = MeanField())
+        model, _ = create_model(mixture_model(), constraints = MeanField())
 
         @test model[:selector] isa RandomVariable
         @test model[:mixture] isa RandomVariable
@@ -160,7 +156,7 @@ using Random
             DummyDistributionTestModelError3,
             AutoVar(:θ)
         )
-        
+
         @test_throws ErrorException ReactiveMP.make_node(
             FactorGraphModel(),
             FactorNodeCreationOptions(),

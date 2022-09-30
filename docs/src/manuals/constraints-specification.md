@@ -144,7 +144,7 @@ end
 
 In this example we specify a mean-field assumption between a set of variables `x[begin:k]` and `x[k+1:end]`. 
 
-To create a model with extra constraints the user may pass an optional `constraints` positional argument for the model generator function:
+To create a model with extra constraints the user may pass an optional `constraints` keyword argument for the `create_model` function:
 
 ```julia
 @model function my_model(arguments...)
@@ -155,7 +155,7 @@ constraints = @constraints begin
     ...
 end
 
-model, returnval = my_model(arguments...)(; constraints = constraints)
+model, returnval = create_model(my_model(arguments...); constraints = constraints)
 ```
 
 Alternatively, it is possible to use constraints directly in the automatic [`inference`](@ref) and [`rxinference`](@ref) functions that accepts `constraints` keyword argument. 

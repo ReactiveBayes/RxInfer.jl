@@ -223,7 +223,10 @@ struct ModelGenerator{G, A, K}
 end
 
 function (generator::ModelGenerator)(; constraints = nothing, meta = nothing, options = nothing)
-    return generator(FactorGraphModel(constraints, meta, options))
+    sconstraints = something(constraints, UnspecifiedConstraints())
+    smeta        = something(meta, UnspecifiedMeta())
+    soptions     = something(options, UnspecifiedModelInferenceOptions())
+    return generator(FactorGraphModel(sconstraints, smeta, soptions))
 end
 
 function (generator::ModelGenerator)(model::FactorGraphModel)
@@ -239,7 +242,7 @@ Returns a tuple of 2 values:
 - 1. an instance of `FactorGraphModel`
 - 2. return value from the `@model` macro function definition
 """
-function create_model(generator::ModelGenerator, constraints = nothing, meta = nothing, options = nothing)
+function create_model(generator::ModelGenerator; constraints = nothing, meta = nothing, options = nothing)
     sconstraints = something(constraints, UnspecifiedConstraints())
     smeta        = something(meta, UnspecifiedMeta())
     soptions     = something(options, UnspecifiedModelInferenceOptions())

@@ -56,8 +56,7 @@ end
 And later on we may create our model and obtain references for variables of interests:
 
 ```@example hierarchical-normal
-generator = my_model()
-model, (m1, y) = generator()
+model, (m1, y) = create_model(my_model())
 nothing #hide
 ```
 
@@ -170,8 +169,7 @@ end
 We create our model as usual, however in order to start VMP inference procedure we need to set initial posterior marginals for all random variables in the model:
 
 ```@example normal-estimation-vmp
-generator = normal_estimation(n)
-model, (m, w, y) = generator()
+model, (m, w, y) = create_model(normal_estimation(n))
 
 # We use vague initial marginals
 setmarginal!(m, vague(NormalMeanVariance)) 

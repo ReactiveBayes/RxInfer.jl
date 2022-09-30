@@ -32,10 +32,10 @@ end
 generator = my_model(model_arguments...)
 ```
 
-In order to create an instance of the model object we should execute the generator:
+In order to create an instance of the model object we should the `create_model` function:
 
 ```julia
-model, (x, y) = generator()
+model, (x, y) = create_model(generator)
 ```
 
 It is not necessary to return anything from the model, in that case `RxInfer.jl` will automatically inject `return nothing` to the end of the model function.

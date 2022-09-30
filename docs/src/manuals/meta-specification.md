@@ -70,7 +70,7 @@ meta = @meta begin
 end
 ```
 
-To create a model with extra constraints the user may pass an optional `meta` positional argument for the model generator function:
+To create a model with extra constraints the user may pass an optional `meta` keyword argument for the `create_model` function:
 
 ```julia
 @model function my_model(arguments...)
@@ -81,7 +81,7 @@ meta = @meta begin
     ...
 end
 
-model, returnval = my_model(arguments...)(; meta = meta)
+model, returnval = create_model(my_model(arguments...); meta = meta)
 ```
 
 Alternatively, it is possible to use constraints directly in the automatic [`inference`](@ref) and [`rxinference`](@ref) functions that accepts `meta` keyword argument. 

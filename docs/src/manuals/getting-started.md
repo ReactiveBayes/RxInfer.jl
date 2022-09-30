@@ -154,12 +154,9 @@ Here is an example of inference procedure:
 function custom_inference(data)
     n = length(data)
 
-    mgenerator = coin_model(n)
-
-    # `coin_model` function from `@model` macro returns a reference to the model generator object and 
-    # model generator creates and returns a tuple of the model object as the first element 
-    # and the same output as in `return` statement in the original function specification as the second element
-    model, (y, θ) = mgenerator()
+    # `coin_model` function from `@model` macro returns a reference to the model generator object
+    # we need to use the `create_model` function to get actual model object
+    model, (y, θ) = create_model(coin_model(n))
     
     # Reference for future posterior marginal 
     mθ = nothing
