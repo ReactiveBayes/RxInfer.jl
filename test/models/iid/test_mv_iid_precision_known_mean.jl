@@ -22,13 +22,7 @@ include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 end
 
 function inference_mv_wishart_known_mean(mean, data, n, d)
-    return inference(
-        model = mv_iid_wishart_known_mean(mean, n, d),
-        data = (y = data,),
-        iterations = 10,
-        returnvars = KeepLast(),
-        free_energy = Float64
-    )
+    return inference(model = mv_iid_wishart_known_mean(mean, n, d), data = (y = data,), iterations = 10, returnvars = KeepLast(), free_energy = Float64)
 end
 
 @testset "Multivariate IID: Precision parametrisation with known mean" begin
@@ -59,13 +53,7 @@ end
         Y = range(-5, 5, length = 200)
 
         p = plot(title = "MvIID experiment / Precision parametrisation (known mean)")
-        p = contour!(
-            p,
-            X,
-            Y,
-            (x, y) -> pdf(MvNormalMeanPrecision(m, mean(result_km.posteriors[:P])), [x, y]),
-            label = "Estimated"
-        )
+        p = contour!(p, X, Y, (x, y) -> pdf(MvNormalMeanPrecision(m, mean(result_km.posteriors[:P])), [x, y]), label = "Estimated")
         p = contour!(p, X, Y, (x, y) -> pdf(MvNormalMeanPrecision(m, P), [x, y]), label = "Real")
     end
 

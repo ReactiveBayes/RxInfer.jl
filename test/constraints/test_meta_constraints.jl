@@ -198,11 +198,7 @@ using Logging
             Gamma(r, t) -> 123 # Factor node exist, but uses wrong var names, but warn is false
         end
 
-        @test_logs (:warn, r".*has no variable named `r`.*") (:warn, r".*has no variable named `t`.*") activate!(
-            meta_with_warn,
-            getnodes(model),
-            getvariables(model)
-        )
+        @test_logs (:warn, r".*has no variable named `r`.*") (:warn, r".*has no variable named `t`.*") activate!(meta_with_warn, getnodes(model), getvariables(model))
         @test_logs min_level = Logging.Warn activate!(meta_without_warn, getnodes(model), getvariables(model))
     end
 

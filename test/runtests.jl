@@ -89,12 +89,7 @@ function Base.run(testrunner::TestRunner)
         # This token indicates that there are no other jobs left
         put!(testrunner.jobschannel, nothing)
         # We create a remote call for another Julia process to execute our test with `include(filename)`
-        task = remotecall(
-            worker,
-            testrunner.jobschannel,
-            testrunner.exschannel,
-            testrunner.iochannel
-        ) do jobschannel, exschannel, iochannel
+        task = remotecall(worker, testrunner.jobschannel, testrunner.exschannel, testrunner.iochannel) do jobschannel, exschannel, iochannel
             finish = false
             while !finish
                 # Each worker takes jobs sequentially from the shared jobs pool 
@@ -172,7 +167,7 @@ function key_to_filename(key)
     return if length(splitted) === 1
         string("test_", first(splitted), ".jl")
     else
-        string(join(splitted[1:end-1], "/"), "/test_", splitted[end], ".jl")
+        string(join(splitted[1:(end - 1)], "/"), "/test_", splitted[end], ".jl")
     end
 end
 
@@ -181,7 +176,7 @@ function filename_to_key(filename)
     if length(splitted) === 1
         return replace(replace(first(splitted), ".jl" => ""), "test_" => "")
     else
-        path, name = splitted[1:end-1], splitted[end]
+        path, name = splitted[1:(end - 1)], splitted[end]
         return string(join(path, ":"), ":", replace(replace(name, ".jl" => ""), "test_" => ""))
     end
 end
@@ -203,10 +198,8 @@ end
 
 @testset ExtendedTestSet "RxInfer" begin
     @testset "Testset helpers" begin
-        @test key_to_filename(filename_to_key("distributions/test_normal_mean_variance.jl")) ==
-              "distributions/test_normal_mean_variance.jl"
-        @test filename_to_key(key_to_filename("distributions:normal_mean_variance")) ==
-              "distributions:normal_mean_variance"
+        @test key_to_filename(filename_to_key("distributions/test_normal_mean_variance.jl")) == "distributions/test_normal_mean_variance.jl"
+        @test filename_to_key(key_to_filename("distributions:normal_mean_variance")) == "distributions:normal_mean_variance"
         @test key_to_filename(filename_to_key("test_message.jl")) == "test_message.jl"
         @test filename_to_key(key_to_filename("message")) == "message"
     end

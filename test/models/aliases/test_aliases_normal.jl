@@ -38,12 +38,7 @@ using RxInfer, BenchmarkTools, Random, Plots, LinearAlgebra, StableRNGs
 end
 
 function normal_aliases_inference()
-    return inference(
-        model = normal_aliases(),
-        data = (d = 1.0,),
-        returnvars = (x1 = KeepLast(),),
-        free_energy = true
-    )
+    return inference(model = normal_aliases(), data = (d = 1.0,), returnvars = (x1 = KeepLast(),), free_energy = true)
 end
 
 @testset "aliases for `Normal` family of distributions" begin

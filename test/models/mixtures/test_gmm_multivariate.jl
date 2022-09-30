@@ -109,18 +109,12 @@ end
     end
 
     # Execute inference for different constraints and option specification
-    results = map(
-        (specs) -> inference_multivariate(specs[1], L, nmixtures, y, 25, specs[2]),
-        [
-            (StableRNG(42), MeanField()),
-            (StableRNG(42), constraints)
-        ]
-    )
+    results = map((specs) -> inference_multivariate(specs[1], L, nmixtures, y, 25, specs[2]), [(StableRNG(42), MeanField()), (StableRNG(42), constraints)])
 
     fresult = results[begin]
 
     # All execution must be equivalent (check against first)
-    foreach(results[begin+1:end]) do result
+    foreach(results[(begin + 1):end]) do result
         foreach(zip(fresult.posteriors, result.posteriors)) do (l, r)
             @test l == r
         end
@@ -160,14 +154,7 @@ end
 
         for (e_m, e_w) in zip(e_means, e_precs)
             gaussian = MvNormal(e_m, Matrix(Hermitian(inv(e_w))))
-            pe = contour!(
-                pe,
-                range(-2L, 2L, step = 0.25),
-                range(-2L, 2L, step = 0.25),
-                (x, y) -> pdf(gaussian, [x, y]),
-                levels = 7,
-                colorbar = false
-            )
+            pe = contour!(pe, range(-2L, 2L, step = 0.25), range(-2L, 2L, step = 0.25), (x, y) -> pdf(gaussian, [x, y]), levels = 7, colorbar = false)
         end
 
         pfe = plot(fe[2:end], label = "Free Energy")

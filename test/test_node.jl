@@ -18,15 +18,7 @@ using Random
 
         model = FactorGraphModel()
 
-        snode, svar = make_node(
-            model,
-            FactorNodeCreationOptions(MeanField(), nothing, nothing),
-            CustomStochasticNode,
-            AutoVar(:cout),
-            cx,
-            cy,
-            cz
-        )
+        snode, svar = make_node(model, FactorNodeCreationOptions(MeanField(), nothing, nothing), CustomStochasticNode, AutoVar(:cout), cx, cy, cz)
 
         @test snode ∈ getnodes(model)
         @test svar ∈ getrandom(model)
@@ -51,15 +43,7 @@ using Random
 
         model = FactorGraphModel()
 
-        snode, svar = make_node(
-            model,
-            FactorNodeCreationOptions(MeanField(), nothing, nothing),
-            CustomDeterministicNode,
-            AutoVar(:cout),
-            cx,
-            cy,
-            cz
-        )
+        snode, svar = make_node(model, FactorNodeCreationOptions(MeanField(), nothing, nothing), CustomDeterministicNode, AutoVar(:cout), cx, cy, cz)
 
         @test svar ∈ getconstant(model)
 
@@ -95,8 +79,7 @@ using Random
                 m, x, y, z, node = make_dummy_model(FullFactorisation(), DefaultFunctionalDependencies())
 
                 # Test that pipeline dependencies have been set properly
-                @test ReactiveMP.get_pipeline_dependencies(ReactiveMP.getpipeline(node)) ===
-                      DefaultFunctionalDependencies()
+                @test ReactiveMP.get_pipeline_dependencies(ReactiveMP.getpipeline(node)) === DefaultFunctionalDependencies()
 
                 x_msgdeps, x_mgdeps = ReactiveMP.functional_dependencies(node, :x)
 
@@ -119,8 +102,7 @@ using Random
                 m, x, y, z, node = make_dummy_model(MeanField(), DefaultFunctionalDependencies())
 
                 # Test that pipeline dependencies have been set properly
-                @test ReactiveMP.get_pipeline_dependencies(ReactiveMP.getpipeline(node)) ===
-                      DefaultFunctionalDependencies()
+                @test ReactiveMP.get_pipeline_dependencies(ReactiveMP.getpipeline(node)) === DefaultFunctionalDependencies()
 
                 x_msgdeps, x_mgdeps = ReactiveMP.functional_dependencies(node, :x)
 
@@ -143,8 +125,7 @@ using Random
                 m, x, y, z, node = make_dummy_model(((1, 2), (3,)), DefaultFunctionalDependencies())
 
                 # Test that pipeline dependencies have been set properly
-                @test ReactiveMP.get_pipeline_dependencies(ReactiveMP.getpipeline(node)) ===
-                      DefaultFunctionalDependencies()
+                @test ReactiveMP.get_pipeline_dependencies(ReactiveMP.getpipeline(node)) === DefaultFunctionalDependencies()
 
                 x_msgdeps, x_mgdeps = ReactiveMP.functional_dependencies(node, :x)
 
@@ -167,8 +148,7 @@ using Random
                 m, x, y, z, node = make_dummy_model(((1,), (2, 3)), DefaultFunctionalDependencies())
 
                 # Test that pipeline dependencies have been set properly
-                @test ReactiveMP.get_pipeline_dependencies(ReactiveMP.getpipeline(node)) ===
-                      DefaultFunctionalDependencies()
+                @test ReactiveMP.get_pipeline_dependencies(ReactiveMP.getpipeline(node)) === DefaultFunctionalDependencies()
 
                 x_msgdeps, x_mgdeps = ReactiveMP.functional_dependencies(node, :x)
 
@@ -191,8 +171,7 @@ using Random
                 m, x, y, z, node = make_dummy_model(((1, 3), (2,)), DefaultFunctionalDependencies())
 
                 # Test that pipeline dependencies have been set properly
-                @test ReactiveMP.get_pipeline_dependencies(ReactiveMP.getpipeline(node)) ===
-                      DefaultFunctionalDependencies()
+                @test ReactiveMP.get_pipeline_dependencies(ReactiveMP.getpipeline(node)) === DefaultFunctionalDependencies()
 
                 x_msgdeps, x_mgdeps = ReactiveMP.functional_dependencies(node, :x)
 
@@ -226,8 +205,7 @@ using Random
 
                 x_msgdeps, x_mgdeps = ReactiveMP.functional_dependencies(node, :x)
 
-                @test length(x_msgdeps) === 3 && name(x_msgdeps[1]) === :x && name(x_msgdeps[2]) === :y &&
-                      name(x_msgdeps[3]) === :z
+                @test length(x_msgdeps) === 3 && name(x_msgdeps[1]) === :x && name(x_msgdeps[2]) === :y && name(x_msgdeps[3]) === :z
                 @test length(x_mgdeps) === 0
                 @test mean_var(Rocket.getrecent(ReactiveMP.messagein(x_msgdeps[1]))) == (0.123, 0.123)
 
@@ -259,15 +237,13 @@ using Random
 
                 y_msgdeps, y_mgdeps = ReactiveMP.functional_dependencies(node, :y)
 
-                @test length(y_msgdeps) === 3 && name(y_msgdeps[1]) === :x && name(y_msgdeps[2]) === :y &&
-                      name(y_msgdeps[3]) === :z
+                @test length(y_msgdeps) === 3 && name(y_msgdeps[1]) === :x && name(y_msgdeps[2]) === :y && name(y_msgdeps[3]) === :z
                 @test length(y_mgdeps) === 0
                 @test mean_var(Rocket.getrecent(ReactiveMP.messagein(y_msgdeps[2]))) == (0.123, 0.123)
 
                 z_msgdeps, z_mgdeps = ReactiveMP.functional_dependencies(node, :z)
 
-                @test length(z_msgdeps) === 3 && name(z_msgdeps[1]) === :x && name(z_msgdeps[2]) === :y &&
-                      name(z_msgdeps[3]) === :z
+                @test length(z_msgdeps) === 3 && name(z_msgdeps[1]) === :x && name(z_msgdeps[2]) === :y && name(z_msgdeps[3]) === :z
                 @test length(z_mgdeps) === 0
                 @test isnothing(Rocket.getrecent(ReactiveMP.messagein(z_msgdeps[3])))
             end
@@ -483,8 +459,7 @@ using Random
                 x_msgdeps, x_mgdeps = ReactiveMP.functional_dependencies(node, :x)
 
                 @test length(x_msgdeps) === 0
-                @test length(x_mgdeps) === 3 && name(x_mgdeps[1]) === :x && name(x_mgdeps[2]) === :y &&
-                      name(x_mgdeps[3]) === :z
+                @test length(x_mgdeps) === 3 && name(x_mgdeps[1]) === :x && name(x_mgdeps[2]) === :y && name(x_mgdeps[3]) === :z
                 @test mean_var(Rocket.getrecent(ReactiveMP.getmarginal(x, IncludeAll()))) == (0.123, 0.123)
 
                 y_msgdeps, y_mgdeps = ReactiveMP.functional_dependencies(node, :y)
@@ -516,15 +491,13 @@ using Random
                 y_msgdeps, y_mgdeps = ReactiveMP.functional_dependencies(node, :y)
 
                 @test length(y_msgdeps) === 0
-                @test length(y_mgdeps) === 3 && name(y_mgdeps[1]) === :x && name(y_mgdeps[2]) === :y &&
-                      name(y_mgdeps[3]) === :z
+                @test length(y_mgdeps) === 3 && name(y_mgdeps[1]) === :x && name(y_mgdeps[2]) === :y && name(y_mgdeps[3]) === :z
                 @test mean_var(Rocket.getrecent(ReactiveMP.getmarginal(y, IncludeAll()))) == (0.123, 0.123)
 
                 z_msgdeps, z_mgdeps = ReactiveMP.functional_dependencies(node, :z)
 
                 @test length(z_msgdeps) === 0
-                @test length(z_mgdeps) === 3 && name(z_mgdeps[1]) === :x && name(z_mgdeps[2]) === :y &&
-                      name(z_mgdeps[3]) === :z
+                @test length(z_mgdeps) === 3 && name(z_mgdeps[1]) === :x && name(z_mgdeps[2]) === :y && name(z_mgdeps[3]) === :z
                 @test isnothing(Rocket.getrecent(ReactiveMP.getmarginal(z, IncludeAll())))
             end
 
@@ -627,20 +600,17 @@ using Random
 
                 x_msgdeps, x_mgdeps = ReactiveMP.functional_dependencies(node, :x)
 
-                @test length(x_msgdeps) === 3 && name(x_msgdeps[1]) === :x && name(x_msgdeps[2]) === :y &&
-                      name(x_msgdeps[3]) === :z
+                @test length(x_msgdeps) === 3 && name(x_msgdeps[1]) === :x && name(x_msgdeps[2]) === :y && name(x_msgdeps[3]) === :z
                 @test length(x_mgdeps) === 1 && name(x_mgdeps[1]) === :x_y_z
 
                 y_msgdeps, y_mgdeps = ReactiveMP.functional_dependencies(node, :y)
 
-                @test length(y_msgdeps) === 3 && name(y_msgdeps[1]) === :x && name(y_msgdeps[2]) === :y &&
-                      name(y_msgdeps[3]) === :z
+                @test length(y_msgdeps) === 3 && name(y_msgdeps[1]) === :x && name(y_msgdeps[2]) === :y && name(y_msgdeps[3]) === :z
                 @test length(y_mgdeps) === 1 && name(y_mgdeps[1]) === :x_y_z
 
                 z_msgdeps, z_mgdeps = ReactiveMP.functional_dependencies(node, :z)
 
-                @test length(z_msgdeps) === 3 && name(z_msgdeps[1]) === :x && name(z_msgdeps[2]) === :y &&
-                      name(z_msgdeps[3]) === :z
+                @test length(z_msgdeps) === 3 && name(z_msgdeps[1]) === :x && name(z_msgdeps[2]) === :y && name(z_msgdeps[3]) === :z
                 @test length(z_mgdeps) === 1 && name(z_mgdeps[1]) === :x_y_z
             end
 
@@ -655,24 +625,18 @@ using Random
 
                 x_msgdeps, x_mgdeps = ReactiveMP.functional_dependencies(node, :x)
 
-                @test length(x_msgdeps) === 3 && name(x_mgdeps[1]) === :x && name(x_mgdeps[2]) === :y &&
-                      name(x_mgdeps[3]) === :z
-                @test length(x_mgdeps) === 3 && name(x_mgdeps[1]) === :x && name(x_mgdeps[2]) === :y &&
-                      name(x_mgdeps[3]) === :z
+                @test length(x_msgdeps) === 3 && name(x_mgdeps[1]) === :x && name(x_mgdeps[2]) === :y && name(x_mgdeps[3]) === :z
+                @test length(x_mgdeps) === 3 && name(x_mgdeps[1]) === :x && name(x_mgdeps[2]) === :y && name(x_mgdeps[3]) === :z
 
                 y_msgdeps, y_mgdeps = ReactiveMP.functional_dependencies(node, :y)
 
-                @test length(y_msgdeps) === 3 && name(y_msgdeps[1]) === :x && name(y_msgdeps[2]) === :y &&
-                      name(y_msgdeps[3]) === :z
-                @test length(y_mgdeps) === 3 && name(y_mgdeps[1]) === :x && name(y_mgdeps[2]) === :y &&
-                      name(y_mgdeps[3]) === :z
+                @test length(y_msgdeps) === 3 && name(y_msgdeps[1]) === :x && name(y_msgdeps[2]) === :y && name(y_msgdeps[3]) === :z
+                @test length(y_mgdeps) === 3 && name(y_mgdeps[1]) === :x && name(y_mgdeps[2]) === :y && name(y_mgdeps[3]) === :z
 
                 z_msgdeps, z_mgdeps = ReactiveMP.functional_dependencies(node, :z)
 
-                @test length(z_msgdeps) === 3 && name(z_msgdeps[1]) === :x && name(z_msgdeps[2]) === :y &&
-                      name(z_msgdeps[3]) === :z
-                @test length(z_mgdeps) === 3 && name(z_mgdeps[1]) === :x && name(z_mgdeps[2]) === :y &&
-                      name(z_mgdeps[3]) === :z
+                @test length(z_msgdeps) === 3 && name(z_msgdeps[1]) === :x && name(z_msgdeps[2]) === :y && name(z_msgdeps[3]) === :z
+                @test length(z_mgdeps) === 3 && name(z_mgdeps[1]) === :x && name(z_mgdeps[2]) === :y && name(z_mgdeps[3]) === :z
             end
 
             @testset "Require everything dependencies: Structured factorisation" begin
@@ -686,20 +650,17 @@ using Random
 
                 x_msgdeps, x_mgdeps = ReactiveMP.functional_dependencies(node, :x)
 
-                @test length(x_msgdeps) === 3 && name(x_msgdeps[1]) === :x && name(x_msgdeps[2]) === :y &&
-                      name(x_msgdeps[3]) === :z
+                @test length(x_msgdeps) === 3 && name(x_msgdeps[1]) === :x && name(x_msgdeps[2]) === :y && name(x_msgdeps[3]) === :z
                 @test length(x_mgdeps) === 2 && name(x_mgdeps[1]) === :x_y && name(x_mgdeps[2]) === :z
 
                 y_msgdeps, y_mgdeps = ReactiveMP.functional_dependencies(node, :y)
 
-                @test length(y_msgdeps) === 3 && name(y_msgdeps[1]) === :x && name(y_msgdeps[2]) === :y &&
-                      name(y_msgdeps[3]) === :z
+                @test length(y_msgdeps) === 3 && name(y_msgdeps[1]) === :x && name(y_msgdeps[2]) === :y && name(y_msgdeps[3]) === :z
                 @test length(y_mgdeps) === 2 && name(y_mgdeps[1]) === :x_y && name(y_mgdeps[2]) === :z
 
                 z_msgdeps, z_mgdeps = ReactiveMP.functional_dependencies(node, :z)
 
-                @test length(z_msgdeps) === 3 && name(z_msgdeps[1]) === :x && name(z_msgdeps[2]) === :y &&
-                      name(z_msgdeps[3]) === :z
+                @test length(z_msgdeps) === 3 && name(z_msgdeps[1]) === :x && name(z_msgdeps[2]) === :y && name(z_msgdeps[3]) === :z
                 @test length(z_mgdeps) === 2 && name(z_mgdeps[1]) === :x_y && name(z_mgdeps[2]) === :z
 
                 ## --- ##
@@ -714,20 +675,17 @@ using Random
 
                 x_msgdeps, x_mgdeps = ReactiveMP.functional_dependencies(node, :x)
 
-                @test length(x_msgdeps) === 3 && name(x_msgdeps[1]) === :x && name(x_msgdeps[2]) === :y &&
-                      name(x_msgdeps[3]) === :z
+                @test length(x_msgdeps) === 3 && name(x_msgdeps[1]) === :x && name(x_msgdeps[2]) === :y && name(x_msgdeps[3]) === :z
                 @test length(x_mgdeps) === 2 && name(x_mgdeps[1]) === :x && name(x_mgdeps[2]) === :y_z
 
                 y_msgdeps, y_mgdeps = ReactiveMP.functional_dependencies(node, :y)
 
-                @test length(y_msgdeps) === 3 && name(y_msgdeps[1]) === :x && name(y_msgdeps[2]) === :y &&
-                      name(y_msgdeps[3]) === :z
+                @test length(y_msgdeps) === 3 && name(y_msgdeps[1]) === :x && name(y_msgdeps[2]) === :y && name(y_msgdeps[3]) === :z
                 @test length(y_mgdeps) === 2 && name(y_mgdeps[1]) === :x && name(y_mgdeps[2]) === :y_z
 
                 z_msgdeps, z_mgdeps = ReactiveMP.functional_dependencies(node, :z)
 
-                @test length(z_msgdeps) === 3 && name(z_msgdeps[1]) === :x && name(z_msgdeps[2]) === :y &&
-                      name(z_msgdeps[3]) === :z
+                @test length(z_msgdeps) === 3 && name(z_msgdeps[1]) === :x && name(z_msgdeps[2]) === :y && name(z_msgdeps[3]) === :z
                 @test length(z_mgdeps) === 2 && name(z_mgdeps[1]) === :x && name(z_mgdeps[2]) === :y_z
 
                 ## --- ##
@@ -742,20 +700,17 @@ using Random
 
                 x_msgdeps, x_mgdeps = ReactiveMP.functional_dependencies(node, :x)
 
-                @test length(x_msgdeps) === 3 && name(x_msgdeps[1]) === :x && name(x_msgdeps[2]) === :y &&
-                      name(x_msgdeps[3]) === :z
+                @test length(x_msgdeps) === 3 && name(x_msgdeps[1]) === :x && name(x_msgdeps[2]) === :y && name(x_msgdeps[3]) === :z
                 @test length(x_mgdeps) === 2 && name(x_mgdeps[1]) === :x_z && name(x_mgdeps[2]) === :y
 
                 y_msgdeps, y_mgdeps = ReactiveMP.functional_dependencies(node, :y)
 
-                @test length(y_msgdeps) === 3 && name(y_msgdeps[1]) === :x && name(y_msgdeps[2]) === :y &&
-                      name(y_msgdeps[3]) === :z
+                @test length(y_msgdeps) === 3 && name(y_msgdeps[1]) === :x && name(y_msgdeps[2]) === :y && name(y_msgdeps[3]) === :z
                 @test length(y_mgdeps) === 2 && name(y_mgdeps[1]) === :x_z && name(y_mgdeps[2]) === :y
 
                 z_msgdeps, z_mgdeps = ReactiveMP.functional_dependencies(node, :z)
 
-                @test length(z_msgdeps) === 3 && name(z_msgdeps[1]) === :x && name(z_msgdeps[2]) === :y &&
-                      name(z_msgdeps[3]) === :z
+                @test length(z_msgdeps) === 3 && name(z_msgdeps[1]) === :x && name(z_msgdeps[2]) === :y && name(z_msgdeps[3]) === :z
                 @test length(z_mgdeps) === 2 && name(z_mgdeps[1]) === :x_z && name(z_mgdeps[2]) === :y
             end
         end

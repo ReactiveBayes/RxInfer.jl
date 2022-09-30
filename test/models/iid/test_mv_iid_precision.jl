@@ -32,10 +32,7 @@ function inference_mv_wishart(data, n, d)
         model = mv_iid_wishart(n, d),
         data = (y = data,),
         constraints = constraints_mv_iid_wishart(),
-        initmarginals = (
-            m = vague(MvNormalMeanCovariance, d),
-            P = vague(Wishart, d)
-        ),
+        initmarginals = (m = vague(MvNormalMeanCovariance, d), P = vague(Wishart, d)),
         returnvars = KeepLast(),
         iterations = 10,
         free_energy = Float64
@@ -70,13 +67,7 @@ end
         Y = range(-5, 5, length = 200)
 
         p = plot(title = "MvIID experiment / Precision parametrisation")
-        p = contour!(
-            p,
-            X,
-            Y,
-            (x, y) -> pdf(MvNormalMeanPrecision(mean(result.posteriors[:m]), mean(result.posteriors[:P])), [x, y]),
-            label = "Estimated"
-        )
+        p = contour!(p, X, Y, (x, y) -> pdf(MvNormalMeanPrecision(mean(result.posteriors[:m]), mean(result.posteriors[:P])), [x, y]), label = "Estimated")
         p = contour!(p, X, Y, (x, y) -> pdf(MvNormalMeanPrecision(m, P), [x, y]), label = "Real")
     end
 

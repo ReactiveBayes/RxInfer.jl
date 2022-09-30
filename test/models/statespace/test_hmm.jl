@@ -37,17 +37,9 @@ function hidden_markov_model_inference(data, vmp_iters)
         data = (x = data,),
         options = (limit_stack_depth = 500,),
         free_energy = true,
-        initmarginals = (
-            A = vague(MatrixDirichlet, 3, 3),
-            B = vague(MatrixDirichlet, 3, 3),
-            s = vague(Categorical, 3)
-        ),
+        initmarginals = (A = vague(MatrixDirichlet, 3, 3), B = vague(MatrixDirichlet, 3, 3), s = vague(Categorical, 3)),
         iterations = vmp_iters,
-        returnvars = (
-            s = KeepEach(),
-            A = KeepEach(),
-            B = KeepEach()
-        )
+        returnvars = (s = KeepEach(), A = KeepEach(), B = KeepEach())
     )
 end
 

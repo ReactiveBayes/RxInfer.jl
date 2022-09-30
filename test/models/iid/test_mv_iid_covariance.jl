@@ -28,10 +28,7 @@ function inference_mv_inverse_wishart(data, n, d)
         model = mv_iid_inverse_wishart(n, d),
         data = (y = data,),
         constraints = constraints_mv_iid_inverse_wishart(),
-        initmarginals = (
-            m = vague(MvNormalMeanCovariance, d),
-            C = vague(InverseWishart, d)
-        ),
+        initmarginals = (m = vague(MvNormalMeanCovariance, d), C = vague(InverseWishart, d)),
         returnvars = KeepLast(),
         iterations = 10,
         free_energy = Float64
@@ -65,13 +62,7 @@ end
         Y = range(-5, 5, length = 200)
 
         p = plot(title = "MvIID experiment / Covariance parametrisation")
-        p = contour!(
-            p,
-            X,
-            Y,
-            (x, y) -> pdf(MvNormalMeanCovariance(mean(result.posteriors[:m]), mean(result.posteriors[:C])), [x, y]),
-            label = "Estimated"
-        )
+        p = contour!(p, X, Y, (x, y) -> pdf(MvNormalMeanCovariance(mean(result.posteriors[:m]), mean(result.posteriors[:C])), [x, y]), label = "Estimated")
         p = contour!(p, X, Y, (x, y) -> pdf(MvNormalMeanCovariance(m, C), [x, y]), label = "Real")
     end
 

@@ -17,23 +17,15 @@ include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
     x[1] ~ Normal(mean = 0.0, precision = 0.01)
 
-    for k in 2:nr_samples+1
-        x[k] ~ Normal(mean = x[k-1] + 0.1, precision = 100)
-        y[k-1] ~ Probit(x[k]) where {
-            pipeline = RequireMessage(in = NormalMeanPrecision(0, 1.0))
-        }
+    for k in 2:(nr_samples + 1)
+        x[k] ~ Normal(mean = x[k - 1] + 0.1, precision = 100)
+        y[k - 1] ~ Probit(x[k]) where {pipeline = RequireMessage(in = NormalMeanPrecision(0, 1.0))}
     end
 end
 
 ## Inference definition
 function probit_inference(data_y)
-    return inference(
-        model = probit_model(length(data_y)),
-        data = (y = data_y,),
-        iterations = 10,
-        returnvars = (x = KeepLast(),),
-        free_energy = true
-    )
+    return inference(model = probit_model(length(data_y)), data = (y = data_y,), iterations = 10, returnvars = (x = KeepLast(),), free_energy = true)
 end
 
 @testset "Probit Model" begin
@@ -53,13 +45,13 @@ end
         data_x[1] = -2
 
         # generate data
-        for k in 2:nr_samples+1
+        for k in 2:(nr_samples + 1)
 
             # calculate new x
-            data_x[k] = data_x[k-1] + u + sqrt(0.01) * randn(rng)
+            data_x[k] = data_x[k - 1] + u + sqrt(0.01) * randn(rng)
 
             # calculate y
-            data_y[k-1] = normcdf(data_x[k]) > rand(rng)
+            data_y[k - 1] = normcdf(data_x[k]) > rand(rng)
         end
 
         # return data

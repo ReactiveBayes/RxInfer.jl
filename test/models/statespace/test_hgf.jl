@@ -57,23 +57,15 @@ function hgf_online_inference(data, vmp_iters, real_k, real_w, z_variance, y_var
         data          = (y = data,),
         autoupdates   = autoupdates,
         keephistory   = length(data),
-        historyvars   = (
-        xt = KeepLast(),
-        zt = KeepLast()
-    ),
-        initmarginals = (
-        zt = NormalMeanVariance(0.0, 5.0),
-        xt = NormalMeanVariance(0.0, 5.0)
-    ),
+        historyvars   = (xt = KeepLast(), zt = KeepLast()),
+        initmarginals = (zt = NormalMeanVariance(0.0, 5.0), xt = NormalMeanVariance(0.0, 5.0)),
         iterations    = vmp_iters,
         free_energy   = true,
         autostart     = true,
-        callbacks     = (
-        after_model_creation = (model, returnval) -> begin
+        callbacks     = (after_model_creation = (model, returnval) -> begin
             gcvnode = returnval
             setmarginal!(gcvnode, :y_x, MvNormalMeanCovariance([0.0, 0.0], [5.0, 5.0]))
-        end,
-    )
+        end,)
     )
 end
 

@@ -172,8 +172,7 @@ end
 import ReactiveMP: resolve_factorisation
 
 node_resolve_factorisation(model::FactorGraphModel, something, fform, variables) = something
-node_resolve_factorisation(model::FactorGraphModel, ::Nothing, fform, variables) =
-    node_resolve_constraints_factorisation(model, getconstraints(model), fform, variables)
+node_resolve_factorisation(model::FactorGraphModel, ::Nothing, fform, variables) = node_resolve_constraints_factorisation(model, getconstraints(model), fform, variables)
 
 node_resolve_constraints_factorisation(model::FactorGraphModel, constraints, fform, variables)                         = resolve_factorisation(constraints, getvariables(model), fform, variables)
 node_resolve_constraints_factorisation(model::FactorGraphModel, ::ConstraintsSpecification{Tuple{}}, fform, variables) = resolve_factorisation(UnspecifiedConstraints(), getvariables(model), fform, variables)
@@ -317,9 +316,7 @@ import ReactiveMP: factorisation, metadata, getpipeline
 
 function node_resolve_options(model::FactorGraphModel, options, fform, variables)
     return FactorNodeCreationOptions(
-        node_resolve_factorisation(model, factorisation(options), fform, variables),
-        node_resolve_meta(model, metadata(options), fform, variables),
-        getpipeline(options)
+        node_resolve_factorisation(model, factorisation(options), fform, variables), node_resolve_meta(model, metadata(options), fform, variables), getpipeline(options)
     )
 end
 
@@ -354,13 +351,7 @@ function make_autovar(model::FactorGraphModel, options::RandomVariableCreationOp
     end
 end
 
-function ReactiveMP.make_node(
-    model::FactorGraphModel,
-    options::FactorNodeCreationOptions,
-    fform,
-    autovar::AutoVar,
-    args::Vararg
-)
+function ReactiveMP.make_node(model::FactorGraphModel, options::FactorNodeCreationOptions, fform, autovar::AutoVar, args::Vararg)
     foreach(args) do arg
         @assert (typeof(arg) <: AbstractVariable || eltype(arg) <: AbstractVariable) "`make_node` cannot create a node with the given arguments autovar = $(autovar), args = [ $(args...) ]"
     end
@@ -375,13 +366,7 @@ end
 __fform_const_apply(::Type{T}, args...) where {T} = T(args...)
 __fform_const_apply(f::F, args...) where {F <: Function} = f(args...)
 
-function ReactiveMP.make_node(
-    model::FactorGraphModel,
-    options::FactorNodeCreationOptions,
-    fform,
-    autovar::AutoVar,
-    args::Vararg{<:ReactiveMP.ConstVariable}
-)
+function ReactiveMP.make_node(model::FactorGraphModel, options::FactorNodeCreationOptions, fform, autovar::AutoVar, args::Vararg{<:ReactiveMP.ConstVariable})
     if isstochastic(sdtype(fform))
         var  = make_autovar(model, ReactiveMP.EmptyRandomVariableCreationOptions, ReactiveMP.name(autovar), true)
         node = ReactiveMP.make_node(model, options, fform, var, args...) # add! is inside

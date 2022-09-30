@@ -72,10 +72,7 @@ import RxInfer: PointMassFormConstraint, is_point_mass_form_constraint, call_bou
         end
 
         for _ in 1:3
-            constraint = PointMassFormConstraint(
-                boundaries = (args...) -> (0.0, Inf),
-                starting_point = (args...) -> [1.0]
-            )
+            constraint = PointMassFormConstraint(boundaries = (args...) -> (0.0, Inf), starting_point = (args...) -> [1.0])
 
             d1 = Gamma(10rand(irng) + 1, 10rand(irng) + 1)
             d2 = Gamma(10rand(irng) + 1, 10rand(irng) + 1)

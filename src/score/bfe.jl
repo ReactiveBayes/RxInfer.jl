@@ -139,9 +139,7 @@ function score(model::FactorGraphModel, ::Type{T}, objective::BetheFreeEnergy) w
     constant_point_entropies_n = mapreduce(degree, +, getconstant(model), init = 0)
     form_point_entropies_n     = mapreduce(degree, +, point_mass_estimates, init = 0)
 
-    point_entropies =
-        InfCountingReal(eltype(T), data_point_entropies_n + constant_point_entropies_n + form_point_entropies_n)
+    point_entropies = InfCountingReal(eltype(T), data_point_entropies_n + constant_point_entropies_n + form_point_entropies_n)
 
-    return combineLatest((node_bound_free_energies_sum, variable_bound_entropies_sum), PushNew()) |>
-           map(eltype(T), d -> float(d[1] + d[2] - point_entropies))
+    return combineLatest((node_bound_free_energies_sum, variable_bound_entropies_sum), PushNew()) |> map(eltype(T), d -> float(d[1] + d[2] - point_entropies))
 end

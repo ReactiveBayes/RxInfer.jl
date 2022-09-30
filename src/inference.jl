@@ -72,12 +72,10 @@ function __check_and_unset_updated!(updates)
     else
         not_updated = filter((pair) -> !last(pair).updated, updates)
         names = join(keys(not_updated), ", ")
-        error(
-            """
-            Variables [ $(names) ] have not been updated after an update event. 
-            Therefore, make sure to initialize all required marginals and messages. See `initmarginals` and `initmessages` keyword arguments for the inference function. 
-            """
-        )
+        error("""
+              Variables [ $(names) ] have not been updated after an update event. 
+              Therefore, make sure to initialize all required marginals and messages. See `initmarginals` and `initmessages` keyword arguments for the inference function. 
+              """)
     end
 end
 
@@ -105,15 +103,13 @@ function __inference_check_itertype end
 __inference_check_itertype(::Symbol, ::Union{Nothing, Tuple, Vector}) = nothing
 
 function __inference_check_itertype(keyword::Symbol, ::T) where {T}
-    error(
-        """
-        Keyword argument `$(keyword)` expects either `Tuple` or `Vector` as an input, but a value of type `$(T)` has been used.
-        If you specify a `Tuple` with a single entry - make sure you put a trailing comma at then end, e.g. `(something, )`. 
-        Note: Julia's parser interprets `(something)` and (something, ) differently. 
-            The first expression simply ignores parenthesis around `something`. 
-            The second expression defines `Tuple`with `something` as a first (and the last) entry.
-        """
-    )
+    error("""
+          Keyword argument `$(keyword)` expects either `Tuple` or `Vector` as an input, but a value of type `$(T)` has been used.
+          If you specify a `Tuple` with a single entry - make sure you put a trailing comma at then end, e.g. `(something, )`. 
+          Note: Julia's parser interprets `(something)` and (something, ) differently. 
+              The first expression simply ignores parenthesis around `something`. 
+              The second expression defines `Tuple`with `something` as a first (and the last) entry.
+          """)
 end
 
 """
@@ -126,15 +122,13 @@ function __inference_check_dicttype end
 __inference_check_dicttype(::Symbol, ::Union{Nothing, NamedTuple, Dict}) = nothing
 
 function __inference_check_dicttype(keyword::Symbol, ::T) where {T}
-    error(
-        """
-        Keyword argument `$(keyword)` expects either `Dict` or `NamedTuple` as an input, but a value of type `$(T)` has been used.
-        If you specify a `NamedTuple` with a single entry - make sure you put a trailing comma at then end, e.g. `(x = something, )`. 
-        Note: Julia's parser interprets `(x = something)` and (x = something, ) differently. 
-            The first expression defines (or **overwrites!**) the local/global variable named `x` with `something` as a content. 
-            The second expression defines `NamedTuple` with `x` as a key and `something` as a value.
-        """
-    )
+    error("""
+          Keyword argument `$(keyword)` expects either `Dict` or `NamedTuple` as an input, but a value of type `$(T)` has been used.
+          If you specify a `NamedTuple` with a single entry - make sure you put a trailing comma at then end, e.g. `(x = something, )`. 
+          Note: Julia's parser interprets `(x = something)` and (x = something, ) differently. 
+              The first expression defines (or **overwrites!**) the local/global variable named `x` with `something` as a content. 
+              The second expression defines `NamedTuple` with `x` as a key and `something` as a value.
+          """)
 end
 
 ##
@@ -188,12 +182,10 @@ end
 
 function Base.getproperty(result::InferenceResult, property::Symbol)
     if property === :free_energy && getfield(result, :free_energy) === nothing
-        error(
-            """
-            Bethe Free Energy has not been computed. 
-            Use `free_energy = true` keyword argument for the `inference` function to compute Bethe Free Energy values.
-            """
-        )
+        error("""
+              Bethe Free Energy has not been computed. 
+              Use `free_energy = true` keyword argument for the `inference` function to compute Bethe Free Energy values.
+              """)
     else
         return getfield(result, property)
     end
@@ -431,10 +423,7 @@ function inference(;
     end
 
     # Second, for each random variable entry we create an actor
-    actors = Dict(
-        variable => make_actor(vardict[variable], value) for
-        (variable, value) in pairs(returnvars) if __check_has_randomvar(vardict, variable)
-    )
+    actors = Dict(variable => make_actor(vardict[variable], value) for (variable, value) in pairs(returnvars) if __check_has_randomvar(vardict, variable))
 
     # At third, for each random variable entry we create a boolean flag to track their updates
     updates = Dict(variable => MarginalHasBeenUpdated(false) for (variable, _) in pairs(actors))
@@ -483,9 +472,7 @@ function inference(;
         else
             foreach(filter(pair -> isdata(last(pair)), pairs(vardict))) do pair
                 varname = first(pair)
-                haskey(data, varname) || error(
-                    "Data entry `$(varname)` is missing in `data` argument. Double check `data = ($(varname) = ???, )`"
-                )
+                haskey(data, varname) || error("Data entry `$(varname)` is missing in `data` argument. Double check `data = ($(varname) = ???, )`")
             end
         end
 
@@ -572,15 +559,12 @@ end
 
 function (specification::RxInferenceAutoUpdateSpecification)(model::FactorGraphModel)
     datavars = map(specification.labels) do label
-        hasdatavar(model, label) ||
-            error("Autoupdate specification defines an update for `$(label)`, but the model has no datavar named `$(label)`")
+        hasdatavar(model, label) || error("Autoupdate specification defines an update for `$(label)`, but the model has no datavar named `$(label)`")
         return model[label]
     end
 
     (hasrandomvar(model, specification.variable) || hasdatavar(model, specification.variable)) ||
-        error(
-            "Autoupdate specification defines an update from `$(specification.variable)`, but the model has no randomvar/datavar named `$(specification.variable)`"
-        )
+        error("Autoupdate specification defines an update from `$(specification.variable)`, but the model has no randomvar/datavar named `$(specification.variable)`")
 
     variable = model[specification.variable]
 
@@ -600,8 +584,7 @@ Base.fetch(autoupdate::RxInferenceAutoUpdate)            = fetch(autoupdate, Rea
 Base.fetch(autoupdate::RxInferenceAutoUpdate, something) = zip(as_tuple(autoupdate.datavars), as_tuple(autoupdate.callback(something)))
 
 macro autoupdates(code)
-    ((code isa Expr) && (code.head === :block)) ||
-        error("Autoupdate requires a block of code `begin ... end` as an input")
+    ((code isa Expr) && (code.head === :block)) || error("Autoupdate requires a block of code `begin ... end` as an input")
 
     specifications = []
 
@@ -610,8 +593,7 @@ macro autoupdates(code)
         if @capture(expression, (lhs_ = callback_(rhs_)) | (lhs_ = callback_(rhs__)))
             if @capture(rhs, (q(variable_)) | (μ(variable_)))
                 # First we check that `variable` is a plain Symbol
-                (variable isa Symbol) ||
-                    error("Variable in the expression `$(expression)` must be a plain name, but a complex expression `$(variable)` found.")
+                (variable isa Symbol) || error("Variable in the expression `$(expression)` must be a plain name, but a complex expression `$(variable)` found.")
                 # Next we extract `datavars` specification from the `lhs`                    
                 datavars = if lhs isa Symbol
                     (lhs,)
@@ -634,8 +616,7 @@ macro autoupdates(code)
         end
     end
 
-    isempty(specifications) &&
-        error("`@autoupdates` did not find any auto-updates specifications. Check the documentation for more information.")
+    isempty(specifications) && error("`@autoupdates` did not find any auto-updates specifications. Check the documentation for more information.")
 
     output = quote
         begin
@@ -696,13 +677,18 @@ mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M
     RxInferenceEngine(
         ::Type{T},
         datastream::D,
-        tickscheduler::L, datavars::V,
+        tickscheduler::L,
+        datavars::V,
         posteriors::P,
-        updateflags::U, history::H,
-        historyactors::S, autoupdates::A, fe_actor::FA,
+        updateflags::U,
+        history::H,
+        historyactors::S,
+        autoupdates::A,
+        fe_actor::FA,
         fe_scheduler::FH,
         fe_objective::FO,
-        fe_source::FS, iterations::I,
+        fe_source::FS,
+        iterations::I,
         model::M,
         returnval::N,
         enabledevents::Val{X},
@@ -734,33 +720,27 @@ mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M
     end
 end
 
-enabled_events(::RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E}) where {T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E} =
-    X
+enabled_events(::RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E}) where {T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E} = X
 
 function Base.getproperty(result::RxInferenceEngine, property::Symbol)
     if property === :free_energy
         !isnothing(getfield(result, :fe_source)) ||
-            error(
-                "Bethe Free Energy stream has not been created. Use `free_energy = true` keyword argument for the `rxinference` function to compute Bethe Free Energy values."
-            )
+            error("Bethe Free Energy stream has not been created. Use `free_energy = true` keyword argument for the `rxinference` function to compute Bethe Free Energy values.")
         return getfield(result, :fe_source)
     elseif property === :free_energy_history
-        !isnothing(getfield(result, :fe_actor)) ||
-            error(
-                "Bethe Free Energy history has not been computed. Use `free_energy = true` keyword argument for the `rxinference` function to compute Bethe Free Energy values together with the `keephistory` argument."
-            )
+        !isnothing(getfield(result, :fe_actor)) || error(
+            "Bethe Free Energy history has not been computed. Use `free_energy = true` keyword argument for the `rxinference` function to compute Bethe Free Energy values together with the `keephistory` argument."
+        )
         return score_snapshot_iterations(getfield(result, :fe_actor))
     elseif property === :free_energy_final_only_history
-        !isnothing(getfield(result, :fe_actor)) ||
-            error(
-                "Bethe Free Energy history has not been comptued. Use `free_energy = true` keyword argument for the `rxinference` function to compute Bethe Free Energy values together with the `keephistory` argument."
-            )
+        !isnothing(getfield(result, :fe_actor)) || error(
+            "Bethe Free Energy history has not been comptued. Use `free_energy = true` keyword argument for the `rxinference` function to compute Bethe Free Energy values together with the `keephistory` argument."
+        )
         return score_snapshot_final(getfield(result, :fe_actor))
     elseif property === :free_energy_raw_history
-        !isnothing(getfield(result, :fe_actor)) ||
-            error(
-                "Bethe Free Energy history has not been comptued. Use `free_energy = true` keyword argument for the `rxinference` function to compute Bethe Free Energy values together with the `keephistory` argument."
-            )
+        !isnothing(getfield(result, :fe_actor)) || error(
+            "Bethe Free Energy history has not been comptued. Use `free_energy = true` keyword argument for the `rxinference` function to compute Bethe Free Energy values together with the `keephistory` argument."
+        )
         return score_snapshot(getfield(result, :fe_actor))
     end
     return getfield(result, property)
@@ -962,8 +942,7 @@ function rxinference(;
 
         stream, etype
     else
-        eltype(datastream) <: NamedTuple ||
-            error("`eltype` of the `datastream` must be a `NamedTuple`")
+        eltype(datastream) <: NamedTuple || error("`eltype` of the `datastream` must be a `NamedTuple`")
         datastream, eltype(datastream)
     end
 
@@ -981,8 +960,7 @@ function rxinference(;
     # This is not very type-styble-friendly but we do it once and it should pay-off in the inference procedure
     datavars = ntuple(N) do i
         datavarname = datavarnames[i]
-        hasdatavar(_model, datavarname) ||
-            error("The `datastream` produces data for `$(datavarname)`, but the model does not have a datavar named `$(datavarname)`")
+        hasdatavar(_model, datavarname) || error("The `datastream` produces data for `$(datavarname)`, but the model does not have a datavar named `$(datavarname)`")
         return _model[datavarname]::DataVariable
     end
 

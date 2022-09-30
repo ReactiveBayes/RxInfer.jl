@@ -32,13 +32,7 @@ function inference_univariate(data, n_its, constraints)
         returnvars    = KeepEach(),
         free_energy   = Float64,
         iterations    = n_its,
-        initmarginals = (
-        s = vague(Beta),
-        m1 = NormalMeanVariance(-2.0, 1e3),
-        m2 = NormalMeanVariance(2.0, 1e3),
-        w1 = vague(GammaShapeRate),
-        w2 = vague(GammaShapeRate)
-    )
+        initmarginals = (s = vague(Beta), m1 = NormalMeanVariance(-2.0, 1e3), m2 = NormalMeanVariance(2.0, 1e3), w1 = vague(GammaShapeRate), w2 = vague(GammaShapeRate))
     )
 end
 
@@ -76,7 +70,7 @@ end
     fresult = results[begin]
 
     # All execution must be equivalent (check against first)
-    foreach(results[begin+1:end]) do result
+    foreach(results[(begin + 1):end]) do result
         foreach(zip(fresult.posteriors, result.posteriors)) do (l, r)
             @test l == r
         end

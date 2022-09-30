@@ -42,8 +42,7 @@ function Base.run(examplesrunner::ExamplesRunner)
     if !isnothing(examplesrunner.specific_example)
         @info "Running specific example matching the following pattern: $(examplesrunner.specific_example)"
         examples = filter(examples) do example
-            return occursin(lowercase(examplesrunner.specific_example), lowercase(example[:path])) ||
-                   occursin(lowercase(examplesrunner.specific_example), lowercase(example[:title]))
+            return occursin(lowercase(examplesrunner.specific_example), lowercase(example[:path])) || occursin(lowercase(examplesrunner.specific_example), lowercase(example[:title]))
         end
     end
 
@@ -82,36 +81,35 @@ function Base.run(examplesrunner::ExamplesRunner)
         # This token indicates that there are no other jobs left
         put!(examplesrunner.jobschannel, nothing)
         # We create a remote call for another Julia process to execute the example
-        task =
-            remotecall(worker, examplesrunner.jobschannel, examplesrunner.resultschannel, examplesrunner.exschannel) do jobschannel, resultschannel, exschannel
-                pid = myid()
-                finish = false
-                while !finish
-                    # Each worker takes examples sequentially from the shared examples pool 
-                    example = take!(jobschannel)
-                    if isnothing(example)
-                        finish = true
-                    else
-                        try
-                            path = example[:path]
+        task = remotecall(worker, examplesrunner.jobschannel, examplesrunner.resultschannel, examplesrunner.exschannel) do jobschannel, resultschannel, exschannel
+            pid = myid()
+            finish = false
+            while !finish
+                # Each worker takes examples sequentially from the shared examples pool 
+                example = take!(jobschannel)
+                if isnothing(example)
+                    finish = true
+                else
+                    try
+                        path = example[:path]
 
-                            @info "Started job: `$(path)` on worker `$(pid)`"
+                        @info "Started job: `$(path)` on worker `$(pid)`"
 
-                            ipath = joinpath(@__DIR__, "..", "examples", path)
-                            opath = joinpath(@__DIR__, "..", "docs", "src", "examples")
-                            fpath = joinpath("..", "assets", "examples") # relative to `opath`
+                        ipath = joinpath(@__DIR__, "..", "examples", path)
+                        opath = joinpath(@__DIR__, "..", "docs", "src", "examples")
+                        fpath = joinpath("..", "assets", "examples") # relative to `opath`
 
-                            ENV["GKSwstype"] = "nul" # Fix for plots
+                        ENV["GKSwstype"] = "nul" # Fix for plots
 
-                            weaved = weave(ipath, out_path = opath, doctype = "github", fig_path = fpath)
+                        weaved = weave(ipath, out_path = opath, doctype = "github", fig_path = fpath)
 
-                            put!(resultschannel, (pid = pid, path = path, weaved = weaved, example = example))
-                        catch iexception
-                            put!(exschannel, iexception)
-                        end
+                        put!(resultschannel, (pid = pid, path = path, weaved = weaved, example = example))
+                    catch iexception
+                        put!(exschannel, iexception)
                     end
                 end
             end
+        end
         # We save the created task for later syncronization
         push!(examplesrunner.runner_tasks, task)
     end

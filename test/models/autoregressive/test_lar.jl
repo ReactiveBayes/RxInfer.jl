@@ -101,12 +101,12 @@ function generate_lar_data(rng, n, θ, γ, τ)
 
     states[1] = randn(rng, order)
 
-    for i in 2:(n+3order)
-        states[i]       = vcat(rand(rng, Normal(dot(θ, states[i-1]), γ_std)), states[i-1][1:end-1])
+    for i in 2:(n + 3order)
+        states[i]       = vcat(rand(rng, Normal(dot(θ, states[i - 1]), γ_std)), states[i - 1][1:(end - 1)])
         observations[i] = rand(rng, Normal(states[i][1], τ_std))
     end
 
-    return states[1+3order:end], observations[1+3order:end]
+    return states[(1 + 3order):end], observations[(1 + 3order):end]
 end
 
 @testset "Latent autoregressive model" begin

@@ -61,20 +61,20 @@ import ReactiveMP: activate!
 
         for i in 1:5
             @test resolve_factorisation(cs, getvariables(model), fform, (x[i], y[i])) === ((1,), (2,))
-            @test resolve_factorisation(cs, getvariables(model), fform, (x[i+1], y[i])) === ((1,), (2,))
-            @test resolve_factorisation(cs, getvariables(model), fform, (x[i], y[i+1])) === ((1,), (2,))
+            @test resolve_factorisation(cs, getvariables(model), fform, (x[i + 1], y[i])) === ((1,), (2,))
+            @test resolve_factorisation(cs, getvariables(model), fform, (x[i], y[i + 1])) === ((1,), (2,))
             @test resolve_factorisation(cs, getvariables(model), fform, (y[i], x[i])) === ((1,), (2,))
             @test resolve_factorisation(cs, getvariables(model), fform, (y[2], x[i])) === ((1,), (2,))
-            @test resolve_factorisation(cs, getvariables(model), fform, (y[i], x[i+1])) === ((1,), (2,))
-            @test resolve_factorisation(cs, getvariables(model), fform, (x[i], x[i+1], y[i], y[i+1])) === ((1, 2), (3, 4))
-            @test resolve_factorisation(cs, getvariables(model), fform, (y[i], y[i+1], x[i], x[i+1])) === ((1, 2), (3, 4))
-            @test resolve_factorisation(cs, getvariables(model), fform, (y[i], x[i], y[i+1], x[i+1])) === ((1, 3), (2, 4))
-            @test resolve_factorisation(cs, getvariables(model), fform, (x[i], y[i], x[i+1], y[i+1])) === ((1, 3), (2, 4))
-            @test resolve_factorisation(cs, getvariables(model), fform, (x[i], y[i+1], x[i+1], y[i])) === ((1, 3), (2, 4))
-            @test resolve_factorisation(cs, getvariables(model), fform, (x[i], x[i+1], x[i+2], y[i], y[i+1], y[i+2])) === ((1, 2, 3), (4, 5, 6))
-            @test resolve_factorisation(cs, getvariables(model), fform, (y[i], y[i+1], y[i+2], x[i], x[i+1], x[i+2])) === ((1, 2, 3), (4, 5, 6))
-            @test resolve_factorisation(cs, getvariables(model), fform, (x[i], y[i], x[i+1], y[i+1], x[i+2], y[i+2])) === ((1, 3, 5), (2, 4, 6))
-            @test resolve_factorisation(cs, getvariables(model), fform, (y[i], x[i], y[i+1], x[i+1], y[i+2], x[i+2])) === ((1, 3, 5), (2, 4, 6))
+            @test resolve_factorisation(cs, getvariables(model), fform, (y[i], x[i + 1])) === ((1,), (2,))
+            @test resolve_factorisation(cs, getvariables(model), fform, (x[i], x[i + 1], y[i], y[i + 1])) === ((1, 2), (3, 4))
+            @test resolve_factorisation(cs, getvariables(model), fform, (y[i], y[i + 1], x[i], x[i + 1])) === ((1, 2), (3, 4))
+            @test resolve_factorisation(cs, getvariables(model), fform, (y[i], x[i], y[i + 1], x[i + 1])) === ((1, 3), (2, 4))
+            @test resolve_factorisation(cs, getvariables(model), fform, (x[i], y[i], x[i + 1], y[i + 1])) === ((1, 3), (2, 4))
+            @test resolve_factorisation(cs, getvariables(model), fform, (x[i], y[i + 1], x[i + 1], y[i])) === ((1, 3), (2, 4))
+            @test resolve_factorisation(cs, getvariables(model), fform, (x[i], x[i + 1], x[i + 2], y[i], y[i + 1], y[i + 2])) === ((1, 2, 3), (4, 5, 6))
+            @test resolve_factorisation(cs, getvariables(model), fform, (y[i], y[i + 1], y[i + 2], x[i], x[i + 1], x[i + 2])) === ((1, 2, 3), (4, 5, 6))
+            @test resolve_factorisation(cs, getvariables(model), fform, (x[i], y[i], x[i + 1], y[i + 1], x[i + 2], y[i + 2])) === ((1, 3, 5), (2, 4, 6))
+            @test resolve_factorisation(cs, getvariables(model), fform, (y[i], x[i], y[i + 1], x[i + 1], y[i + 2], x[i + 2])) === ((1, 3, 5), (2, 4, 6))
         end
     end
 
@@ -123,12 +123,12 @@ import ReactiveMP: activate!
             @test resolve_factorisation(cs, getvariables(model), fform, (x[i], y[i], z)) === ((1, 2, 3),)
             @test resolve_factorisation(cs, getvariables(model), fform, (z, x[i], y[i])) === ((1, 2, 3),)
             @test resolve_factorisation(cs, getvariables(model), fform, (x[i], z, y[i])) === ((1, 2, 3),)
-            @test resolve_factorisation(cs, getvariables(model), fform, (x[i], x[i+1], y[i], y[i+1], z)) === ((1, 2, 3, 4, 5),)
-            @test resolve_factorisation(cs, getvariables(model), fform, (z, x[i], x[i+1], y[i], y[i+1])) === ((1, 2, 3, 4, 5),)
-            @test resolve_factorisation(cs, getvariables(model), fform, (x[i], z, x[i+1], y[i], y[i+1])) === ((1, 2, 3, 4, 5),)
-            @test resolve_factorisation(cs, getvariables(model), fform, (x[i], x[i+1], z, y[i], y[i+1])) === ((1, 2, 3, 4, 5),)
-            @test resolve_factorisation(cs, getvariables(model), fform, (x[i], x[i+1], y[i], z, y[i+1])) === ((1, 2, 3, 4, 5),)
-            @test resolve_factorisation(cs, getvariables(model), fform, (x[i], x[i+1], y[i], y[i+1], z)) === ((1, 2, 3, 4, 5),)
+            @test resolve_factorisation(cs, getvariables(model), fform, (x[i], x[i + 1], y[i], y[i + 1], z)) === ((1, 2, 3, 4, 5),)
+            @test resolve_factorisation(cs, getvariables(model), fform, (z, x[i], x[i + 1], y[i], y[i + 1])) === ((1, 2, 3, 4, 5),)
+            @test resolve_factorisation(cs, getvariables(model), fform, (x[i], z, x[i + 1], y[i], y[i + 1])) === ((1, 2, 3, 4, 5),)
+            @test resolve_factorisation(cs, getvariables(model), fform, (x[i], x[i + 1], z, y[i], y[i + 1])) === ((1, 2, 3, 4, 5),)
+            @test resolve_factorisation(cs, getvariables(model), fform, (x[i], x[i + 1], y[i], z, y[i + 1])) === ((1, 2, 3, 4, 5),)
+            @test resolve_factorisation(cs, getvariables(model), fform, (x[i], x[i + 1], y[i], y[i + 1], z)) === ((1, 2, 3, 4, 5),)
         end
     end
 
@@ -142,14 +142,14 @@ import ReactiveMP: activate!
         x = randomvar(model, :x, 10)
 
         for i in 1:8
-            @test resolve_factorisation(cs, getvariables(model), fform, (x[i], x[i+1])) === ((1,), (2,))
-            @test resolve_factorisation(cs, getvariables(model), fform, (x[i], x[i+1], x[i+2])) === ((1,), (2,), (3,))
+            @test resolve_factorisation(cs, getvariables(model), fform, (x[i], x[i + 1])) === ((1,), (2,))
+            @test resolve_factorisation(cs, getvariables(model), fform, (x[i], x[i + 1], x[i + 2])) === ((1,), (2,), (3,))
         end
     end
 
     @testset "Use case #7" begin
         cs = @constraints function cs6(n)
-            q(x) = q(x[1:n])q(x[n+1]) .. q(x[end])
+            q(x) = q(x[1:n])q(x[n + 1]) .. q(x[end])
         end
 
         model = FactorGraphModel()
@@ -193,14 +193,14 @@ import ReactiveMP: activate!
         r = randomvar(model, :r)
 
         for i in 1:9
-            @test ReactiveMP.resolve_factorisation(cs8(false), getvariables(model), fform, (y[i], y[i+1], x[i], x[i+1], t, r)) === ((1, 3), (2, 4), (5, 6))
-            @test ReactiveMP.resolve_factorisation(cs8(false), getvariables(model), fform, (x[i], x[i+1], y[i], y[i+1], t, r)) === ((1, 3), (2, 4), (5, 6))
-            @test ReactiveMP.resolve_factorisation(cs8(false), getvariables(model), fform, (t, r, x[i], x[i+1], y[i], y[i+1])) === ((1, 2), (3, 5), (4, 6))
-            @test ReactiveMP.resolve_factorisation(cs8(false), getvariables(model), fform, (t, x[i], x[i+1], y[i], y[i+1], r)) === ((1, 6), (2, 4), (3, 5))
-            @test ReactiveMP.resolve_factorisation(cs8(true), getvariables(model), fform, (y[i], y[i+1], x[i], x[i+1], t, r)) === ((1, 3), (2, 4), (5,), (6,))
-            @test ReactiveMP.resolve_factorisation(cs8(true), getvariables(model), fform, (x[i], x[i+1], y[i], y[i+1], t, r)) === ((1, 3), (2, 4), (5,), (6,))
-            @test ReactiveMP.resolve_factorisation(cs8(true), getvariables(model), fform, (t, r, x[i], x[i+1], y[i], y[i+1])) === ((1,), (2,), (3, 5), (4, 6))
-            @test ReactiveMP.resolve_factorisation(cs8(true), getvariables(model), fform, (t, x[i], x[i+1], y[i], y[i+1], r)) === ((1,), (2, 4), (3, 5), (6,))
+            @test ReactiveMP.resolve_factorisation(cs8(false), getvariables(model), fform, (y[i], y[i + 1], x[i], x[i + 1], t, r)) === ((1, 3), (2, 4), (5, 6))
+            @test ReactiveMP.resolve_factorisation(cs8(false), getvariables(model), fform, (x[i], x[i + 1], y[i], y[i + 1], t, r)) === ((1, 3), (2, 4), (5, 6))
+            @test ReactiveMP.resolve_factorisation(cs8(false), getvariables(model), fform, (t, r, x[i], x[i + 1], y[i], y[i + 1])) === ((1, 2), (3, 5), (4, 6))
+            @test ReactiveMP.resolve_factorisation(cs8(false), getvariables(model), fform, (t, x[i], x[i + 1], y[i], y[i + 1], r)) === ((1, 6), (2, 4), (3, 5))
+            @test ReactiveMP.resolve_factorisation(cs8(true), getvariables(model), fform, (y[i], y[i + 1], x[i], x[i + 1], t, r)) === ((1, 3), (2, 4), (5,), (6,))
+            @test ReactiveMP.resolve_factorisation(cs8(true), getvariables(model), fform, (x[i], x[i + 1], y[i], y[i + 1], t, r)) === ((1, 3), (2, 4), (5,), (6,))
+            @test ReactiveMP.resolve_factorisation(cs8(true), getvariables(model), fform, (t, r, x[i], x[i + 1], y[i], y[i + 1])) === ((1,), (2,), (3, 5), (4, 6))
+            @test ReactiveMP.resolve_factorisation(cs8(true), getvariables(model), fform, (t, x[i], x[i + 1], y[i], y[i + 1], r)) === ((1,), (2, 4), (3, 5), (6,))
         end
     end
 
@@ -210,7 +210,7 @@ import ReactiveMP: activate!
             q(x, y, t, r) = q(x, y)q(t)q(r)
             q(x, w) = q(x)q(w)
             q(y, w) = q(y)q(w)
-            q(x) = q(x[begin:begin+2])q(x[begin+3]) .. q(x[end])
+            q(x) = q(x[begin:(begin + 2)])q(x[begin + 3]) .. q(x[end])
         end
 
         model = FactorGraphModel()
@@ -243,20 +243,20 @@ import ReactiveMP: activate!
         r = randomvar(model, :r)
 
         for i in 1:9
-            @test ReactiveMP.resolve_factorisation(cs, getvariables(model), fform, (y[i], y[i+1], x[i], x[i+1], t, r)) === ((1,), (2,), (3,), (4,), (5, 6))
-            @test ReactiveMP.resolve_factorisation(cs, getvariables(model), fform, (y[i], x[i+1], x[i], y[i+1], t, r)) === ((1,), (2,), (3,), (4,), (5, 6))
-            @test ReactiveMP.resolve_factorisation(cs, getvariables(model), fform, (x[i], y[i+1], y[i], x[i+1], t, r)) === ((1,), (2,), (3,), (4,), (5, 6))
-            @test ReactiveMP.resolve_factorisation(cs, getvariables(model), fform, (x[i], x[i+1], y[i], y[i+1], t, r)) === ((1,), (2,), (3,), (4,), (5, 6))
-            @test ReactiveMP.resolve_factorisation(cs, getvariables(model), fform, (r, y[i], y[i+1], x[i], x[i+1], t)) === ((1, 6), (2,), (3,), (4,), (5,))
-            @test ReactiveMP.resolve_factorisation(cs, getvariables(model), fform, (t, y[i], y[i+1], x[i], x[i+1], r)) === ((1, 6), (2,), (3,), (4,), (5,))
-            @test ReactiveMP.resolve_factorisation(cs, getvariables(model), fform, (r, t, y[i], y[i+1], x[i], x[i+1])) === ((1, 2), (3,), (4,), (5,), (6,))
-            @test ReactiveMP.resolve_factorisation(cs, getvariables(model), fform, (t, r, y[i], y[i+1], x[i], x[i+1])) === ((1, 2), (3,), (4,), (5,), (6,))
+            @test ReactiveMP.resolve_factorisation(cs, getvariables(model), fform, (y[i], y[i + 1], x[i], x[i + 1], t, r)) === ((1,), (2,), (3,), (4,), (5, 6))
+            @test ReactiveMP.resolve_factorisation(cs, getvariables(model), fform, (y[i], x[i + 1], x[i], y[i + 1], t, r)) === ((1,), (2,), (3,), (4,), (5, 6))
+            @test ReactiveMP.resolve_factorisation(cs, getvariables(model), fform, (x[i], y[i + 1], y[i], x[i + 1], t, r)) === ((1,), (2,), (3,), (4,), (5, 6))
+            @test ReactiveMP.resolve_factorisation(cs, getvariables(model), fform, (x[i], x[i + 1], y[i], y[i + 1], t, r)) === ((1,), (2,), (3,), (4,), (5, 6))
+            @test ReactiveMP.resolve_factorisation(cs, getvariables(model), fform, (r, y[i], y[i + 1], x[i], x[i + 1], t)) === ((1, 6), (2,), (3,), (4,), (5,))
+            @test ReactiveMP.resolve_factorisation(cs, getvariables(model), fform, (t, y[i], y[i + 1], x[i], x[i + 1], r)) === ((1, 6), (2,), (3,), (4,), (5,))
+            @test ReactiveMP.resolve_factorisation(cs, getvariables(model), fform, (r, t, y[i], y[i + 1], x[i], x[i + 1])) === ((1, 2), (3,), (4,), (5,), (6,))
+            @test ReactiveMP.resolve_factorisation(cs, getvariables(model), fform, (t, r, y[i], y[i + 1], x[i], x[i + 1])) === ((1, 2), (3,), (4,), (5,), (6,))
         end
     end
 
     @testset "Use case #11" begin
         cs = @constraints begin
-            q(x, y) = q(y[1])q(x[begin], y[begin+1]) .. q(x[end], y[end])
+            q(x, y) = q(y[1])q(x[begin], y[begin + 1]) .. q(x[end], y[end])
             q(x, y, t) = q(x, y)q(t)
             q(x, y, r) = q(x, y)q(r)
         end
@@ -271,13 +271,12 @@ import ReactiveMP: activate!
         @test ReactiveMP.resolve_factorisation(cs, getvariables(model), fform, (x[1], y[2], x[2], y[3])) === ((1, 2), (3, 4))
         @test ReactiveMP.resolve_factorisation(cs, getvariables(model), fform, (x[1], y[2], x[2], y[3], y[1])) === ((1, 2), (3, 4), (5,))
         @test ReactiveMP.resolve_factorisation(cs, getvariables(model), fform, (y[1], y[2], x[1], x[2], t, r)) === ((1,), (2, 3), (4,), (5, 6))
-        @test ReactiveMP.resolve_factorisation(cs, getvariables(model), fform, (y[1], y[2], y[3], x[1], x[2], x[3], t, r)) ===
-              ((1,), (2, 4), (3, 5), (6,), (7, 8))
+        @test ReactiveMP.resolve_factorisation(cs, getvariables(model), fform, (y[1], y[2], y[3], x[1], x[2], x[3], t, r)) === ((1,), (2, 4), (3, 5), (6,), (7, 8))
     end
 
     @testset "Use case #12" begin
         cs = @constraints begin
-            q(x, y) = q(x[begin]) * q(x[begin+1:end]) * q(y)
+            q(x, y) = q(x[begin]) * q(x[(begin + 1):end]) * q(y)
         end
 
         model = FactorGraphModel()
@@ -288,7 +287,7 @@ import ReactiveMP: activate!
         for i in 1:10
             if i > 1 && i < 10
                 @test ReactiveMP.resolve_factorisation(cs, getvariables(model), fform, (x[1], x[i])) === ((1,), (2,))
-                @test ReactiveMP.resolve_factorisation(cs, getvariables(model), fform, (x[1], x[i], x[i+1])) === ((1,), (2, 3))
+                @test ReactiveMP.resolve_factorisation(cs, getvariables(model), fform, (x[1], x[i], x[i + 1])) === ((1,), (2, 3))
             end
             @test ReactiveMP.resolve_factorisation(cs, getvariables(model), fform, (x[1], x[2], x[3], y[i])) === ((1,), (2, 3), (4,))
             @test ReactiveMP.resolve_factorisation(cs, getvariables(model), fform, (x[1], x[2], x[3], x[4], y[i])) === ((1,), (2, 3, 4), (5,))

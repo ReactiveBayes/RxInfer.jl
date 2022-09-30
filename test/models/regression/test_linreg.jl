@@ -36,17 +36,9 @@ end
 function linreg_inference(modelfn, niters, xdata, ydata)
     return inference(
         model = modelfn(length(xdata)),
-        data = (
-            x = xdata,
-            y = ydata
-        ),
-        returnvars = (
-            a = KeepLast(),
-            b = KeepLast()
-        ),
-        initmessages = (
-            b = NormalMeanVariance(0.0, 100.0),
-        ),
+        data = (x = xdata, y = ydata),
+        returnvars = (a = KeepLast(), b = KeepLast()),
+        initmessages = (b = NormalMeanVariance(0.0, 100.0),),
         free_energy = true,
         iterations = niters
     )

@@ -75,13 +75,8 @@ using Random
             nodes = Vector{Any}(undef, n)
 
             x[1] ~ NormalMeanVariance(0.0, 1.0)
-            x[2:end] .~ x[1:end-1] + 1
-            nodes, y .~ NormalMeanVariance(
-                x .+ 1 .- constvar(1) .+ 1,
-                det((diageye(2) .+ diageye(2)) ./ 2)
-            ) where {
-                q = q(μ)q(v)q(out), meta = 1
-            }
+            x[2:end] .~ x[1:(end - 1)] + 1
+            nodes, y .~ NormalMeanVariance(x .+ 1 .- constvar(1) .+ 1, det((diageye(2) .+ diageye(2)) ./ 2)) where {q = q(μ)q(v)q(out), meta = 1}
 
             return (nodes,)
         end
@@ -147,19 +142,9 @@ using Random
     @testset "Error #3: make_node should throws on an unknown distribution type" begin
         struct DummyDistributionTestModelError3 <: Distribution{Univariate, Continuous} end
 
-        @test_throws ErrorException ReactiveMP.make_node(
-            FactorGraphModel(),
-            FactorNodeCreationOptions(),
-            DummyDistributionTestModelError3,
-            AutoVar(:θ)
-        )
+        @test_throws ErrorException ReactiveMP.make_node(FactorGraphModel(), FactorNodeCreationOptions(), DummyDistributionTestModelError3, AutoVar(:θ))
 
-        @test_throws ErrorException ReactiveMP.make_node(
-            FactorGraphModel(),
-            FactorNodeCreationOptions(),
-            DummyDistributionTestModelError3,
-            randomvar(:θ)
-        )
+        @test_throws ErrorException ReactiveMP.make_node(FactorGraphModel(), FactorNodeCreationOptions(), DummyDistributionTestModelError3, randomvar(:θ))
     end
 end
 

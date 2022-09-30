@@ -20,13 +20,7 @@ include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 end
 
 function inference_mv_inverse_wishart_known_mean(mean, data, n, d)
-    return inference(
-        model = mv_iid_inverse_wishart_known_mean(mean, n, d),
-        data = (y = data,),
-        iterations = 10,
-        returnvars = KeepLast(),
-        free_energy = Float64
-    )
+    return inference(model = mv_iid_inverse_wishart_known_mean(mean, n, d), data = (y = data,), iterations = 10, returnvars = KeepLast(), free_energy = Float64)
 end
 
 @testset "Multivariate IID: Covariance parametrisation with known mean" begin
@@ -56,13 +50,7 @@ end
         Y = range(-5, 5, length = 200)
 
         p = plot(title = "MvIID experiment / Covariance parametrisation with known mean")
-        p = contour!(
-            p,
-            X,
-            Y,
-            (x, y) -> pdf(MvNormalMeanCovariance(m, mean(result_km.posteriors[:C])), [x, y]),
-            label = "Estimated"
-        )
+        p = contour!(p, X, Y, (x, y) -> pdf(MvNormalMeanCovariance(m, mean(result_km.posteriors[:C])), [x, y]), label = "Estimated")
         p = contour!(p, X, Y, (x, y) -> pdf(MvNormalMeanCovariance(m, C), [x, y]), label = "Real")
     end
 

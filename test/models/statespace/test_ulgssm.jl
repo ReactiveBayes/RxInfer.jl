@@ -24,11 +24,7 @@ include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 end
 
 function univariate_lgssm_inference(data, x0, c, P)
-    return inference(
-        model = univariate_lgssm_model(length(data), x0, c, P),
-        data = (y = data,),
-        free_energy = true
-    )
+    return inference(model = univariate_lgssm_model(length(data), x0, c, P), data = (y = data,), free_energy = true)
 end
 
 @testset "Univariate Linear Gaussian State Space Model" begin
