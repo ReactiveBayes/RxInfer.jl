@@ -17,7 +17,7 @@ end
 ```
 
 ```@docs
-UnspecifiedFormConstraint
+ReactiveMP.UnspecifiedFormConstraint
 ```
 
 ## [PointMassFormConstraint](@id lib-forms-point-mass-constraint)
@@ -31,7 +31,7 @@ end
 ```
 
 ```@docs 
-PointMassFormConstraint
+RxInfer.PointMassFormConstraint
 ```
 
 ## [SampleListFormConstraint](@id lib-forms-sample-list-constraint)
@@ -47,7 +47,7 @@ end
 ```
 
 ```@docs 
-SampleListFormConstraint
+RxInfer.SampleListFormConstraint
 ```
 
 ## [FixedMarginalFormConstraint](@id lib-forms-fixed-marginal-constraint)
@@ -62,7 +62,7 @@ end
 ```
 
 ```@docs 
-FixedMarginalFormConstraint
+RxInfer.FixedMarginalFormConstraint
 ```
 
 ## [CompositeFormConstraint](@id lib-forms-composite-constraint)
@@ -80,5 +80,5 @@ end
 ```
 
 ```@docs
-CompositeFormConstraint
+ReactiveMP.CompositeFormConstraint
 ```

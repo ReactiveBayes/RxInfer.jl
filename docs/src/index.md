@@ -33,7 +33,7 @@ See also:
 - Easy to extend with custom nodes.
 
 ## How to get started?
-Head to the [Getting started](@ref user-guide-getting-started) section to get up and running with ForneyLab. Alternatively, explore various [examples](@ref examples-overview) in the documentation. For advanced extensive tutorial take a look on [Advanced Tutorial](@ref user-guide-advanced-tutorial).
+Head to the [Getting started](@ref user-guide-getting-started) section to get up and running with ForneyLab. Alternatively, explore various [examples](@ref examples-overview) in the documentation.
 
 ## Table of Contents
 

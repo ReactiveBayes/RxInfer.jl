@@ -222,9 +222,9 @@ nothing #hide
 ```@example coin
 p3 = plot(title = "Posterior", legend = :topleft)
 
-p3 = plot!(p3, rθ, (x) -> pdf(θestimated_100, x), fillalpha = 0.3, fillrange = 0, label = L"P\:(\theta\:|y_{1:100})", c = 4)
-p3 = plot!(p3, rθ, (x) -> pdf(θestimated_1000, x), fillalpha = 0.3, fillrange = 0, label = L"P\:(\theta\:|y_{1:1000})", c = 5)
-p3 = plot!(p3, rθ, (x) -> pdf(θestimated_10000, x), fillalpha = 0.3, fillrange = 0, label = L"P\:(\theta\:|y_{1:10000})", c = 6)
+p3 = plot!(p3, rθ, (x) -> pdf(θestimated_100, x), fillalpha = 0.3, fillrange = 0, label = "P(θ|y_100)", c = 4)
+p3 = plot!(p3, rθ, (x) -> pdf(θestimated_1000, x), fillalpha = 0.3, fillrange = 0, label = "P(θ|y_1000)", c = 5)
+p3 = plot!(p3, rθ, (x) -> pdf(θestimated_10000, x), fillalpha = 0.3, fillrange = 0, label = "P(θ|y_10000)", c = 6)
 
 plot(p1, p3, layout = @layout([ a; b ]))
 ```

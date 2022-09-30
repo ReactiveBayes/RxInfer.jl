@@ -2,6 +2,10 @@
 
 `RxInfer.jl` exports `@constraints` macro for the extra constraints specification that can be used during the inference step in `ReactiveMP.jl` engine package.
 
+```@example manual_constraints
+using RxInfer
+```
+
 ## General syntax 
 
 `@constraints` macro accepts either regular Julia function or a single `begin ... end` block. For example both are valid:

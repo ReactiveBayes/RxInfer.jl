@@ -1,6 +1,10 @@
 # [Meta Specification](@id user-guide-meta-specification)
 
-Some nodes in the `ReactiveMP.jl` inference engine accept optional meta structure that may be used to change or customise the inference procedure or the way node computes outbound messages. As an example `GCV` node accepts the approximation method that will be used to approximate non-conjugate relationships between variables in this node. `RxInfer.jl` exports `@meta` macro to specify node-specific meta and contextual information. For example:
+Some nodes in the `ReactiveMP.jl` inference engine accept optional meta structure that may be used to change or customise the inference procedure or the way node computes outbound messages. As an example `GCV` node accepts the approximation method that will be used to approximate non-conjugate relationships between variables in this node. `RxInfer.jl` exports `@meta` macro to specify node-specific meta and contextual information.
+
+```@example manual_meta
+using RxInfer
+```
 
 ## General syntax 
 

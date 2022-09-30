@@ -241,7 +241,7 @@ VMP inference boils down to finding the member of a family of tractable probabil
 The `RxInfer` package exports `score` function for an observable of free energy values:
 
 ```@example normal-estimation-vmp
-fe_observable = score(BetheFreeEnergy(), model)
+fe_observable = score(model, BetheFreeEnergy())
 nothing #hide
 ```
 
