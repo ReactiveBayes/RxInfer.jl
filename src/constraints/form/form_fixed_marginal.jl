@@ -13,7 +13,7 @@ Can be viewed as blocking of updates of a specific edge associated with the marg
 - `default_prod_constraint`       = `ProdAnalytical()`
 - `make_form_constraint`          = `Marginal` (for use in `@constraints` macro)
 
-See also: [`ReactiveMP.constrain_form`](@ref), [`ReactiveMP.DistProduct`](@ref)
+See also: `ReactiveMP.constrain_form`, `ReactiveMP.DistProduct`
 """
 mutable struct FixedMarginalFormConstraint <: ReactiveMP.AbstractFormConstraint
     fixed_value::Any
