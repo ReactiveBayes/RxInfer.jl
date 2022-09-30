@@ -32,7 +32,7 @@ function inference_mv_wishart_known_mean(mean, data, n, d)
 end
 
 @testset "Multivariate IID: Precision parametrisation with known mean" begin
-    
+
     ## Data creation
     rng = StableRNG(123)
 
@@ -45,17 +45,16 @@ end
     P = cholinv(C)
 
     data = rand(rng, MvNormalMeanPrecision(m, P), n) |> eachcol |> collect .|> collect
-    
+
     ## Inference execution
     result_km = inference_mv_wishart_known_mean(m, data, n, d)
-    
+
     ## Test inference results
     @test isapprox(mean(result_km.posteriors[:P]), P, atol = 0.07)
     # Check that FE does not depend on iteration in the known mean cast
     @test all(==(first(result_km.free_energy)), result_km.free_energy)
-    
-    
-    @test_plot "models" "iid_mv_wishart_known_mean" begin 
+
+    @test_plot "models" "iid_mv_wishart_known_mean" begin
         X = range(-5, 5, length = 200)
         Y = range(-5, 5, length = 200)
 

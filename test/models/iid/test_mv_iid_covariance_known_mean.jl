@@ -42,17 +42,16 @@ end
     C = L * L'
 
     data = rand(rng, MvNormalMeanCovariance(m, C), n) |> eachcol |> collect .|> collect
-    
+
     ## Inference execution
     result_km = inference_mv_inverse_wishart_known_mean(m, data, n, d)
-    
+
     ## Test inference results
     @test isapprox(mean(result_km.posteriors[:C]), C, atol = 0.15)
     # Check that FE does not depend on iteration in the known mean cast
     @test all(==(first(result_km.free_energy)), result_km.free_energy)
-    
-    
-    @test_plot "models" "iid_mv_covariance_known_mean" begin 
+
+    @test_plot "models" "iid_mv_covariance_known_mean" begin
         X = range(-5, 5, length = 200)
         Y = range(-5, 5, length = 200)
 

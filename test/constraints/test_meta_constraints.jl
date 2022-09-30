@@ -6,7 +6,6 @@ using Distributions
 using Logging
 
 @testset "Meta specification with @meta macro" begin
-
     import ReactiveMP: resolve_meta, make_node, activate!
 
     struct SomeNode end
@@ -200,8 +199,8 @@ using Logging
         end
 
         @test_logs (:warn, r".*has no variable named `r`.*") (:warn, r".*has no variable named `t`.*") activate!(
-            meta_with_warn, 
-            getnodes(model), 
+            meta_with_warn,
+            getnodes(model),
             getvariables(model)
         )
         @test_logs min_level = Logging.Warn activate!(meta_without_warn, getnodes(model), getvariables(model))

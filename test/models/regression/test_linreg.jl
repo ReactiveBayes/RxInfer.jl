@@ -19,7 +19,6 @@ include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
     for i in 1:n
         y[i] ~ Normal(mean = x[i] * b + a, var = 1.0)
     end
-
 end
 
 @model function linear_regression_broadcasted(n)
@@ -31,15 +30,14 @@ end
 
     # Variance over-complicated for a purpose of checking that this expressions are allowed, it should be equal to `1.0`
     y .~ Normal(mean = x .* b .+ a, var = det((diageye(2) .+ diageye(2)) ./ 2))
-
 end
 
 ## Inference definition
 function linreg_inference(modelfn, niters, xdata, ydata)
     return inference(
         model = modelfn(length(xdata)),
-        data  = (
-            x = xdata, 
+        data = (
+            x = xdata,
             y = ydata
         ),
         returnvars = (
@@ -47,7 +45,7 @@ function linreg_inference(modelfn, niters, xdata, ydata)
             b = KeepLast()
         ),
         initmessages = (
-            b =  NormalMeanVariance(0.0, 100.0),
+            b = NormalMeanVariance(0.0, 100.0),
         ),
         free_energy = true,
         iterations = niters
@@ -55,7 +53,7 @@ function linreg_inference(modelfn, niters, xdata, ydata)
 end
 
 @testset "Linear regression" begin
-    
+
     ## Data creation
     reala = 10.0
     realb = -10.0
@@ -66,7 +64,7 @@ end
 
     xdata = collect(1:N) .+ 1 * randn(rng, N)
     ydata = reala .+ realb .* xdata
-    
+
     ## Inference execution
     result  = linreg_inference(linear_regression, 25, xdata, ydata)
     resultb = linreg_inference(linear_regression_broadcasted, 25, xdata, ydata)

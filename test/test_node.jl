@@ -5,9 +5,7 @@ using RxInfer
 using Random
 
 @testset "@node macro integration tests" begin
-
     @testset "make_node compatibility tests for stochastic nodes" begin
-
         struct CustomStochasticNode end
 
         @node CustomStochasticNode Stochastic [out, (x, aliases = [xx]), (y, aliases = [yy]), z]
@@ -36,16 +34,14 @@ using Random
         @test snode !== nothing
         @test typeof(svar) <: RandomVariable
         @test factorisation(snode) === ((1,), (2,), (3,), (4,))
-
     end
 
     @testset "make_node compatibility tests for deterministic nodes" begin
-
         struct CustomDeterministicNode end
 
         CustomDeterministicNode(x, y, z) = x + y + z
 
-        @node CustomDeterministicNode Deterministic [ out, (x, aliases = [xx]), (y, aliases = [yy]), z ]
+        @node CustomDeterministicNode Deterministic [out, (x, aliases = [xx]), (y, aliases = [yy]), z]
 
         @test sdtype(CustomDeterministicNode) === Deterministic()
 
@@ -69,11 +65,9 @@ using Random
 
         @test snode === nothing
         @test typeof(svar) <: ConstVariable
-
     end
 
     @testset "`FactorGraphModel` compatibility/correctness with functional dependencies pipelines" begin
-
         import ReactiveMP: activate!
 
         struct DummyStochasticNode end
@@ -94,7 +88,6 @@ using Random
         end
 
         @testset "Default functional dependencies" begin
-
             import ReactiveMP: DefaultFunctionalDependencies
 
             @testset "Default functional dependencies: FullFactorisation" begin
@@ -219,7 +212,6 @@ using Random
         end
 
         @testset "Require inbound message functional dependencies" begin
-
             import ReactiveMP: RequireMessageFunctionalDependencies
 
             @testset "Require inbound message functional dependencies: FullFactorisation" begin
@@ -421,7 +413,6 @@ using Random
         end
 
         @testset "Require marginal functional dependencies" begin
-
             import ReactiveMP: RequireMarginalFunctionalDependencies
 
             @testset "Require marginal functional dependencies: FullFactorisation" begin
@@ -623,7 +614,6 @@ using Random
         end
 
         @testset "Require everything functional dependencies" begin
-
             import ReactiveMP: RequireEverythingFunctionalDependencies
 
             @testset "Require everything functional dependencies: FullFactorisation" begin
@@ -770,7 +760,6 @@ using Random
             end
         end
     end
-
 end
 
 end

@@ -544,7 +544,7 @@ end
 ## ------------------------------------------------------------------------ ##
 
 struct FromMarginalAutoUpdate end
-struct FromMessageAutoUpdate end 
+struct FromMessageAutoUpdate end
 
 import Base: string
 

@@ -12,11 +12,10 @@ end
 ScoreActor(iterations::Int, keep::Int = 1) = ScoreActor(Real, iterations, keep)
 ScoreActor(::Type{L}, iterations::Int, keep::Int = 1) where {L <: Real} = ScoreActor{L}(Matrix{L}(undef, iterations, keep), 1, 0, falses(keep))
 
-Base.show(io::IO, ::ScoreActor{L}) where L = print(io, "ScoreActor(", L, ")")
+Base.show(io::IO, ::ScoreActor{L}) where {L} = print(io, "ScoreActor(", L, ")")
 Base.setindex!(actor::ScoreActor, data, frame, index) = actor.score[index, frame] = data
 
 function getvalid(actor::ScoreActor)
-
     firstframe  = something(findnext(actor.valid, actor.cframe + 1), 1)
     continuous  = Iterators.flatten(eachcol(actor.score))
     niterations = getniterations(actor)
@@ -30,7 +29,6 @@ getniterations(actor::ScoreActor) = size(actor.score, 1)
 getnframes(actor::ScoreActor)     = size(actor.score, 2)
 
 function Rocket.on_next!(actor::ScoreActor{L}, data::L) where {L}
-
     iterations = getniterations(actor)
     nframes    = getnframes(actor)
 
@@ -67,14 +65,13 @@ function Rocket.on_complete!(actor::ScoreActor)
 end
 
 function Rocket.release!(actor::ScoreActor)
-
     iterations = getniterations(actor)
     cframe     = actor.cframe
     cindex     = actor.cindex
 
     if cindex !== iterations
         @warn "Invalid `release!` call on `ScoreActor`. The current frame has not been fully specified"
-    else 
+    else
         @assert !actor.valid[cframe] "Broken `ScoreActor` state, cannot `release!` a valid frame of free energy values"
         actor.valid[cframe] = true
     end
@@ -92,7 +89,6 @@ function score_snapshot_final(actor::ScoreActor)
 end
 
 function score_snapshot_iterations(actor::ScoreActor)
-
     result = vec(sum(view(actor.score, :, actor.valid), dims = 2))
 
     map!(Base.Fix2(/, sum(actor.valid)), result, result)

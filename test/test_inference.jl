@@ -165,7 +165,7 @@ end
             prevx = nextx
         end
 
-        autoupdates = @autoupdates begin 
+        autoupdates = @autoupdates begin
             x_t_min_mean, x_t_min_var = mean_var(q(x_t))
             τ_shape = shape(q(τ))
             τ_rate = rate(q(τ))
@@ -174,8 +174,8 @@ end
         result = rxinference(
             model = test_model1(),
             constraints = MeanField(),
-            data = (y = observedy, ),
-            returnvars = (:x_t, ),
+            data = (y = observedy,),
+            returnvars = (:x_t,),
             historyvars = (x_t = KeepEach(), τ = KeepEach()),
             keephistory = 10,
             initmarginals = (x_t = NormalMeanVariance(0.0, 1e3), τ = GammaShapeRate(1.0, 1.0)),

@@ -5,9 +5,7 @@ using RxInfer
 using Random
 
 @testset "@model macro tests" begin
-
     @testset "Tuple based variables usage #1" begin
-
         @model function mixture_model()
             mean1 ~ Normal(mean = 10, variance = 10000)
             mean2 ~ Normal(mean = -10, variance = 10000)
@@ -26,7 +24,6 @@ using Random
         @test model[:selector] isa RandomVariable
         @test model[:mixture] isa RandomVariable
         @test length(getnodes(model)) === 7
-
     end
 
     @testset "Broadcasting #1" begin

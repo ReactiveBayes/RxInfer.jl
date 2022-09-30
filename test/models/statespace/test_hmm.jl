@@ -23,7 +23,6 @@ include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
         x[t] ~ Transition(s[t], B)
         s_prev = s[t]
     end
-
 end
 
 @constraints function hidden_markov_constraints()
@@ -35,9 +34,9 @@ function hidden_markov_model_inference(data, vmp_iters)
     return inference(
         model = hidden_markov_model(length(data)),
         constraints = hidden_markov_constraints(),
-        data  = (x = data, ),
-        options = (limit_stack_depth = 500, ),
-        free_energy = true, 
+        data = (x = data,),
+        options = (limit_stack_depth = 500,),
+        free_energy = true,
         initmarginals = (
             A = vague(MatrixDirichlet, 3, 3),
             B = vague(MatrixDirichlet, 3, 3),
@@ -89,7 +88,7 @@ end
 
     rng = StableRNG(123)
     x_data, s_data = generate_data(rng, 100)
-    
+
     ## Inference execution
     result = hidden_markov_model_inference(x_data, 20)
 
@@ -97,7 +96,7 @@ end
     Abuffer = result.posteriors[:A]
     Bbuffer = result.posteriors[:B]
     fe = result.free_energy
-    
+
     ## Test inference results
     @test length(sbuffer) === 20 && all(b -> length(b) === 100, sbuffer)
     @test length(Abuffer) === 20
@@ -115,7 +114,6 @@ end
     end
 
     @test_benchmark "models" "mlgssm" hidden_markov_model_inference($x_data, 20)
-
 end
 
 end

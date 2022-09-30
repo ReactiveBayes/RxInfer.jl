@@ -7,7 +7,6 @@ using RxInfer, BenchmarkTools, Random, Plots, Dates, LinearAlgebra, StableRNGs
 include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
 @model function univariate_lgssm_model(n, x0, c_, P_)
-
     x_prior ~ Normal(mean = mean(x0), var = var(x0))
 
     x = randomvar(n)
@@ -22,13 +21,12 @@ include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
         y[i] ~ Normal(mean = x[i], var = P)
         x_prev = x[i]
     end
-
 end
 
 function univariate_lgssm_inference(data, x0, c, P)
     return inference(
         model = univariate_lgssm_model(length(data), x0, c, P),
-        data  = (y = data, ),
+        data = (y = data,),
         free_energy = true
     )
 end
@@ -54,7 +52,7 @@ end
     @test all(var.(x_estimated) .> 0.0)
     @test length(fe) === 1
     @test abs(last(fe) - 1854.297647) < 0.01
-    
+
     ## Create output plots
     @test_plot "models" "ulgssm" begin
         subrange = 200:215
@@ -66,9 +64,8 @@ end
         p = scatter!(subrange, data[subrange], label = "Observations")
         return p
     end
-    
-    @test_benchmark "models" "ulgssm" univariate_lgssm_inference($data, $x0_prior, 1.0, $P)
 
+    @test_benchmark "models" "ulgssm" univariate_lgssm_inference($data, $x0_prior, 1.0, $P)
 end
 
 end

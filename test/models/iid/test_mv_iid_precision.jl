@@ -43,7 +43,7 @@ function inference_mv_wishart(data, n, d)
 end
 
 @testset "Multivariate IID: Precision parametrisation" begin
-    
+
     ## Data creation
     rng = StableRNG(123)
 
@@ -56,16 +56,16 @@ end
     P = cholinv(C)
 
     data = rand(rng, MvNormalMeanPrecision(m, P), n) |> eachcol |> collect .|> collect
-    
+
     ## Inference execution
     result = inference_mv_wishart(data, n, d)
-    
+
     ## Test inference results
     @test isapprox(mean(result.posteriors[:m]), m, atol = 0.05)
     @test isapprox(mean(result.posteriors[:P]), P, atol = 0.07)
     @test all(<(0), filter(e -> abs(e) > 1e-10, diff(result.free_energy)))
-    
-    @test_plot "models" "iid_mv_precision" begin 
+
+    @test_plot "models" "iid_mv_precision" begin
         X = range(-5, 5, length = 200)
         Y = range(-5, 5, length = 200)
 

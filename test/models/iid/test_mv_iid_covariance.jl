@@ -39,7 +39,7 @@ function inference_mv_inverse_wishart(data, n, d)
 end
 
 @testset "Multivariate IID: Covariance parametrisation" begin
-    
+
     ## Data creation
     rng = StableRNG(123)
 
@@ -51,17 +51,16 @@ end
     C = L * L'
 
     data = rand(rng, MvNormalMeanCovariance(m, C), n) |> eachcol |> collect .|> collect
-    
+
     ## Inference execution
-    result    = inference_mv_inverse_wishart(data, n, d)
-    
-    
+    result = inference_mv_inverse_wishart(data, n, d)
+
     ## Test inference results
     @test isapprox(mean(result.posteriors[:m]), m, atol = 0.07)
     @test isapprox(mean(result.posteriors[:C]), C, atol = 0.15)
     @test all(<(0), filter(e -> abs(e) > 1e-10, diff(result.free_energy)))
-    
-    @test_plot "models" "iid_mv_covariance" begin 
+
+    @test_plot "models" "iid_mv_covariance" begin
         X = range(-5, 5, length = 200)
         Y = range(-5, 5, length = 200)
 

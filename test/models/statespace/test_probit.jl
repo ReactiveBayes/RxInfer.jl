@@ -12,7 +12,6 @@ include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
 ## Model definition
 @model function probit_model(nr_samples::Int64)
-
     x = randomvar(nr_samples + 1)
     y = datavar(Float64, nr_samples)
 
@@ -24,22 +23,21 @@ include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
             pipeline = RequireMessage(in = NormalMeanPrecision(0, 1.0))
         }
     end
-
 end
 
 ## Inference definition
 function probit_inference(data_y)
     return inference(
         model = probit_model(length(data_y)),
-        data = (y = data_y, ),
+        data = (y = data_y,),
         iterations = 10,
-        returnvars = (x = KeepLast(), ),
+        returnvars = (x = KeepLast(),),
         free_energy = true
     )
 end
 
 @testset "Probit Model" begin
-    
+
     ## Data creation
     function generate_data(nr_samples::Int64; seed = 123)
         rng = StableRNG(seed)
@@ -70,14 +68,14 @@ end
 
     n = 40
     data_x, data_y = generate_data(n)
-    
+
     ## Inference execution
     result = probit_inference(data_y)
-    
+
     ## Test inference results
     @test length(result.free_energy) === 10
     @test last(result.free_energy) ≈ 15.646236967225065
-    
+
     ## Create output plots
     @test_plot "models" "probit" begin
         mx = result.posteriors[:x]

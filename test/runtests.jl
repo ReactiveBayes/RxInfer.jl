@@ -36,8 +36,12 @@ end
 
 # Unregistered GraphPPL and ReactiveMP, do not commit this two lines, but use them to test ReactiveMP locally
 ENV["JULIA_PKG_USE_CLI_GIT"] = true
-import Pkg; Pkg.rm("GraphPPL"); Pkg.add(Pkg.PackageSpec(name = "GraphPPL", rev = "develop-3.0"));
-import Pkg; Pkg.rm("ReactiveMP"); Pkg.add(Pkg.PackageSpec(name = "ReactiveMP", rev = "develop-3.0"));
+import Pkg;
+Pkg.rm("GraphPPL");
+Pkg.add(Pkg.PackageSpec(name = "GraphPPL", rev = "develop-3.0"));
+import Pkg;
+Pkg.rm("ReactiveMP");
+Pkg.add(Pkg.PackageSpec(name = "ReactiveMP", rev = "develop-3.0"));
 
 # DocMeta.setdocmeta!(RxInfer, :DocTestSetup, :(using RxInfer, Distributions); recursive=true)
 

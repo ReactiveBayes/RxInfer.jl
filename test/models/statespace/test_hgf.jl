@@ -43,7 +43,6 @@ end
     GCV(xt_min, xt, zt) -> GCVMetadata(GaussHermiteCubature(31))
 end
 
-
 ## Inference definition
 function hgf_online_inference(data, vmp_iters, real_k, real_w, z_variance, y_variance)
     autoupdates = @autoupdates begin
@@ -61,25 +60,25 @@ function hgf_online_inference(data, vmp_iters, real_k, real_w, z_variance, y_var
         historyvars   = (
         xt = KeepLast(),
         zt = KeepLast()
-        ),
+    ),
         initmarginals = (
-            zt = NormalMeanVariance(0.0, 5.0),
-            xt = NormalMeanVariance(0.0, 5.0)
-        ),
+        zt = NormalMeanVariance(0.0, 5.0),
+        xt = NormalMeanVariance(0.0, 5.0)
+    ),
         iterations    = vmp_iters,
         free_energy   = true,
         autostart     = true,
         callbacks     = (
-            after_model_creation = (model, returnval) -> begin
-                gcvnode = returnval
-                setmarginal!(gcvnode, :y_x, MvNormalMeanCovariance([0.0, 0.0], [5.0, 5.0]))
-            end,
-        )
+        after_model_creation = (model, returnval) -> begin
+            gcvnode = returnval
+            setmarginal!(gcvnode, :y_x, MvNormalMeanCovariance([0.0, 0.0], [5.0, 5.0]))
+        end,
+    )
     )
 end
 
 @testset "Hierarchical Gaussian Filter" begin
-    
+
     ## Data creation
     function generate_data(rng, k, w, zv, yv)
         z_prev = 0.0
@@ -102,7 +101,7 @@ end
 
         return z, x, y
     end
-    
+
     rng = StableRNG(42)
     # Parameters of the HGF process
     real_k = 1.0
@@ -112,7 +111,7 @@ end
     # Number of observations
     n = 2000
     z, x, y = generate_data(rng, real_k, real_w, z_variance, y_variance)
-    
+
     ## Inference execution
     vmp_iters = 10
     result = hgf_online_inference(y, vmp_iters, real_k, real_w, z_variance, y_variance)
@@ -120,7 +119,7 @@ end
     mz = result.history[:zt]
     mx = result.history[:xt]
     fe = result.free_energy_history
-    
+
     ## Test inference results
     @test length(mz) === n
     @test length(mx) === n
@@ -135,7 +134,7 @@ end
     @test (sum((mean.(mx) .- 3 .* std.(mx)) .< x .< (mean.(mx) .+ 3 .* std.(mx))) / n) > 0.95
     @test all(var.(mx) .> 0.0)
     @test all(var.(mz) .> 0.0)
-    
+
     ## Create output plots
     @test_plot "models" "hgf" begin
         pz = plot(title = "Hidden States Z")
@@ -151,8 +150,8 @@ end
 
         p = plot(pz, px, pf, layout = @layout([a; b; c]))
         return p
-    end 
-    
+    end
+
     @test_benchmark "models" "hgf" hgf_online_inference($y, $vmp_iters, $real_k, $real_w, $z_variance, $y_variance)
 end
 

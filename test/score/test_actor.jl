@@ -7,9 +7,7 @@ import RxInfer: ScoreActor, score_snapshot, score_snapshot_final, score_snapshot
 import Rocket: release!
 
 @testset "ScoreActor tests" begin
-
-    @testset "Basic functionality #1" begin 
-
+    @testset "Basic functionality #1" begin
         actor = ScoreActor(Float64, 10, 1)
 
         for i in 1:10
@@ -18,7 +16,7 @@ import Rocket: release!
 
         release!(actor)
 
-        raw   = score_snapshot(actor)
+        raw = score_snapshot(actor)
         final = score_snapshot_final(actor)
         aggregated = score_snapshot_iterations(actor)
 
@@ -39,7 +37,7 @@ import Rocket: release!
 
         release!(actor)
 
-        raw   = score_snapshot(actor)
+        raw = score_snapshot(actor)
         final = score_snapshot_final(actor)
         aggregated = score_snapshot_iterations(actor)
 
@@ -57,11 +55,9 @@ import Rocket: release!
         end
 
         @test_logs (:warn, r"Invalid `release!`x*") release!(actor)
-
     end
 
-    @testset "Basic functionality #2" begin 
-
+    @testset "Basic functionality #2" begin
         actor = ScoreActor(Float64, 10, 2)
 
         for i in 1:10
@@ -70,7 +66,7 @@ import Rocket: release!
 
         release!(actor)
 
-        raw   = score_snapshot(actor)
+        raw = score_snapshot(actor)
         final = score_snapshot_final(actor)
         aggregated = score_snapshot_iterations(actor)
 
@@ -86,7 +82,7 @@ import Rocket: release!
             next!(actor, convert(Float64, i))
         end
 
-        raw   = score_snapshot(actor)
+        raw = score_snapshot(actor)
         final = score_snapshot_final(actor)
         aggregated = score_snapshot_iterations(actor)
 
@@ -105,7 +101,7 @@ import Rocket: release!
 
         release!(actor)
 
-        raw   = score_snapshot(actor)
+        raw = score_snapshot(actor)
         final = score_snapshot_final(actor)
         aggregated = score_snapshot_iterations(actor)
 
@@ -121,7 +117,7 @@ import Rocket: release!
             next!(actor, convert(Float64, i))
         end
 
-        raw   = score_snapshot(actor)
+        raw = score_snapshot(actor)
         final = score_snapshot_final(actor)
         aggregated = score_snapshot_iterations(actor)
 
@@ -139,11 +135,9 @@ import Rocket: release!
         end
 
         @test_logs (:warn, r"Invalid `release!`x*") release!(actor)
-
     end
 
-    @testset "Basic functionality #2" begin 
-
+    @testset "Basic functionality #2" begin
         actor = ScoreActor(Float64, 10, 2)
 
         for i in 1:30
@@ -160,7 +154,7 @@ import Rocket: release!
         @test length(raw) === 20
         @test raw == 11:30
         @test length(final) == 2
-        @test final == [ 20, 30 ]
+        @test final == [20, 30]
         @test length(aggregated) === 10
         @test aggregated == ((11:20) .+ (21:30)) ./ 2
 
@@ -176,12 +170,10 @@ import Rocket: release!
         @test length(raw) === 10
         @test raw == 21:30
         @test length(final) == 1
-        @test final == [ 30 ]
+        @test final == [30]
         @test length(aggregated) === 10
         @test aggregated == 21:30
-
     end
-
 end
 
 end

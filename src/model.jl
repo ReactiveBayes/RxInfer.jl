@@ -74,7 +74,7 @@ const DefaultModelInferenceOptions = UnspecifiedModelInferenceOptions()
 global_reactive_scheduler(options::ModelInferenceOptions) = something(options.global_reactive_scheduler, AsapScheduler())
 get_pipeline_stages(options::ModelInferenceOptions)       = something(options.pipeline, EmptyPipelineStage())
 
-struct FactorGraphModel{Constrains, Meta, Options <: ModelInferenceOptions }
+struct FactorGraphModel{Constrains, Meta, Options <: ModelInferenceOptions}
     constraints :: Constrains
     meta        :: Meta
     options     :: Options
@@ -361,7 +361,6 @@ function ReactiveMP.make_node(
     autovar::AutoVar,
     args::Vararg
 )
-
     foreach(args) do arg
         @assert (typeof(arg) <: AbstractVariable || eltype(arg) <: AbstractVariable) "`make_node` cannot create a node with the given arguments autovar = $(autovar), args = [ $(args...) ]"
     end

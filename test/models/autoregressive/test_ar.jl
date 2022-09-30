@@ -23,7 +23,7 @@ function ar_inference(inputs, outputs, order, niter)
         model         = ar_model(length(outputs), order),
         data          = (x = inputs, y = outputs),
         constraints   = MeanField(),
-        options       = (limit_stack_depth = 500, ),
+        options       = (limit_stack_depth = 500,),
         initmarginals = (γ = GammaShapeRate(1.0, 1.0),),
         returnvars    = (γ = KeepEach(), θ = KeepEach()),
         iterations    = niter,
