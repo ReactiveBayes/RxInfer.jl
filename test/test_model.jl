@@ -8,6 +8,31 @@ using Random
 
     import RxInfer: create_model
 
+    @testset "Tuple based variables usage #1" begin
+
+        @model function mixture_model()
+            mean1 ~ Normal(mean = 10, variance = 10000)
+            mean2 ~ Normal(mean = -10, variance = 10000)
+            prec1 ~ Gamma(shape = 1, rate = 1)
+            prec2 ~ Gamma(shape = 1, rate = 1)
+
+            selector ~ Bernoulli(0.3)
+            mixture  ~ NormalMixture(selector, (mean1, mean2), (prec1, prec2))
+
+            y = datavar(Float64)
+            y ~ Normal(mean = mixture, variance = 1.0)
+        end
+
+        generator = mixture_model()
+
+        model, _ = generator(; constraints = MeanField())
+
+        @test model[:selector] isa RandomVariable
+        @test model[:mixture] isa RandomVariable
+        @test length(getnodes(model)) === 7
+
+    end
+
     @testset "Broadcasting #1" begin
         @model function bsyntax1(n, broadcasting)
             m ~ NormalMeanPrecision(0.0, 1.0)
@@ -124,6 +149,24 @@ using Random
 
         m, _ = create_model(mymodel1(condition = 3))
         @test haskey(m, :x) && ReactiveMP.degree(m[:x]) === 2
+    end
+
+    @testset "Error #3: make_node should throws on an unknown distribution type" begin
+        struct DummyDistributionTestModelError3 <: Distribution{Univariate, Continuous} end
+
+        @test_throws ErrorException ReactiveMP.make_node(
+            FactorGraphModel(),
+            FactorNodeCreationOptions(),
+            DummyDistributionTestModelError3,
+            AutoVar(:θ)
+        )
+        
+        @test_throws ErrorException ReactiveMP.make_node(
+            FactorGraphModel(),
+            FactorNodeCreationOptions(),
+            DummyDistributionTestModelError3,
+            randomvar(:θ)
+        )
     end
 end
 

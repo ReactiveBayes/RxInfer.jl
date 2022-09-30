@@ -8,7 +8,7 @@ import ReactiveMP: CompositeFormConstraint
 import ReactiveMP: resolve_marginal_form_prod, resolve_messages_form_prod
 import ReactiveMP: activate!
 
-@testset "Form constraints specification" begin
+@testset "Form constraints specification with @constraints macro" begin
     @testset "Use case #1" begin
         cs = @constraints begin
             q(x)::PointMass
