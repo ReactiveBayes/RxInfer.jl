@@ -7,7 +7,7 @@ using Logging
 
 @testset "Meta specification with @meta macro" begin
 
-    import ReactiveMP: resolve_meta
+    import ReactiveMP: resolve_meta, make_node, activate!
 
     struct SomeNode end
     struct SomeOtherNode end
@@ -178,7 +178,7 @@ using Logging
             Gamma(x, y) -> 123 # Factor node does exist in the model, but warn is false
         end
 
-        @test_logs (:warn, r".*model has no factor node `Gamma`.*") activate!(meta_with_warn, getnodes(model), getvariables(model))
+        @test_logs (:warn, r".*has no factor node `Gamma`.*") activate!(meta_with_warn, getnodes(model), getvariables(model))
         @test_logs min_level = Logging.Warn activate!(meta_without_warn, getnodes(model), getvariables(model))
     end
 
@@ -189,7 +189,7 @@ using Logging
         x = randomvar(model, :x)
         y = randomvar(model, :y)
 
-        ReactiveMP.add!(model, make_node(Gamma, z, x, y))
+        make_node(model, FactorNodeCreationOptions(), Gamma, z, x, y)
 
         meta_with_warn = @meta [warn = true] begin
             Gamma(r, t) -> 123 # Factor node exist, but uses wrong var names
@@ -199,7 +199,7 @@ using Logging
             Gamma(r, t) -> 123 # Factor node exist, but uses wrong var names, but warn is false
         end
 
-        @test_logs (:warn, r".*model has no variable named `r`.*") (:warn, r".*model has no variable named `t`.*") activate!(
+        @test_logs (:warn, r".*has no variable named `r`.*") (:warn, r".*has no variable named `t`.*") activate!(
             meta_with_warn, 
             getnodes(model), 
             getvariables(model)

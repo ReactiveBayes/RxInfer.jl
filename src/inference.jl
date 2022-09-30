@@ -404,7 +404,7 @@ function inference(;
     _options = convert(ModelInferenceOptions, options)
 
     inference_invoke_callback(callbacks, :before_model_creation)
-    fmodel, freturval = create_model(model, constraints = constraints, meta = meta, option = _options)
+    fmodel, freturval = create_model(model, constraints = constraints, meta = meta, options = _options)
     inference_invoke_callback(callbacks, :after_model_creation, fmodel, freturval)
     vardict = getvardict(fmodel)
 
