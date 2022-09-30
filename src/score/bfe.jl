@@ -97,7 +97,7 @@ apply_diagnostic_check(::Nothing, something, stream)     = stream
 apply_diagnostic_check(checks::Tuple, something, stream) = foldl((folded, check) -> apply_diagnostic_check(check, something, folded), checks; init = stream)
 
 """
-    BetheFreeEnergy(marginal_skip_strategy, diagnostic_checks)
+    BetheFreeEnergy(marginal_skip_strategy, scheduler, diagnostic_checks)
 
 Creates Bethe Free Energy values stream when passed to the `score` function. 
 """
