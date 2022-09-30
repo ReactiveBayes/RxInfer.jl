@@ -159,7 +159,7 @@ function Base.run(examplesrunner::ExamplesRunner)
         @info "Generating overview"
 
         write(io_overview, "# [Examples overview](@id examples-overview)\n\n")
-        write(io_overview, "This section contains a set of examples for Bayesian Inference with `ReactiveMP` package in various probabilistic models.\n\n")
+        write(io_overview, "This section contains a set of examples for Bayesian Inference with `RxInfer` package in various probabilistic models.\n\n")
         write(io_overview, "!!! note\n")
         write(
             io_overview,

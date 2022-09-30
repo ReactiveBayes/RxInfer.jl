@@ -72,7 +72,7 @@ nothing #hide
 
 ### [Posterior marginal updates](@id user-guide-inference-execution-marginal-updates)
 
-The `ReactiveMP` inference engine has a reactive API and operates in terms of Observables and Actors. For detailed information about these concepts we refer to [Rocket.jl documentation](https://biaslab.github.io/Rocket.jl/stable/observables/about/).
+The `RxInfer` inference engine has a reactive API and operates in terms of Observables and Actors. For detailed information about these concepts we refer to [Rocket.jl documentation](https://biaslab.github.io/Rocket.jl/stable/observables/about/).
 
 We use `getmarginal` function from `ReactiveMP` to get a posterior marginal updates observable:
 
@@ -107,7 +107,7 @@ m_n_updates = getmarginals(m_n)
 
 ### [Feeding observations](@id user-guide-inference-execution-observations)
 
-By default (without any extra factorisation constraints) model specification implies Belief Propagation message passing update rules. In case of BP algorithm `ReactiveMP` package computes an exact Bayesian posteriors with a single message passing iteration. To enforce Belief Propagation message passing update rule for some specific factor node user may use `where { q = FullFactorisation() }` option. Read more in [Model Specification](@ref user-guide-model-specification) section. To perform a message passing iteration we need to pass some data to all our data inputs that were created with [`datavar` function](@ref user-guide-model-specification-data-variables) during model specification.
+By default (without any extra factorisation constraints) model specification implies Belief Propagation message passing update rules. In case of BP algorithm `RxInfer` package computes an exact Bayesian posteriors with a single message passing iteration. To enforce Belief Propagation message passing update rule for some specific factor node user may use `where { q = FullFactorisation() }` option. Read more in [Model Specification](@ref user-guide-model-specification) section. To perform a message passing iteration we need to pass some data to all our data inputs that were created with [`datavar` function](@ref user-guide-model-specification-data-variables) during model specification.
 
 To feed an observation for a specific data input we use `update!` function:
 

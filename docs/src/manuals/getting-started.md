@@ -13,7 +13,7 @@ Install `RxInfer` through the Julia package manager:
 ] add RxInfer
 ```
 
-## Importing ReactiveMP
+## Importing RxInfer
 
 To add `RxInfer` package (and all associated packages) into a running Julia session simply run:
 

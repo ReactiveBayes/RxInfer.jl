@@ -24,7 +24,7 @@ install `RxInfer` for development purposes. To work on your fork of `RxInfer`, u
 ] dev git@github.com:your_username/RxInfer.jl.git
 ```
 
-The `dev` command clones `RxInfer` to `~/.julia/dev/RxInfer`. All local changes to ReactiveMP code will be reflected in imported code.
+The `dev` command clones `RxInfer` to `~/.julia/dev/RxInfer`. All local changes to `RxInfer` code will be reflected in imported code.
 
 !!! note
     It is also might be useful to install [Revise.jl](https://github.com/timholy/Revise.jl) package as it allows you to modify code and use the changes without restarting Julia.
@@ -64,7 +64,7 @@ The tests can be evaluated by running following command in the Julia REPL:
 ] test RxInfer
 ```
 
-In addition tests can be evaluated by running following command in the ReactiveMP root directory:
+In addition tests can be evaluated by running following command in the `RxInfer` root directory:
 
 ```bash
 make test

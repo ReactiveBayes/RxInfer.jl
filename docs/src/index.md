@@ -11,11 +11,6 @@ RxInfer
 
 Given a probabilistic model, RxInfer allows for an efficient message-passing based Bayesian inference. It uses the model structure to generate an algorithm that consists of a sequence of local computations on a Forney-style factor graph (FFG) representation of the model. RxInfer.jl has been designed with a focus on efficiency, scalability and maximum performance for running inference with message passing.
 
-See also:
-- [`ReactiveMP.jl`](https://github.com/biaslab/ReactiveMP.jl)
-- [`GraphPPL.jl`](https://github.com/biaslab/GraphPPL.jl)
-- [`Rocket.jl`](https://github.com/biaslab/Rocket.jl)
-
 ## Package Features
 
 - User friendly syntax for specification of probabilistic models.
@@ -25,12 +20,21 @@ See also:
     - [Expectation maximization](https://en.wikipedia.org/wiki/Expectation-maximization_algorithm)
 - Support for hybrid models combining discrete and continuous latent variables.
 - Support for hybrid distinct message passing inference algorithm under a unified paradigm.
+- Factorisation and functional form constraints specification.
 - Evaluation of Bethe free energy as a model performance measure.
 - Schedule-free reactive message passing API.
 - High performance.
 - Scalability for large models with millions of parameters and observations.
 - Inference procedure is differentiable.
-- Easy to extend with custom nodes.
+- Easy to extend with custom nodes and message update rules.
+
+## Ecosystem
+
+The `RxInfer` unites 3 core packages into one powerful reactive message passing-based Bayesian inference framework:
+
+- [`ReactiveMP.jl`](https://github.com/biaslab/ReactiveMP.jl) - core package for efficient and scalable for reactive message passing 
+- [`GraphPPL.jl`](https://github.com/biaslab/GraphPPL.jl) - package for model and constraints specification
+- [`Rocket.jl`](https://github.com/biaslab/Rocket.jl) - reactive programming tools
 
 ## How to get started?
 Head to the [Getting started](@ref user-guide-getting-started) section to get up and running with ForneyLab. Alternatively, explore various [examples](@ref examples-overview) in the documentation.

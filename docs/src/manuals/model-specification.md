@@ -134,7 +134,7 @@ end
 
 #### Data variables available options
 
-- `allow_missing = true/false`: Specifies if it is possible to pass `missing` object as an observation. Note however that by default ReactiveMP.jl does not expose any message computation rules that involve `missing`s.
+- `allow_missing = true/false`: Specifies if it is possible to pass `missing` object as an observation. Note however that by default the `ReactiveMP` inference engine does not expose any message computation rules that involve `missing`s.
 
 ### [Random variables](@id user-guide-model-specification-random-variables)
 
@@ -210,7 +210,7 @@ end
 ```
 
 !!! note
-    The `RxxInfer.jl` package uses the `~` operator for modelling both stochastic and deterministic relationships between random variables.
+    The `RxInfer.jl` package uses the `~` operator for modelling both stochastic and deterministic relationships between random variables.
 
 
 The `@model` macro automatically resolves any inner function calls into anonymous extra nodes in case this inner function call is a non-linear transformation. It will also create needed anonymous random variables. But it is important to note that the inference backend will try to optimize inner non-linear deterministic function calls in the case where all arguments are constants or data inputs. For example:
@@ -306,7 +306,7 @@ Example:
 y ~ NormalMeanVariance(y_mean, y_var) where { q = q(y_mean)q(y_var)q(y) } # mean-field factorisation over q
 ```
 
-A list of the available options specific to the `ReactiveMP.jl` inference engine is presented below.
+A list of the available options specific to the `ReactiveMP` inference engine is presented below.
 
 #### Factorisation constraint option
 
