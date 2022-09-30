@@ -36,7 +36,7 @@ We use the standard [GitHub Flow](https://guides.github.com/introduction/flow/) 
 Before opening a pull request, please make sure that all tests pass without failing! All examples (can be found in `/examples/` directory) have to run without errors as well. 
 
 !!! note
-    Use `make test` and `make examples` commands to ensure that both tests and examples run without any issues.
+    Use `make test`, `make examples` and `make docs` commands to ensure that all tests, examples and the documentation build run without any issues. See below for the `Makefile` commands description in more details.
 
 ### Style conventions
 
@@ -49,7 +49,7 @@ We use default [Julia style guide](https://docs.julialang.org/en/v1/manual/style
 - The name of a method that modifies its argument(s) must end in `!`
 
 !!! note
-    `RxInfer` repository contains scripts to automatically format code according to our guidelines. Use `make format` command to fix code style. This command overwrites files.
+    `RxInfer` repository contains scripts to automatically format code according to our guidelines. Use `make format` command to fix code style. This command overwrites files. Use `make lint` to run a linting procedure without overwriting the actual source files.
 
 ### Unit tests
 
@@ -70,6 +70,9 @@ In addition tests can be evaluated by running following command in the ReactiveM
 make test
 ```
 
+!!! note 
+    Use `make devtest` to use local `dev`-ed versions of the core packages.
+
 ### Makefile
 
 `RxInfer.jl` uses `Makefile` for most common operations:
@@ -78,7 +81,14 @@ make test
 - `make test`: Run tests, supports extra arguments
   - `make test testest="distributions:normal_mean_variance"` would run tests only from `distributions/test_normal_mean_variance.jl`
   - `make test testset="distributions:normal_mean_variance models:lgssm"` would run tests both from `distributions/test_normal_mean_variance.jl` and `models/test_lgssm.jl`
+  - `make test dev=true` would run tests while using `dev-ed` versions of core packages
+- `make devtest`: Alias for the `make test dev=true ...`
 - `make docs`: Compile documentation
+- `make devdocs`: Same as `make docs`, but uses `dev-ed` versions of core packages
 - `make examples`: Run all examples and put them in the `docs/` folder if successfull 
+- `make devexamples`: Same as `make examples`, but uses `dev-ed` versions of core packages
 - `make lint`: Check codestyle
 - `make format`: Check and fix codestyle 
+
+!!! note
+    Core packages include `ReactiveMP.jl`, `GraphPPL.jl` and `Rocket.jl`. When using any of the `dev` commands from the `Makefile` those packages must be present in the `Pkg.devdir()` directory.

@@ -15,23 +15,42 @@ format: scripts_init ## Code formating run
 .PHONY: examples
 
 examples_init:
+	rm -f examples/Manifest.toml
 	julia --startup-file=no --project=examples/ -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate(); Pkg.precompile(); using Plots; using PyPlot'
 
+dev_examples_init:
+	rm -f examples/Manifest.toml
+	julia --startup-file=no --project=examples/ -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.develop(PackageSpec(path=joinpath(Pkg.devdir(), "ReactiveMP.jl"))); Pkg.develop(PackageSpec(path=joinpath(Pkg.devdir(), "GraphPPL.jl"))); Pkg.develop(PackageSpec(path=joinpath(Pkg.devdir(), "Rocket.jl"))); Pkg.instantiate(); Pkg.precompile(); using Plots; using PyPlot'
+
 examples: scripts_init examples_init ## Precompile examples and put them in the `docs/src/examples` folder (use specific="<pattern>" to compile a specific example)
+	julia --startup-file=no --project=scripts/ scripts/examples.jl $(specific)
+
+devexamples: scripts_init dev_examples_init ## Same as `make examples` but uses `dev-ed` versions of core packages
 	julia --startup-file=no --project=scripts/ scripts/examples.jl $(specific)
 
 .PHONY: docs
 
 doc_init:
+	rm -f docs/Manifest.toml
 	julia --project=docs -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate(); Pkg.precompile();'
+
+dev_doc_init:
+	rm -f docs/Manifest.toml
+	julia --project=docs -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.develop(PackageSpec(path=joinpath(Pkg.devdir(), "ReactiveMP.jl"))); Pkg.develop(PackageSpec(path=joinpath(Pkg.devdir(), "GraphPPL.jl"))); Pkg.develop(PackageSpec(path=joinpath(Pkg.devdir(), "Rocket.jl"))); Pkg.instantiate(); Pkg.precompile();'
 
 docs: doc_init ## Generate documentation
 	julia --startup-file=no --project=docs/ docs/make.jl
 
+devdocs: dev_doc_init ## Same as `make docs` but uses `dev-ed` versions of core packages
+	julia --startup-file=no --project=docs/ docs/make.jl
+
 .PHONY: test
 
-test: ## Run tests (use testset="folder1:test1 folder2:test2" argument to run reduced testset)
-	julia -e 'import Pkg; Pkg.activate("."); Pkg.test(test_args = split("$(testset)") .|> string)'	
+test: ## Run tests, use testset="folder1:test1 folder2:test2" argument to run reduced testset, use dev=true to use `dev-ed` version of core packages
+	julia -e 'ENV["USE_DEV"]="$(dev)"; import Pkg; Pkg.activate("."); Pkg.test(test_args = split("$(testset)") .|> string)'	
+
+devtest: ## Alias for the `make test dev=true ...`
+	julia -e 'ENV["USE_DEV"]="true"; import Pkg; Pkg.activate("."); Pkg.test(test_args = split("$(testset)") .|> string)'	
 
 clean: ## Clean documentation build, precompiled examples, benchmark output from tests
 	rm -rf docs/src/examples

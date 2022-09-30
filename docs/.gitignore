@@ -1,3 +1,4 @@
 # Use `RxInfer.jl/examples` folder (see `.meta.jl`)
+Manifest.toml
 src/examples
 src/assets/examples
