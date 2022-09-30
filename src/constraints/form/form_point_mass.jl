@@ -52,7 +52,7 @@ end
 - `default_prod_constraint`       = `ProdGeneric()`
 - `make_form_constraint`          = `PointMass` (for use in `@constraints` macro)
 
-See also: [`constrain_form`](@ref), [`DistProduct`](@ref)
+See also: [`ReactiveMP.constrain_form`](@ref), [`ReactiveMP.DistProduct`](@ref)
 """
 struct PointMassFormConstraint{F, P, B} <: AbstractFormConstraint
     optimizer      :: F

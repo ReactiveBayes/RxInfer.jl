@@ -4,4 +4,5 @@
 RxInfer.@model
 RxInfer.ModelGenerator
 RxInfer.create_model
+RxInfer.ModelInferenceOptions
 ```

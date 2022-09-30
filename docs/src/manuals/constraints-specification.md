@@ -83,7 +83,7 @@ Sometimes it might be useful to set a functional form constraint on messages too
 ```@example manual_constraints
 @constraints begin 
     q(x) :: PointMass
-    μ(x) :: SampleList 
+    μ(x) :: SampleList(1000)
     # it is possible to assign different form constraints on the same variable 
     # both for the marginal and for the messages 
 end

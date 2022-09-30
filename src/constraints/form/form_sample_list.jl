@@ -19,7 +19,7 @@ One of the form constraint objects. Approximates `DistProduct` with a SampleList
 - `default_prod_constraint`       = `ProdGeneric()`
 - `make_form_constraint`          = `SampleList` (for use in `@constraints` macro)
 
-See also: [`constrain_form`](@ref), [`DistProduct`](@ref)
+See also: [`ReactiveMP.constrain_form`](@ref), [`ReactiveMP.DistProduct`](@ref)
 """
 struct SampleListFormConstraint{N, R, S, M} <: AbstractFormConstraint
     rng      :: R

@@ -197,8 +197,8 @@ using Plots, LaTeXStrings; theme(:default)
 
 rθ = range(0, 1, length = 1000)
 
-p1 = plot(rθ, (x) -> pdf(Beta(2.0, 7.0), x), title="Prior", fillalpha=0.3, fillrange = 0, label=L"P\:(\theta)", c=1,)
-p2 = plot(rθ, (x) -> pdf(θestimated, x), title="Posterior", fillalpha=0.3, fillrange = 0, label=L"P\:(\theta|y)", c=3)
+p1 = plot(rθ, (x) -> pdf(Beta(2.0, 7.0), x), title="Prior", fillalpha=0.3, fillrange = 0, label="P(θ)", c=1,)
+p2 = plot(rθ, (x) -> pdf(θestimated, x), title="Posterior", fillalpha=0.3, fillrange = 0, label="P(θ|y)", c=3)
 
 plot(p1, p2, layout = @layout([ a; b ]))
 ```
