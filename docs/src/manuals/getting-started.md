@@ -193,7 +193,7 @@ nothing #hide
 ```
 
 ```@example coin
-using Plots, LaTeXStrings; theme(:default)
+using Plots
 
 rθ = range(0, 1, length = 1000)
 
@@ -203,7 +203,7 @@ p2 = plot(rθ, (x) -> pdf(θestimated, x), title="Posterior", fillalpha=0.3, fil
 plot(p1, p2, layout = @layout([ a; b ]))
 ```
 
-In our dataset we used 10 coin flips to estimate the bias of a coin. It resulted in a vague posterior distribution, however `ReactiveMP` scales very well for large models and factor graphs. We may use more coin flips in our dataset for better posterior distribution estimates:
+In our dataset we used 10 coin flips to estimate the bias of a coin. It resulted in a vague posterior distribution, however `RxInfer` scales very well for large models and factor graphs. We may use more coin flips in our dataset for better posterior distribution estimates:
 
 ```@example coin
 dataset_100   = float.(rand(rng, Bernoulli(p), 100))

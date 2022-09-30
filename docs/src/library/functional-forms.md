@@ -16,10 +16,6 @@ Unspecified functional form constraint is used by default and uses only analytic
 end
 ```
 
-```@docs
-ReactiveMP.UnspecifiedFormConstraint
-```
-
 ## [PointMassFormConstraint](@id lib-forms-point-mass-constraint)
 
 The most basic form of posterior marginal approximation is the `PointMass` function. In a few words `PointMass` represents delta function. In the context of functional form constraints `PointMass` approximation corresponds to the MAP estimate. For a given distribution `d` - `PointMass` functional form simply finds the `argmax` of the `logpdf(d, x)` by default. 
@@ -77,8 +73,4 @@ form_constraint = SampleListFormConstraint(1000) + PointMassFormConstraint()
 @constraints begin 
     q(x) :: SampleList(1000) :: PointMass()
 end
-```
-
-```@docs
-ReactiveMP.CompositeFormConstraint
 ```
