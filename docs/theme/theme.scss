@@ -1,0 +1,30 @@
+html:not(.theme--documenter-dark) body #documenter {
+    
+    .docs-heading-anchor {
+      color: #7C76BB
+    }
+
+    .docs-sidebar {
+      box-shadow: none;
+      color: #ffffff;
+      background-color: white;
+      border-right: none;
+  
+      .docs-package-name {
+        a,
+        a:hover {
+          color: #7C76BB;
+        }
+      }
+
+      .docs-menu {
+        li {
+          .tocitem {
+            background-color: white;
+          }
+        }
+      }
+  
+      
+    }
+}
