@@ -25,12 +25,18 @@ Examples = map(filter((f) -> f != "Overview.md", readdir(ExamplesPath))) do exam
     return replace(example, ".md" => "") => joinpath("examples", example)
 end
 
+# WIP: Keep it as a nice starting approach for adding a header, currently we are using `assets/header.js`
 # struct DocumentationWriter <: Documenter.Writer
 #     base :: Documenter.HTML
 # end
 
-# function Documenter.Selectors.runner(::Type{T}, writer::DocumentationWriter, document) where {T}
-#     Documenter.Selectors.runner(T, writer.base, document)
+# abstract type ExtendedHTMLFormat <: Documenter.Writers.FormatSelector end
+
+# Documenter.Selectors.order(::Type{ExtendedHTMLFormat})            = 4.0
+# Documenter.Selectors.matcher(::Type{ExtendedHTMLFormat}, fmt, _)  = isa(fmt, DocumentationWriter)
+
+# function Documenter.Selectors.runner(::Type{ExtendedHTMLFormat}, fmt, doc) 
+#     return Documenter.Writers.HTMLWriter.render(doc, fmt.base)
 # end
 
 makedocs(;
@@ -43,10 +49,7 @@ makedocs(;
         prettyurls = get(ENV, "CI", "false") == "true",
         canonical = "https://biaslab.github.io/RxInfer.jl",
         edit_link = "main",
-        assets = String[ "assets/theme.css" ],
-        footer = """
-        <b>Privet</b>
-        """
+        assets = String[ "assets/theme.css", "assets/header.js" ],
     ),
     pages = [
         "Home"     => "index.md",
