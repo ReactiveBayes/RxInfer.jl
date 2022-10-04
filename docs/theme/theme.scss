@@ -1,9 +1,27 @@
+body {
+  div.rx-infer-header {
+    min-height: 40px;
+    width: 100%;
+    border-bottom: 1px solid #dbdbdb;
+    padding: 10px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 999;
+    background-color: white;
+  }
+}
+
 html:not(.theme--documenter-dark) body #documenter {
 
     margin-top: 50px; // For header
     
     .docs-heading-anchor {
       color: black; // Color of headings
+    }
+
+    .docs-sidebar.visible {
+      margin-top: 0px !important;
     }
 
     .docs-sidebar {
