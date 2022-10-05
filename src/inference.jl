@@ -753,7 +753,7 @@ function start(engine::RxInferenceEngine{T}) where {T}
     end
 
     _eventexecutor = RxInferenceEventExecutor(T, engine)
-    _ticksheduler  = engine.tickscheduler
+    _tickscheduler = engine.tickscheduler
 
     # This subscription tracks updates of all `posteriors`
     engine.updatesubscriptions = map(keys(engine.updateflags), values(engine.updateflags)) do name, updateflag
@@ -770,7 +770,7 @@ function start(engine::RxInferenceEngine{T}) where {T}
         engine.fe_subscription = subscribe!(engine.fe_source, engine.fe_actor)
     end
 
-    release!(_ticksheduler)
+    release!(_tickscheduler)
 
     engine.is_running = true
 
@@ -1001,7 +1001,7 @@ function rxinference(;
     _keephistory isa Integer || error("`keephistory` argument must be of type Integer or `nothing`")
     _keephistory >= 0 || error("`keephistory` arguments must be greater than or equal to zero")
 
-    # `tickscheduler` defines a moment when we send new posterios in the `posteriors` streams
+    # `tickscheduler` defines a moment when we send new posteriors in the `posteriors` streams
     tickscheduler = PendingScheduler()
 
     # Here we prepare our free energy streams (if requested)
