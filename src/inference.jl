@@ -138,7 +138,7 @@ end
 
 This structure is used as a return value from the [`inference`](@ref) function. 
 
-# Fields
+# Public Fields
 
 - `posteriors`: `Dict` or `NamedTuple` of 'random variable' - 'posterior' pairs. See the `returnvars` argument for [`inference`](@ref).
 - `free_energy`: (optional) An array of Bethe Free Energy values per VMP iteration. See the `free_energy` argument for [`inference`](@ref).
@@ -159,23 +159,17 @@ Base.iterate(results::InferenceResult, any) = iterate((getfield(results, :poster
 
 function Base.show(io::IO, result::InferenceResult)
     print(io, "Inference results:\n")
+
+    lcolumnlen = 18 # Defines the padding for the "left" column of the output
+
+    print(io, rpad("  Posteriors", lcolumnlen), " | ")
+    print(io, "available for (")
+    join(io, keys(getfield(result, :posteriors)), ", ")
+    print(io, ")\n")
+
     if !isnothing(getfield(result, :free_energy))
-        print(io, "-----------------------------------------\n")
-        print(io, "Free Energy: ")
+        print(io, rpad("  Free Energy:", lcolumnlen), " | ")
         print(IOContext(io, :compact => true, :limit => true, :displaysize => (1, 80)), result.free_energy)
-        print(io, "\n")
-    end
-    maxdisplay = 80
-    maxlen     = maximum(p -> length(string(first(p))), pairs(result.posteriors), init = 0)
-    print(io, "-----------------------------------------\n")
-    for (key, value) in pairs(result.posteriors)
-        print(io, "$(rpad(key, maxlen)) = ")
-        strval    = repr(value, context = :limit => true)
-        lastindex = last(collect(Iterators.take(eachindex(strval), maxdisplay)))
-        print(io, view(strval, 1:lastindex))
-        if lastindex >= maxdisplay
-            print(io, "...")
-        end
         print(io, "\n")
     end
 end
@@ -405,7 +399,7 @@ function inference(;
     if returnvars === nothing || returnvars === KeepEach() || returnvars === KeepLast()
         # Checks if the first argument is `nothing`, in which case returns the second argument
         returnoption = something(returnvars, iterations isa Number ? KeepEach() : KeepLast())
-        returnvars   = Dict(variable => returnoption for (variable, value) in pairs(vardict) if (israndom(value) && !isproxy(value)))
+        returnvars   = Dict(variable => returnoption for (variable, value) in pairs(vardict) if (israndom(value) && !isanonymous(value)))
     end
 
     __inference_check_dicttype(:returnvars, returnvars)
@@ -634,12 +628,23 @@ end
 """
     RxInferenceEngine
 
-This is the main heart of the reactive inference procedure implemented in the `rxinference` function.
+The return value of the `rxinference` function. 
 
-# Fields
-- `datastream`: Data stream that supports `subscribe!` method from `Rocket.jl` package, must produce `NamedTuple` events, where keys refer to `datavar`'s defined in a model
-- `tickscheduler`: Main tick scheduler on which all synchronization events occur
+# Public fields
+- `posteriors`: `Dict` or `NamedTuple` of 'random variable' - 'posterior stream' pairs. See the `returnvars` argument for the [`rxinference`](@ref).
+- `free_energy`: (optional) A stream of Bethe Free Energy values per VMP iteration. See the `free_energy` argument for the [`rxinference`](@ref).
+- `history`: (optional) Saves history of previous marginal updates. See the `historyvars` and `keephistory` arguments for the [`rxinference`](@ref).
+- `free_energy_history`: (optional) Free energy history, average over variational iterations 
+- `free_energy_raw_history`: (optional) Free energy history, returns returns computed values of all variational iterations for each data event (if available)
+- `free_energy_final_only_history`: (optional) Free energy history, returns computed values of final variational iteration for each data event (if available)
+- `events`: (optional) A stream of events send by the inference engine. See the `events` argument for the [`rxinference`](@ref).
+- `model`: `FactorGraphModel` object reference.
+- `returnval`: Return value from executed `@model`.
 
+Use the `RxInfer.start(engine)` function to subscribe on the `data` source and start the inference procedure. Use `RxInfer.stop(engine)` to unsubscribe from the `data` source and stop the inference procedure. 
+Note, that it is not always possible to start/stop the inference procedure.
+
+See also: [`rxinference`](@ref), [`RxInferenceEvent`](@ref), [`RxInfer.start`](@ref), [`RxInfer.stop`](@ref)
 """
 mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E, J}
     datastream       :: D
@@ -720,6 +725,39 @@ mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M
             ticklock
         )
     end
+end
+
+function Base.show(io::IO, engine::RxInferenceEngine)
+    print(io, "RxInferenceEngine:\n")
+
+    lcolumnlen = 22 # Defines the padding for the "left" column of the output
+
+    print(io, rpad("  Posteriors stream", lcolumnlen), " | ")
+    print(io, "enabled for (")
+    join(io, keys(getfield(engine, :posteriors)), ", ")
+    print(io, ")\n")
+
+    print(io, rpad("  Free Energy stream", lcolumnlen), " | ")
+    if !isnothing(getfield(engine, :fe_source)) 
+        print(io, "enabled\n") 
+    else
+        print(io, "disabled\n")
+    end
+
+    print(io, rpad("  Posteriors history", lcolumnlen), " | ")
+    print(io, "available for (")
+    join(io, keys(getfield(engine, :historyactors)), ", ")
+    print(io, ")\n")
+
+    print(io, rpad("  Free Energy history", lcolumnlen), " | ")
+    if !isnothing(getfield(engine, :fe_actor)) 
+        print(io, "available\n") 
+    else
+        print(io, "unavailable\n")
+    end
+
+    print(io, rpad("  Enabled events", lcolumnlen), " | ")
+    print(io, "[ ", join(enabled_events(engine), ", "), " ]")
 end
 
 enabled_events(::RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E}) where {T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E} = X
@@ -1142,7 +1180,7 @@ function rxinference(;
 
     # We check if `returnvars` argument is empty, in which case we return names of all random (non-proxy) variables in the model
     if isnothing(returnvars)
-        returnvars = [name(variable) for (variable, value) in pairs(vardict) if (israndom(value) && !isproxy(value))]
+        returnvars = [name(variable) for (variable, value) in pairs(vardict) if (israndom(value) && !isanonymous(value))]
     end
 
     eltype(returnvars) === Symbol || error("`returnvars` must contain a list of symbols") # TODO?
