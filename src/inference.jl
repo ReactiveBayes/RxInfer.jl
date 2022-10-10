@@ -646,7 +646,7 @@ Note, that it is not always possible to start/stop the inference procedure.
 
 See also: [`rxinference`](@ref), [`RxInferenceEvent`](@ref), [`RxInfer.start`](@ref), [`RxInfer.stop`](@ref)
 """
-mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E, J}
+mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E, J, B}
     datastream       :: D
     tickscheduler    :: L
     mainsubscription :: Teardown
@@ -678,6 +678,7 @@ mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M
     events     :: E
     is_running :: Bool
     ticklock   :: J
+    callbacks  :: B
 
     RxInferenceEngine(
         ::Type{T},
@@ -698,9 +699,10 @@ mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M
         returnval::N,
         enabledevents::Val{X},
         events::E,
-        ticklock::J
-    ) where {T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E, J} = begin
-        return new{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E, J}(
+        ticklock::J,
+        callbacks::B
+    ) where {T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E, J, B} = begin
+        return new{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E, J, B}(
             datastream,
             tickscheduler,
             voidTeardown,
@@ -722,7 +724,8 @@ mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M
             returnval,
             events,
             false,
-            ticklock
+            ticklock,
+            callbacks
         )
     end
 end
@@ -806,6 +809,11 @@ function start(engine::RxInferenceEngine{T}) where {T}
             return nothing
         end
 
+        _callbacks = engine.callbacks
+        _model     = engine.model
+
+        inference_invoke_callback(_callbacks, :before_start, _model, engine)
+
         _eventexecutor = RxInferenceEventExecutor(T, engine)
         _tickscheduler = engine.tickscheduler
 
@@ -831,6 +839,7 @@ function start(engine::RxInferenceEngine{T}) where {T}
         # After all preparations we finaly can `subscribe!` on the `datastream`
         engine.mainsubscription = subscribe!(engine.datastream, _eventexecutor)
 
+        inference_invoke_callback(_callbacks, :after_start, _model, engine)
     end
 
     return nothing
@@ -853,6 +862,11 @@ function stop(engine::RxInferenceEngine)
             return nothing
         end
 
+        _callbacks = engine.callbacks
+        _model     = engine.model
+
+        inference_invoke_callback(_callbacks, :before_stop, _model, engine)
+
         unsubscribe!(engine.fe_subscription)
         unsubscribe!(engine.historysubscriptions)
         unsubscribe!(engine.updatesubscriptions)
@@ -860,6 +874,7 @@ function stop(engine::RxInferenceEngine)
 
         engine.is_running = false
 
+        inference_invoke_callback(_callbacks, :after_stop, _model, engine)
     end
 
     return nothing
@@ -1249,7 +1264,6 @@ function rxinference(;
         _ticklock = uselock
     end
 
-    # inference_invoke_callback(callbacks, :before_inference, fmodel)
     engine = RxInferenceEngine(
         _T,
         _datastream,
@@ -1269,11 +1283,14 @@ function rxinference(;
         _returnval,
         _enabledevents,
         _events,
-        _ticklock
+        _ticklock,
+        callbacks
     )
 
     if autostart
+        inference_invoke_callback(callbacks, :before_autostart, _model, engine)
         start(engine)
+        inference_invoke_callback(callbacks, :after_autostart, _model, engine)
     end
 
     return engine

@@ -126,7 +126,7 @@ end
     end
 end
 
-@testset "Reactive inference with `rxinference`" begin
+@testset "Reactive inference with `rxinference` for test model #1" begin
 
     # A simple model for testing that resembles a simple kalman filter with
     # random walk state transition and unknown observational noise
@@ -150,27 +150,30 @@ end
         # Observations
         y = datavar(Float64)
         y ~ Normal(mean = x_t, precision = τ)
+
+        return 2, 3 # test returnval
     end
 
-    @testset "Check basic usage on a simple model" begin
-        n         = 100
-        hiddenx   = []
-        observedy = []
-        prevx     = 0.0
-        for i in 1:n
-            nextx = rand(NormalMeanVariance(prevx, 1.0))
-            nexty = rand(NormalMeanPrecision(nextx, 10.0))
-            push!(hiddenx, nextx)
-            push!(observedy, nexty)
-            prevx = nextx
-        end
+    autoupdates = @autoupdates begin
+        x_t_min_mean, x_t_min_var = mean_var(q(x_t))
+        τ_shape = shape(q(τ))
+        τ_rate = rate(q(τ))
+    end
 
-        autoupdates = @autoupdates begin
-            x_t_min_mean, x_t_min_var = mean_var(q(x_t))
-            τ_shape = shape(q(τ))
-            τ_rate = rate(q(τ))
-        end
+    n         = 100
+    hiddenx   = []
+    observedy = []
+    prevx     = 0.0
+    for i in 1:n
+        nextx = rand(NormalMeanVariance(prevx, 1.0))
+        nexty = rand(NormalMeanPrecision(nextx, 10.0))
+        push!(hiddenx, nextx)
+        push!(observedy, nexty)
+        prevx = nextx
+    end
 
+    @testset "Check basic usage" begin
+        
         result = rxinference(
             model = test_model1(),
             constraints = MeanField(),
@@ -181,7 +184,7 @@ end
             initmarginals = (x_t = NormalMeanVariance(0.0, 1e3), τ = GammaShapeRate(1.0, 1.0)),
             iterations = 5,
             free_energy = true,
-            autoupdates = autoupdates
+            autoupdates = autoupdates,
         )
 
         # Test that the `.model` reference is correct
@@ -190,6 +193,12 @@ end
         @test length(getdata(result.model)) === 5
         @test length(getconstant(result.model)) === 1
 
+        # Test that the `.returnval` reference is correct
+        @test result.returnval === (2, 3)
+
+        @test sort(collect(keys(result.posteriors))) == [ :x_t ]
+        @test sort(collect(keys(result.history))) == [ :x_t, :τ ]
+
         @test length(result.history[:x_t]) === 10 # Number of `keephistory`
         @test length(result.history[:x_t][end]) === 5 # Number of iterations
 
@@ -197,8 +206,53 @@ end
         @test length(result.history[:τ][end]) === 5 # Number of iterations
 
         @test length(result.free_energy_history) === 5
+        @test all(<=(0), diff(result.free_energy_history))
+
         @test length(result.free_energy_final_only_history) === 10
         @test length(result.free_energy_raw_history) === 50
+    end
+
+    @testset "Check callbacks usage: autostart enabled" begin
+
+        callbacksdata = []
+        
+        result = rxinference(
+            model = test_model1(),
+            constraints = MeanField(),
+            data = (y = observedy,),
+            returnvars = (:x_t,),
+            historyvars = (x_t = KeepEach(), τ = KeepEach()),
+            keephistory = 10,
+            initmarginals = (x_t = NormalMeanVariance(0.0, 1e3), τ = GammaShapeRate(1.0, 1.0)),
+            iterations = 5,
+            free_energy = true,
+            autoupdates = autoupdates,
+            callbacks = (
+                before_model_creation = (args...) -> push!(callbacksdata, (:before_model_creation, args)),
+                after_model_creation = (args...) -> push!(callbacksdata, (:after_model_creation, args)),
+                before_autostart = (args...) -> push!(callbacksdata, (:before_autostart, args)),
+                after_autostart = (args...) -> push!(callbacksdata, (:after_autostart, args)),
+                before_start = (args...) -> push!(callbacksdata, (:before_start, args)),
+                after_start = (args...) -> push!(callbacksdata, (:after_start, args)),
+                before_stop = (args...) -> push!(callbacksdata, (:before_stop, args)),
+                after_stop = (args...) -> push!(callbacksdata, (:after_stop, args))
+            ),
+            autostart = true
+        )
+
+        # First check the order
+        @test first.(callbacksdata) == [
+            :before_model_creation,
+            :after_model_creation,
+            :before_autostart,
+            :before_start,
+            :after_start,
+            :after_autostart,
+            :before_stop,
+            :after_stop
+        ]
+
+
     end
 
     @testset "Check the event creation and unrolling syntax" begin 
