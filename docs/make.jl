@@ -59,13 +59,16 @@ makedocs(;
             "Model specification"       => "manuals/model-specification.md",
             "Constraints specification" => "manuals/constraints-specification.md",
             "Meta specification"        => "manuals/meta-specification.md",
-            "Inference execution"       => "manuals/inference-execution.md"
+            "Inference specification"   => [ 
+                "Overview" => "manuals/inference/overview.md",
+                "Static dataset" => "manuals/inference/inference.md",
+                "Real-time dataset / reactive inference" => "manuals/inference/rxinference.md",
+                "Manual inference specification" => "manuals/inference/manual.md"
+            ]
         ],
         "Library" => [
             "Built-in functional form constraints" => "library/functional-forms.md",
             "Model specification" => "library/model-specification.md",
-            "Static Inference" => "library/inference.md",
-            "Reactive inference" => "library/rxinference.md",
             "Bethe Free Energy" => "library/bethe-free-energy.md",
             "Exported methods" => "library/exported-methods.md"
         ],

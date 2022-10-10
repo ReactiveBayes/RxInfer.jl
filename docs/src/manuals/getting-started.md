@@ -137,7 +137,7 @@ println("std:  ", std(θestimated))
 nothing #hide
 ```
 
-Read more information about the `inference` function in the [Static Inference](@ref lib-inference) documentation section.
+Read more information about the `inference` function in the [Static Inference](@ref user-guide-inference) documentation section.
 
 #### Manual inference specification
 

@@ -1,27 +1,6 @@
-# [Inference execution](@id user-guide-inference-execution)
+# [Manual inference](@id user-guide-manual-inference)
 
-This section explains how to use `RxInfer` reactive API for running inference on probabilistic models.
-
-The `RxInfer` inference API supports different types of message-passing algorithms (including hybrid algorithms combining several different types):
-
-- [Belief Propagation](https://en.wikipedia.org/wiki/Belief_propagation)
-- [Variational Message Passing](https://en.wikipedia.org/wiki/Variational_message_passing)
-
-Whereas belief propagation computes exact inference for the random variables of interest, the variational message passing (VMP) in an approximation method that can be applied to a larger range of models.
-
-The inference engine itself isn't aware of different algorithm types and simply does message passing between nodes, however during model specification stage user may specify different factorisation constraints around factor nodes by using `where { q = ... }` syntax or with the help of the `@constraints` macro. Different factorisation constraints lead to a different message passing update rules. See more documentation about constraints specification in the corresponding [section](@ref user-guide-constraints-specification).
-
-## [Automatic inference specification on static datasets](@id user-guide-inference-execution-automatic-specification-static)
-
-`RxInfer` exports the `inference` function to quickly run and test you model with static datasets. See more information about the `inference` function on the separate [documentation section](@ref lib-inference). 
-
-## [Automatic inference specification on real-time datasets](@id user-guide-inference-execution-automatic-specification-realtime)
-
-`RxInfer` exports the `rxinference` function to quickly run and test you model with dynamic and potentially real-time datasets. See more information about the `rxinference` function on the separate [documentation section](@ref lib-rxinference). 
-
-## [Manual inference specification](@id user-guide-inference-execution-manual-specification)
-
-For advanced use cases such as online real-time Bayesian inference it is advised to use manual inference specification. 
+For advanced use cases it is advised to use manual inference specification. 
 
 Manual inference specification with `RxInfer` usually consists of the same simple building blocks and designed in such a way to support both static and real-time infinite datasets:
 
@@ -33,7 +12,7 @@ Manual inference specification with `RxInfer` usually consists of the same simpl
 
 It is worth to note that Step 5 is optional and in case where observations come from an infinite real-time data stream (e.g. from the internet) it may be justified to never unsubscribe and perform real-time Bayesian inference in a reactive manner as soon as data arrives.
 
-### [Model creation](@id user-guide-inference-execution-model-creation)
+## [Model creation](@id user-guide-manual-inference-model-creation)
 
 During model specification stage user decides on variables of interest in a model and returns (optionally) them using a `return ...` statement. As an example consider that we have a simple hierarchical model in which the mean of a Normal distribution is represented by another Normal distribution whose mean is modelled by another Normal distribution.
 
@@ -69,7 +48,7 @@ nothing #hide
 
 `@model` macro also return a reference for a factor graph as its first return value. Factor graph object (named `model` in previous example) contains all information about all factor nodes in a model as well as random variables and data inputs.
 
-### [Posterior marginal updates](@id user-guide-inference-execution-marginal-updates)
+## [Posterior marginal updates](@id user-guide-manual-inference-marginal-updates)
 
 The `RxInfer` inference engine has a reactive API and operates in terms of Observables and Actors. For detailed information about these concepts we refer to [Rocket.jl documentation](https://biaslab.github.io/Rocket.jl/stable/observables/about/).
 
@@ -104,7 +83,7 @@ model, (m_n, ...) = my_model()
 m_n_updates = getmarginals(m_n)
 ```
 
-### [Feeding observations](@id user-guide-inference-execution-observations)
+## [Feeding observations](@id user-guide-manual-inference-observations)
 
 By default (without any extra factorisation constraints) model specification implies Belief Propagation message passing update rules. In case of BP algorithm `RxInfer` package computes an exact Bayesian posteriors with a single message passing iteration. To enforce Belief Propagation message passing update rule for some specific factor node user may use `where { q = FullFactorisation() }` option. Read more in [Model Specification](@ref user-guide-model-specification) section. To perform a message passing iteration we need to pass some data to all our data inputs that were created with [`datavar` function](@ref user-guide-model-specification-data-variables) during model specification.
 
@@ -132,7 +111,7 @@ end
 update!(y, data)
 ```
 
-### [Variational Message Passing](@id user-guide-inference-vmp)
+## [Variational Message Passing](@id user-guide-manual-inference-vmp)
 
 Variational message passing (VMP) algorithms are generated much in the same way as the belief propagation algorithm we saw in the previous section. There is a major difference though: for VMP algorithm generation we need to define the factorization properties of our approximate distribution. A common approach is to assume that all random variables of the model factorize with respect to each other. This is known as the mean field assumption. In `RxInfer`, the specification of such factorization properties is defined during model specification stage using the `where { q = ... }` syntax or with the `@constraints` macro (see [Constraints specification](@ref user-guide-constraints-specification) section for more info about the `@constraints` macro). Let's take a look at a simple example to see how it is used. In this model we want to learn the mean and precision of a Normal distribution, where the former is modelled with a Normal distribution and the latter with a Gamma.
 
@@ -233,7 +212,7 @@ end
 plot!(p2, [ real_precision ], seriestype = :vline, label = "Real precision", color = :red4, opacity = 0.7)
 ```
 
-### [Computing Bethe Free Energy](@id user-guide-inference-vmp-bfe)
+## [Computing Bethe Free Energy](@id user-guide-manual-inference-vmp-bfe)
 
 VMP inference boils down to finding the member of a family of tractable probability distributions that is closest in KL divergence to an intractable posterior distribution. This is achieved by minimizing a quantity known as Variational Free Energy. `RxInfer` uses Bethe Free Energy approximation to the real Variational Free Energy. Free energy is particularly useful to test for convergence of the VMP iterative procedure.
 
