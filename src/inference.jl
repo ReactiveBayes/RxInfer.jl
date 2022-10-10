@@ -902,7 +902,7 @@ function Rocket.on_error!(executor::RxInferenceEventExecutor, err)
     __inference_process_error(err)
 end
 
-function Rocket.on_complete!(::RxInferenceEventExecutor) 
+function Rocket.on_complete!(executor::RxInferenceEventExecutor) 
 
     _model = executor.engine.model
     _enabled_events = executor.engine.enabled_events
@@ -967,6 +967,9 @@ struct RxInferenceEvent{T, D}
 end
 
 Base.show(io::IO, ::RxInferenceEvent{T}) where {T} = print(io, "RxInferenceEvent(:", T, ")")
+
+Base.iterate(event::RxInferenceEvent)        = iterate(event.data)
+Base.iterate(event::RxInferenceEvent, state) = iterate(event.data, state)
 
 function inference_invoke_event(::Val{Event}, ::Val{EnabledEvents}, events, args...) where {Event, EnabledEvents}
     # Here `E` must be a tuple of symbols
