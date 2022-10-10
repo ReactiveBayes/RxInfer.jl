@@ -7,6 +7,8 @@ For running inference on static datasets see the [Static Inference](@ref lib-inf
 ```@docs
 @autoupdates
 rxinference
+RxInfer.start
+RxInfer.stop
 RxInferenceEngine
 RxInferenceEvent
 ```

@@ -752,52 +752,78 @@ function Base.getproperty(result::RxInferenceEngine, property::Symbol)
     return getfield(result, property)
 end
 
+"""
+    start(engine::RxInferenceEngine)
+
+Starts the `RxInferenceEngine` by subscribing to the data source, instantiating free energy (if enabled) and starting the event loop.
+Use [`RxInfer.stop`](@ref) to stop the `RxInferenceEngine`. Note that it is not always possible to stop/restart the engine and this depends on the data source type.
+
+See also: [`RxInfer.stop`](@ref)
+"""
 function start(engine::RxInferenceEngine{T}) where {T}
-    if engine.is_running
-        @warn "Engine is already running. Cannot start a single engine twice."
-        return nothing
-    end
 
-    _eventexecutor = RxInferenceEventExecutor(T, engine)
-    _tickscheduler = engine.tickscheduler
+    rxexecutorlock(engine.ticklock) do
 
-    # This subscription tracks updates of all `posteriors`
-    engine.updatesubscriptions = map(keys(engine.updateflags), values(engine.updateflags)) do name, updateflag
-        return subscribe!(obtain_marginal(engine.model[name]), updateflag)
-    end
-
-    if !isnothing(engine.historyactors) && !isnothing(engine.history)
-        engine.historysubscriptions = map(keys(engine.historyactors), values(engine.historyactors)) do name, actor
-            return subscribe!(obtain_marginal(engine.model[name]), actor)
+        if engine.is_running
+            @warn "Engine is already running. Cannot start a single engine twice."
+            return nothing
         end
+
+        _eventexecutor = RxInferenceEventExecutor(T, engine)
+        _tickscheduler = engine.tickscheduler
+
+        # This subscription tracks updates of all `posteriors`
+        engine.updatesubscriptions = map(keys(engine.updateflags), values(engine.updateflags)) do name, updateflag
+            return subscribe!(obtain_marginal(engine.model[name]), updateflag)
+        end
+
+        if !isnothing(engine.historyactors) && !isnothing(engine.history)
+            engine.historysubscriptions = map(keys(engine.historyactors), values(engine.historyactors)) do name, actor
+                return subscribe!(obtain_marginal(engine.model[name]), actor)
+            end
+        end
+
+        if !isnothing(engine.fe_actor)
+            engine.fe_subscription = subscribe!(engine.fe_source, engine.fe_actor)
+        end
+
+        release!(_tickscheduler)
+
+        engine.is_running = true
+
+        # After all preparations we finaly can `subscribe!` on the `datastream`
+        engine.mainsubscription = subscribe!(engine.datastream, _eventexecutor)
+
     end
-
-    if !isnothing(engine.fe_actor)
-        engine.fe_subscription = subscribe!(engine.fe_source, engine.fe_actor)
-    end
-
-    release!(_tickscheduler)
-
-    engine.is_running = true
-
-    # After all preparations we finaly can `subscribe!` on the `datastream`
-    engine.mainsubscription = subscribe!(engine.datastream, _eventexecutor)
 
     return nothing
 end
 
+"""
+    stop(engine::RxInferenceEngine)
+
+Stops the `RxInferenceEngine` by unsubscribing to the data source, free energy (if enabled) and stopping the event loop.
+Use [`RxInfer.start`](@ref) to start the `RxInferenceEngine` again. Note that it is not always possible to stop/restart the engine and this depends on the data source type.
+
+See also: [`RxInfer.start`](@ref)
+"""
 function stop(engine::RxInferenceEngine)
-    if !engine.is_running
-        @warn "Engine is not running. Cannot stop an idle engine"
-        return nothing
+
+    rxexecutorlock(engine.ticklock) do
+
+        if !engine.is_running
+            @warn "Engine is not running. Cannot stop an idle engine"
+            return nothing
+        end
+
+        unsubscribe!(engine.fe_subscription)
+        unsubscribe!(engine.historysubscriptions)
+        unsubscribe!(engine.updatesubscriptions)
+        unsubscribe!(engine.mainsubscription)
+
+        engine.is_running = false
+
     end
-
-    unsubscribe!(engine.fe_subscription)
-    unsubscribe!(engine.historysubscriptions)
-    unsubscribe!(engine.updatesubscriptions)
-    unsubscribe!(engine.mainsubscription)
-
-    engine.is_running = false
 
     return nothing
 end
@@ -820,24 +846,26 @@ function Rocket.on_next!(executor::RxInferenceEventExecutor{T}, event::T) where 
     # This is the `main` executor of the inference procedure
     # It listens new data and is supposed to run indefinitely
 
-    # `executor.engine` is defined as mutable 
-    # we extract all variables before the loop so Julia does not extract them every time
-    _tickscheduler  = executor.engine.tickscheduler
-    _iterations     = executor.engine.iterations
-    _model          = executor.engine.model
-    _datavars       = executor.engine.datavars
-    _autoupdates    = executor.engine.autoupdates
-    _updateflags    = executor.engine.updateflags
-    _history        = executor.engine.history
-    _historyactors  = executor.engine.historyactors
-    _fe_actor       = executor.engine.fe_actor
-    _fe_scheduler   = executor.engine.fe_scheduler
-    _enabled_events = executor.engine.enabled_events
-    _events         = executor.engine.events
-    _ticklock       = executor.engine.ticklock
-
     # By default `_ticklock` is nothing, `executorlock` is defined such that it does not sync if `_ticklock` is nothing
+    _ticklock  = executor.engine.ticklock
+
     rxexecutorlock(_ticklock) do 
+
+        # `executor.engine` is defined as mutable 
+        # we extract all variables before the loop so Julia does not extract them every time
+        _tickscheduler  = executor.engine.tickscheduler
+        _iterations     = executor.engine.iterations
+        _model          = executor.engine.model
+        _datavars       = executor.engine.datavars
+        _autoupdates    = executor.engine.autoupdates
+        _updateflags    = executor.engine.updateflags
+        _history        = executor.engine.history
+        _historyactors  = executor.engine.historyactors
+        _fe_actor       = executor.engine.fe_actor
+        _fe_scheduler   = executor.engine.fe_scheduler
+        _enabled_events = executor.engine.enabled_events
+        _events         = executor.engine.events
+
         inference_invoke_event(Val(:on_new_data), Val(_enabled_events), _events, _model, event)
 
         # Before we start our iterations we 'prefetch' recent values for autoupdates
