@@ -184,6 +184,12 @@ end
             autoupdates = autoupdates
         )
 
+        # Test that the `.model` reference is correct
+        @test length(getnodes(result.model)) === 4
+        @test length(getrandom(result.model)) === 3
+        @test length(getdata(result.model)) === 5
+        @test length(getconstant(result.model)) === 1
+
         @test length(result.history[:x_t]) === 10 # Number of `keephistory`
         @test length(result.history[:x_t][end]) === 5 # Number of iterations
 
