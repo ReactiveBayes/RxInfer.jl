@@ -1,6 +1,6 @@
 export KeepEach, KeepLast
 export inference, InferenceResult
-export rxinference, @autoupdates, RxInferenceEngine
+export rxinference, @autoupdates, RxInferenceEngine, RxInferenceEvent
 
 import DataStructures: CircularBuffer
 
@@ -642,7 +642,7 @@ This is the main heart of the reactive inference procedure implemented in the `r
 
 
 """
-mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E}
+mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E, J}
     datastream       :: D
     tickscheduler    :: L
     mainsubscription :: Teardown
@@ -673,6 +673,7 @@ mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M
     returnval  :: N
     events     :: E
     is_running :: Bool
+    ticklock   :: J
 
     RxInferenceEngine(
         ::Type{T},
@@ -692,9 +693,10 @@ mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M
         model::M,
         returnval::N,
         enabledevents::Val{X},
-        events::E
-    ) where {T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E} = begin
-        return new{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E}(
+        events::E,
+        ticklock::J
+    ) where {T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E, J} = begin
+        return new{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E, J}(
             datastream,
             tickscheduler,
             voidTeardown,
@@ -715,7 +717,8 @@ mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M
             model,
             returnval,
             events,
-            false
+            false,
+            ticklock
         )
     end
 end
@@ -723,7 +726,10 @@ end
 enabled_events(::RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E}) where {T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E} = X
 
 function Base.getproperty(result::RxInferenceEngine, property::Symbol)
-    if property === :free_energy
+
+    if property === :enabled_events
+        return enabled_events(result)
+    elseif property === :free_energy
         !isnothing(getfield(result, :fe_source)) ||
             error("Bethe Free Energy stream has not been created. Use `free_energy = true` keyword argument for the `rxinference` function to compute Bethe Free Energy values.")
         return getfield(result, :fe_source)
@@ -804,8 +810,11 @@ struct RxInferenceEventExecutor{T, E} <: Actor{T}
     RxInferenceEventExecutor(::Type{T}, engine::E) where {T, E} = new{T, E}(engine)
 end
 
-Base.show(io::IO, executor::RxInferenceEventExecutor)         = print(io, "RxInferenceEventExecutor")
-Base.show(io::IO, executor::Type{<:RxInferenceEventExecutor}) = print(io, "RxInferenceEventExecutor")
+Base.show(io::IO, ::RxInferenceEventExecutor)         = print(io, "RxInferenceEventExecutor")
+Base.show(io::IO, ::Type{<:RxInferenceEventExecutor}) = print(io, "RxInferenceEventExecutor")
+
+rxexecutorlock(fn::F, ::Nothing) where {F} = fn()
+rxexecutorlock(fn::F, locker) where {F}    = lock(fn, locker)
 
 function Rocket.on_next!(executor::RxInferenceEventExecutor{T}, event::T) where {T}
     # This is the `main` executor of the inference procedure
@@ -823,66 +832,134 @@ function Rocket.on_next!(executor::RxInferenceEventExecutor{T}, event::T) where 
     _historyactors  = executor.engine.historyactors
     _fe_actor       = executor.engine.fe_actor
     _fe_scheduler   = executor.engine.fe_scheduler
-    _enabled_events = enabled_events(executor.engine)
+    _enabled_events = executor.engine.enabled_events
     _events         = executor.engine.events
+    _ticklock       = executor.engine.ticklock
 
-    # Before we start our iterations we 'prefetch' recent values for autoupdates
-    fupdates = map(fetch, _autoupdates)
+    # By default `_ticklock` is nothing, `executorlock` is defined such that it does not sync if `_ticklock` is nothing
+    rxexecutorlock(_ticklock) do 
+        inference_invoke_event(Val(:on_new_data), Val(_enabled_events), _events, _model, event)
 
-    # This loop correspond to the different VMP iterations
-    for iteration in 1:_iterations
-        inference_invoke_event(Val(:before_iteration), Val(_enabled_events), _events, _model, iteration)
+        # Before we start our iterations we 'prefetch' recent values for autoupdates
+        fupdates = map(fetch, _autoupdates)
 
-        # At first we update all our priors (auto updates) with the fixed values from the `redirectupdate` field
-        inference_invoke_event(Val(:before_auto_update), Val(_enabled_events), _events, _model, fupdates)
-        foreach(fupdates) do fupdate
-            for (datavar, value) in fupdate
+        # This loop correspond to the different VMP iterations
+        for iteration in 1:_iterations
+            inference_invoke_event(Val(:before_iteration), Val(_enabled_events), _events, _model, iteration)
+
+            # At first we update all our priors (auto updates) with the fixed values from the `redirectupdate` field
+            inference_invoke_event(Val(:before_auto_update), Val(_enabled_events), _events, _model, fupdates)
+            foreach(fupdates) do fupdate
+                for (datavar, value) in fupdate
+                    update!(datavar, value)
+                end
+            end
+            inference_invoke_event(Val(:after_auto_update), Val(_enabled_events), _events, _model, fupdates)
+
+            # At second we pass our observations
+            inference_invoke_event(Val(:before_data_update), Val(_enabled_events), _events, _model, event)
+            for (datavar, value) in zip(_datavars, values(event))
                 update!(datavar, value)
             end
-        end
-        inference_invoke_event(Val(:after_auto_update), Val(_enabled_events), _events, _model, fupdates)
+            inference_invoke_event(Val(:after_data_update), Val(_enabled_events), _events, _model, event)
 
-        # At second we pass our observations
-        inference_invoke_event(Val(:before_data_update), Val(_enabled_events), _events, _model, event)
-        for (datavar, value) in zip(_datavars, values(event))
-            update!(datavar, value)
-        end
-        inference_invoke_event(Val(:after_data_update), Val(_enabled_events), _events, _model, event)
+            __check_and_unset_updated!(_updateflags)
 
-        __check_and_unset_updated!(_updateflags)
+            if !isnothing(_fe_scheduler)
+                release!(_fe_scheduler)
+            end
 
-        if !isnothing(_fe_scheduler)
-            release!(_fe_scheduler)
+            inference_invoke_event(Val(:after_iteration), Val(_enabled_events), _events, _model, iteration)
         end
 
-        inference_invoke_event(Val(:after_iteration), Val(_enabled_events), _events, _model, iteration)
+        # `release!` on `fe_actor` ensures that free energy sumed up between iterations correctly
+        if !isnothing(_fe_actor)
+            release!(_fe_actor)
+        end
+
+        if !isnothing(_history) && !isnothing(_historyactors)
+            inference_invoke_event(Val(:before_history_save), Val(_enabled_events), _events, _model)
+            for (name, actor) in pairs(_historyactors)
+                push!(_history[name], getdata(getvalues(actor)))
+            end
+            inference_invoke_event(Val(:after_history_save), Val(_enabled_events), _events, _model)
+        end
+
+        # On this `release!` call we update our priors for the next step
+        release!(_tickscheduler)
+
+        inference_invoke_event(Val(:on_tick), Val(_enabled_events), _events, _model)
     end
-
-    # `release!` on `fe_actor` ensures that free energy sumed up between iterations correctly
-    if !isnothing(_fe_actor)
-        release!(_fe_actor)
-    end
-
-    if !isnothing(_history) && !isnothing(_historyactors)
-        inference_invoke_event(Val(:before_history_save), Val(_enabled_events), _events, _model)
-        for (name, actor) in pairs(_historyactors)
-            push!(_history[name], getdata(getvalues(actor)))
-        end
-        inference_invoke_event(Val(:after_history_save), Val(_enabled_events), _events, _model)
-    end
-
-    # On this `release!` call we update our priors for the next step
-    release!(_tickscheduler)
-
-    inference_invoke_event(Val(:on_tick), Val(_enabled_events), _events, _model)
 end
 
-# TODO: do we need to add smth here?
-Rocket.on_error!(executor::RxInferenceEventExecutor, err) = __inference_process_error(err)
-Rocket.on_complete!(executor::RxInferenceEventExecutor)   = begin end
+function Rocket.on_error!(executor::RxInferenceEventExecutor, err) 
+    _model = executor.engine.model
+    _enabled_events = executor.engine.enabled_events
+    _events         = executor.engine.events
+
+    inference_invoke_event(Val(:on_error), Val(_enabled_events), _events, _model, err)
+
+    __inference_process_error(err)
+end
+
+function Rocket.on_complete!(::RxInferenceEventExecutor) 
+
+    _model = executor.engine.model
+    _enabled_events = executor.engine.enabled_events
+    _events         = executor.engine.events
+
+    inference_invoke_event(Val(:on_complete), Val(_enabled_events), _events, _model)
+
+    return nothing
+end
 
 ## 
 
+"""
+    RxInferenceEvent{T, D}
+
+The `RxInferenceEngine` sends events in a form of the `RxInferenceEvent` structure. `T` represents the type of an event, `D` represents the type of a data associated with the event.
+The type of data depends on the type of an event, but usually represents a tuple, which can be unrolled automatically with the Julia's splitting syntax, e.g. `model, iteration = event`. 
+See the documentation of the `rxinference` function for possible event types and their associated data types.
+
+The events system itself uses the `Rocket.jl` library API. For example, one may create a custom event listener in the following way:
+
+
+```jldoctest
+
+using Rocket
+
+struct MyEventListener <: Rocket.Actor{RxInferenceEvent}
+    # ... extra fields
+end
+
+function Rocket.on_next!(listener::MyEventListener, event::RxInferenceEvent{ :after_iteration })
+    model, iteration = event
+    println("Iteration \$(iteration) has been finished.")
+end
+
+function Rocket.on_error!(listener::MyEventListener, err)
+    # ...
+end
+
+function Rocket.on_complete!(listener::MyEventListener)
+    # ...
+end
+
+```
+
+and later on:
+
+```julia
+
+engine = rxinference(events = Val((:after_iteration, )), ...)
+
+subscription = subscribe!(engine.events, MyEventListener(...))
+
+```
+
+See also: [`rxinference`](@ref), [`RxInferenceEngine`](@ref)
+"""
 struct RxInferenceEvent{T, D}
     data::D
 
@@ -920,6 +997,7 @@ function rxinference(;
     autostart = true,
     events = nothing,
     callbacks = nothing,
+    uselock = false,
     warn = true
 )
     __inference_check_dicttype(:callbacks, callbacks)
@@ -1096,6 +1174,16 @@ function rxinference(;
         error("`events` keyword argument must be a `Val` of tuple of symbols")
     end
 
+    # By default we do not use any lock synchronization
+    _ticklock = nothing
+
+    # Check the lock
+    if uselock === true
+        _ticklock = Base.Threads.SpinLock()
+    elseif uselock !== false # This check makes sense because `uselock` is not necessarily of the `Bool` type
+        _ticklock = uselock
+    end
+
     # inference_invoke_callback(callbacks, :before_inference, fmodel)
     engine = RxInferenceEngine(
         _T,
@@ -1115,7 +1203,8 @@ function rxinference(;
         _model,
         _returnval,
         _enabledevents,
-        _events
+        _events,
+        _ticklock
     )
 
     if autostart

@@ -64,6 +64,8 @@ makedocs(;
         "Library" => [
             "Built-in functional form constraints" => "library/functional-forms.md",
             "Model specification" => "library/model-specification.md",
+            "Static Inference" => "library/inference.md",
+            "Reactive inference" => "library/rxinference.md",
             "Bethe Free Energy" => "library/bethe-free-energy.md",
             "Exported methods" => "library/exported-methods.md"
         ],

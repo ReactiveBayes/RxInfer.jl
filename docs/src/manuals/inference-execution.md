@@ -11,14 +11,13 @@ Whereas belief propagation computes exact inference for the random variables of 
 
 The inference engine itself isn't aware of different algorithm types and simply does message passing between nodes, however during model specification stage user may specify different factorisation constraints around factor nodes by using `where { q = ... }` syntax or with the help of the `@constraints` macro. Different factorisation constraints lead to a different message passing update rules. See more documentation about constraints specification in the corresponding [section](@ref user-guide-constraints-specification).
 
-## [Automatic inference specification on static datasets](@id user-guide-inference-execution-automatic-specification)
+## [Automatic inference specification on static datasets](@id user-guide-inference-execution-automatic-specification-static)
 
-`RxInfer` exports user friendly `inference` function to quickly run and test you model with static datasets. Note, however, that this function does cover almost all capabilities of the inference engine, but for advanced use cases you may want to resort to the [manual inference specification](@ref user-guide-inference-execution-manual-specification).
+`RxInfer` exports the `inference` function to quickly run and test you model with static datasets. See more information about the `inference` function on the separate [documentation section](@ref lib-inference). 
 
-```@docs
-inference
-InferenceResult
-```
+## [Automatic inference specification on real-time datasets](@id user-guide-inference-execution-automatic-specification-realtime)
+
+`RxInfer` exports the `rxinference` function to quickly run and test you model with dynamic and potentially real-time datasets. See more information about the `rxinference` function on the separate [documentation section](@ref lib-rxinference). 
 
 ## [Manual inference specification](@id user-guide-inference-execution-manual-specification)
 
