@@ -194,6 +194,13 @@ end
         @test length(result.free_energy_final_only_history) === 10
         @test length(result.free_energy_raw_history) === 50
     end
+
+    @testset "Check the event creation and unrolling syntax" begin 
+        data1, data2 = RxInferenceEvent(Val(:event1), (1, 2.0))
+
+        @test data1 === 1
+        @test data2 === 2.0
+    end
 end
 
 end

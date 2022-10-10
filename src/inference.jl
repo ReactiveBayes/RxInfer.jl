@@ -638,8 +638,7 @@ This is the main heart of the reactive inference procedure implemented in the `r
 
 # Fields
 - `datastream`: Data stream that supports `subscribe!` method from `Rocket.jl` package, must produce `NamedTuple` events, where keys refer to `datavar`'s defined in a model
-- `tickscheduler`: Main tick scheduler on which all syncrhonization events occur
-
+- `tickscheduler`: Main tick scheduler on which all synchronization events occur
 
 """
 mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E, J}
@@ -954,7 +953,6 @@ The events system itself uses the `Rocket.jl` library API. For example, one may 
 
 
 ```jldoctest
-
 using Rocket
 
 struct MyEventListener <: Rocket.Actor{RxInferenceEvent}
@@ -979,11 +977,9 @@ end
 and later on:
 
 ```julia
-
 engine = rxinference(events = Val((:after_iteration, )), ...)
 
 subscription = subscribe!(engine.events, MyEventListener(...))
-
 ```
 
 See also: [`rxinference`](@ref), [`RxInferenceEngine`](@ref)
