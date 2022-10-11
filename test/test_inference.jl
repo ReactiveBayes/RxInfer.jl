@@ -151,7 +151,7 @@ end
         y = datavar(Float64)
         y ~ Normal(mean = x_t, precision = τ)
 
-        return 2, 3 # test returnval
+        return 2, 3.0, "hello world" # test returnval
     end
 
     autoupdates = @autoupdates begin
@@ -174,42 +174,44 @@ end
 
     @testset "Check basic usage" begin
         
-        result = rxinference(
-            model = test_model1(),
-            constraints = MeanField(),
-            data = (y = observedy,),
-            returnvars = (:x_t,),
-            historyvars = (x_t = KeepEach(), τ = KeepEach()),
-            keephistory = 10,
-            initmarginals = (x_t = NormalMeanVariance(0.0, 1e3), τ = GammaShapeRate(1.0, 1.0)),
-            iterations = 5,
-            free_energy = true,
-            autoupdates = autoupdates,
-        )
+        for keephistory in (2, 3), iterations in (4, 5)
+            result = rxinference(
+                model = test_model1(),
+                constraints = MeanField(),
+                data = (y = observedy,),
+                returnvars = (:x_t,),
+                historyvars = (x_t = KeepEach(), τ = KeepEach()),
+                keephistory = keephistory,
+                initmarginals = (x_t = NormalMeanVariance(0.0, 1e3), τ = GammaShapeRate(1.0, 1.0)),
+                iterations = iterations,
+                free_energy = true,
+                autoupdates = autoupdates,
+            )
 
-        # Test that the `.model` reference is correct
-        @test length(getnodes(result.model)) === 4
-        @test length(getrandom(result.model)) === 3
-        @test length(getdata(result.model)) === 5
-        @test length(getconstant(result.model)) === 1
+            # Test that the `.model` reference is correct
+            @test length(getnodes(result.model)) === 4
+            @test length(getrandom(result.model)) === 3
+            @test length(getdata(result.model)) === 5
+            @test length(getconstant(result.model)) === 1
 
-        # Test that the `.returnval` reference is correct
-        @test result.returnval === (2, 3)
+            # Test that the `.returnval` reference is correct
+            @test result.returnval === (2, 3.0, "hello world")
 
-        @test sort(collect(keys(result.posteriors))) == [ :x_t ]
-        @test sort(collect(keys(result.history))) == [ :x_t, :τ ]
+            @test sort(collect(keys(result.posteriors))) == [ :x_t ]
+            @test sort(collect(keys(result.history))) == [ :x_t, :τ ]
 
-        @test length(result.history[:x_t]) === 10 # Number of `keephistory`
-        @test length(result.history[:x_t][end]) === 5 # Number of iterations
+            @test length(result.history[:x_t]) === keephistory 
+            @test length(result.history[:x_t][end]) === iterations
 
-        @test length(result.history[:τ]) === 10 # Number of `keephistory`
-        @test length(result.history[:τ][end]) === 5 # Number of iterations
+            @test length(result.history[:τ]) === keephistory
+            @test length(result.history[:τ][end]) === iterations
 
-        @test length(result.free_energy_history) === 5
-        @test all(<=(0), diff(result.free_energy_history))
+            @test length(result.free_energy_history) === iterations
+            @test all(<=(0), diff(result.free_energy_history))
 
-        @test length(result.free_energy_final_only_history) === 10
-        @test length(result.free_energy_raw_history) === 50
+            @test length(result.free_energy_final_only_history) === keephistory
+            @test length(result.free_energy_raw_history) === keephistory * iterations
+        end
     end
 
     @testset "Check callbacks usage: autostart enabled" begin
@@ -220,22 +222,13 @@ end
             model = test_model1(),
             constraints = MeanField(),
             data = (y = observedy,),
-            returnvars = (:x_t,),
-            historyvars = (x_t = KeepEach(), τ = KeepEach()),
-            keephistory = 10,
             initmarginals = (x_t = NormalMeanVariance(0.0, 1e3), τ = GammaShapeRate(1.0, 1.0)),
-            iterations = 5,
-            free_energy = true,
             autoupdates = autoupdates,
             callbacks = (
                 before_model_creation = (args...) -> push!(callbacksdata, (:before_model_creation, args)),
                 after_model_creation = (args...) -> push!(callbacksdata, (:after_model_creation, args)),
                 before_autostart = (args...) -> push!(callbacksdata, (:before_autostart, args)),
                 after_autostart = (args...) -> push!(callbacksdata, (:after_autostart, args)),
-                before_start = (args...) -> push!(callbacksdata, (:before_start, args)),
-                after_start = (args...) -> push!(callbacksdata, (:after_start, args)),
-                before_stop = (args...) -> push!(callbacksdata, (:before_stop, args)),
-                after_stop = (args...) -> push!(callbacksdata, (:after_stop, args))
             ),
             autostart = true
         )
@@ -245,14 +238,68 @@ end
             :before_model_creation,
             :after_model_creation,
             :before_autostart,
-            :before_start,
-            :after_start,
             :after_autostart,
-            :before_stop,
-            :after_stop
         ]
 
+        @test typeof(callbacksdata[1][2]) <: Tuple{}                                              # before_model_creation
+        @test typeof(callbacksdata[2][2]) <: Tuple{FactorGraphModel, Tuple{Int, Float64, String}} # after_model_creation 
+        @test typeof(callbacksdata[3][2]) <: Tuple{RxInferenceEngine}                             # before_autostart 
+        @test typeof(callbacksdata[4][2]) <: Tuple{RxInferenceEngine}                             # after_autostart
 
+    end
+
+    @testset "Check callbacks usage: autostart disabled" begin
+
+        callbacksdata = []
+        
+        result = rxinference(
+            model = test_model1(),
+            constraints = MeanField(),
+            data = (y = observedy,),
+            initmarginals = (x_t = NormalMeanVariance(0.0, 1e3), τ = GammaShapeRate(1.0, 1.0)),
+            autoupdates = autoupdates,
+            callbacks = (
+                before_model_creation = (args...) -> push!(callbacksdata, (:before_model_creation, args)),
+                after_model_creation = (args...) -> push!(callbacksdata, (:after_model_creation, args)),
+                before_autostart = (args...) -> push!(callbacksdata, (:before_autostart, args)),
+                after_autostart = (args...) -> push!(callbacksdata, (:after_autostart, args)),
+            ),
+            autostart = false
+        )
+
+        # First check the order
+        @test first.(callbacksdata) == [
+            :before_model_creation,
+            :after_model_creation,
+        ]
+
+        @test typeof(callbacksdata[1][2]) <: Tuple{}                                              # before_model_creation
+        @test typeof(callbacksdata[2][2]) <: Tuple{FactorGraphModel, Tuple{Int, Float64, String}} # after_model_creation 
+
+        RxInfer.start(result)
+
+        # Nothing extra should has been executed on `start`
+        @test length(callbacksdata) === 2
+
+    end
+
+    @testset "Check callbacks usage: unknown callback warning" begin
+
+        callbacksdata = []
+        
+        @test_warn r"Unknown callback specification.*hello_world.*Available callbacks.*" result = rxinference(
+            model = test_model1(),
+            constraints = MeanField(),
+            data = (y = observedy,),
+            initmarginals = (x_t = NormalMeanVariance(0.0, 1e3), τ = GammaShapeRate(1.0, 1.0)),
+            autoupdates = autoupdates,
+            callbacks = (
+                hello_world = (args...) -> push!(callbacksdata, args),
+            ),
+            autostart = true
+        )
+
+        @test length(callbacksdata) === 0
     end
 
     @testset "Check the event creation and unrolling syntax" begin 

@@ -337,17 +337,18 @@ result = inference(
 )
 ```
 
-The list of all possible callbacks is present below:
+The `callbacks` keyword argument accepts a named-tuple of 'name = callback' pairs. 
+The list of all possible callbacks and their arguments is present below:
 
-- `:on_marginal_update`:    args: (model::FactorGraphModel, name::Symbol, update)
-- `:before_model_creation`: args: ()
-- `:after_model_creation`:  args: (model::FactorGraphModel, returnval)
-- `:before_inference`:      args: (model::FactorGraphModel)
-- `:before_iteration`:      args: (model::FactorGraphModel, iteration::Int)
-- `:before_data_update`:    args: (model::FactorGraphModel, data)
-- `:after_data_update`:     args: (model::FactorGraphModel, data)
-- `:after_iteration`:       args: (model::FactorGraphModel, iteration::Int)
-- `:after_inference`:       args: (model::FactorGraphModel)
+- `on_marginal_update`:    args: (model::FactorGraphModel, name::Symbol, update)
+- `before_model_creation`: args: ()
+- `after_model_creation`:  args: (model::FactorGraphModel, returnval)
+- `before_inference`:      args: (model::FactorGraphModel)
+- `before_iteration`:      args: (model::FactorGraphModel, iteration::Int)
+- `before_data_update`:    args: (model::FactorGraphModel, data)
+- `after_data_update`:     args: (model::FactorGraphModel, data)
+- `after_iteration`:       args: (model::FactorGraphModel, iteration::Int)
+- `after_inference`:       args: (model::FactorGraphModel)
 
 See also: [`InferenceResult`](@ref)
 """
@@ -386,6 +387,15 @@ function inference(;
     __inference_check_dicttype(:initmarginals, initmarginals)
     __inference_check_dicttype(:initmessages, initmessages)
     __inference_check_dicttype(:callbacks, callbacks)
+
+    # Check for available callbacks
+    if warn && !isnothing(callbacks)
+        for key in keys(callbacks)
+            if key ∉ (:on_marginal_update, :before_model_creation, :after_model_creation, :before_inference, :before_iteration, :before_data_update, :after_data_update, :after_iteration, :after_inference)
+                @warn "Unknown callback specification: $(key). Available callbacks: on_marginal_update, before_model_creation, after_model_creation, before_inference, before_iteration, before_data_update, after_data_update, after_iteration, after_inference. Set `warn = false` to supress this warning."
+            end
+        end
+    end
 
     _options = convert(ModelInferenceOptions, options)
 
@@ -646,7 +656,7 @@ Note, that it is not always possible to start/stop the inference procedure.
 
 See also: [`rxinference`](@ref), [`RxInferenceEvent`](@ref), [`RxInfer.start`](@ref), [`RxInfer.stop`](@ref)
 """
-mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E, J, B}
+mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E, J}
     datastream       :: D
     tickscheduler    :: L
     mainsubscription :: Teardown
@@ -678,7 +688,6 @@ mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M
     events     :: E
     is_running :: Bool
     ticklock   :: J
-    callbacks  :: B
 
     RxInferenceEngine(
         ::Type{T},
@@ -699,10 +708,9 @@ mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M
         returnval::N,
         enabledevents::Val{X},
         events::E,
-        ticklock::J,
-        callbacks::B
-    ) where {T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E, J, B} = begin
-        return new{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E, J, B}(
+        ticklock::J
+    ) where {T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E, J} = begin
+        return new{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E, J}(
             datastream,
             tickscheduler,
             voidTeardown,
@@ -724,8 +732,7 @@ mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M
             returnval,
             events,
             false,
-            ticklock,
-            callbacks
+            ticklock
         )
     end
 end
@@ -809,10 +816,10 @@ function start(engine::RxInferenceEngine{T}) where {T}
             return nothing
         end
 
-        _callbacks = engine.callbacks
-        _model     = engine.model
+        _enabled_events = engine.enabled_events
+        _events         = engine.events
 
-        inference_invoke_callback(_callbacks, :before_start, _model, engine)
+        inference_invoke_event(Val(:before_start), Val(_enabled_events), _events, engine)
 
         _eventexecutor = RxInferenceEventExecutor(T, engine)
         _tickscheduler = engine.tickscheduler
@@ -839,7 +846,8 @@ function start(engine::RxInferenceEngine{T}) where {T}
         # After all preparations we finaly can `subscribe!` on the `datastream`
         engine.mainsubscription = subscribe!(engine.datastream, _eventexecutor)
 
-        inference_invoke_callback(_callbacks, :after_start, _model, engine)
+        inference_invoke_event(Val(:after_start), Val(_enabled_events), _events, engine)
+
     end
 
     return nothing
@@ -862,10 +870,10 @@ function stop(engine::RxInferenceEngine)
             return nothing
         end
 
-        _callbacks = engine.callbacks
-        _model     = engine.model
+        _enabled_events = engine.enabled_events
+        _events         = engine.events
 
-        inference_invoke_callback(_callbacks, :before_stop, _model, engine)
+        inference_invoke_event(Val(:before_stop), Val(_enabled_events), _events, engine)
 
         unsubscribe!(engine.fe_subscription)
         unsubscribe!(engine.historysubscriptions)
@@ -874,7 +882,8 @@ function stop(engine::RxInferenceEngine)
 
         engine.is_running = false
 
-        inference_invoke_callback(_callbacks, :after_stop, _model, engine)
+        inference_invoke_event(Val(:after_stop), Val(_enabled_events), _events, engine)
+
     end
 
     return nothing
@@ -1058,6 +1067,30 @@ end
 
 ##
 
+"""
+
+- ### `callbacks`
+
+The `rxinference` function has its own lifecycle. The user is free to provide some (or none) of the callbacks to inject some extra logging or other procedures in the preparation of the inference engine.
+To inject extra procedures during the inference use the `events`. Here is the example of the `callbacks`
+
+```julia
+result = rxinference(
+    ...,
+    callbacks = (
+        after_model_creation = (model, returnval) -> println("The model has been created. Number of nodes: \$(length(getnodes(model)))"),
+    )
+)
+```
+
+The `callbacks` keyword argument accepts a named-tuple of 'name = callback' pairs. 
+The list of all possible callbacks and their input arguments is present below:
+
+- `before_model_creation`:    args: ()
+- `after_model_creation`:     args: (model::FactorGraphModel, returnval)
+- `before_autostart`:         args: (engine::RxInferenceEngine)
+- `after_autostart`:          args: (engine::RxInferenceEngine)
+"""
 function rxinference(;
     model::ModelGenerator,
     data = nothing,
@@ -1081,6 +1114,15 @@ function rxinference(;
     warn = true
 )
     __inference_check_dicttype(:callbacks, callbacks)
+
+    # Check for available callbacks
+    if warn && !isnothing(callbacks)
+        for key in keys(callbacks)
+            if key ∉ (:before_model_creation, :after_model_creation, :before_autostart, :after_autostart)
+                @warn "Unknown callback specification: $(key). Available callbacks: before_model_creation, after_model_creation, before_autostart, after_autostart. Set `warn = false` to supress this warning."
+            end
+        end
+    end
 
     # The `rxinference` support both static `data` and dynamic `datastream`
     if !isnothing(data) && !isnothing(datastream) # Ensure that only one of them set
@@ -1283,14 +1325,13 @@ function rxinference(;
         _returnval,
         _enabledevents,
         _events,
-        _ticklock,
-        callbacks
+        _ticklock
     )
 
     if autostart
-        inference_invoke_callback(callbacks, :before_autostart, _model, engine)
+        inference_invoke_callback(callbacks, :before_autostart, engine)
         start(engine)
-        inference_invoke_callback(callbacks, :after_autostart, _model, engine)
+        inference_invoke_callback(callbacks, :after_autostart, engine)
     end
 
     return engine
