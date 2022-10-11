@@ -160,7 +160,7 @@ end
         τ_rate = rate(q(τ))
     end
 
-    n         = 100
+    n         = 10
     hiddenx   = []
     observedy = []
     prevx     = 0.0
@@ -174,17 +174,20 @@ end
 
     @testset "Check basic usage" begin
         
-        for keephistory in (2, 3), iterations in (4, 5)
+        for keephistory in (0, 1, 2), iterations in (3, 4), free_energy in (true, Float64, false), returnvars in ((:x_t, ), (:x_t, :τ))
+
+            historyvars = keephistory > 0 ? NamedTuple{returnvars}(map(_ -> KeepEach(), returnvars)) : nothing
+
             result = rxinference(
                 model = test_model1(),
                 constraints = MeanField(),
                 data = (y = observedy,),
-                returnvars = (:x_t,),
-                historyvars = (x_t = KeepEach(), τ = KeepEach()),
+                returnvars = returnvars,
+                historyvars = historyvars,
                 keephistory = keephistory,
                 initmarginals = (x_t = NormalMeanVariance(0.0, 1e3), τ = GammaShapeRate(1.0, 1.0)),
                 iterations = iterations,
-                free_energy = true,
+                free_energy = free_energy,
                 autoupdates = autoupdates,
             )
 
@@ -196,21 +199,31 @@ end
 
             # Test that the `.returnval` reference is correct
             @test result.returnval === (2, 3.0, "hello world")
+            @test sort(collect(keys(result.posteriors))) == sort(collect(returnvars))
 
-            @test sort(collect(keys(result.posteriors))) == [ :x_t ]
-            @test sort(collect(keys(result.history))) == [ :x_t, :τ ]
+            # Check that we save the history of the marginals if needed
+            if keephistory > 0
+                @test sort(collect(keys(result.history))) == sort(collect(keys(historyvars)))
+                for key in keys(historyvars)
+                    @test length(result.history[key]) === keephistory 
+                    @test length(result.history[key][end]) === iterations
+                end
+            else
+                @test result.history === nothing
+            end
 
-            @test length(result.history[:x_t]) === keephistory 
-            @test length(result.history[:x_t][end]) === iterations
+            # Check that we save the history of the free energy if needed
+            if keephistory > 0 && free_energy !== false
+                @test length(result.free_energy_history) === iterations
+                @test all(<=(0), diff(result.free_energy_history))
 
-            @test length(result.history[:τ]) === keephistory
-            @test length(result.history[:τ][end]) === iterations
-
-            @test length(result.free_energy_history) === iterations
-            @test all(<=(0), diff(result.free_energy_history))
-
-            @test length(result.free_energy_final_only_history) === keephistory
-            @test length(result.free_energy_raw_history) === keephistory * iterations
+                @test length(result.free_energy_final_only_history) === keephistory
+                @test length(result.free_energy_raw_history) === keephistory * iterations
+            else
+                @test_throws ErrorException result.free_energy_history
+                @test_throws ErrorException result.free_energy_final_only_history
+                @test_throws ErrorException result.free_energy_raw_history
+            end
         end
     end
 
