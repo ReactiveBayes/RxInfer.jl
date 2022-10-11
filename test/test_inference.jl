@@ -174,9 +174,9 @@ end
 
     @testset "Check basic usage" begin
         
-        for keephistory in (0, 1, 2), iterations in (3, 4), free_energy in (true, Float64, false), returnvars in ((:x_t, ), (:x_t, :τ))
+        for keephistory in (0, 1, 2), iterations in (3, 4), free_energy in (true, Float64, false), returnvars in ((:x_t, ), (:x_t, :τ)), historyvars in ((:x_t, ), (:x_t, :τ))
 
-            historyvars = keephistory > 0 ? NamedTuple{returnvars}(map(_ -> KeepEach(), returnvars)) : nothing
+            historyvars = keephistory > 0 ? NamedTuple{historyvars}(map(_ -> KeepEach(), historyvars)) : nothing
 
             result = rxinference(
                 model = test_model1(),
