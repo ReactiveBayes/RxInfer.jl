@@ -199,7 +199,10 @@ end
 
             # Test that the `.returnval` reference is correct
             @test result.returnval === (2, 3.0, "hello world")
+
+            # Test that the `.posteriors` field is constructed correctly
             @test sort(collect(keys(result.posteriors))) == sort(collect(returnvars))
+            @test all(p -> typeof(p) <: Rocket.Subscribable, collect(values(result.posteriors)))
 
             # Check that we save the history of the marginals if needed
             if keephistory > 0
@@ -210,6 +213,12 @@ end
                 end
             else
                 @test result.history === nothing
+            end
+
+            if free_energy !== false
+                @test typeof(result.free_energy) <: Rocket.Subscribable
+            else 
+                @test_throws ErrorException result.free_energy
             end
 
             # Check that we save the history of the free energy if needed
