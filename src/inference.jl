@@ -576,7 +576,7 @@ function (specification::RxInferenceAutoUpdateSpecification)(model::FactorGraphM
 end
 
 struct RxInferenceAutoUpdate{N, C, R}
-    datavars :: NTuple{N, <:DataVariable}
+    datavars :: N
     callback :: C
     recent   :: R
 end

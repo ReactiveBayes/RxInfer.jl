@@ -13,20 +13,15 @@
 
 RxInfer.jl is a Julia package for automatic Bayesian inference on a factor graph with reactive message passing.
 
-See also:
-- [`ReactiveMP.jl`](https://github.com/biaslab/ReactiveMP.jl)
-- [`GraphPPL.jl`](https://github.com/biaslab/GraphPPL.jl)
-- [`Rocket.jl`](https://github.com/biaslab/Rocket.jl)
-
 Given a probabilistic model, RxInfer allows for an efficient message-passing based Bayesian inference. It uses the model structure to generate an algorithm that consists of a sequence of local computations on a Forney-style factor graph (FFG) representation of the model.
 
-The current version supports belief propagation (sum-product message passing) and variational message passing (both Mean-Field and Structured VMP) and is aimed to run inference in conjugate state-space models.
+The current version supports belief propagation (sum-product message passing) and variational message passing (both Mean-Field and Structured VMP)
 
-ReactiveMP.jl has been designed with a focus on efficiency, scalability and maximum performance for running inference on conjugate state-space models with message passing. Below is a benchmark comparison between RxInfer.jl and [Turing.jl](https://github.com/TuringLang/Turing.jl) on a linear multivariate Gaussian state space Model. It is worth noting that this model contains many conjugate prior and likelihood pairings that lead to analytically computable Bayesian posteriors. For these types of models, RxInfer.jl takes advantage of the conjugate pairings and beats general-purpose probabilistic programming packages easily in terms of computational load, speed, memory  and accuracy. On the other hand, sampling-based packages like [Turing.jl](https://github.com/TuringLang/Turing.jl) are generic Bayesian inference solutions and are capable of running inference for a broader set of models. 
+RxInfer.jl has been designed with a focus on efficiency, scalability and maximum performance for running inference on conjugate state-space models with message passing. Below is a benchmark comparison between RxInfer.jl and [Turing.jl](https://github.com/TuringLang/Turing.jl) on a linear multivariate Gaussian state space model. RxInfer.jl does execute the inference procedure faster and also provides more accurate analytical solution to the problem. This model contains many conjugate prior and likelihood pairings that lead to analytically computable Bayesian posteriors. For these types of models, RxInfer.jl takes advantage of the conjugate pairings and beats general-purpose probabilistic programming packages easily in terms of computational load, speed, memory and accuracy.
 
 Turing comparison             |  Scalability performance
 :-------------------------:|:-------------------------:
-![](benchmark/notebooks/plots/lgssm_comparison.svg?raw=true&sanitize=true)  |  ![](benchmark/notebooks/plots/lgssm_scaling.svg?raw=true&sanitize=true)
+![](benchmarks/plots/lgssm_comparison.svg?raw=true&sanitize=true)  |  ![](benchmarks/plots/lgssm_scaling.svg?raw=true&sanitize=true)
 
 # Installation
 
@@ -139,6 +134,11 @@ result = inference(
 
 # Where to go next?
 There are a set of [examples](https://github.com/biaslab/ReactiveMP.jl/tree/master/examples) available in `RxInfer` repository that demonstrate the more advanced features of the package. Alternatively, you can head to the [documentation][docs-stable-url] that provides more detailed information of how to use `RxInfer` to specify more complex probabilistic models.
+
+See also:
+- [`ReactiveMP.jl`](https://github.com/biaslab/ReactiveMP.jl)
+- [`GraphPPL.jl`](https://github.com/biaslab/GraphPPL.jl)
+- [`Rocket.jl`](https://github.com/biaslab/Rocket.jl)
 
 # License
 

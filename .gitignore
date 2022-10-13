@@ -32,7 +32,7 @@ examples/*Compiled
 
 **/Manifest.toml
 **/LocalPreferences.toml
-!benchmark/Manifest.toml
+!benchmarks/Manifest.toml
 
 **/.benchmarkci
 benchmark/*.json
