@@ -49,7 +49,7 @@ makedocs(;
         prettyurls = get(ENV, "CI", "false") == "true",
         canonical = "https://biaslab.github.io/RxInfer.jl",
         edit_link = "main",
-        assets = String[ "assets/theme.css", "assets/header.js" ],
+        assets = String[ "assets/theme.css", "assets/header.css", "assets/header.js" ],
     ),
     pages = [
         "Home"     => "index.md",
