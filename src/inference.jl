@@ -200,7 +200,7 @@ unwrap_free_energy_option(option::Type{T}) where {T <: Real} = (true, T, InfCoun
 
 """
     inference(
-        model::ModelGenerator; 
+        model; 
         data,
         initmarginals           = nothing,
         initmessages            = nothing,
@@ -215,21 +215,21 @@ unwrap_free_energy_option(option::Type{T}) where {T <: Real} = (true, T, InfCoun
         callbacks               = nothing,
     )
 
-This function provides a generic (but somewhat limited) way to perform probabilistic inference in ReactiveMP.jl. Returns `InferenceResult`.
+This function provides a generic way to perform probabilistic inference in RxInfer.jl. Returns `InferenceResult`.
 
 ## Arguments
 
 For more information about some of the arguments, please check below.
 
-- `model::ModelGenerator`: specifies a model generator, with the help of the `Model` function
+- `model`: specifies a model generator, required
 - `data`: `NamedTuple` or `Dict` with data, required
-- `initmarginals = nothing`: `NamedTuple` or `Dict` with initial marginals, optional, defaults to nothing
-- `initmessages = nothing`: `NamedTuple` or `Dict` with initial messages, optional, defaults to nothing
+- `initmarginals = nothing`: `NamedTuple` or `Dict` with initial marginals, optional
+- `initmessages = nothing`: `NamedTuple` or `Dict` with initial messages, optional
 - `constraints = nothing`: constraints specification object, optional, see `@constraints`
 - `meta  = nothing`: meta specification object, optional, may be required for some models, see `@meta`
-- `options = nothing`: model creation options, optional
+- `options = nothing`: model creation options, optional, see `ModelInferenceOptions`
 - `returnvars = nothing`: return structure info, optional, defaults to return everything at each iteration, see below for more information
-- `iterations = nothing`: number of iterations, optional, defaults to `nothing`, we do not distinguish between variational message passing or Loopy belief propagation or expectation propagation iterations, see below for more information
+- `iterations = nothing`: number of iterations, optional, defaults to `nothing`, the inference engine does not distinguish between variational message passing or Loopy belief propagation or expectation propagation iterations, see below for more information
 - `free_energy = false`: compute the Bethe free energy, optional, defaults to false. Can be passed a floating point type, e.g. `Float64`, for better efficiency, but disables automatic differentiation packages, such as ForwardDiff.jl
 - `free_energy_diagnostics = BetheFreeEnergyDefaultChecks`: free energy diagnostic checks, optional, by default checks for possible `NaN`s and `Inf`s. `nothing` disables all checks.
 - `showprogress = false`: show progress module, optional, defaults to false
@@ -246,13 +246,16 @@ creates `NamedTuple` with `x` as a key and `KeepLast()` as a value assigned for 
 
 - ### `model`
 
-The `model` argument accepts a `ModelGenerator` as its input. The easiest way to create the `ModelGenerator` is to use the `Model` function. The `Model` function accepts a model name as its first argument and the rest is passed directly to the model constructor.
+The `model` argument accepts a `ModelGenerator` as its input. The easiest way to create the `ModelGenerator` is to use the `@model` macro. 
 For example:
 
 ```julia
+@model function coin_toss(some_argument, some_keyword_argument = 3)
+   ...
+end
+
 result = inference(
-    # Creates `coin_toss(some_argument, some_keyword_argument = 3)`
-    model = Model(coin_toss, some_argument; some_keyword_argument = 3)
+    model = coin_toss(some_argument; some_keyword_argument = 3)
 )
 ```
 
@@ -1119,6 +1122,178 @@ end
 ##
 
 """
+    rxinference(
+        model,
+        data = nothing,
+        datastream = nothing,
+        initmarginals = nothing,
+        initmessages = nothing,
+        autoupdates = nothing,
+        constraints = nothing,
+        meta = nothing,
+        options = nothing,
+        returnvars = nothing,
+        historyvars = nothing,
+        keephistory = nothing,
+        iterations = nothing,
+        free_energy = false,
+        free_energy_diagnostics = BetheFreeEnergyDefaultChecks,
+        autostart = true,
+        events = nothing,
+        callbacks = nothing,
+        uselock = false,
+        warn = true
+    )
+
+This function provides a generic way to perform probabilistic inference in RxInfer.jl. Returns `RxInferenceEngine`.
+
+## Arguments
+
+For more information about some of the arguments, please check below.
+
+- `model`: specifies a model generator, required
+- `data`: `NamedTuple` or `Dict` with data, required
+- `initmarginals = nothing`: `NamedTuple` or `Dict` with initial marginals, optional
+- `initmessages = nothing`: `NamedTuple` or `Dict` with initial messages, optional
+- `autoupdates`: auto-updates specification, required for many models, see `@autoupdates`
+- `constraints = nothing`: constraints specification object, optional, see `@constraints`
+- `meta  = nothing`: meta specification object, optional, may be required for some models, see `@meta`
+- `options = nothing`: model creation options, optional, see `ModelInferenceOptions`
+- `returnvars = nothing`: return structure info, optional, by default creates observables for all random variables that return posteriors at last vmp iteration, see below for more information
+- `historyvars = nothing`: history structure info, optional, defaults to no history, see below for more information
+- `keephistory = nothing`: history buffer size, defaults to empty buffer, see below for more information
+- `iterations = nothing`: number of iterations, optional, defaults to `nothing`, the inference engine does not distinguish between variational message passing or Loopy belief propagation or expectation propagation iterations, see below for more information
+- `free_energy = false`: compute the Bethe free energy, optional, defaults to false. Can be passed a floating point type, e.g. `Float64`, for better efficiency, but disables automatic differentiation packages, such as ForwardDiff.jl
+- `free_energy_diagnostics = BetheFreeEnergyDefaultChecks`: free energy diagnostic checks, optional, by default checks for possible `NaN`s and `Inf`s. `nothing` disables all checks.
+- `autostart = true`: specifies whether to call `RxInfer.start` on the created engine automatically or not
+- `showprogress = false`: show progress module, optional, defaults to false
+- `events = nothing`: inference cycle events, optional, see below for more info
+- `callbacks = nothing`: inference cycle callbacks, optional, see below for more info
+- `uselock = false`: specifies either to use the lock structure for the inference or not, if set to true uses `Base.Threads.SpinLock`. Accepts custom `AbstractLock`.
+- `warn = true`: enables/disables warnings
+
+## Note on NamedTuples
+
+When passing `NamedTuple` as a value for some argument, make sure you use a trailing comma for `NamedTuple`s with a single entry. The reason is that Julia treats `returnvars = (x = KeepLast())` and 
+`returnvars = (x = KeepLast(), )` expressions differently. First expression creates (or **overwrites!**) new local/global variable named `x` with contents `KeepLast()`. The second expression (note traling comma)
+creates `NamedTuple` with `x` as a key and `KeepLast()` as a value assigned for this key.
+
+## Extended information about some of the arguments
+
+- ### `model`
+
+The `model` argument accepts a `ModelGenerator` as its input. The easiest way to create the `ModelGenerator` is to use the `@model` macro. 
+For example:
+
+```julia
+@model function coin_toss(some_argument, some_keyword_argument = 3)
+   ...
+end
+
+result = rxinference(
+    model = coin_toss(some_argument; some_keyword_argument = 3)
+)
+```
+
+**Note**: The `model` keyword argument does not accept a `FactorGraphModel` instance as a value, as it needs to inject `constraints` and `meta` during the inference procedure.
+
+- ### `initmarginals`
+
+In general for variational message passing every marginal distribution in a model needs to be pre-initialised. In practice, however, for many models it is sufficient enough to initialise only a small subset of variables in the model.
+
+- ### `initmessages`
+
+Loopy belief propagation may need some messages in a model to be pre-initialised.
+
+- ### `options`
+
+- `limit_stack_depth`: limits the stack depth for computing messages, helps with `StackOverflowError` for some huge models, but reduces the performance of inference backend. Accepts integer as an argument that specifies the maximum number of recursive depth. Lower is better for stack overflow error, but worse for performance.
+- `pipeline`: changes the default pipeline for each factor node in the graph
+- `global_reactive_scheduler`: changes the scheduler of reactive streams, see Rocket.jl for more info, defaults to no scheduler
+
+- ### `returnvars`
+
+`returnvars` accepts a tuple of symbols and specifies the latent variables of interests. For each symbol in the `returnvars` specification the `rxinference` function will prepare an observable 
+stream (see `Rocket.jl`) of posterior updates. An agent may subscribe on the new posteriors events and perform some actions.
+For example:
+
+```julia
+engine = rxinference(
+    ...,
+    returnvars = (:x, :τ),
+    autostart  = false
+)
+
+x_subscription = subscribe!(engine.posteriors[:x], (update) -> println("x variable has been updated: ", update))
+τ_subscription = subscribe!(engine.posteriors[:τ], (update) -> println("τ variable has been updated: ", update))
+
+RxInfer.start(engine)
+
+...
+
+unsubscribe!(x_subscription)
+unsubscribe!(τ_subscription)
+
+RxInfer.stop(engine)
+```
+
+- ### `historyvars`
+
+`historyvars` specifies the variables of interests and the amount of information to keep in history about the posterior updates. The specification is similar to the `returnvars` in the `inference` procedure.
+The `historyvars` requires `keephistory` to be greater than zero.
+
+`historyvars` accepts a `NamedTuple` or `Dict` or return var specification. There are two specifications:
+- `KeepLast`: saves the last update for a variable, ignoring any intermediate results during iterations
+- `KeepEach`: saves all updates for a variable for all iterations
+
+Example: 
+
+```julia
+result = rxinference(
+    ...,
+    historyvars = (
+        x = KeepLast(),
+        τ = KeepEach()
+    ),
+    keephistory = 10
+)
+```
+
+It is also possible to set iether `historyvars = KeepLast()` or `historyvars = KeepEach()` that acts as an alias and sets the given option for __all__ random variables in the model.
+
+# Example: 
+
+```julia
+result = rxinference(
+    ...,
+    historyvars = KeepLast(),
+    keephistory = 10
+)
+```
+
+- ### `keep_history`
+
+Specifies the buffer size for the updates history both for the `historyvars` and the `free_energy` buffers.. 
+
+- ### `iterations`
+
+Specifies the number of variational (or loopy BP) iterations. By default set to `nothing`, which is equivalent of doing 1 iteration. 
+
+- ### `free_energy` 
+
+This setting specifies whenever the `inference` function should create an observable of Bethe Free Energy (BFE) values. The BFE observable returns a new computed value for each VMP iteration.
+Note, however, that it may be not possible to compute BFE values for every model. If `free_energy = true` and `keephistory > 0` the engine exposes extra fields to access the history of the Bethe free energy updates:
+
+- `engine.free_energy_history`: Returns a free energy history averaged over the VMP iterations
+- `engine.free_energy_final_only_history`: Returns a free energy history of values computed on last VMP iterations for every observation
+- `engine.free_energy_raw_history`: Returns a raw free energy history
+
+Additionally, the argument may accept a floating point type, instead of a `Bool` value. Using this option, e.g.`Float64`, improves performance of Bethe Free Energy computation, but restricts using automatic differentiation packages.
+
+- ### `free_energy_diagnostics`
+
+This settings specifies either a single or a tuple of diagnostic checks for Bethe Free Energy values stream. By default checks for `NaN`s and `Inf`s. See also [`BetheFreeEnergyCheckNaNs`](@ref) and [`BetheFreeEnergyCheckInfs`](@ref).
+Pass `nothing` to disable any checks.
 
 - ### `callbacks`
 
