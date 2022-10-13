@@ -1299,6 +1299,44 @@ Additionally, the argument may accept a floating point type, instead of a `Bool`
 This settings specifies either a single or a tuple of diagnostic checks for Bethe Free Energy values stream. By default checks for `NaN`s and `Inf`s. See also [`BetheFreeEnergyCheckNaNs`](@ref) and [`BetheFreeEnergyCheckInfs`](@ref).
 Pass `nothing` to disable any checks.
 
+- ### `events`
+
+The engine from the `rxinference` function has its own lifecycle. The events can be listened by subscribing to the `engine.events` field. E.g.
+
+```julia
+engine = rxinference(
+    ...,
+    autostart = false
+)
+
+subscription = subscribe!(engine.events, (event) -> println(event))
+
+RxInfer.start(engine)
+```
+
+By default all events are disabled, in order to enable an event its identifier must be listed in the `Val` tuple of symbols passed to the `events` keyword arguments.
+
+```julia
+engine = rxinference(
+    events = Val((:on_new_data, :before_history_save, :after_history_save))
+)
+```
+
+The list of all possible events and their event data is present below (see `RxInferenceEvent` for more information about the type of event data):
+
+- `on_new_data`:           args: (model::FactorGraphModel, data)
+- `before_iteration`       args: (model::FactorGraphModel, iteration)
+- `before_auto_update`     args: (model::FactorGraphModel, auto_updates)
+- `after_auto_update`      args: (model::FactorGraphModel, auto_updates)
+- `before_data_update`     args: (model::FactorGraphModel, data)
+- `after_data_update`      args: (model::FactorGraphModel, data)
+- `after_iteration`        args: (model::FactorGraphModel, iteration)
+- `before_history_save`    args: (model::FactorGraphModel, )
+- `after_history_save`     args: (model::FactorGraphModel, )
+- `on_tick`                args: (model::FactorGraphModel, )
+- `on_error`               args: (model::FactorGraphModel, err)
+- `on_complete`            args: (model::FactorGraphModel, )
+
 - ### `callbacks`
 
 The `rxinference` function has its own lifecycle. The user is free to provide some (or none) of the callbacks to inject some extra logging or other procedures in the preparation of the inference engine.
