@@ -1174,8 +1174,8 @@ For more information about some of the arguments, please check below.
 
 ## Note on NamedTuples
 
-When passing `NamedTuple` as a value for some argument, make sure you use a trailing comma for `NamedTuple`s with a single entry. The reason is that Julia treats `returnvars = (x = KeepLast())` and 
-`returnvars = (x = KeepLast(), )` expressions differently. First expression creates (or **overwrites!**) new local/global variable named `x` with contents `KeepLast()`. The second expression (note traling comma)
+When passing `NamedTuple` as a value for some argument, make sure you use a trailing comma for `NamedTuple`s with a single entry. The reason is that Julia treats `historyvars = (x = KeepLast())` and 
+`historyvars = (x = KeepLast(), )` expressions differently. First expression creates (or **overwrites!**) new local/global variable named `x` with contents `KeepLast()`. The second expression (note traling comma)
 creates `NamedTuple` with `x` as a key and `KeepLast()` as a value assigned for this key.
 
 ## Extended information about some of the arguments
