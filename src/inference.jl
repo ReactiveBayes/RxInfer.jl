@@ -1155,7 +1155,7 @@ For more information about some of the arguments, please check below.
 - `data`: `NamedTuple` or `Dict` with data, required
 - `initmarginals = nothing`: `NamedTuple` or `Dict` with initial marginals, optional
 - `initmessages = nothing`: `NamedTuple` or `Dict` with initial messages, optional
-- `autoupdates`: auto-updates specification, required for many models, see `@autoupdates`
+- `autoupdates = nothing`: auto-updates specification, required for many models, see `@autoupdates`
 - `constraints = nothing`: constraints specification object, optional, see `@constraints`
 - `meta  = nothing`: meta specification object, optional, may be required for some models, see `@meta`
 - `options = nothing`: model creation options, optional, see `ModelInferenceOptions`
@@ -1204,6 +1204,10 @@ In general for variational message passing every marginal distribution in a mode
 - ### `initmessages`
 
 Loopy belief propagation may need some messages in a model to be pre-initialised.
+
+- ### `autoupdates`
+
+See `@autoupdates` for more information.
 
 - ### `options`
 

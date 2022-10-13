@@ -6,10 +6,10 @@ For running inference on static datasets see the [Static Inference](@ref user-gu
 For manual inference specification see the [Manual Inference](@ref user-guide-manual-inference) section.
 
 ```@docs
-@autoupdates
 rxinference
 RxInfer.start
 RxInfer.stop
+@autoupdates
 RxInferenceEngine
 RxInferenceEvent
 ```
