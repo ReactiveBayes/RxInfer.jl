@@ -1,4 +1,4 @@
-# [Automatic inference specification on real-time datasets](@id lib-rxinference)
+# [Automatic inference specification on real-time datasets](@id user-guide-rxinference)
 
 `RxInfer` exports the `rxinference` function to quickly run and test you model with dynamic and potentially real-time datasets. Note, however, that this function does cover almost all capabilities of the __reactive__ inference engine, but for advanced use cases you may want to resort to the [manual inference specification](@ref user-guide-inference-execution-manual-specification).
 
