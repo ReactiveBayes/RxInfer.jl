@@ -35,7 +35,7 @@ window.onload = function() {
                     { title: "Examples", link: "poka" },
                     { title: "Papers", link: "poka" },
                     { title: "Team", link: "poka" },
-                    { title: "GitHub", link: "poka" },
+                    { title: "GitHub", link: "https://github.com/biaslab/RxInfer.jl", icon: [ "fab", "fa-github" ] },
                 ]
 
                 items.forEach((item) => {
@@ -44,10 +44,25 @@ window.onload = function() {
                         li.classList.add("nav-item")
                         li.appendChild((() => {
                             const a = document.createElement("a")
+
+                            if (item.icon !== undefined) {
+                                a.appendChild((() => {
+                                    const i = document.createElement("i")
+                                    i.classList.add(...(item.icon))
+                                    return i    
+                                })())
+                            }
+
                             a.classList.add("nav-link")
                             a.href = item.link
-                            a.innerHTML = item.title
                             a.title = item.title
+
+                            a.appendChild((() => {
+                                const span = document.createElement("span")
+                                span.innerHTML = `&nbsp;${item.title}`
+                                return span
+                            })())
+
                             return a
                         })())
                         return li
