@@ -161,8 +161,8 @@ end
     end
 
     n         = 10
-    hiddenx   = []
-    observedy = []
+    hiddenx   = Float64[]
+    observedy = Float64[]
     prevx     = 0.0
     for i in 1:n
         nextx = rand(NormalMeanVariance(prevx, 1.0))
@@ -178,7 +178,7 @@ end
 
             historyvars = keephistory > 0 ? NamedTuple{historyvars}(map(_ -> KeepEach(), historyvars)) : nothing
 
-            result = rxinference(
+            engine = rxinference(
                 model = test_model1(),
                 constraints = MeanField(),
                 data = (y = observedy,),
@@ -192,47 +192,52 @@ end
             )
 
             # Test that the `.model` reference is correct
-            @test length(getnodes(result.model)) === 4
-            @test length(getrandom(result.model)) === 3
-            @test length(getdata(result.model)) === 5
-            @test length(getconstant(result.model)) === 1
+            @test length(getnodes(engine.model)) === 4
+            @test length(getrandom(engine.model)) === 3
+            @test length(getdata(engine.model)) === 5
+            @test length(getconstant(engine.model)) === 1
 
             # Test that the `.returnval` reference is correct
-            @test result.returnval === (2, 3.0, "hello world")
+            @test engine.returnval === (2, 3.0, "hello world")
 
             # Test that the `.posteriors` field is constructed correctly
-            @test sort(collect(keys(result.posteriors))) == sort(collect(returnvars))
-            @test all(p -> typeof(p) <: Rocket.Subscribable, collect(values(result.posteriors)))
+            @test sort(collect(keys(engine.posteriors))) == sort(collect(returnvars))
+            @test all(p -> typeof(p) <: Rocket.Subscribable, collect(values(engine.posteriors)))
 
             # Check that we save the history of the marginals if needed
             if keephistory > 0
-                @test sort(collect(keys(result.history))) == sort(collect(keys(historyvars)))
+                @test sort(collect(keys(engine.history))) == sort(collect(keys(historyvars)))
                 for key in keys(historyvars)
-                    @test length(result.history[key]) === keephistory 
-                    @test length(result.history[key][end]) === iterations
+                    @test length(engine.history[key]) === keephistory 
+                    @test length(engine.history[key][end]) === iterations
                 end
             else
-                @test result.history === nothing
+                @test engine.history === nothing
             end
 
             if free_energy !== false
-                @test typeof(result.free_energy) <: Rocket.Subscribable
+                @test typeof(engine.free_energy) <: Rocket.Subscribable
             else 
-                @test_throws ErrorException result.free_energy
+                @test_throws ErrorException engine.free_energy
             end
 
             # Check that we save the history of the free energy if needed
             if keephistory > 0 && free_energy !== false
-                @test length(result.free_energy_history) === iterations
-                @test all(<=(0), diff(result.free_energy_history))
+                @test length(engine.free_energy_history) === iterations
+                @test all(<=(0), diff(engine.free_energy_history))
 
-                @test length(result.free_energy_final_only_history) === keephistory
-                @test length(result.free_energy_raw_history) === keephistory * iterations
+                @test length(engine.free_energy_final_only_history) === keephistory
+                @test length(engine.free_energy_raw_history) === keephistory * iterations
             else
-                @test_throws ErrorException result.free_energy_history
-                @test_throws ErrorException result.free_energy_final_only_history
-                @test_throws ErrorException result.free_energy_raw_history
+                @test_throws ErrorException engine.free_energy_history
+                @test_throws ErrorException engine.free_energy_final_only_history
+                @test_throws ErrorException engine.free_energy_raw_history
             end
+
+            # The engine might run on the static data just once
+            # `RxInfer.start` and `RxInfer.stop` after the completion should be disallowed
+            @test_logs (:warn, r"The engine.*completed.*") RxInfer.start(engine)
+            @test_logs (:warn, r"The engine.*completed.*") RxInfer.stop(engine)
         end
     end
 
@@ -240,7 +245,7 @@ end
 
         callbacksdata = []
         
-        result = rxinference(
+        engine = rxinference(
             model = test_model1(),
             constraints = MeanField(),
             data = (y = observedy,),
@@ -274,7 +279,7 @@ end
 
         callbacksdata = []
         
-        result = rxinference(
+        engine = rxinference(
             model = test_model1(),
             constraints = MeanField(),
             data = (y = observedy,),
@@ -298,7 +303,7 @@ end
         @test typeof(callbacksdata[1][2]) <: Tuple{}                                              # before_model_creation
         @test typeof(callbacksdata[2][2]) <: Tuple{FactorGraphModel, Tuple{Int, Float64, String}} # after_model_creation 
 
-        RxInfer.start(result)
+        RxInfer.start(engine)
 
         # Nothing extra should has been executed on `start`
         @test length(callbacksdata) === 2
@@ -323,6 +328,126 @@ end
 
         @test length(callbacksdata) === 0
     end
+
+    @testset "Check events usage" begin
+
+        struct CustomEventListener <: Rocket.NextActor{RxInferenceEvent}
+            eventsdata
+        end
+
+        function Rocket.on_next!(listener::CustomEventListener, event::RxInferenceEvent{ :on_new_data })
+            push!(listener.eventsdata, Any[ event ])
+        end
+
+        function Rocket.on_next!(listener::CustomEventListener, event::RxInferenceEvent)
+            push!(last(listener.eventsdata), event)
+        end
+
+        for iterations in (2, 3), keephistory = (0, 1)
+        
+            engine = rxinference(
+                model = test_model1(),
+                constraints = MeanField(),
+                data = (y = observedy,),
+                initmarginals = (x_t = NormalMeanVariance(0.0, 1e3), τ = GammaShapeRate(1.0, 1.0)),
+                autoupdates = autoupdates,
+                historyvars = KeepEach(),
+                keephistory = keephistory,
+                events = Val(
+                    (
+                        :on_new_data, 
+                        :before_iteration,
+                        :after_iteration,
+                        :before_auto_update, 
+                        :after_auto_update,
+                        :before_data_update, 
+                        :after_data_update,
+                        :before_history_save,
+                        :after_history_save,
+                        :on_tick,
+                        :on_error,
+                        :on_complete
+                    )
+                ),
+                iterations = iterations,
+                autostart = false,
+                warn = false
+            )
+
+            event_listener = CustomEventListener([])
+
+            subscription = subscribe!(engine.events, event_listener)
+
+            RxInfer.start(engine)
+
+            eventsdata = event_listener.eventsdata
+
+            # Check that the number of event blocks consitent with the number of data points
+            @test length(eventsdata) === length(observedy)
+
+            for (index, events) in enumerate(eventsdata)
+                @test length(filter(event -> event isa RxInferenceEvent{:on_new_data}, events)) == 1
+
+                # Check the associated data with the `:on_new_data` events
+                foreach(filter(event -> event isa RxInferenceEvent{:on_new_data}, events)) do event 
+                    # `(model, data) = event`
+                    model, data = event
+                    @test model === engine.model
+                    @test data === (y = observedy[index], )
+                end
+
+                # Check that the number of `:before_iteration` and `:after_iteration` events depends on the number of iterations
+                @test length(filter(event -> event isa RxInferenceEvent{:before_iteration}, events)) == iterations
+                @test length(filter(event -> event isa RxInferenceEvent{:after_iteration}, events)) == iterations
+
+                # Check the associated data with the `:before_iteration` events
+                foreach(enumerate(filter(event -> event isa RxInferenceEvent{:before_iteration}, events))) do (ii, event)
+                    model, iteration = event
+                    @test model === engine.model
+                    @test iteration === ii
+                end
+
+                # Check the associated data with the `:after_iteration` events
+                foreach(enumerate(filter(event -> event isa RxInferenceEvent{:after_iteration}, events))) do (ii, event)
+                    model, iteration = event
+                    @test model === engine.model
+                    @test iteration === ii
+                end
+
+                # Check the correct ordering of the `:before_iteration` and `:after_iteration` events
+                @test map(name, filter(event -> event isa RxInferenceEvent{:before_iteration} || event isa RxInferenceEvent{:after_iteration}, events)) == 
+                    Iterators.repeat([ :before_iteration, :after_iteration ], iterations)
+                
+
+                # Check that the number of `:before_auto_update` and `:after_auto_update` events depends on the number of iterations
+                @test length(filter(event -> event isa RxInferenceEvent{:before_auto_update}, events)) == iterations
+                @test length(filter(event -> event isa RxInferenceEvent{:after_auto_update}, events)) == iterations
+
+                # Check that the number of `:before_data_update` and `:after_data_update` events depends on the number of iterations
+                @test length(filter(event -> event isa RxInferenceEvent{:before_data_update}, events)) == iterations
+                @test length(filter(event -> event isa RxInferenceEvent{:after_data_update}, events)) == iterations
+
+                if keephistory > 0
+                    @test length(filter(event -> event isa RxInferenceEvent{:before_history_save}, events)) == 1
+                    @test length(filter(event -> event isa RxInferenceEvent{:after_history_save}, events)) == 1
+                end
+
+                @test length(filter(event -> event isa RxInferenceEvent{:on_tick}, events)) == 1
+
+                # We should receive the `:on_complete` event only for the last data point
+                if index === length(eventsdata)
+                    @test length(filter(event -> event isa RxInferenceEvent{:on_complete}, events)) == 1
+                else
+                    @test length(filter(event -> event isa RxInferenceEvent{:on_complete}, events)) == 0
+                end
+            end
+
+            unsubscribe!(subscription)
+        end
+
+    end
+
+    
 
     @testset "Check the event creation and unrolling syntax" begin 
         data1, data2 = RxInferenceEvent(Val(:event1), (1, 2.0))

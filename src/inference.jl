@@ -740,7 +740,10 @@ mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M
     model      :: M
     returnval  :: N
     events     :: E
-    is_running :: Bool
+    is_running   :: Bool
+    is_errored   :: Bool
+    is_completed :: Bool
+    error :: Any
     ticklock   :: J
 
     RxInferenceEngine(
@@ -786,6 +789,9 @@ mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M
             returnval,
             events,
             false,
+            false,
+            false,
+            nothing,
             ticklock
         )
     end
@@ -865,8 +871,13 @@ function start(engine::RxInferenceEngine{T}) where {T}
 
     rxexecutorlock(engine.ticklock) do
 
+        if engine.is_completed || engine.is_errored
+            @warn "The engine has been completed or errored. Cannot start an exhausted engine."
+            return nothing
+        end
+
         if engine.is_running
-            @warn "Engine is already running. Cannot start a single engine twice."
+            @warn "The engine is already running. Cannot start a single engine twice."
             return nothing
         end
 
@@ -919,8 +930,13 @@ function stop(engine::RxInferenceEngine)
 
     rxexecutorlock(engine.ticklock) do
 
+        if engine.is_completed || engine.is_errored
+            @warn "The engine has been completed or errored. Cannot stop an exhausted engine."
+            return nothing
+        end
+
         if !engine.is_running
-            @warn "Engine is not running. Cannot stop an idle engine"
+            @warn "The engine is not running. Cannot stop an idle engine."
             return nothing
         end
 
@@ -1036,9 +1052,14 @@ function Rocket.on_next!(executor::RxInferenceEventExecutor{T}, event::T) where 
 end
 
 function Rocket.on_error!(executor::RxInferenceEventExecutor, err) 
-    _model = executor.engine.model
+
+    _engine         = executor.engine
+    _model          = executor.engine.model
     _enabled_events = executor.engine.enabled_events
     _events         = executor.engine.events
+
+    _engine.is_errored = true
+    _engine.error      = err
 
     inference_invoke_event(Val(:on_error), Val(_enabled_events), _events, _model, err)
 
@@ -1047,9 +1068,12 @@ end
 
 function Rocket.on_complete!(executor::RxInferenceEventExecutor) 
 
-    _model = executor.engine.model
+    _engine         = executor.engine
+    _model          = executor.engine.model
     _enabled_events = executor.engine.enabled_events
     _events         = executor.engine.events
+
+    _engine.is_completed = true
 
     inference_invoke_event(Val(:on_complete), Val(_enabled_events), _events, _model)
 
@@ -1105,6 +1129,8 @@ struct RxInferenceEvent{T, D}
 
     RxInferenceEvent(::Val{T}, data::D) where {T, D} = new{T, D}(data)
 end
+
+RxInfer.name(::RxInferenceEvent{T}) where {T} = T
 
 Base.show(io::IO, ::RxInferenceEvent{T}) where {T} = print(io, "RxInferenceEvent(:", T, ")")
 
