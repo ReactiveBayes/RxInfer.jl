@@ -37,12 +37,12 @@ end
 import Pkg
 
 if ENV["USE_DEV"] == "true"
-    Pkg.rm("ReactiveMP");
-    Pkg.rm("GraphPPL");
-    Pkg.rm("Rocket");
-    Pkg.develop(Pkg.PackageSpec(path=joinpath(Pkg.devdir(), "ReactiveMP.jl")));
-    Pkg.develop(Pkg.PackageSpec(path=joinpath(Pkg.devdir(), "GraphPPL.jl")));
-    Pkg.develop(Pkg.PackageSpec(path=joinpath(Pkg.devdir(), "Rocket.jl")));
+    Pkg.rm("ReactiveMP")
+    Pkg.rm("GraphPPL")
+    Pkg.rm("Rocket")
+    Pkg.develop(Pkg.PackageSpec(path = joinpath(Pkg.devdir(), "ReactiveMP.jl")))
+    Pkg.develop(Pkg.PackageSpec(path = joinpath(Pkg.devdir(), "GraphPPL.jl")))
+    Pkg.develop(Pkg.PackageSpec(path = joinpath(Pkg.devdir(), "Rocket.jl")))
 end
 
 # DocMeta.setdocmeta!(RxInfer, :DocTestSetup, :(using RxInfer, Distributions); recursive=true)

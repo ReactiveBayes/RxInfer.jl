@@ -17,7 +17,7 @@ import ReactiveMP: InfCountingReal, FactorNodeCreationOptions, make_node, activa
             events = []
 
             subscription = subscribe!(
-                vbenergy |> safe(), lambda(on_next     = (data) -> push!(events, float(data)), on_error    = (err) -> push!(events, err), on_complete = () -> push!(events, "completed"))
+                vbenergy |> safe(), lambda(on_next = (data) -> push!(events, float(data)), on_error = (err) -> push!(events, err), on_complete = () -> push!(events, "completed"))
             )
 
             # First value is ok
@@ -46,7 +46,7 @@ import ReactiveMP: InfCountingReal, FactorNodeCreationOptions, make_node, activa
             events = []
 
             subscription = subscribe!(
-                vbenergy |> safe(), lambda(on_next     = (data) -> push!(events, float(data)), on_error    = (err) -> push!(events, err), on_complete = () -> push!(events, "completed"))
+                vbenergy |> safe(), lambda(on_next = (data) -> push!(events, float(data)), on_error = (err) -> push!(events, err), on_complete = () -> push!(events, "completed"))
             )
 
             # First value is ok
@@ -75,7 +75,7 @@ import ReactiveMP: InfCountingReal, FactorNodeCreationOptions, make_node, activa
             events = []
 
             subscription = subscribe!(
-                vbenergy |> safe(), lambda(on_next     = (data) -> push!(events, float(data)), on_error    = (err) -> push!(events, err), on_complete = () -> push!(events, "completed"))
+                vbenergy |> safe(), lambda(on_next = (data) -> push!(events, float(data)), on_error = (err) -> push!(events, err), on_complete = () -> push!(events, "completed"))
             )
 
             # First value is ok

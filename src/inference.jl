@@ -394,7 +394,17 @@ function inference(;
     # Check for available callbacks
     if warn && !isnothing(callbacks)
         for key in keys(callbacks)
-            if key ∉ (:on_marginal_update, :before_model_creation, :after_model_creation, :before_inference, :before_iteration, :before_data_update, :after_data_update, :after_iteration, :after_inference)
+            if key ∉ (
+                :on_marginal_update,
+                :before_model_creation,
+                :after_model_creation,
+                :before_inference,
+                :before_iteration,
+                :before_data_update,
+                :after_data_update,
+                :after_iteration,
+                :after_inference
+            )
                 @warn "Unknown callback specification: $(key). Available callbacks: on_marginal_update, before_model_creation, after_model_creation, before_inference, before_iteration, before_data_update, after_data_update, after_iteration, after_inference. Set `warn = false` to supress this warning."
             end
         end
@@ -736,15 +746,15 @@ mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M
     fe_subscription :: Teardown
 
     # utility 
-    iterations :: I
-    model      :: M
-    returnval  :: N
-    events     :: E
+    iterations   :: I
+    model        :: M
+    returnval    :: N
+    events       :: E
     is_running   :: Bool
     is_errored   :: Bool
     is_completed :: Bool
-    error :: Any
-    ticklock   :: J
+    error        :: Any
+    ticklock     :: J
 
     RxInferenceEngine(
         ::Type{T},
@@ -808,8 +818,8 @@ function Base.show(io::IO, engine::RxInferenceEngine)
     print(io, ")\n")
 
     print(io, rpad("  Free Energy stream", lcolumnlen), " | ")
-    if !isnothing(getfield(engine, :fe_source)) 
-        print(io, "enabled\n") 
+    if !isnothing(getfield(engine, :fe_source))
+        print(io, "enabled\n")
     else
         print(io, "disabled\n")
     end
@@ -820,8 +830,8 @@ function Base.show(io::IO, engine::RxInferenceEngine)
     print(io, ")\n")
 
     print(io, rpad("  Free Energy history", lcolumnlen), " | ")
-    if !isnothing(getfield(engine, :fe_actor)) 
-        print(io, "available\n") 
+    if !isnothing(getfield(engine, :fe_actor))
+        print(io, "available\n")
     else
         print(io, "unavailable\n")
     end
@@ -833,7 +843,6 @@ end
 enabled_events(::RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E}) where {T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E} = X
 
 function Base.getproperty(result::RxInferenceEngine, property::Symbol)
-
     if property === :enabled_events
         return enabled_events(result)
     elseif property === :free_energy
@@ -868,9 +877,7 @@ Use [`RxInfer.stop`](@ref) to stop the `RxInferenceEngine`. Note that it is not 
 See also: [`RxInfer.stop`](@ref)
 """
 function start(engine::RxInferenceEngine{T}) where {T}
-
     rxexecutorlock(engine.ticklock) do
-
         if engine.is_completed || engine.is_errored
             @warn "The engine has been completed or errored. Cannot start an exhausted engine."
             return nothing
@@ -912,7 +919,6 @@ function start(engine::RxInferenceEngine{T}) where {T}
         engine.mainsubscription = subscribe!(engine.datastream, _eventexecutor)
 
         inference_invoke_event(Val(:after_start), Val(_enabled_events), _events, engine)
-
     end
 
     return nothing
@@ -927,9 +933,7 @@ Use [`RxInfer.start`](@ref) to start the `RxInferenceEngine` again. Note that it
 See also: [`RxInfer.start`](@ref)
 """
 function stop(engine::RxInferenceEngine)
-
     rxexecutorlock(engine.ticklock) do
-
         if engine.is_completed || engine.is_errored
             @warn "The engine has been completed or errored. Cannot stop an exhausted engine."
             return nothing
@@ -953,7 +957,6 @@ function stop(engine::RxInferenceEngine)
         engine.is_running = false
 
         inference_invoke_event(Val(:after_stop), Val(_enabled_events), _events, engine)
-
     end
 
     return nothing
@@ -978,9 +981,9 @@ function Rocket.on_next!(executor::RxInferenceEventExecutor{T}, event::T) where 
     # It listens new data and is supposed to run indefinitely
 
     # By default `_ticklock` is nothing, `executorlock` is defined such that it does not sync if `_ticklock` is nothing
-    _ticklock  = executor.engine.ticklock
+    _ticklock = executor.engine.ticklock
 
-    rxexecutorlock(_ticklock) do 
+    rxexecutorlock(_ticklock) do
 
         # `executor.engine` is defined as mutable 
         # we extract all variables before the loop so Julia does not extract them every time
@@ -1051,8 +1054,7 @@ function Rocket.on_next!(executor::RxInferenceEventExecutor{T}, event::T) where 
     end
 end
 
-function Rocket.on_error!(executor::RxInferenceEventExecutor, err) 
-
+function Rocket.on_error!(executor::RxInferenceEventExecutor, err)
     _engine         = executor.engine
     _model          = executor.engine.model
     _enabled_events = executor.engine.enabled_events
@@ -1066,8 +1068,7 @@ function Rocket.on_error!(executor::RxInferenceEventExecutor, err)
     __inference_process_error(err)
 end
 
-function Rocket.on_complete!(executor::RxInferenceEventExecutor) 
-
+function Rocket.on_complete!(executor::RxInferenceEventExecutor)
     _engine         = executor.engine
     _model          = executor.engine.model
     _enabled_events = executor.engine.enabled_events

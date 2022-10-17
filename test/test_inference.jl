@@ -173,9 +173,7 @@ end
     end
 
     @testset "Check basic usage" begin
-        
-        for keephistory in (0, 1, 2), iterations in (3, 4), free_energy in (true, Float64, false), returnvars in ((:x_t, ), (:x_t, :τ)), historyvars in ((:x_t, ), (:x_t, :τ))
-
+        for keephistory in (0, 1, 2), iterations in (3, 4), free_energy in (true, Float64, false), returnvars in ((:x_t,), (:x_t, :τ)), historyvars in ((:x_t,), (:x_t, :τ))
             historyvars = keephistory > 0 ? NamedTuple{historyvars}(map(_ -> KeepEach(), historyvars)) : nothing
 
             engine = rxinference(
@@ -188,7 +186,7 @@ end
                 initmarginals = (x_t = NormalMeanVariance(0.0, 1e3), τ = GammaShapeRate(1.0, 1.0)),
                 iterations = iterations,
                 free_energy = free_energy,
-                autoupdates = autoupdates,
+                autoupdates = autoupdates
             )
 
             # Test that the `.model` reference is correct
@@ -208,7 +206,7 @@ end
             if keephistory > 0
                 @test sort(collect(keys(engine.history))) == sort(collect(keys(historyvars)))
                 for key in keys(historyvars)
-                    @test length(engine.history[key]) === keephistory 
+                    @test length(engine.history[key]) === keephistory
                     @test length(engine.history[key][end]) === iterations
                 end
             else
@@ -217,7 +215,7 @@ end
 
             if free_energy !== false
                 @test typeof(engine.free_energy) <: Rocket.Subscribable
-            else 
+            else
                 @test_throws ErrorException engine.free_energy
             end
 
@@ -242,9 +240,8 @@ end
     end
 
     @testset "Check callbacks usage: autostart enabled" begin
-
         callbacksdata = []
-        
+
         engine = rxinference(
             model = test_model1(),
             constraints = MeanField(),
@@ -255,30 +252,23 @@ end
                 before_model_creation = (args...) -> push!(callbacksdata, (:before_model_creation, args)),
                 after_model_creation = (args...) -> push!(callbacksdata, (:after_model_creation, args)),
                 before_autostart = (args...) -> push!(callbacksdata, (:before_autostart, args)),
-                after_autostart = (args...) -> push!(callbacksdata, (:after_autostart, args)),
+                after_autostart = (args...) -> push!(callbacksdata, (:after_autostart, args))
             ),
             autostart = true
         )
 
         # First check the order
-        @test first.(callbacksdata) == [
-            :before_model_creation,
-            :after_model_creation,
-            :before_autostart,
-            :after_autostart,
-        ]
+        @test first.(callbacksdata) == [:before_model_creation, :after_model_creation, :before_autostart, :after_autostart]
 
         @test typeof(callbacksdata[1][2]) <: Tuple{}                                              # before_model_creation
         @test typeof(callbacksdata[2][2]) <: Tuple{FactorGraphModel, Tuple{Int, Float64, String}} # after_model_creation 
         @test typeof(callbacksdata[3][2]) <: Tuple{RxInferenceEngine}                             # before_autostart 
         @test typeof(callbacksdata[4][2]) <: Tuple{RxInferenceEngine}                             # after_autostart
-
     end
 
     @testset "Check callbacks usage: autostart disabled" begin
-
         callbacksdata = []
-        
+
         engine = rxinference(
             model = test_model1(),
             constraints = MeanField(),
@@ -289,16 +279,13 @@ end
                 before_model_creation = (args...) -> push!(callbacksdata, (:before_model_creation, args)),
                 after_model_creation = (args...) -> push!(callbacksdata, (:after_model_creation, args)),
                 before_autostart = (args...) -> push!(callbacksdata, (:before_autostart, args)),
-                after_autostart = (args...) -> push!(callbacksdata, (:after_autostart, args)),
+                after_autostart = (args...) -> push!(callbacksdata, (:after_autostart, args))
             ),
             autostart = false
         )
 
         # First check the order
-        @test first.(callbacksdata) == [
-            :before_model_creation,
-            :after_model_creation,
-        ]
+        @test first.(callbacksdata) == [:before_model_creation, :after_model_creation]
 
         @test typeof(callbacksdata[1][2]) <: Tuple{}                                              # before_model_creation
         @test typeof(callbacksdata[2][2]) <: Tuple{FactorGraphModel, Tuple{Int, Float64, String}} # after_model_creation 
@@ -307,22 +294,18 @@ end
 
         # Nothing extra should has been executed on `start`
         @test length(callbacksdata) === 2
-
     end
 
     @testset "Check callbacks usage: unknown callback warning" begin
-
         callbacksdata = []
-        
+
         @test_warn r"Unknown callback specification.*hello_world.*Available callbacks.*" result = rxinference(
             model = test_model1(),
             constraints = MeanField(),
             data = (y = observedy,),
             initmarginals = (x_t = NormalMeanVariance(0.0, 1e3), τ = GammaShapeRate(1.0, 1.0)),
             autoupdates = autoupdates,
-            callbacks = (
-                hello_world = (args...) -> push!(callbacksdata, args),
-            ),
+            callbacks = (hello_world = (args...) -> push!(callbacksdata, args),),
             autostart = true
         )
 
@@ -330,21 +313,19 @@ end
     end
 
     @testset "Check events usage" begin
-
         struct CustomEventListener <: Rocket.NextActor{RxInferenceEvent}
             eventsdata
         end
 
-        function Rocket.on_next!(listener::CustomEventListener, event::RxInferenceEvent{ :on_new_data })
-            push!(listener.eventsdata, Any[ event ])
+        function Rocket.on_next!(listener::CustomEventListener, event::RxInferenceEvent{:on_new_data})
+            push!(listener.eventsdata, Any[event])
         end
 
         function Rocket.on_next!(listener::CustomEventListener, event::RxInferenceEvent)
             push!(last(listener.eventsdata), event)
         end
 
-        for iterations in (2, 3), keephistory = (0, 1)
-        
+        for iterations in (2, 3), keephistory in (0, 1)
             engine = rxinference(
                 model = test_model1(),
                 constraints = MeanField(),
@@ -353,22 +334,20 @@ end
                 autoupdates = autoupdates,
                 historyvars = KeepEach(),
                 keephistory = keephistory,
-                events = Val(
-                    (
-                        :on_new_data, 
-                        :before_iteration,
-                        :after_iteration,
-                        :before_auto_update, 
-                        :after_auto_update,
-                        :before_data_update, 
-                        :after_data_update,
-                        :before_history_save,
-                        :after_history_save,
-                        :on_tick,
-                        :on_error,
-                        :on_complete
-                    )
-                ),
+                events = Val((
+                    :on_new_data,
+                    :before_iteration,
+                    :after_iteration,
+                    :before_auto_update,
+                    :after_auto_update,
+                    :before_data_update,
+                    :after_data_update,
+                    :before_history_save,
+                    :after_history_save,
+                    :on_tick,
+                    :on_error,
+                    :on_complete
+                )),
                 iterations = iterations,
                 autostart = false,
                 warn = false
@@ -389,11 +368,11 @@ end
                 @test length(filter(event -> event isa RxInferenceEvent{:on_new_data}, events)) == 1
 
                 # Check the associated data with the `:on_new_data` events
-                foreach(filter(event -> event isa RxInferenceEvent{:on_new_data}, events)) do event 
+                foreach(filter(event -> event isa RxInferenceEvent{:on_new_data}, events)) do event
                     # `(model, data) = event`
                     model, data = event
                     @test model === engine.model
-                    @test data === (y = observedy[index], )
+                    @test data === (y = observedy[index],)
                 end
 
                 # Check that the number of `:before_iteration` and `:after_iteration` events depends on the number of iterations
@@ -415,9 +394,9 @@ end
                 end
 
                 # Check the correct ordering of the `:before_iteration` and `:after_iteration` events
-                @test map(name, filter(event -> event isa RxInferenceEvent{:before_iteration} || event isa RxInferenceEvent{:after_iteration}, events)) == 
-                    Iterators.repeat([ :before_iteration, :after_iteration ], iterations)
-                
+                @test map(name, filter(event -> event isa RxInferenceEvent{:before_iteration} || event isa RxInferenceEvent{:after_iteration}, events)) ==
+                    Iterators.repeat([:before_iteration, :after_iteration], iterations)
+
                 # Check that the number of `:before_auto_update` and `:after_auto_update` events depends on the number of iterations
                 @test length(filter(event -> event isa RxInferenceEvent{:before_auto_update}, events)) == iterations
                 @test length(filter(event -> event isa RxInferenceEvent{:after_auto_update}, events)) == iterations
@@ -428,7 +407,7 @@ end
                     @test model === engine.model
                     @test iteration === ii
                     @test length(fupdate) === 3
-                    @test name.(getindex.(Iterators.flatten(collect.(fupdate)), 1)) == [ :x_t_min_mean, :x_t_min_var, :τ_shape, :τ_rate ]
+                    @test name.(getindex.(Iterators.flatten(collect.(fupdate)), 1)) == [:x_t_min_mean, :x_t_min_var, :τ_shape, :τ_rate]
                     @test eltype(getindex.(Iterators.flatten(collect.(fupdate)), 2)) === Float64
                 end
 
@@ -438,13 +417,13 @@ end
                     @test model === engine.model
                     @test iteration === ii
                     @test length(fupdate) === 3
-                    @test name.(getindex.(Iterators.flatten(collect.(fupdate)), 1)) == [ :x_t_min_mean, :x_t_min_var, :τ_shape, :τ_rate ]
+                    @test name.(getindex.(Iterators.flatten(collect.(fupdate)), 1)) == [:x_t_min_mean, :x_t_min_var, :τ_shape, :τ_rate]
                     @test eltype(getindex.(Iterators.flatten(collect.(fupdate)), 2)) === Float64
                 end
 
                 # Check the correct ordering of the `:before_auto_update` and `:after_auto_update` events
-                @test map(name, filter(event -> event isa RxInferenceEvent{:before_auto_update} || event isa RxInferenceEvent{:after_auto_update}, events)) == 
-                    Iterators.repeat([ :before_auto_update, :after_auto_update ], iterations)
+                @test map(name, filter(event -> event isa RxInferenceEvent{:before_auto_update} || event isa RxInferenceEvent{:after_auto_update}, events)) ==
+                    Iterators.repeat([:before_auto_update, :after_auto_update], iterations)
 
                 # Check that the number of `:before_data_update` and `:after_data_update` events depends on the number of iterations
                 @test length(filter(event -> event isa RxInferenceEvent{:before_data_update}, events)) == iterations
@@ -455,7 +434,7 @@ end
                     model, iteration, data = event
                     @test model === engine.model
                     @test iteration === ii
-                    @test data === (y = observedy[index], )
+                    @test data === (y = observedy[index],)
                 end
 
                 # Check the associated data with the `:after_auto_update` events
@@ -463,29 +442,25 @@ end
                     model, iteration, data = event
                     @test model === engine.model
                     @test iteration === ii
-                    @test data === (y = observedy[index], )
+                    @test data === (y = observedy[index],)
                 end
 
                 # Check the correct ordering of the `:before_auto_update` and `:after_auto_update` events
-                @test map(name, filter(event -> event isa RxInferenceEvent{:before_data_update} || event isa RxInferenceEvent{:after_data_update}, events)) == 
-                    Iterators.repeat([ :before_data_update, :after_data_update ], iterations)
+                @test map(name, filter(event -> event isa RxInferenceEvent{:before_data_update} || event isa RxInferenceEvent{:after_data_update}, events)) ==
+                    Iterators.repeat([:before_data_update, :after_data_update], iterations)
 
                 # Check the correct ordering of the iteration related events
-                @test map(name, filter(events) do event
-                    return event isa RxInferenceEvent{:before_iteration} ||
-                        event isa RxInferenceEvent{:before_auto_update} ||
-                        event isa RxInferenceEvent{:after_auto_update} ||
-                        event isa RxInferenceEvent{:before_data_update} ||
-                        event isa RxInferenceEvent{:after_data_update} ||
-                        event isa RxInferenceEvent{:after_iteration}
-                end) == Iterators.repeat([ 
-                    :before_iteration, 
-                    :before_auto_update, 
-                    :after_auto_update, 
-                    :before_data_update, 
-                    :after_data_update, 
-                    :after_iteration 
-                ], iterations)
+                @test map(
+                    name,
+                    filter(events) do event
+                        return event isa RxInferenceEvent{:before_iteration} ||
+                               event isa RxInferenceEvent{:before_auto_update} ||
+                               event isa RxInferenceEvent{:after_auto_update} ||
+                               event isa RxInferenceEvent{:before_data_update} ||
+                               event isa RxInferenceEvent{:after_data_update} ||
+                               event isa RxInferenceEvent{:after_iteration}
+                    end
+                ) == Iterators.repeat([:before_iteration, :before_auto_update, :after_auto_update, :before_data_update, :after_data_update, :after_iteration], iterations)
 
                 if keephistory > 0
                     @test length(filter(event -> event isa RxInferenceEvent{:before_history_save}, events)) == 1
@@ -504,12 +479,9 @@ end
 
             unsubscribe!(subscription)
         end
-
     end
 
-    
-
-    @testset "Check the event creation and unrolling syntax" begin 
+    @testset "Check the event creation and unrolling syntax" begin
         data1, data2 = RxInferenceEvent(Val(:event1), (1, 2.0))
 
         @test data1 === 1
