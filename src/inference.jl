@@ -1007,20 +1007,20 @@ function Rocket.on_next!(executor::RxInferenceEventExecutor{T}, event::T) where 
             inference_invoke_event(Val(:before_iteration), Val(_enabled_events), _events, _model, iteration)
 
             # At first we update all our priors (auto updates) with the fixed values from the `redirectupdate` field
-            inference_invoke_event(Val(:before_auto_update), Val(_enabled_events), _events, _model, fupdates)
+            inference_invoke_event(Val(:before_auto_update), Val(_enabled_events), _events, _model, iteration, fupdates)
             foreach(fupdates) do fupdate
                 for (datavar, value) in fupdate
                     update!(datavar, value)
                 end
             end
-            inference_invoke_event(Val(:after_auto_update), Val(_enabled_events), _events, _model, fupdates)
+            inference_invoke_event(Val(:after_auto_update), Val(_enabled_events), _events, _model, iteration, fupdates)
 
             # At second we pass our observations
-            inference_invoke_event(Val(:before_data_update), Val(_enabled_events), _events, _model, event)
+            inference_invoke_event(Val(:before_data_update), Val(_enabled_events), _events, _model, iteration, event)
             for (datavar, value) in zip(_datavars, values(event))
                 update!(datavar, value)
             end
-            inference_invoke_event(Val(:after_data_update), Val(_enabled_events), _events, _model, event)
+            inference_invoke_event(Val(:after_data_update), Val(_enabled_events), _events, _model, iteration, event)
 
             __check_and_unset_updated!(_updateflags)
 
@@ -1352,10 +1352,10 @@ The list of all possible events and their event data is present below (see `RxIn
 
 - `on_new_data`:           args: (model::FactorGraphModel, data)
 - `before_iteration`       args: (model::FactorGraphModel, iteration)
-- `before_auto_update`     args: (model::FactorGraphModel, auto_updates)
-- `after_auto_update`      args: (model::FactorGraphModel, auto_updates)
-- `before_data_update`     args: (model::FactorGraphModel, data)
-- `after_data_update`      args: (model::FactorGraphModel, data)
+- `before_auto_update`     args: (model::FactorGraphModel, iteration, auto_updates)
+- `after_auto_update`      args: (model::FactorGraphModel, iteration, auto_updates)
+- `before_data_update`     args: (model::FactorGraphModel, iteration, data)
+- `after_data_update`      args: (model::FactorGraphModel, iteration, data)
 - `after_iteration`        args: (model::FactorGraphModel, iteration)
 - `before_history_save`    args: (model::FactorGraphModel, )
 - `after_history_save`     args: (model::FactorGraphModel, )

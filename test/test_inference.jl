@@ -418,14 +418,74 @@ end
                 @test map(name, filter(event -> event isa RxInferenceEvent{:before_iteration} || event isa RxInferenceEvent{:after_iteration}, events)) == 
                     Iterators.repeat([ :before_iteration, :after_iteration ], iterations)
                 
-
                 # Check that the number of `:before_auto_update` and `:after_auto_update` events depends on the number of iterations
                 @test length(filter(event -> event isa RxInferenceEvent{:before_auto_update}, events)) == iterations
                 @test length(filter(event -> event isa RxInferenceEvent{:after_auto_update}, events)) == iterations
 
+                # Check the associated data with the `:before_auto_update` events
+                foreach(enumerate(filter(event -> event isa RxInferenceEvent{:before_auto_update}, events))) do (ii, event)
+                    model, iteration, fupdate = event
+                    @test model === engine.model
+                    @test iteration === ii
+                    @test length(fupdate) === 3
+                    @test name.(getindex.(Iterators.flatten(collect.(fupdate)), 1)) == [ :x_t_min_mean, :x_t_min_var, :τ_shape, :τ_rate ]
+                    @test eltype(getindex.(Iterators.flatten(collect.(fupdate)), 2)) === Float64
+                end
+
+                # Check the associated data with the `:after_auto_update` events
+                foreach(enumerate(filter(event -> event isa RxInferenceEvent{:after_auto_update}, events))) do (ii, event)
+                    model, iteration, fupdate = event
+                    @test model === engine.model
+                    @test iteration === ii
+                    @test length(fupdate) === 3
+                    @test name.(getindex.(Iterators.flatten(collect.(fupdate)), 1)) == [ :x_t_min_mean, :x_t_min_var, :τ_shape, :τ_rate ]
+                    @test eltype(getindex.(Iterators.flatten(collect.(fupdate)), 2)) === Float64
+                end
+
+                # Check the correct ordering of the `:before_auto_update` and `:after_auto_update` events
+                @test map(name, filter(event -> event isa RxInferenceEvent{:before_auto_update} || event isa RxInferenceEvent{:after_auto_update}, events)) == 
+                    Iterators.repeat([ :before_auto_update, :after_auto_update ], iterations)
+
                 # Check that the number of `:before_data_update` and `:after_data_update` events depends on the number of iterations
                 @test length(filter(event -> event isa RxInferenceEvent{:before_data_update}, events)) == iterations
                 @test length(filter(event -> event isa RxInferenceEvent{:after_data_update}, events)) == iterations
+
+                # Check the associated data with the `:before_auto_update` events
+                foreach(enumerate(filter(event -> event isa RxInferenceEvent{:before_data_update}, events))) do (ii, event)
+                    model, iteration, data = event
+                    @test model === engine.model
+                    @test iteration === ii
+                    @test data === (y = observedy[index], )
+                end
+
+                # Check the associated data with the `:after_auto_update` events
+                foreach(enumerate(filter(event -> event isa RxInferenceEvent{:after_data_update}, events))) do (ii, event)
+                    model, iteration, data = event
+                    @test model === engine.model
+                    @test iteration === ii
+                    @test data === (y = observedy[index], )
+                end
+
+                # Check the correct ordering of the `:before_auto_update` and `:after_auto_update` events
+                @test map(name, filter(event -> event isa RxInferenceEvent{:before_data_update} || event isa RxInferenceEvent{:after_data_update}, events)) == 
+                    Iterators.repeat([ :before_data_update, :after_data_update ], iterations)
+
+                # Check the correct ordering of the iteration related events
+                @test map(name, filter(events) do event
+                    return event isa RxInferenceEvent{:before_iteration} ||
+                        event isa RxInferenceEvent{:before_auto_update} ||
+                        event isa RxInferenceEvent{:after_auto_update} ||
+                        event isa RxInferenceEvent{:before_data_update} ||
+                        event isa RxInferenceEvent{:after_data_update} ||
+                        event isa RxInferenceEvent{:after_iteration}
+                end) == Iterators.repeat([ 
+                    :before_iteration, 
+                    :before_auto_update, 
+                    :after_auto_update, 
+                    :before_data_update, 
+                    :after_data_update, 
+                    :after_iteration 
+                ], iterations)
 
                 if keephistory > 0
                     @test length(filter(event -> event isa RxInferenceEvent{:before_history_save}, events)) == 1
