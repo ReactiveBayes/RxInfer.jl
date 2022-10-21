@@ -11,7 +11,7 @@ function GraphPPL.write_model_structure(::RxInferBackend, ms_name, ms_model, ms_
     generator = gensym(ms_name)
 
     # Extract symbols from the arguments specification
-    ms_args_symbols = map(ms_args) do ms_arg 
+    ms_args_symbols = map(ms_args) do ms_arg
         if @capture(ms_arg, sym_ = var_)
             return sym
         end
@@ -19,7 +19,7 @@ function GraphPPL.write_model_structure(::RxInferBackend, ms_name, ms_model, ms_
     end
 
     # Extract symbols from the keyword arguments specification
-    ms_kwargs_symbols = map(ms_kwargs) do ms_kwarg 
+    ms_kwargs_symbols = map(ms_kwargs) do ms_kwarg
         if @capture(ms_kwarg, sym_ = var_)
             return sym
         end
