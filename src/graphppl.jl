@@ -10,6 +10,22 @@ struct RxInferBackend end
 function GraphPPL.write_model_structure(::RxInferBackend, ms_name, ms_model, ms_args_checks, ms_args_const_init_block, ms_args, ms_kwargs, ms_body)
     generator = gensym(ms_name)
 
+    # Extract symbols from the arguments specification
+    ms_args_symbols = map(ms_args) do ms_arg 
+        if @capture(ms_arg, sym_ = var_)
+            return sym
+        end
+        return ms_arg
+    end
+
+    # Extract symbols from the keyword arguments specification
+    ms_kwargs_symbols = map(ms_kwargs) do ms_kwarg 
+        if @capture(ms_kwarg, sym_ = var_)
+            return sym
+        end
+        return ms_kwarg
+    end
+
     return quote
         function ($generator)($ms_model::RxInfer.FactorGraphModel, $(ms_args...); $(ms_kwargs...))
             $(ms_args_checks...)
@@ -18,7 +34,7 @@ function GraphPPL.write_model_structure(::RxInferBackend, ms_name, ms_model, ms_
         end
 
         function $ms_name($(ms_args...); $(ms_kwargs...))
-            return RxInfer.ModelGenerator($generator, ($(ms_args...),), (; $(ms_kwargs...)))
+            return RxInfer.ModelGenerator($generator, ($(ms_args_symbols...),), (; $(ms_kwargs_symbols...)))
         end
 
         RxInfer.model_name(::typeof($ms_name)) = $(QuoteNode(ms_name))
