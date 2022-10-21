@@ -101,6 +101,24 @@ return [
         hidden = false  
     ),
     (
+        path = "Nonlinear Noisy Pendulum.ipynb",
+        title = "Nonlinear Smoothing: Noisy Pendulum",
+        description = "In this demo, we will look at a realistic dynamical system with nonlinear state transitions: tracking a noisy single pendulum. We translate a differential equation in state-space model form to a probabilistic model.",
+        hidden = false
+    ),
+    (
+        path = "Nonlinear Rabbit Population.ipynb",
+        title = "Nonlinear Smoothing: Rabbit Population",
+        description = "In this demo, we will look at dynamical systems with nonlinear state transitions. We will start with a one-dimensional problem; the number of rabbits on an island. This problem seems overly simple, but it is a good way to demonstrate the basic pipeline of working with RxInfer.",
+        hidden = false
+    ),
+    (
+        path = "Nonlinear Virus Spread.ipynb",
+        title = "Nonlinear Virus Spread",
+        description = "In this demo we consider a model for the spead of a virus (not COVID-19!) in a population. We are interested in estimating the reproduction rate from daily observations of the number of infected individuals.",
+        hidden = false
+    ),
+    (
         path = "Handling Missing Data.ipynb",
         title = "Handling Missing Data",
         description = "This example shows how to extend the set of builtin rules to support `missing` observations.",
