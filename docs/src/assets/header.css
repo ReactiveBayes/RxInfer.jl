@@ -78,6 +78,10 @@
 
 }
 
+header.navigation {
+    z-index: 3;
+}
+
 header.navigation div.container nav.navbar ul.navbar-nav {
     margin-left: 4rem;
     min-height: 3.25rem;
