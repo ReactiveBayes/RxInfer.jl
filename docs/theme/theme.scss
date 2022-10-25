@@ -1,71 +1,11 @@
-html:not(.theme--documenter-dark) body #documenter {
+html body #documenter {
 
     .docs-main {
       margin-top: 4rem; // For header
-    }
-    
-    .docs-heading-anchor {
-      color: black; // Color of headings
     }
 
     .docs-sidebar.visible {
       margin-top: 0px !important;
     }
 
-    .docs-sidebar {
-      box-shadow: none;
-      color: #ffffff;
-      background-color: white;
-  
-      .docs-package-name {
-        a {
-          color: #222;
-          transition: color 200ms;
-
-          &:hover {
-            color: #0aa8a7
-          }
-        }
-      }
-
-      ul.docs-menu {
-
-        %nav-hover {
-          background-color: whitesmoke; // Color of the hover effect
-        }
-
-        .tocitem {
-          background-color: white;
-  
-          &:hover {
-            @extend %nav-hover;
-          }
-        }
-
-        li.is-active {
-  
-          .tocitem {
-            @extend %nav-hover;
-  
-            &:hover {
-              @extend %nav-hover;
-            }
-          }
-  
-          ul.internal {
-  
-            .tocitem {
-              background-color: white;
-  
-              &:hover {
-                @extend %nav-hover;
-              }
-            }
-          }
-        }
-
-      }
-  
-      
-    }
 }
