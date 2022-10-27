@@ -119,6 +119,12 @@ return [
         hidden = false
     ),
     (
+        path = "Nonlinear Sensor Fusion.ipynb",
+        title = "Nonlinear Sensor Fusion",
+        description = "Nonlinear Sensor Fusion",
+        hidden = false
+    ),
+    (
         path = "Handling Missing Data.ipynb",
         title = "Handling Missing Data",
         description = "This example shows how to extend the set of builtin rules to support `missing` observations.",
