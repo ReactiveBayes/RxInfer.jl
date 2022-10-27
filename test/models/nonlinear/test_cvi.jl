@@ -31,7 +31,7 @@ end
     y[1] ~ NormalMeanPrecision(x[1], θ)
 
     for t in 2:T
-        z[t] ~ NormalMeanPrecision(z[t-1] + 1, τ)
+        z[t] ~ NormalMeanPrecision(z[t - 1] + 1, τ)
         x[t] ~ f(z[t]) where {meta = CVIApproximation(rng, n_iterations, n_samples, Descent(learning_rate))}
         y[t] ~ NormalMeanPrecision(x[t], θ)
     end
@@ -57,11 +57,7 @@ function inference_cvi(transformed, rng, iterations)
         returnvars = (z = KeepLast(),),
         constraints = constraints,
         initmessages = (z = NormalMeanVariance(0, P),),
-        initmarginals = (
-            z = NormalMeanVariance(0, P),
-            τ = GammaShapeRate(1.0, 1.0e-12),
-            θ = GammaShapeRate(1.0, 1.0e-12)
-        )
+        initmarginals = (z = NormalMeanVariance(0, P), τ = GammaShapeRate(1.0, 1.0e-12), θ = GammaShapeRate(1.0, 1.0e-12))
     )
 end
 
@@ -110,19 +106,12 @@ end
 
             px = plot!(px, hidden, label = "Hidden Signal", color = :red)
             px = plot!(px, map(mean, res.posteriors[:z]), label = "Estimated signal location", color = :orange)
-            px = plot!(
-                px,
-                map(mean, res.posteriors[:z]),
-                ribbon = (9 .* var.(res.posteriors[:z])) .|> sqrt,
-                fillalpha = 0.5,
-                label = "Estimated Signal confidence",
-                color = :blue
-            )
+            px = plot!(px, map(mean, res.posteriors[:z]), ribbon = (9 .* var.(res.posteriors[:z])) .|> sqrt, fillalpha = 0.5, label = "Estimated Signal confidence", color = :blue)
             pf = plot(fe, label = "Bethe Free Energy")
 
             return plot(px, pf, layout = @layout([a; b]))
-        end 
-        
+        end
+
         @test_benchmark "models" "cvi" inference_cvi($transformed, $rng, 110)
     end
 end
