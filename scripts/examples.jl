@@ -219,6 +219,7 @@ function Base.run(examplesrunner::ExamplesRunner)
     # `Weave` executes notebooks in the `dst` folder so we need to copy there our environment (and remove it)
     rm(joinpath(dfolder, "Manifest.toml"), force = true)
     rm(joinpath(dfolder, "Project.toml"), force = true)
+    rm(joinpath(dfolder, "data"), force = true, recursive = true)
 
     @info "Finished."
 end

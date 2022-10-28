@@ -93,20 +93,20 @@ html.theme--documenter-dark header.navigation div.container nav.navbar ul.navbar
     color: #0aa8a7
 }
 
-html.theme--documenter-light header.navigation {
+html header.navigation {
     background-color: white !important;
 }
 
-html.theme--documenter-light header.navigation div.container {
-    border-bottom: 1px solid #dbdbdb !important;
+html header.navigation div.container {
+    border-bottom: 1px solid #dbdbdb;
 }
 
-html.theme--documenter-light header.navigation div.container nav.navbar ul.navbar-nav li.nav-item a.nav-link {
+html header.navigation div.container nav.navbar ul.navbar-nav li.nav-item a.nav-link {
     color: #222;
     transition: color 100ms;
 }
 
-html.theme--documenter-light header.navigation div.container nav.navbar ul.navbar-nav li.nav-item a.nav-link:hover {
+html header.navigation div.container nav.navbar ul.navbar-nav li.nav-item a.nav-link:hover {
     color: #0aa8a7
 }
 
