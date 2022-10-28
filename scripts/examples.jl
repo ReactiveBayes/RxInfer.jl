@@ -66,6 +66,7 @@ function Base.run(examplesrunner::ExamplesRunner)
     # `Weave` executes notebooks in the `dst` folder so we need to copy there our environment
     cp(joinpath(efolder, "Manifest.toml"), joinpath(dfolder, "Manifest.toml"), force = true)
     cp(joinpath(efolder, "Project.toml"), joinpath(dfolder, "Project.toml"), force = true)
+    cp(joinpath(efolder, "data"), joinpath(dfolder, "data"), force = true)
 
     # We also need to fix relative RxInfer path in the moved `Project.toml`
     # This is a bit iffy, but does the job (not sure about Windows though?)

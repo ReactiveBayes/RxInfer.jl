@@ -121,7 +121,19 @@ return [
     (
         path = "Nonlinear Sensor Fusion.ipynb",
         title = "Nonlinear Sensor Fusion",
-        description = "Nonlinear Sensor Fusion",
+        description = "Nonlinear object position identification using a sparse set of sensors",
+        hidden = false
+    ),
+    (
+        path = "Nonlinear Dynamical System.ipynb",
+        title = "Nonlinear Dynamical System",
+        description = "Gaussian Dynamical System with nonlinear link function between states and observations",
+        hidden = false
+    ),
+    (
+        path = "Kalman filter with LSTM network driven dynamic.ipynb",
+        title = "Kalman filter with LSTM network driven dynamic",
+        description = "In this demo, we are interested in Bayesian state estimation in Nonlinear State-Space Model using the LSTM.",
         hidden = false
     ),
     (

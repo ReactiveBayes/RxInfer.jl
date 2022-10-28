@@ -54,7 +54,7 @@ makedocs(;
     pages = [
         "Home"     => "index.md",
         "User guide"  => [
-            "Background: variational inference" => "manuals/background.md",
+            # "Background: variational inference" => "manuals/background.md",
             "Getting started"           => "manuals/getting-started.md",
             "Model specification"       => "manuals/model-specification.md",
             "Constraints specification" => "manuals/constraints-specification.md",
