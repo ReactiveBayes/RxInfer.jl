@@ -188,7 +188,7 @@ using Aqua
 if isempty(testrunner.enabled_tests)
     println("Running all tests...")
     # `project_toml_formatting` is broken on CI, revise at some point
-    # TODO uncomment Aqua.test_all
+    # TODO uncomment Aqua.test_all after the release as it requires new version of the `ReactiveMP` and `GraphPPL` and `[compat]`
     # Aqua.test_all(RxInfer; ambiguities = false, project_toml_formatting = false)
     # doctest(RxInfer)
 else
