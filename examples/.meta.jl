@@ -59,6 +59,12 @@ return [
         hidden = false
     ),
     (
+        path = "Infinite Data Stream.ipynb",
+        title = "Infinite Data Stream",
+        description = "This example shows RxInfer capabilities of running inference for infinite time-series data.",
+        hidden = false
+    ),
+    (
         path = "Identification Problem.ipynb",
         title = "System Identification Problem",
         description = "This example attempts to identify and separate two combined signals.",
