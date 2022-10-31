@@ -30,11 +30,12 @@ window.onload = function() {
                 })())
 
                 const items = [
-                    { title: "Get Started", link: "poka" },
-                    { title: "Documentation", link: "poka" },
-                    { title: "Examples", link: "poka" },
-                    { title: "Papers", link: "poka" },
-                    { title: "Team", link: "poka" },
+                    { title: "Get Started", link: "https://biaslab.github.io/RxInfer.jl/stable/manuals/getting-started/" },
+                    { title: "Documentation", link: "https://biaslab.github.io/RxInfer.jl/stable/" },
+                    { title: "Examples", link: "https://biaslab.github.io/RxInfer.jl/stable/examples/overview/" },
+                    { title: "Papers", link: "https://biaslab.github.io/publication/" },
+                    { title: "Team", link: "https://biaslab.github.io/team/" },
+                    { title: "Contact", link: "https://rxinfer.ml/contact/" },
                     { title: "GitHub", link: "https://github.com/biaslab/RxInfer.jl", icon: [ "fab", "fa-github" ] },
                 ]
 
