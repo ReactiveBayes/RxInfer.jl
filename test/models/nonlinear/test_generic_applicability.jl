@@ -11,8 +11,12 @@ include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 ## Model definition
 ## -------------------------------------------- ##
 
+# We test that the function can depend on a global variable
+# A particular value does not matter here, only the fact that it runs
+globalvar = 0
+
 function f₁(x)
-    return sqrt.(x)
+    return sqrt.(x .+ globalvar)
 end
 
 function f₁_inv(x)
