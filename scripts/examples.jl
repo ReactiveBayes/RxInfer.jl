@@ -60,6 +60,7 @@ function Base.run(examplesrunner::ExamplesRunner)
 
     efolder = joinpath(@__DIR__, "..", "examples")
     dfolder = joinpath(@__DIR__, "..", "docs", "src", "examples")
+    afolder = joinpath(@__DIR__, "..", "docs", "src", "assets", "examples")
 
     mkpath(dfolder)
 
@@ -152,6 +153,18 @@ function Base.run(examplesrunner::ExamplesRunner)
     close(examplesrunner.jobschannel)
     close(examplesrunner.resultschannel)
 
+    # `gifs` are a bit special in the `Plots.jl`, we need to fix paths manually
+    gifs = filter(d -> last(splitext(d)) == ".gif", readdir(dfolder, join = true))
+
+    foreach(gifs) do gifpath
+        mv(gifpath, joinpath(afolder, last(splitpath(gifpath))), force = true)
+    end
+
+    fixgifs = map(gifs) do gifpath
+        gif_filename = last(splitpath(gifpath))
+        return gif_filename => string("../assets/examples/", gif_filename)
+    end
+
     if isnothing(examplesrunner.specific_example)
 
         # If not failed we generate overview report and fix fig links
@@ -199,8 +212,8 @@ function Base.run(examplesrunner::ExamplesRunner)
             open(mdpath, "w") do f
                 # In every examples we replace title with its `@id` equivalent, such that 
                 # `# Super cool title` becomes `[# Super cool title](@id examples-super-cool-title)`
-                fixid  = replace(mdtext, "# $(title)" => "# [$(title)](@id $(id))")
-                output = string("This example has been auto-generated from the [`examples/`](https://github.com/biaslab/RxInfer.jl/tree/main/examples) folder at GitHub repository.\n\n", fixid)
+                fixtext = replace(mdtext, "# $(title)" => "# [$(title)](@id $(id))", fixgifs...)
+                output  = string("This example has been auto-generated from the [`examples/`](https://github.com/biaslab/RxInfer.jl/tree/main/examples) folder at GitHub repository.\n\n", fixtext)
                 write(f, output)
             end
 
@@ -213,7 +226,7 @@ function Base.run(examplesrunner::ExamplesRunner)
             write(f, String(take!(io_overview)))
         end
     else
-        @info "Skip overview generation for a specific example"
+        @info "Skip overview generation for a specific example. Possible errors in the generated document are supressed. Check the generated document manually."
     end
 
     # `Weave` executes notebooks in the `dst` folder so we need to copy there our environment (and remove it)
