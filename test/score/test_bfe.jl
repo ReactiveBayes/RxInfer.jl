@@ -4,7 +4,7 @@ using Test, Random
 using RxInfer
 
 import RxInfer: get_skip_strategy, get_scheduler, apply_diagnostic_check
-import ReactiveMP: InfCountingReal, FactorNodeCreationOptions, make_node, activate!
+import ReactiveMP: CountingReal, FactorNodeCreationOptions, make_node, activate!
 
 @testset "BetheFreeEnergy score tests" begin
     @testset "Diagnostic check tests" begin

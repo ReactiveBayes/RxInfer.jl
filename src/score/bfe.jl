@@ -3,7 +3,7 @@ export BetheFreeEnergyDefaultMarginalSkipStrategy, BetheFreeEnergyDefaultChecks
 export BetheFreeEnergy
 
 import ReactiveMP: is_point_mass_form_constraint
-import ReactiveMP: InfCountingReal, value_isnan, value_isinf
+import ReactiveMP: CountingReal, value_isnan, value_isinf
 import ReactiveMP: score, indexed_name, name
 
 """
@@ -17,8 +17,8 @@ abstract type AbstractScoreObjective end
 
 # Default version is differentiable
 # Specialized versions like score(Float64, ...) are not differentiable, but could be faster
-score(model::FactorGraphModel, objective::AbstractScoreObjective)                              = score(model, InfCountingReal, objective)
-score(model::FactorGraphModel, ::Type{T}, objective::AbstractScoreObjective) where {T <: Real} = score(model, InfCountingReal{T}, objective)
+score(model::FactorGraphModel, objective::AbstractScoreObjective)                              = score(model, CountingReal, objective)
+score(model::FactorGraphModel, ::Type{T}, objective::AbstractScoreObjective) where {T <: Real} = score(model, CountingReal{T}, objective)
 
 # Bethe Free Energy objective
 
@@ -117,7 +117,7 @@ get_scheduler(objective::BetheFreeEnergy)     = objective.scheduler
 
 apply_diagnostic_check(objective::BetheFreeEnergy, something, stream) = apply_diagnostic_check(objective.diagnostic_checks, something, stream)
 
-function score(model::FactorGraphModel, ::Type{T}, objective::BetheFreeEnergy) where {T <: InfCountingReal}
+function score(model::FactorGraphModel, ::Type{T}, objective::BetheFreeEnergy) where {T <: CountingReal}
     stochastic_variables = filter(r -> !is_point_mass_form_constraint(marginal_form_constraint(r)), getrandom(model))
     point_mass_estimates = filter(r -> is_point_mass_form_constraint(marginal_form_constraint(r)), getrandom(model))
 
@@ -139,7 +139,7 @@ function score(model::FactorGraphModel, ::Type{T}, objective::BetheFreeEnergy) w
     constant_point_entropies_n = mapreduce(degree, +, getconstant(model), init = 0)
     form_point_entropies_n     = mapreduce(degree, +, point_mass_estimates, init = 0)
 
-    point_entropies = InfCountingReal(eltype(T), data_point_entropies_n + constant_point_entropies_n + form_point_entropies_n)
+    point_entropies = CountingReal(eltype(T), data_point_entropies_n + constant_point_entropies_n + form_point_entropies_n)
 
     return combineLatest((node_bound_free_energies_sum, variable_bound_entropies_sum), PushNew()) |> map(eltype(T), d -> float(d[1] + d[2] - point_entropies))
 end

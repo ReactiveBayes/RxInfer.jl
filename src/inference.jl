@@ -7,7 +7,7 @@ import DataStructures: CircularBuffer
 using MacroTools # for `@autoupdates`
 
 import ReactiveMP: israndom, isdata, isconst, isproxy, isanonymous
-import ReactiveMP: InfCountingReal
+import ReactiveMP: CountingReal
 
 import ProgressMeter
 
@@ -195,8 +195,8 @@ inference_invoke_callback(::Nothing, name, args...) = begin end
 inference_get_callback(callbacks, name) = get(() -> nothing, callbacks, name)
 inference_get_callback(::Nothing, name) = nothing
 
-unwrap_free_energy_option(option::Bool)                      = (option, Real, InfCountingReal)
-unwrap_free_energy_option(option::Type{T}) where {T <: Real} = (true, T, InfCountingReal{T})
+unwrap_free_energy_option(option::Bool)                      = (option, Real, CountingReal)
+unwrap_free_energy_option(option::Type{T}) where {T <: Real} = (true, T, CountingReal{T})
 
 """
     inference(
