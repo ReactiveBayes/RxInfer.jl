@@ -238,9 +238,7 @@ For more information about some of the arguments, please check below.
 
 ## Note on NamedTuples
 
-When passing `NamedTuple` as a value for some argument, make sure you use a trailing comma for `NamedTuple`s with a single entry. The reason is that Julia treats `returnvars = (x = KeepLast())` and 
-`returnvars = (x = KeepLast(), )` expressions differently. First expression creates (or **overwrites!**) new local/global variable named `x` with contents `KeepLast()`. The second expression (note traling comma)
-creates `NamedTuple` with `x` as a key and `KeepLast()` as a value assigned for this key.
+When passing `NamedTuple` as a value for some argument, make sure you use a trailing comma for `NamedTuple`s with a single entry. The reason is that Julia treats `returnvars = (x = KeepLast())` and `returnvars = (x = KeepLast(), )` expressions differently. This first expression creates (or **overwrites!**) new local/global variable named `x` with contents `KeepLast()`. The second expression (note trailing comma) creates `NamedTuple` with `x` as a key and `KeepLast()` as a value assigned for this key.
 
 ## Extended information about some of the arguments
 
@@ -271,7 +269,7 @@ Loopy belief propagation may need some messages in a model to be pre-initialised
 
 - ### `options`
 
-- `limit_stack_depth`: limits the stack depth for computing messages, helps with `StackOverflowError` for some huge models, but reduces the performance of inference backend. Accepts integer as an argument that specifies the maximum number of recursive depth. Lower is better for stack overflow error, but worse for performance.
+- `limit_stack_depth`: limits the stack depth for computing messages, helps with `StackOverflowError` for large models, but reduces the performance of the inference backend. Accepts integer as an argument that specifies the maximum number of recursive depth. Lower is better for stack overflow error, but worse for performance.
 - `pipeline`: changes the default pipeline for each factor node in the graph
 - `global_reactive_scheduler`: changes the scheduler of reactive streams, see Rocket.jl for more info, defaults to no scheduler
 
@@ -299,7 +297,7 @@ result = inference(
 )
 ```
 
-It is also possible to set iether `returnvars = KeepLast()` or `returnvars = KeepEach()` that acts as an alias and sets the given option for __all__ random variables in the model.
+It is also possible to set either `returnvars = KeepLast()` or `returnvars = KeepEach()` that acts as an alias and sets the given option for __all__ random variables in the model.
 
 # Example: 
 
@@ -312,7 +310,7 @@ result = inference(
 
 - ### `iterations`
 
-Specifies the number of variational (or loopy BP) iterations. By default set to `nothing`, which is equivalent of doing 1 iteration. 
+Specifies the number of variational (or loopy belief propagation) iterations. By default set to `nothing`, which is equivalent of doing 1 iteration. 
 
 - ### `free_energy` 
 
@@ -1201,9 +1199,7 @@ For more information about some of the arguments, please check below.
 
 ## Note on NamedTuples
 
-When passing `NamedTuple` as a value for some argument, make sure you use a trailing comma for `NamedTuple`s with a single entry. The reason is that Julia treats `historyvars = (x = KeepLast())` and 
-`historyvars = (x = KeepLast(), )` expressions differently. First expression creates (or **overwrites!**) new local/global variable named `x` with contents `KeepLast()`. The second expression (note traling comma)
-creates `NamedTuple` with `x` as a key and `KeepLast()` as a value assigned for this key.
+When passing `NamedTuple` as a value for some argument, make sure you use a trailing comma for `NamedTuple`s with a single entry. The reason is that Julia treats `returnvars = (x = KeepLast())` and `returnvars = (x = KeepLast(), )` expressions differently. This first expression creates (or **overwrites!**) new local/global variable named `x` with contents `KeepLast()`. The second expression (note trailing comma) creates `NamedTuple` with `x` as a key and `KeepLast()` as a value assigned for this key.
 
 ## Extended information about some of the arguments
 
@@ -1244,8 +1240,7 @@ See `@autoupdates` for more information.
 
 - ### `returnvars`
 
-`returnvars` accepts a tuple of symbols and specifies the latent variables of interests. For each symbol in the `returnvars` specification the `rxinference` function will prepare an observable 
-stream (see `Rocket.jl`) of posterior updates. An agent may subscribe on the new posteriors events and perform some actions.
+`returnvars` accepts a tuple of symbols and specifies the latent variables of interests. For each symbol in the `returnvars` specification the `rxinference` function will prepare an observable stream (see `Rocket.jl`) of posterior updates. An agent may subscribe on the new posteriors events and perform some actions.
 For example:
 
 ```julia
@@ -1290,7 +1285,7 @@ result = rxinference(
 )
 ```
 
-It is also possible to set iether `historyvars = KeepLast()` or `historyvars = KeepEach()` that acts as an alias and sets the given option for __all__ random variables in the model.
+It is also possible to set either `historyvars = KeepLast()` or `historyvars = KeepEach()` that acts as an alias and sets the given option for __all__ random variables in the model.
 
 # Example: 
 
@@ -1304,11 +1299,11 @@ result = rxinference(
 
 - ### `keep_history`
 
-Specifies the buffer size for the updates history both for the `historyvars` and the `free_energy` buffers.. 
+Specifies the buffer size for the updates history both for the `historyvars` and the `free_energy` buffers.
 
 - ### `iterations`
 
-Specifies the number of variational (or loopy BP) iterations. By default set to `nothing`, which is equivalent of doing 1 iteration. 
+Specifies the number of variational (or loopy belief propagation) iterations. By default set to `nothing`, which is equivalent of doing 1 iteration. 
 
 - ### `free_energy` 
 
