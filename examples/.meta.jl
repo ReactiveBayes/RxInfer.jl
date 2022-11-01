@@ -101,6 +101,12 @@ return [
         hidden = false  
     ),
     (
+        path = "Conjugate-NonConjugate Varialtional Message passsing.ipynb",
+        title = "Conjugate-NonConjugate Varialtional Message Passsing: a tutorial",
+        description = "This examples provides an extensive tutorial for the non-conjugate message-passing based inference by exploiting the local CVI approximation.",
+        hidden = false
+    ),
+    (
         path = "GPRegression by SSM.ipynb",
         title = "Solve GP regression by SDE",
         description = "In this notebook, we solve a GP regression problem by using 'Stochastic Differential Equation' (SDE). This method is well described in the dissertation 'Stochastic differential equation methods for spatio-temporal Gaussian process regression.' by Arno Solin and 'Sequential Inference for Latent Temporal Gaussian Process Models' by Jouni Hartikainen.",
