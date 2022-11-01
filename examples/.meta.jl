@@ -101,8 +101,8 @@ return [
         hidden = false  
     ),
     (
-        path = "Conjugate-NonConjugate Varialtional Message passsing.ipynb",
-        title = "Conjugate-NonConjugate Varialtional Message Passsing: a tutorial",
+        path = "Conjugate-NonConjugate Variational Message Passing.ipynb",
+        title = "Conjugate-NonConjugate Variational Message Passing: a tutorial",
         description = "This examples provides an extensive tutorial for the non-conjugate message-passing based inference by exploiting the local CVI approximation.",
         hidden = false
     ),
