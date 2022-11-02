@@ -102,8 +102,8 @@ return [
     ),
     (
         path = "Conjugate-NonConjugate Variational Message Passing.ipynb",
-        title = "Conjugate-NonConjugate Variational Message Passing: a tutorial",
-        description = "This examples provides an extensive tutorial for the non-conjugate message-passing based inference by exploiting the local CVI approximation.",
+        title = "Conjugate-NonConjugate Variational Message Passing (CVI)",
+        description = "This example provides an extensive tutorial for the non-conjugate message-passing based inference by exploiting the local CVI approximation.",
         hidden = false
     ),
     (
@@ -134,12 +134,6 @@ return [
         path = "Nonlinear Sensor Fusion.ipynb",
         title = "Nonlinear Sensor Fusion",
         description = "Nonlinear object position identification using a sparse set of sensors",
-        hidden = false
-    ),
-    (
-        path = "Nonlinear Dynamical System.ipynb",
-        title = "Nonlinear Dynamical System",
-        description = "Gaussian Dynamical System with nonlinear link function between states and observations",
         hidden = false
     ),
     (
