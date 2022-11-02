@@ -739,9 +739,7 @@
   <path d="M 485 351 L 487.5 351 L 487.5 360 L 485 360 Z M 485 351 "/>
 </clipPath>
 </defs>
-<g id="surface1">
-<path style=" stroke:none;fill-rule:nonzero;fill:rgb(100%,100%,100%);fill-opacity:1;" d="M 0 0 L 487.5 0 L 487.5 375 L 0 375 Z M 0 0 "/>
-<path style=" stroke:none;fill-rule:nonzero;fill:rgb(100%,100%,100%);fill-opacity:1;" d="M 57 327.75 L 475.5 327.75 L 475.5 29.25 L 57 29.25 Z M 57 327.75 "/>
+<g id="surface1503">
 <path style="fill:none;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:0.12;stroke-miterlimit:2;" d="M 154.760417 437 L 154.760417 39 " transform="matrix(0.75,0,0,0.75,0,0)"/>
 <path style="fill:none;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:0.12;stroke-miterlimit:2;" d="M 288.255208 437 L 288.255208 39 " transform="matrix(0.75,0,0,0.75,0,0)"/>
 <path style="fill:none;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:0.12;stroke-miterlimit:2;" d="M 421.744792 437 L 421.744792 39 " transform="matrix(0.75,0,0,0.75,0,0)"/>

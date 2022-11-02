@@ -469,9 +469,7 @@
 </symbol>
 </g>
 </defs>
-<g id="surface617">
-<path style=" stroke:none;fill-rule:nonzero;fill:rgb(100%,100%,100%);fill-opacity:1;" d="M 0 0 L 487.5 0 L 487.5 375 L 0 375 Z M 0 0 "/>
-<path style=" stroke:none;fill-rule:nonzero;fill:rgb(100%,100%,100%);fill-opacity:1;" d="M 57 327 L 475.5 327 L 475.5 29.25 L 57 29.25 Z M 57 327 "/>
+<g id="surface1946">
 <path style="fill:none;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:0.12;stroke-miterlimit:2;" d="M 101.364583 436 L 101.364583 39 " transform="matrix(0.75,0,0,0.75,0,0)"/>
 <path style="fill:none;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:0.12;stroke-miterlimit:2;" d="M 151.6875 436 L 151.6875 39 " transform="matrix(0.75,0,0,0.75,0,0)"/>
 <path style="fill:none;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,0%,0%);stroke-opacity:0.12;stroke-miterlimit:2;" d="M 218.729167 436 L 218.729167 39 " transform="matrix(0.75,0,0,0.75,0,0)"/>
