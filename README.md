@@ -46,7 +46,7 @@ Let's start by creating some dataset. For simplicity in this example we will use
 First let's setup our environment by importing all needed packages:
 
 ```julia
-using RxInfer, Distributions, Random
+using RxInfer, Random
 ```
 
 Next, let's define our dataset:
@@ -133,7 +133,7 @@ result = inference(
 ![Coin Flip](docs/src/assets/img/coin-flip.svg?raw=true&sanitize=true "Coin-Flip readme results")
 
 # Where to go next?
-There are a set of [examples](https://github.com/biaslab/ReactiveMP.jl/tree/master/examples) available in `RxInfer` repository that demonstrate the more advanced features of the package. Alternatively, you can head to the [documentation][docs-stable-url] that provides more detailed information of how to use `RxInfer` to specify more complex probabilistic models.
+There are a set of [examples](https://biaslab.github.io/RxInfer.jl/stable/examples/Overview/) available in `RxInfer` repository that demonstrate the more advanced features of the package. Alternatively, you can head to the [documentation][docs-stable-url] that provides more detailed information of how to use `RxInfer` to specify more complex probabilistic models.
 
 See also:
 - [`ReactiveMP.jl`](https://github.com/biaslab/ReactiveMP.jl)

@@ -5,6 +5,8 @@ on:
       - main
     tags: '*'
   pull_request:
+  schedule:
+    - cron: '0 8 * * 1' # run the cron job one time per week on Monday 8:00 AM
 concurrency:
   # Skip intermediate builds: always.
   # Cancel intermediate builds: only if it is a pull request build.
