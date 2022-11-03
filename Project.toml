@@ -20,11 +20,15 @@ TupleTools = "9d95972d-f1c8-5527-a6e0-b4b365fa01f6"
 
 [compat]
 Distributions = "0.25"
+DataStructures = "0.18"
 DomainSets = "0.5.2"
+GraphPPL = "3.0.0"
 MacroTools = "0.5.6"
 Optim = "1.0.0"
 ProgressMeter = "1.0.0"
+ReactiveMP = "3.0.0"
 Reexport = "1.2.0"
+Rocket = "1.6.0"
 TupleTools = "1.2.0"
 julia = "1.6"
 
