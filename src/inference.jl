@@ -638,10 +638,10 @@ end
 This model has two `datavar`s that represent our prior knowledge of the `x_current` state of the system. The `x_next` random variable represent the next state of the system that 
 is connected to the observed variable `y`. The auto-update specification could look like:
 
-```jldoctest
+```julia
 autoupdates = @autoupdates begin
     x_current_mean, x_current_var = mean_cov(q(x_next))
-end;
+end
 ```
 
 This structure specifies to update our prior as soon as we have a new posterior `q(x_next)`. It then applies the `mean_cov` function on the updated posteriors and updates 
@@ -1091,7 +1091,7 @@ See the documentation of the `rxinference` function for possible event types and
 The events system itself uses the `Rocket.jl` library API. For example, one may create a custom event listener in the following way:
 
 
-```jldoctest
+```julia
 using Rocket
 
 struct MyEventListener <: Rocket.Actor{RxInferenceEvent}

@@ -28,7 +28,8 @@ end
 # end
 
 makedocs(;
-    draft = true,
+    draft = false,
+    strict = [ :doctest, :eval_block, :example_block, :meta_block, :parse_error, :setup_block ],
     modules = [ RxInfer ],
     authors = "Bagaev Dmitry <d.v.bagaev@tue.nl> and contributors",
     repo = "https://github.com/biaslab/RxInfer.jl/blob/{commit}{path}#{line}",

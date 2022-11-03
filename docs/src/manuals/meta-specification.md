@@ -56,7 +56,7 @@ List of available options:
 
 First, let's start with an example:
 
-```@example manual_meta
+```julia
 meta = @meta begin 
     GCV(x, k, w) -> GCVMetadata(GaussHermiteCubature(20))
 end
@@ -66,7 +66,7 @@ This meta specification indicates, that for every `GCV` node in the model with `
 
 You can have a list of as many meta specification entries as possible for different nodes:
 
-```@example manual_meta
+```julia
 meta = @meta begin 
     GCV(x1, k1, w1) -> GCVMetadata(GaussHermiteCubature(20))
     GCV(x2, k2, w3) -> GCVMetadata(GaussHermiteCubature(30))
