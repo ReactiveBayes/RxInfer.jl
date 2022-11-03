@@ -299,7 +299,7 @@ end
     @testset "Check callbacks usage: unknown callback warning" begin
         callbacksdata = []
 
-        @test_warn r"Unknown callback specification.*hello_world.*Available callbacks.*" result = rxinference(
+        @test_logs (:warn, r"Unknown callback specification.*hello_world.*Available callbacks.*") result = rxinference(
             model = test_model1(),
             constraints = MeanField(),
             data = (y = observedy,),
@@ -395,7 +395,7 @@ end
 
                 # Check the correct ordering of the `:before_iteration` and `:after_iteration` events
                 @test map(name, filter(event -> event isa RxInferenceEvent{:before_iteration} || event isa RxInferenceEvent{:after_iteration}, events)) ==
-                    Iterators.repeat([:before_iteration, :after_iteration], iterations)
+                    repeat([:before_iteration, :after_iteration], iterations)
 
                 # Check that the number of `:before_auto_update` and `:after_auto_update` events depends on the number of iterations
                 @test length(filter(event -> event isa RxInferenceEvent{:before_auto_update}, events)) == iterations
@@ -423,7 +423,7 @@ end
 
                 # Check the correct ordering of the `:before_auto_update` and `:after_auto_update` events
                 @test map(name, filter(event -> event isa RxInferenceEvent{:before_auto_update} || event isa RxInferenceEvent{:after_auto_update}, events)) ==
-                    Iterators.repeat([:before_auto_update, :after_auto_update], iterations)
+                    repeat([:before_auto_update, :after_auto_update], iterations)
 
                 # Check that the number of `:before_data_update` and `:after_data_update` events depends on the number of iterations
                 @test length(filter(event -> event isa RxInferenceEvent{:before_data_update}, events)) == iterations
@@ -447,7 +447,7 @@ end
 
                 # Check the correct ordering of the `:before_auto_update` and `:after_auto_update` events
                 @test map(name, filter(event -> event isa RxInferenceEvent{:before_data_update} || event isa RxInferenceEvent{:after_data_update}, events)) ==
-                    Iterators.repeat([:before_data_update, :after_data_update], iterations)
+                    repeat([:before_data_update, :after_data_update], iterations)
 
                 # Check the correct ordering of the iteration related events
                 @test map(
@@ -460,7 +460,7 @@ end
                                event isa RxInferenceEvent{:after_data_update} ||
                                event isa RxInferenceEvent{:after_iteration}
                     end
-                ) == Iterators.repeat([:before_iteration, :before_auto_update, :after_auto_update, :before_data_update, :after_data_update, :after_iteration], iterations)
+                ) == repeat([:before_iteration, :before_auto_update, :after_auto_update, :before_data_update, :after_data_update, :after_iteration], iterations)
 
                 if keephistory > 0
                     @test length(filter(event -> event isa RxInferenceEvent{:before_history_save}, events)) == 1
