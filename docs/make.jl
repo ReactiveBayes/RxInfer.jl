@@ -1,18 +1,6 @@
 using RxInfer
 using Documenter
 
-## Custom theme building
-
-using Sass
-
-assets = joinpath(@__DIR__, "src", "assets")
-ispath(assets) || mkpath(assets)
-
-themesrc = joinpath(@__DIR__, "theme", "theme.scss")
-themedst = joinpath(assets, "theme.css")
-    
-Sass.compile_file(themesrc, themedst)
-
 ## https://discourse.julialang.org/t/generation-of-documentation-fails-qt-qpa-xcb-could-not-connect-to-display/60988
 ## https://gr-framework.org/workstations.html#no-output
 ENV["GKSwstype"] = "100"

@@ -1,13 +1,9 @@
-html body #documenter {
+html body #documenter .docs-main {
+    margin-top: 4rem; 
+}
 
-    .docs-main {
-      margin-top: 4rem; // For header
-    }
-
-    .docs-sidebar.visible {
-      margin-top: 0px !important;
-    }
-
+html body #documenter .docs-sidebar.visible {
+    margin-top: 0px !important;
 }
 
 html div.light-biglogo {
