@@ -3,6 +3,11 @@
 ## https://gr-framework.org/workstations.html#no-output
 ENV["GKSwstype"] = "100"
 
+## CI does not use the `Makefile`, hence does not have the `USE_DEV` environment variable
+if !haskey(ENV, "USE_DEV")
+    ENV["USE_DEV"] = "false"
+end
+
 using Distributed
 
 const worker_io_lock = ReentrantLock()
