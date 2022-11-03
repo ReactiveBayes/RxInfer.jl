@@ -155,8 +155,8 @@ return [
         hidden = false
     ),
     (
-        path = "Probit model (EP).ipynb",
-        title = "Probit model (EP)",
+        path = "Probit Model (EP).ipynb",
+        title = "Probit Model (EP)",
         description = "In this demo we illustrate EP in the context of state-estimation in a linear state-space model that combines a Gaussian state-evolution model with a discrete observation model.",
         hidden = false
     ),
