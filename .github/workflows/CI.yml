@@ -63,6 +63,13 @@ jobs:
         with:
           version: '1.8'
       - uses: julia-actions/julia-buildpkg@v1
+      - uses: actions/cache@v3
+        id: examples
+        with:
+          path: |
+            docs/src/examples
+            docs/src/assets/examples
+          key: ${{ github.sha }}
       - run: make examples
   docs:
     name: Documentation
@@ -78,8 +85,15 @@ jobs:
       - uses: julia-actions/setup-julia@v1
         with:
           version: '1.8'
+      - uses: actions/cache@v3
+        id: examples
+        with:
+          path: |
+            docs/src/examples
+            docs/src/assets/examples
+          key: ${{ github.sha }}
       - uses: julia-actions/julia-buildpkg@v1
-      - uses: julia-actions/julia-docdeploy@v1
+      - run: make docs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - run: make docs
+      
