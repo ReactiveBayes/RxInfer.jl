@@ -5,7 +5,21 @@ CurrentModule = RxInfer
 RxInfer
 =======
 
+```@raw html
+<div class="light-biglogo">
+```
 ![RxInfer Logo](assets/biglogo.svg)
+```@raw html
+</div>
+```
+
+```@raw html
+<div class="dark-biglogo">
+```
+![RxInfer Logo](assets/biglogo-blacktheme.svg)
+```@raw html
+</div>
+```
 
 *Julia package for automatic Bayesian inference on a factor graph with reactive message passing.*
 

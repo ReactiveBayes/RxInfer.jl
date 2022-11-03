@@ -9,3 +9,19 @@ html body #documenter {
     }
 
 }
+
+html div.light-biglogo {
+  display: block;
+}
+
+html.theme--documenter-dark div.light-biglogo {
+  display: none;
+}
+
+html div.dark-biglogo {
+  display: none;
+}
+
+html.theme--documenter-dark div.dark-biglogo {
+  display: block;
+}
