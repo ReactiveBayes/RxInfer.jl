@@ -62,7 +62,7 @@ makedocs(;
             "Exported methods" => "library/exported-methods.md"
         ],
         "Examples" => [
-            "Overview" => "examples/Overview.md", # This must be auto-generated with `make examples`
+            "Overview" => "examples/overview.md", # This must be auto-generated with `make examples`
             Examples...
         ],
         "Contributing" => [

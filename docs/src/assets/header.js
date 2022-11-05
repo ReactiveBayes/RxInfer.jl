@@ -30,6 +30,7 @@ window.onload = function() {
                 })())
 
                 const items = [
+                    { title: "Home", link: "https://rxinfer.ml" },
                     { title: "Get Started", link: "https://biaslab.github.io/RxInfer.jl/stable/manuals/getting-started/" },
                     { title: "Documentation", link: "https://biaslab.github.io/RxInfer.jl/stable/" },
                     { title: "Examples", link: "https://biaslab.github.io/RxInfer.jl/stable/examples/overview/" },

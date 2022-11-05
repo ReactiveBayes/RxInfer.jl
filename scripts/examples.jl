@@ -222,7 +222,7 @@ function Base.run(examplesrunner::ExamplesRunner)
             return nothing
         end
 
-        open(joinpath(@__DIR__, "..", "docs", "src", "examples", "Overview.md"), "w") do f
+        open(joinpath(@__DIR__, "..", "docs", "src", "examples", "overview.md"), "w") do f
             write(f, String(take!(io_overview)))
         end
     else
