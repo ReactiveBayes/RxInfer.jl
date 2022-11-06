@@ -9,7 +9,7 @@ DocMeta.setdocmeta!(RxInfer, :DocTestSetup, :(using RxInfer); recursive = true)
 
 # This must be auto-generated with `make examples`
 ExamplesPath = joinpath(@__DIR__, "src", "examples")
-Examples = map(filter((f) -> f != "Overview.md", readdir(ExamplesPath))) do example 
+Examples = map(filter((f) -> f != "overview.md", readdir(ExamplesPath))) do example 
     return replace(example, ".md" => "") => joinpath("examples", example)
 end
 

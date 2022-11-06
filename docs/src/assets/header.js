@@ -21,7 +21,7 @@ window.onload = function() {
                     smalllink.appendChild((() => {
                         const a = document.createElement('a')
                         a.classList.add("nav-link")
-                        a.href = 'https://rxinfer.ml'
+                        a.href = 'http://www.rxinfer.ml'
                         a.innerHTML = 'RxInfer.jl'
                         a.title = 'RxInfer.jl'
                         return a
@@ -30,13 +30,13 @@ window.onload = function() {
                 })())
 
                 const items = [
-                    { title: "Home", link: "https://rxinfer.ml" },
+                    { title: "Home", link: "http://www.rxinfer.ml", icon: [ "fas", "fa-diagram-project" ] },
                     { title: "Get Started", link: "https://biaslab.github.io/RxInfer.jl/stable/manuals/getting-started/" },
                     { title: "Documentation", link: "https://biaslab.github.io/RxInfer.jl/stable/" },
                     { title: "Examples", link: "https://biaslab.github.io/RxInfer.jl/stable/examples/overview/" },
                     { title: "Papers", link: "https://biaslab.github.io/publication/" },
                     { title: "Team", link: "https://biaslab.github.io/team/" },
-                    { title: "Contact", link: "https://rxinfer.ml/contact/" },
+                    // { title: "Contact", link: "http://www.rxinfer.ml/contact/" }, the redirect is broken for now
                     { title: "GitHub", link: "https://github.com/biaslab/RxInfer.jl", icon: [ "fab", "fa-github" ] },
                 ]
 
