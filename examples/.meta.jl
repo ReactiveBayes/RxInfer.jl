@@ -177,5 +177,11 @@ return [
         title = "Tiny Benchmark", 
         description = "Tiny Benchmark for Internal testing.",
         hidden = true
-    )
+    ),
+    (
+        path  = "Universal Mixtures.ipynb", 
+        title = "Universal Mixtures", 
+        description = "Universal mixture modeling.",
+        hidden = false
+    ),
 ]
