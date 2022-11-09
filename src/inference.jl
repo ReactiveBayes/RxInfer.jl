@@ -532,7 +532,7 @@ function inference(;
 
         unsubscribe!(fe_subscription)
 
-        posterior_values = Dict(variable => ReactiveMP.getdata(getvalues(actor)) for (variable, actor) in pairs(actors))
+        posterior_values = Dict(variable => getvalues(actor) for (variable, actor) in pairs(actors))
         fe_values        = !isnothing(fe_actor) ? score_snapshot_iterations(fe_actor) : nothing
 
         inference_invoke_callback(callbacks, :after_inference, fmodel)
