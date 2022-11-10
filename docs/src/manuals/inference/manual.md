@@ -68,7 +68,7 @@ end)
 nothing #hide
 ```
 
-Sometimes it is usefull to return an array of random variables from model specification, in this case we may use `getmarginals()` function that transform an array of observables to an observable of arrays.
+Sometimes it is useful to return an array of random variables from model specification, in this case we may use `getmarginals()` function that transform an array of observables to an observable of arrays.
 
 ```julia
 @model function my_model()
