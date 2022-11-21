@@ -84,6 +84,32 @@ end
         @test autoupdate[2].variable === :τ_current
     end
 
+    @testset "Use case #4.1: simple indexing" begin
+        autoupdate = @autoupdates begin
+            x_t_prev_mean = somefunction(q(x[1]))
+        end
+
+        @test autoupdate isa Tuple && length(autoupdate) === 1
+        @test autoupdate[1] isa RxInfer.RxInferenceAutoUpdateSpecification
+        @test autoupdate[1].labels === (:x_t_prev_mean,)
+        @test autoupdate[1].callback === somefunction
+        @test autoupdate[1].from === RxInfer.FromMarginalAutoUpdate()
+        @test autoupdate[1].variable === RxInfer.RxInferenceAutoUpdateIndexedVariable(:x, (1,))
+    end
+
+    @testset "Use case #4.2: complex indexing" begin
+        autoupdate = @autoupdates begin
+            x_t_prev_mean = somefunction(q(x[1, 2, 3]))
+        end
+
+        @test autoupdate isa Tuple && length(autoupdate) === 1
+        @test autoupdate[1] isa RxInfer.RxInferenceAutoUpdateSpecification
+        @test autoupdate[1].labels === (:x_t_prev_mean,)
+        @test autoupdate[1].callback === somefunction
+        @test autoupdate[1].from === RxInfer.FromMarginalAutoUpdate()
+        @test autoupdate[1].variable === RxInfer.RxInferenceAutoUpdateIndexedVariable(:x, (1, 2, 3))
+    end
+
     @testset "Error cases" begin
         # No specs
         @test_throws LoadError eval(:(@autoupdates begin end))
@@ -100,15 +126,6 @@ end
 
         @test_throws LoadError eval(:(@autoupdates begin
             x[1] = somefunction(μ(x_t_current))
-        end))
-
-        # Complex rhs
-        @test_throws LoadError eval(:(@autoupdates begin
-            x = somefunction(q(x_t_current[1]))
-        end))
-
-        @test_throws LoadError eval(:(@autoupdates begin
-            x = somefunction(μ(x_t_current[1]))
         end))
 
         # Complex call expression

@@ -27,9 +27,9 @@ make_actor(::RandomVariable, ::KeepEach)                       = keep(Marginal)
 make_actor(::Array{<:RandomVariable, N}, ::KeepEach) where {N} = keep(Array{Marginal, N})
 make_actor(x::AbstractArray{<:RandomVariable}, ::KeepEach)     = keep(typeof(similar(x, Marginal)))
 
-make_actor(::RandomVariable, ::KeepEach, capacity::Integer)                      = circularkeep(Marginal, capacity)
-make_actor(::Array{<:RandomVariable, N}, ::KeepEach, capcity::Integer) where {N} = circularkeep(Array{Marginal, N}, capacity)
-make_actor(x::AbstractArray{<:RandomVariable}, ::KeepEach, capacity::Integer)    = circularkeep(typeof(similar(x, Marginal)), capacity)
+make_actor(::RandomVariable, ::KeepEach, capacity::Integer)                       = circularkeep(Marginal, capacity)
+make_actor(::Array{<:RandomVariable, N}, ::KeepEach, capacity::Integer) where {N} = circularkeep(Array{Marginal, N}, capacity)
+make_actor(x::AbstractArray{<:RandomVariable}, ::KeepEach, capacity::Integer)     = circularkeep(typeof(similar(x, Marginal)), capacity)
 
 make_actor(::RandomVariable, ::KeepLast)                   = storage(Marginal)
 make_actor(x::AbstractArray{<:RandomVariable}, ::KeepLast) = buffer(Marginal, size(x))
@@ -561,15 +561,29 @@ Base.fetch(::FromMarginalAutoUpdate, variable::Union{DataVariable, RandomVariabl
 Base.fetch(::FromMessageAutoUpdate, variable::RandomVariable) = ReactiveMP.messagein(variable, 1) # Here we assume that predictive message has index `1`
 Base.fetch(::FromMessageAutoUpdate, variable::DataVariable)   = error("`FromMessageAutoUpdate` fetch strategy is not implemented for `DataVariable`")
 
-struct RxInferenceAutoUpdateSpecification{N, F, C}
+struct RxInferenceAutoUpdateIndexedVariable{V, I}
+    variable :: V
+    index    :: I
+end
+
+Base.string(indexed::RxInferenceAutoUpdateIndexedVariable) = string(indexed.variable, "[", join(indexed.index, ", "), "]")
+
+hasdatavar(model, variable::RxInferenceAutoUpdateIndexedVariable)   = hasdatavar(model, variable.variable)
+hasrandomvar(model, variable::RxInferenceAutoUpdateIndexedVariable) = hasrandomvar(model, variable.variable)
+
+function Base.getindex(model::FactorGraphModel, indexed::RxInferenceAutoUpdateIndexedVariable)
+    return model[indexed.variable][indexed.index...]
+end
+
+struct RxInferenceAutoUpdateSpecification{N, F, C, V}
     labels   :: NTuple{N, Symbol}
     from     :: F
     callback :: C
-    variable :: Symbol
+    variable :: V
 end
 
 function Base.show(io::IO, specification::RxInferenceAutoUpdateSpecification)
-    print(io, join(specification.labels, ","), " = ", string(specification.callback), "(", string(specification.from), "(", specification.variable, "))")
+    print(io, join(specification.labels, ","), " = ", string(specification.callback), "(", string(specification.from), "(", string(specification.variable), "))")
 end
 
 function (specification::RxInferenceAutoUpdateSpecification)(model::FactorGraphModel)
@@ -658,8 +672,14 @@ macro autoupdates(code)
         # We modify all expression of the form `... = callback(q(...))` or `... = callback(μ(...))`
         if @capture(expression, (lhs_ = callback_(rhs_)) | (lhs_ = callback_(rhs__)))
             if @capture(rhs, (q(variable_)) | (μ(variable_)))
-                # First we check that `variable` is a plain Symbol
-                (variable isa Symbol) || error("Variable in the expression `$(expression)` must be a plain name, but a complex expression `$(variable)` found.")
+                # First we check that `variable` is a plain Symbol or an index operation
+                if (variable isa Symbol)
+                    variable = QuoteNode(variable)
+                elseif (variable isa Expr) && (variable.head === :ref)
+                    variable = :(RxInfer.RxInferenceAutoUpdateIndexedVariable($(QuoteNode(variable.args[1])), ($(variable.args[2:end])...,)))
+                else
+                    error("Variable in the expression `$(expression)` must be a plain name or and indexing operation, but a complex expression `$(variable)` found.")
+                end
                 # Next we extract `datavars` specification from the `lhs`                    
                 datavars = if lhs isa Symbol
                     (lhs,)
@@ -671,7 +691,7 @@ macro autoupdates(code)
                 # Only two options are possible within this `if` block
                 from = @capture(rhs, q(smth_)) ? :(RxInfer.FromMarginalAutoUpdate()) : :(RxInfer.FromMessageAutoUpdate())
 
-                push!(specifications, :(RxInfer.RxInferenceAutoUpdateSpecification($(datavars...,), $from, $callback, $(QuoteNode(variable)))))
+                push!(specifications, :(RxInfer.RxInferenceAutoUpdateSpecification($(datavars...,), $from, $callback, $variable)))
 
                 return :(nothing)
             else
@@ -1447,12 +1467,10 @@ function rxinference(;
     vardict = getvardict(_model)
 
     # At the very beginning we try to preallocate handles for the `datavar` labels that are present in the `T` (from `datastream`)
-    # This is not very type-styble-friendly but we do it once and it should pay-off in the inference procedure
     # This is not very type-stable-friendly but we do it once and it should pay-off in the inference procedure
     datavars = ntuple(N) do i
         datavarname = datavarnames[i]
         hasdatavar(_model, datavarname) || error("The `datastream` produces data for `$(datavarname)`, but the model does not have a datavar named `$(datavarname)`")
-        return _model[datavarname]::DataVariable
         return _model[datavarname]
     end
 
