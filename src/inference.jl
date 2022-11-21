@@ -1448,10 +1448,12 @@ function rxinference(;
 
     # At the very beginning we try to preallocate handles for the `datavar` labels that are present in the `T` (from `datastream`)
     # This is not very type-styble-friendly but we do it once and it should pay-off in the inference procedure
+    # This is not very type-stable-friendly but we do it once and it should pay-off in the inference procedure
     datavars = ntuple(N) do i
         datavarname = datavarnames[i]
         hasdatavar(_model, datavarname) || error("The `datastream` produces data for `$(datavarname)`, but the model does not have a datavar named `$(datavarname)`")
         return _model[datavarname]::DataVariable
+        return _model[datavarname]
     end
 
     # Second we check autoupdates and pregenerate all necessary structures here
