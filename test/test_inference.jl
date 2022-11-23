@@ -504,6 +504,15 @@ end
         @test data1 === 1
         @test data2 === 2.0
     end
+
+    @testset "Either `data` or `datastream` is required" begin 
+        @test_throws ErrorException rxinference(model = test_model1(), )
+    end
+
+    @testset "`data` and `datastream` cannot be used together" begin 
+        @test_throws ErrorException rxinference(model = test_model1(), data = (y = observedy, ), datastream = labeled(Val((:y, )), combineLatest(from(observedy))))
+    end
+
 end
 
 end

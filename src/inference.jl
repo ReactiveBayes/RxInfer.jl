@@ -259,6 +259,14 @@ result = inference(
 
 **Note**: The `model` keyword argument does not accept a `FactorGraphModel` instance as a value, as it needs to inject `constraints` and `meta` during the inference procedure.
 
+- ### `data`
+
+The `data` keyword argument must be a `NamedTuple` (or `Dict`) where keys (of `Symbol` type) correspond to all `datavar`s defined in the model specification. For example, if a model defines `x = datavar(Float64)` the 
+`data` field must have an `:x` key (of `Symbol` type) which holds a value of type `Float64`. The values in the `data` must have the exact same shape as the `datavar` container. In other words, if a model defines `x = datavar(Float64, n)` then 
+`data[:x]` must provide a container with length `n` and with elements of type `Float64`.
+
+**Note**: The behavior of the `data` keyword argument is different from that which is used in the `rxinference` function.
+
 - ### `initmarginals`
 
 In general for variational message passing every marginal distribution in a model needs to be pre-initialised. In practice, however, for many models it is sufficient enough to initialise only a small subset of variables in the model.
@@ -1197,7 +1205,8 @@ This function provides a generic way to perform probabilistic inference in RxInf
 For more information about some of the arguments, please check below.
 
 - `model`: specifies a model generator, required
-- `data`: `NamedTuple` or `Dict` with data, required
+- `data`: `NamedTuple` or `Dict` with data, required (or `datastream`)
+- `datastream`: A stream of `NamedTuple` with data, required (or `data`)
 - `initmarginals = nothing`: `NamedTuple` or `Dict` with initial marginals, optional
 - `initmessages = nothing`: `NamedTuple` or `Dict` with initial messages, optional
 - `autoupdates = nothing`: auto-updates specification, required for many models, see `@autoupdates`
@@ -1222,6 +1231,31 @@ For more information about some of the arguments, please check below.
 When passing `NamedTuple` as a value for some argument, make sure you use a trailing comma for `NamedTuple`s with a single entry. The reason is that Julia treats `returnvars = (x = KeepLast())` and `returnvars = (x = KeepLast(), )` expressions differently. This first expression creates (or **overwrites!**) new local/global variable named `x` with contents `KeepLast()`. The second expression (note trailing comma) creates `NamedTuple` with `x` as a key and `KeepLast()` as a value assigned for this key.
 
 ## Extended information about some of the arguments
+
+- ### `data` or `datastream`
+
+Either `data` or `datastream` keyword argument is required, but specifying both is not supported and will result in an error.
+
+- ### `data`
+
+The `data` keyword argument must be a `NamedTuple` (or `Dict`) where keys (of `Symbol` type) correspond to all `datavar`s defined in the model specification. For example, if a model defines `x = datavar(Float64)` the 
+`data` field must have an `:x` key (of `Symbol` type) which holds an iterable container with values of type `Float64`. The elements of such containers in the `data` must have the exact same shape as the `datavar` container. In other words, if a model defines `x = datavar(Float64, n)` then 
+`data[:x]` must provide an iterable container with elements of type `Vector{Float64}`. 
+
+All entries in the `data` argument are zipped together with the `Base.zip` function to form one slice of the data chunck. This means all containers in the `data` must be of the same size (`zip` iterator finished as soon as one container has no remaining values).
+In order to use a fixed value for some specific `datavar` it is not necessary to create a container with that fixed value, but rather more efficient to use `Iterators.repeated` to create an infinite iterator.
+
+**Note**: The behavior of the `data` keyword argument is different from that which is used in the `inference` function.
+
+- ### `datastream`
+
+The `datastream` keyword argument must be an observable that supports `subscribe!` and `unsbuscribe!` functions (streams from the `Rocket.jl` package are supported).
+The elements of the observable must be of type `NamedTuple` where keys (of `Symbol` type) correspond to all `datavar`s defined in the model specification, except for those which are listed in the `autoupdates` specification. 
+For example, if a model defines `x = datavar(Float64)` (which is not part of the `autoupdates` specification) the named tuple from the observable must have an `:x` key (of `Symbol` type) which holds a value of type `Float64`. The values in the named tuple must have the exact same shape as the `datavar` container. In other words, if a model defines `x = datavar(Float64, n)` then 
+`namedtuple[:x]` must provide a container with length `n` and with elements of type `Float64`.
+
+**Note**: The behavior of the individual named tuples from the `datastream` observable is similar to that which is used in the `inference` function and its `data` argument.
+In fact, you can see the `rxinference` function as an efficient streamed version of the `inference` function, which automatically updates some `datavar`s with the `autoupdates` specification and listens to the `datastream` to update the rest of the `datavar`s.
 
 - ### `model`
 
@@ -1436,7 +1470,7 @@ function rxinference(;
 
     # The `rxinference` support both static `data` and dynamic `datastream`
     if !isnothing(data) && !isnothing(datastream) # Ensure that only one of them set
-        error("`data` and `datastream` keyword arguments cannot be used together")
+        error("`data` and `datastream` keyword arguments cannot be used together.")
     elseif isnothing(data) && isnothing(datastream) # Ensure that at least one of them set
         error("The `rxinference` function requires either `data` or `datastream` keyword argument to be non-empty.")
     end
