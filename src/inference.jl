@@ -1238,18 +1238,16 @@ Either `data` or `datastream` keyword argument is required, but specifying both 
 
 - ### `data`
 
-The `data` keyword argument must be a `NamedTuple` (or `Dict`) where keys (of `Symbol` type) correspond to all `datavar`s defined in the model specification. For example, if a model defines `x = datavar(Float64)` the 
-`data` field must have an `:x` key (of `Symbol` type) which holds an iterable container with values of type `Float64`. The elements of such containers in the `data` must have the exact same shape as the `datavar` container. In other words, if a model defines `x = datavar(Float64, n)` then 
-`data[:x]` must provide an iterable container with elements of type `Vector{Float64}`. 
+The `data` keyword argument must be a `NamedTuple` (or `Dict`) where keys (of `Symbol` type) correspond to all `datavar`s defined in the model specification. For example, if a model defines `x = datavar(Float64)` the `data` field must have an `:x` key (of `Symbol` type) which holds an iterable container with values of type `Float64`. The elements of such containers in the `data` must have the exact same shape as the `datavar` container. In other words, if a model defines `x = datavar(Float64, n)` then `data[:x]` must provide an iterable container with elements of type `Vector{Float64}`. 
 
-All entries in the `data` argument are zipped together with the `Base.zip` function to form one slice of the data chunck. This means all containers in the `data` must be of the same size (`zip` iterator finished as soon as one container has no remaining values).
+All entries in the `data` argument are zipped together with the `Base.zip` function to form one slice of the data chunck. This means all containers in the `data` argument must be of the same size (`zip` iterator finished as soon as one container has no remaining values).
 In order to use a fixed value for some specific `datavar` it is not necessary to create a container with that fixed value, but rather more efficient to use `Iterators.repeated` to create an infinite iterator.
 
 **Note**: The behavior of the `data` keyword argument is different from that which is used in the `inference` function.
 
 - ### `datastream`
 
-The `datastream` keyword argument must be an observable that supports `subscribe!` and `unsbuscribe!` functions (streams from the `Rocket.jl` package are supported).
+The `datastream` keyword argument must be an observable that supports `subscribe!` and `unsubscribe!` functions (streams from the `Rocket.jl` package are also supported).
 The elements of the observable must be of type `NamedTuple` where keys (of `Symbol` type) correspond to all `datavar`s defined in the model specification, except for those which are listed in the `autoupdates` specification. 
 For example, if a model defines `x = datavar(Float64)` (which is not part of the `autoupdates` specification) the named tuple from the observable must have an `:x` key (of `Symbol` type) which holds a value of type `Float64`. The values in the named tuple must have the exact same shape as the `datavar` container. In other words, if a model defines `x = datavar(Float64, n)` then 
 `namedtuple[:x]` must provide a container with length `n` and with elements of type `Float64`.
