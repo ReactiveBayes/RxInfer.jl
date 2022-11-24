@@ -6,7 +6,7 @@
 	.st0{fill-rule:evenodd;clip-rule:evenodd;fill:#333333;stroke:#FFFFFF;stroke-miterlimit:10;}
 	.st1{fill:#389826;}
 	.st2{fill:#9558B2;}
-	.st3{stroke:#FFFFFF;stroke-miterlimit:10;}
+	.st3{fill:#FFFFFF;stroke:#FFFFFF;stroke-miterlimit:10;}
 	.st4{fill:#CB3C33;}
 	.st5{fill-rule:evenodd;clip-rule:evenodd;fill:#333333;stroke:#FFE9E9;stroke-miterlimit:10;}
 	.st6{fill-rule:evenodd;clip-rule:evenodd;fill:#4063D8;stroke:#FFFFFF;stroke-miterlimit:10;}

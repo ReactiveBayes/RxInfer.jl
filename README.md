@@ -1,11 +1,10 @@
 
-<p align="center">
-  <img src="https://user-images.githubusercontent.com/6557701/173435965-2020adae-b10b-41d2-9c7f-98ad63986958.svg" width=60%/>
-</p>
+![](docs/src/assets/biglogo-blacktheme.svg?raw=true&sanitize=true)
 
 [![Official page](https://img.shields.io/badge/official%20page%20-RxInfer-blue)](http://www.rxinfer.ml)
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://biaslab.github.io/RxInfer.jl/stable/)
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://biaslab.github.io/RxInfer.jl/dev/)
+[![Examples](https://img.shields.io/badge/examples-RxInfer-brightgreen)](https://biaslab.github.io/RxInfer.jl/stable/examples/overview/)
 [![Build Status](https://github.com/biaslab/RxInfer.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/biaslab/RxInfer.jl/actions/workflows/CI.yml?query=branch%3Amain)
 [![Coverage](https://codecov.io/gh/biaslab/RxInfer.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/biaslab/RxInfer.jl)
 [![PkgEval](https://JuliaCI.github.io/NanosoldierReports/pkgeval_badges/R/RxInfer.svg)](https://JuliaCI.github.io/NanosoldierReports/pkgeval_badges/report.html)
