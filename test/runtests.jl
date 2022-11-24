@@ -193,7 +193,7 @@ using Aqua
 if isempty(testrunner.enabled_tests)
     println("Running all tests...")
     # `project_toml_formatting` is broken on CI, revise at some point
-    Aqua.test_all(RxInfer; ambiguities = false, project_toml_formatting = false)
+    # Aqua.test_all(RxInfer; ambiguities = false, project_toml_formatting = false)
     # doctest(RxInfer)
 else
     println("Running specific tests:")
