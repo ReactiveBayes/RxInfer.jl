@@ -96,6 +96,54 @@ using Random
         end
     end
 
+    @testset "Priors in arguments" begin 
+
+        @model function coin_model_priors1(n, prior)
+            y = datavar(Float64, n)
+            θ ~ prior
+            for i in 1:n
+                y[i] ~ Bernoulli(θ)
+            end
+        end
+
+        @model function coin_model_priors2(n, prior)
+            y = datavar(Float64, n)
+            θ = randomvar()
+            θ ~ prior
+            for i in 1:n
+                y[i] ~ Bernoulli(θ)
+            end
+        end
+
+        @model function coin_model_priors3(n, priors)
+            y = datavar(Float64, n)
+            θ = randomvar(1)
+            θ .~ priors
+            for i in 1:n
+                y[i] ~ Bernoulli(θ[1])
+            end
+        end
+
+        rng  = MersenneTwister(42)
+        n    = 50
+        data = float.(rand(rng, Bernoulli(0.75), n));
+
+        testsets = [
+            (prior = Beta(4.0, 8.0), answer = Beta(43.0, 19.0)),
+            (prior = Beta(54.0, 1.0), answer = Beta(93.0, 12.0)),
+            (prior = Beta(1.0, 12.0), answer = Beta(40.0, 23.0))
+        ]
+
+        for ts in testsets 
+
+            @test inference(model = coin_model_priors1(n, ts[:prior]), data = (y = data, )).posteriors[:θ] == ts[:answer]
+            @test inference(model = coin_model_priors2(n, ts[:prior]), data = (y = data, )).posteriors[:θ] == ts[:answer]
+            @test inference(model = coin_model_priors3(n, [ ts[:prior] ]), data = (y = data, )).posteriors[:θ] == [ ts[:answer] ]
+
+        end
+
+    end
+
     @testset "Error #1: Fail if variable in broadcasting hasnt been defined" begin
         @model function berror1(n)
             x = randomvar(n)

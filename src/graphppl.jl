@@ -75,12 +75,24 @@ function GraphPPL.write_make_node_expression(::RxInferBackend, model, fform, var
     return :($nodeexpr = ReactiveMP.make_node($model, $options, $fform, $varexpr, $(variables...)))
 end
 
+function GraphPPL.write_make_auto_node_expression(::RxInferBackend, model, rhs, nodeexpr, varexpr)
+    return :($nodeexpr = ReactiveMP.make_node($model, RxInfer.AutoNode(), $varexpr, $rhs))
+end
+
 function GraphPPL.write_broadcasted_make_node_expression(::RxInferBackend, model, fform, variables, options, nodeexpr, varexpr)
     return :($nodeexpr = ReactiveMP.make_node.($model, $options, $fform, $varexpr, $(variables...)))
 end
 
+function GraphPPL.write_broadcasted_make_auto_node_expression(::RxInferBackend, model, rhs, nodeexpr, varexpr)
+    return :($nodeexpr = ReactiveMP.make_node.($model, RxInfer.AutoNode(), $varexpr, $rhs))
+end
+
 function GraphPPL.write_autovar_make_node_expression(::RxInferBackend, model, fform, variables, options, nodeexpr, varexpr, autovarid)
     return :(($nodeexpr, $varexpr) = ReactiveMP.make_node($model, $options, $fform, RxInfer.AutoVar($(GraphPPL.fquote(autovarid))), $(variables...)))
+end
+
+function GraphPPL.write_autovar_make_auto_node_expression(::RxInferBackend, model, rhs, nodeexpr, varexpr, autovarid)
+    return :(($nodeexpr, $varexpr) = ReactiveMP.make_node($model, RxInfer.AutoNode(), RxInfer.AutoVar($(GraphPPL.fquote(autovarid))), $rhs))
 end
 
 function GraphPPL.write_check_variable_existence(::RxInferBackend, model, varid, errormsg)
