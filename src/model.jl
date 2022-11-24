@@ -384,7 +384,7 @@ struct AutoNode end
 Base.broadcastable(::AutoNode) = Ref(AutoNode())
 
 function ReactiveMP.make_node(model::FactorGraphModel, ::AutoNode, autovar::AutoVar, distribution::Distribution)
-    var  = make_autovar(model, ReactiveMP.EmptyRandomVariableCreationOptions, ReactiveMP.name(autovar), true)
+    var = make_autovar(model, ReactiveMP.EmptyRandomVariableCreationOptions, ReactiveMP.name(autovar), true)
     return ReactiveMP.make_node(model, AutoNode(), var, distribution)
 end
 
