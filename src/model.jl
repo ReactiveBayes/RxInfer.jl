@@ -384,3 +384,20 @@ function ReactiveMP.make_node(model::FactorGraphModel, options::FactorNodeCreati
         return nothing, var
     end
 end
+
+## AutoNode 
+
+struct AutoNode end
+
+Base.broadcastable(::AutoNode) = Ref(AutoNode())
+
+function ReactiveMP.make_node(model::FactorGraphModel, ::AutoNode, autovar::AutoVar, distribution::Distribution)
+    var = make_autovar(model, ReactiveMP.EmptyRandomVariableCreationOptions, ReactiveMP.name(autovar), true)
+    return ReactiveMP.make_node(model, AutoNode(), var, distribution)
+end
+
+function ReactiveMP.make_node(model::FactorGraphModel, ::AutoNode, var::RandomVariable, distribution::Distribution)
+    args = map(v -> as_variable(model, v), params(distribution))
+    node = ReactiveMP.make_node(model, FactorNodeCreationOptions(), typeof(distribution), var, args...)
+    return node, var
+end
