@@ -75,12 +75,24 @@ function GraphPPL.write_make_node_expression(::RxInferBackend, model, fform, var
     return :($nodeexpr = ReactiveMP.make_node($model, $options, $fform, $varexpr, $(variables...)))
 end
 
+function GraphPPL.write_make_auto_node_expression(::RxInferBackend, model, rhs, nodeexpr, varexpr)
+    return :($nodeexpr = ReactiveMP.make_node($model, RxInfer.AutoNode(), $varexpr, $rhs))
+end
+
 function GraphPPL.write_broadcasted_make_node_expression(::RxInferBackend, model, fform, variables, options, nodeexpr, varexpr)
     return :($nodeexpr = ReactiveMP.make_node.($model, $options, $fform, $varexpr, $(variables...)))
 end
 
+function GraphPPL.write_broadcasted_make_auto_node_expression(::RxInferBackend, model, rhs, nodeexpr, varexpr)
+    return :($nodeexpr = ReactiveMP.make_node.($model, RxInfer.AutoNode(), $varexpr, $rhs))
+end
+
 function GraphPPL.write_autovar_make_node_expression(::RxInferBackend, model, fform, variables, options, nodeexpr, varexpr, autovarid)
     return :(($nodeexpr, $varexpr) = ReactiveMP.make_node($model, $options, $fform, RxInfer.AutoVar($(GraphPPL.fquote(autovarid))), $(variables...)))
+end
+
+function GraphPPL.write_autovar_make_auto_node_expression(::RxInferBackend, model, rhs, nodeexpr, varexpr, autovarid)
+    return :(($nodeexpr, $varexpr) = ReactiveMP.make_node($model, RxInfer.AutoNode(), RxInfer.AutoVar($(GraphPPL.fquote(autovarid))), $rhs))
 end
 
 function GraphPPL.write_check_variable_existence(::RxInferBackend, model, varid, errormsg)
@@ -474,9 +486,9 @@ ReactiveMPNodeAliases = (
     ),
     (
         (expression) -> if @capture(expression, (Normal | Gaussian)(args__))
-            :(error(
+            error(
                 "Please use a specific version of the `Normal` (`Gaussian`) distribution (e.g. `NormalMeanVariance` or aliased version `Normal(mean = ..., variance|precision = ...)`)."
-            ))
+            )
         else
             expression
         end,
@@ -484,9 +496,9 @@ ReactiveMPNodeAliases = (
     ),
     (
         (expression) -> if @capture(expression, (MvNormal | MvGaussian)(args__))
-            :(error(
+            error(
                 "Please use a specific version of the `MvNormal` (`MvGaussian`) distribution (e.g. `MvNormalMeanCovariance` or aliased version `MvNormal(mean = ..., covariance|precision = ...)`)."
-            ))
+            )
         else
             expression
         end,
