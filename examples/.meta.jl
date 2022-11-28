@@ -17,6 +17,12 @@
 
 return [
     (
+        path = "Bayesian ARMA.ipynb",
+        title = "Bayesian ARMA model",
+        description = "This notebook shows how Bayesian ARMA model can be implemeted in **RxInfer.jl**",
+        hidden = false
+    ),
+    (
         path = "Coin Toss Model.ipynb",
         title = "Coin toss model (Beta-Bernoulli)",
         description = "An example of Bayesian inference in Beta-Bernoulli model with IID observations.",
