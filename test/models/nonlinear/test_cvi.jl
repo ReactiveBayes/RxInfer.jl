@@ -60,7 +60,7 @@ function inference_cvi(transformed, rng, iterations)
         free_energy = true,
         returnvars = (z = KeepLast(),),
         constraints = constraints,
-        meta         = model_meta(rng, 600, 600, 0.01),
+        meta = model_meta(rng, 600, 600, 0.01),
         initmessages = (z = NormalMeanVariance(0, P),),
         initmarginals = (z = NormalMeanVariance(0, P), τ = GammaShapeRate(1.0, 1.0e-12), θ = GammaShapeRate(1.0, 1.0e-12))
     )
@@ -96,7 +96,6 @@ end
         @test (sum((mean.(mz) .- 4 .* std.(mz)) .< hidden .< (mean.(mz) .+ 4 .* std.(mz))) / T) > 0.95
         @test (sum((mean.(mz) .- 3 .* std.(mz)) .< hidden .< (mean.(mz) .+ 3 .* std.(mz))) / T) > 0.90
 
-        
         # Free energy for the CVI may fluctuate
         @test all(d -> d < 1.0, diff(fe)[5:end]) # Check that the fluctuations are not big
         @test abs(last(fe) - 363) < 1.0          # Check the final result with relatively low precision
