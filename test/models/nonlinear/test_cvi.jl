@@ -18,7 +18,7 @@ function f(z)
     (z - sensor_location)^2
 end
 
-@model function non_linear_dynamics(T, rng, n_iterations, n_samples, learning_rate)
+@model function non_linear_dynamics(T)
     z = randomvar(T)
     x = randomvar(T)
     y = datavar(Float64, T)
@@ -27,12 +27,12 @@ end
     θ ~ GammaShapeRate(1.0, 1.0e-12)
 
     z[1] ~ NormalMeanPrecision(0, τ)
-    x[1] ~ f(z[1]) where {meta = CVIApproximation(rng, n_iterations, n_samples, Descent(learning_rate))}
+    x[1] ~ f(z[1])
     y[1] ~ NormalMeanPrecision(x[1], θ)
 
     for t in 2:T
         z[t] ~ NormalMeanPrecision(z[t - 1] + 1, τ)
-        x[t] ~ f(z[t]) where {meta = CVIApproximation(rng, n_iterations, n_samples, Descent(learning_rate))}
+        x[t] ~ f(z[t])
         y[t] ~ NormalMeanPrecision(x[t], θ)
     end
 
@@ -43,6 +43,10 @@ constraints = @constraints begin
     q(z, x, τ, θ) = q(z)q(x)q(τ)q(θ)
 end
 
+@meta function model_meta(rng, n_iterations, n_samples, learning_rate)
+    f() -> CVI(rng, n_iterations, n_samples, Descent(learning_rate))
+end
+
 ## -------------------------------------------- ##
 ## Inference definition
 ## -------------------------------------------- ##
@@ -50,12 +54,13 @@ function inference_cvi(transformed, rng, iterations)
     T = length(transformed)
 
     return inference(
-        model = non_linear_dynamics(T, rng, 600, 600, 0.01),
+        model = non_linear_dynamics(T),
         data = (y = transformed,),
         iterations = iterations,
         free_energy = true,
         returnvars = (z = KeepLast(),),
         constraints = constraints,
+        meta         = model_meta(rng, 600, 600, 0.01),
         initmessages = (z = NormalMeanVariance(0, P),),
         initmarginals = (z = NormalMeanVariance(0, P), τ = GammaShapeRate(1.0, 1.0e-12), θ = GammaShapeRate(1.0, 1.0e-12))
     )
@@ -90,7 +95,11 @@ end
         @test all(mean.(mz) .- 6 .* std.(mz) .< hidden .< (mean.(mz) .+ 6 .* std.(mz)))
         @test (sum((mean.(mz) .- 4 .* std.(mz)) .< hidden .< (mean.(mz) .+ 4 .* std.(mz))) / T) > 0.95
         @test (sum((mean.(mz) .- 3 .* std.(mz)) .< hidden .< (mean.(mz) .+ 3 .* std.(mz))) / T) > 0.90
-        @test abs(last(fe) - 362.6552215247382) < 0.01
+
+        
+        # Free energy for the CVI may fluctuate
+        @test all(d -> d < 1.0, diff(fe)[5:end]) # Check that the fluctuations are not big
+        @test abs(last(fe) - 363) < 1.0          # Check the final result with relatively low precision
 
         @test (first(fe) - last(fe)) > 0
         ## Form debug output
@@ -101,7 +110,7 @@ end
         benchmark_output = joinpath(base_output, "non_linear_dynamics_$(timestamp)_v$(VERSION).txt")
 
         ## Create output plots
-        @test_plot "models" "hgf" begin
+        @test_plot "models" "cvi" begin
             px = plot()
 
             px = plot!(px, hidden, label = "Hidden Signal", color = :red)
