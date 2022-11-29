@@ -6,7 +6,7 @@ import DataStructures: CircularBuffer
 
 using MacroTools # for `@autoupdates`
 
-import ReactiveMP: israndom, isdata, isconst, isproxy, isanonymous
+import ReactiveMP: israndom, isdata, isconst, isproxy, isanonymous, isprocess
 import ReactiveMP: CountingReal
 
 import ProgressMeter
@@ -36,6 +36,21 @@ make_actor(x::AbstractArray{<:RandomVariable}, ::KeepLast) = buffer(Marginal, si
 
 make_actor(::RandomVariable, ::KeepLast, capacity::Integer)                   = storage(Marginal)
 make_actor(x::AbstractArray{<:RandomVariable}, ::KeepLast, capacity::Integer) = buffer(Marginal, size(x))
+
+### Randomprocess 
+make_actor(::RandomProcess, ::KeepEach)                       = keep(Marginal)
+make_actor(::Array{<:RandomProcess, N}, ::KeepEach) where {N} = keep(Array{Marginal, N})
+make_actor(x::AbstractArray{<:RandomProcess}, ::KeepEach)     = keep(typeof(similar(x, Marginal)))
+
+make_actor(::RandomProcess, ::KeepEach, capacity::Integer)                       = circularkeep(Marginal, capacity)
+make_actor(::Array{<:RandomProcess, N}, ::KeepEach, capacity::Integer) where {N} = circularkeep(Array{Marginal, N}, capacity)
+make_actor(x::AbstractArray{<:RandomProcess}, ::KeepEach, capacity::Integer)     = circularkeep(typeof(similar(x, Marginal)), capacity)
+
+make_actor(::RandomProcess, ::KeepLast)                   = storage(Marginal)
+make_actor(x::AbstractArray{<:RandomProcess}, ::KeepLast) = buffer(Marginal, size(x))
+
+make_actor(::RandomProcess, ::KeepLast, capacity::Integer)                   = storage(Marginal)
+make_actor(x::AbstractArray{<:RandomProcess}, ::KeepLast, capacity::Integer) = buffer(Marginal, size(x))
 
 ## Inference ensure update
 
@@ -428,7 +443,7 @@ function inference(;
     if returnvars === nothing || returnvars === KeepEach() || returnvars === KeepLast()
         # Checks if the first argument is `nothing`, in which case returns the second argument
         returnoption = something(returnvars, iterations isa Number ? KeepEach() : KeepLast())
-        returnvars   = Dict(variable => returnoption for (variable, value) in pairs(vardict) if (israndom(value) && !isanonymous(value)))
+        returnvars   = Dict(variable => returnoption for (variable, value) in pairs(vardict) if (israndom(value) && !isanonymous(value)) || (isprocess(value) && !isanonymous(value))) #add randomprocess here 
     end
 
     __inference_check_dicttype(:returnvars, returnvars)
@@ -564,10 +579,12 @@ Base.string(::FromMessageAutoUpdate) = "μ"
 import Base: fetch
 
 # TODO for arrays
-Base.fetch(::FromMarginalAutoUpdate, variable::Union{DataVariable, RandomVariable}) = ReactiveMP.getmarginal(variable, IncludeAll())
+Base.fetch(::FromMarginalAutoUpdate, variable::Union{DataVariable, RandomVariable, RandomProcess}) = ReactiveMP.getmarginal(variable, IncludeAll())  #add randomprocess
 
 Base.fetch(::FromMessageAutoUpdate, variable::RandomVariable) = ReactiveMP.messagein(variable, 1) # Here we assume that predictive message has index `1`
 Base.fetch(::FromMessageAutoUpdate, variable::DataVariable)   = error("`FromMessageAutoUpdate` fetch strategy is not implemented for `DataVariable`")
+#add process 
+Base.fetch(::FromMessageAutoUpdate, variable::RandomProcess) = ReactiveMP.messagein(variable, 1) # Here we assume that predictive message has index `1`
 
 struct RxInferenceAutoUpdateIndexedVariable{V, I}
     variable :: V
@@ -578,6 +595,7 @@ Base.string(indexed::RxInferenceAutoUpdateIndexedVariable) = string(indexed.vari
 
 hasdatavar(model, variable::RxInferenceAutoUpdateIndexedVariable)   = hasdatavar(model, variable.variable)
 hasrandomvar(model, variable::RxInferenceAutoUpdateIndexedVariable) = hasrandomvar(model, variable.variable)
+hasrandomprocess(model, variable::RxInferenceAutoUpdateIndexedVariable) = hasrandomprocess(model, variable.variable) #add randomprocess
 
 function Base.getindex(model::FactorGraphModel, indexed::RxInferenceAutoUpdateIndexedVariable)
     return model[indexed.variable][indexed.index...]
@@ -600,8 +618,8 @@ function (specification::RxInferenceAutoUpdateSpecification)(model::FactorGraphM
         return model[label]
     end
 
-    (hasrandomvar(model, specification.variable) || hasdatavar(model, specification.variable)) ||
-        error("Autoupdate specification defines an update from `$(specification.variable)`, but the model has no randomvar/datavar named `$(specification.variable)`")
+    (hasrandomvar(model, specification.variable) || hasdatavar(model, specification.variable)) || hasrandomprocess(model, specification.variable) ||
+        error("Autoupdate specification defines an update from `$(specification.variable)`, but the model has no randomvar/datavar named `$(specification.variable)`")   #add randomprocess
 
     variable = model[specification.variable]
 

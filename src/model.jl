@@ -97,12 +97,14 @@ getoptions(model::FactorGraphModel)     = model.options
 getnodes(model::FactorGraphModel)       = model.nodes
 getvariables(model::FactorGraphModel)   = model.variables
 
-import ReactiveMP: getrandom, getconstant, getdata, getvardict
+import ReactiveMP: getrandom, getconstant, getdata, getvardict, getprocess
 
 ReactiveMP.getrandom(model::FactorGraphModel)   = getrandom(getvariables(model))
 ReactiveMP.getconstant(model::FactorGraphModel) = getconstant(getvariables(model))
 ReactiveMP.getdata(model::FactorGraphModel)     = getdata(getvariables(model))
 ReactiveMP.getvardict(model::FactorGraphModel)  = getvardict(getvariables(model))
+#add process
+ReactiveMP.getprocess(model::FactorGraphModel)  = getprocess(getvariables(model)) 
 
 function Base.getindex(model::FactorGraphModel, symbol::Symbol)
     return getindex(getvariables(model), symbol)
@@ -114,11 +116,13 @@ end
 
 Base.broadcastable(model::FactorGraphModel) = (model,)
 
-import ReactiveMP: hasrandomvar, hasdatavar, hasconstvar
+import ReactiveMP: hasrandomvar, hasdatavar, hasconstvar, hasprocess
 
 ReactiveMP.hasrandomvar(model::FactorGraphModel, symbol::Symbol) = hasrandomvar(getvariables(model), symbol)
 ReactiveMP.hasdatavar(model::FactorGraphModel, symbol::Symbol)   = hasdatavar(getvariables(model), symbol)
 ReactiveMP.hasconstvar(model::FactorGraphModel, symbol::Symbol)  = hasconstvar(getvariables(model), symbol)
+#add random process 
+ReactiveMP.hasprocess(model::FactorGraphModel, symbol::Symbol)   = hasprocess(getvariables(model), symbol) #checked 
 
 Base.firstindex(model::FactorGraphModel, symbol::Symbol) = firstindex(getvariables(model), symbol)
 Base.lastindex(model::FactorGraphModel, symbol::Symbol)  = lastindex(getvariables(model), symbol)
@@ -149,7 +153,12 @@ function ReactiveMP.activate!(model::FactorGraphModel)
         @assert degree(randomvar) !== 1 "Half-edge has been found: $(indexed_name(randomvar)). To terminate half-edges 'Uninformative' node can be used."
         return degree(randomvar) >= 2
     end
-
+    #add process 
+    filter!(getprocess(model)) do randomprocess
+        @assert degree(randomprocess) !== 0 "Unused random variable has been found $(indexed_name(randomprocess))."
+        @assert degree(randomprocess) !== 1 "Half-edge has been found: $(indexed_name(randomprocess)). To terminate half-edges 'Uninformative' node can be used."
+        return degree(randomprocess) >= 2
+    end
     foreach(getdata(model)) do datavar
         if !isconnected(datavar)
             @warn "Unused data variable has been found: '$(indexed_name(datavar))'. Ignore if '$(indexed_name(datavar))' has been used in deterministic nonlinear tranformation."
@@ -164,6 +173,7 @@ function ReactiveMP.activate!(model::FactorGraphModel)
 
     filter!(c -> isconnected(c), getconstant(model))
     foreach(r -> activate!(r, gscheduler), getrandom(model))
+    foreach(p -> activate!(p, gscheduler), getprocess(model)) # add process 
     foreach(n -> activate!(n, gpipelinestages, gscheduler), getnodes(model))
 end
 
@@ -203,7 +213,24 @@ function randomvar_resolve_options(model::FactorGraphModel, options::RandomVaria
 
     return roptions
 end
+# random process 
+import ReactiveMP: randomprocess_options_set_marginal_form_check_strategy, randomprocess_options_set_marginal_form_constraint
+import ReactiveMP: randomprocess_options_set_messages_form_check_strategy, randomprocess_options_set_messages_form_constraint
+import ReactiveMP: randomprocess_options_set_pipeline, randomprocess_options_set_prod_constraint
+import ReactiveMP: randomprocess_options_set_prod_strategy, randomprocess_options_set_proxy_variables
 
+function randomprocess_resolve_options(model::FactorGraphModel, options::RandomProcessCreationOptions, name)
+    qform, qprod = randomprocess_resolve_marginal_form_prod(model, options, name)
+    mform, mprod = randomprocess_resolve_messages_form_prod(model, options, name)
+
+    rprod = resolve_prod_constraint(options.prod_constraint, resolve_prod_constraint(qprod, mprod)) #check this 
+
+    qoptions = randomprocess_options_set_marginal_form_constraint(options, qform)
+    moptions = randomprocess_options_set_messages_form_constraint(qoptions, mform)
+    roptions = randomprocess_options_set_prod_constraint(moptions, rprod)
+
+    return roptions
+end
 # Model Generator
 
 """
@@ -271,13 +298,31 @@ randomvar_resolve_messages_form_prod(model::FactorGraphModel, options::RandomVar
 randomvar_resolve_messages_form_prod(model::FactorGraphModel, ::UnspecifiedConstraints, name) = (nothing, nothing)
 randomvar_resolve_messages_form_prod(model::FactorGraphModel, constraints, name)              = resolve_messages_form_prod(constraints, name)
 
+## constraints randomprocess 
+
+randomprocess_resolve_marginal_form_prod(model::FactorGraphModel, options::RandomProcessCreationOptions, name)            = randomprocess_resolve_marginal_form_prod(model, options, marginal_form_constraint(options), name)
+randomprocess_resolve_marginal_form_prod(model::FactorGraphModel, options::RandomProcessCreationOptions, something, name) = (something, nothing)
+randomprocess_resolve_marginal_form_prod(model::FactorGraphModel, options::RandomProcessCreationOptions, ::Nothing, name) = randomprocess_resolve_marginal_form_prod(model, getconstraints(model), name)
+
+randomprocess_resolve_marginal_form_prod(model::FactorGraphModel, ::UnspecifiedConstraints, name) = (nothing, nothing)
+randomprocess_resolve_marginal_form_prod(model::FactorGraphModel, constraints, name)              = resolve_marginal_form_prod(constraints, name)  
+
+randomprocess_resolve_messages_form_prod(model::FactorGraphModel, options::RandomProcessCreationOptions, name)            = randomprocess_resolve_messages_form_prod(model, options, messages_form_constraint(options), name)
+randomprocess_resolve_messages_form_prod(model::FactorGraphModel, options::RandomProcessCreationOptions, something, name) = (something, nothing)
+randomprocess_resolve_messages_form_prod(model::FactorGraphModel, options::RandomProcessCreationOptions, ::Nothing, name) = randomprocess_resolve_messages_form_prod(model, getconstraints(model), name)
+
+randomprocess_resolve_messages_form_prod(model::FactorGraphModel, ::UnspecifiedConstraints, name) = (nothing, nothing)
+randomprocess_resolve_messages_form_prod(model::FactorGraphModel, constraints, name)              = resolve_messages_form_prod(constraints, name)
+
 # We extend `ReactiveMP` functionality here
-import ReactiveMP: RandomVariable, DataVariable, ConstVariable
-import ReactiveMP: RandomVariableCreationOptions, DataVariableCreationOptions
-import ReactiveMP: randomvar, datavar, constvar, make_node
+import ReactiveMP: RandomVariable, DataVariable, ConstVariable, RandomProcess
+import ReactiveMP: RandomVariableCreationOptions, DataVariableCreationOptions, RandomProcessCreationOptions
+import ReactiveMP: randomvar, datavar, constvar, make_node, randomprocess
 
 ReactiveMP.randomvar(model::FactorGraphModel, name::Symbol, args...) = randomvar(model, RandomVariableCreationOptions(), name, args...)
 ReactiveMP.datavar(model::FactorGraphModel, name::Symbol, args...)   = datavar(model, DataVariableCreationOptions(Any), name, args...)
+## add random process 
+ReactiveMP.randomprocess(model::FactorGraphModel, name::Symbol, args...) = randomprocess(model, RandomProcessCreationOptions(), name, args...)
 
 function __check_variable_existence(model::FactorGraphModel, name::Symbol)
     if haskey(getvardict(model), name)
@@ -299,6 +344,12 @@ end
 function ReactiveMP.constvar(model::FactorGraphModel, name::Symbol, args...)
     __check_variable_existence(model, name)
     return push!(model, constvar(name, args...))
+end
+
+#add randomprocess 
+function ReactiveMP.randomprocess(model::FactorGraphModel, options::RandomProcessCreationOptions, name::Symbol, args...)
+    __check_variable_existence(model, name)
+    return push!(model, randomprocess(randomprocess_resolve_options(model, options, name), name, args...))
 end
 
 import ReactiveMP: as_variable, undo_as_variable
