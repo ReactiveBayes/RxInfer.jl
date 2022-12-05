@@ -173,6 +173,12 @@ return [
         hidden = false
     ),
     (
+        path = "Active Inference - Mountain car.ipynb",
+        title = "Active Inference - Mountain car",
+        description = "This notebooks covers RxInfer usage in the Active Inference setting for the simple mountain car problem.",
+        hidden = false
+    ),
+    (
         path  = "Tiny Benchmark.ipynb", 
         title = "Tiny Benchmark", 
         description = "Tiny Benchmark for Internal testing.",
