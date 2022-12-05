@@ -14,8 +14,16 @@
 #            7. Notebooks and plain Julia have different scoping rules for global variables, if it happens so that examples generation fails due to 
 #               `UndefVarError` and scoping issues use `let ... end` blocks to enforce local scoping (see `Gaussian Mixtures Multivariate.ipynb` as an example)
 #            8. All examples must use and activate local `Project.toml` in the second cell (see `1.`), if you need some package add it to the `(examples)` project
-
+#               Use the code below as a placeholder
+#               # Activate local environment, see `Project.toml`
+#               import Pkg; Pkg.activate("."); Pkg.instantiate(); 
 return [
+    (
+        path = "Bayesian ARMA.ipynb",
+        title = "Bayesian ARMA model",
+        description = "This notebook shows how Bayesian ARMA (Autoregressive Moving-Average) model can be implemeted in **RxInfer.jl**",
+        hidden = false
+    ),
     (
         path = "Coin Toss Model.ipynb",
         title = "Coin toss model (Beta-Bernoulli)",
