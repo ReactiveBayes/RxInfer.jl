@@ -17,13 +17,8 @@
 #               Use the code below as a placeholder
 #               # Activate local environment, see `Project.toml`
 #               import Pkg; Pkg.activate("."); Pkg.instantiate(); 
+#            9. Do not use special symbols (`-`, `:`, ...) in titles as it does not play nicely with automatic link generation
 return [
-    (
-        path = "Bayesian ARMA.ipynb",
-        title = "Bayesian ARMA model",
-        description = "This notebook shows how Bayesian ARMA (Autoregressive Moving-Average) model can be implemeted in **RxInfer.jl**",
-        hidden = false
-    ),
     (
         path = "Coin Toss Model.ipynb",
         title = "Coin toss model (Beta-Bernoulli)",
@@ -34,6 +29,12 @@ return [
         path = "Linear Regression.ipynb",
         title = "Bayesian Linear Regression",
         description = "An example of Bayesian linear regression.",
+        hidden = false
+    ),
+    (
+        path = "Active Inference Mountain car.ipynb",
+        title = "Active Inference Mountain car",
+        description = "This notebooks covers RxInfer usage in the Active Inference setting for the simple mountain car problem.",
         hidden = false
     ),
     (
@@ -64,6 +65,12 @@ return [
         path = "Hierarchical Gaussian Filter.ipynb",
         title = "Hierarchical Gaussian Filter",
         description = "An example of online inference procedure for Hierarchical Gaussian Filter with univariate noisy observations using Variational Message Passing algorithm. Reference: [Ismail Senoz, Online Message Passing-based Inference in the Hierarchical Gaussian Filter](https://ieeexplore.ieee.org/document/9173980).",
+        hidden = false
+    ),
+    (
+        path = "Bayesian ARMA.ipynb",
+        title = "Bayesian ARMA model",
+        description = "This notebook shows how Bayesian ARMA (Autoregressive Moving-Average) model can be implemeted in **RxInfer.jl**",
         hidden = false
     ),
     (
@@ -178,12 +185,6 @@ return [
         path = "Advanced Tutorial.ipynb",
         title = "Advanced Tutorial",
         description = "This notebook covers the fundamentals and advanced usage of the `RxInfer.jl` package.",
-        hidden = false
-    ),
-    (
-        path = "Active Inference - Mountain car.ipynb",
-        title = "Active Inference - Mountain car",
-        description = "This notebooks covers RxInfer usage in the Active Inference setting for the simple mountain car problem.",
         hidden = false
     ),
     (
