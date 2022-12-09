@@ -25,13 +25,6 @@ affiliations:
 date: 9 December 2022
 bibliography: paper.bib
 
-# Optional fields if submitting to a AAS journal too, see this blog post:
-# https://blog.joss.theoj.org/2018/12/a-new-collaboration-with-aas-publishing
-# update this with the DOI from AAS once you know it.
-aas-doi: 10.3847/xxxxx 
-# The name of the AAS journal.
-aas-journal: Journal of Open Source Software 
-
 # Citations to entries in paper.bib should be in
 # [rMarkdown](http://rmarkdown.rstudio.com/authoring_bibliographies_and_citations.html)
 # format.
