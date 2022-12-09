@@ -1,7 +1,7 @@
 
 ![](docs/src/assets/biglogo-blacktheme.svg?raw=true&sanitize=true)
 
-[![Official page](https://img.shields.io/badge/official%20page%20-RxInfer-blue)](http://www.rxinfer.ml)
+[![Official page](https://img.shields.io/badge/official%20page%20-RxInfer-blue)](https://biaslab.github.io/rxinfer-website/)
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://biaslab.github.io/RxInfer.jl/stable/)
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://biaslab.github.io/RxInfer.jl/dev/)
 [![Examples](https://img.shields.io/badge/examples-RxInfer-brightgreen)](https://biaslab.github.io/RxInfer.jl/stable/examples/overview/)
