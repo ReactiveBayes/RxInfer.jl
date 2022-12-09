@@ -32,7 +32,7 @@ end
 generator = my_model(model_arguments...)
 ```
 
-In order to create an instance of the model object we should the `create_model` function:
+In order to create an instance of the model object we should use the `create_model` function:
 
 ```julia
 model, (x, y) = create_model(generator)
