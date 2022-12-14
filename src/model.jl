@@ -87,7 +87,7 @@ Rocket.getscheduler(options::ModelInferenceOptions) = something(options.schedule
 ReactiveMP.get_pipeline_stages(options::ModelInferenceOptions) = something(options.pipeline, EmptyPipelineStage())
 
 ReactiveMP.getaddons(options::ModelInferenceOptions) = ReactiveMP.getaddons(options, options.addons)
-ReactiveMP.getaddons(options::ModelInferenceOptions, addons::ReactiveMP.AbstractAddon) = (addons, ) # ReactiveMP expects addons to be of type tuple
+ReactiveMP.getaddons(options::ModelInferenceOptions, addons::ReactiveMP.AbstractAddon) = (addons,) # ReactiveMP expects addons to be of type tuple
 ReactiveMP.getaddons(options::ModelInferenceOptions, addons::Nothing) = addons                      # Do nothing if addons is `nothing`
 ReactiveMP.getaddons(options::ModelInferenceOptions, addons::Tuple) = addons                        # Do nothing if addons is a `Tuple`
 
