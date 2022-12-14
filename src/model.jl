@@ -38,6 +38,10 @@ end
 
 UnspecifiedModelInferenceOptions() = convert(ModelInferenceOptions, (;))
 
+setpipeline(options::ModelInferenceOptions, pipeline) = ModelInferenceOptions(pipeline, options.scheduler, options.addons)
+setscheduler(options::ModelInferenceOptions, scheduler) = ModelInferenceOptions(options.pipeline, scheduler, options.addons)
+setaddons(options::ModelInferenceOptions, addons) = ModelInferenceOptions(options.pipeline, options.scheduler, addons)
+
 import Base: convert
 
 function Base.convert(::Type{ModelInferenceOptions}, options::Nothing)
@@ -81,7 +85,11 @@ const DefaultModelInferenceOptions = UnspecifiedModelInferenceOptions()
 Rocket.getscheduler(options::ModelInferenceOptions) = something(options.scheduler, AsapScheduler())
 
 ReactiveMP.get_pipeline_stages(options::ModelInferenceOptions) = something(options.pipeline, EmptyPipelineStage())
-ReactiveMP.getaddons(options::ModelInferenceOptions)           = options.addons
+
+ReactiveMP.getaddons(options::ModelInferenceOptions) = ReactiveMP.getaddons(options, options.addons)
+ReactiveMP.getaddons(options::ModelInferenceOptions, addons::ReactiveMP.AbstractAddon) = (addons, ) # ReactiveMP expects addons to be of type tuple
+ReactiveMP.getaddons(options::ModelInferenceOptions, addons::Nothing) = addons                      # Do nothing if addons is `nothing`
+ReactiveMP.getaddons(options::ModelInferenceOptions, addons::Tuple) = addons                        # Do nothing if addons is a `Tuple`
 
 struct FactorGraphModel{Constrains, Meta, Options <: ModelInferenceOptions}
     constraints :: Constrains

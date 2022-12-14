@@ -1,4 +1,5 @@
 export KeepEach, KeepLast
+export DefaultPostprocess, UnpackMarginalPostprocess, NoopPostprocess
 export inference, InferenceResult
 export rxinference, @autoupdates, RxInferenceEngine, RxInferenceEvent
 
@@ -136,17 +137,27 @@ end
 """
     __inference_postprocess(strategy, result)
 
-This function modifies the `result` of the inference procedure according to the strategy. The default `strategy` is `UnpackMarginalPostprocess`.
-
-See also: [`RxInfer.UnpackMarginalPostprocess`](@ref)
+This function modifies the `result` of the inference procedure according to the strategy. The default `strategy` is `DefaultPostprocess`.
 """
 function __inference_postprocess end
 
+"""`DefaultPostprocess` picks the most suitable postprocessing step automatically"""
+struct DefaultPostprocess end
+
+__inference_postprocess(::DefaultPostprocess, result::Marginal) = __inference_postprocess(DefaultPostprocess(), result, ReactiveMP.getaddons(result))
+__inference_postprocess(::DefaultPostprocess, result::AbstractVector) = map((element) -> __inference_postprocess(DefaultPostprocess(), element), result)
+
+# Default postprocessing step removes Marginal type wrapper if no addons are present, and keeps the Marginal type wrapper otherwise
+__inference_postprocess(::DefaultPostprocess, result, addons::Nothing) = __inference_postprocess(UnpackMarginalPostprocess(), result)
+__inference_postprocess(::DefaultPostprocess, result, addons::Any) = __inference_postprocess(NoopPostprocess(), result)
+
+"""This postprocessing step removes the `Marginal` wrapper type from the result"""
 struct UnpackMarginalPostprocess end
 
 __inference_postprocess(::UnpackMarginalPostprocess, result::Marginal) = getdata(result)
-__inference_postprocess(::UnpackMarginalPostprocess, result::AbstractVector{<:Marginal}) = getdata.(result)
+__inference_postprocess(::UnpackMarginalPostprocess, result::AbstractVector) = map((element) -> __inference_postprocess(UnpackMarginalPostprocess(), element), result)
 
+"""This postprocessing step does nothing"""
 struct NoopPostprocess end
 
 __inference_postprocess(::NoopPostprocess, result) = result
@@ -232,6 +243,8 @@ unwrap_free_energy_option(option::Type{T}) where {T <: Real} = (true, T, Countin
         free_energy_diagnostics = BetheFreeEnergyDefaultChecks,
         showprogress            = false,
         callbacks               = nothing,
+        addons                  = nothing,
+        postprocess             = DefaultPostprocess()
     )
 
 This function provides a generic way to perform probabilistic inference in RxInfer.jl. Returns `InferenceResult`.
@@ -253,7 +266,8 @@ For more information about some of the arguments, please check below.
 - `free_energy_diagnostics = BetheFreeEnergyDefaultChecks`: free energy diagnostic checks, optional, by default checks for possible `NaN`s and `Inf`s. `nothing` disables all checks.
 - `showprogress = false`: show progress module, optional, defaults to false
 - `callbacks = nothing`: inference cycle callbacks, optional, see below for more info
-- `postprocess = UnpackMarginalPostprocess`: inference results postprocessing step, optional, see below for more info
+- `addons = nothing`: inject and send extra computation information along messages, see below for more info
+- `postprocess = DefaultPostprocess()`: inference results postprocessing step, optional, see below for more info
 - `warn = true`: enables/disables warnings
 
 ## Note on NamedTuples
@@ -380,13 +394,19 @@ The list of all possible callbacks and their arguments is present below:
 - `after_iteration`:       args: (model::FactorGraphModel, iteration::Int)
 - `after_inference`:       args: (model::FactorGraphModel)
 
+- ### `addons`
+
+The `addons` field extends the default message computation rules with some extra information, e.g. computing log-scaling factors of messages or saving debug-information.
+Accepts a single addon or a tuple of addons. If set, replaces the corresponding setting in the `options`. Automatically changes the default value of the `postprocess` argument to `NoopPostprocess`.
+ 
 - ### `postprocess`
 
 The `postprocess` keyword argument controls whether the inference results must be modified in some way before exiting the `inference` function.
-By default, the inference function uses the `UnpackMarginalPostprocess` strategy, which will remove the `Marginal` wrapper type from the results.
-Change this setting to `nothing` if you would like to keep the `Marginal` wrapper type, which might be useful in the combination with the `addons` argument.
+By default, the inference function uses the `DefaultPostprocess` strategy, which by default removes the `Marginal` wrapper type from the results.
+Change this setting to `NoopPostprocess` if you would like to keep the `Marginal` wrapper type, which might be useful in the combination with the `addons` argument.
+If the `addons` argument has been used, automatically changes the default strategy value to `NoopPostprocess`.
  
-    See also: [`InferenceResult`](@ref), [`rxinference`](@ref)
+See also: [`InferenceResult`](@ref), [`rxinference`](@ref)
 """
 function inference(;
     # `model`: specifies a model generator, with the help of the `Model` function
@@ -416,8 +436,10 @@ function inference(;
     showprogress = false,
     # Inference cycle callbacks
     callbacks = nothing,
+    # Addons specification
+    addons = nothing,
     # Inference postprocessing option
-    postprocess = UnpackMarginalPostprocess(),
+    postprocess = DefaultPostprocess(),
     # warn, optional, defaults to true
     warn = true
 )
@@ -446,6 +468,14 @@ function inference(;
     end
 
     _options = convert(ModelInferenceOptions, options)
+
+    # Override `options` addons if the `addons` keyword argument is present 
+    if !isnothing(addons)
+        if !isnothing(getaddons(_options))
+            @warn "Both `addons = ...` and `options = (addons = ..., )` specify a value for the `addons`. Ignoring the `options` setting. Set `warn = false` to supress this warning."
+        end
+        _options = setaddons(_options, addons)
+    end
 
     inference_invoke_callback(callbacks, :before_model_creation)
     fmodel, freturval = create_model(model, constraints = constraints, meta = meta, options = _options)
@@ -1227,7 +1257,8 @@ end
         autostart = true,
         events = nothing,
         callbacks = nothing,
-        postprocess = UnpackMarginalPostprocess(),
+        addons = nothing,
+        postprocess = DefaultPostprocess(),
         uselock = false,
         warn = true
     )
@@ -1257,7 +1288,8 @@ For more information about some of the arguments, please check below.
 - `showprogress = false`: show progress module, optional, defaults to false
 - `events = nothing`: inference cycle events, optional, see below for more info
 - `callbacks = nothing`: inference cycle callbacks, optional, see below for more info
-- `postprocess = UnpackMarginalPostprocess`: inference results postprocessing step, optional, see below for more info
+- `addons = nothing`: inject and send extra computation information along messages, see below for more info
+- `postprocess = DefaultPostprocess()`: inference results postprocessing step, optional, see below for more info
 - `uselock = false`: specifies either to use the lock structure for the inference or not, if set to true uses `Base.Threads.SpinLock`. Accepts custom `AbstractLock`.
 - `warn = true`: enables/disables warnings
 
@@ -1468,11 +1500,17 @@ The list of all possible callbacks and their input arguments is present below:
 - `before_autostart`:         args: (engine::RxInferenceEngine)
 - `after_autostart`:          args: (engine::RxInferenceEngine)
 
+- ### `addons`
+
+The `addons` field extends the default message computation rules with some extra information, e.g. computing log-scaling factors of messages or saving debug-information.
+Accepts a single addon or a tuple of addons. If set, replaces the corresponding setting in the `options`. Automatically changes the default value of the `postprocess` argument to `NoopPostprocess`.
+ 
 - ### `postprocess`
 
 The `postprocess` keyword argument controls whether the inference results must be modified in some way before exiting the `inference` function.
-By default, the inference function uses the `UnpackMarginalPostprocess` strategy, which will remove the `Marginal` wrapper type from the results.
-Change this setting to `nothing` if you would like to keep the `Marginal` wrapper type, which might be useful in the combination with the `addons` argument.
+By default, the inference function uses the `DefaultPostprocess` strategy, which by default removes the `Marginal` wrapper type from the results.
+Change this setting to `NoopPostprocess` if you would like to keep the `Marginal` wrapper type, which might be useful in the combination with the `addons` argument.
+If the `addons` argument has been used, automatically changes the default strategy value to `NoopPostprocess`.
 
 See also [`inference`](@ref)
 """
@@ -1494,8 +1532,9 @@ function rxinference(;
     free_energy_diagnostics = BetheFreeEnergyDefaultChecks,
     autostart = true,
     events = nothing,
+    addons = nothing,
     callbacks = nothing,
-    postprocess = UnpackMarginalPostprocess(),
+    postprocess = DefaultPostprocess(),
     uselock = false,
     warn = true
 )
@@ -1536,6 +1575,14 @@ function rxinference(;
     N            = length(datavarnames) # should be static
 
     _options = convert(ModelInferenceOptions, options)
+
+    # Override `options` addons if the `addons` keyword argument is present 
+    if !isnothing(addons)
+        if !isnothing(getaddons(_options))
+            @warn "Both `addons = ...` and `options = (addons = ..., )` specify a value for the `addons`. Ignoring the `options` setting. Set `warn = false` to supress this warning."
+        end
+        _options = setaddons(_options, addons)
+    end
 
     inference_invoke_callback(callbacks, :before_model_creation)
     _model, _returnval = create_model(model, constraints = constraints, meta = meta, options = _options)
