@@ -2,8 +2,8 @@
 
 using RxInfer, StableRNGs, Plots
 
-Δt = 0.01 # -- Time step resolution
-G = 9.81  # -- Gravitational acceleration
+Δt = 0.005 # -- Time step resolution
+G = 9.81   # -- Gravitational acceleration
 
 # Nonlinear state-transition function `f`
 g(x) = [x[1] + x[2]*Δt, x[2] - G*sin(x[1])*Δt]
@@ -19,7 +19,9 @@ g(x) = [x[1] + x[2]*Δt, x[2] - G*sin(x[1])*Δt]
     state ~ g(state_prior)
     
     # Assign a prior for the noise component
-    noise ~ Gamma(1.0, 10.0)
+    noise_shape = datavar(Float64)
+    noise_scale = datavar(Float64)
+    noise ~ Gamma(noise_shape, noise_scale)
 
     # Define reactive input for the `observation`
     observation = datavar(Float64)
@@ -35,7 +37,7 @@ end
 @meta function pendulum_meta()
     # Use the `Linearization` approximation method 
     # around the (potentially) non-linear function `f`
-    g() -> Linearization()
+    g() -> Unscented()
 end
 
 # Generate dummy data
@@ -48,7 +50,7 @@ function dataset(; T, precision = 1.0, seed = 42)
     observations = zeros(T,)
 
     # Initial states
-    states[:, 1] = [ 1.0 , 0.0 ]
+    states[:, 1] = [ 0.99 , 0.0 ]
 
     for t = 2:T
         # State transition
@@ -62,7 +64,7 @@ function dataset(; T, precision = 1.0, seed = 42)
     return timesteps, states, observations
 end
 
-timesteps, states, observations = dataset(T = 1000, precision = 0.1)
+timesteps, states, observations = dataset(T = 1000, precision = 0.5)
 
 plot(timesteps, states[1, :])
 scatter!(timesteps, observations, ms = 2, alpha = 0.5)
@@ -72,18 +74,26 @@ function experiment(observations)
     autoupdates = @autoupdates begin 
         # Update `prior` automatically as soon as 
         # we have a new posterior for the `state`
-        (prior_mean, prior_cov) = mean_cov(q(state))
+        prior_mean  = mean(q(state))
+        prior_cov   = cov(q(state))
+        noise_shape = shape(q(noise))
+        noise_scale = scale(q(noise))
     end
 
     results = rxinference(
         model = pendulum(),
         constraints = pendulum_constraint(),
         meta = pendulum_meta(), 
+        autoupdates = autoupdates,
         data = (observation = observations, ),
-        initmarginals = (state = vague(MvNormalMeanPrecision, 2), ),
+        initmarginals = (
+            # We assume a relatively good prior for the very first state
+            state = MvNormalMeanPrecision([ 0.99, 0.0 ], [ 100.0 0.0; 0.0 100.0 ]), 
+            noise = Gamma(1.0, 100.0)
+        ),
         historyvars = (state = KeepLast(), ),
         keephistory = length(observations),
-        iterations = 5,
+        iterations = 10,
         autostart = true
     )
 
@@ -91,3 +101,16 @@ function experiment(observations)
 end
 
 results = experiment(observations)
+
+inferred_states = results.history[:state]
+
+plot(timesteps, states[1, :], ylim = (-4, 1.5))
+scatter!(timesteps, observations, ms = 2, alpha = 0.5)
+plot!(timesteps, getindex.(mean.(inferred_states), 1), ribbon = getindex(cov.(inferred_states), 1, 1))
+
+lensrange = 100:120
+lensx = [ timesteps[lensrange[begin]], timesteps[lensrange[end]] ]
+lensy = [ minimum(states[1, lensrange]), maximum(states[1, lensrange]) ]
+
+lens!(lensx, lensy, inset = (1, bbox(0.1, 0.5, 0.4, 0.4)))
+
