@@ -2,7 +2,7 @@
 
 using RxInfer, StableRNGs, Plots
 
-Δt = 0.005 # -- Time step resolution
+Δt = 0.01 # -- Time step resolution
 G = 9.81   # -- Gravitational acceleration
 
 # Nonlinear state-transition function `f`
@@ -50,7 +50,7 @@ function dataset(; T, precision = 1.0, seed = 42)
     observations = zeros(T,)
 
     # Initial states
-    states[:, 1] = [ 0.99 , 0.0 ]
+    states[:, 1] = [ 0.5 , 0.0 ]
 
     for t = 2:T
         # State transition
@@ -64,7 +64,7 @@ function dataset(; T, precision = 1.0, seed = 42)
     return timesteps, states, observations
 end
 
-timesteps, states, observations = dataset(T = 1000, precision = 0.5)
+timesteps, states, observations = dataset(T = 1000, precision = 1.0)
 
 plot(timesteps, states[1, :])
 scatter!(timesteps, observations, ms = 2, alpha = 0.5)
@@ -88,10 +88,10 @@ function experiment(observations)
         data = (observation = observations, ),
         initmarginals = (
             # We assume a relatively good prior for the very first state
-            state = MvNormalMeanPrecision([ 0.99, 0.0 ], [ 100.0 0.0; 0.0 100.0 ]), 
+            state = MvNormalMeanPrecision([ 0.5, 0.0 ], [ 100.0 0.0; 0.0 100.0 ]), 
             noise = Gamma(1.0, 100.0)
         ),
-        historyvars = (state = KeepLast(), ),
+        historyvars = (state = KeepLast(), noise = KeepLast()),
         keephistory = length(observations),
         iterations = 10,
         autostart = true
@@ -104,13 +104,20 @@ results = experiment(observations)
 
 inferred_states = results.history[:state]
 
-plot(timesteps, states[1, :], ylim = (-4, 1.5))
-scatter!(timesteps, observations, ms = 2, alpha = 0.5)
-plot!(timesteps, getindex.(mean.(inferred_states), 1), ribbon = getindex(cov.(inferred_states), 1, 1))
+p = plot(timesteps, states[1, :], ylim = (-5, 2.5), label = "Real signal")
+p = scatter!(p, timesteps, observations, ms = 2, alpha = 0.5, label = "Noisy observations")
+p = plot!(p, timesteps, getindex.(mean.(inferred_states), 1), ribbon = getindex.(std.(inferred_states), 1, 1), label = "Inferred states")
 
-lensrange = 100:120
+lensrange = 170:250
 lensx = [ timesteps[lensrange[begin]], timesteps[lensrange[end]] ]
-lensy = [ minimum(states[1, lensrange]), maximum(states[1, lensrange]) ]
+lensy = [ minimum(states[1, lensrange]) - 0.15, maximum(states[1, lensrange]) + 0.15 ]
 
-lens!(lensx, lensy, inset = (1, bbox(0.1, 0.5, 0.4, 0.4)))
+p = lens!(p, lensx, lensy, inset = (1, bbox(0.1, 0.5, 0.4, 0.4)))
 
+display(p)
+
+# Benchmark
+
+using BenchmarkTools
+
+@btime experiment($observations)
