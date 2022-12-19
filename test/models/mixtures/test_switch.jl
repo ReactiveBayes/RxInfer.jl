@@ -67,21 +67,9 @@ end
 
         ## -------------------------------------------- ##
         ## Inference execution
-        result1 = inference(
-            model = beta_model1(length(dataset)),
-            data = (y = dataset,),
-            returnvars = (θ = KeepLast(),),
-            free_energy = true,
-            addons = AddonLogScale()
-        )
+        result1 = inference(model = beta_model1(length(dataset)), data = (y = dataset,), returnvars = (θ = KeepLast(),), free_energy = true, addons = AddonLogScale())
 
-        result2 = inference(
-            model = beta_model2(length(dataset)),
-            data = (y = dataset,),
-            returnvars = (θ = KeepLast(),),
-            free_energy = true,
-            addons = AddonLogScale()
-        )
+        result2 = inference(model = beta_model2(length(dataset)), data = (y = dataset,), returnvars = (θ = KeepLast(),), free_energy = true, addons = AddonLogScale())
 
         resultswitch = inference(
             model = beta_switch_model(length(dataset)),
