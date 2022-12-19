@@ -75,6 +75,7 @@ function __check_and_unset_updated!(updates)
         error("""
               Variables [ $(names) ] have not been updated after an update event. 
               Therefore, make sure to initialize all required marginals and messages. See `initmarginals` and `initmessages` keyword arguments for the inference function. 
+              See the function documentation for detailed information regarding the initialization.
               """)
     end
 end
@@ -269,11 +270,33 @@ The `data` keyword argument must be a `NamedTuple` (or `Dict`) where keys (of `S
 
 - ### `initmarginals`
 
-In general for variational message passing every marginal distribution in a model needs to be pre-initialised. In practice, however, for many models it is sufficient enough to initialise only a small subset of variables in the model.
+For specific types of inference algorithms, such as variational message passing, it might be required to initialize (some of) the marginals before running the inference procedure in order to break the dependency loop. If this is not done, the inference algorithm will not be executed due to the lack of information and message and/or marginals will not be updated. In order to specify these initial marginals, you can use the `initmarginals` argument, such as
+```julia
+inference(...
+    initmarginals = (
+        # initialize the marginal distribution of x as a vague Normal distribution
+        # if x is a vector, then it simply uses the same value for all elements
+        # However, it is also possible to provide a vector of distributions to set each element individually 
+        x = vague(NormalMeanPrecision),  
+    ),
+)
+```
+This argument needs to be a named tuple, i.e. `initmarginals = (a = ..., )`, or dictionary.
 
 - ### `initmessages`
 
-Loopy belief propagation may need some messages in a model to be pre-initialised.
+For specific types of inference algorithms, such as loopy belief propagation or expectation propagation, it might be required to initialize (some of) the messages before running the inference procedure in order to break the dependency loop. If this is not done, the inference algorithm will not be executed due to the lack of information and message and/or marginals will not be updated. In order to specify these initial messages, you can use the `initmessages` argument, such as
+```julia
+inference(...
+    initmessages = (
+        # initialize the messages distribution of x as a vague Normal distribution
+        # if x is a vector, then it simply uses the same value for all elements
+        # However, it is also possible to provide a vector of distributions to set each element individually 
+        x = vague(NormalMeanPrecision),  
+    ),
+)
+```
+This argument needs to be a named tuple, i.e. `initmessages = (a = ..., )`, or dictionary.
 
 - ### `options`
 
@@ -1274,11 +1297,33 @@ result = rxinference(
 
 - ### `initmarginals`
 
-In general for variational message passing every marginal distribution in a model needs to be pre-initialised. In practice, however, for many models it is sufficient enough to initialise only a small subset of variables in the model.
+For specific types of inference algorithms, such as variational message passing, it might be required to initialize (some of) the marginals before running the inference procedure in order to break the dependency loop. If this is not done, the inference algorithm will not be executed due to the lack of information and message and/or marginals will not be updated. In order to specify these initial marginals, you can use the `initmarginals` argument, such as
+```julia
+rxinference(...
+    initmarginals = (
+        # initialize the marginal distribution of x as a vague Normal distribution
+        # if x is a vector, then it simply uses the same value for all elements
+        # However, it is also possible to provide a vector of distributions to set each element individually 
+        x = vague(NormalMeanPrecision),  
+    ),
+)
+```
+This argument needs to be a named tuple, i.e. `initmarginals = (a = ..., )`, or dictionary.
 
 - ### `initmessages`
 
-Loopy belief propagation may need some messages in a model to be pre-initialised.
+For specific types of inference algorithms, such as loopy belief propagation or expectation propagation, it might be required to initialize (some of) the messages before running the inference procedure in order to break the dependency loop. If this is not done, the inference algorithm will not be executed due to the lack of information and message and/or marginals will not be updated. In order to specify these initial messages, you can use the `initmessages` argument, such as
+```julia
+rxinference(...
+    initmessages = (
+        # initialize the messages distribution of x as a vague Normal distribution
+        # if x is a vector, then it simply uses the same value for all elements
+        # However, it is also possible to provide a vector of distributions to set each element individually 
+        x = vague(NormalMeanPrecision),  
+    ),
+)
+```
+This argument needs to be a named tuple, i.e. `initmessages = (a = ..., )`, or dictionary.
 
 - ### `autoupdates`
 

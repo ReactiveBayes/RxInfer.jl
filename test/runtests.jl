@@ -48,6 +48,7 @@ if ENV["USE_DEV"] == "true"
     Pkg.develop(Pkg.PackageSpec(path = joinpath(Pkg.devdir(), "ReactiveMP.jl")))
     Pkg.develop(Pkg.PackageSpec(path = joinpath(Pkg.devdir(), "GraphPPL.jl")))
     Pkg.develop(Pkg.PackageSpec(path = joinpath(Pkg.devdir(), "Rocket.jl")))
+    Pkg.update()
 end
 
 # DocMeta.setdocmeta!(RxInfer, :DocTestSetup, :(using RxInfer, Distributions); recursive=true)
