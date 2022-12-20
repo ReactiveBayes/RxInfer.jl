@@ -188,8 +188,15 @@ function Base.run(examplesrunner::ExamplesRunner)
             # Check if example failed with an error
             # TODO: we might have better heurstic here? But I couldn't find a way to tell `Weave.jl` if an error has occured
             # TODO: try to improve this later
-            if !isnothing(findnext("```\nError:", mdtext, 1))
+            erroridx = findnext("```\nError:", mdtext, 1)
+            if !isnothing(erroridx)
                 @error "`Error` block found in the `$(mdpath)` example. Check the logs for more details."
+                # We print a part of the file, which (hopefully) should be enough to identify the issue
+                # For more logs check the actual output
+                errwindow = 500 # We need to iterate over the text with `prevind` and `nextind`, because strings are UTF8
+                errstart = reduce((idx, _) -> max(firstindex(mdtext), prevind(mdtext, idx)), 1:errwindow; init = erroridx)  
+                errend = reduce((idx, _) -> min(lastindex(mdtext), nextind(mdtext, idx)), 1:errwindow; init = erroridx)  
+                @error "Part of the error message:\n\n$(mdtext[errstart:errend])\n"
                 error(-1)
             end
 
