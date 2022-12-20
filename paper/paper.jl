@@ -37,7 +37,7 @@ end
 @meta function pendulum_meta()
     # Use the `Linearization` approximation method 
     # around the (potentially) non-linear function `f`
-    g() -> Unscented()
+    g() -> Linearization()
 end
 
 # Generate dummy data
@@ -64,11 +64,6 @@ function dataset(; T, precision = 1.0, seed = 42)
     return timesteps, states, observations
 end
 
-timesteps, states, observations = dataset(T = 1000, precision = 1.0)
-
-plot(timesteps, states[1, :])
-scatter!(timesteps, observations, ms = 2, alpha = 0.5)
-
 function experiment(observations)
 
     autoupdates = @autoupdates begin 
@@ -93,12 +88,14 @@ function experiment(observations)
         ),
         historyvars = (state = KeepLast(), noise = KeepLast()),
         keephistory = length(observations),
-        iterations = 10,
+        iterations = 5,
         autostart = true
     )
 
     return results
 end
+
+timesteps, states, observations = dataset(T = 1000, precision = 1.0)
 
 results = experiment(observations)
 
