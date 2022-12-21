@@ -72,6 +72,7 @@ makedocs(;
         "Contributing" => [
             "Overview" => "contributing/overview.md",
             "Adding a new example" => "contributing/new-example.md",
+            "Publishing a new release" => "contributing/new-release.md"
         ]
     ]
 )

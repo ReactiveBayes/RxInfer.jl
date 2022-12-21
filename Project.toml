@@ -28,6 +28,7 @@ Optim = "1.0.0"
 ProgressMeter = "1.0.0"
 ReactiveMP = "~3.3.0"
 Reexport = "1.2.0"
+Rocket = "1.6.0"
 TupleTools = "1.2.0"
 julia = "1.6"
 
