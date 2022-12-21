@@ -102,6 +102,18 @@ function default_point_mass_form_constraint_optimizer(::Type{Univariate}, ::Type
     end
 end
 
+function default_point_mass_form_constraint_optimizer(::Type{Univariate}, ::Type{Discrete}, constraint::PointMassFormConstraint, distribution)
+
+    # fetch probvec
+    p = probvec(distribution)
+
+    # create new probvec
+    p_new = zeros(length(p))
+    p_new[argmax(p)] = 1
+
+    return PointMass(p_new)
+end
+
 function default_point_mass_form_constraint_boundaries(::Type{Univariate}, ::Type{Continuous}, constraint::PointMassFormConstraint, distribution)
     support = Distributions.support(distribution)
     lower   = Distributions.minimum(support)
