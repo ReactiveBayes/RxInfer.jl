@@ -10,6 +10,6 @@ In order to start the release process a person with the associated permissions s
 - Open a commit page on GitHub
 - Write the `@JuliaRegistrator register` comment for the commit:
 
-![Release comment](./assets/img/release_comment.png)
+![Release comment](../assets/img/release_comment.png)
 
 The Julia Registrator bot should automaticallly register a requst for the new release. After all checks will be passed on the Julia Registrator side the new release will be published and tagged automatically.
