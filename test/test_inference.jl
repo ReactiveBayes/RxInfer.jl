@@ -498,6 +498,44 @@ end
         end
     end
 
+    @testset "Check postprocess usage: UnpackMarginalPostprocess" begin
+        engine = rxinference(
+            model = test_model1(),
+            constraints = MeanField(),
+            data = (y = observedy,),
+            initmarginals = (x_t = NormalMeanVariance(0.0, 1e3), τ = GammaShapeRate(1.0, 1.0)),
+            autoupdates = autoupdates,
+            postprocess = RxInfer.UnpackMarginalPostprocess(),
+            historyvars = (τ = KeepLast(),),
+            iterations = 10,
+            keephistory = 100,
+            autostart = true
+        )
+
+        # Check that the result is not of type `Marginal`
+        @test all(data -> !(typeof(data) <: ReactiveMP.Marginal), engine.history[:τ])
+    end
+
+    @testset "Check postprocess usage: NoopPostprocess & nothing" begin
+        for postprocess in (RxInfer.NoopPostprocess(), nothing)
+            engine = rxinference(
+                model = test_model1(),
+                constraints = MeanField(),
+                data = (y = observedy,),
+                initmarginals = (x_t = NormalMeanVariance(0.0, 1e3), τ = GammaShapeRate(1.0, 1.0)),
+                autoupdates = autoupdates,
+                postprocess = postprocess,
+                historyvars = (τ = KeepLast(),),
+                iterations = 10,
+                keephistory = 100,
+                autostart = true
+            )
+
+            # Check that the result is of type `Marginal`
+            @test all(data -> typeof(data) <: ReactiveMP.Marginal, engine.history[:τ])
+        end
+    end
+
     @testset "Check the event creation and unrolling syntax" begin
         data1, data2 = RxInferenceEvent(Val(:event1), (1, 2.0))
 

@@ -104,6 +104,12 @@ return [
         hidden = false
     ),
     (
+        path  = "Universal Mixtures.ipynb", 
+        title = "Universal Mixtures", 
+        description = "Universal mixture modeling.",
+        hidden = false
+    ),
+    (
         path = "Global Parameter Optimisation.ipynb",
         title = "Global Parameter Optimisation",
         description = "This example shows how to use RxInfer.jl automated inference within other optimisation packages such as Optim.jl.",
@@ -192,5 +198,5 @@ return [
         title = "Tiny Benchmark", 
         description = "Tiny Benchmark for Internal testing.",
         hidden = true
-    )
+    ),
 ]
