@@ -55,6 +55,7 @@ makedocs(;
                 "Overview" => "manuals/inference/overview.md",
                 "Static dataset" => "manuals/inference/inference.md",
                 "Real-time dataset / reactive inference" => "manuals/inference/rxinference.md",
+                "Inference results postprocessing"  => "manuals/inference/postprocess.md",
                 "Manual inference specification" => "manuals/inference/manual.md"
             ]
         ],
@@ -71,6 +72,7 @@ makedocs(;
         "Contributing" => [
             "Overview" => "contributing/overview.md",
             "Adding a new example" => "contributing/new-example.md",
+            "Publishing a new release" => "contributing/new-release.md"
         ]
     ]
 )

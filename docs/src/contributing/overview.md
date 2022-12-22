@@ -29,6 +29,10 @@ The `dev` command clones `RxInfer` to `~/.julia/dev/RxInfer`. All local changes 
 !!! note
     It is also might be useful to install [Revise.jl](https://github.com/timholy/Revise.jl) package as it allows you to modify code and use the changes without restarting Julia.
 
+### Core dependencies
+
+`RxInfer.jl` heavily depends on the `ReactiveMP.jl`, `GraphPPL.jl` and `Rocket.jl` packages. RxInfer.jl must be updated every time any of these packages has a major update and/or API changes. Developers are adviced to use the `dev` command for all of these packages while making changes to the `RxInfer.jl. It is worth noting though that standard Julia testing utilities ignore the local development environment and always try to test the package with the latest released versions of the core dependencies. Read the section about the `Makefile` below to see how to test `RxInfer.jl` with the locally installed core dependencies.
+
 ### Committing code
 
 We use the standard [GitHub Flow](https://guides.github.com/introduction/flow/) workflow where all contributions are added through pull requests. In order to contribute, first [fork](https://guides.github.com/activities/forking/) the repository, then commit your contributions to your fork, and then create a pull request on the `main` branch of the `RxInfer` repository.
