@@ -7,7 +7,7 @@ G = 9.81   # -- Gravitational acceleration
 
 # Nonlinear state-transition function `f`
 # See Example 3.7 in the "Bayesian Filtering and Smoothing" Simo Sarkka
-g(x) = [x[1] + x[2] * Δt, x[2] - G * sin(x[1]) * Δt]
+f(x) = [x[1] + x[2] * Δt, x[2] - G * sin(x[1]) * Δt]
 
 @model function pendulum()
     # Define reactive inputs for the `prior` 
@@ -17,7 +17,7 @@ g(x) = [x[1] + x[2] * Δt, x[2] - G * sin(x[1]) * Δt]
 
     previous_state ~ MvNormal(μ = prior_mean, Σ = prior_cov)
     # Use `f` as state transition function
-    state ~ g(previous_state)
+    state ~ f(previous_state)
 
     # Assign a prior for the noise component
     noise_shape = datavar(Float64)
@@ -37,7 +37,7 @@ end
 @meta function pendulum_meta()
     # Use the `Linearization` approximation method 
     # around the (potentially) non-linear function `g`
-    g() -> Linearization()
+    f() -> Linearization()
 end
 
 # Generate dummy data
@@ -54,7 +54,7 @@ function dataset(; T, precision = 1.0, seed = 42)
 
     for t in 2:T
         # State transition
-        states[:, t] = g(states[:, t - 1])
+        states[:, t] = f(states[:, t - 1])
 
         # Observation likelihood, we observe only the first component
         observations[t] = rand(rng, NormalMeanPrecision(states[1, t][1], precision))
