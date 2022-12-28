@@ -239,7 +239,7 @@ The inference results for the pendulum example. X-axis represents time $t$ (in s
 Y-axis represents the current angle of the pendulum (in radians) at time $t$. 
 Real (unobserved) signal is shown in blue line. Observations are shown as orange dots. 
 The inference results are shown as green line with area, which represents posterior uncertainty (one standard deviation). 
-The inference process runs in real time and takes 166 microseconds on a single CPU per observation on a 
+The inference process runs in real time and takes 166 microseconds per observation on a single CPU of a 
 regular office laptop (MacBook Pro 2018, $2.6$ GHz Intel Core i7). \label{fig:example}
 ](inference.pdf)
 
