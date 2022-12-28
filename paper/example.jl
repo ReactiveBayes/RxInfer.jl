@@ -149,4 +149,5 @@ benchmark = @benchmark experiment(data[3]) setup=(data = dataset(T = 1000; preci
 
 open("benchmark.txt", "w") do file 
     show(file, "text/plain", benchmark)
+    versioninfo(file, verbose = true)
 end
