@@ -80,7 +80,7 @@ Many important AI applications, such as self-driving vehicles, weather forecasti
   probabilistic models with a large number of latent variables.
 Often, the inference task in these applications must be performed continually and in real time in
   response to new observations.
-Popular MC-based inference methods, such as No U-Turn Samples (NUTS) or Hamltonian Monte Carlo (HMC), 
+Popular MC-based inference methods, such as No U-Turn Samples (NUTS) [@hoffman_nuts] or Hamltonian Monte Carlo (HMC) [@hmc_ref_2011], 
   rely on computationally heavy sampling procedures that do not scale well to probabilistic
   models with thousands of latent states.
 Therefore, MC-based inference is practically not suitable for real-time applications.
@@ -129,7 +129,7 @@ We present **RxInfer.jl**, a package for processing infinite data streams by rea
     functionality with custom nodes and message update rules.
 - A large collection of precomputed analytical inference solutions. Current built-in functionality includes fast 
     inference solutions for linear Gaussian dynamical systems, autoregressive models, hierarchical models, 
-    discrete-valued models, mixture models, invertible neural networks, arbitrary nonlinear state transition 
+    discrete-valued models, mixture models, invertible neural networks [@van_erp_hybrid_2022], arbitrary nonlinear state transition 
     functions, and conjugate pair primitives.
 - The inference procedure is auto-differentiable with external packages, such as **ForwardDiff.jl** [@revels_forward-mode_2016] 
     or **ReverseDiff.jl**.
@@ -151,7 +151,7 @@ We use the **RxInfer**'s `@model` macro to specify the probabilistic model. We u
   the variational distributions in the Bethe Free Energy optimization procedure, and the `@autoupdates` macro to 
   specify how to update priors about the current state of the system. Finally, we use the `rxinference` function to 
   execute the inference process, see \autoref{fig:example}. The inference process runs in real time and 
-  takes 166 microseconds per observation on a single CPU of a regular office laptop (MacBook Pro 2018, $2.6$ GHz Intel Core i7). 
+  takes 162 microseconds on average per observation on a single CPU of a regular office laptop (MacBook Pro 2018, $2.6$ GHz Intel Core i7). 
 
 
 ```julia
@@ -239,7 +239,7 @@ The inference results for the pendulum example. X-axis represents time $t$ (in s
 Y-axis represents the current angle of the pendulum (in radians) at time $t$. 
 Real (unobserved) signal is shown in blue line. Observations are shown as orange dots. 
 The inference results are shown as green line with area, which represents posterior uncertainty (one standard deviation). 
-The inference process runs in real time and takes 166 microseconds per observation on a single CPU of a 
+The inference process runs in real time and takes 162 microseconds on average per observation on a single CPU of a 
 regular office laptop (MacBook Pro 2018, $2.6$ GHz Intel Core i7). \label{fig:example}
 ](inference.pdf)
 

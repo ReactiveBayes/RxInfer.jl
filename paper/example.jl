@@ -1,6 +1,6 @@
 # This file contains an example code for the `paper.md` for Journal of Open Source Software
 
-using RxInfer, StableRNGs, Plots
+using RxInfer, StableRNGs, Plots, InteractiveUtils
 
 Δt = 0.01 # -- Time step resolution
 G = 9.81   # -- Gravitational acceleration
@@ -149,5 +149,5 @@ benchmark = @benchmark experiment(data[3]) setup=(data = dataset(T = 1000; preci
 
 open("benchmark.txt", "w") do file 
     show(file, "text/plain", benchmark)
-    versioninfo(file, verbose = true)
+    versioninfo(file, verbose = false)
 end
