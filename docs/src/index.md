@@ -51,6 +51,7 @@ The `RxInfer` unites 3 core packages into one powerful reactive message passing-
 - [`Rocket.jl`](https://github.com/biaslab/Rocket.jl) - reactive programming tools
 
 ## How to get started?
+
 Head to the [Getting started](@ref user-guide-getting-started) section to get up and running with RxInfer. Alternatively, explore various [examples](@ref examples-overview) in the documentation.
 
 ## Table of Contents
