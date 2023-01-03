@@ -83,8 +83,11 @@ end
 
 ## Extra error handling
 
-__inference_process_error(error) = rethrow(error)
+function __inference_process_error(error) 
+    rethrow(error)
+end
 
+# We want to show an extra hint in case the error is of type `StackOverflowError`
 function __inference_process_error(err::StackOverflowError)
     @error """
     Stack overflow error occurred during the inference procedure. 
@@ -94,15 +97,12 @@ function __inference_process_error(err::StackOverflowError)
     """
     rethrow(err) # Shows the original stack trace
 end
-
-"""
-    __inference_check_itertype(label, container)
-
-This function check is the second argument is of type `Nothing`, `Tuple` or `Vector`. Throws an error otherwise.
-"""
-function __inference_check_itertype end
-
-__inference_check_itertype(::Symbol, ::Union{Nothing, Tuple, Vector}) = nothing
+    
+function __inference_check_itertype(::Symbol, ::Union{Nothing, Tuple, Vector}) 
+    # This function check is the second argument is of type `Nothing`, `Tuple` or `Vector`. 
+    # Does nothing is true, throws an error otherwise (see the second method below)
+    nothing 
+end
 
 function __inference_check_itertype(keyword::Symbol, ::T) where {T}
     error("""
@@ -114,14 +114,11 @@ function __inference_check_itertype(keyword::Symbol, ::T) where {T}
           """)
 end
 
-"""
-    __inference_check_dicttype(label, container)
-
-This function check is the second argument is of type `Nothing`, `NamedTuple` or `Dict`. Throws an error otherwise.
-"""
-function __inference_check_dicttype end
-
-__inference_check_dicttype(::Symbol, ::Union{Nothing, NamedTuple, Dict}) = nothing
+function __inference_check_dicttype(::Symbol, ::Union{Nothing, NamedTuple, Dict}) 
+    # This function check is the second argument is of type `Nothing`, `NamedTuple` or `Dict`. 
+    # Does nothing is true, throws an error otherwise (see the second method below)
+    nothing
+end
 
 function __inference_check_dicttype(keyword::Symbol, ::T) where {T}
     error("""
@@ -135,11 +132,9 @@ end
 
 ## Inference results postprocessing
 
-"""
-    __inference_postprocess(strategy, result)
-
-This function modifies the `result` of the inference procedure according to the strategy. The default `strategy` is `DefaultPostprocess`.
-"""
+# TODO: Make this function a part of the public API?
+# __inference_postprocess(strategy, result)
+# This function modifies the `result` of the inference procedure according to the strategy. The default `strategy` is `DefaultPostprocess`.
 function __inference_postprocess end
 
 """`DefaultPostprocess` picks the most suitable postprocessing step automatically"""
