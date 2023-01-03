@@ -83,7 +83,7 @@ end
 
 ## Extra error handling
 
-function __inference_process_error(error) 
+function __inference_process_error(error)
     rethrow(error)
 end
 
@@ -97,11 +97,11 @@ function __inference_process_error(err::StackOverflowError)
     """
     rethrow(err) # Shows the original stack trace
 end
-    
-function __inference_check_itertype(::Symbol, ::Union{Nothing, Tuple, Vector}) 
+
+function __inference_check_itertype(::Symbol, ::Union{Nothing, Tuple, Vector})
     # This function check is the second argument is of type `Nothing`, `Tuple` or `Vector`. 
     # Does nothing is true, throws an error otherwise (see the second method below)
-    nothing 
+    nothing
 end
 
 function __inference_check_itertype(keyword::Symbol, ::T) where {T}
@@ -114,7 +114,7 @@ function __inference_check_itertype(keyword::Symbol, ::T) where {T}
           """)
 end
 
-function __inference_check_dicttype(::Symbol, ::Union{Nothing, NamedTuple, Dict}) 
+function __inference_check_dicttype(::Symbol, ::Union{Nothing, NamedTuple, Dict})
     # This function check is the second argument is of type `Nothing`, `NamedTuple` or `Dict`. 
     # Does nothing is true, throws an error otherwise (see the second method below)
     nothing
