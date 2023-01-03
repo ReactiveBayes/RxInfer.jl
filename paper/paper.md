@@ -58,7 +58,7 @@ The framework describes how a rational agent should update its beliefs when new 
   Automatic-Differentiation Variational Inference (ADVI) [@kucukelbir_automatic_2017], and Black-Box
   Variational Inference (BBVI) [@bamler_structured_2017].
 
-We present **RxInfer.jl**, which is a Julia [@bezanson_julia_2012], [@bezanson_julia_2017] package for real-time variational Bayesian
+We present **RxInfer.jl**, which is a Julia [@bezanson_julia_2012; @bezanson_julia_2017] package for real-time variational Bayesian
   inference based on reactive message passing in a factor graph representation of the model under
   study [@bagaev_reactive_2021]. **RxInfer.jl** provides access to a powerful model specification language 
   that translates a textual description of a probabilistic model into a corresponding factor graph representation. 
@@ -69,9 +69,9 @@ We present **RxInfer.jl**, which is a Julia [@bezanson_julia_2012], [@bezanson_j
   engine *reacts* to new data and automatically updates relevant posteriors.
 
 Over the past few years, the inference methods in this package have been tested on many advanced probabilistic models, 
-  resulting in several publications in highly ranked journals such as Entropy [@podusenko_message_2021-1], [@senoz_variational_2021], 
+  resulting in several publications in highly ranked journals such as Entropy [@podusenko_message_2021-1; @senoz_variational_2021], 
   Frontiers [@podusenko_aida_2021], and conferences such as MLSP-2021 [@podusenko_message_2021], 
-  EUSIPCO-2022 [@podusenko_message_2022], [@van_erp_hybrid_2022] and SiPS [@nguyen_efficient_2022].
+  EUSIPCO-2022 [@podusenko_message_2022; @van_erp_hybrid_2022] and SiPS [@nguyen_efficient_2022].
 
 # Statement of need
 
