@@ -22,6 +22,23 @@ jobs:
         with:
           version: '1.8'
       - run: make lint
+  paper:
+    name: Paper Preview
+    runs-on: ubuntu-latest
+    steps:
+        uses: actions/checkout@v2
+        uses: openjournals/openjournals-draft-action@master
+        with:
+          journal: joss
+          # This should be the path to the paper within your repo.
+          paper-path: paper/paper.md
+        uses: actions/upload-artifact@v1
+        with:
+          name: paper
+          # This is the output path where Pandoc will write the compiled
+          # PDF. Note, this should be the same directory as the input
+          # paper.md
+          path: paper/paper.pdf
   test:
     name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
     runs-on: ${{ matrix.os }}
