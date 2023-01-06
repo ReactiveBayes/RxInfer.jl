@@ -8,14 +8,14 @@ tags:
   - message passing
 authors:
   - name: Dmitry Bagaev
-    orcid: 0000-0000-0000-0000
+    orcid: 0000-0001-9655-7986
     corresponding: true # (This is how to denote the corresponding author)
     affiliation: 1  
   - name: Albert Podusenko
-    orcid: 0000-0000-0000-0000
+    orcid: 0000-0003-0515-0465
     affiliation: 1
   - name: Bert de Vries
-    orcid: 0000-0000-0000-0000
+    orcid: 0000-0003-0839-174X
     affiliation: 1 # (Multiple affiliations must be quoted)
 affiliations:
  - name: Technical University of Eindhoven
