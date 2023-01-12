@@ -640,10 +640,10 @@ Base.string(::FromMessageAutoUpdate) = "μ"
 
 import Base: fetch
 
-Base.fetch(strategy::Union{ FromMarginalAutoUpdate, FromMessageAutoUpdate }, variables::AbstractArray) = (Base.fetch(strategy, variable) for variable in variables)
+Base.fetch(strategy::Union{FromMarginalAutoUpdate, FromMessageAutoUpdate}, variables::AbstractArray) = (Base.fetch(strategy, variable) for variable in variables)
 Base.fetch(::FromMarginalAutoUpdate, variable::Union{DataVariable, RandomVariable}) = ReactiveMP.getmarginal(variable, IncludeAll())
 Base.fetch(::FromMessageAutoUpdate, variable::RandomVariable) = ReactiveMP.messagein(variable, 1) # Here we assume that predictive message has index `1`
-Base.fetch(::FromMessageAutoUpdate, variable::DataVariable)   = error("`FromMessageAutoUpdate` fetch strategy is not implemented for `DataVariable`")
+Base.fetch(::FromMessageAutoUpdate, variable::DataVariable) = error("`FromMessageAutoUpdate` fetch strategy is not implemented for `DataVariable`")
 
 struct RxInferenceAutoUpdateIndexedVariable{V, I}
     variable :: V
@@ -692,7 +692,7 @@ end
 
 import Base: fetch
 
-Base.fetch(autoupdate::RxInferenceAutoUpdate)            = fetch(autoupdate, autoupdate.recent)
+Base.fetch(autoupdate::RxInferenceAutoUpdate) = fetch(autoupdate, autoupdate.recent)
 Base.fetch(autoupdate::RxInferenceAutoUpdate, something) = fetch(autoupdate, something, ReactiveMP.getdata(ReactiveMP.getrecent(something)))
 Base.fetch(autoupdate::RxInferenceAutoUpdate, something::Union{AbstractArray, Base.Generator}) = fetch(autoupdate, something, ReactiveMP.getdata.(ReactiveMP.getrecent.(something)))
 
