@@ -12,6 +12,9 @@ import ReactiveMP: CountingReal
 
 import ProgressMeter
 
+obtain_prediction(variable::AbstractVariable)                   = getprediction(variable)
+obtain_prediction(variables::AbstractArray{<:AbstractVariable}) = getpredictions(variables)
+
 obtain_marginal(variable::AbstractVariable, strategy = SkipInitial())                   = getmarginal(variable, strategy)
 obtain_marginal(variables::AbstractArray{<:AbstractVariable}, strategy = SkipInitial()) = getmarginals(variables, strategy)
 
@@ -24,19 +27,19 @@ assign_message!(variable::AbstractVariable, message)                    = setmes
 struct KeepEach end
 struct KeepLast end
 
-make_actor(::RandomVariable, ::KeepEach)                       = keep(Marginal)
-make_actor(::Array{<:RandomVariable, N}, ::KeepEach) where {N} = keep(Array{Marginal, N})
-make_actor(x::AbstractArray{<:RandomVariable}, ::KeepEach)     = keep(typeof(similar(x, Marginal)))
+make_actor(::AbstractVariable, ::KeepEach)                       = keep(Marginal)
+make_actor(::Array{<:AbstractVariable, N}, ::KeepEach) where {N} = keep(Array{Marginal, N})
+make_actor(x::AbstractArray{<:AbstractVariable}, ::KeepEach)     = keep(typeof(similar(x, Marginal)))
 
-make_actor(::RandomVariable, ::KeepEach, capacity::Integer)                       = circularkeep(Marginal, capacity)
-make_actor(::Array{<:RandomVariable, N}, ::KeepEach, capacity::Integer) where {N} = circularkeep(Array{Marginal, N}, capacity)
-make_actor(x::AbstractArray{<:RandomVariable}, ::KeepEach, capacity::Integer)     = circularkeep(typeof(similar(x, Marginal)), capacity)
+make_actor(::AbstractVariable, ::KeepEach, capacity::Integer)                       = circularkeep(Marginal, capacity)
+make_actor(::Array{<:AbstractVariable, N}, ::KeepEach, capacity::Integer) where {N} = circularkeep(Array{Marginal, N}, capacity)
+make_actor(x::AbstractArray{<:AbstractVariable}, ::KeepEach, capacity::Integer)     = circularkeep(typeof(similar(x, Marginal)), capacity)
 
-make_actor(::RandomVariable, ::KeepLast)                   = storage(Marginal)
-make_actor(x::AbstractArray{<:RandomVariable}, ::KeepLast) = buffer(Marginal, size(x))
+make_actor(::AbstractVariable, ::KeepLast)                   = storage(Marginal)
+make_actor(x::AbstractArray{<:AbstractVariable}, ::KeepLast) = buffer(Marginal, size(x))
 
-make_actor(::RandomVariable, ::KeepLast, capacity::Integer)                   = storage(Marginal)
-make_actor(x::AbstractArray{<:RandomVariable}, ::KeepLast, capacity::Integer) = buffer(Marginal, size(x))
+make_actor(::AbstractVariable, ::KeepLast, capacity::Integer)                   = storage(Marginal)
+make_actor(x::AbstractArray{<:AbstractVariable}, ::KeepLast, capacity::Integer) = buffer(Marginal, size(x))
 
 ## Inference ensure update
 
@@ -173,15 +176,16 @@ This structure is used as a return value from the [`inference`](@ref) function.
 
 See also: [`inference`](@ref)
 """
-struct InferenceResult{P, F, M, R}
+struct InferenceResult{P, A, F, M, R}
     posteriors  :: P
+    predictions :: A
     free_energy :: F
     model       :: M
     returnval   :: R
 end
 
-Base.iterate(results::InferenceResult)      = iterate((getfield(results, :posteriors), getfield(results, :free_energy), getfield(results, :model), getfield(results, :returnval)))
-Base.iterate(results::InferenceResult, any) = iterate((getfield(results, :posteriors), getfield(results, :free_energy), getfield(results, :model), getfield(results, :returnval)), any)
+Base.iterate(results::InferenceResult)      = iterate((getfield(results, :posteriors), getfield(results, :predictions), getfield(results, :free_energy), getfield(results, :model), getfield(results, :returnval)))
+Base.iterate(results::InferenceResult, any) = iterate((getfield(results, :posteriors), getfield(results, :predictions), getfield(results, :free_energy), getfield(results, :model), getfield(results, :returnval)), any)
 
 function Base.show(io::IO, result::InferenceResult)
     print(io, "Inference results:\n")
@@ -192,6 +196,13 @@ function Base.show(io::IO, result::InferenceResult)
     print(io, "available for (")
     join(io, keys(getfield(result, :posteriors)), ", ")
     print(io, ")\n")
+
+    if !isnothing(getfield(result, :predictions))
+        print(io, rpad("  Predictions", lcolumnlen), " | ")
+        print(io, "available for (")
+        join(io, keys(getfield(result, :predictions)), ", ")
+        print(io, ")\n")
+    end
 
     if !isnothing(getfield(result, :free_energy))
         print(io, rpad("  Free Energy:", lcolumnlen), " | ")
@@ -431,6 +442,8 @@ function inference(;
     model::ModelGenerator,
     # NamedTuple or Dict with data, required
     data,
+    # NamedTuple or Dict with predictions
+    predictions = nothing, # optional
     # NamedTuple or Dict with initial marginals, optional, defaults to empty
     initmarginals = nothing,
     # NamedTuple or Dict with initial messages, optional, defaults to empty
@@ -443,6 +456,8 @@ function inference(;
     options = nothing,
     # Return structure info, optional, defaults to return everything at each iteration
     returnvars = nothing,
+    # Return structure info, optional, defaults to return everything at each iteration
+    predictvars = nothing,
     # Number of iterations, defaults to 1, we do not distinguish between VMP or Loopy belief or EP iterations
     iterations = nothing,
     # Do we compute FE, optional, defaults to false 
@@ -462,6 +477,7 @@ function inference(;
     warn = true
 )
     __inference_check_dicttype(:data, data)
+    __inference_check_dicttype(:predictions, predictions)
     __inference_check_dicttype(:initmarginals, initmarginals)
     __inference_check_dicttype(:initmessages, initmessages)
     __inference_check_dicttype(:callbacks, callbacks)
@@ -508,7 +524,13 @@ function inference(;
         returnvars   = Dict(variable => returnoption for (variable, value) in pairs(vardict) if (israndom(value) && !isanonymous(value)))
     end
 
+    # Check if `predictvars` is nothing but `data` has missing values
+    if predictvars === nothing
+        predictvars = Dict(variable => KeepLast() for (variable, value) in pairs(vardict) if (isdata(value) && !isempty(findall(ismissing, data[variable])) && !isanonymous(value)))
+    end
+
     __inference_check_dicttype(:returnvars, returnvars)
+    __inference_check_dicttype(:predictvars, predictvars)
 
     # Use `__check_has_randomvar` to filter out unknown or non-random variables in the `returnvar` specification
     __check_has_randomvar(vardict, variable) = begin
@@ -522,11 +544,24 @@ function inference(;
         return haskey_check && israndom_check
     end
 
+    __check_has_prediction(vardict, variable) = begin
+        haskey_check   = haskey(vardict, variable)
+        isdata_check = haskey_check ? isdata(vardict[variable]) : false
+        if warn && !haskey_check
+            @warn "`predictvars` object has `$(variable)` specification, but model has no variable named `$(variable)`. The `$(variable)` specification is ignored. Use `warn = false` to suppress this warning."
+        elseif warn && haskey_check && !isdata_check
+            @warn "`predictvars` object has `$(variable)` specification, but model has no **data** variable named `$(variable)`. The `$(variable)` specification is ignored. Use `warn = false` to suppress this warning."
+        end
+        return haskey_check && isdata_check
+    end
+
     # Second, for each random variable entry we create an actor
-    actors = Dict(variable => make_actor(vardict[variable], value) for (variable, value) in pairs(returnvars) if __check_has_randomvar(vardict, variable))
+    actors_rv = Dict(variable => make_actor(vardict[variable], value) for (variable, value) in pairs(returnvars) if __check_has_randomvar(vardict, variable))
+    actors_pr = Dict(variable => make_actor(vardict[variable], value) for (variable, value) in pairs(predictvars) if __check_has_prediction(vardict, variable))
 
     # At third, for each random variable entry we create a boolean flag to track their updates
-    updates = Dict(variable => MarginalHasBeenUpdated(false) for (variable, _) in pairs(actors))
+    updates = Dict(variable => MarginalHasBeenUpdated(false) for (variable, _) in pairs(merge(actors_rv, actors_pr)))
+    # updates = Dict(variable => MarginalHasBeenUpdated(false) for (variable, _) in pairs(actors_pr))
 
     _iterations = something(iterations, 1)
     _iterations isa Integer || error("`iterations` argument must be of type Integer or `nothing`")
@@ -534,7 +569,8 @@ function inference(;
 
     try
         on_marginal_update = inference_get_callback(callbacks, :on_marginal_update)
-        subscriptions      = Dict(variable => subscribe!(obtain_marginal(vardict[variable]) |> ensure_update(fmodel, on_marginal_update, variable, updates[variable]), actor) for (variable, actor) in pairs(actors))
+        subscriptions_rv   = Dict(variable => subscribe!(obtain_marginal(vardict[variable]) |> ensure_update(fmodel, on_marginal_update, variable, updates[variable]), actor) for (variable, actor) in pairs(actors_rv))
+        subscriptions_pr   = Dict(variable => subscribe!(obtain_prediction(vardict[variable]) |> ensure_update(fmodel, on_marginal_update, variable, updates[variable]), actor) for (variable, actor) in pairs(actors_pr))
 
         fe_actor        = nothing
         fe_subscription = VoidTeardown()
@@ -607,7 +643,7 @@ function inference(;
             inference_invoke_callback(callbacks, :after_iteration, fmodel, iteration)
         end
 
-        for (_, subscription) in pairs(subscriptions)
+        for (_, subscription) in pairs(merge(subscriptions_pr, subscriptions_rv))
             unsubscribe!(subscription)
         end
 
@@ -617,12 +653,13 @@ function inference(;
 
         unsubscribe!(fe_subscription)
 
-        posterior_values = Dict(variable => __inference_postprocess(postprocess, getvalues(actor)) for (variable, actor) in pairs(actors))
+        posterior_values = Dict(variable => __inference_postprocess(postprocess, getvalues(actor)) for (variable, actor) in pairs(actors_rv))
+        predicted_values = Dict(variable => __inference_postprocess(postprocess, getvalues(actor)) for (variable, actor) in pairs(actors_pr))
         fe_values        = !isnothing(fe_actor) ? score_snapshot_iterations(fe_actor) : nothing
 
         inference_invoke_callback(callbacks, :after_inference, fmodel)
 
-        return InferenceResult(posterior_values, fe_values, fmodel, freturval)
+        return InferenceResult(posterior_values, predicted_values, fe_values, fmodel, freturval)
     catch error
         __inference_process_error(error)
     end
