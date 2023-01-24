@@ -458,7 +458,7 @@ ReactiveMPNodeAliases = (
         else
             expression
         end,
-        "`Normal(μ|m|mean = ..., τ|γ|σ⁻²|w|p|prec|precision = ...)` alias for `NormalMeanVariance(..., ...)` node. `Gaussian` could be used instead `Normal` too."
+        "`Normal(μ|m|mean = ..., τ|γ|σ⁻²|w|p|prec|precision = ...)` alias for `NormalMeanPrecision(..., ...)` node. `Gaussian` could be used instead `Normal` too."
     ),
     (
         (expression) -> if @capture(expression, (MvNormal | MvGaussian)((μ) | (m) | (mean) = mean_, (Σ) | (V) | (Λ⁻¹) | (cov) | (covariance) = cov_))
