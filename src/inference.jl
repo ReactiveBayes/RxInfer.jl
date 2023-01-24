@@ -545,7 +545,7 @@ function inference(;
     end
 
     __check_has_prediction(vardict, variable) = begin
-        haskey_check   = haskey(vardict, variable)
+        haskey_check = haskey(vardict, variable)
         isdata_check = haskey_check ? isdata(vardict[variable]) : false
         if warn && !haskey_check
             @warn "`predictvars` object has `$(variable)` specification, but model has no variable named `$(variable)`. The `$(variable)` specification is ignored. Use `warn = false` to suppress this warning."
