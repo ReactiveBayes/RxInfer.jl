@@ -476,9 +476,9 @@ function inference(;
     # warn, optional, defaults to true
     warn = true
 )
-      if isnothing(data) && isnothing(predictvars)
+    if isnothing(data) && isnothing(predictvars)
         error("""One of keyword arguments `data` or predictvars must be specified""")
-      end
+    end
     __inference_check_dicttype(:initmarginals, initmarginals)
     __inference_check_dicttype(:initmessages, initmessages)
     __inference_check_dicttype(:callbacks, callbacks)
@@ -524,11 +524,13 @@ function inference(;
         returnoption = something(returnvars, iterations isa Number ? KeepEach() : KeepLast())
         returnvars   = Dict(variable => returnoption for (variable, value) in pairs(vardict) if (israndom(value) && !isanonymous(value)))
     end
-    
+
     # Assuming that the prediction variables are specified as datavars inside @model, e.g. pred = datavar(Float64, n)
     # Check if `predictvars` is nothing but `data` has missing values
     if predictvars === nothing
-        predictvars = Dict(variable => KeepLast() for (variable, value) in pairs(vardict) if (isdata(value) && __inference_check_dataismissing(data[variable]) && !isanonymous(value)))
+        predictvars = Dict(
+            variable => KeepLast() for (variable, value) in pairs(vardict) if (isdata(value) && __inference_check_dataismissing(data[variable]) && !isanonymous(value))
+        )
     else # iterate through vardict and find corresponding variables in predictvars
         for (variable, value) in pairs(vardict)
             # this logic creates and adds predictions into the data as missings
@@ -544,7 +546,10 @@ function inference(;
         end
         # in case predictvars are empty, then the only place to look for predictions are `missings` of data
         # we extract datavars keys to add them to predictvars
-        data_missing = Dict(variable => KeepLast() for (variable, value) in pairs(vardict) if (isdata(value) && haskey(data, variable) && __inference_check_dataismissing(data[variable]) && !isanonymous(value)))
+        data_missing = Dict(
+            variable => KeepLast() for
+            (variable, value) in pairs(vardict) if (isdata(value) && haskey(data, variable) && __inference_check_dataismissing(data[variable]) && !isanonymous(value))
+        )
         predictvars = merge(predictvars, data_missing)
     end
 
