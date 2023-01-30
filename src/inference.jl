@@ -133,6 +133,8 @@ function __inference_check_dicttype(keyword::Symbol, ::T) where {T}
           """)
 end
 
+__inference_check_dataismissing(d) = (ismissing(d) || !isempty(findall(ismissing, d)))
+
 ## Inference results postprocessing
 
 # TODO: Make this function a part of the public API?
@@ -197,7 +199,7 @@ function Base.show(io::IO, result::InferenceResult)
     join(io, keys(getfield(result, :posteriors)), ", ")
     print(io, ")\n")
 
-    if !isnothing(getfield(result, :predictions))
+    if !isempty(getfield(result, :predictions))
         print(io, rpad("  Predictions", lcolumnlen), " | ")
         print(io, "available for (")
         join(io, keys(getfield(result, :predictions)), ", ")
@@ -440,10 +442,8 @@ See also: [`InferenceResult`](@ref), [`rxinference`](@ref)
 function inference(;
     # `model`: specifies a model generator, with the help of the `Model` function
     model::ModelGenerator,
-    # NamedTuple or Dict with data, required
-    data,
-    # NamedTuple or Dict with predictions
-    predictions = nothing, # optional
+    # NamedTuple or Dict with data, optional if predictvars are specified
+    data = nothing,
     # NamedTuple or Dict with initial marginals, optional, defaults to empty
     initmarginals = nothing,
     # NamedTuple or Dict with initial messages, optional, defaults to empty
@@ -476,8 +476,9 @@ function inference(;
     # warn, optional, defaults to true
     warn = true
 )
-    __inference_check_dicttype(:data, data)
-    __inference_check_dicttype(:predictions, predictions)
+      if isnothing(data) && isnothing(predictvars)
+        error("""One of keyword arguments `data` or predictvars must be specified""")
+      end
     __inference_check_dicttype(:initmarginals, initmarginals)
     __inference_check_dicttype(:initmessages, initmessages)
     __inference_check_dicttype(:callbacks, callbacks)
@@ -523,10 +524,28 @@ function inference(;
         returnoption = something(returnvars, iterations isa Number ? KeepEach() : KeepLast())
         returnvars   = Dict(variable => returnoption for (variable, value) in pairs(vardict) if (israndom(value) && !isanonymous(value)))
     end
-
+    
+    # Assuming that the prediction variables are specified as datavars inside @model, e.g. pred = datavar(Float64, n)
     # Check if `predictvars` is nothing but `data` has missing values
     if predictvars === nothing
-        predictvars = Dict(variable => KeepLast() for (variable, value) in pairs(vardict) if (isdata(value) && !isempty(findall(ismissing, data[variable])) && !isanonymous(value)))
+        predictvars = Dict(variable => KeepLast() for (variable, value) in pairs(vardict) if (isdata(value) && __inference_check_dataismissing(data[variable]) && !isanonymous(value)))
+    else # iterate through vardict and find corresponding variables in predictvars
+        for (variable, value) in pairs(vardict)
+            # this logic creates and adds predictions into the data as missings
+            if isdata(value) && haskey(predictvars, variable)
+                # TODO: how to check the size of datavar
+                if value isa Vector
+                    predictions = NamedTuple{Tuple([variable])}([repeat([missing], length(value))])
+                else
+                    predictions = NamedTuple{Tuple([variable])}([missing])
+                end
+                data = isnothing(data) ? predictions : merge(data, predictions)
+            end
+        end
+        # in case predictvars are empty, then the only place to look for predictions are `missings` of data
+        # we extract datavars keys to add them to predictvars
+        data_missing = Dict(variable => KeepLast() for (variable, value) in pairs(vardict) if (isdata(value) && haskey(data, variable) && __inference_check_dataismissing(data[variable]) && !isanonymous(value)))
+        predictvars = merge(predictvars, data_missing)
     end
 
     __inference_check_dicttype(:returnvars, returnvars)
@@ -555,13 +574,12 @@ function inference(;
         return haskey_check && isdata_check
     end
 
-    # Second, for each random variable entry we create an actor
+    # Second, for each random variable and predicting variable entry we create an actor
     actors_rv = Dict(variable => make_actor(vardict[variable], value) for (variable, value) in pairs(returnvars) if __check_has_randomvar(vardict, variable))
     actors_pr = Dict(variable => make_actor(vardict[variable], value) for (variable, value) in pairs(predictvars) if __check_has_prediction(vardict, variable))
 
-    # At third, for each random variable entry we create a boolean flag to track their updates
+    # At third, for each variable entry we create a boolean flag to track their updates
     updates = Dict(variable => MarginalHasBeenUpdated(false) for (variable, _) in pairs(merge(actors_rv, actors_pr)))
-    # updates = Dict(variable => MarginalHasBeenUpdated(false) for (variable, _) in pairs(actors_pr))
 
     _iterations = something(iterations, 1)
     _iterations isa Integer || error("`iterations` argument must be of type Integer or `nothing`")
