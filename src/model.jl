@@ -189,8 +189,8 @@ function ReactiveMP.activate!(model::FactorGraphModel)
 
     filter!(c -> isconnected(c), getconstant(model))
     foreach(r -> activate!(r, options), getrandom(model))
-    foreach(n -> activate!(n, options), getnodes(model))
     foreach(p -> activate!(p, options), getprocess(model)) # add process
+    foreach(n -> activate!(n, options), getnodes(model))
 end
 
 ## constraints 
