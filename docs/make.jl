@@ -9,8 +9,11 @@ DocMeta.setdocmeta!(RxInfer, :DocTestSetup, :(using RxInfer); recursive = true)
 
 # This must be auto-generated with `make examples`
 ExamplesPath = joinpath(@__DIR__, "src", "examples")
-Examples = map(filter((f) -> f != "overview.md", readdir(ExamplesPath))) do example 
-    return replace(example, ".md" => "") => joinpath("examples", example)
+ExamplesMeta = include(joinpath(@__DIR__, "..", "examples", ".meta.jl"))
+Examples = map(filter(example -> !example.hidden, ExamplesMeta)) do examplemeta
+    path = examplemeta.path
+    title = examplemeta.title
+    return title => joinpath("examples", replace(path, ".ipynb" => ".md"))
 end
 
 # WIP: Keep it as a nice starting approach for adding a header, currently we are using `assets/header.js`
@@ -52,6 +55,7 @@ makedocs(;
                 "Overview" => "manuals/inference/overview.md",
                 "Static dataset" => "manuals/inference/inference.md",
                 "Real-time dataset / reactive inference" => "manuals/inference/rxinference.md",
+                "Inference results postprocessing"  => "manuals/inference/postprocess.md",
                 "Manual inference specification" => "manuals/inference/manual.md"
             ]
         ],
@@ -68,6 +72,7 @@ makedocs(;
         "Contributing" => [
             "Overview" => "contributing/overview.md",
             "Adding a new example" => "contributing/new-example.md",
+            "Publishing a new release" => "contributing/new-release.md"
         ]
     ]
 )

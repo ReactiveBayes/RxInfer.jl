@@ -1,4 +1,5 @@
 export KeepEach, KeepLast
+export DefaultPostprocess, UnpackMarginalPostprocess, NoopPostprocess
 export inference, InferenceResult
 export rxinference, @autoupdates, RxInferenceEngine, RxInferenceEvent
 
@@ -90,14 +91,18 @@ function __check_and_unset_updated!(updates)
         error("""
               Variables [ $(names) ] have not been updated after an update event. 
               Therefore, make sure to initialize all required marginals and messages. See `initmarginals` and `initmessages` keyword arguments for the inference function. 
+              See the function documentation for detailed information regarding the initialization.
               """)
     end
 end
 
 ## Extra error handling
 
-__inference_process_error(error) = rethrow(error)
+function __inference_process_error(error)
+    rethrow(error)
+end
 
+# We want to show an extra hint in case the error is of type `StackOverflowError`
 function __inference_process_error(err::StackOverflowError)
     @error """
     Stack overflow error occurred during the inference procedure. 
@@ -108,14 +113,11 @@ function __inference_process_error(err::StackOverflowError)
     rethrow(err) # Shows the original stack trace
 end
 
-"""
-    __inference_check_itertype(label, container)
-
-This function check is the second argument is of type `Nothing`, `Tuple` or `Vector`. Throws an error otherwise.
-"""
-function __inference_check_itertype end
-
-__inference_check_itertype(::Symbol, ::Union{Nothing, Tuple, Vector}) = nothing
+function __inference_check_itertype(::Symbol, ::Union{Nothing, Tuple, Vector})
+    # This function check is the second argument is of type `Nothing`, `Tuple` or `Vector`. 
+    # Does nothing is true, throws an error otherwise (see the second method below)
+    nothing
+end
 
 function __inference_check_itertype(keyword::Symbol, ::T) where {T}
     error("""
@@ -127,14 +129,11 @@ function __inference_check_itertype(keyword::Symbol, ::T) where {T}
           """)
 end
 
-"""
-    __inference_check_dicttype(label, container)
-
-This function check is the second argument is of type `Nothing`, `NamedTuple` or `Dict`. Throws an error otherwise.
-"""
-function __inference_check_dicttype end
-
-__inference_check_dicttype(::Symbol, ::Union{Nothing, NamedTuple, Dict}) = nothing
+function __inference_check_dicttype(::Symbol, ::Union{Nothing, NamedTuple, Dict})
+    # This function check is the second argument is of type `Nothing`, `NamedTuple` or `Dict`. 
+    # Does nothing is true, throws an error otherwise (see the second method below)
+    nothing
+end
 
 function __inference_check_dicttype(keyword::Symbol, ::T) where {T}
     error("""
@@ -146,7 +145,34 @@ function __inference_check_dicttype(keyword::Symbol, ::T) where {T}
           """)
 end
 
-##
+## Inference results postprocessing
+
+# TODO: Make this function a part of the public API?
+# __inference_postprocess(strategy, result)
+# This function modifies the `result` of the inference procedure according to the strategy. The default `strategy` is `DefaultPostprocess`.
+function __inference_postprocess end
+
+"""`DefaultPostprocess` picks the most suitable postprocessing step automatically"""
+struct DefaultPostprocess end
+
+__inference_postprocess(::DefaultPostprocess, result::Marginal) = __inference_postprocess(DefaultPostprocess(), result, ReactiveMP.getaddons(result))
+__inference_postprocess(::DefaultPostprocess, result::AbstractArray) = map((element) -> __inference_postprocess(DefaultPostprocess(), element), result)
+
+# Default postprocessing step removes Marginal type wrapper if no addons are present, and keeps the Marginal type wrapper otherwise
+__inference_postprocess(::DefaultPostprocess, result, addons::Nothing) = __inference_postprocess(UnpackMarginalPostprocess(), result)
+__inference_postprocess(::DefaultPostprocess, result, addons::Any) = __inference_postprocess(NoopPostprocess(), result)
+
+"""This postprocessing step removes the `Marginal` wrapper type from the result"""
+struct UnpackMarginalPostprocess end
+
+__inference_postprocess(::UnpackMarginalPostprocess, result::Marginal) = getdata(result)
+__inference_postprocess(::UnpackMarginalPostprocess, result::AbstractArray) = map((element) -> __inference_postprocess(UnpackMarginalPostprocess(), element), result)
+
+"""This postprocessing step does nothing"""
+struct NoopPostprocess end
+
+__inference_postprocess(::NoopPostprocess, result) = result
+__inference_postprocess(::Nothing, result) = result
 
 """
     InferenceResult
@@ -228,6 +254,8 @@ unwrap_free_energy_option(option::Type{T}) where {T <: Real} = (true, T, Countin
         free_energy_diagnostics = BetheFreeEnergyDefaultChecks,
         showprogress            = false,
         callbacks               = nothing,
+        addons                  = nothing,
+        postprocess             = DefaultPostprocess()
     )
 
 This function provides a generic way to perform probabilistic inference in RxInfer.jl. Returns `InferenceResult`.
@@ -249,6 +277,8 @@ For more information about some of the arguments, please check below.
 - `free_energy_diagnostics = BetheFreeEnergyDefaultChecks`: free energy diagnostic checks, optional, by default checks for possible `NaN`s and `Inf`s. `nothing` disables all checks.
 - `showprogress = false`: show progress module, optional, defaults to false
 - `callbacks = nothing`: inference cycle callbacks, optional, see below for more info
+- `addons = nothing`: inject and send extra computation information along messages, see below for more info
+- `postprocess = DefaultPostprocess()`: inference results postprocessing step, optional, see below for more info
 - `warn = true`: enables/disables warnings
 
 ## Note on NamedTuples
@@ -284,11 +314,33 @@ The `data` keyword argument must be a `NamedTuple` (or `Dict`) where keys (of `S
 
 - ### `initmarginals`
 
-In general for variational message passing every marginal distribution in a model needs to be pre-initialised. In practice, however, for many models it is sufficient enough to initialise only a small subset of variables in the model.
+For specific types of inference algorithms, such as variational message passing, it might be required to initialize (some of) the marginals before running the inference procedure in order to break the dependency loop. If this is not done, the inference algorithm will not be executed due to the lack of information and message and/or marginals will not be updated. In order to specify these initial marginals, you can use the `initmarginals` argument, such as
+```julia
+inference(...
+    initmarginals = (
+        # initialize the marginal distribution of x as a vague Normal distribution
+        # if x is a vector, then it simply uses the same value for all elements
+        # However, it is also possible to provide a vector of distributions to set each element individually 
+        x = vague(NormalMeanPrecision),  
+    ),
+)
+```
+This argument needs to be a named tuple, i.e. `initmarginals = (a = ..., )`, or dictionary.
 
 - ### `initmessages`
 
-Loopy belief propagation may need some messages in a model to be pre-initialised.
+For specific types of inference algorithms, such as loopy belief propagation or expectation propagation, it might be required to initialize (some of) the messages before running the inference procedure in order to break the dependency loop. If this is not done, the inference algorithm will not be executed due to the lack of information and message and/or marginals will not be updated. In order to specify these initial messages, you can use the `initmessages` argument, such as
+```julia
+inference(...
+    initmessages = (
+        # initialize the messages distribution of x as a vague Normal distribution
+        # if x is a vector, then it simply uses the same value for all elements
+        # However, it is also possible to provide a vector of distributions to set each element individually 
+        x = vague(NormalMeanPrecision),  
+    ),
+)
+```
+This argument needs to be a named tuple, i.e. `initmessages = (a = ..., )`, or dictionary.
 
 - ### `options`
 
@@ -361,6 +413,7 @@ result = inference(
 )
 ```
 
+
 The `callbacks` keyword argument accepts a named-tuple of 'name = callback' pairs. 
 The list of all possible callbacks and their arguments is present below:
 
@@ -374,7 +427,19 @@ The list of all possible callbacks and their arguments is present below:
 - `after_iteration`:       args: (model::FactorGraphModel, iteration::Int)
 - `after_inference`:       args: (model::FactorGraphModel)
 
-See also: [`InferenceResult`](@ref)
+- ### `addons`
+
+The `addons` field extends the default message computation rules with some extra information, e.g. computing log-scaling factors of messages or saving debug-information.
+Accepts a single addon or a tuple of addons. If set, replaces the corresponding setting in the `options`. Automatically changes the default value of the `postprocess` argument to `NoopPostprocess`.
+ 
+- ### `postprocess`
+
+The `postprocess` keyword argument controls whether the inference results must be modified in some way before exiting the `inference` function.
+By default, the inference function uses the `DefaultPostprocess` strategy, which by default removes the `Marginal` wrapper type from the results.
+Change this setting to `NoopPostprocess` if you would like to keep the `Marginal` wrapper type, which might be useful in the combination with the `addons` argument.
+If the `addons` argument has been used, automatically changes the default strategy value to `NoopPostprocess`.
+ 
+See also: [`InferenceResult`](@ref), [`rxinference`](@ref)
 """
 function inference(;
     # `model`: specifies a model generator, with the help of the `Model` function
@@ -404,6 +469,10 @@ function inference(;
     showprogress = false,
     # Inference cycle callbacks
     callbacks = nothing,
+    # Addons specification
+    addons = nothing,
+    # Inference postprocessing option
+    postprocess = DefaultPostprocess(),
     # warn, optional, defaults to true
     warn = true
 )
@@ -432,6 +501,14 @@ function inference(;
     end
 
     _options = convert(ModelInferenceOptions, options)
+
+    # Override `options` addons if the `addons` keyword argument is present 
+    if !isnothing(addons)
+        if !isnothing(getaddons(_options))
+            @warn "Both `addons = ...` and `options = (addons = ..., )` specify a value for the `addons`. Ignoring the `options` setting. Set `warn = false` to supress this warning."
+        end
+        _options = setaddons(_options, addons)
+    end
 
     inference_invoke_callback(callbacks, :before_model_creation)
     fmodel, freturval = create_model(model, constraints = constraints, meta = meta, options = _options)
@@ -555,7 +632,7 @@ function inference(;
 
         unsubscribe!(fe_subscription)
 
-        posterior_values = Dict(variable => ReactiveMP.getdata(getvalues(actor)) for (variable, actor) in pairs(actors))
+        posterior_values = Dict(variable => __inference_postprocess(postprocess, getvalues(actor)) for (variable, actor) in pairs(actors))
         fe_values        = !isnothing(fe_actor) ? score_snapshot_iterations(fe_actor) : nothing
 
         inference_invoke_callback(callbacks, :after_inference, fmodel)
@@ -578,13 +655,10 @@ Base.string(::FromMessageAutoUpdate) = "μ"
 
 import Base: fetch
 
-# TODO for arrays
-Base.fetch(::FromMarginalAutoUpdate, variable::Union{DataVariable, RandomVariable, RandomProcess}) = ReactiveMP.getmarginal(variable, IncludeAll())  #add randomprocess
-
+Base.fetch(strategy::Union{FromMarginalAutoUpdate, FromMessageAutoUpdate}, variables::AbstractArray) = (Base.fetch(strategy, variable) for variable in variables)
+Base.fetch(::FromMarginalAutoUpdate, variable::Union{DataVariable, RandomVariable}) = ReactiveMP.getmarginal(variable, IncludeAll())
 Base.fetch(::FromMessageAutoUpdate, variable::RandomVariable) = ReactiveMP.messagein(variable, 1) # Here we assume that predictive message has index `1`
-Base.fetch(::FromMessageAutoUpdate, variable::DataVariable)   = error("`FromMessageAutoUpdate` fetch strategy is not implemented for `DataVariable`")
-#add process 
-Base.fetch(::FromMessageAutoUpdate, variable::RandomProcess) = ReactiveMP.messagein(variable, 1) # Here we assume that predictive message has index `1`
+Base.fetch(::FromMessageAutoUpdate, variable::DataVariable) = error("`FromMessageAutoUpdate` fetch strategy is not implemented for `DataVariable`")
 
 struct RxInferenceAutoUpdateIndexedVariable{V, I}
     variable :: V
@@ -634,9 +708,11 @@ end
 
 import Base: fetch
 
-# TODO for arrays
-Base.fetch(autoupdate::RxInferenceAutoUpdate)            = fetch(autoupdate, ReactiveMP.getdata(Rocket.getrecent(autoupdate.recent)))
-Base.fetch(autoupdate::RxInferenceAutoUpdate, something) = zip(as_tuple(autoupdate.datavars), as_tuple(autoupdate.callback(something)))
+Base.fetch(autoupdate::RxInferenceAutoUpdate) = fetch(autoupdate, autoupdate.recent)
+Base.fetch(autoupdate::RxInferenceAutoUpdate, something) = fetch(autoupdate, something, ReactiveMP.getdata(ReactiveMP.getrecent(something)))
+Base.fetch(autoupdate::RxInferenceAutoUpdate, something::Union{AbstractArray, Base.Generator}) = fetch(autoupdate, something, ReactiveMP.getdata.(ReactiveMP.getrecent.(something)))
+
+Base.fetch(autoupdate::RxInferenceAutoUpdate, _, data) = zip(as_tuple(autoupdate.datavars), as_tuple(autoupdate.callback(data)))
 
 """
     @autoupdates
@@ -764,7 +840,7 @@ Note, that it is not always possible to start/stop the inference procedure.
 
 See also: [`rxinference`](@ref), [`RxInferenceEvent`](@ref), [`RxInfer.start`](@ref), [`RxInfer.stop`](@ref)
 """
-mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E, J}
+mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, R, I, M, N, X, E, J}
     datastream       :: D
     tickscheduler    :: L
     mainsubscription :: Teardown
@@ -790,6 +866,7 @@ mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M
     fe_subscription :: Teardown
 
     # utility 
+    postprocess  :: R
     iterations   :: I
     model        :: M
     returnval    :: N
@@ -814,14 +891,15 @@ mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M
         fe_scheduler::FH,
         fe_objective::FO,
         fe_source::FS,
+        postprocess::R,
         iterations::I,
         model::M,
         returnval::N,
         enabledevents::Val{X},
         events::E,
         ticklock::J
-    ) where {T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E, J} = begin
-        return new{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E, J}(
+    ) where {T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, R, I, M, N, X, E, J} = begin
+        return new{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, R, I, M, N, X, E, J}(
             datastream,
             tickscheduler,
             voidTeardown,
@@ -838,6 +916,7 @@ mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M
             fe_objective,
             fe_source,
             voidTeardown,
+            postprocess,
             iterations,
             model,
             returnval,
@@ -884,7 +963,7 @@ function Base.show(io::IO, engine::RxInferenceEngine)
     print(io, "[ ", join(enabled_events(engine), ", "), " ]")
 end
 
-enabled_events(::RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E}) where {T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, I, M, N, X, E} = X
+enabled_events(::RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, R, I, M, N, X, E}) where {T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, R, I, M, N, X, E} = X
 
 function Base.getproperty(result::RxInferenceEngine, property::Symbol)
     if property === :enabled_events
@@ -1033,6 +1112,7 @@ function Rocket.on_next!(executor::RxInferenceEventExecutor{T}, event::T) where 
         # we extract all variables before the loop so Julia does not extract them every time
         _tickscheduler  = executor.engine.tickscheduler
         _iterations     = executor.engine.iterations
+        _postprocess    = executor.engine.postprocess
         _model          = executor.engine.model
         _datavars       = executor.engine.datavars
         _autoupdates    = executor.engine.autoupdates
@@ -1050,7 +1130,8 @@ function Rocket.on_next!(executor::RxInferenceEventExecutor{T}, event::T) where 
         fupdates = map(fetch, _autoupdates)
 
         # This loop correspond to the different VMP iterations
-        for iteration in 1:_iterations
+        # Here `_iterations` can be `Ref` too, so we use `[]`. Should not affect integers
+        for iteration in 1:_iterations[]
             inference_invoke_event(Val(:before_iteration), Val(_enabled_events), _events, _model, iteration)
 
             # At first we update all our priors (auto updates) with the fixed values from the `redirectupdate` field
@@ -1086,7 +1167,7 @@ function Rocket.on_next!(executor::RxInferenceEventExecutor{T}, event::T) where 
         if !isnothing(_history) && !isnothing(_historyactors)
             inference_invoke_event(Val(:before_history_save), Val(_enabled_events), _events, _model)
             for (name, actor) in pairs(_historyactors)
-                push!(_history[name], getdata(getvalues(actor)))
+                push!(_history[name], __inference_postprocess(_postprocess, getvalues(actor)))
             end
             inference_invoke_event(Val(:after_history_save), Val(_enabled_events), _events, _model)
         end
@@ -1212,6 +1293,8 @@ end
         autostart = true,
         events = nothing,
         callbacks = nothing,
+        addons = nothing,
+        postprocess = DefaultPostprocess(),
         uselock = false,
         warn = true
     )
@@ -1241,6 +1324,8 @@ For more information about some of the arguments, please check below.
 - `showprogress = false`: show progress module, optional, defaults to false
 - `events = nothing`: inference cycle events, optional, see below for more info
 - `callbacks = nothing`: inference cycle callbacks, optional, see below for more info
+- `addons = nothing`: inject and send extra computation information along messages, see below for more info
+- `postprocess = DefaultPostprocess()`: inference results postprocessing step, optional, see below for more info
 - `uselock = false`: specifies either to use the lock structure for the inference or not, if set to true uses `Base.Threads.SpinLock`. Accepts custom `AbstractLock`.
 - `warn = true`: enables/disables warnings
 
@@ -1292,11 +1377,33 @@ result = rxinference(
 
 - ### `initmarginals`
 
-In general for variational message passing every marginal distribution in a model needs to be pre-initialised. In practice, however, for many models it is sufficient enough to initialise only a small subset of variables in the model.
+For specific types of inference algorithms, such as variational message passing, it might be required to initialize (some of) the marginals before running the inference procedure in order to break the dependency loop. If this is not done, the inference algorithm will not be executed due to the lack of information and message and/or marginals will not be updated. In order to specify these initial marginals, you can use the `initmarginals` argument, such as
+```julia
+rxinference(...
+    initmarginals = (
+        # initialize the marginal distribution of x as a vague Normal distribution
+        # if x is a vector, then it simply uses the same value for all elements
+        # However, it is also possible to provide a vector of distributions to set each element individually 
+        x = vague(NormalMeanPrecision),  
+    ),
+)
+```
+This argument needs to be a named tuple, i.e. `initmarginals = (a = ..., )`, or dictionary.
 
 - ### `initmessages`
 
-Loopy belief propagation may need some messages in a model to be pre-initialised.
+For specific types of inference algorithms, such as loopy belief propagation or expectation propagation, it might be required to initialize (some of) the messages before running the inference procedure in order to break the dependency loop. If this is not done, the inference algorithm will not be executed due to the lack of information and message and/or marginals will not be updated. In order to specify these initial messages, you can use the `initmessages` argument, such as
+```julia
+rxinference(...
+    initmessages = (
+        # initialize the messages distribution of x as a vague Normal distribution
+        # if x is a vector, then it simply uses the same value for all elements
+        # However, it is also possible to provide a vector of distributions to set each element individually 
+        x = vague(NormalMeanPrecision),  
+    ),
+)
+```
+This argument needs to be a named tuple, i.e. `initmessages = (a = ..., )`, or dictionary.
 
 - ### `autoupdates`
 
@@ -1450,6 +1557,20 @@ The list of all possible callbacks and their input arguments is present below:
 - `after_model_creation`:     args: (model::FactorGraphModel, returnval)
 - `before_autostart`:         args: (engine::RxInferenceEngine)
 - `after_autostart`:          args: (engine::RxInferenceEngine)
+
+- ### `addons`
+
+The `addons` field extends the default message computation rules with some extra information, e.g. computing log-scaling factors of messages or saving debug-information.
+Accepts a single addon or a tuple of addons. If set, replaces the corresponding setting in the `options`. Automatically changes the default value of the `postprocess` argument to `NoopPostprocess`.
+ 
+- ### `postprocess`
+
+The `postprocess` keyword argument controls whether the inference results must be modified in some way before exiting the `inference` function.
+By default, the inference function uses the `DefaultPostprocess` strategy, which by default removes the `Marginal` wrapper type from the results.
+Change this setting to `NoopPostprocess` if you would like to keep the `Marginal` wrapper type, which might be useful in the combination with the `addons` argument.
+If the `addons` argument has been used, automatically changes the default strategy value to `NoopPostprocess`.
+
+See also [`inference`](@ref)
 """
 function rxinference(;
     model::ModelGenerator,
@@ -1469,7 +1590,9 @@ function rxinference(;
     free_energy_diagnostics = BetheFreeEnergyDefaultChecks,
     autostart = true,
     events = nothing,
+    addons = nothing,
     callbacks = nothing,
+    postprocess = DefaultPostprocess(),
     uselock = false,
     warn = true
 )
@@ -1510,6 +1633,14 @@ function rxinference(;
     N            = length(datavarnames) # should be static
 
     _options = convert(ModelInferenceOptions, options)
+
+    # Override `options` addons if the `addons` keyword argument is present 
+    if !isnothing(addons)
+        if !isnothing(getaddons(_options))
+            @warn "Both `addons = ...` and `options = (addons = ..., )` specify a value for the `addons`. Ignoring the `options` setting. Set `warn = false` to supress this warning."
+        end
+        _options = setaddons(_options, addons)
+    end
 
     inference_invoke_callback(callbacks, :before_model_creation)
     _model, _returnval = create_model(model, constraints = constraints, meta = meta, options = _options)
@@ -1554,8 +1685,8 @@ function rxinference(;
 
     # `iterations` might be set to `nothing` in which case we assume `1` iteration
     _iterations = something(iterations, 1)
-    _iterations isa Integer || error("`iterations` argument must be of type Integer or `nothing`")
-    _iterations > 0 || error("`iterations` arguments must be greater than zero")
+    (_iterations isa Integer || _iterations isa Ref{<:Integer}) || error("`iterations` argument must be of type Integer, Ref{<:Integer}, or `nothing`")
+    _iterations[] > 0 || error("`iterations` arguments must be greater than zero")
 
     _keephistory = something(keephistory, 0)
     _keephistory isa Integer || error("`keephistory` argument must be of type Integer or `nothing`")
@@ -1576,7 +1707,7 @@ function rxinference(;
 
     if is_free_energy
         if _keephistory > 0
-            fe_actor = ScoreActor(S, _iterations, _keephistory)
+            fe_actor = ScoreActor(S, _iterations[], _keephistory)
         end
         fe_scheduler = PendingScheduler()
         fe_objective = BetheFreeEnergy(BetheFreeEnergyDefaultMarginalSkipStrategy, fe_scheduler, free_energy_diagnostics)
@@ -1612,7 +1743,7 @@ function rxinference(;
         if isnothing(historyvars)
             # First what we do - we check if `historyvars` is nothing 
             # In which case we mirror the `returnvars` specication and use either `KeepLast()` or `KeepEach` (depending on the iterations spec)
-            historyoption = _iterations > 1 ? KeepEach() : KeepLast()
+            historyoption = _iterations[] > 1 ? KeepEach() : KeepLast()
             historyvars   = Dict(name => historyoption for name in returnvars)
         elseif historyvars === KeepEach() || historyvars === KeepLast()
             # Second we check if it is one of the two possible global values: `KeepEach` and `KeepLast`. 
@@ -1635,7 +1766,7 @@ function rxinference(;
     history       = nothing
 
     if !isnothing(historyvars) && _keephistory > 0
-        historyactors = Dict(name => make_actor(vardict[name], historyoption, _iterations) for (name, historyoption) in pairs(historyvars))
+        historyactors = Dict(name => make_actor(vardict[name], historyoption, _iterations[]) for (name, historyoption) in pairs(historyvars))
         history       = Dict(name => CircularBuffer(_keephistory) for (name, _) in pairs(historyvars))
     end
 
@@ -1645,7 +1776,9 @@ function rxinference(;
     updateflags = Dict(variable => MarginalHasBeenUpdated(false) for variable in returnvars)
 
     # `posteriors` returns a `stream` for each entry in the `returnvars`
-    posteriors = Dict(variable => obtain_marginal(vardict[variable]) |> schedule_on(tickscheduler) |> map(Any, getdata) for variable in returnvars)
+    posteriors = Dict(
+        variable => obtain_marginal(vardict[variable]) |> schedule_on(tickscheduler) |> map(Any, (data) -> __inference_postprocess(postprocess, data)) for variable in returnvars
+    )
 
     _events        = Subject(RxInferenceEvent)
     _enabledevents = something(events, Val(()))
@@ -1680,6 +1813,7 @@ function rxinference(;
         fe_scheduler,
         fe_objective,
         fe_source,
+        postprocess,
         _iterations,
         _model,
         _returnval,

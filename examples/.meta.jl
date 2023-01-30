@@ -14,7 +14,10 @@
 #            7. Notebooks and plain Julia have different scoping rules for global variables, if it happens so that examples generation fails due to 
 #               `UndefVarError` and scoping issues use `let ... end` blocks to enforce local scoping (see `Gaussian Mixtures Multivariate.ipynb` as an example)
 #            8. All examples must use and activate local `Project.toml` in the second cell (see `1.`), if you need some package add it to the `(examples)` project
-
+#               Use the code below as a placeholder
+#               # Activate local environment, see `Project.toml`
+#               import Pkg; Pkg.activate("."); Pkg.instantiate(); 
+#            9. Do not use special symbols (`-`, `:`, ...) in titles as it does not play nicely with automatic link generation
 return [
     (
         path = "Coin Toss Model.ipynb",
@@ -26,6 +29,12 @@ return [
         path = "Linear Regression.ipynb",
         title = "Bayesian Linear Regression",
         description = "An example of Bayesian linear regression.",
+        hidden = false
+    ),
+    (
+        path = "Active Inference Mountain car.ipynb",
+        title = "Active Inference Mountain car",
+        description = "This notebooks covers RxInfer usage in the Active Inference setting for the simple mountain car problem.",
         hidden = false
     ),
     (
@@ -59,6 +68,12 @@ return [
         hidden = false
     ),
     (
+        path = "Bayesian ARMA.ipynb",
+        title = "Bayesian ARMA model",
+        description = "This notebook shows how Bayesian ARMA (Autoregressive Moving-Average) model can be implemeted in **RxInfer.jl**",
+        hidden = false
+    ),
+    (
         path = "Infinite Data Stream.ipynb",
         title = "Infinite Data Stream",
         description = "This example shows RxInfer capabilities of running inference for infinite time-series data.",
@@ -86,6 +101,12 @@ return [
         path = "Gamma Mixture.ipynb",
         title = "Gamma Mixture Model",
         description = "This example implements one of the Gamma mixture experiments outlined in https://biaslab.github.io/publication/mp-based-inference-in-gmm/ .",
+        hidden = false
+    ),
+    (
+        path  = "Universal Mixtures.ipynb", 
+        title = "Universal Mixtures", 
+        description = "Universal mixture modeling.",
         hidden = false
     ),
     (
@@ -177,5 +198,5 @@ return [
         title = "Tiny Benchmark", 
         description = "Tiny Benchmark for Internal testing.",
         hidden = true
-    )
+    ),
 ]

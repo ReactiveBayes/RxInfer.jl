@@ -1,7 +1,7 @@
 
 ![](docs/src/assets/biglogo-blacktheme.svg?raw=true&sanitize=true)
 
-[![Official page](https://img.shields.io/badge/official%20page%20-RxInfer-blue)](http://www.rxinfer.ml)
+[![Official page](https://img.shields.io/badge/official%20page%20-RxInfer-blue)](https://biaslab.github.io/rxinfer-website/)
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://biaslab.github.io/RxInfer.jl/stable/)
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://biaslab.github.io/RxInfer.jl/dev/)
 [![Examples](https://img.shields.io/badge/examples-RxInfer-brightgreen)](https://biaslab.github.io/RxInfer.jl/stable/examples/overview/)
@@ -13,7 +13,7 @@ RxInfer.jl is a Julia package for automatic Bayesian inference on a factor graph
 
 Given a probabilistic model, RxInfer allows for an efficient message-passing based Bayesian inference. It uses the model structure to generate an algorithm that consists of a sequence of local computations on a Forney-style factor graph (FFG) representation of the model.
 
-RxInfer.jl has been designed with a focus on efficiency, scalability and maximum performance for running inference on conjugate state-space models with message passing. Below is a comparison between RxInfer.jl and Turing.jl on latent state estimation in a linear multi-variate Gaussian state-space model. [Turing.jl](https://github.com/TuringLang/Turing.jl) is a state-of-the-art Julia-based general-purpose probabilistic programming package. Still, RxInfer.jl executes the state inference task faster and more accurately. RxInfer.jl accomplishes this by taking advantage of any conjugate likelihood-prior pairings in the model, which have analytical posteriors that are known by RxInfer.jl. As a result, in models with conjugate pairings, RxInfer.jl often beats general-purpose probabilistic programming packages in terms of computational load, speed, memory and accuracy. Note, however, that RxInfer.jl also supports non-conjugate inference.
+RxInfer.jl has been designed with a focus on efficiency, scalability and maximum performance for running Bayesian inference with message passing. Below is a comparison between RxInfer.jl and Turing.jl on latent state estimation in a linear multi-variate Gaussian state-space model. [Turing.jl](https://github.com/TuringLang/Turing.jl) is a state-of-the-art Julia-based general-purpose probabilistic programming package. Still, RxInfer.jl executes the state inference task faster and more accurately. RxInfer.jl accomplishes this by taking advantage of any conjugate likelihood-prior pairings in the model, which have analytical posteriors that are known by RxInfer.jl. As a result, in models with conjugate pairings, RxInfer.jl often beats general-purpose probabilistic programming packages in terms of computational load, speed, memory and accuracy. Note, however, that RxInfer.jl also supports non-conjugate inference.
 
 Turing comparison             |  Scalability performance
 :-------------------------:|:-------------------------:
@@ -131,11 +131,14 @@ result = inference(
 # Where to go next?
 There are a set of [examples](https://biaslab.github.io/RxInfer.jl/stable/examples/overview/) available in `RxInfer` repository that demonstrate the more advanced features of the package. Alternatively, you can head to the [documentation][docs-stable-url] that provides more detailed information of how to use `RxInfer` to specify more complex probabilistic models.
 
-See also:
-- [`ReactiveMP.jl`](https://github.com/biaslab/ReactiveMP.jl)
-- [`GraphPPL.jl`](https://github.com/biaslab/GraphPPL.jl)
-- [`Rocket.jl`](https://github.com/biaslab/Rocket.jl)
+# Ecosystem
+
+The `RxInfer` framework consists of three *core* packages developed by BIASlab:
+
+- [`ReactiveMP.jl`](https://github.com/biaslab/ReactiveMP.jl) - the underlying message passing-based inference engine
+- [`GraphPPL.jl`](https://github.com/biaslab/GraphPPL.jl) - model and constraints specification package
+- [`Rocket.jl`](https://github.com/biaslab/Rocket.jl) - reactive extensions package for Julia 
 
 # License
 
-MIT License Copyright (c) 2021-2022 BIASlab
+MIT License Copyright (c) 2021-2023 BIASlab

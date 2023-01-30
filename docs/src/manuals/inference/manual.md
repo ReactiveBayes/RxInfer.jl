@@ -10,7 +10,7 @@ Manual inference specification with `RxInfer` usually consists of the same simpl
 4. Feed model with observations 
 5. Unsubscribe from posterior marginal updates (optional)
 
-It is worth to note that Step 5 is optional and in case where observations come from an infinite real-time data stream (e.g. from the internet) it may be justified to never unsubscribe and perform real-time Bayesian inference in a reactive manner as soon as data arrives.
+It is worth to note that Step 5 is optional and in case where observations come from an infinite real-time data stream (e.g. from an external source or the internet) it may be justified to never unsubscribe and perform real-time Bayesian inference in a reactive manner as soon as data arrives.
 
 ## [Model creation](@id user-guide-manual-inference-model-creation)
 
@@ -31,14 +31,14 @@ using RxInfer, Distributions, Random
 end
 ```
 
-And later on we may create our model and obtain references for variables of interests:
+And later on we may create our model with the [`create_model`](@ref) function and obtain references for variables of interests:
 
 ```@example hierarchical-normal
 model, (m1, y) = create_model(my_model())
 nothing #hide
 ```
 
-Alternatively, it is possible to query variables using squared brackets on `model` object:
+Alternatively, it is possible to query any variable using squared brackets on `model` object:
 
 ```@example hierarchical-normal
 model[:m1] # m1
@@ -78,7 +78,7 @@ Sometimes it is useful to return an array of random variables from model specifi
     return m_n, ...
 end
 
-model, (m_n, ...) = my_model()
+model, (m_n, ...) = create_model(my_model())
 
 m_n_updates = getmarginals(m_n)
 ```

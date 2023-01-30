@@ -9,9 +9,11 @@ import ReactiveMP: score, indexed_name, name
 """
     AbstractScoreObjective
 
-Abstract type for functional objectives that can be used in the `score` function.
+Abstract type for functional objectives that can be used in the `score` function. 
 
-See also: [`score`](@ref)
+!!! note
+   `score` is defined in the `ReactiveMP` package.
+
 """
 abstract type AbstractScoreObjective end
 

@@ -5,7 +5,8 @@ export getoptions, getconstraints, getmeta
 export getnodes, getvariables, getrandom, getconstant, getdata
 
 import Base: push!, show, getindex, haskey, firstindex, lastindex
-import ReactiveMP: AbstractFactorNode
+import ReactiveMP: get_pipeline_stages, getaddons, AbstractFactorNode
+import Rocket: getscheduler
 
 function create_model end
 
@@ -29,12 +30,17 @@ Creates model inference options object. The list of available options is present
 
 See also: [`inference`](@ref), [`rxinference`](@ref)
 """
-struct ModelInferenceOptions{P, S}
-    pipeline                  :: P
-    global_reactive_scheduler :: S
+struct ModelInferenceOptions{P, S, A}
+    pipeline  :: P
+    scheduler :: S
+    addons    :: A
 end
 
 UnspecifiedModelInferenceOptions() = convert(ModelInferenceOptions, (;))
+
+setpipeline(options::ModelInferenceOptions, pipeline) = ModelInferenceOptions(pipeline, options.scheduler, options.addons)
+setscheduler(options::ModelInferenceOptions, scheduler) = ModelInferenceOptions(options.pipeline, scheduler, options.addons)
+setaddons(options::ModelInferenceOptions, addons) = ModelInferenceOptions(options.pipeline, options.scheduler, addons)
 
 import Base: convert
 
@@ -43,36 +49,47 @@ function Base.convert(::Type{ModelInferenceOptions}, options::Nothing)
 end
 
 function Base.convert(::Type{ModelInferenceOptions}, options::NamedTuple{keys}) where {keys}
-    available_options = (:pipeline, :global_reactive_scheduler, :limit_stack_depth)
+    available_options = (:pipeline, :scheduler, :limit_stack_depth, :addons)
 
     for key in keys
         key ∈ available_options || error("Unknown model inference options: $(key).")
     end
 
-    pipeline                  = nothing
-    global_reactive_scheduler = nothing
+    pipeline  = nothing
+    scheduler = nothing
+    addons    = nothing
 
     if haskey(options, :pipeline)
         pipeline = options[:pipeline]
     end
 
-    if haskey(options, :global_reactive_scheduler) && haskey(options, :limit_stack_depth)
-        @warn "Model options have `global_reactive_scheduler` and `limit_stack_depth` options specified together. Ignoring `limit_stack_depth`."
+    if haskey(options, :scheduler) && haskey(options, :limit_stack_depth)
+        @warn "Model options have `scheduler` and `limit_stack_depth` options specified together. Ignoring `limit_stack_depth`."
     end
 
-    if haskey(options, :global_reactive_scheduler)
-        global_reactive_scheduler = options[:global_reactive_scheduler]
+    if haskey(options, :scheduler)
+        scheduler = options[:scheduler]
     elseif haskey(options, :limit_stack_depth)
-        global_reactive_scheduler = LimitStackScheduler(options[:limit_stack_depth]...)
+        scheduler = LimitStackScheduler(options[:limit_stack_depth]...)
     end
 
-    return ModelInferenceOptions(pipeline, global_reactive_scheduler)
+    if haskey(options, :addons)
+        addons = options[:addons]
+    end
+
+    return ModelInferenceOptions(pipeline, scheduler, addons)
 end
 
 const DefaultModelInferenceOptions = UnspecifiedModelInferenceOptions()
 
-global_reactive_scheduler(options::ModelInferenceOptions) = something(options.global_reactive_scheduler, AsapScheduler())
-get_pipeline_stages(options::ModelInferenceOptions)       = something(options.pipeline, EmptyPipelineStage())
+Rocket.getscheduler(options::ModelInferenceOptions) = something(options.scheduler, AsapScheduler())
+
+ReactiveMP.get_pipeline_stages(options::ModelInferenceOptions) = something(options.pipeline, EmptyPipelineStage())
+
+ReactiveMP.getaddons(options::ModelInferenceOptions) = ReactiveMP.getaddons(options, options.addons)
+ReactiveMP.getaddons(options::ModelInferenceOptions, addons::ReactiveMP.AbstractAddon) = (addons,) # ReactiveMP expects addons to be of type tuple
+ReactiveMP.getaddons(options::ModelInferenceOptions, addons::Nothing) = addons                      # Do nothing if addons is `nothing`
+ReactiveMP.getaddons(options::ModelInferenceOptions, addons::Tuple) = addons                        # Do nothing if addons is a `Tuple`
 
 struct FactorGraphModel{Constrains, Meta, Options <: ModelInferenceOptions}
     constraints :: Constrains
@@ -168,13 +185,12 @@ function ReactiveMP.activate!(model::FactorGraphModel)
     activate!(getconstraints(model), getnodes(model), getvariables(model))
     activate!(getmeta(model), getnodes(model), getvariables(model))
 
-    gpipelinestages = get_pipeline_stages(getoptions(model))
-    gscheduler      = global_reactive_scheduler(getoptions(model))
+    options = getoptions(model)
 
     filter!(c -> isconnected(c), getconstant(model))
-    foreach(r -> activate!(r, gscheduler), getrandom(model))
-    foreach(p -> activate!(p, gscheduler), getprocess(model)) # add process 
-    foreach(n -> activate!(n, gpipelinestages, gscheduler), getnodes(model))
+    foreach(r -> activate!(r, options), getrandom(model))
+    foreach(n -> activate!(n, options), getnodes(model))
+    foreach(p -> activate!(p, options), getprocess(model)) # add process
 end
 
 ## constraints 

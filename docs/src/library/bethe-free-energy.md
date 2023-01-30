@@ -3,6 +3,7 @@
 ```@docs
 RxInfer.AbstractScoreObjective
 RxInfer.BetheFreeEnergy
+RxInfer.apply_diagnostic_check
 RxInfer.BetheFreeEnergyCheckNaNs
 RxInfer.BetheFreeEnergyCheckInfs
 ```
