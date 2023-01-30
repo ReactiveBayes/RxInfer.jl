@@ -135,6 +135,10 @@ end
 
 __inference_check_dataismissing(d) = (ismissing(d) || !isempty(findall(ismissing, d)))
 
+# Return NamedTuple for predictions
+__inference_fill_predictions(s::Symbol, d::AbstractArray) = NamedTuple{Tuple([s])}([repeat([missing], length(d))])
+__inference_fill_predictions(s::Symbol, d::DataVariable) = NamedTuple{Tuple([s])}([missing])
+
 ## Inference results postprocessing
 
 # TODO: Make this function a part of the public API?
@@ -535,12 +539,7 @@ function inference(;
         for (variable, value) in pairs(vardict)
             # this logic creates and adds predictions into the data as missings
             if isdata(value) && haskey(predictvars, variable)
-                # TODO: how to check the size of datavar
-                if value isa Vector
-                    predictions = NamedTuple{Tuple([variable])}([repeat([missing], length(value))])
-                else
-                    predictions = NamedTuple{Tuple([variable])}([missing])
-                end
+                predictions = __inference_fill_predictions(variable, value)
                 data = isnothing(data) ? predictions : merge(data, predictions)
             end
         end
@@ -552,7 +551,7 @@ function inference(;
         )
         predictvars = merge(predictvars, data_missing)
     end
-
+    @show data
     __inference_check_dicttype(:returnvars, returnvars)
     __inference_check_dicttype(:predictvars, predictvars)
 
