@@ -7,7 +7,7 @@ import DataStructures: CircularBuffer
 
 using MacroTools # for `@autoupdates`
 
-import ReactiveMP: israndom, isdata, isconst, isproxy, isanonymous
+import ReactiveMP: israndom, isdata, isconst, isproxy, isanonymous, allows_missings
 import ReactiveMP: CountingReal
 
 import ProgressMeter
@@ -251,6 +251,7 @@ unwrap_free_energy_option(option::Type{T}) where {T <: Real} = (true, T, Countin
         meta                    = nothing,
         options                 = nothing,
         returnvars              = nothing, 
+        predictvars             = nothing, 
         iterations              = nothing,
         free_energy             = false,
         free_energy_diagnostics = BetheFreeEnergyDefaultChecks,
@@ -274,6 +275,7 @@ For more information about some of the arguments, please check below.
 - `meta  = nothing`: meta specification object, optional, may be required for some models, see `@meta`
 - `options = nothing`: model creation options, optional, see `ModelInferenceOptions`
 - `returnvars = nothing`: return structure info, optional, defaults to return everything at each iteration, see below for more information
+- `predictvars = nothing`: return structure info, optional, see below for more information
 - `iterations = nothing`: number of iterations, optional, defaults to `nothing`, the inference engine does not distinguish between variational message passing or Loopy belief propagation or expectation propagation iterations, see below for more information
 - `free_energy = false`: compute the Bethe free energy, optional, defaults to false. Can be passed a floating point type, e.g. `Float64`, for better efficiency, but disables automatic differentiation packages, such as ForwardDiff.jl
 - `free_energy_diagnostics = BetheFreeEnergyDefaultChecks`: free energy diagnostic checks, optional, by default checks for possible `NaN`s and `Inf`s. `nothing` disables all checks.
@@ -385,6 +387,27 @@ result = inference(
 )
 ```
 
+- ### `predictvars`
+
+`predictvars` specifies the variables which should be predicted. In the model definition these variables are specified
+as datavars, although they should not be passed inside data argument.
+
+Similar to `returnvars`, `predictvars` accepts a `NamedTuple` or `Dict`. There are two specifications:
+- `KeepLast`: saves the last update for a variable, ignoring any intermediate results during iterations
+- `KeepEach`: saves all updates for a variable for all iterations
+
+Example: 
+
+```julia
+result = inference(
+    ...,
+    predictvars = (
+        o = KeepLast(),
+        τ = KeepEach()
+    )
+)
+```
+
 - ### `iterations`
 
 Specifies the number of variational (or loopy belief propagation) iterations. By default set to `nothing`, which is equivalent of doing 1 iteration. 
@@ -481,7 +504,7 @@ function inference(;
     warn = true
 )
     if isnothing(data) && isnothing(predictvars)
-        error("""One of keyword arguments `data` or predictvars must be specified""")
+        error("""One of keyword arguments `data` or `predictvars`` must be specified""")
     end
     __inference_check_dicttype(:initmarginals, initmarginals)
     __inference_check_dicttype(:initmessages, initmessages)
@@ -529,29 +552,36 @@ function inference(;
         returnvars   = Dict(variable => returnoption for (variable, value) in pairs(vardict) if (israndom(value) && !isanonymous(value)))
     end
 
-    # Assuming that the prediction variables are specified as datavars inside @model, e.g. pred = datavar(Float64, n)
-    # Check if `predictvars` is nothing but `data` has missing values
-    if predictvars === nothing
-        predictvars = Dict(
-            variable => KeepLast() for (variable, value) in pairs(vardict) if (isdata(value) && __inference_check_dataismissing(data[variable]) && !isanonymous(value))
-        )
-    else # iterate through vardict and find corresponding variables in predictvars
+    # Assume that the prediction variables are specified as `datavars` inside the `@model` block, e.g. `pred = datavar(Float64, n)`.
+    # Verify that `predictvars` is not `nothing` and that `data` does not have any missing values.
+    if !isnothing(predictvars)
         for (variable, value) in pairs(vardict)
-            # this logic creates and adds predictions into the data as missings
-            if isdata(value) && haskey(predictvars, variable)
-                predictions = __inference_fill_predictions(variable, value)
-                data = isnothing(data) ? predictions : merge(data, predictions)
+            if !isnothing(data) && haskey(predictvars, variable) && haskey(data, variable)
+                @warn "$(variable) is present in both `data` and `predictvars`. The values in `data` will be ignored."
+            end
+            # The following logic creates and adds predictions to the data as missing values.
+            if isdata(value) && haskey(predictvars, variable) # Verify that the value is of a specified data type and is included in `predictvars`.
+                if allows_missings(value) # Allow missing values, otherwise raise an error.
+                    predictions = __inference_fill_predictions(variable, value)
+                    data = isnothing(data) ? predictions : merge(data, predictions)
+                else
+                    error("`predictvars` does not allow missing values for $(variable). Please add the following line: `$(variable) ~ datavar{...} where {allow_missing = true }`")
+                end
+            elseif isdata(value) && haskey(data, variable) && __inference_check_dataismissing(data[variable]) # The variable may be of a specified data type and contain missing values.
+                if allows_missings(value)
+                    predictvars = merge(predictvars, Dict(variable => KeepLast()))
+                else
+                    error("datavar $(variable) has missings inside but does not allow it. Add `where {allow_missing = true }`")
+                end
             end
         end
-        # in case predictvars are empty, then the only place to look for predictions are `missings` of data
-        # we extract datavars keys to add them to predictvars
-        data_missing = Dict(
-            variable => KeepLast() for
-            (variable, value) in pairs(vardict) if (isdata(value) && haskey(data, variable) && __inference_check_dataismissing(data[variable]) && !isanonymous(value))
+    else # In this case, the prediction functionality should only be performed if the data allows missings and actually contains missing values.
+        predictvars = Dict(
+            variable => KeepLast() for (variable, value) in pairs(vardict) if
+            (isdata(value) && haskey(data, variable) && allows_missings(value) && __inference_check_dataismissing(data[variable]) && !isanonymous(value))
         )
-        predictvars = merge(predictvars, data_missing)
     end
-    @show data
+
     __inference_check_dicttype(:returnvars, returnvars)
     __inference_check_dicttype(:predictvars, predictvars)
 
@@ -567,6 +597,7 @@ function inference(;
         return haskey_check && israndom_check
     end
 
+    # Use `__check_has_prediction` to filter out unknown predictions variables in the `predictvar` specification
     __check_has_prediction(vardict, variable) = begin
         haskey_check = haskey(vardict, variable)
         isdata_check = haskey_check ? isdata(vardict[variable]) : false
@@ -630,7 +661,9 @@ function inference(;
         else
             foreach(filter(pair -> isdata(last(pair)), pairs(vardict))) do pair
                 varname = first(pair)
-                haskey(data, varname) || error("Data entry `$(varname)` is missing in `data` argument. Double check `data = ($(varname) = ???, )`")
+                haskey(data, varname) || error(
+                    "Data entry `$(varname)` is missing in `data` or `predictvars` arguments. Double check `data = ($(varname) = ???, )` or `predictvars = ($(varname) = ???, )`"
+                )
             end
         end
 
