@@ -86,15 +86,15 @@ end
         @test getdata(result2.posteriors[:θ]) == getdata(resultswitch.posteriors[:in2])
         @test getdata(resultswitch.posteriors[:in1]) == getdata(resultswitch.posteriors[:θ]).components[1]
         @test getdata(resultswitch.posteriors[:in2]) == getdata(resultswitch.posteriors[:θ]).components[2]
-        @test getdata(resultswitch.posteriors[:selector]).p ≈ getdata(resultswitch.posteriors[:θ]).prior.p[1]
+        @test getdata(resultswitch.posteriors[:selector]).p ≈ getdata(resultswitch.posteriors[:θ]).weights
 
         # check free energies
         @test -result1.free_energy[1] ≈ getlogscale(result1.posteriors[:θ])
         @test -result2.free_energy[1] ≈ getlogscale(result2.posteriors[:θ])
-        @test getlogscale(resultswitch.posteriors[:in1]) ≈ log(0.7) - result1.free_energy[1]
-        @test getlogscale(resultswitch.posteriors[:in2]) ≈ log(0.3) - result2.free_energy[1]
-        @test log(0.7 * exp(-result1.free_energy[1]) + 0.3 * exp(-result2.free_energy[1])) ≈ getlogscale(resultswitch.posteriors[:selector])
-        @test log(0.7 * exp(-result1.free_energy[1]) + 0.3 * exp(-result2.free_energy[1])) ≈ getlogscale(resultswitch.posteriors[:θ])
+        @test getlogscale(resultswitch.posteriors[:in1]) ≈ log(0.3) - result1.free_energy[1]
+        @test getlogscale(resultswitch.posteriors[:in2]) ≈ log(0.7) - result2.free_energy[1]
+        @test log(0.3 * exp(-result1.free_energy[1]) + 0.7 * exp(-result2.free_energy[1])) ≈ getlogscale(resultswitch.posteriors[:selector])
+        @test log(0.3 * exp(-result1.free_energy[1]) + 0.7 * exp(-result2.free_energy[1])) ≈ getlogscale(resultswitch.posteriors[:θ])
         @test getlogscale(resultswitch.posteriors[:θ]) ≈ getlogscale(resultswitch.posteriors[:selector])
 
         ## Create output plots
@@ -103,7 +103,7 @@ end
             θestimated = resultswitch.posteriors[:θ]
             p = plot(title = "Inference results")
 
-            plot!(rθ, (x) -> pdf(MixtureModel([Beta(4.0, 8.0), Beta(8.0, 4.0)], Categorical([0.5, 0.5])), x), fillalpha = 0.3, fillrange = 0, label = "P(θ)", c = 1)
+            plot!(rθ, (x) -> pdf(MixtureDistribution([Beta(4.0, 8.0), Beta(8.0, 4.0)], [0.5, 0.5]), x), fillalpha = 0.3, fillrange = 0, label = "P(θ)", c = 1)
             plot!(rθ, (x) -> pdf(getdata(θestimated), x), fillalpha = 0.3, fillrange = 0, label = "P(θ|y)", c = 3)
             vline!([θ_real], label = "Real θ")
             return p
