@@ -31,6 +31,8 @@ Inference with RxInfer             |  Inference with HMC
 :-------------------------:|:-------------------------:
 ![](benchmarks/plots/inference_rxinfer.svg?raw=true&sanitize=true)  |  ![](benchmarks/plots/inference_turing.svg?raw=true&sanitize=true)
 
+The benchmark and accuracy experiment, which generated these plots, is available in the `benchmarks/` folder.
+
 # Installation
 
 Install RxInfer through the Julia package manager:
