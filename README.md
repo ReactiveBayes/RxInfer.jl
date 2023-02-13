@@ -9,15 +9,29 @@
 [![Coverage](https://codecov.io/gh/biaslab/RxInfer.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/biaslab/RxInfer.jl)
 [![PkgEval](https://JuliaCI.github.io/NanosoldierReports/pkgeval_badges/R/RxInfer.svg)](https://JuliaCI.github.io/NanosoldierReports/pkgeval_badges/report.html)
 
-RxInfer.jl is a Julia package for automatic Bayesian inference on a factor graph with reactive message passing.
+# Overview
+
+`RxInfer.jl` is a Julia package for automatic Bayesian inference on a factor graph with reactive message passing.
 
 Given a probabilistic model, RxInfer allows for an efficient message-passing based Bayesian inference. It uses the model structure to generate an algorithm that consists of a sequence of local computations on a Forney-style factor graph (FFG) representation of the model.
+
+### Performance and scalability
 
 RxInfer.jl has been designed with a focus on efficiency, scalability and maximum performance for running Bayesian inference with message passing. Below is a comparison between RxInfer.jl and Turing.jl on latent state estimation in a linear multi-variate Gaussian state-space model. [Turing.jl](https://github.com/TuringLang/Turing.jl) is a state-of-the-art Julia-based general-purpose probabilistic programming package. Still, RxInfer.jl executes the state inference task faster and more accurately. RxInfer.jl accomplishes this by taking advantage of any conjugate likelihood-prior pairings in the model, which have analytical posteriors that are known by RxInfer.jl. As a result, in models with conjugate pairings, RxInfer.jl often beats general-purpose probabilistic programming packages in terms of computational load, speed, memory and accuracy. Note, however, that RxInfer.jl also supports non-conjugate inference.
 
 Turing comparison             |  Scalability performance
 :-------------------------:|:-------------------------:
 ![](benchmarks/plots/lgssm_comparison.svg?raw=true&sanitize=true)  |  ![](benchmarks/plots/lgssm_scaling.svg?raw=true&sanitize=true)
+
+### Faster inference with better results
+
+RxInfer.jl not only beats generic-purpose Bayesian inference methods, executes faster, and scales better, but also provides more accurate results for various complex problems. Check out our [examples](https://biaslab.github.io/RxInfer.jl/stable/examples/overview/)!
+
+Inference with RxInfer             |  Inference with HMC
+:-------------------------:|:-------------------------:
+![](benchmarks/plots/inference_rxinfer.svg?raw=true&sanitize=true)  |  ![](benchmarks/plots/inference_turing.svg?raw=true&sanitize=true)
+
+The benchmark and accuracy experiment, which generated these plots, is available in the `benchmarks/` folder.
 
 # Installation
 
@@ -31,7 +45,7 @@ Optionally, use `] test RxInfer` to validate the installation by running the tes
 
 # Getting Started
 
-There are examples available to get you started in the `examples/` folder. 
+There are examples available to get you started in the `examples/` folder. Alternatively, preview the same examples in the [documentation](https://biaslab.github.io/RxInfer.jl/stable/examples/overview/).
 
 ### Coin flip simulation
 
