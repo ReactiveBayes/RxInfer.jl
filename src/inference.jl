@@ -10,6 +10,10 @@ using MacroTools # for `@autoupdates`
 import ReactiveMP: israndom, isdata, isconst, isproxy, isanonymous
 import ReactiveMP: CountingReal
 
+import Base: hasfield
+
+ReactiveMP.isproxy(datavar::DataVariable) = Base.hasfield(typeof(datavar.messageout), :proxy)
+
 import ProgressMeter
 
 obtain_marginal(variable::AbstractVariable, strategy = SkipInitial())                   = getmarginal(variable, strategy)
@@ -570,7 +574,7 @@ function inference(;
         if isnothing(data) || isempty(data)
             error("Data is empty. Make sure you used `data` keyword argument with correct value.")
         else
-            foreach(filter(pair -> isdata(last(pair)), pairs(vardict))) do pair
+            foreach(filter(pair -> isdata(last(pair)) && !isproxy(last(pair)), pairs(vardict))) do pair
                 varname = first(pair)
                 haskey(data, varname) || error("Data entry `$(varname)` is missing in `data` argument. Double check `data = ($(varname) = ???, )`")
             end
