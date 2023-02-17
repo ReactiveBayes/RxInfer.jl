@@ -120,9 +120,6 @@ Now let's see how to specify this model using GraphPPL's package syntax.
         y[i] ~ Bernoulli(θ)
     end
     
-    # We return references to our data inputs and θ parameter
-    # We will use these references later on during inference step
-    return y, θ
 end
 
 ```
