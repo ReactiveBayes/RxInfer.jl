@@ -393,13 +393,16 @@ function ReactiveMP.make_node(model::FactorGraphModel, options::FactorNodeCreati
     end
 end
 
+import ReactiveMP: getpointmass
+ReactiveMP.getpointmass(point::Float64) = point
+
 function ReactiveMP.make_node(model::FactorGraphModel, options::FactorNodeCreationOptions, fform, autovar::AutoVar, args::Vararg{<:ReactiveMP.DataVariable})
     if isstochastic(sdtype(fform))
         var  = make_autovar(model, ReactiveMP.EmptyRandomVariableCreationOptions, ReactiveMP.name(autovar), true)
         node = ReactiveMP.make_node(model, options, fform, var, args...) # add! is inside
         return node, var
     else
-        stream = combineLatest(ReactiveMP._getmarginal.(args)..., strategy=PushNew()) |> map(Any, (d) -> fform(ReactiveMP.getdata(d)...))
+        stream = combineLatest(ReactiveMP._getmarginal.(args)..., strategy=PushNew()) |> map(Any, (d) -> fform(ReactiveMP.getpointmass.(ReactiveMP.getdata(d))...))
         options = DataVariableCreationOptions(stream)
         var = push!(model, ReactiveMP.datavar(options, ReactiveMP.name(autovar), Any))
         return nothing, var

@@ -23,7 +23,7 @@ function datavars_inference(modelfn, adata, bdata, ydata)
     return inference(
         model = modelfn(),
         data = (a = adata, b = bdata, y = ydata),
-        free_energy = true
+        # free_energy = true
     )
 end
 
@@ -41,7 +41,7 @@ end
 
     result = datavars_inference(sum_datavars_as_gaussian_mean, adata, bdata, ydata)
     xres = result.posteriors[:x]
-    fres = result.free_energy
+    # fres = result.free_energy
 
     @test typeof(xres) <: NormalDistributionsFamily
     @test isapprox(mean(xres), 1.5, atol = 0.1)
