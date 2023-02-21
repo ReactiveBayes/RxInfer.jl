@@ -1,5 +1,5 @@
 
-module RxInferModelsSwitchTest
+module RxInferModelsMixtureTest
 
 using Test, InteractiveUtils
 using RxInfer, Distributions
@@ -37,7 +37,7 @@ end
     return y, θ
 end
 
-@model function beta_switch_model(n)
+@model function beta_mixture_model(n)
     y = datavar(Float64, n)
 
     selector ~ Bernoulli(0.7)
@@ -45,7 +45,7 @@ end
     in1 ~ Beta(4.0, 8.0)
     in2 ~ Beta(8.0, 4.0)
 
-    θ ~ Switch(selector, (in1, in2))
+    θ ~ Mixture(selector, (in1, in2))
 
     for i in 1:n
         y[i] ~ Bernoulli(θ)
@@ -54,7 +54,7 @@ end
     return y, θ
 end
 
-@testset "Model switch" begin
+@testset "Model mixture" begin
     @testset "Check inference results" begin
         ## -------------------------------------------- ##
         ## Data creation
@@ -72,7 +72,7 @@ end
         result2 = inference(model = beta_model2(length(dataset)), data = (y = dataset,), returnvars = (θ = KeepLast(),), free_energy = true, addons = AddonLogScale())
 
         resultswitch = inference(
-            model = beta_switch_model(length(dataset)),
+            model = beta_mixture_model(length(dataset)),
             data = (y = dataset,),
             returnvars = (θ = KeepLast(), in1 = KeepLast(), in2 = KeepLast(), selector = KeepLast()),
             addons = AddonLogScale()
