@@ -399,9 +399,9 @@ function ReactiveMP.make_node(model::FactorGraphModel, options::FactorNodeCreati
         node = ReactiveMP.make_node(model, options, fform, var, args...) # add! is inside
         return node, var
     else
-        combined_datavars = combineLatest(ReactiveMP.getmarginal.(args, IncludeAll())..., strategy=PushNew())
-        mapped_datavars = combined_datavars |> map(Any, (d) -> Message(PointMass.(fform(ReactiveMP.getpointmass.(ReactiveMP.getdata(d))...)), false, false, nothing))
-        var = push!(model, ReactiveMP.datavar(DataVariableCreationOptions(mapped_datavars), ReactiveMP.name(autovar), Any))
+        c_args = combineLatest(ReactiveMP.getmarginal.(args, IncludeAll())..., strategy=PushNew())
+        m_args = c_args |> map(Marginal, (d) -> as_marginal(Message(PointMass.(fform(ReactiveMP.getpointmass.(ReactiveMP.getdata(d))...)), false, false, nothing)))
+        var = push!(model, ReactiveMP.datavar(DataVariableCreationOptions(m_args, true), ReactiveMP.name(autovar), Any))
         return nothing, var
     end
 end
