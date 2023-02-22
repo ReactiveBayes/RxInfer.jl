@@ -32,12 +32,13 @@ Inference with RxInfer             |  Inference with HMC
 ![](benchmarks/plots/inference_rxinfer.svg?raw=true&sanitize=true)  |  ![](benchmarks/plots/inference_turing.svg?raw=true&sanitize=true)
 
 The benchmark and accuracy experiment, which generated these plots, is available in the `benchmarks/` folder. Note, that the execution speed and accuracy 
-of the HMC heavily depends on the choice of hyper-parameters. `RxInfer`, in this example, performs consistent and exact inference and does not depent on any hyper-parameters.
+of the HMC estimator heavily depends on the choice of hyper-parameters. 
+In this example, RxInfer executes exact inference consistently and does not depend on any hyper-parameters.
 
 ### References
 
 - [Variational Message Passing and Local Constraint Manipulation in Factor Graphs](https://doi.org/10.3390/e23070807) describes theoretical aspects of the underlying Bayesian inference method.
-- [Reactive Message Passing for Scalable Bayesian Inference](https://doi.org/10.48550/arXiv.2112.13251) describes implementation aspects of the Bayesian inference engine and performs benchmarks & accuracy comparison on various models.
+- [Reactive Message Passing for Scalable Bayesian Inference](https://doi.org/10.48550/arXiv.2112.13251) describes implementation aspects of the Bayesian inference engine and performs benchmarks and accuracy comparison on various models.
 - [A Julia package for reactive variational Bayesian inference](https://doi.org/10.1016/j.simpa.2022.100299) - a reference paper for the `ReactiveMP.jl` package.
 
 # Installation
