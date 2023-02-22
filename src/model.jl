@@ -168,7 +168,7 @@ function ReactiveMP.activate!(model::FactorGraphModel)
     end
 
     foreach(getdata(model)) do datavar
-        if !isconnected(datavar)
+        if !isconnected(datavar) && !ReactiveMP.isused(datavar)
             @warn "Unused data variable has been found: '$(indexed_name(datavar))'. Ignore if '$(indexed_name(datavar))' has been used in deterministic nonlinear tranformation."
         end
     end
@@ -401,10 +401,13 @@ function ReactiveMP.make_node(
         node = ReactiveMP.make_node(model, options, fform, var, args...) # add! is inside
         return node, var
     else
-        c_args = combineLatest(ReactiveMP.getmarginal.(args, IncludeAll()), PushNew())
-        m_args = c_args |> map(Message, (d) -> Message(PointMass(fform(ReactiveMP.getpointmass.(ReactiveMP.getdata(d))...)), false, false, nothing))
-        output = m_args |> share_recent()
-        var = push!(model, ReactiveMP.datavar(DataVariableCreationOptions(output, true), ReactiveMP.name(autovar), Any))
+        combinedvars = combineLatest(ReactiveMP.getmarginal.(args, IncludeAll()), PushNew())
+        mappedvars = combinedvars |> map(Message, (d) -> Message(PointMass(fform(ReactiveMP.getpointmass.(ReactiveMP.getdata(d))...)), false, false, nothing))
+        output = mappedvars |> share_recent()
+        var = push!(model, ReactiveMP.datavar(DataVariableCreationOptions(output, true, false), ReactiveMP.name(autovar), Any))
+        foreach(filter(ReactiveMP.isdata, args)) do datavar
+            datavar.isused = true
+        end
         return nothing, var
     end
 end

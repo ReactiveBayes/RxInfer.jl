@@ -61,9 +61,9 @@ end
     xres = result.posteriors[:x]
     fres = result.free_energy
 
-    isproxy_vars = [ReactiveMP.isproxy(var) for var in model.variables.data]
-    @test length(isproxy_vars) == 4
-    @test sum(isproxy_vars) == 1
+    @test size(getdata(model),1) == 4
+    @test count(>(0), ReactiveMP.isproxy.(getdata(model))) == 1
+    @test count(>(0), ReactiveMP.isused.(getdata(model))) == 2
     @test typeof(xres) <: NormalDistributionsFamily
     @test isapprox(mean(xres), 1.5, atol = 0.1)
     @test isapprox(fres[end], 3.51551, atol = 0.1)
@@ -73,9 +73,9 @@ end
     xres = result.posteriors[:x]
     fres = result.free_energy
 
-    isproxy_vars = [ReactiveMP.isproxy(var) for var in model.variables.data]
-    @test length(isproxy_vars) == 5
-    @test sum(isproxy_vars) == 2
+    @test size(getdata(model),1) == 5
+    @test count(>(0), ReactiveMP.isproxy.(getdata(model))) == 2
+    @test count(>(0), ReactiveMP.isused.(getdata(model))) == 3
     @test typeof(xres) <: NormalDistributionsFamily
     @test isapprox(mean(xres), 1.5, atol = 0.1)
     @test isapprox(fres[end], 3.51551, atol = 0.1)
@@ -86,9 +86,9 @@ end
     xres = result.posteriors[:x]
     fres = result.free_energy
 
-    isproxy_vars = [ReactiveMP.isproxy(var) for var in model.variables.data]
-    @test length(isproxy_vars) == 4
-    @test sum(isproxy_vars) == 1
+    @test size(getdata(model),1) == 4
+    @test count(>(0), ReactiveMP.isproxy.(getdata(model))) == 1
+    @test count(>(0), ReactiveMP.isused.(getdata(model))) == 2
     @test typeof(xres) <: NormalDistributionsFamily
     @test isapprox(mean(xres), 1.0, atol = 0.1)
     @test isapprox(fres[end], 2.26551, atol = 0.1)
