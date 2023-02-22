@@ -42,6 +42,23 @@ Given a probabilistic model, RxInfer allows for an efficient message-passing bas
 - Inference procedure is differentiable.
 - Easy to extend with custom nodes and message update rules.
 
+## Why RxInfer
+
+Many important AI applications, such as audio-processing, self-driving vehicles, weather forecasting, extended reality video processing, and others require continually solving an inference task in sophisticated probabilistic models with a large number of latent variables. 
+Often, the inference task in these applications must be performed continually and in real time in response to new observations. 
+Popular MC-based inference methods, such as No U-Turn Samples (NUTS) or Hamiltonian Monte Carlo (HMC), rely on computationally heavy sampling procedures that do not scale well to probabilistic models with thousands of latent states. 
+Therefore, MC-based inference is practically not suitable for real-time applications. 
+While the alternative variational inference (VI) method promises to scale better to large models than sampling-based inference, VI requires the derivation of gradients of the "variational Free Energy" cost function. 
+For large models, manual derivation of these gradients might be not feasible, while automated "black-box" gradient methods do not scale either because they are not capable of taking advantage of sparsity or conjugate pairs in the model. 
+Therefore, while Bayesian inference is known as the optimal data processing framework, in practice, real-time AI applications rely on much simpler, often ad hoc, data processing algorithms.
+
+`RxInfer` provides utility to run efficient Bayesian inference in sophisticated probabilistic models, 
+takes advantages of conjugate relationships in probabilistic models, and focuses to perform real-time Bayesian inference 
+in large state-space models with thousands of latent variables. In addition, `RxInfer` provides a straightforward 
+way to extend its functionality with custom factor nodes and message passing update rules. The engine is capable of running
+various Bayesian inference algorithms in different parts of the factor graph of a single probabilistic model. This makes it easier 
+to explore different "what-if" scenarious and enables very efficient inference in specific cases.
+
 ## Ecosystem
 
 The `RxInfer` unites 3 core packages into one powerful reactive message passing-based Bayesian inference framework:

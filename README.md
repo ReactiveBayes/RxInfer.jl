@@ -17,7 +17,7 @@ Given a probabilistic model, RxInfer allows for an efficient message-passing bas
 
 ### Performance and scalability
 
-RxInfer.jl has been designed with a focus on efficiency, scalability and maximum performance for running Bayesian inference with message passing. Below is a comparison between RxInfer.jl and Turing.jl on latent state estimation in a linear multi-variate Gaussian state-space model. [Turing.jl](https://github.com/TuringLang/Turing.jl) is a state-of-the-art Julia-based general-purpose probabilistic programming package. Still, RxInfer.jl executes the state inference task faster and more accurately. RxInfer.jl accomplishes this by taking advantage of any conjugate likelihood-prior pairings in the model, which have analytical posteriors that are known by RxInfer.jl. As a result, in models with conjugate pairings, RxInfer.jl often beats general-purpose probabilistic programming packages in terms of computational load, speed, memory and accuracy. Note, however, that RxInfer.jl also supports non-conjugate inference.
+RxInfer.jl has been designed with a focus on efficiency, scalability and maximum performance for running Bayesian inference with message passing. Below is a comparison between RxInfer.jl and Turing.jl on latent state estimation in a linear multi-variate Gaussian state-space model. [Turing.jl](https://github.com/TuringLang/Turing.jl) is a state-of-the-art Julia-based general-purpose probabilistic programming package and is capable of running inference in a broader class of models. Still, RxInfer.jl executes the inference task in [various models](https://biaslab.github.io/RxInfer.jl/stable/examples/overview/) faster and more accurately. RxInfer.jl accomplishes this by taking advantage of any conjugate likelihood-prior pairings in the model, which have analytical posteriors that are known by RxInfer.jl. As a result, in models with conjugate pairings, RxInfer.jl often beats general-purpose probabilistic programming packages in terms of computational load, speed, memory and accuracy. Note, however, that RxInfer.jl also supports non-conjugate inference and is continually improving in order to support a larger class of models.
 
 Turing comparison             |  Scalability performance
 :-------------------------:|:-------------------------:
@@ -25,13 +25,20 @@ Turing comparison             |  Scalability performance
 
 ### Faster inference with better results
 
-RxInfer.jl not only beats generic-purpose Bayesian inference methods, executes faster, and scales better, but also provides more accurate results for various complex problems. Check out our [examples](https://biaslab.github.io/RxInfer.jl/stable/examples/overview/)!
+RxInfer.jl not only beats generic-purpose Bayesian inference methods in conjugate models, executes faster, and scales better, but also provides more accurate results. Check out the [documentation](https://biaslab.github.io/RxInfer.jl/stable/examples/overview/) for more examples!.
 
 Inference with RxInfer             |  Inference with HMC
 :-------------------------:|:-------------------------:
 ![](benchmarks/plots/inference_rxinfer.svg?raw=true&sanitize=true)  |  ![](benchmarks/plots/inference_turing.svg?raw=true&sanitize=true)
 
-The benchmark and accuracy experiment, which generated these plots, is available in the `benchmarks/` folder.
+The benchmark and accuracy experiment, which generated these plots, is available in the `benchmarks/` folder. Note, that the execution speed and accuracy 
+of the HMC heavily depends on the choice of hyper-parameters. `RxInfer`, in this example, performs consistent and exact inference and does not depent on any hyper-parameters.
+
+### References
+
+- [Variational Message Passing and Local Constraint Manipulation in Factor Graphs](https://doi.org/10.3390/e23070807) describes theoretical aspects of the underlying Bayesian inference method.
+- [Reactive Message Passing for Scalable Bayesian Inference](https://doi.org/10.48550/arXiv.2112.13251) describes implementation aspects of the Bayesian inference engine and performs benchmarks & accuracy comparison on various models.
+- [A Julia package for reactive variational Bayesian inference](https://doi.org/10.1016/j.simpa.2022.100299) - a reference paper for the `ReactiveMP.jl` package.
 
 # Installation
 
