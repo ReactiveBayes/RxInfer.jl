@@ -393,15 +393,18 @@ function ReactiveMP.make_node(model::FactorGraphModel, options::FactorNodeCreati
     end
 end
 
-function ReactiveMP.make_node(model::FactorGraphModel, options::FactorNodeCreationOptions, fform, autovar::AutoVar, args::Vararg{<:ReactiveMP.DataVariable})
+function ReactiveMP.make_node(
+    model::FactorGraphModel, options::FactorNodeCreationOptions, fform, autovar::AutoVar, args::Vararg{<:Union{ReactiveMP.ConstVariable, ReactiveMP.DataVariable}}
+)
     if isstochastic(sdtype(fform))
         var  = make_autovar(model, ReactiveMP.EmptyRandomVariableCreationOptions, ReactiveMP.name(autovar), true)
         node = ReactiveMP.make_node(model, options, fform, var, args...) # add! is inside
         return node, var
     else
-        c_args = combineLatest(ReactiveMP.getmarginal.(args, IncludeAll())..., strategy=PushNew())
-        m_args = c_args |> map(Marginal, (d) -> as_marginal(Message(PointMass.(fform(ReactiveMP.getpointmass.(ReactiveMP.getdata(d))...)), false, false, nothing)))
-        var = push!(model, ReactiveMP.datavar(DataVariableCreationOptions(m_args, true), ReactiveMP.name(autovar), Any))
+        c_args = combineLatest(ReactiveMP.getmarginal.(args, IncludeAll()), PushNew())
+        m_args = c_args |> map(Message, (d) -> Message(PointMass(fform(ReactiveMP.getpointmass.(ReactiveMP.getdata(d))...)), false, false, nothing))
+        output = m_args |> share_recent()
+        var = push!(model, ReactiveMP.datavar(DataVariableCreationOptions(output, true), ReactiveMP.name(autovar), Any))
         return nothing, var
     end
 end
