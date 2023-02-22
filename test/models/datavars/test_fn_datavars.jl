@@ -41,7 +41,7 @@ end
     b = datavar(Matrix{Float64})
     y = datavar(Float64)
 
-    x ~ Normal(mean = dot(a[1:2], b[1:2,1]), variance = 1.0)
+    x ~ Normal(mean = dot(a[1:2], b[1:2, 1]), variance = 1.0)
     y ~ Normal(mean = x, variance = 1.0)
 end
 
@@ -61,7 +61,7 @@ end
     xres = result.posteriors[:x]
     fres = result.free_energy
 
-    @test size(getdata(model),1) == 4
+    @test size(getdata(model), 1) == 4
     @test count(>(0), ReactiveMP.isproxy.(getdata(model))) == 1
     @test count(>(0), ReactiveMP.isused.(getdata(model))) == 2
     @test typeof(xres) <: NormalDistributionsFamily
@@ -73,7 +73,7 @@ end
     xres = result.posteriors[:x]
     fres = result.free_energy
 
-    @test size(getdata(model),1) == 5
+    @test size(getdata(model), 1) == 5
     @test count(>(0), ReactiveMP.isproxy.(getdata(model))) == 2
     @test count(>(0), ReactiveMP.isused.(getdata(model))) == 3
     @test typeof(xres) <: NormalDistributionsFamily
@@ -86,7 +86,7 @@ end
     xres = result.posteriors[:x]
     fres = result.free_energy
 
-    @test size(getdata(model),1) == 4
+    @test size(getdata(model), 1) == 4
     @test count(>(0), ReactiveMP.isproxy.(getdata(model))) == 1
     @test count(>(0), ReactiveMP.isused.(getdata(model))) == 2
     @test typeof(xres) <: NormalDistributionsFamily
