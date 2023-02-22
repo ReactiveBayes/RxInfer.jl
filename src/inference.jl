@@ -10,10 +10,6 @@ using MacroTools # for `@autoupdates`
 import ReactiveMP: israndom, isdata, isconst, isproxy, isanonymous
 import ReactiveMP: CountingReal
 
-import Base: hasfield
-
-ReactiveMP.isproxy(datavar::DataVariable) = Base.hasfield(typeof(datavar.messageout), :proxy)
-
 import ProgressMeter
 
 obtain_marginal(variable::AbstractVariable, strategy = SkipInitial())                   = getmarginal(variable, strategy)
