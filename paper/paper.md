@@ -75,19 +75,19 @@ Over the past few years, the inference methods in this package have been tested 
 
 # Statement of need
 
-Many important AI applications, such as self-driving vehicles, weather forecasting, extended
-  reality video processing, and others require continually solving an inference task in sophisticated
+Many important AI applications, including audio processing, self-driving vehicles, weather forecasting, and extended-reality 
+  video processing, and others require continually solving an inference task in sophisticated
   probabilistic models with a large number of latent variables.
 Often, the inference task in these applications must be performed continually and in real time in
   response to new observations.
-Popular MC-based inference methods, such as No U-Turn Samples (NUTS) [@hoffman_nuts] or Hamltonian Monte Carlo (HMC) [@hmc_ref_2011], 
+Popular MC-based inference methods, such as the No U-Turn Sampler (NUTS) [@hoffman_nuts] or Hamiltonian Monte Carlo (HMC) sampling [@hmc_ref_2011], 
   rely on computationally heavy sampling procedures that do not scale well to probabilistic
   models with thousands of latent states.
 Therefore, MC-based inference is practically not suitable for real-time applications.
-While the alternative variational inference (VI) method promises to scale better to large models
+While the alternative variational inference method (VI) promises to scale better to large models
   than sampling-based inference, VI requires the derivation of gradients of the "variational Free
   Energy" cost function.
-For large models, manual derivation of these gradients might be not feasible, while automated
+For large models, manual derivation of these gradients might not be feasible, while automated
   "black-box" gradient methods do not scale either because they are not capable of taking advantage
   of sparsity or conjugate pairs in the model.
 Therefore, while Bayesian inference is known as the optimal data processing framework, in practice,
