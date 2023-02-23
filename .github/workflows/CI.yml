@@ -1,7 +1,7 @@
 name: CI
 on:
   pull_request:
-    types: [ready_for_review,closed,reopened,synchronize]
+    types: [ready_for_review,reopened,synchronize]
   pull_request_review:
     types: [submitted,edited]
   push:
