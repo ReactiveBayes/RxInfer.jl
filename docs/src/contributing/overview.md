@@ -1,6 +1,6 @@
 # [Contributing](@id contributing-overview)
 
-We welcome all possible contributors. This page details the some of the guidelines that should be followed when contributing to this package.
+We welcome all possible contributors. This page details some of the guidelines that should be followed when contributing to this package.
 
 ## Reporting bugs
 
@@ -31,7 +31,7 @@ The `dev` command clones `RxInfer` to `~/.julia/dev/RxInfer`. All local changes 
 
 ### Core dependencies
 
-`RxInfer.jl` heavily depends on the `ReactiveMP.jl`, `GraphPPL.jl` and `Rocket.jl` packages. RxInfer.jl must be updated every time any of these packages has a major update and/or API changes. Developers are adviced to use the `dev` command for all of these packages while making changes to the `RxInfer.jl. It is worth noting though that standard Julia testing utilities ignore the local development environment and always try to test the package with the latest released versions of the core dependencies. Read the section about the `Makefile` below to see how to test `RxInfer.jl` with the locally installed core dependencies.
+`RxInfer.jl` heavily depends on the `ReactiveMP.jl`, `GraphPPL.jl` and `Rocket.jl` packages. RxInfer.jl must be updated every time any of these packages has a major update and/or API changes. Developers are adviced to use the `dev` command for all of these packages while making changes to the `RxInfer.jl`. It is worth noting though that standard Julia testing utilities ignore the local development environment and always try to test the package with the latest released versions of the core dependencies. Read the section about the `Makefile` below to see how to test `RxInfer.jl` with the locally installed core dependencies.
 
 ### Committing code
 
@@ -59,7 +59,7 @@ We use default [Julia style guide](https://docs.julialang.org/en/v1/manual/style
 
 We use the test-driven development (TDD) methodology for `RxInfer` development. The test coverage should be as complete as possible. Please make sure that you write tests for each piece of code that you want to add.
 
-All unit tests are located in the `/test/` directory. The `/test/` directory follows the structure of the `/src/` directory. Each test file should have following filename format: `test_*.jl`. Some tests are also present in `jldoctest` docs annotations directly in the source code.
+All unit tests are located in the `/test/` directory. The `/test/` directory follows the structure of the `/src/` directory. Each test file should have the following filename format: `test_*.jl`. Some tests are also present in `jldoctest` docs annotations directly in the source code.
 See [Julia's documentation](https://docs.julialang.org/en/v1/manual/documentation/index.html) about doctests.
 
 The tests can be evaluated by running following command in the Julia REPL:
@@ -83,8 +83,8 @@ make test
 
 - `make help`: Shows help snippet
 - `make test`: Run tests, supports extra arguments
-  - `make test testest="distributions:normal_mean_variance"` would run tests only from `distributions/test_normal_mean_variance.jl`
-  - `make test testset="distributions:normal_mean_variance models:lgssm"` would run tests both from `distributions/test_normal_mean_variance.jl` and `models/test_lgssm.jl`
+  - `make test test_args="distributions:normal_mean_variance"` would run tests only from `distributions/test_normal_mean_variance.jl`
+  - `make test test_args="distributions:normal_mean_variance models:lgssm"` would run tests both from `distributions/test_normal_mean_variance.jl` and `models/test_lgssm.jl`
   - `make test dev=true` would run tests while using `dev-ed` versions of core packages
 - `make devtest`: Alias for the `make test dev=true ...`
 - `make docs`: Compile documentation

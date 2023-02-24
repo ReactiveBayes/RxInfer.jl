@@ -1,10 +1,15 @@
 name: CI
 on:
+  pull_request:
+    types: [ready_for_review,reopened,synchronize]
+  pull_request_review:
+    types: [submitted,edited]
   push:
     branches:
-      - main
+      - 'main'
     tags: '*'
-  pull_request:
+  check_run:
+    types: [rerequested]
   schedule:
     - cron: '0 8 * * 1' # run the cron job one time per week on Monday 8:00 AM
 concurrency:
@@ -25,6 +30,7 @@ jobs:
   test:
     name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
     runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ contains(matrix.version, 'nightly') }}
     needs: format
     strategy:
       fail-fast: false
@@ -53,6 +59,11 @@ jobs:
       - uses: codecov/codecov-action@v2
         with:
           files: lcov.info
+      - name: Archive test artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: test-output
+          path: test/_output
   examples:
     name: Examples
     runs-on: ubuntu-latest

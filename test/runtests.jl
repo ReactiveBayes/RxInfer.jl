@@ -234,7 +234,7 @@ end
 
     addtests(testrunner, "models/mixtures/test_gmm_univariate.jl")
     addtests(testrunner, "models/mixtures/test_gmm_multivariate.jl")
-    addtests(testrunner, "models/mixtures/test_switch.jl")
+    addtests(testrunner, "models/mixtures/test_mixture.jl")
 
     addtests(testrunner, "models/statespace/test_ulgssm.jl")
     addtests(testrunner, "models/statespace/test_mlgssm.jl")

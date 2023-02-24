@@ -46,11 +46,11 @@ devdocs: dev_doc_init ## Same as `make docs` but uses `dev-ed` versions of core 
 
 .PHONY: test
 
-test: ## Run tests, use testset="folder1:test1 folder2:test2" argument to run reduced testset, use dev=true to use `dev-ed` version of core packages
-	julia -e 'ENV["USE_DEV"]="$(dev)"; import Pkg; Pkg.activate("."); Pkg.test(test_args = split("$(testset)") .|> string)'	
+test: ## Run tests, use test_args="folder1:test1 folder2:test2" argument to run reduced testset, use dev=true to use `dev-ed` version of core packages
+	julia -e 'ENV["USE_DEV"]="$(dev)"; import Pkg; Pkg.activate("."); Pkg.test(test_args = split("$(test_args)") .|> string)'	
 
 devtest: ## Alias for the `make test dev=true ...`
-	julia -e 'ENV["USE_DEV"]="true"; import Pkg; Pkg.activate("."); Pkg.test(test_args = split("$(testset)") .|> string)'	
+	julia -e 'ENV["USE_DEV"]="true"; import Pkg; Pkg.activate("."); Pkg.test(test_args = split("$(test_args)") .|> string)'	
 
 clean: ## Clean documentation build, precompiled examples, benchmark output from tests
 	rm -rf docs/src/examples
