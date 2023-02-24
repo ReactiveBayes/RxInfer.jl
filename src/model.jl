@@ -5,7 +5,7 @@ export getoptions, getconstraints, getmeta
 export getnodes, getvariables, getrandom, getconstant, getdata
 
 import Base: push!, show, getindex, haskey, firstindex, lastindex
-import ReactiveMP: get_pipeline_stages, getaddons, AbstractFactorNode
+import ReactiveMP: get_pipeline_stages, getaddons, AbstractFactorNode, isconnected, isused
 import Rocket: getscheduler
 
 function create_model end
@@ -168,7 +168,7 @@ function ReactiveMP.activate!(model::FactorGraphModel)
     end
 
     foreach(getdata(model)) do datavar
-        if !isconnected(datavar) && !ReactiveMP.isused(datavar)
+        if !isconnected(datavar) && !isused(datavar)
             @warn "Unused data variable has been found: '$(indexed_name(datavar))'. Ignore if '$(indexed_name(datavar))' has been used in deterministic nonlinear tranformation."
         end
     end
@@ -379,16 +379,13 @@ function ReactiveMP.make_node(model::FactorGraphModel, options::FactorNodeCreati
     return node, var
 end
 
-__fform_const_apply(::Type{T}, args...) where {T} = T(args...)
-__fform_const_apply(f::F, args...) where {F <: Function} = f(args...)
-
 function ReactiveMP.make_node(model::FactorGraphModel, options::FactorNodeCreationOptions, fform, autovar::AutoVar, args::Vararg{<:ReactiveMP.ConstVariable})
     if isstochastic(sdtype(fform))
         var  = make_autovar(model, ReactiveMP.EmptyRandomVariableCreationOptions, ReactiveMP.name(autovar), true)
         node = ReactiveMP.make_node(model, options, fform, var, args...) # add! is inside
         return node, var
     else
-        var = push!(model, ReactiveMP.constvar(ReactiveMP.name(autovar), __fform_const_apply(fform, map((d) -> ReactiveMP.getconst(d), args)...)))
+        var = push!(model, ReactiveMP.constvar(ReactiveMP.name(autovar), fform(map((d) -> ReactiveMP.getconst(d), args)...)))
         return nothing, var
     end
 end
@@ -402,7 +399,7 @@ function ReactiveMP.make_node(
         return node, var
     else
         combinedvars = combineLatest(ReactiveMP.getmarginal.(args, IncludeAll()), PushNew())
-        mappedvars = combinedvars |> map(Message, (d) -> Message(PointMass(fform(ReactiveMP.getpointmass.(ReactiveMP.getdata(d))...)), false, false, nothing))
+        mappedvars = combinedvars |> map(Message, (vars) -> Message(PointMass(fform(map((d) -> ReactiveMP.getpointmass(ReactiveMP.getdata(d)), vars)...)), false, false, nothing))
         output = mappedvars |> share_recent()
         var = push!(model, ReactiveMP.datavar(DataVariableCreationOptions(output, true, false), ReactiveMP.name(autovar), Any))
         foreach(filter(ReactiveMP.isdata, args)) do datavar
