@@ -61,9 +61,9 @@ end
     xres = result.posteriors[:x]
     fres = result.free_energy
 
-    @test size(getdata(model), 1) == 4
-    @test count(>(0), ReactiveMP.isproxy.(getdata(model))) == 1
-    @test count(>(0), ReactiveMP.isused.(getdata(model))) == 2
+    @test length(getdata(model)) == 4
+    @test count(ReactiveMP.isproxy, getdata(model)) == 1
+    @test count(ReactiveMP.isused, getdata(model)) == 4
     @test typeof(xres) <: NormalDistributionsFamily
     @test isapprox(mean(xres), 1.5, atol = 0.1)
     @test isapprox(fres[end], 3.51551, atol = 0.1)
@@ -73,9 +73,9 @@ end
     xres = result.posteriors[:x]
     fres = result.free_energy
 
-    @test size(getdata(model), 1) == 5
-    @test count(>(0), ReactiveMP.isproxy.(getdata(model))) == 2
-    @test count(>(0), ReactiveMP.isused.(getdata(model))) == 3
+    @test length(getdata(model)) == 5
+    @test count(ReactiveMP.isproxy, getdata(model)) == 2
+    @test count(ReactiveMP.isused, getdata(model)) == 5
     @test typeof(xres) <: NormalDistributionsFamily
     @test isapprox(mean(xres), 1.5, atol = 0.1)
     @test isapprox(fres[end], 3.51551, atol = 0.1)
@@ -86,14 +86,16 @@ end
     xres = result.posteriors[:x]
     fres = result.free_energy
 
-    @test size(getdata(model), 1) == 4
-    @test count(>(0), ReactiveMP.isproxy.(getdata(model))) == 1
-    @test count(>(0), ReactiveMP.isused.(getdata(model))) == 2
+    @test length(getdata(model)) == 4
+    @test count(ReactiveMP.isproxy, getdata(model)) == 1
+    @test count(ReactiveMP.isused, getdata(model)) == 4
     @test typeof(xres) <: NormalDistributionsFamily
     @test isapprox(mean(xres), 1.0, atol = 0.1)
     @test isapprox(fres[end], 2.26551, atol = 0.1)
 
     # Test with indexing datavariables
+    # The test is broken, because this functionality is not implemented, but 
+    # ideally we would like to support something like this in the future
     A_data = [1.0, 2.0, 3.0]
     B_data = [1.0 0.5; 0.5 1.0]
     @test_broken result = fn_datavars_inference(idx_datavars_as_gaussian_mean, A_data, B_data, ydata)
