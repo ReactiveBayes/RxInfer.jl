@@ -25,7 +25,7 @@ Turing comparison             |  Scalability performance
 
 ### Faster inference with better results
 
-RxInfer.jl not only beats generic-purpose Bayesian inference methods in conjugate models, executes faster, and scales better, but also provides more accurate results. Check out the [documentation](https://biaslab.github.io/RxInfer.jl/stable/examples/overview/) for more examples!.
+RxInfer.jl not only beats generic-purpose Bayesian inference methods in conjugate models, executes faster, and scales better, but also provides more accurate results. Check out the [documentation](https://biaslab.github.io/RxInfer.jl/stable/examples/overview/) for more examples!
 
 Inference with RxInfer             |  Inference with HMC
 :-------------------------:|:-------------------------:
