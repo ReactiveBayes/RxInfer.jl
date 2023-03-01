@@ -85,7 +85,8 @@ In a Bayesian setting, the next step is to specify our probabilistic model. This
 We will assume that the outcome of each coin flip is governed by the Bernoulli distribution, i.e.
 
 <p align="center">
-    <img src="https://render.githubusercontent.com/render/math?math=y_i%20\sim%20\mathrm{Bernoulli}(\theta)">
+    <img src="https://render.githubusercontent.com/render/math?math={y_i%20\sim%20\mathrm{Bernoulli}(\theta)}#gh-light-mode-only">
+    <img src="https://render.githubusercontent.com/render/math?math={\color{white}y_i%20\sim%20\mathrm{Bernoulli}(\theta)}#gh-dark-mode-only">
 </p>
 
 where <img src="https://render.githubusercontent.com/render/math?math=y_1%20=%201"> represents "heads", <img src="https://render.githubusercontent.com/render/math?math=y_1%20=%200"> represents "tails". The underlying probability of the coin landing heads up for a single coin flip is <img src="https://render.githubusercontent.com/render/math?math=\theta%20\in%20[0,1]">.
@@ -94,7 +95,8 @@ where <img src="https://render.githubusercontent.com/render/math?math=y_1%20=%20
 We will choose the conjugate prior of the Bernoulli likelihood function defined above, namely the beta distribution, i.e.
 
 <p align="center">
-    <img src="https://render.githubusercontent.com/render/math?math=\theta%20\sim%20Beta(a,%20b)">
+    <img src="https://render.githubusercontent.com/render/math?math={\theta%20\sim%20Beta(a,%20b)}#gh-light-mode-only">
+    <img src="https://render.githubusercontent.com/render/math?math={\color{white}\theta%20\sim%20Beta(a,%20b)}#gh-dark-mode-only">
 </p>
 
 where ``a`` and ``b`` are the hyperparameters that encode our prior beliefs about the possible values of ``θ``. We will assign values to the hyperparameters in a later step.   
@@ -103,7 +105,8 @@ where ``a`` and ``b`` are the hyperparameters that encode our prior beliefs abou
 The joint probability is given by the multiplication of the likelihood and the prior, i.e.
 
 <p align="center">
-    <img src="https://render.githubusercontent.com/render/math?math=P(y_{1:N},%20\theta)%20=%20P(\theta)%20\prod_{i=1}^N%20P(y_i%20|%20\theta).">
+    <img src="https://render.githubusercontent.com/render/math?math={P(y_{1:N},%20\theta)%20=%20P(\theta)%20\prod_{i=1}^N%20P(y_i%20|%20\theta).}#gh-light-mode-only">
+    <img src="https://render.githubusercontent.com/render/math?math={\color{white}P(y_{1:N},%20\theta)%20=%20P(\theta)%20\prod_{i=1}^N%20P(y_i%20|%20\theta).}#gh-dark-mode-only">
 </p>
 
 Now let's see how to specify this model using GraphPPL's package syntax.
