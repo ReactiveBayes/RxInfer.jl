@@ -84,30 +84,27 @@ In a Bayesian setting, the next step is to specify our probabilistic model. This
 #### Likelihood
 We will assume that the outcome of each coin flip is governed by the Bernoulli distribution, i.e.
 
-<p align="center">
-    <img src="https://render.githubusercontent.com/render/math?math={y_i%20\sim%20\mathrm{Bernoulli}(\theta)}#gh-light-mode-only">
-    <img src="https://render.githubusercontent.com/render/math?math={\color{white}y_i%20\sim%20\mathrm{Bernoulli}(\theta)}#gh-dark-mode-only">
-</p>
+```math
+y_i \sim \mathrm{Bernoulli}(\theta)
+```
 
-where <img src="https://render.githubusercontent.com/render/math?math=y_1%20=%201"> represents "heads", <img src="https://render.githubusercontent.com/render/math?math=y_1%20=%200"> represents "tails". The underlying probability of the coin landing heads up for a single coin flip is <img src="https://render.githubusercontent.com/render/math?math=\theta%20\in%20[0,1]">.
+where $y_i = 1$ represents "heads", $y_i = 0$ represents "tails". The underlying probability of the coin landing heads up for a single coin flip is $\theta \in [0,1]$.
 
 #### Prior
 We will choose the conjugate prior of the Bernoulli likelihood function defined above, namely the beta distribution, i.e.
 
-<p align="center">
-    <img src="https://render.githubusercontent.com/render/math?math={\theta%20\sim%20Beta(a,%20b)}#gh-light-mode-only">
-    <img src="https://render.githubusercontent.com/render/math?math={\color{white}\theta%20\sim%20Beta(a,%20b)}#gh-dark-mode-only">
-</p>
+```math
+\theta \sim Beta(a, b)
+```
 
-where ``a`` and ``b`` are the hyperparameters that encode our prior beliefs about the possible values of ``θ``. We will assign values to the hyperparameters in a later step.   
+where $a$ and $b$ are the hyperparameters that encode our prior beliefs about the possible values of $\theta$. We will assign values to the hyperparameters in a later step.   
 
 #### Joint probability
 The joint probability is given by the multiplication of the likelihood and the prior, i.e.
 
-<p align="center">
-    <img src="https://render.githubusercontent.com/render/math?math={P(y_{1:N},%20\theta)%20=%20P(\theta)%20\prod_{i=1}^N%20P(y_i%20|%20\theta).}#gh-light-mode-only">
-    <img src="https://render.githubusercontent.com/render/math?math={\color{white}P(y_{1:N},%20\theta)%20=%20P(\theta)%20\prod_{i=1}^N%20P(y_i%20|%20\theta).}#gh-dark-mode-only">
-</p>
+```math
+P(y_{1:N}, \theta) = P(\theta) \prod_{i=1}^N P(y_i | \theta).
+```
 
 Now let's see how to specify this model using GraphPPL's package syntax.
 
@@ -135,7 +132,7 @@ end
 
 ```
 
-As you can see, `RxInfer` offers a model specification syntax that resembles closely to the mathematical equations defined above. We use `datavar` function to create "clamped" variables that take specific values at a later date. `θ ~ Beta(2.0, 7.0)` expression creates random variable `θ` and assigns it as an output of `Beta` node in the corresponding FFG. 
+As you can see, `RxInfer` offers a model specification syntax that resembles closely to the mathematical equations defined above. We use `datavar` function to create "clamped" variables that take specific values at a later date. $\theta \sim \mathrm{Beta}(2.0, 7.0)$ expression creates random variable $θ$ and assigns it as an output of $\mathrm{Beta}$ node in the corresponding FFG. 
 
 ### Inference specification
 
