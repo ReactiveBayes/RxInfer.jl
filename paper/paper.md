@@ -103,7 +103,9 @@ We present **RxInfer.jl**, a package for processing infinite data streams by rea
   where each message carves away a bit of the variational Free Energy cost function. Very often, closed-form message 
   computation rules are available for specific nodes and node combinations, leading to much faster inference than 
   sampling-based inference methods, and additionally enables hierarchical composition of different models without 
-  need for extra derivations. 
+  need for extra derivations. These properties distinguish **RxInfer.jl** from other popular Bayesian inference 
+  libraries in Julia, such as **Turing.jl** [@ge2018t], **Stan.jl** [@standevteam; @standevteam_jl], and others, 
+  which are not designed to run inference continually in response to new observations in real-time.
 
 # Overview of functionality
 
