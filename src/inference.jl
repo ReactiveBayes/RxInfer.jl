@@ -532,6 +532,10 @@ function inference(;
     _iterations isa Integer || error("`iterations` argument must be of type Integer or `nothing`")
     _iterations > 0 || error("`iterations` arguments must be greater than zero")
 
+    ins_res=[]
+    record_actors=[]
+    record_fe_actor=[]
+
     try
         on_marginal_update = inference_get_callback(callbacks, :on_marginal_update)
         subscriptions      = Dict(variable => subscribe!(obtain_marginal(vardict[variable]) |> ensure_update(fmodel, on_marginal_update, variable, updates[variable]), actor) for (variable, actor) in pairs(actors))
@@ -589,22 +593,39 @@ function inference(;
 
         p = showprogress ? ProgressMeter.Progress(_iterations) : nothing
 
-        for iteration in 1:_iterations
-            inference_invoke_callback(callbacks, :before_iteration, fmodel, iteration)
-            inference_invoke_callback(callbacks, :before_data_update, fmodel, data)
-            for (key, value) in fdata
-                update!(vardict[key], value)
-            end
-            inference_invoke_callback(callbacks, :after_data_update, fmodel, data)
+        record_actors=[]
+        record_fe_actor=[]
 
-            # Check that all requested marginals have been updated and unset the `updated` flag
-            # Throws an error if some were not update
-            __check_and_unset_updated!(updates)
+        try
+            for iteration in 1:_iterations
+                #sleep allow interuption
+                sleep(2)
+                inference_invoke_callback(callbacks, :before_iteration, fmodel, iteration)
+                inference_invoke_callback(callbacks, :before_data_update, fmodel, data)
+                for (key, value) in fdata
+                    update!(vardict[key], value)
+                end
+                inference_invoke_callback(callbacks, :after_data_update, fmodel, data)
 
-            if !isnothing(p)
-                ProgressMeter.next!(p)
+                # Check that all requested marginals have been updated and unset the `updated` flag
+                # Throws an error if some were not update
+                __check_and_unset_updated!(updates)
+
+                if !isnothing(p)
+                    ProgressMeter.next!(p)
+                end
+                inference_invoke_callback(callbacks, :after_iteration, fmodel, iteration)
+                record_actors=actors
+                record_fe_actor=fe_actor
+
             end
-            inference_invoke_callback(callbacks, :after_iteration, fmodel, iteration)
+        catch 
+            # println(e)
+            actors=record_actors
+            record_actors=actors
+            fe_actor=record_fe_actor
+            record_fe_actor=fe_actor
+            ins_res=InferenceResult(posterior_values, fe_values, fmodel, freturval)
         end
 
         for (_, subscription) in pairs(subscriptions)
@@ -621,10 +642,15 @@ function inference(;
         fe_values        = !isnothing(fe_actor) ? score_snapshot_iterations(fe_actor) : nothing
 
         inference_invoke_callback(callbacks, :after_inference, fmodel)
+        
 
         return InferenceResult(posterior_values, fe_values, fmodel, freturval)
     catch error
-        __inference_process_error(error)
+        # __inference_process_error(error)
+        @show error
+        posterior_values = Dict(variable => __inference_postprocess(postprocess, getvalues(actor)) for (variable, actor) in pairs(record_actors))
+        fe_values        = !isnothing(record_fe_actor) ? score_snapshot_iterations(record_fe_actor) : nothing
+        return InferenceResult(posterior_values, fe_values, fmodel, freturval)
     end
 end
 
