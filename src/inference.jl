@@ -459,7 +459,8 @@ function inference(;
     # Inference postprocessing option
     postprocess = DefaultPostprocess(),
     # warn, optional, defaults to true
-    warn = true
+    warn = true,
+    allow_failed = false,
 )
     __inference_check_dicttype(:data, data)
     __inference_check_dicttype(:initmarginals, initmarginals)
@@ -595,11 +596,15 @@ function inference(;
 
         record_actors=[]
         record_fe_actor=[]
+        error_type=[]
 
         try
             for iteration in 1:_iterations
-                #sleep allow interuption
-                sleep(2)
+                #sleep allow user interuption
+                if allow_failed
+                    #sleep sometime let the interruption happens inside interation loop
+                    sleep(0.5)
+                end
                 inference_invoke_callback(callbacks, :before_iteration, fmodel, iteration)
                 inference_invoke_callback(callbacks, :before_data_update, fmodel, data)
                 for (key, value) in fdata
@@ -619,13 +624,13 @@ function inference(;
                 record_fe_actor=fe_actor
 
             end
-        catch 
-            # println(e)
+        catch error_type
+            @show error_type
+            #for user interruption
             actors=record_actors
             record_actors=actors
             fe_actor=record_fe_actor
             record_fe_actor=fe_actor
-            ins_res=InferenceResult(posterior_values, fe_values, fmodel, freturval)
         end
 
         for (_, subscription) in pairs(subscriptions)
@@ -646,11 +651,13 @@ function inference(;
 
         return InferenceResult(posterior_values, fe_values, fmodel, freturval)
     catch error
-        # __inference_process_error(error)
-        @show error
-        posterior_values = Dict(variable => __inference_postprocess(postprocess, getvalues(actor)) for (variable, actor) in pairs(record_actors))
-        fe_values        = !isnothing(record_fe_actor) ? score_snapshot_iterations(record_fe_actor) : nothing
-        return InferenceResult(posterior_values, fe_values, fmodel, freturval)
+        if allow_failed
+            posterior_values = Dict(variable => __inference_postprocess(postprocess, getvalues(actor)) for (variable, actor) in pairs(record_actors))
+            fe_values        = !isnothing(record_fe_actor) ? score_snapshot_iterations(record_fe_actor) : nothing
+            return InferenceResult(posterior_values, fe_values, fmodel, freturval)
+        else
+            rethrow(error)
+        end
     end
 end
 
