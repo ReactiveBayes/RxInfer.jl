@@ -90,7 +90,7 @@ end
     @test length(mw1) === 10
     @test length(mw2) === 10
     @test length(fe) === 10 && all(filter(e -> abs(e) > 1e-3, diff(fe)) .< 0)
-    @test abs(last(fe) - 280.3276104) < 0.01
+    @test abs(last(fe) - 139.74362) < 0.01
 
     ms = mean(last(mswitch))
 
@@ -100,14 +100,14 @@ end
     rms = sort([μ1, μ2])
 
     foreach(zip(rms, ems)) do (r, e)
-        @test abs(r - mean(e)) < 0.2
+        @test abs(r - mean(e)) < 0.19
     end
 
     ews = sort([last(mw1), last(mw2)], by = mean)
     rws = sort([w, w])
 
     foreach(zip(rws, ews)) do (r, e)
-        @test abs(r - mean(e)) < 0.2
+        @test abs(r - mean(e)) < 0.15
     end
 
     @test_plot "models" "gmm_univariate" begin

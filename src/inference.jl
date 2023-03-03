@@ -585,7 +585,7 @@ function inference(;
         if isnothing(data) || isempty(data)
             error("Data is empty. Make sure you used `data` keyword argument with correct value.")
         else
-            foreach(filter(pair -> isdata(last(pair)), pairs(vardict))) do pair
+            foreach(filter(pair -> isdata(last(pair)) && !isproxy(last(pair)), pairs(vardict))) do pair
                 varname = first(pair)
                 haskey(data, varname) || error("Data entry `$(varname)` is missing in `data` argument. Double check `data = ($(varname) = ???, )`")
             end

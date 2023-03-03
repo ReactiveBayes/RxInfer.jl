@@ -230,9 +230,11 @@ end
     addtests(testrunner, "models/autoregressive/test_ar.jl")
     addtests(testrunner, "models/autoregressive/test_lar.jl")
 
+    addtests(testrunner, "models/datavars/test_fn_datavars.jl")
+
     addtests(testrunner, "models/mixtures/test_gmm_univariate.jl")
     addtests(testrunner, "models/mixtures/test_gmm_multivariate.jl")
-    addtests(testrunner, "models/mixtures/test_switch.jl")
+    addtests(testrunner, "models/mixtures/test_mixture.jl")
 
     addtests(testrunner, "models/statespace/test_ulgssm.jl")
     addtests(testrunner, "models/statespace/test_mlgssm.jl")
