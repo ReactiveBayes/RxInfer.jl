@@ -4,12 +4,22 @@ using Test
 using RxInfer
 using Random
 
+struct CustomStochasticNode end
+
+@node CustomStochasticNode Stochastic [out, (x, aliases = [xx]), (y, aliases = [yy]), z]
+
+struct CustomDeterministicNode end
+
+CustomDeterministicNode(x, y, z) = x + y + z
+
+@node CustomDeterministicNode Deterministic [out, (x, aliases = [xx]), (y, aliases = [yy]), z]
+
+struct DummyStochasticNode end
+
+@node DummyStochasticNode Stochastic [x, y, z]
+
 @testset "@node macro integration tests" begin
     @testset "make_node compatibility tests for stochastic nodes" begin
-        struct CustomStochasticNode end
-
-        @node CustomStochasticNode Stochastic [out, (x, aliases = [xx]), (y, aliases = [yy]), z]
-
         @test sdtype(CustomStochasticNode) === Stochastic()
 
         cx = constvar(:cx, 1.0)
@@ -29,12 +39,6 @@ using Random
     end
 
     @testset "make_node compatibility tests for deterministic nodes" begin
-        struct CustomDeterministicNode end
-
-        CustomDeterministicNode(x, y, z) = x + y + z
-
-        @node CustomDeterministicNode Deterministic [out, (x, aliases = [xx]), (y, aliases = [yy]), z]
-
         @test sdtype(CustomDeterministicNode) === Deterministic()
 
         cx = constvar(:cx, 1.0)
@@ -53,10 +57,6 @@ using Random
 
     @testset "`FactorGraphModel` compatibility/correctness with functional dependencies pipelines" begin
         import ReactiveMP: activate!
-
-        struct DummyStochasticNode end
-
-        @node DummyStochasticNode Stochastic [x, y, z]
 
         function make_dummy_model(factorisation, pipeline)
             m = FactorGraphModel()
