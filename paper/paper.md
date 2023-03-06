@@ -146,7 +146,7 @@ In this section, we show a small example based on Example 3.7 in Sarkka [@sarkka
   simple pendulum can be written as a special case of a continuous-time nonlinear dynamic system where the 
   hidden state $x(t)$ is a two-dimensional vector $\begin{bmatrix}x^{(1)} \\ x^{(2)}\end{bmatrix}\equiv\begin{bmatrix}\alpha \\ v\end{bmatrix}$ 
   with $\alpha$ and $v$ being the angle and velocity, respectively, and the state transition function $f(x) = \begin{bmatrix}x^{(1)} + x^{(2)} \Delta t \\ x^{(2)} - g \cdot \sin(x^{(1)}) \Delta t\end{bmatrix}$. 
-  For more detailed derivations we refer interested reader to [@sarkka_bayesian_2013].
+  For more detailed derivations we refer interested reader to @sarkka_bayesian_2013.
 
 We use the **RxInfer**'s `@model` macro to specify the probabilistic model. We use the `@meta` macro to specify an 
   approximation method for the nonlinearity in the model, the `@constraints` macro to define constraints for 
