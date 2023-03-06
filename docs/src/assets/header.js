@@ -80,5 +80,18 @@ window.onload = function() {
     const documenterTarget = document.querySelector('#documenter');
     
     documenterTarget.parentNode.insertBefore(header, documenterTarget);
+
+    // Edit broken links in the examples, see issue #70
+    const editOnGithubLinkTarget = document.querySelector('.docs-edit-link');
+
+    if (editOnGithubLinkTarget) {
+        const link = editOnGithubLinkTarget.href;
+        if (link.includes('docs/src/examples')) {
+            const fixedLink = link.replace('docs/src/', '').replace('.md', '.ipynb');
+            editOnGithubLinkTarget.href = fixedLink;
+            console.log('Fixed link for the example: ', fixedLink)
+        }
+    }
+
 }
 
