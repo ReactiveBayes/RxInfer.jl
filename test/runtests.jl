@@ -3,11 +3,6 @@
 ## https://gr-framework.org/workstations.html#no-output
 ENV["GKSwstype"] = "100"
 
-## CI does not use the `Makefile`, hence does not have the `USE_DEV` environment variable
-if !haskey(ENV, "USE_DEV")
-    ENV["USE_DEV"] = "false"
-end
-
 using Distributed
 
 const worker_io_lock = ReentrantLock()
@@ -41,7 +36,7 @@ end
 
 import Pkg
 
-if ENV["USE_DEV"] == "true"
+if get(ENV, "USE_DEV", "false") == "true"
     Pkg.rm("ReactiveMP")
     Pkg.rm("GraphPPL")
     Pkg.rm("Rocket")
@@ -56,7 +51,7 @@ end
 # Example usage of a reduced testset
 # julia --project --color=yes -e 'import Pkg; Pkg.test(test_args = [ "distributions:normal_mean_variance" ])'
 
-addprocs(min(Sys.CPU_THREADS, 4))
+addprocs(min(Sys.CPU_THREADS, get(ENV, "BENCHMARK", "false") == "true" ? 1 : 4))
 
 @everywhere using Test, Documenter, RxInfer
 @everywhere using TestSetExtensions

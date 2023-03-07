@@ -42,9 +42,11 @@ macro test_benchmark(group, id, code)
             base_output = joinpath($dir, "_output", $group)
             mkpath(base_output)
             benchmark_output = joinpath(base_output, $outputfile)
+            GC.gc(true)
             benchmark = @benchmark begin
                 $code
             end seconds = 15
+            GC.gc(true)
             open(benchmark_output, "w") do io
                 show(io, MIME("text/plain"), benchmark)
                 versioninfo(io)
