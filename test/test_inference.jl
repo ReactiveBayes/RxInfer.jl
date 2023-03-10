@@ -143,12 +143,11 @@ end
     end
 end
 
-@testset "Static inference with `inference`" begin 
+@testset "Static inference with `inference`" begin
 
     # A simple model for testing that resembles a simple kalman filter with
     # random walk state transition and unknown observational noise
     @model function test_model1(n)
-
         x = randomvar(n)
         y = datavar(Float64, n)
 
@@ -169,36 +168,36 @@ end
         q(x, τ) = q(x)q(τ)
     end
 
-    @testset "Test halting iterations based on callbacks" begin 
-
+    @testset "Test halting iterations based on callbacks" begin
         observations = rand(10)
 
         # Case #1: no halting
         results1 = inference(
             model = test_model1(10),
             constraints = test_model1_constraints(),
-            data = (y = observations, ),
-            initmarginals = (τ = Gamma(1.0, 1.0), ),
+            data = (y = observations,),
+            initmarginals = (τ = Gamma(1.0, 1.0),),
             iterations = 10,
             returnvars = KeepEach(),
             free_energy = true
         )
 
         @test length(results1.free_energy) === 10
-        @test length(results1.posteriors[:x]) === 10 
-        @test length(results1.posteriors[:τ]) === 10 
+        @test length(results1.posteriors[:x]) === 10
+        @test length(results1.posteriors[:τ]) === 10
 
         # Case #2: halt before iteration starts
         results2 = inference(
             model = test_model1(10),
             constraints = test_model1_constraints(),
-            data = (y = observations, ),
-            initmarginals = (τ = Gamma(1.0, 1.0), ),
+            data = (y = observations,),
+            initmarginals = (τ = Gamma(1.0, 1.0),),
             iterations = 10,
             returnvars = KeepEach(),
             free_energy = true,
             callbacks = (
-                before_iteration = (model, iteration) -> iteration === 5, # halt before iteration 5
+                # halt before iteration 5, but the logic could be more complex of course
+                before_iteration = (model, iteration) -> iteration === 5,
             )
         )
 
@@ -207,18 +206,18 @@ end
         @test length(results2.posteriors[:x]) === 4
         @test length(results2.posteriors[:τ]) === 4
 
-
         # Case #3: halt after iteration ends
         results3 = inference(
             model = test_model1(10),
             constraints = test_model1_constraints(),
-            data = (y = observations, ),
-            initmarginals = (τ = Gamma(1.0, 1.0), ),
+            data = (y = observations,),
+            initmarginals = (τ = Gamma(1.0, 1.0),),
             iterations = 10,
             returnvars = KeepEach(),
             free_energy = true,
             callbacks = (
-                after_iteration = (model, iteration) -> iteration === 5, # halt before iteration 5
+                # halt after iteration 5, but the logic could be more complex of course
+                after_iteration = (model, iteration) -> iteration === 5,
             )
         )
 
@@ -644,4 +643,3 @@ end
 end
 
 end
-

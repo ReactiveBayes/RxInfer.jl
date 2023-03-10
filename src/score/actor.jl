@@ -98,4 +98,4 @@ end
 
 slice_snapshot(vector, ::Nothing) = vector
 slice_snapshot(vector, range::AbstractRange) = vector[range]
-slice_snapshot(vector, count::Int) = vector[firstindex(vector):(firstindex(vector) + count - 1)]
+slice_snapshot(vector, count::Int) = length(vector) === count ? vector : vector[firstindex(vector):(firstindex(vector) + count - 1)]

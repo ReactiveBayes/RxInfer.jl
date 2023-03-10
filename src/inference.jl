@@ -591,7 +591,7 @@ function inference(;
         end
 
         progress_meter = showprogress ? ProgressMeter.Progress(_iterations) : nothing
-        executed_iterations = 0 
+        executed_iterations = 0
 
         for iteration in 1:_iterations
             if something(ensure_bool_or_nothing(inference_invoke_callback(callbacks, :before_iteration, fmodel, iteration)), false)::Bool
