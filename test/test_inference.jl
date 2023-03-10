@@ -143,6 +143,97 @@ end
     end
 end
 
+@testset "Static inference with `inference`" begin 
+
+    # A simple model for testing that resembles a simple kalman filter with
+    # random walk state transition and unknown observational noise
+    @model function test_model1(n)
+
+        x = randomvar(n)
+        y = datavar(Float64, n)
+
+        τ ~ Gamma(1.0, 1.0)
+
+        x[1] ~ Normal(mean = 0.0, variance = 1.0)
+        y[1] ~ Normal(mean = x[1], precision = τ)
+
+        for i in 2:n
+            x[i] ~ Normal(mean = x[i - 1], variance = 1.0)
+            y[i] ~ Normal(mean = x[i], precision = τ)
+        end
+
+        return 2, 3.0, "hello world" # test returnval
+    end
+
+    @constraints function test_model1_constraints()
+        q(x, τ) = q(x)q(τ)
+    end
+
+    @testset "Test halting iterations based on callbacks" begin 
+
+        observations = rand(10)
+
+        # Case #1: no halting
+        results1 = inference(
+            model = test_model1(10),
+            constraints = test_model1_constraints(),
+            data = (y = observations, ),
+            initmarginals = (τ = Gamma(1.0, 1.0), ),
+            iterations = 10,
+            returnvars = KeepEach(),
+            free_energy = true
+        )
+
+        @test length(results1.free_energy) === 10
+        @test length(results1.posteriors[:x]) === 10 
+        @test length(results1.posteriors[:τ]) === 10 
+
+        # Case #2: halt before iteration starts
+        results2 = inference(
+            model = test_model1(10),
+            constraints = test_model1_constraints(),
+            data = (y = observations, ),
+            initmarginals = (τ = Gamma(1.0, 1.0), ),
+            iterations = 10,
+            returnvars = KeepEach(),
+            free_energy = true,
+            callbacks = (
+                before_iteration = (model, iteration) -> iteration === 5, # halt before iteration 5
+            )
+        )
+
+        # We halted before iteration 5, so we assume the result length should be 4
+        @test length(results2.free_energy) === 4
+        @test length(results2.posteriors[:x]) === 4
+        @test length(results2.posteriors[:τ]) === 4
+
+
+        # Case #3: halt after iteration ends
+        results3 = inference(
+            model = test_model1(10),
+            constraints = test_model1_constraints(),
+            data = (y = observations, ),
+            initmarginals = (τ = Gamma(1.0, 1.0), ),
+            iterations = 10,
+            returnvars = KeepEach(),
+            free_energy = true,
+            callbacks = (
+                after_iteration = (model, iteration) -> iteration === 5, # halt before iteration 5
+            )
+        )
+
+        # We halted after iteration 5, so we assume the result length should be 5
+        @test length(results3.free_energy) === 5
+        @test length(results3.posteriors[:x]) === 5
+        @test length(results3.posteriors[:τ]) === 5
+
+        # Check that free energy is equivalent between runs, data is the same, inference should be 
+        # the same up until the halting point
+        @test all(results1.free_energy[1:4] .=== results2.free_energy)
+        @test all(results1.free_energy[1:5] .=== results3.free_energy)
+    end
+end
+
 @testset "Reactive inference with `rxinference` for test model #1" begin
 
     # A simple model for testing that resembles a simple kalman filter with
@@ -553,3 +644,4 @@ end
 end
 
 end
+

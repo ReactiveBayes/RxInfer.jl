@@ -10,7 +10,7 @@ mutable struct ScoreActor{L} <: Rocket.Actor{L}
 end
 
 ScoreActor(iterations::Int, keep::Int = 1) = ScoreActor(Real, iterations, keep)
-ScoreActor(::Type{L}, iterations::Int, keep::Int = 1) where {L <: Real} = ScoreActor{L}(Matrix{L}(undef, iterations, keep), 1, 0, falses(keep))
+ScoreActor(::Type{L}, iterations::Int, keep::Int = 1) where {L <: Real} = ScoreActor{L}(zeros(L, iterations, keep), 1, 0, falses(keep))
 
 Base.show(io::IO, ::ScoreActor{L}) where {L} = print(io, "ScoreActor(", L, ")")
 Base.setindex!(actor::ScoreActor, data, frame, index) = actor.score[index, frame] = data
@@ -64,12 +64,12 @@ function Rocket.on_complete!(actor::ScoreActor)
     nothing
 end
 
-function Rocket.release!(actor::ScoreActor)
+function Rocket.release!(actor::ScoreActor, warn = true)
     iterations = getniterations(actor)
     cframe     = actor.cframe
     cindex     = actor.cindex
 
-    if cindex !== iterations
+    if warn && (cindex !== iterations)
         @warn "Invalid `release!` call on `ScoreActor`. The current frame has not been fully specified"
     else
         @assert !actor.valid[cframe] "Broken `ScoreActor` state, cannot `release!` a valid frame of free energy values"
@@ -88,10 +88,14 @@ function score_snapshot_final(actor::ScoreActor)
     return score_snapshot(actor)[iters:iters:end]
 end
 
-function score_snapshot_iterations(actor::ScoreActor)
+function score_snapshot_iterations(actor::ScoreActor, slice = nothing)
     result = vec(sum(view(actor.score, :, actor.valid), dims = 2))
 
     map!(Base.Fix2(/, sum(actor.valid)), result, result)
 
-    return result
+    return slice_snapshot(result, slice)
 end
+
+slice_snapshot(vector, ::Nothing) = vector
+slice_snapshot(vector, range::AbstractRange) = vector[range]
+slice_snapshot(vector, count::Int) = vector[firstindex(vector):(firstindex(vector) + count - 1)]
