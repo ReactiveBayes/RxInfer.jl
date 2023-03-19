@@ -533,15 +533,12 @@ function inference(;
     _iterations isa Integer || error("`iterations` argument must be of type Integer or `nothing`")
     _iterations > 0 || error("`iterations` arguments must be greater than zero")
 
-    ins_res=[]
-    record_actors=[]
-    record_fe_actor=[]
+    fe_actor        = nothing
 
     try
         on_marginal_update = inference_get_callback(callbacks, :on_marginal_update)
         subscriptions      = Dict(variable => subscribe!(obtain_marginal(vardict[variable]) |> ensure_update(fmodel, on_marginal_update, variable, updates[variable]), actor) for (variable, actor) in pairs(actors))
 
-        fe_actor        = nothing
         fe_subscription = VoidTeardown()
 
         is_free_energy, S, T = unwrap_free_energy_option(free_energy)
@@ -594,43 +591,22 @@ function inference(;
 
         p = showprogress ? ProgressMeter.Progress(_iterations) : nothing
 
-        record_actors=[]
-        record_fe_actor=[]
-        error_type=[]
-
-        try
-            for iteration in 1:_iterations
-                #sleep allow user interuption
-                if allow_failed
-                    #sleep sometime let the interruption happens inside interation loop
-                    sleep(0.5)
-                end
-                inference_invoke_callback(callbacks, :before_iteration, fmodel, iteration)
-                inference_invoke_callback(callbacks, :before_data_update, fmodel, data)
-                for (key, value) in fdata
-                    update!(vardict[key], value)
-                end
-                inference_invoke_callback(callbacks, :after_data_update, fmodel, data)
-
-                # Check that all requested marginals have been updated and unset the `updated` flag
-                # Throws an error if some were not update
-                __check_and_unset_updated!(updates)
-
-                if !isnothing(p)
-                    ProgressMeter.next!(p)
-                end
-                inference_invoke_callback(callbacks, :after_iteration, fmodel, iteration)
-                record_actors=actors
-                record_fe_actor=fe_actor
-
+        for iteration in 1:_iterations
+            inference_invoke_callback(callbacks, :before_iteration, fmodel, iteration)
+            inference_invoke_callback(callbacks, :before_data_update, fmodel, data)
+            for (key, value) in fdata
+                update!(vardict[key], value)
             end
-        catch error_type
-            @show error_type
-            #for user interruption
-            actors=record_actors
-            record_actors=actors
-            fe_actor=record_fe_actor
-            record_fe_actor=fe_actor
+            inference_invoke_callback(callbacks, :after_data_update, fmodel, data)
+
+            # Check that all requested marginals have been updated and unset the `updated` flag
+            # Throws an error if some were not update
+            __check_and_unset_updated!(updates)
+
+            if !isnothing(p)
+                ProgressMeter.next!(p)
+            end
+            inference_invoke_callback(callbacks, :after_iteration, fmodel, iteration)
         end
 
         for (_, subscription) in pairs(subscriptions)
@@ -643,22 +619,24 @@ function inference(;
 
         unsubscribe!(fe_subscription)
 
-        posterior_values = Dict(variable => __inference_postprocess(postprocess, getvalues(actor)) for (variable, actor) in pairs(actors))
-        fe_values        = !isnothing(fe_actor) ? score_snapshot_iterations(fe_actor) : nothing
-
         inference_invoke_callback(callbacks, :after_inference, fmodel)
-        
-
-        return InferenceResult(posterior_values, fe_values, fmodel, freturval)
     catch error
-        if allow_failed
-            posterior_values = Dict(variable => __inference_postprocess(postprocess, getvalues(actor)) for (variable, actor) in pairs(record_actors))
-            fe_values        = !isnothing(record_fe_actor) ? score_snapshot_iterations(record_fe_actor) : nothing
-            return InferenceResult(posterior_values, fe_values, fmodel, freturval)
+        if !allow_failed
+            throw()
         else
-            rethrow(error)
+            print(error)
         end
     end
+    # print(fe_actor.score)
+    posterior_values = Dict(variable => __inference_postprocess(postprocess, getvalues(actor)) for (variable, actor) in pairs(actors))
+    if !allow_failed
+        fe_values        = !isnothing(fe_actor) ? score_snapshot_iterations(fe_actor) : nothing
+    else
+        #if allow failed, there are some #undef in fe_values, because the expected iteration doesn't finish
+        fe_values        = !isnothing(fe_actor) ? score_snapshot_when_interupt(fe_actor) : nothing
+    end
+    
+    return InferenceResult(posterior_values, fe_values, fmodel, freturval)
 end
 
 ## ------------------------------------------------------------------------ ##

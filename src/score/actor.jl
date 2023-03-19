@@ -95,3 +95,13 @@ function score_snapshot_iterations(actor::ScoreActor)
 
     return result
 end
+
+#if allow failed, there are some #undef in fe_values. This function aims to removing these #undef.
+function score_snapshot_when_interupt(actor::ScoreActor)
+    result=actor.score
+    bb=filter(i -> isassigned(result, i), 1:length(result))
+
+    result=result[bb]
+
+    return result
+end
