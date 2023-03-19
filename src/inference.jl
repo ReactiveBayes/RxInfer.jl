@@ -460,7 +460,7 @@ function inference(;
     postprocess = DefaultPostprocess(),
     # warn, optional, defaults to true
     warn = true,
-    allow_failed = false,
+    allow_failed = false
 )
     __inference_check_dicttype(:data, data)
     __inference_check_dicttype(:initmarginals, initmarginals)
@@ -533,7 +533,7 @@ function inference(;
     _iterations isa Integer || error("`iterations` argument must be of type Integer or `nothing`")
     _iterations > 0 || error("`iterations` arguments must be greater than zero")
 
-    fe_actor        = nothing
+    fe_actor = nothing
 
     try
         on_marginal_update = inference_get_callback(callbacks, :on_marginal_update)
@@ -630,12 +630,12 @@ function inference(;
     # print(fe_actor.score)
     posterior_values = Dict(variable => __inference_postprocess(postprocess, getvalues(actor)) for (variable, actor) in pairs(actors))
     if !allow_failed
-        fe_values        = !isnothing(fe_actor) ? score_snapshot_iterations(fe_actor) : nothing
+        fe_values = !isnothing(fe_actor) ? score_snapshot_iterations(fe_actor) : nothing
     else
         #if allow failed, there are some #undef in fe_values, because the expected iteration doesn't finish
-        fe_values        = !isnothing(fe_actor) ? score_snapshot_when_interupt(fe_actor) : nothing
+        fe_values = !isnothing(fe_actor) ? score_snapshot_when_interupt(fe_actor) : nothing
     end
-    
+
     return InferenceResult(posterior_values, fe_values, fmodel, freturval)
 end
 

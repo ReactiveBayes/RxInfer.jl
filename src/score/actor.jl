@@ -98,10 +98,10 @@ end
 
 #if allow failed, there are some #undef in fe_values. This function aims to removing these #undef.
 function score_snapshot_when_interupt(actor::ScoreActor)
-    result=actor.score
-    bb=filter(i -> isassigned(result, i), 1:length(result))
+    result = actor.score
+    bb = filter(i -> isassigned(result, i), 1:length(result))
 
-    result=result[bb]
+    result = result[bb]
 
     return result
 end
