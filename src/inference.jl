@@ -622,7 +622,7 @@ function inference(;
         inference_invoke_callback(callbacks, :after_inference, fmodel)
     catch error
         if !allow_failed
-            throw()
+            __inference_process_error()
         else
             print(error)
         end
