@@ -38,6 +38,12 @@ return [
         hidden = false
     ),
     (
+        path = "Chance Constraints.ipynb",
+        title = "Chance-Constrained Active Inference",
+        description = "This notebook applies reactive message passing for active inference in the context of chance-constraints.",
+        hidden = false
+    ),
+    (
         path = "Assessing People Skills.ipynb",
         title = "Assessing People’s Skills",
         description = "The demo is inspired by the example from Chapter 2 of Bishop's Model-Based Machine Learning book. We are going to perform an exact inference to assess the skills of a student given the results of the test.",
