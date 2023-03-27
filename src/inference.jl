@@ -84,18 +84,29 @@ end
 ## Extra error handling
 
 function __inference_process_error(error)
-    rethrow(error)
+    # By default, rethrow the error
+    return __inference_process_error(error, true)
+end
+
+function __inference_process_error(error, rethrow)
+    if rethrow
+        Base.rethrow(error)
+    end
+    return error, catch_backtrace()
 end
 
 # We want to show an extra hint in case the error is of type `StackOverflowError`
-function __inference_process_error(err::StackOverflowError)
+function __inference_process_error(err::StackOverflowError, rethrow)
     @error """
     Stack overflow error occurred during the inference procedure. 
     The inference engine may execute message update rules recursively, hence, the model graph size might be causing this error. 
     To resolve this issue, try using `limit_stack_depth` inference option for model creation. See `?inference` documentation for more details.
     The `limit_stack_depth` option does not help against over stack overflow errors that might hapenning outside of the model creation or message update rules execution.
     """
-    rethrow(err) # Shows the original stack trace
+    if rethrow
+        Base.rethrow(err) # Shows the original stack trace
+    end
+    return err, catch_backtrace()
 end
 
 function __inference_check_itertype(::Symbol, ::Union{Nothing, Tuple, Vector})
@@ -170,18 +181,23 @@ This structure is used as a return value from the [`inference`](@ref) function.
 - `free_energy`: (optional) An array of Bethe Free Energy values per VMP iteration. See the `free_energy` argument for [`inference`](@ref).
 - `model`: `FactorGraphModel` object reference.
 - `returnval`: Return value from executed `@model`.
+- `error`: (optional) A reference to an exception, that might have occured during the inference. See the `catch_exception` argument for [`inference`](@ref).
 
 See also: [`inference`](@ref)
 """
-struct InferenceResult{P, F, M, R}
+struct InferenceResult{P, F, M, R, E}
     posteriors  :: P
     free_energy :: F
     model       :: M
     returnval   :: R
+    error       :: E
 end
 
-Base.iterate(results::InferenceResult)      = iterate((getfield(results, :posteriors), getfield(results, :free_energy), getfield(results, :model), getfield(results, :returnval)))
-Base.iterate(results::InferenceResult, any) = iterate((getfield(results, :posteriors), getfield(results, :free_energy), getfield(results, :model), getfield(results, :returnval)), any)
+Base.iterate(results::InferenceResult)      = iterate((getfield(results, :posteriors), getfield(results, :free_energy), getfield(results, :model), getfield(results, :returnval), getfield(results, :error)))
+Base.iterate(results::InferenceResult, any) = iterate((getfield(results, :posteriors), getfield(results, :free_energy), getfield(results, :model), getfield(results, :returnval), getfield(results, :error)), any)
+
+issuccess(result::InferenceResult) = !iserror(result)
+iserror(result::InferenceResult) = !isnothing(result.error)
 
 function Base.show(io::IO, result::InferenceResult)
     print(io, "Inference results:\n")
@@ -198,6 +214,27 @@ function Base.show(io::IO, result::InferenceResult)
         print(IOContext(io, :compact => true, :limit => true, :displaysize => (1, 80)), result.free_energy)
         print(io, "\n")
     end
+
+    if iserror(result)
+        print(
+            io,
+            "[ WARN ] An error has occured during the inference procedure. The result might not be complete. You can use the `.error` field to access the error and its backtrace. Use `Base.showerror` function to display the error."
+        )
+    end
+end
+
+function Base.showerror(result::InferenceResult)
+    return Base.showerror(stderr, result)
+end
+
+function Base.showerror(io::IO, result::InferenceResult)
+    if iserror(result)
+        error, backtrace = result.error
+        println(io, error, "\n")
+        show(io, "text/plain", stacktrace(backtrace))
+    else
+        print(io, "The inference has completed successfully.")
+    end
 end
 
 function Base.getproperty(result::InferenceResult, property::Symbol)
@@ -213,10 +250,10 @@ function Base.getproperty(result::InferenceResult, property::Symbol)
 end
 
 __inference_invoke_callback(callback, args...)  = callback(args...)
-__inference_invoke_callback(::Nothing, args...) = begin end
+__inference_invoke_callback(::Nothing, args...) = nothing
 
 inference_invoke_callback(callbacks, name, args...) = __inference_invoke_callback(inference_get_callback(callbacks, name), args...)
-inference_invoke_callback(::Nothing, name, args...) = begin end
+inference_invoke_callback(::Nothing, name, args...) = nothing
 
 inference_get_callback(callbacks, name) = get(() -> nothing, callbacks, name)
 inference_get_callback(::Nothing, name) = nothing
@@ -406,11 +443,14 @@ The list of all possible callbacks and their arguments is present below:
 - `before_model_creation`: args: ()
 - `after_model_creation`:  args: (model::FactorGraphModel, returnval)
 - `before_inference`:      args: (model::FactorGraphModel)
-- `before_iteration`:      args: (model::FactorGraphModel, iteration::Int)
+- `before_iteration`:      args: (model::FactorGraphModel, iteration::Int)::Bool
 - `before_data_update`:    args: (model::FactorGraphModel, data)
 - `after_data_update`:     args: (model::FactorGraphModel, data)
-- `after_iteration`:       args: (model::FactorGraphModel, iteration::Int)
+- `after_iteration`:       args: (model::FactorGraphModel, iteration::Int)::Bool
 - `after_inference`:       args: (model::FactorGraphModel)
+
+`before_iteration` and `after_iteration` callbacks are allowed to return `true/false` value.
+`true` indicates that iterations must be halted and no further inference should be made.
 
 - ### `addons`
 
@@ -423,6 +463,15 @@ The `postprocess` keyword argument controls whether the inference results must b
 By default, the inference function uses the `DefaultPostprocess` strategy, which by default removes the `Marginal` wrapper type from the results.
 Change this setting to `NoopPostprocess` if you would like to keep the `Marginal` wrapper type, which might be useful in the combination with the `addons` argument.
 If the `addons` argument has been used, automatically changes the default strategy value to `NoopPostprocess`.
+
+- ### `catch_exception`
+
+The `catch_exception` keyword argument specifies whether exceptions during the inference procedure should be catched in the `error` field of the 
+result. By default, if exception occurs during the inference procedure the result will be lost. Set `catch_exception = true` to obtain partial result 
+for the inference in case if an exception occurs. Use `RxInfer.issuccess` and `RxInfer.iserror` function to check if the inference completed successfully or failed.
+If an error occurs, the `error` field will store a tuple, where first element is the exception itself and the second element is the catched `backtrace`. Use the `stacktrace` function 
+with the `backtrace` as an argument to recover the stacktrace of the error. Use `Base.showerror` function to display
+the error.
  
 See also: [`InferenceResult`](@ref), [`rxinference`](@ref)
 """
@@ -460,7 +509,8 @@ function inference(;
     postprocess = DefaultPostprocess(),
     # warn, optional, defaults to true
     warn = true,
-    allow_failed = false
+    # catch exceptions during the inference procedure, optional, defaults to false
+    catch_exception = false
 )
     __inference_check_dicttype(:data, data)
     __inference_check_dicttype(:initmarginals, initmarginals)
@@ -534,12 +584,14 @@ function inference(;
     _iterations > 0 || error("`iterations` arguments must be greater than zero")
 
     fe_actor = nothing
+    fe_subscription = VoidTeardown()
+
+    potential_error = nothing
+    executed_iterations = 0
 
     try
         on_marginal_update = inference_get_callback(callbacks, :on_marginal_update)
         subscriptions      = Dict(variable => subscribe!(obtain_marginal(vardict[variable]) |> ensure_update(fmodel, on_marginal_update, variable, updates[variable]), actor) for (variable, actor) in pairs(actors))
-
-        fe_subscription = VoidTeardown()
 
         is_free_energy, S, T = unwrap_free_energy_option(free_energy)
 
@@ -589,10 +641,12 @@ function inference(;
             return hk && is_data
         end
 
-        p = showprogress ? ProgressMeter.Progress(_iterations) : nothing
+        progress_meter = showprogress ? ProgressMeter.Progress(_iterations) : nothing
 
         for iteration in 1:_iterations
-            inference_invoke_callback(callbacks, :before_iteration, fmodel, iteration)
+            if something(ensure_bool_or_nothing(inference_invoke_callback(callbacks, :before_iteration, fmodel, iteration)), false)::Bool
+                break
+            end
             inference_invoke_callback(callbacks, :before_data_update, fmodel, data)
             for (key, value) in fdata
                 update!(vardict[key], value)
@@ -603,40 +657,36 @@ function inference(;
             # Throws an error if some were not update
             __check_and_unset_updated!(updates)
 
-            if !isnothing(p)
-                ProgressMeter.next!(p)
+            if !isnothing(progress_meter)
+                ProgressMeter.next!(progress_meter)
             end
-            inference_invoke_callback(callbacks, :after_iteration, fmodel, iteration)
+
+            executed_iterations += 1
+
+            if something(ensure_bool_or_nothing(inference_invoke_callback(callbacks, :after_iteration, fmodel, iteration)), false)::Bool
+                break
+            end
         end
 
         for (_, subscription) in pairs(subscriptions)
             unsubscribe!(subscription)
         end
 
-        if !isnothing(fe_actor)
-            release!(fe_actor)
-        end
-
-        unsubscribe!(fe_subscription)
-
         inference_invoke_callback(callbacks, :after_inference, fmodel)
     catch error
-        if !allow_failed
-            __inference_process_error()
-        else
-            print(error)
-        end
-    end
-    # print(fe_actor.score)
-    posterior_values = Dict(variable => __inference_postprocess(postprocess, getvalues(actor)) for (variable, actor) in pairs(actors))
-    if !allow_failed
-        fe_values = !isnothing(fe_actor) ? score_snapshot_iterations(fe_actor) : nothing
-    else
-        #if allow failed, there are some #undef in fe_values, because the expected iteration doesn't finish
-        fe_values = !isnothing(fe_actor) ? score_snapshot_when_interupt(fe_actor) : nothing
+        potential_error = __inference_process_error(error, !catch_exception)
     end
 
-    return InferenceResult(posterior_values, fe_values, fmodel, freturval)
+    if !isnothing(fe_actor)
+        release!(fe_actor, (_iterations === executed_iterations))
+    end
+
+    unsubscribe!(fe_subscription)
+
+    posterior_values = Dict(variable => __inference_postprocess(postprocess, getvalues(actor)) for (variable, actor) in pairs(actors))
+    fe_values        = !isnothing(fe_actor) ? score_snapshot_iterations(fe_actor, executed_iterations) : nothing
+
+    return InferenceResult(posterior_values, fe_values, fmodel, freturval, potential_error)
 end
 
 ## ------------------------------------------------------------------------ ##

@@ -54,7 +54,7 @@ end
         p = contour!(p, X, Y, (x, y) -> pdf(MvNormalMeanCovariance(m, C), [x, y]), label = "Real")
     end
 
-    @test_benchmark "models" "iid_mv_covariance_known_mean" inference_mv_wishart_known_mean($m, $data, $n, $d)
+    @test_benchmark "models" "iid_inverse_wishart_known_mean" inference_mv_inverse_wishart_known_mean($m, $data, $n, $d)
 end
 
 end
