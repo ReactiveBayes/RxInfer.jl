@@ -213,10 +213,10 @@ function Base.getproperty(result::InferenceResult, property::Symbol)
 end
 
 __inference_invoke_callback(callback, args...)  = callback(args...)
-__inference_invoke_callback(::Nothing, args...) = begin end
+__inference_invoke_callback(::Nothing, args...) = nothing
 
 inference_invoke_callback(callbacks, name, args...) = __inference_invoke_callback(inference_get_callback(callbacks, name), args...)
-inference_invoke_callback(::Nothing, name, args...) = begin end
+inference_invoke_callback(::Nothing, name, args...) = nothing
 
 inference_get_callback(callbacks, name) = get(() -> nothing, callbacks, name)
 inference_get_callback(::Nothing, name) = nothing
@@ -406,11 +406,14 @@ The list of all possible callbacks and their arguments is present below:
 - `before_model_creation`: args: ()
 - `after_model_creation`:  args: (model::FactorGraphModel, returnval)
 - `before_inference`:      args: (model::FactorGraphModel)
-- `before_iteration`:      args: (model::FactorGraphModel, iteration::Int)
+- `before_iteration`:      args: (model::FactorGraphModel, iteration::Int)::Bool
 - `before_data_update`:    args: (model::FactorGraphModel, data)
 - `after_data_update`:     args: (model::FactorGraphModel, data)
-- `after_iteration`:       args: (model::FactorGraphModel, iteration::Int)
+- `after_iteration`:       args: (model::FactorGraphModel, iteration::Int)::Bool
 - `after_inference`:       args: (model::FactorGraphModel)
+
+`before_iteration` and `after_iteration` callbacks are allowed to return `true/false` value.
+`true` indicates that iterations must be halted and no further inference should be made.
 
 - ### `addons`
 
@@ -587,10 +590,13 @@ function inference(;
             return hk && is_data
         end
 
-        p = showprogress ? ProgressMeter.Progress(_iterations) : nothing
+        progress_meter = showprogress ? ProgressMeter.Progress(_iterations) : nothing
+        executed_iterations = 0
 
         for iteration in 1:_iterations
-            inference_invoke_callback(callbacks, :before_iteration, fmodel, iteration)
+            if something(ensure_bool_or_nothing(inference_invoke_callback(callbacks, :before_iteration, fmodel, iteration)), false)::Bool
+                break
+            end
             inference_invoke_callback(callbacks, :before_data_update, fmodel, data)
             for (key, value) in fdata
                 update!(vardict[key], value)
@@ -601,10 +607,15 @@ function inference(;
             # Throws an error if some were not update
             __check_and_unset_updated!(updates)
 
-            if !isnothing(p)
-                ProgressMeter.next!(p)
+            if !isnothing(progress_meter)
+                ProgressMeter.next!(progress_meter)
             end
-            inference_invoke_callback(callbacks, :after_iteration, fmodel, iteration)
+
+            executed_iterations += 1
+
+            if something(ensure_bool_or_nothing(inference_invoke_callback(callbacks, :after_iteration, fmodel, iteration)), false)::Bool
+                break
+            end
         end
 
         for (_, subscription) in pairs(subscriptions)
@@ -612,13 +623,13 @@ function inference(;
         end
 
         if !isnothing(fe_actor)
-            release!(fe_actor)
+            release!(fe_actor, (_iterations === executed_iterations))
         end
 
         unsubscribe!(fe_subscription)
 
         posterior_values = Dict(variable => __inference_postprocess(postprocess, getvalues(actor)) for (variable, actor) in pairs(actors))
-        fe_values        = !isnothing(fe_actor) ? score_snapshot_iterations(fe_actor) : nothing
+        fe_values        = !isnothing(fe_actor) ? score_snapshot_iterations(fe_actor, executed_iterations) : nothing
 
         inference_invoke_callback(callbacks, :after_inference, fmodel)
 
