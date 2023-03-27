@@ -195,7 +195,7 @@ using Aqua
 if isempty(testrunner.enabled_tests)
     println("Running all tests (including Aqua)...")
     # We pirate some methods from ReactiveMP for now
-    Aqua.test_all(RxInfer; ambiguities = false, piracy = false)
+    Aqua.test_all(RxInfer; ambiguities = false, piracy = false, project_toml_formatting = false)
 else
     println("Running specific tests only:")
     foreach(testrunner.enabled_tests) do test
