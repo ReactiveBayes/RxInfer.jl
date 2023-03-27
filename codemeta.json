@@ -1,0 +1,69 @@
+{
+    "@context": "https://doi.org/10.5063/schema/codemeta-2.0",
+    "@type": "SoftwareSourceCode",
+    "license": "https://spdx.org/licenses/MIT",
+    "codeRepository": "https://github.com/biaslab/RxInfer.jl",
+    "contIntegration": "https://github.com/biaslab/RxInfer.jl/actions",
+    "dateCreated": "2022-06-13",
+    "datePublished": "2022-11-03",
+    "downloadUrl": "https://github.com/biaslab/RxInfer.jl/releases",
+    "issueTracker": "https://github.com/biaslab/RxInfer.jl/issues",
+    "name": "RxInfer.jl",
+    "version": "2.9.0",
+    "description": "Julia package for automated, scalable and efficient Bayesian inference on factor graphs with reactive message passing. ",
+    "applicationCategory": "Statistics",
+    "developmentStatus": "active",
+    "readme": "https://biaslab.github.io/RxInfer.jl/stable/",
+    "softwareVersion": "2.9.0",
+    "keywords": [
+        "Bayesian inference",
+        "message passing",
+        "factor graphs",
+        "probabilistic programming",
+        "reactive programming",
+        "continual inference",
+        "scalable inference",
+        "variational optimization",
+        "free energy",
+        "Bethe constraints"
+    ],
+    "programmingLanguage": [
+        "Julia"
+    ],
+    "operatingSystem": [
+        "Linux",
+        "Windows",
+        "MacOS"
+    ],
+    "relatedLink": [
+        "https://biaslab.github.io/rxinfer-website/",
+        "https://biaslab.github.io/RxInfer.jl/stable/",
+        "https://app.codecov.io/gh/biaslab/RxInfer.jl"
+    ],
+    "author": [
+        {
+            "@type": "Person",
+            "@id": "https://orcid.org/0000-0001-9655-7986",
+            "givenName": "Dmitry",
+            "familyName": "Bagaev",
+            "email": "d.v.bagaev@tue.nl",
+            "affiliation": {
+                "@type": "Organization",
+                "name": "Eindhoven University of Technology"
+            }
+        }
+    ],
+    "maintainer": [
+        {
+            "@type": "Person",
+            "@id": "https://orcid.org/0000-0001-9655-7986",
+            "givenName": "Dmitry",
+            "familyName": "Bagaev",
+            "email": "d.v.bagaev@tue.nl",
+            "affiliation": {
+                "@type": "Organization",
+                "name": "Eindhoven University of Technology"
+            }
+        }
+    ]
+}
