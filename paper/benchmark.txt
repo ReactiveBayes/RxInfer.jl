@@ -1,0 +1,18 @@
+BenchmarkTools.Trial: 95 samples with 1 evaluation.
+ Range (min … max):  143.761 ms … 174.270 ms  ┊ GC (min … max): 0.00% … 8.44%
+ Time  (median):     162.086 ms               ┊ GC (median):    8.36%
+ Time  (mean ± σ):   158.347 ms ±   9.111 ms  ┊ GC (mean ± σ):  4.83% ± 4.30%
+
+     ▆  ▁ ▃  ▆  ▁ ▃▁▁                       ▆  ▆ ▁▁█  █  ▃       
+  ▄▄▄█▇▄█▁█▁▇█▄▄█▁███▁▁▇▄▁▁▁▁▁▁▁▁▁▁▁▁▁▁▇▇▇▄▄█▇▄█▄███▄▇█▁▄█▁▁▁▇▄ ▁
+  144 ms           Histogram: frequency by time          172 ms <
+
+ Memory estimate: 63.33 MiB, allocs estimate: 1334275.Julia Version 1.8.4
+Commit 00177ebc4fc (2022-12-23 21:32 UTC)
+Platform Info:
+  OS: macOS (x86_64-apple-darwin21.4.0)
+  CPU: 12 × Intel(R) Core(TM) i7-8850H CPU @ 2.60GHz
+  WORD_SIZE: 64
+  LIBM: libopenlibm
+  LLVM: libLLVM-13.0.1 (ORCJIT, skylake)
+  Threads: 1 on 12 virtual cores

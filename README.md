@@ -8,6 +8,7 @@
 [![Build Status](https://github.com/biaslab/RxInfer.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/biaslab/RxInfer.jl/actions/workflows/CI.yml?query=branch%3Amain)
 [![Coverage](https://codecov.io/gh/biaslab/RxInfer.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/biaslab/RxInfer.jl)
 [![PkgEval](https://JuliaCI.github.io/NanosoldierReports/pkgeval_badges/R/RxInfer.svg)](https://JuliaCI.github.io/NanosoldierReports/pkgeval_badges/report.html)
+[![DOI](https://zenodo.org/badge/501995296.svg)](https://zenodo.org/badge/latestdoi/501995296)
 
 # Overview
 
@@ -148,7 +149,7 @@ result = inference(
 ![Coin Flip](docs/src/assets/img/coin-flip.svg?raw=true&sanitize=true "Coin-Flip readme results")
 
 # Where to go next?
-There are a set of [examples](https://biaslab.github.io/RxInfer.jl/stable/examples/overview/) available in `RxInfer` repository that demonstrate the more advanced features of the package. Alternatively, you can head to the [documentation][docs-stable-url] that provides more detailed information of how to use `RxInfer` to specify more complex probabilistic models.
+There are a set of [examples](https://biaslab.github.io/RxInfer.jl/stable/examples/overview/) available in `RxInfer` repository that demonstrate the more advanced features of the package. Alternatively, you can head to the [documentation](https://biaslab.github.io/RxInfer.jl/stable/) that provides more detailed information of how to use `RxInfer` to specify more complex probabilistic models.
 
 # Ecosystem
 

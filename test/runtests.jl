@@ -3,10 +3,12 @@
 ## https://gr-framework.org/workstations.html#no-output
 ENV["GKSwstype"] = "100"
 
-## CI does not use the `Makefile`, hence does not have the `USE_DEV` environment variable
-if !haskey(ENV, "USE_DEV")
-    ENV["USE_DEV"] = "false"
-end
+const IS_USE_DEV = get(ENV, "USE_DEV", "false") == "true"
+const IS_BENCHMARK = get(ENV, "BENCHMARK", "false") == "true"
+
+# We use only `1` runner in case if benchmarks are enabled to improve the 
+# quality of the benchmarking procedure
+const NUM_RUNNERS = IS_BENCHMARK ? 1 : min(Sys.CPU_THREADS, 4)
 
 using Distributed
 
@@ -41,7 +43,7 @@ end
 
 import Pkg
 
-if ENV["USE_DEV"] == "true"
+if IS_USE_DEV
     Pkg.rm("ReactiveMP")
     Pkg.rm("GraphPPL")
     Pkg.rm("Rocket")
@@ -56,7 +58,8 @@ end
 # Example usage of a reduced testset
 # julia --project --color=yes -e 'import Pkg; Pkg.test(test_args = [ "distributions:normal_mean_variance" ])'
 
-addprocs(min(Sys.CPU_THREADS, 4))
+@info "Running tests using $(NUM_RUNNERS) runners."
+addprocs(NUM_RUNNERS)
 
 @everywhere using Test, Documenter, RxInfer
 @everywhere using TestSetExtensions
@@ -153,8 +156,6 @@ end
 
 const testrunner = TestRunner(lowercase.(ARGS))
 
-println("`TestRunner` has been created. The number of available procs is $(nprocs()).")
-
 @everywhere workerlocal_lock = ReentrantLock()
 
 function addtests(testrunner::TestRunner, filename)
@@ -192,12 +193,11 @@ end
 using Aqua
 
 if isempty(testrunner.enabled_tests)
-    println("Running all tests...")
-    # `project_toml_formatting` is broken on CI, revise at some point
-    # Aqua.test_all(RxInfer; ambiguities = false, project_toml_formatting = false)
-    # doctest(RxInfer)
+    println("Running all tests (including Aqua)...")
+    # We pirate some methods from ReactiveMP for now
+    Aqua.test_all(RxInfer; ambiguities = false, piracy = false, project_toml_formatting = false)
 else
-    println("Running specific tests:")
+    println("Running specific tests only:")
     foreach(testrunner.enabled_tests) do test
         println(" - ", test)
     end
