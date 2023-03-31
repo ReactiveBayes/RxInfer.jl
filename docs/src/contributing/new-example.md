@@ -22,4 +22,7 @@ $$\begin{aligned}
 8. All examples must use and activate the local environment specified by `Project.toml` in the second cell (see `1.`). Please have a look at the existing notebooks for an example on how to activate this local environment. If you need additional packages, you can add then to the `(examples)` project.
 
 !!! note
+    Please avoid adding `PyPlot` in the `(examples)` project. Installing and building `PyPlot` dependencies takes several minutes on every CI run. Use `Plots` instead.
+
+!!! note
     Use `make examples` to run all examples or `make examples specific=MyNewCoolNotebook` to run any notebook that includes `MyNewCoolNotebook` in its file name.
