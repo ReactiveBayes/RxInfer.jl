@@ -93,8 +93,6 @@ jobs:
         with:
           version: '1.8'
       - uses: julia-actions/julia-buildpkg@v1
-        env:
-          PYTHON: ""
       - uses: actions/cache@v3
         id: examples
         with:
@@ -125,8 +123,6 @@ jobs:
             docs/src/assets/examples
           key: ${{ github.sha }}
       - uses: julia-actions/julia-buildpkg@v1
-        env:
-          PYTHON: ""
       - run: make docs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

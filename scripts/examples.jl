@@ -8,7 +8,7 @@ Pkg.instantiate();
 
 # Precompile packages on the main worker
 @info "Precompile packages on the main worker"
-using RxInfer, Plots, PyPlot, StatsPlots, BenchmarkTools, ProgressMeter, Optim
+using RxInfer, Plots, StatsPlots, BenchmarkTools, ProgressMeter, Optim
 
 @info "Adding $(min(Sys.CPU_THREADS, 4)) workers"
 addprocs(min(Sys.CPU_THREADS, 4), exeflags = "--project=$(ExamplesFolder)")
