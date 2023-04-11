@@ -1,6 +1,14 @@
 SHELL = /bin/bash
 .DEFAULT_GOAL = help
 
+# Windows has different commands in shell
+# - `RM` command: use for removing files
+ifeq ($(OS), Windows_NT) 
+    RM = del /Q /F
+else
+    RM = rm -rf
+endif
+
 .PHONY: lint format
 
 scripts_init:
@@ -15,11 +23,11 @@ format: scripts_init ## Code formating run
 .PHONY: examples
 
 examples_init:
-	rm -f examples/Manifest.toml
+	$(RM) examples/Manifest.toml
 	julia --startup-file=no --project=examples/ -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate(); Pkg.precompile();'
 
 dev_examples_init:
-	rm -f examples/Manifest.toml
+	$(RM) examples/Manifest.toml
 	julia --startup-file=no --project=examples/ -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.develop(PackageSpec(path=joinpath(Pkg.devdir(), "ReactiveMP.jl"))); Pkg.develop(PackageSpec(path=joinpath(Pkg.devdir(), "GraphPPL.jl"))); Pkg.develop(PackageSpec(path=joinpath(Pkg.devdir(), "Rocket.jl"))); Pkg.update(); Pkg.precompile();'
 
 examples: scripts_init examples_init ## Precompile examples and put them in the `docs/src/examples` folder (use specific="<pattern>" to compile a specific example)
@@ -31,11 +39,11 @@ devexamples: scripts_init dev_examples_init ## Same as `make examples` but uses 
 .PHONY: docs
 
 doc_init:
-	rm -f docs/Manifest.toml
+	$(RM) docs/Manifest.toml
 	julia --project=docs -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate(); Pkg.precompile();'
 
 dev_doc_init:
-	rm -f docs/Manifest.toml
+	$(RM) docs/Manifest.toml
 	julia --project=docs -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.develop(PackageSpec(path=joinpath(Pkg.devdir(), "ReactiveMP.jl"))); Pkg.develop(PackageSpec(path=joinpath(Pkg.devdir(), "GraphPPL.jl"))); Pkg.develop(PackageSpec(path=joinpath(Pkg.devdir(), "Rocket.jl"))); Pkg.update(); Pkg.precompile();'
 
 docs: doc_init ## Generate documentation
@@ -53,11 +61,11 @@ devtest: ## Alias for the `make test dev=true ...`
 	julia -e 'ENV["USE_DEV"]="true"; import Pkg; Pkg.activate("."); Pkg.test(test_args = split("$(test_args)") .|> string)'	
 
 clean: ## Clean documentation build, precompiled examples, benchmark output from tests
-	rm -rf docs/src/examples
-	rm -rf docs/src/assets/examples
-	rm -rf docs/build
-	rm -rf _output
-	rm -rf test/_output
+	$(RM) docs/src/examples
+	$(RM) docs/src/assets/examples
+	$(RM) docs/build
+	$(RM) _output
+	$(RM) test/_output
 	
 help:  ## Display this help
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m\033[0m\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-24s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
