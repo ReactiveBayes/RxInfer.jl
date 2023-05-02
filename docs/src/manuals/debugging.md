@@ -1,8 +1,8 @@
 # [Debugging](@id user-guide-debugging)
 
-Addon is a memory that shows the full computation history of the messages and marginals. This memory can be used for debugging purposes. Two examples are as follows:
+Addon is a memory that shows the full computation history of the messages and marginals. This memory can be used for debugging purposes. An example is as follows:
 
-The first example is a homework of a student in a Bayesian machine learning class. He tried to make a probabilistic model for a coin toss problem. This is his description of the problem:
+This example is a homework of a student in a Bayesian machine learning class. He tried to make a probabilistic model for a coin toss problem. This is his description of the problem:
 
 In this coin toss example, I assumed four random inputs according to an unfair coin. As the coin has only two incomes, I used a Bernoulli distribution as my likelihood. 
 The goal of this example is to infer 𝜃 which is the parameter for this distribution. I also set a Beta distribution for the 𝜃 parameter and considered the 𝑎 and 𝑏, the parameters for the Beta distributions with some prior knowledge of the coin behavior.
@@ -57,7 +57,7 @@ rθ = range(0, 1, length = 1000)
 plot(rθ, (x) -> pdf(θestimated, x),title = "Inference results", label="Infered posterior")
 vline!([θ_real], label="Real θ")
 ```
-This is how we debugged the code using the Addons memory. First, we simply added the 𝑎𝑑𝑑𝑜𝑛𝑠=(𝐴𝑑𝑑𝑜𝑛𝑀𝑒𝑚𝑜𝑟𝑦(),) argument to the inference function.
+This is how we debugged the code using the Addons memory. First, we simply added the addons = (AddonMemory(),) argument to the inference function.
 
 ```@example addoncoin
 result = inference(
@@ -66,7 +66,7 @@ result = inference(
     addons = (AddonMemory(),)
 )
 ```
-Now we have access to the massages when we get the result posterior. With running result.posteriors[:θ]
+Now we have access to the massages with running result.posteriors[:θ]:
 
 ![Addons_messages](../assets/img/debugging_messages.png)
 
