@@ -83,7 +83,8 @@ makedocs(;
                 "Real-time dataset / reactive inference" => "manuals/inference/rxinference.md",
                 "Inference results postprocessing" => "manuals/inference/postprocess.md",
                 "Manual inference specification" => "manuals/inference/manual.md"
-            ]
+            ],
+            "Custom nodes" => "manuals/custom-node.md",
         ],
         "Library" => [
             "Built-in functional form constraints" => "library/functional-forms.md",
