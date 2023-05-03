@@ -1,0 +1,46 @@
+cff-version: "1.2.0"
+authors:
+- family-names: Bagaev
+  given-names: Dmitry
+  orcid: "https://orcid.org/0000-0001-9655-7986"
+- family-names: Podusenko
+  given-names: Albert
+  orcid: "https://orcid.org/0000-0003-0515-0465"
+- family-names: Vries
+  given-names: Bert
+  name-particle: de
+  orcid: "https://orcid.org/0000-0003-0839-174X"
+contact:
+- family-names: Bagaev
+  given-names: Dmitry
+  orcid: "https://orcid.org/0000-0001-9655-7986"
+doi: 10.5281/zenodo.7774921
+message: If you use this software, please cite our article in the
+  Journal of Open Source Software.
+preferred-citation:
+  authors:
+  - family-names: Bagaev
+    given-names: Dmitry
+    orcid: "https://orcid.org/0000-0001-9655-7986"
+  - family-names: Podusenko
+    given-names: Albert
+    orcid: "https://orcid.org/0000-0003-0515-0465"
+  - family-names: Vries
+    given-names: Bert
+    name-particle: de
+    orcid: "https://orcid.org/0000-0003-0839-174X"
+  date-published: 2023-04-20
+  doi: 10.21105/joss.05161
+  issn: 2475-9066
+  issue: 84
+  journal: Journal of Open Source Software
+  publisher:
+    name: Open Journals
+  start: 5161
+  title: "RxInfer: A Julia package for reactive real-time Bayesian
+    inference"
+  type: article
+  url: "https://joss.theoj.org/papers/10.21105/joss.05161"
+  volume: 8
+title: "RxInfer: A Julia package for reactive real-time Bayesian
+  inference"
