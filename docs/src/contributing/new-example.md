@@ -17,9 +17,10 @@ $$\begin{aligned}
       <latex equations here>
 \end{aligned}$$
 ``` 
-7. Notebooks and plain Julia have different scoping rules for global variables. It may happen that the generation of your example fails due to an `UndefVarError` or other scoping issues. In these cases we recommend using `let ... end` blocks to enforce local scoping (see `Gaussian Mixtures Multivariate.ipynb` as an example)
+7. When using equations, make sure not to follow the left-hand `$$` or `$` with a space, but instead directly start the equation, e.g. not `$$ a + b $$`, but `$$a + b$$`. For equations that are supposed to be on a separate line, make sure `$$...$$` is preceded and followed by an empty line.
+8. Notebooks and plain Julia have different scoping rules for global variables. It may happen that the generation of your example fails due to an `UndefVarError` or other scoping issues. In these cases we recommend using `let ... end` blocks to enforce local scoping (see `Gaussian Mixtures Multivariate.ipynb` as an example)
 
-8. All examples must use and activate the local environment specified by `Project.toml` in the second cell (see `1.`). Please have a look at the existing notebooks for an example on how to activate this local environment. If you need additional packages, you can add then to the `(examples)` project.
+9. All examples must use and activate the local environment specified by `Project.toml` in the second cell (see `1.`). Please have a look at the existing notebooks for an example on how to activate this local environment. If you need additional packages, you can add then to the `(examples)` project.
 
 !!! note
     Please avoid adding `PyPlot` in the `(examples)` project. Installing and building `PyPlot` dependencies takes several minutes on every CI run. Use `Plots` instead.
