@@ -40,12 +40,13 @@ Jane is interested in determining the fairness of the coin. Therefore she aims t
 ## Step 1: Creating the custom node
 
 
-> Note: In this example we will assume that the `Bernoulli` node and distribution do not yet exist.
+!!! note
+    In this example we will assume that the `Bernoulli` node and distribution do not yet exist. The `RxInfer` already defines the node for the `Bernoulli` distribution from the `Distributions.jl` package.
 
 
 First things first, let's import `RxInfer`:
 
-```julia
+```@example create-node
 using RxInfer
 ```
 
@@ -59,7 +60,7 @@ In order to define a custom node using the `@node` macro from `RxInfer`, we need
 
 For the name of the node we wish to use `MyBernoulli` in this tutorial (`Bernoulli` already exists). However, the corresponding distribution does not yet exist. Therefore we need to specify it first as
 
-```julia
+```@example create-node
 # struct for Bernoulli distribution with success probability π
 struct MyBernoulli{T <: Real} <: ContinuousUnivariateDistribution
     π :: T
@@ -68,11 +69,14 @@ end
 
 # for simplicity, let's also specify the mean of the distribution
 Distributions.mean(d::MyBernoulli) = d.π
+
+nothing # hide
 ```
 
-
-
 In this case the distribution also has an entry in the struct, however, this is not necessary as long as the name of the distribution is a `Type`. The custom node created with `struct NewNode end` would also work fine.
+
+!!! note 
+    You can use regular functions, e.g `+` as a node type. Their Julia type, however, is written with the `typeof(_)` specification, e.g. `typeof(+)`
 
 For our node we are dealing with a stochastic node, because the node forms a probabilistic relationship. This means that for a given value of $\pi$, we do know the corresponding value of the output, but we do have some belief about this. Deterministic nodes include for example linear and non-linear transformation.
 
@@ -80,11 +84,9 @@ The interfaces specify what variables are connected to the node. The first argum
 
 Concluding, we can create the `MyBernoulli` factor node as
 
-```julia
+```@example create-node
 @node MyBernoulli Stochastic [out, (π, aliases = [p])]
 ```
-
-
 
 Cool! Step 1 is done, we have created a custom node.
 
@@ -113,7 +115,7 @@ This integral does not always have nice tractable solutions. However, for some f
 
 For the case of a `Beta` message coming into our node, the outgoing message will be the predictive posterior of the `Bernoulli` distribution with a `Beta` prior. Here we obtain $\pi = \frac{\alpha}{\alpha + \beta}$, which coincides with the mean of the `Beta` distribution. Hence, we can write down the first update rule using the `@rule` macro as
 
-```julia
+```@example create-node
 @rule MyBernoulli(:out, Marginalisation) (m_π :: Beta,) = MyBernoulli(mean(m_π))
 ```
 
@@ -123,7 +125,7 @@ Here, `:out` refers to the interface of the outgoing message. The second argumen
 
 The second rule is also straightforward; if `π` is a `PointMass` and therefore fixed, the outgoing message will be `MyBernoulli(π)`:
 
-```julia
+```@example create-node
 @rule MyBernoulli(:out, Marginalisation) (m_π :: PointMass,) = MyBernoulli(mean(m_π))
 ```
 
@@ -135,7 +137,7 @@ $$\overleftarrow{\mu}(π) \propto \mathrm{Beta}(1 + x, 2 - x)$$
 
 Which gives us the following update rule:
 
-```julia
+```@example create-node
 @rule MyBernoulli(:π, Marginalisation) (m_out :: PointMass,) = begin
     p = mean(m_out)
     Beta(one(p) + p, 2one(p) - p)
@@ -155,7 +157,7 @@ $$\overleftarrow{\nu}(\pi) \propto \exp \sum_{x \in \{0,1\}} q(x) \ln \mathrm{Be
 
 These messages depend on the marginals on the adjacent edges and not on the incoming messages as was the case with sum-product message passing. Update rules that operate on the marginals instead of the incoming messages are specified with the `q_{interface}` argument names. With these update rules, we can often support a wider family of distributions. Below we directly give the variational update rules. Deriving them yourself will be a nice challenge.
 
-```julia
+```@example create-node
 #rules towards out
 @rule MyBernoulli(:out, Marginalisation) (q_π :: PointMass,) = MyBernoulli(mean(q_π))
 
@@ -175,7 +177,8 @@ end
 end
 ```
 
-
+!!! node
+    Typically, the type of the variational distributions `q_` does not matter in the real computations, but only their statistics, e.g `mean` or `var`. Thus, in this case, we may safely use `::Any`.
 
 In the example that we will show later on, we solely use sum-product message passing. Variational message passing requires us to set the local constraints in our model, something which is out of scope of this tutorial.
 
@@ -196,9 +199,9 @@ In order to be able to compute the Bethe free energy, we need to first describe 
 
 $$q(x_k, \pi) = \vec{\mu}(\pi) \overleftarrow{\mu}(x_k) \mathrm{Ber}(x_k \mid \pi)$$
 
-To calculate the updated posterior marginal for our custom distribution, we need to provide the posterior marginals for the interfaces of our node in a `NamedTuple`. In our case, the posterior marginal for the observation is still the same `PointMass` distribution. However, to calculate the posterior marginal over `π`, we use `RxInfer`'s built-in `prod` functionality to multiply the `Beta` prior with the `Beta` likelihood. This gives us the updated posterior distribution, which is also a `Beta` distribution. We use `ProdAnalytical()` parameter to ensure that we multiply the two distributions analytically. This is done as follows:
+To calculate the updated posterior marginal for our custom distribution, we need to return joint posterior marginals for the interfaces of our node. In our case, the posterior marginal for the observation is still the same `PointMass` distribution. However, to calculate the posterior marginal over `π`, we use `RxInfer`'s built-in `prod` functionality to multiply the `Beta` prior with the `Beta` likelihood. This gives us the updated posterior distribution, which is also a `Beta` distribution. We use `ProdAnalytical()` parameter to ensure that we multiply the two distributions analytically. This is done as follows:
 
-```julia
+```@example create-node
 @marginalrule MyBernoulli(:out_π) (m_out::PointMass, m_π::Beta) = begin
     r = mean(m_out)
     p = prod(ProdAnalytical(), Beta(one(r) + r, 2one(r) - r), m_π)
@@ -206,9 +209,7 @@ To calculate the updated posterior marginal for our custom distribution, we need
 end
 ```
 
-
-
-In this code `:out_π` describes the arguments of the joint marginal distribution. The second argument contains the incoming messages. Here we know from the model specification that we observe `out` and therefore this has to be a `PointMass`. Because it is a `PointMass`, the joint marginal automatically factorizes as $q(x_k, \pi) = q(x_k)q(\pi)$. These are the distributions that we return. For computing $q(\pi)$ we need to compute the product $\vec{\mu}(\pi)\overleftarrow{\mu}(\pi)$. We already know how $\overleftarrow{\mu}(\pi)$ looks like from the previous step, so we can just use the `prod` function.
+In this code `:out_π` describes the arguments of the joint marginal distribution. The second argument contains the incoming messages. Here we know from the model specification that we observe `out` and therefore this has to be a `PointMass`. Because it is a `PointMass`, the joint marginal automatically factorizes as $q(x_k, \pi) = q(x_k)q(\pi)$. These are the distributions that we return in a form of the `NamedTuple`. `NamedTuple` is used only in cases where we know that the joint marginal factorizes further, but typically it should be a full distribution. For computing $q(\pi)$ we need to compute the product $\vec{\mu}(\pi)\overleftarrow{\mu}(\pi)$. We already know how $\overleftarrow{\mu}(\pi)$ looks like from the previous step, so we can just use the `prod` function.
 
 
 ---
@@ -227,7 +228,7 @@ $$\begin{aligned}
 
 Which is what we implemented below. Note that `mean(mirrorlog, q(x))` is equal to $\mathrm{E}_{q(x)}[1-\log{x}]$.
 
-```julia
+```@example create-node
 @average_energy Bernoulli (q_out::Any, q_π::Any) = -mean(q_out) * mean(log, q_π) - (1.0 - mean(q_out)) * mean(mirrorlog, q_π)
 ```
 
@@ -239,9 +240,9 @@ In the case that the interfaces do not factorize, we would get something like `@
 ## Using our node in a model
 
 
-With all the necessary functions defined, we can proceed to test our custom node in an experiment. For this experiment, we will generate a dataset from a Bernoulli distribution with a fixed success probability of 0.75. Next, we will define a probabilistic model that has a `Beta` prior and a `MyBernoulli` likelihood. The `Beta` prior will be used to model our prior belief about the probability of success. The MyBernoulli likelihood will be used to model the generative process of the observed data. We start by generating the dataset:
+With all the necessary functions defined, we can proceed to test our custom node in an experiment. For this experiment, we will generate a dataset from a Bernoulli distribution with a fixed success probability of 0.75. Next, we will define a probabilistic model that has a `Beta` prior and a `MyBernoulli` likelihood. The `Beta` prior will be used to model our prior belief about the probability of success. The `MyBernoulli` likelihood will be used to model the generative process of the observed data. We start by generating the dataset:
 
-```julia
+```@example create-node
 using Random
 
 rng = MersenneTwister(42)
@@ -249,14 +250,16 @@ n = 500
 π_real = 0.75
 distribution = Bernoulli(π_real)
 
-dataset = float.(rand(rng, distribution, n));
+dataset = float.(rand(rng, distribution, n))
+
+nothing # hide
 ```
 
 
 
 Next, we define our model. Note that we use the `MyBernoulli` node in the model. The model consists of a single latent variable `π`, which has a `Beta` prior and is the parameter of the `MyBernoulli` likelihood. The `MyBernoulli` node takes the value of `π` as its parameter and returns a binary observation. We set the hyperparameters of the `Beta` prior to be 4 and 8, respectively, which correspond to a distribution slightly biased towards higher values of `π`. The model is defined as follows:
 
-```julia
+```@example create-node
 @model function coin_model_mybernoulli(n)
 
     # `datavar` creates data 'inputs' in our model
@@ -277,24 +280,16 @@ end
 
 Finally, we can run inference with this model and the generated dataset:
 
-```julia
+```@example create-node
 result_mybernoulli = inference(
     model = coin_model_mybernoulli(length(dataset)), 
     data  = (y = dataset, ),
 )
 ```
 
-```
-Inference results:
-  Posteriors       | available for (π)
-```
-
-
-
-
 We have now completed our experiment and obtained the posterior marginal distribution for p through inference. To evaluate the performance of our inference, we can compare the estimated posterior to the true value. In our experiment, the true value for p is 0.75, and we can see that the estimated posterior has a mean of approximately 0.713, which shows that our custom node was able to succesfully pass messages towards the `π` variable in order to learn the true value of the parameter.
 
-```julia
+```@example create-node
 using Plots
 
 rθ = range(0, 1, length = 1000)
@@ -305,12 +300,9 @@ plot!(rθ, (x) -> pdf(result_mybernoulli.posteriors[:π], x), fillalpha=0.3, fil
 vline!([π_real], label="Real π")
 ```
 
-![](../assets/examples/node_creation_13_1.png)
-
-
 As a sanity check, we can create the same model with the `RxInfer` built-in node `Bernoulli` and compare the resulting posterior distribution with the one obtained using our custom `MyBernoulli` node. This will give us confidence that our custom node is working correctly. We use the `Bernoulli` node with the same `Beta` prior and the observed data, and then run inference. We can compare the two posterior distributions and observe that they are exactly the same, which indicates that our custom node is performing as expected.
 
-```julia
+```@example create-node
 @model function coin_model(n)
     
     y = datavar(Float64, n)
@@ -321,18 +313,19 @@ As a sanity check, we can create the same model with the `RxInfer` built-in node
     end
 
 end
+
 result_bernoulli = inference(
     model = coin_model(length(dataset)), 
     data  = (y = dataset, ),
 )
-println(result_bernoulli.posteriors[:p] == result_mybernoulli.posteriors[:π])
+
+if !(result_bernoulli.posteriors[:p] == result_mybernoulli.posteriors[:π])
+    error("Results are not identical")
+else 
+    println("Results are identical 🎉🎉🎉")
+end
+
+nothing # hide
 ```
-
-```
-true
-```
-
-
-
 
 Congratulations! You have succesfully implemented your own custom node in `RxInfer`. We went through the definition of a node to the implementation of the update rules and marginal posterior calculations. Finally we tested our custom node in a model and checked if we implemented everything correctly.

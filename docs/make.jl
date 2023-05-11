@@ -84,7 +84,9 @@ makedocs(;
                 "Inference results postprocessing" => "manuals/inference/postprocess.md",
                 "Manual inference specification" => "manuals/inference/manual.md"
             ],
-            "Custom nodes" => "manuals/custom-node.md",
+            "Inference customization" => [
+                "Defining a custom node and rules" => "manuals/custom-node.md",
+            ]
         ],
         "Library" => [
             "Built-in functional form constraints" => "library/functional-forms.md",
