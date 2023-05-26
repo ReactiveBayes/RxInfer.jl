@@ -44,6 +44,9 @@ end
 
 ```@docs 
 RxInfer.SampleListFormConstraint
+RxInfer.AutoProposal
+RxInfer.LeftProposal
+RxInfer.RightProposal
 ```
 
 ## [FixedMarginalFormConstraint](@id lib-forms-fixed-marginal-constraint)
