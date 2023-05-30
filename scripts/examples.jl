@@ -8,7 +8,7 @@ Pkg.instantiate();
 
 # Precompile packages on the main worker
 @info "Precompile packages on the main worker"
-using RxInfer, Plots, PyPlot, StatsPlots, BenchmarkTools, ProgressMeter, Optim
+using RxInfer, Plots, StatsPlots, BenchmarkTools, ProgressMeter, Optim
 
 @info "Adding $(min(Sys.CPU_THREADS, 4)) workers"
 addprocs(min(Sys.CPU_THREADS, 4), exeflags = "--project=$(ExamplesFolder)")
@@ -165,6 +165,9 @@ function Base.run(examplesrunner::ExamplesRunner)
         return gif_filename => string("../assets/examples/", gif_filename)
     end
 
+    # Fix paths from the `pics/` folder located in the examples
+    fixpics = "![](pics/" => "![](../assets/examples/pics/"
+
     if isnothing(examplesrunner.specific_example)
 
         # If not failed we generate overview report and fix fig links
@@ -219,7 +222,7 @@ function Base.run(examplesrunner::ExamplesRunner)
             open(mdpath, "w") do f
                 # In every examples we replace title with its `@id` equivalent, such that 
                 # `# Super cool title` becomes `[# Super cool title](@id examples-super-cool-title)`
-                fixtext = replace(mdtext, "# $(title)" => "# [$(title)](@id $(id))", fixgifs...)
+                fixtext = replace(mdtext, "# $(title)" => "# [$(title)](@id $(id))", fixpics, fixgifs...)
                 output  = string("This example has been auto-generated from the [`examples/`](https://github.com/biaslab/RxInfer.jl/tree/main/examples) folder at GitHub repository.\n\n", fixtext)
                 write(f, output)
             end
@@ -227,6 +230,12 @@ function Base.run(examplesrunner::ExamplesRunner)
             write(io_overview, "- [$(title)](@ref $id): $description\n")
 
             return nothing
+        end
+
+        # Copy the `pics` folder from the examples to the assets
+        if isdir(joinpath(efolder, "pics"))
+            @info "Copying the `pics` folder from the examples."
+            cp(joinpath(efolder, "pics"), joinpath(afolder, "pics"); force = true)
         end
 
         open(joinpath(@__DIR__, "..", "docs", "src", "examples", "overview.md"), "w") do f
