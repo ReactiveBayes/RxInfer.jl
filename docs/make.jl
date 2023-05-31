@@ -51,14 +51,14 @@ makedocs(;
             "Model specification"       => "manuals/model-specification.md",
             "Constraints specification" => "manuals/constraints-specification.md",
             "Meta specification"        => "manuals/meta-specification.md",
-            "Debugging"                 => "manuals/debugging.md",
             "Inference specification"   => [ 
                 "Overview" => "manuals/inference/overview.md",
                 "Static dataset" => "manuals/inference/inference.md",
                 "Real-time dataset / reactive inference" => "manuals/inference/rxinference.md",
                 "Inference results postprocessing"  => "manuals/inference/postprocess.md",
                 "Manual inference specification" => "manuals/inference/manual.md"
-            ]
+            ],
+            "Debugging"                 => "manuals/debugging.md",
         ],
         "Library" => [
             "Built-in functional form constraints" => "library/functional-forms.md",

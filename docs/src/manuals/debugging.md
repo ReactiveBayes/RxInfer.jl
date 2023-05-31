@@ -1,113 +1,112 @@
 # [Debugging](@id user-guide-debugging)
 
-Addon is a memory that shows the full computation history of the messages and marginals. This memory can be used for debugging purposes. An example is as follows:
+Debugging RxInfer can be quite challenging, mostly due to custom typing, the use of Observables and julia's stack tracing in general. Below we discuss ways to help you find problems. 
 
-This example is a homework of a student in a Bayesian machine learning class. He tried to make a probabilistic model for a coin toss problem. This is his description of the problem:
+## Requesting a trace of messages
 
-In this coin toss example, I assumed four random inputs according to an unfair coin. As the coin has only two incomes, I used a Bernoulli distribution as my likelihood. 
-The goal of this example is to infer 𝜃 which is the parameter for this distribution. I also set a Beta distribution for the 𝜃 parameter and considered the 𝑎 and 𝑏, the parameters for the Beta distributions with some prior knowledge of the coin behavior.
+We have developed a way to keep a history of the computations that led to the messages and marginals in an inference procedure. This history is added on to the information flowing through the factor graph and is referred to as a "Memory Addon". Below is an example explaining how you can extract this history and use it to fix a bug.
 
+Consider the coin toss example from earlier in the documentation. We model the binary outcome `x` (heads or tails) using a Bernoulli distribution, with a parameter 𝜃 that represents the probability of landing on heads. We have a Beta prior distribution for the 𝜃 parameter, with a known shape 𝑎 and rate 𝑏 parameter.
 
-So my model can be represented as:
 
 ```math 
-y_i \sim \mathrm{Bernoulli}(\theta),
-```
-```math 
-\theta \sim Beta(a, b),
+x_i \sim \mathrm{Bernoulli}(\theta) \\
+\theta \sim \mathrm{Beta}(a, b)
 ```
 
-where ``y_i \in {0, 1}`` are the binary observations. And this is my RxInfer model:
+where ``x_i \in {0, 1}`` are the binary observations (heads = 1, tails = 0). This is the corresponding RxInfer model:
 
 ```@example addoncoin
 using RxInfer, Random, Plots
 
 n = 4
 θ_real = 0.3
-dataset = float.(rand(Bernoulli(θ_real), n));
+dataset = convert.(Int64, rand(Bernoulli(θ_real), n))
 
 @model function coin_model(n)
     
-    # Input data
-    y = datavar(Float64, n)
+    # Observations
+    x = datavar(Int64, n)
     
-    # θ prior
+    # Prior distribution
     θ ~ Beta(4, huge)
 
     # Likelihood for each input
     for i in 1:n
-        y[i] ~ Bernoulli(θ)
+        x[i] ~ Bernoulli(θ)
     end
 
 end
 
 result = inference(
     model = coin_model(length(dataset)), 
-    data  = (y = dataset, ),
+    data  = (x = dataset, ),
 );
 
 ```
-But when I get and plot the marginal distribution for 𝜃, It seems the model is unable to learn from the data. 
+
+The model will run without errors. But when we plot the posterior distribution for 𝜃, something's wrong. The posterior seems to be a flat distribution:
 
 ```@example addoncoin
 
-θestimated = result.posteriors[:θ]
 rθ = range(0, 1, length = 1000)
 
-plot(rθ, (x) -> pdf(θestimated, x),title = "Inference results", label="Infered posterior")
-vline!([θ_real], label="Real θ")
+plot(rθ, (rvar) -> pdf(result.posteriors[:θ], rvar), label="Infered posterior")
+vline!([θ_real], label="Real θ", title = "Inference results")
 ```
-This is how we debugged the code using the Addons memory. First, we simply added the addons = (AddonMemory(),) argument to the inference function.
+
+We can figure out what's wrong by looking at the Memory Addon. To obtain the trace, we have to add `addons = (AddonMemory(),)` as an argument to the inference function.
 
 ```@example addoncoin
 result = inference(
     model = coin_model(length(dataset)), 
-    data  = (y = dataset, ),
+    data  = (x = dataset, ),
     addons = (AddonMemory(),)
 )
 ```
-Now we have access to the massages with running result.posteriors[:θ]:
+Now we have access to the messages that led to the marginal posterior:
 
 ![Addons_messages](../assets/img/debugging_messages.png)
 
-We mapped the messages in the factor graph to be more convenient to follow. Also to dive deeper into the computation of the messages you can consider the following manual results with the general equation for the sum-product message:
+The messages in the factor graph are marked in color. If you're interested in the mathematics behind these results, consider verifying them manually using the general equation for sum-product messages:
 
 ```math 
-\underbrace{\overrightarrow{\mu}_{Y}(y)}_{\substack{ \text{outgoing}\\ \text{message}}} = \sum_{x_1,\ldots,x_n} \underbrace{\overrightarrow{\mu}_{X_1}(x_1)\cdots \overrightarrow{\mu}_{X_n}(x_n)}_{\substack{\text{incoming} \\ \text{messages}}} \cdot \underbrace{f(y,x_1,\ldots,x_n)}_{\substack{\text{node}\\ \text{function}}} 
+\underbrace{\overrightarrow{\mu}_{θ}(θ)}_{\substack{ \text{outgoing}\\ \text{message}}} = \sum_{x_1,\ldots,x_n} \underbrace{\overrightarrow{\mu}_{X_1}(x_1)\cdots \overrightarrow{\mu}_{X_n}(x_n)}_{\substack{\text{incoming} \\ \text{messages}}} \cdot \underbrace{f(θ,x_1,\ldots,x_n)}_{\substack{\text{node}\\ \text{function}}} 
 ```
 ![Graph](../assets/img/debugging_graph.png)
 
-Now it can easily be seen that the initial amount for the prior distribution is the cause of the unreasonable posterior. It seems the student mistakenly thinks the second parameter of Beta distribution is a variance and he put a huge number to set a wide range for it. We suggest he change the second parameter or use a Uniform distribution instate of that.
+Note that the posterior (yellow) has a rate parameter on the order of `1e12`. Our plot failed because a Beta distribution with such a rate parameter cannot be accurately depicted using the range of θ we used in the code block above. So why does the posterior have this rate parameter?
+
+All the observations (purple, green, pink, blue) have much smaller rate parameters. It seems the prior distribution (red) has an unusual rate parameter, namely `1e12`. If we look back at the model, the parameter was set to `huge` (which is a reserved keyword meaning `1e12`). Reducing the prior rate parameter will ensure the posterior has a reasonable rate parameter as well.
 
 
 ```@example addoncoin
 @model function coin_model(n)
     
-    # Input data
-    y = datavar(Float64, n)
+    # Observations
+    x = datavar(Int64, n)
     
-    # θ prior
-    θ ~ Beta(4, 4)
+    # Prior distribution
+    θ ~ Beta(4, 100)
 
     # Likelihood for each input
     for i in 1:n
-        y[i] ~ Bernoulli(θ)
+        x[i] ~ Bernoulli(θ)
     end
 
 end
 
 result = inference(
     model = coin_model(length(dataset)), 
-    data  = (y = dataset, ),
+    data  = (x = dataset, ),
 );
 ```
 
 ```@example addoncoin
-θestimated = result.posteriors[:θ]
 rθ = range(0, 1, length = 1000)
 
-plot(rθ, (x) -> pdf(θestimated, x),title = "Inference results", label="Infered posterior")
-vline!([θ_real], label="Real θ")
+plot(rθ, (rvar) -> pdf(result.posteriors[:θ], rvar), label="Infered posterior")
+vline!([θ_real], label="Real θ", title = "Inference results")
 ```
 
-A more accurate result can be given with more data.
+Now the posterior is visible in the plot.
