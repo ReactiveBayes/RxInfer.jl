@@ -21,3 +21,7 @@ html div.dark-biglogo {
 html.theme--documenter-dark div.dark-biglogo {
   display: block;
 }
+
+#documenter .docs-main article.content img {
+    width: 100%;
+}

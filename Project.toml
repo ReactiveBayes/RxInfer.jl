@@ -2,7 +2,7 @@ name = "RxInfer"
 uuid = "86711068-29c9-4ff7-b620-ae75d7495b3d"
 authors = ["Bagaev Dmitry <d.v.bagaev@tue.nl> and contributors"]
 # Do not forget to update the version in the `codemeta.json` too
-version = "2.10.2"
+version = "2.11.0"
 
 [deps]
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
@@ -27,7 +27,7 @@ GraphPPL = "3.1.0"
 MacroTools = "0.5.6"
 Optim = "1.0.0"
 ProgressMeter = "1.0.0"
-ReactiveMP = "~3.8.0"
+ReactiveMP = "~3.9.0"
 Reexport = "1.2.0"
 Rocket = "1.7.0"
 TupleTools = "1.2.0"
@@ -41,7 +41,7 @@ Coverage = "a2441757-f6aa-5fb2-8edb-039e3f45d037"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
-Flux = "587475ba-b771-5e3f-ad9e-33799f191a9c"
+Optimisers = "3bd65402-5787-11e9-1adc-39752487f4e2"
 InteractiveUtils = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
 Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
 Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
@@ -53,4 +53,4 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 TestSetExtensions = "98d24dd4-01ad-11ea-1b02-c9a08f80db04"
 
 [targets]
-test = ["Test", "Pkg", "Logging", "InteractiveUtils", "TestSetExtensions", "Coverage", "Dates", "Distributed", "Documenter", "Plots", "BenchmarkCI", "BenchmarkTools", "PkgBenchmark", "Aqua", "StableRNGs", "StatsFuns", "Flux"]
+test = ["Test", "Pkg", "Logging", "InteractiveUtils", "TestSetExtensions", "Coverage", "Dates", "Distributed", "Documenter", "Plots", "BenchmarkCI", "BenchmarkTools", "PkgBenchmark", "Aqua", "StableRNGs", "StatsFuns", "Optimisers"]

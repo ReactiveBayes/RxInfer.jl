@@ -79,6 +79,7 @@ Pages = [
   "manuals/constraints-specification.md",
   "manuals/meta-specification.md",
   "manuals/inference-execution.md",
+  "manuals/custom-node.md",
   "manuals/debugging.md",
   "examples/overview.md",
   "library/exported-methods.md",

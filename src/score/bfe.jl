@@ -43,6 +43,14 @@ See also: [`BetheFreeEnergyCheckInfs`](@ref)
 """
 struct BetheFreeEnergyCheckNaNs end
 
+function apply_diagnostic_check(::BetheFreeEnergyCheckNaNs, ::Type{CountingReal}, stream)
+    error_fn = (_) -> """
+        Failed to compute the final Bethe Free Energy value. The result is `NaN` after subtracting `PointMass` entropies.
+        Use `diagnostic_checks` field in `BetheFreeEnergy` constructor or `free_energy_diagnostics` keyword argument in the `inference` function to suppress this error.
+    """
+    return stream |> error_if(value_isnan, error_fn)
+end
+
 function apply_diagnostic_check(::BetheFreeEnergyCheckNaNs, node::AbstractFactorNode, stream)
     error_fn = let node = node
         (_) -> """
@@ -73,6 +81,15 @@ Throws an error if finds `Inf`.
 See also: [`BetheFreeEnergyCheckNaNs`](@ref)
 """
 struct BetheFreeEnergyCheckInfs end
+
+function apply_diagnostic_check(::BetheFreeEnergyCheckInfs, ::Type{CountingReal}, stream)
+    error_fn = (_) -> """
+        Failed to compute the final Bethe Free Energy value. The result is `Inf` after subtracting `PointMass` entropies.
+        This may indicate that some `PointMass` entropies did not cancel out during the computation procedure.
+        Use `diagnostic_checks` field in `BetheFreeEnergy` constructor or `free_energy_diagnostics` keyword argument in the `inference` function to suppress this error.
+    """
+    return stream |> error_if(value_isinf, error_fn)
+end
 
 function apply_diagnostic_check(::BetheFreeEnergyCheckInfs, node::AbstractFactorNode, stream)
     error_fn = let node = node
@@ -143,5 +160,7 @@ function score(model::FactorGraphModel, ::Type{T}, objective::BetheFreeEnergy) w
 
     point_entropies = CountingReal(eltype(T), data_point_entropies_n + constant_point_entropies_n + form_point_entropies_n)
 
-    return combineLatest((node_bound_free_energies_sum, variable_bound_entropies_sum), PushNew()) |> map(eltype(T), d -> float(d[1] + d[2] - point_entropies))
+    bfe_stream = combineLatest((node_bound_free_energies_sum, variable_bound_entropies_sum), PushNew()) |> map(eltype(T), d -> float(d[1] + d[2] - point_entropies))
+
+    return apply_diagnostic_check(objective, CountingReal, bfe_stream)
 end
