@@ -26,7 +26,7 @@ return [
         hidden = false
     ),
     (
-        path = "Linear Regression.ipynb",
+        path = "Bayesian Linear Regression.ipynb",
         title = "Bayesian Linear Regression",
         description = "An example of Bayesian linear regression.",
         hidden = false
