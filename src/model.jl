@@ -169,7 +169,7 @@ function ReactiveMP.activate!(model::FactorGraphModel)
 
     foreach(getdata(model)) do datavar
         if !isconnected(datavar) && !isused(datavar)
-            @warn "Unused data variable has been found: '$(indexed_name(datavar))'. Ignore if '$(indexed_name(datavar))' has been used in deterministic nonlinear tranformation."
+            @warn "Unused data variable has been found: '$(indexed_name(datavar))'. Ignore if '$(indexed_name(datavar))' has been used in deterministic nonlinear transformation."
         end
     end
 
