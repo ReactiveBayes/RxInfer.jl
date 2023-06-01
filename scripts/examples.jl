@@ -64,6 +64,11 @@ function Base.run(examplesrunner::ExamplesRunner)
 
     mkpath(dfolder)
 
+    # Make path for pictures
+    mkpath(joinpath(efolder, "pics"))
+    mkpath(joinpath(dfolder, "pics"))
+    mkpath(joinpath(afolder, "pics"))
+
     # `Weave` executes notebooks in the `dst` folder so we need to copy there our environment
     cp(joinpath(efolder, "Manifest.toml"), joinpath(dfolder, "Manifest.toml"), force = true)
     cp(joinpath(efolder, "Project.toml"), joinpath(dfolder, "Project.toml"), force = true)
@@ -154,7 +159,7 @@ function Base.run(examplesrunner::ExamplesRunner)
     close(examplesrunner.resultschannel)
 
     # `gifs` are a bit special in the `Plots.jl`, we need to fix paths manually
-    gifs = filter(d -> last(splitext(d)) == ".gif", readdir(dfolder, join = true))
+    gifs = filter(d -> last(splitext(d)) == ".gif", readdir(joinpath(dfolder, "pics"), join = true))
 
     foreach(gifs) do gifpath
         mv(gifpath, joinpath(afolder, last(splitpath(gifpath))), force = true)
@@ -162,7 +167,7 @@ function Base.run(examplesrunner::ExamplesRunner)
 
     fixgifs = map(gifs) do gifpath
         gif_filename = last(splitpath(gifpath))
-        return gif_filename => string("../assets/examples/", gif_filename)
+        return gif_filename => string("../assets/examples/pics/", gif_filename)
     end
 
     # Fix paths from the `pics/` folder located in the examples
