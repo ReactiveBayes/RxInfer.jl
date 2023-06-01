@@ -536,6 +536,13 @@ function inference(;
         end
     end
 
+    if !warn # defaults to true (only update when false)
+        if !isnothing(options)
+            options = merge(options, (warn = warn,))
+        else
+            options = (warn = warn,)
+        end
+    end
     _options = convert(ModelInferenceOptions, options)
 
     # Override `options` addons if the `addons` keyword argument is present 
@@ -1676,7 +1683,14 @@ function rxinference(;
 
     datavarnames = fields(_T)::NTuple
     N            = length(datavarnames) # should be static
-
+    
+    if !warn # defaults to true (only update when false)
+        if !isnothing(options)
+            options = merge(options, (warn = warn,))
+        else
+            options = (warn = warn,)
+        end
+    end
     _options = convert(ModelInferenceOptions, options)
 
     # Override `options` addons if the `addons` keyword argument is present 

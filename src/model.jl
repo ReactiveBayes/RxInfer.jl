@@ -22,6 +22,7 @@ Creates model inference options object. The list of available options is present
 ### Options
 
 - `limit_stack_depth`: limits the stack depth for computing messages, helps with `StackOverflowError` for some huge models, but reduces the performance of inference backend. Accepts integer as an argument that specifies the maximum number of recursive depth. Lower is better for stack overflow error, but worse for performance.
+- `warn`: flag to throw warnings during model creatino.
 
 ### Advanced options
 
@@ -34,7 +35,9 @@ struct ModelInferenceOptions{P, S, A}
     pipeline  :: P
     scheduler :: S
     addons    :: A
+    warn      :: Bool
 end
+ModelInferenceOptions(pipeline, scheduler, addons) = ModelInferenceOptions(pipeline, scheduler, addons, true)
 
 UnspecifiedModelInferenceOptions() = convert(ModelInferenceOptions, (;))
 
@@ -49,7 +52,7 @@ function Base.convert(::Type{ModelInferenceOptions}, options::Nothing)
 end
 
 function Base.convert(::Type{ModelInferenceOptions}, options::NamedTuple{keys}) where {keys}
-    available_options = (:pipeline, :scheduler, :limit_stack_depth, :addons)
+    available_options = (:pipeline, :scheduler, :limit_stack_depth, :addons, :warn)
 
     for key in keys
         key ∈ available_options || error("Unknown model inference options: $(key).")
@@ -58,13 +61,18 @@ function Base.convert(::Type{ModelInferenceOptions}, options::NamedTuple{keys}) 
     pipeline  = nothing
     scheduler = nothing
     addons    = nothing
+    warn      = true
+
+    if haskey(options, :warn)
+        warn = options[:warn]
+    end
 
     if haskey(options, :pipeline)
         pipeline = options[:pipeline]
     end
 
-    if haskey(options, :scheduler) && haskey(options, :limit_stack_depth)
-        @warn "Model options have `scheduler` and `limit_stack_depth` options specified together. Ignoring `limit_stack_depth`."
+    if warn && haskey(options, :scheduler) && haskey(options, :limit_stack_depth)
+        @warn "Model options have `scheduler` and `limit_stack_depth` options specified together. Ignoring `limit_stack_depth`. Use `warn = false` to suppress this warning."
     end
 
     if haskey(options, :scheduler)
@@ -77,7 +85,7 @@ function Base.convert(::Type{ModelInferenceOptions}, options::NamedTuple{keys}) 
         addons = options[:addons]
     end
 
-    return ModelInferenceOptions(pipeline, scheduler, addons)
+    return ModelInferenceOptions(pipeline, scheduler, addons, warn)
 end
 
 const DefaultModelInferenceOptions = UnspecifiedModelInferenceOptions()
@@ -168,8 +176,8 @@ function ReactiveMP.activate!(model::FactorGraphModel)
     end
 
     foreach(getdata(model)) do datavar
-        if !isconnected(datavar) && !isused(datavar)
-            @warn "Unused data variable has been found: '$(indexed_name(datavar))'. Ignore if '$(indexed_name(datavar))' has been used in deterministic nonlinear transformation."
+        if model.options.warn && !isconnected(datavar) && !isused(datavar)
+            @warn "Unused data variable has been found: '$(indexed_name(datavar))'. Ignore if '$(indexed_name(datavar))' has been used in deterministic nonlinear transformation. Use `warn = false` to suppress this warning."
         end
     end
 
@@ -249,7 +257,7 @@ function (generator::ModelGenerator)(model::FactorGraphModel)
 end
 
 """
-    create_model(::ModelGenerator, constraints = nothing, meta = nothing, options = nothing)
+    create_model(::ModelGenerator, constraints = nothing, meta = nothing, options = nothing, warn = true)
 
 Creates an instance of `FactorGraphModel` from the given model specification as well as optional `constraints`, `meta` and `options`.
 
