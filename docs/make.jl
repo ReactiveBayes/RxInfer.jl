@@ -101,7 +101,8 @@ makedocs(;
             ],
             "Inference customization" => [
                 "Defining a custom node and rules" => "manuals/custom-node.md",
-            ]
+            ],
+            "Debugging"                 => "manuals/debugging.md",
         ],
         "Library" => [
             "Built-in functional form constraints" => "library/functional-forms.md",
