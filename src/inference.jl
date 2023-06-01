@@ -540,7 +540,7 @@ function inference(;
 
     # Override `options` addons if the `addons` keyword argument is present 
     if !isnothing(addons)
-        if !isnothing(getaddons(_options))
+        if warn && !isnothing(getaddons(_options))
             @warn "Both `addons = ...` and `options = (addons = ..., )` specify a value for the `addons`. Ignoring the `options` setting. Set `warn = false` to supress this warning."
         end
         _options = setaddons(_options, addons)
