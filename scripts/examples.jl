@@ -158,20 +158,11 @@ function Base.run(examplesrunner::ExamplesRunner)
     close(examplesrunner.jobschannel)
     close(examplesrunner.resultschannel)
 
-    # `gifs` are a bit special in the `Plots.jl`, we need to fix paths manually
-    gifs = filter(d -> last(splitext(d)) == ".gif", readdir(joinpath(dfolder, "pics"), join = true))
-
-    foreach(gifs) do gifpath
-        mv(gifpath, joinpath(afolder, last(splitpath(gifpath))), force = true)
-    end
-
-    fixgifs = map(gifs) do gifpath
-        gif_filename = last(splitpath(gifpath))
-        return gif_filename => string("../assets/examples/pics/", gif_filename)
-    end
-
     # Fix paths from the `pics/` folder located in the examples
-    fixpics = "![](pics/" => "![](../assets/examples/pics/"
+    fixpics = (
+        "![](pics/" => "![](../assets/examples/pics/", 
+        "![](./pics/" => "![](../assets/examples/pics/", 
+    )
 
     if isnothing(examplesrunner.specific_example)
 
@@ -227,7 +218,7 @@ function Base.run(examplesrunner::ExamplesRunner)
             open(mdpath, "w") do f
                 # In every examples we replace title with its `@id` equivalent, such that 
                 # `# Super cool title` becomes `[# Super cool title](@id examples-super-cool-title)`
-                fixtext = replace(mdtext, "# $(title)" => "# [$(title)](@id $(id))", fixpics, fixgifs...)
+                fixtext = replace(mdtext, "# $(title)" => "# [$(title)](@id $(id))", fixpics...)
                 output  = string("This example has been auto-generated from the [`examples/`](https://github.com/biaslab/RxInfer.jl/tree/main/examples) folder at GitHub repository.\n\n", fixtext)
                 write(f, output)
             end
