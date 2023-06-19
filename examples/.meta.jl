@@ -26,7 +26,7 @@ return [
         hidden = false
     ),
     (
-        path = "Linear Regression.ipynb",
+        path = "Bayesian Linear Regression.ipynb",
         title = "Bayesian Linear Regression",
         description = "An example of Bayesian linear regression.",
         hidden = false
@@ -35,6 +35,12 @@ return [
         path = "Active Inference Mountain car.ipynb",
         title = "Active Inference Mountain car",
         description = "This notebooks covers RxInfer usage in the Active Inference setting for the simple mountain car problem.",
+        hidden = false
+    ),
+    (
+        path = "Chance Constraints.ipynb",
+        title = "Chance-Constrained Active Inference",
+        description = "This notebook applies reactive message passing for active inference in the context of chance-constraints.",
         hidden = false
     ),
     (

@@ -8,7 +8,7 @@ Pkg.instantiate();
 
 # Precompile packages on the main worker
 @info "Precompile packages on the main worker"
-using RxInfer, Plots, PyPlot, StatsPlots, BenchmarkTools, ProgressMeter, Optim
+using RxInfer, Plots, StatsPlots, BenchmarkTools, ProgressMeter, Optim
 
 @info "Adding $(min(Sys.CPU_THREADS, 4)) workers"
 addprocs(min(Sys.CPU_THREADS, 4), exeflags = "--project=$(ExamplesFolder)")
@@ -63,6 +63,11 @@ function Base.run(examplesrunner::ExamplesRunner)
     afolder = joinpath(@__DIR__, "..", "docs", "src", "assets", "examples")
 
     mkpath(dfolder)
+
+    # Make path for pictures
+    mkpath(joinpath(efolder, "pics"))
+    mkpath(joinpath(dfolder, "pics"))
+    mkpath(joinpath(afolder, "pics"))
 
     # `Weave` executes notebooks in the `dst` folder so we need to copy there our environment
     cp(joinpath(efolder, "Manifest.toml"), joinpath(dfolder, "Manifest.toml"), force = true)
@@ -153,17 +158,8 @@ function Base.run(examplesrunner::ExamplesRunner)
     close(examplesrunner.jobschannel)
     close(examplesrunner.resultschannel)
 
-    # `gifs` are a bit special in the `Plots.jl`, we need to fix paths manually
-    gifs = filter(d -> last(splitext(d)) == ".gif", readdir(dfolder, join = true))
-
-    foreach(gifs) do gifpath
-        mv(gifpath, joinpath(afolder, last(splitpath(gifpath))), force = true)
-    end
-
-    fixgifs = map(gifs) do gifpath
-        gif_filename = last(splitpath(gifpath))
-        return gif_filename => string("../assets/examples/", gif_filename)
-    end
+    # Fix paths from the `pics/` folder located in the examples
+    fixpics = ("![](pics/" => "![](../assets/examples/pics/", "![](./pics/" => "![](../assets/examples/pics/")
 
     if isnothing(examplesrunner.specific_example)
 
@@ -219,7 +215,7 @@ function Base.run(examplesrunner::ExamplesRunner)
             open(mdpath, "w") do f
                 # In every examples we replace title with its `@id` equivalent, such that 
                 # `# Super cool title` becomes `[# Super cool title](@id examples-super-cool-title)`
-                fixtext = replace(mdtext, "# $(title)" => "# [$(title)](@id $(id))", fixgifs...)
+                fixtext = replace(mdtext, "# $(title)" => "# [$(title)](@id $(id))", fixpics...)
                 output  = string("This example has been auto-generated from the [`examples/`](https://github.com/biaslab/RxInfer.jl/tree/main/examples) folder at GitHub repository.\n\n", fixtext)
                 write(f, output)
             end
@@ -227,6 +223,12 @@ function Base.run(examplesrunner::ExamplesRunner)
             write(io_overview, "- [$(title)](@ref $id): $description\n")
 
             return nothing
+        end
+
+        # Copy the `pics` folder from the examples to the assets
+        if isdir(joinpath(efolder, "pics"))
+            @info "Copying the `pics` folder from the examples."
+            cp(joinpath(efolder, "pics"), joinpath(afolder, "pics"); force = true)
         end
 
         open(joinpath(@__DIR__, "..", "docs", "src", "examples", "overview.md"), "w") do f

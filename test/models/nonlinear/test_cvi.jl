@@ -2,7 +2,7 @@ module ReactiveMPModelsNonLinearDynamicsTest
 
 using Test, InteractiveUtils
 using RxInfer, Distributions
-using BenchmarkTools, Random, Plots, Dates, StableRNGs, Flux
+using BenchmarkTools, Random, Plots, Dates, StableRNGs, Optimisers
 
 # Please use StableRNGs for random number generators
 
@@ -44,7 +44,7 @@ constraints = @constraints begin
 end
 
 @meta function model_meta(rng, n_iterations, n_samples, learning_rate)
-    f() -> CVI(rng, n_iterations, n_samples, Descent(learning_rate))
+    f() -> CVI(rng, n_iterations, n_samples, Optimisers.Descent(learning_rate))
 end
 
 ## -------------------------------------------- ##
