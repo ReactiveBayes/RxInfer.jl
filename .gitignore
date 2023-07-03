@@ -36,3 +36,5 @@ examples/*Compiled
 
 **/.benchmarkci
 benchmark/*.json
+
+.venv
