@@ -202,7 +202,7 @@ return (
         #     hidden = false
         # ),
         (
-            path  = "Tiny Benchmark.ipynb", 
+            filename  = "Tiny Benchmark.ipynb", 
             title = "Tiny Benchmark", 
             description = "Tiny Benchmark for Internal testing.",
             category = :hidden_examples
