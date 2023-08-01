@@ -1,24 +1,6 @@
 # This file contains titles and descriptions for each example in this folder
 # These meta information will be used for our documentation pipeline
-
-# IMPORTANT: 0. IF YOU MAKE CHANGES TO THIS INSTRUCTION CHANGE THE DOCUMENTATION SECTION AS WELL (`docs/contributing/new-example.md`)
-#            1. Make sure that the very first cell of the notebook contains ONLY `# <title>` in it and has markdown type
-#               This is important for link generation in the documentation
-#            2. Description is used to pre-generate an Examples page overview in the documentation
-#            3. Use hidden option to not include a certain example in the documentation (build will still run to ensure the example runs)
-#            4. Name `Overview` is reserved, please do not use it
-#            5. Use $$\begin{aligned} <- on the same line, otherwise formulas will not render correctly in the documentation 
-#                   <latex formulas here>
-#                   \end{aligned}$$   <- on the same line (check other examples if you are not sure)
-#            6. Notebooks and plain Julia have different scoping rules for global variables, if it happens so that examples generation fails due to 
-#               `UndefVarError` and scoping issues use `let ... end` blocks to enforce local scoping (see `Gaussian Mixtures Multivariate.ipynb` as an example)
-#            7. All examples must use and activate local `Project.toml` in the second cell (see `1.`), if you need some package add it to the `(examples)` project
-#               Use the code below as a placeholder
-#               ```
-#               # Activate local environment, see `Project.toml`
-#               import Pkg; Pkg.activate(".."); Pkg.instantiate(); 
-#               ````
-#            8. Do not use special symbols (`-`, `:`, ...) in titles as it does not play nicely with automatic link generation
+# Please carefully read the documentation section `Contributing: new example` for more information
 return (
     categories = (
         basic_examples = (
