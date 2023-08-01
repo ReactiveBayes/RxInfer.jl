@@ -11,13 +11,17 @@ DocMeta.setdocmeta!(RxInfer, :DocTestSetup, :(using RxInfer); recursive=true)
 ExamplesPath = joinpath(@__DIR__, "src", "examples")
 ExamplesOverviewPath = joinpath(ExamplesPath, "overview.md")
 ExamplesMeta = include(joinpath(@__DIR__, "..", "examples", ".meta.jl"))
-Examples = map(filter(example -> !example.hidden, ExamplesMeta)) do examplemeta
-    path = examplemeta.path
-    mdpath = replace(path, ".ipynb" => ".md")
+
+ExamplesCategories = ExamplesMeta[:categories]
+
+Examples = map(filter(example -> !isequal(example[:category], :hidden_examples), ExamplesMeta[:examples])) do examplemeta
+    filename = string(examplemeta.filename)
+    category = string(examplemeta.category)
+    mdpath = replace(filename, ".ipynb" => ".md")
     title = examplemeta.title
 
-    fullpath = joinpath(ExamplesPath, mdpath)
-    shortpath = joinpath("examples", mdpath)
+    fullpath = joinpath(ExamplesPath, category, mdpath)
+    shortpath = joinpath("examples", category, mdpath)
 
     # We use `fullpath` to check if the file exists
     # We use `shortpath` to make a page reference in the left panel in the documentation

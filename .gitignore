@@ -10,6 +10,7 @@ examples/*incomplete.ipynb
 examples/*.jl
 examples/*WIP*
 examples/*gif
+!examples/.meta.jl
 
 _output
 test/_output

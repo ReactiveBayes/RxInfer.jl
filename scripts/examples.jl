@@ -37,32 +37,50 @@ end
 function Base.run(examplesrunner::ExamplesRunner)
     @info "Reading .meta.jl"
 
-    examples = include(joinpath(@__DIR__, "..", "examples", ".meta.jl"))
+    configuration = include(joinpath(@__DIR__, "..", "examples", ".meta.jl"))
+
+    if !haskey(configuration, :categories)
+        error("The `.meta.jl` should return a configuration object with the `categories` field.")
+    end
+
+    if !haskey(configuration, :examples)
+        error("The `.meta.jl` should return a configuration object with the `examples` field.")
+    end
+
+    categories = configuration[:categories]
+    examples = configuration[:examples]
 
     if !isnothing(examplesrunner.specific_example)
-        @info "Running specific example matching the following pattern: $(examplesrunner.specific_example)"
+        @info "Running specific example matching the following pattern: $(examplesrunner.specific_example)."
         examples = filter(examples) do example
-            return occursin(lowercase(examplesrunner.specific_example), lowercase(example[:path])) || occursin(lowercase(examplesrunner.specific_example), lowercase(example[:title]))
+            return occursin(lowercase(examplesrunner.specific_example), lowercase(example[:filename])) ||
+                   occursin(lowercase(examplesrunner.specific_example), lowercase(example[:title]))
         end
     end
 
     if isempty(examples)
-        @error "Examples list is empty"
-        exit(-1)
+        error("The list of examples is empty.")
     end
 
     foreach(examples) do example
-        @info "Adding $(example[:path]) to the jobs list"
+        @info "Adding $(example[:filename]) to the jobs list"
         put!(examplesrunner.jobschannel, example)
     end
 
-    @info "Preparing `examples` environment"
+    @info "Preparing `examples` environment."
 
     efolder = joinpath(@__DIR__, "..", "examples")
     dfolder = joinpath(@__DIR__, "..", "docs", "src", "examples")
     afolder = joinpath(@__DIR__, "..", "docs", "src", "assets", "examples")
 
+    # Make folder for the documentation
     mkpath(dfolder)
+
+    # `categories` field is a `label => info` pairs, where `label` is assumed to be a folder name
+    for (label, _) in pairs(categories)
+        # Make folder for each category
+        mkpath(joinpath(dfolder, string(label)))
+    end
 
     # Make path for pictures
     mkpath(joinpath(efolder, "pics"))
@@ -98,19 +116,26 @@ function Base.run(examplesrunner::ExamplesRunner)
                     finish = true
                 else
                     try
-                        path = example[:path]
+                        filename = example[:filename]
 
-                        @info "Started job: `$(path)` on worker `$(pid)`"
+                        # Check if the example has category with it
+                        if !haskey(example, :category)
+                            error("Missing category for the example $(filename).")
+                        end
 
-                        ipath = joinpath(@__DIR__, "..", "examples", path)
-                        opath = joinpath(@__DIR__, "..", "docs", "src", "examples")
-                        fpath = joinpath("..", "assets", "examples") # relative to `opath`
+                        category = string(example[:category])
+
+                        @info "Started job: `$(filename)` on worker `$(pid)`"
+
+                        ipath = joinpath(@__DIR__, "..", "examples", category, filename)
+                        opath = joinpath(@__DIR__, "..", "docs", "src", "examples", category)
+                        fpath = joinpath("..", "..", "assets", "examples") # relative to `opath`
 
                         ENV["GKSwstype"] = "nul" # Fix for plots
 
                         weaved = weave(ipath, out_path = opath, doctype = "github", fig_path = fpath)
 
-                        put!(resultschannel, (pid = pid, path = path, weaved = weaved, example = example))
+                        put!(resultschannel, (pid = pid, filename = filename, weaved = weaved, example = example))
                     catch iexception
                         put!(exschannel, iexception)
                     end
@@ -143,9 +168,9 @@ function Base.run(examplesrunner::ExamplesRunner)
 
         while isready(examplesrunner.resultschannel)
             result = take!(examplesrunner.resultschannel)
-            pid    = result[:pid]
-            path   = result[:path]
-            @info "Finished `$(path)` on worker `$(pid)`."
+            pid = result[:pid]
+            filename = result[:filename]
+            @info "Finished `$(filename)` on worker `$(pid)`."
             push!(results, result)
         end
 
@@ -177,8 +202,8 @@ function Base.run(examplesrunner::ExamplesRunner)
         )
 
         foreach(examples) do example
-            mdname = replace(example[:path], ".ipynb" => ".md")
-            mdpath = joinpath(@__DIR__, "..", "docs", "src", "examples", mdname)
+            mdname = replace(example[:filename], ".ipynb" => ".md")
+            mdpath = joinpath(@__DIR__, "..", "docs", "src", "examples", string(example[:category]), mdname)
             mdtext = read(mdpath, String)
 
             # Check if example failed with an error
@@ -197,8 +222,8 @@ function Base.run(examplesrunner::ExamplesRunner)
             end
 
             # We simply remove pre-generated `.md` file if it has been marked as hidden
-            if example[:hidden]
-                @info "Skipping example $(example[:title]) as it has been marked as hidden"
+            if isequal(example[:category], :hidden_examples)
+                @info "Skipping example $(example[:title]) as it has been marked as hidden."
                 rm(mdpath, force = true)
                 return nothing
             end
@@ -208,8 +233,7 @@ function Base.run(examplesrunner::ExamplesRunner)
             id          = string("examples-", lowercase(join(split(example[:title]), "-")))
 
             if isnothing(findnext("# $(title)", mdtext, 1))
-                @error "Could not find cell `# $(title)` in the `$(mdpath)`"
-                error(-1)
+                error("Could not find cell `# $(title)` in the `$(mdpath)`")
             end
 
             open(mdpath, "w") do f
