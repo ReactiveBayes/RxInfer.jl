@@ -46,13 +46,13 @@ return (
             category = :basic_examples
         ),
         (
-            path = "Bayesian Linear Regression.ipynb",
+            filename = "Bayesian Linear Regression.ipynb",
             title = "Bayesian Linear Regression",
             description = "An example of Bayesian linear regression.",
             category = :basic_examples
         ),
         (
-            path = "Active Inference Mountain car.ipynb",
+            filename = "Active Inference Mountain car.ipynb",
             title = "Active Inference Mountain car",
             description = "This notebooks covers RxInfer usage in the Active Inference setting for the simple mountain car problem.",
             category = :advanced_examples
@@ -76,17 +76,17 @@ return (
         #     hidden = false
         # ),
         (
-            path  = "Hidden Markov Model.ipynb",
+            filename  = "Hidden Markov Model.ipynb",
             title = "How to train your Hidden Markov Model",
             description = "An example of structured variational Bayesian inference in Hidden Markov Model with unknown transition and observational matrices.",
+            category = :basic_examples
+        ),
+        (
+            filename  = "Autoregressive Models.ipynb", 
+            title = "Autoregressive Models", 
+            description = "An example of variational Bayesian Inference on full graph for Autoregressive model. Reference: [Albert Podusenko, Message Passing-Based Inference for Time-Varying Autoregressive Models](https://www.mdpi.com/1099-4300/23/6/683).",
             category = :problem_specific
         ),
-        # (
-        #     path  = "Autoregressive Model.ipynb", 
-        #     title = "Autoregressive Model", 
-        #     description = "An example of variational Bayesian Inference on full graph for Autoregressive model. Reference: [Albert Podusenko, Message Passing-Based Inference for Time-Varying Autoregressive Models](https://www.mdpi.com/1099-4300/23/6/683).",
-        #     hidden = false
-        # ),
         # (
         #     path = "Hierarchical Gaussian Filter.ipynb",
         #     title = "Hierarchical Gaussian Filter",

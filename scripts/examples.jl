@@ -184,7 +184,11 @@ function Base.run(examplesrunner::ExamplesRunner)
     close(examplesrunner.resultschannel)
 
     # Fix paths from the `pics/` folder located in the examples
-    fixpics = ("![](pics/" => "![](../assets/examples/pics/", "![](./pics/" => "![](../assets/examples/pics/")
+    fixpics = (
+        "![](pics/" => "![](../assets/examples/pics/", 
+        "![](./pics/" => "![](../assets/examples/pics/",
+        "![](../pics/" => "![](../assets/examples/pics/"
+    )
 
     if isnothing(examplesrunner.specific_example)
 
