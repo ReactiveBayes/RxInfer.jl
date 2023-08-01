@@ -45,18 +45,18 @@ return (
             description = "An example of Bayesian inference in Beta-Bernoulli model with IID observations.",
             category = :basic_examples
         ),
-        # (
-        #     path = "Bayesian Linear Regression.ipynb",
-        #     title = "Bayesian Linear Regression",
-        #     description = "An example of Bayesian linear regression.",
-        #     hidden = false
-        # ),
-        # (
-        #     path = "Active Inference Mountain car.ipynb",
-        #     title = "Active Inference Mountain car",
-        #     description = "This notebooks covers RxInfer usage in the Active Inference setting for the simple mountain car problem.",
-        #     hidden = false
-        # ),
+        (
+            path = "Bayesian Linear Regression.ipynb",
+            title = "Bayesian Linear Regression",
+            description = "An example of Bayesian linear regression.",
+            category = :basic_examples
+        ),
+        (
+            path = "Active Inference Mountain car.ipynb",
+            title = "Active Inference Mountain car",
+            description = "This notebooks covers RxInfer usage in the Active Inference setting for the simple mountain car problem.",
+            category = :advanced_examples
+        ),
         # (
         #     path = "Chance Constraints.ipynb",
         #     title = "Chance-Constrained Active Inference",
@@ -75,12 +75,12 @@ return (
         #     description = "An example of inference procedure for Gaussian Linear Dynamical System with multivariate noisy observations using Belief Propagation (Sum Product) algorithm. Reference: [Simo Sarkka, Bayesian Filtering and Smoothing](https://users.aalto.fi/~ssarkka/pub/cup_book_online_20131111.pdf).",
         #     hidden = false
         # ),
-        # (
-        #     path  = "Hidden Markov Model.ipynb",
-        #     title = "How to train your Hidden Markov Model",
-        #     description = "An example of structured variational Bayesian inference in Hidden Markov Model with unknown transition and observational matrices.",
-        #     hidden = false
-        # ),
+        (
+            path  = "Hidden Markov Model.ipynb",
+            title = "How to train your Hidden Markov Model",
+            description = "An example of structured variational Bayesian inference in Hidden Markov Model with unknown transition and observational matrices.",
+            category = :problem_specific
+        ),
         # (
         #     path  = "Autoregressive Model.ipynb", 
         #     title = "Autoregressive Model", 

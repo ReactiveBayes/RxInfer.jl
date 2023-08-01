@@ -189,17 +189,35 @@ function Base.run(examplesrunner::ExamplesRunner)
     if isnothing(examplesrunner.specific_example)
 
         # If not failed we generate overview report and fix fig links
-        io_overview = IOBuffer()
+        io_main_overview = IOBuffer() # main overview
+        io_category_overviews = map(category -> (io = IOBuffer(), category = category), categories) # sub-category overviews
 
-        @info "Generating overview"
+        @info "Generating overviews"
 
-        write(io_overview, "# [Examples overview](@id examples-overview)\n\n")
-        write(io_overview, "This section contains a set of examples for Bayesian Inference with `RxInfer` package in various probabilistic models.\n\n")
-        write(io_overview, "!!! note\n")
+        write(io_main_overview, "# [Examples overview](@id examples-overview)\n\n")
+        write(io_main_overview, "This section contains a set of examples for Bayesian Inference with `RxInfer` package in various probabilistic models.\n\n")
+        write(io_main_overview, "!!! note\n")
         write(
-            io_overview,
+            io_main_overview,
             "\tAll examples have been pre-generated automatically from the [`examples/`](https://github.com/biaslab/RxInfer.jl/tree/main/examples) folder at GitHub repository.\n\n"
         )
+
+        foreach(pairs(io_category_overviews)) do (label, overview)
+            if !isequal(label, :hidden_examples)
+                # Add a small description to the main overview file
+                write(io_main_overview, "- [$(overview.category.title)](@ref examples-$(label)-overview): $(overview.category.description)\n")
+
+                # Write sub descriptions in each distinct sub category
+                write(overview.io, "# [$(overview.category.title)](@id examples-$(label)-overview)\n\n")
+                write(overview.io, "This section contains a set of examples for Bayesian Inference with `RxInfer` package in various probabilistic models.\n\n")
+                write(overview.io, "!!! note\n")
+                write(
+                    overview.io,
+                    "\tAll examples have been pre-generated automatically from the [`examples/`](https://github.com/biaslab/RxInfer.jl/tree/main/examples) folder at GitHub repository.\n\n"
+                )
+                write(overview.io, "$(overview.category.description)\n\n")
+            end
+        end
 
         foreach(examples) do example
             mdname = replace(example[:filename], ".ipynb" => ".md")
@@ -244,7 +262,7 @@ function Base.run(examplesrunner::ExamplesRunner)
                 write(f, output)
             end
 
-            write(io_overview, "- [$(title)](@ref $id): $description\n")
+            write(io_category_overviews[example.category].io, "- [$(title)](@ref $id): $description\n")
 
             return nothing
         end
@@ -255,9 +273,20 @@ function Base.run(examplesrunner::ExamplesRunner)
             cp(joinpath(efolder, "pics"), joinpath(afolder, "pics"); force = true)
         end
 
+        # Write main overview
         open(joinpath(@__DIR__, "..", "docs", "src", "examples", "overview.md"), "w") do f
-            write(f, String(take!(io_overview)))
+            write(f, String(take!(io_main_overview)))
         end
+
+        # Write sub-categories overviews
+        foreach(pairs(io_category_overviews)) do (label, overview)
+            if !isequal(label, :hidden_examples)
+                open(joinpath(@__DIR__, "..", "docs", "src", "examples", string(label), "overview.md"), "w") do f
+                    write(f, String(take!(overview.io)))
+                end
+            end
+        end
+
     else
         @info "Skip overview generation for a specific example. Possible errors in the generated document are supressed. Check the generated document manually."
     end
