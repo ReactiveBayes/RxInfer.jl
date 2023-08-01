@@ -201,11 +201,11 @@ return (
         #     description = "This notebook covers the fundamentals and advanced usage of the `RxInfer.jl` package.",
         #     hidden = false
         # ),
-        # (
-        #     path  = "Tiny Benchmark.ipynb", 
-        #     title = "Tiny Benchmark", 
-        #     description = "Tiny Benchmark for Internal testing.",
-        #     hidden = true
-        # ),
+        (
+            path  = "Tiny Benchmark.ipynb", 
+            title = "Tiny Benchmark", 
+            description = "Tiny Benchmark for Internal testing.",
+            category = :hidden_examples
+        ),
     ]
 )

@@ -91,6 +91,7 @@ function Base.run(examplesrunner::ExamplesRunner)
     cp(joinpath(efolder, "Manifest.toml"), joinpath(dfolder, "Manifest.toml"), force = true)
     cp(joinpath(efolder, "Project.toml"), joinpath(dfolder, "Project.toml"), force = true)
     cp(joinpath(efolder, "data"), joinpath(dfolder, "data"), force = true)
+    cp(joinpath(efolder, "pics"), joinpath(dfolder, "pics"), force = true)
 
     # We also need to fix relative RxInfer path in the moved `Project.toml`
     # This is a bit iffy, but does the job (not sure about Windows though?)
@@ -185,9 +186,9 @@ function Base.run(examplesrunner::ExamplesRunner)
 
     # Fix paths from the `pics/` folder located in the examples
     fixpics = (
-        "![](pics/" => "![](../assets/examples/pics/", 
-        "![](./pics/" => "![](../assets/examples/pics/",
-        "![](../pics/" => "![](../assets/examples/pics/"
+        "![](pics/" => "![](../../assets/examples/pics/", 
+        "![](./pics/" => "![](../../assets/examples/pics/",
+        "![](../pics/" => "![](../../assets/examples/pics/"
     )
 
     if isnothing(examplesrunner.specific_example)
@@ -299,6 +300,7 @@ function Base.run(examplesrunner::ExamplesRunner)
     rm(joinpath(dfolder, "Manifest.toml"), force = true)
     rm(joinpath(dfolder, "Project.toml"), force = true)
     rm(joinpath(dfolder, "data"), force = true, recursive = true)
+    rm(joinpath(dfolder, "pics"), force = true, recursive = true)
 
     @info "Finished."
 end
