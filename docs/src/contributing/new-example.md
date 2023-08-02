@@ -18,7 +18,13 @@ $$\begin{aligned}
 \end{aligned}$$
 ``` 
 7. When using equations, make sure not to follow the left-hand `$$` or `$` with a space, but instead directly start the equation, e.g. not `$$ a + b $$`, but `$$a + b$$`. For equations that are supposed to be on a separate line, make sure `$$...$$` is preceded and followed by an empty line.
-8. Notebooks and plain Julia have different scoping rules for global variables. It may happen that the generation of your example fails due to an `UndefVarError` or other scoping issues. In these cases we recommend using `let ... end` blocks to enforce local scoping (see `Gaussian Mixtures Multivariate.ipynb` as an example)
+8. Notebooks and plain Julia have different scoping rules for global variables. It may happen that the generation of your example fails due to an `UndefVarError` or other scoping issues. In these cases we recommend using `let ... end` blocks to enforce local scoping or use the `global` keyword to disambiguate the scoping rules, e.g.
+```julia
+variable = 0
+for i in 1:10
+    global variable = variable + i
+end
+```
 9. All examples must use and activate the local environment specified by `Project.toml` in the second cell (see `1.`). Please have a look at the existing notebooks for an example on how to activate this local environment. If you need additional packages, you can add then to the `(examples)` project.
 10. All plots should be displayed automatically. In special cases, if needed, save figures in the `../pics/figure-name.ext` format. Might be useful for saving gifs. Use `![](../pics/figure-name.ext)` to display a static image.
 
