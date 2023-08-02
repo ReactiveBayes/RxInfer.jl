@@ -287,7 +287,7 @@ result_mybernoulli = inference(
 )
 ```
 
-We have now completed our experiment and obtained the posterior marginal distribution for p through inference. To evaluate the performance of our inference, we can compare the estimated posterior to the true value. In our experiment, the true value for p is 0.75, and we can see that the estimated posterior has a mean of approximately 0.713, which shows that our custom node was able to succesfully pass messages towards the `π` variable in order to learn the true value of the parameter.
+We have now completed our experiment and obtained the posterior marginal distribution for p through inference. To evaluate the performance of our inference, we can compare the estimated posterior to the true value. In our experiment, the true value for p is 0.75, and we can see that the estimated posterior has a mean of approximately 0.713, which shows that our custom node was able to successfully pass messages towards the `π` variable in order to learn the true value of the parameter.
 
 ```@example create-node
 using Plots
