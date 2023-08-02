@@ -270,8 +270,14 @@ function Base.run(examplesrunner::ExamplesRunner)
 
         # Copy the `pics` folder from the examples to the assets
         if isdir(joinpath(efolder, "pics"))
+            # These are the static pics
             @info "Copying the `pics` folder from the examples."
             cp(joinpath(efolder, "pics"), joinpath(afolder, "pics"); force = true)
+            # These are the pics generated inside of the examples (e.g gifs)
+            @info "Copying the generated `pics` from the examples."
+            for generated_pic in readdir(joinpath(dfolder, "pics"))
+                cp(joinpath(dfolder, "pics", generated_pic), joinpath(afolder, "pics", generated_pic); force = true)
+            end
         end
 
         # Write main overview
