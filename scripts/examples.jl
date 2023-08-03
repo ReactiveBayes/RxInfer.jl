@@ -121,7 +121,7 @@ function Base.run(examplesrunner::ExamplesRunner)
         push!(examplesrunner.runner_tasks, task)
     end
 
-    # For each remotelly called task we `fetch` its result or save an exception
+    # For each remotely called task we `fetch` its result or save an exception
     foreach(fetch, examplesrunner.runner_tasks)
 
     # If exception are not empty we notify the user and force-fail
@@ -182,7 +182,7 @@ function Base.run(examplesrunner::ExamplesRunner)
             mdtext = read(mdpath, String)
 
             # Check if example failed with an error
-            # TODO: we might have better heurstic here? But I couldn't find a way to tell `Weave.jl` if an error has occured
+            # TODO: we might have better heuristic here? But I couldn't find a way to tell `Weave.jl` if an error has occurred
             # TODO: try to improve this later
             erroridx = findnext("```\nError:", mdtext, 1)
             if !isnothing(erroridx)
