@@ -37,37 +37,61 @@ end
 function Base.run(examplesrunner::ExamplesRunner)
     @info "Reading .meta.jl"
 
-    examples = include(joinpath(@__DIR__, "..", "examples", ".meta.jl"))
+    configuration = include(joinpath(@__DIR__, "..", "examples", ".meta.jl"))
+
+    if !haskey(configuration, :categories)
+        error("The `.meta.jl` should return a configuration object with the `categories` field.")
+    end
+
+    if !haskey(configuration, :examples)
+        error("The `.meta.jl` should return a configuration object with the `examples` field.")
+    end
+
+    categories = configuration[:categories]
+    examples = configuration[:examples]
 
     if !isnothing(examplesrunner.specific_example)
-        @info "Running specific example matching the following pattern: $(examplesrunner.specific_example)"
+        @info "Running specific example matching the following pattern: $(examplesrunner.specific_example)."
         examples = filter(examples) do example
-            return occursin(lowercase(examplesrunner.specific_example), lowercase(example[:path])) || occursin(lowercase(examplesrunner.specific_example), lowercase(example[:title]))
+            return occursin(lowercase(examplesrunner.specific_example), lowercase(example[:filename])) ||
+                   occursin(lowercase(examplesrunner.specific_example), lowercase(example[:title]))
         end
     end
 
     if isempty(examples)
-        @error "Examples list is empty"
-        exit(-1)
+        error("The list of examples is empty.")
     end
 
     foreach(examples) do example
-        @info "Adding $(example[:path]) to the jobs list"
+        @info "Adding $(example[:filename]) to the jobs list"
         put!(examplesrunner.jobschannel, example)
     end
 
-    @info "Preparing `examples` environment"
+    @info "Preparing `examples` environment."
 
     efolder = joinpath(@__DIR__, "..", "examples")
     dfolder = joinpath(@__DIR__, "..", "docs", "src", "examples")
     afolder = joinpath(@__DIR__, "..", "docs", "src", "assets", "examples")
 
+    # Make folder for the documentation
     mkpath(dfolder)
+
+    # `categories` field is a `label => info` pairs, where `label` is assumed to be a folder name
+    for (label, _) in pairs(categories)
+        # Make folder for each category
+        mkpath(joinpath(dfolder, string(label)))
+    end
+
+    # Make path for pictures
+    mkpath(joinpath(efolder, "pics"))
+    mkpath(joinpath(dfolder, "pics"))
+    mkpath(joinpath(afolder, "pics"))
 
     # `Weave` executes notebooks in the `dst` folder so we need to copy there our environment
     cp(joinpath(efolder, "Manifest.toml"), joinpath(dfolder, "Manifest.toml"), force = true)
     cp(joinpath(efolder, "Project.toml"), joinpath(dfolder, "Project.toml"), force = true)
     cp(joinpath(efolder, "data"), joinpath(dfolder, "data"), force = true)
+    cp(joinpath(efolder, "pics"), joinpath(dfolder, "pics"), force = true)
 
     # We also need to fix relative RxInfer path in the moved `Project.toml`
     # This is a bit iffy, but does the job (not sure about Windows though?)
@@ -93,19 +117,26 @@ function Base.run(examplesrunner::ExamplesRunner)
                     finish = true
                 else
                     try
-                        path = example[:path]
+                        filename = example[:filename]
 
-                        @info "Started job: `$(path)` on worker `$(pid)`"
+                        # Check if the example has category with it
+                        if !haskey(example, :category)
+                            error("Missing category for the example $(filename).")
+                        end
 
-                        ipath = joinpath(@__DIR__, "..", "examples", path)
-                        opath = joinpath(@__DIR__, "..", "docs", "src", "examples")
-                        fpath = joinpath("..", "assets", "examples") # relative to `opath`
+                        category = string(example[:category])
+
+                        @info "Started job: `$(filename)` on worker `$(pid)`"
+
+                        ipath = joinpath(@__DIR__, "..", "examples", category, filename)
+                        opath = joinpath(@__DIR__, "..", "docs", "src", "examples", category)
+                        fpath = joinpath("..", "..", "assets", "examples") # relative to `opath`
 
                         ENV["GKSwstype"] = "nul" # Fix for plots
 
                         weaved = weave(ipath, out_path = opath, doctype = "github", fig_path = fpath)
 
-                        put!(resultschannel, (pid = pid, path = path, weaved = weaved, example = example))
+                        put!(resultschannel, (pid = pid, filename = filename, weaved = weaved, example = example))
                     catch iexception
                         put!(exschannel, iexception)
                     end
@@ -116,7 +147,7 @@ function Base.run(examplesrunner::ExamplesRunner)
         push!(examplesrunner.runner_tasks, task)
     end
 
-    # For each remotelly called task we `fetch` its result or save an exception
+    # For each remotely called task we `fetch` its result or save an exception
     foreach(fetch, examplesrunner.runner_tasks)
 
     # If exception are not empty we notify the user and force-fail
@@ -138,9 +169,9 @@ function Base.run(examplesrunner::ExamplesRunner)
 
         while isready(examplesrunner.resultschannel)
             result = take!(examplesrunner.resultschannel)
-            pid    = result[:pid]
-            path   = result[:path]
-            @info "Finished `$(path)` on worker `$(pid)`."
+            pid = result[:pid]
+            filename = result[:filename]
+            @info "Finished `$(filename)` on worker `$(pid)`."
             push!(results, result)
         end
 
@@ -153,43 +184,49 @@ function Base.run(examplesrunner::ExamplesRunner)
     close(examplesrunner.jobschannel)
     close(examplesrunner.resultschannel)
 
-    # `gifs` are a bit special in the `Plots.jl`, we need to fix paths manually
-    gifs = filter(d -> last(splitext(d)) == ".gif", readdir(dfolder, join = true))
-
-    foreach(gifs) do gifpath
-        mv(gifpath, joinpath(afolder, last(splitpath(gifpath))), force = true)
-    end
-
-    fixgifs = map(gifs) do gifpath
-        gif_filename = last(splitpath(gifpath))
-        return gif_filename => string("../assets/examples/", gif_filename)
-    end
-
     # Fix paths from the `pics/` folder located in the examples
-    fixpics = "![](pics/" => "![](../assets/examples/pics/"
+    fixpics = ("![](pics/" => "![](../../assets/examples/pics/", "![](./pics/" => "![](../../assets/examples/pics/", "![](../pics/" => "![](../../assets/examples/pics/")
 
     if isnothing(examplesrunner.specific_example)
 
         # If not failed we generate overview report and fix fig links
-        io_overview = IOBuffer()
+        io_main_overview = IOBuffer() # main overview
+        io_category_overviews = map(category -> (io = IOBuffer(), category = category), categories) # sub-category overviews
 
-        @info "Generating overview"
+        @info "Generating overviews"
 
-        write(io_overview, "# [Examples overview](@id examples-overview)\n\n")
-        write(io_overview, "This section contains a set of examples for Bayesian Inference with `RxInfer` package in various probabilistic models.\n\n")
-        write(io_overview, "!!! note\n")
+        write(io_main_overview, "# [Examples overview](@id examples-overview)\n\n")
+        write(io_main_overview, "This section contains a set of examples for Bayesian Inference with `RxInfer` package in various probabilistic models.\n\n")
+        write(io_main_overview, "!!! note\n")
         write(
-            io_overview,
+            io_main_overview,
             "\tAll examples have been pre-generated automatically from the [`examples/`](https://github.com/biaslab/RxInfer.jl/tree/main/examples) folder at GitHub repository.\n\n"
         )
 
+        foreach(pairs(io_category_overviews)) do (label, overview)
+            if !isequal(label, :hidden_examples)
+                # Add a small description to the main overview file
+                write(io_main_overview, "- [$(overview.category.title)](@ref examples-$(label)-overview): $(overview.category.description)\n")
+
+                # Write sub descriptions in each distinct sub category
+                write(overview.io, "# [$(overview.category.title)](@id examples-$(label)-overview)\n\n")
+                write(overview.io, "This section contains a set of examples for Bayesian Inference with `RxInfer` package in various probabilistic models.\n\n")
+                write(overview.io, "!!! note\n")
+                write(
+                    overview.io,
+                    "\tAll examples have been pre-generated automatically from the [`examples/`](https://github.com/biaslab/RxInfer.jl/tree/main/examples) folder at GitHub repository.\n\n"
+                )
+                write(overview.io, "$(overview.category.description)\n\n")
+            end
+        end
+
         foreach(examples) do example
-            mdname = replace(example[:path], ".ipynb" => ".md")
-            mdpath = joinpath(@__DIR__, "..", "docs", "src", "examples", mdname)
+            mdname = replace(example[:filename], ".ipynb" => ".md")
+            mdpath = joinpath(@__DIR__, "..", "docs", "src", "examples", string(example[:category]), mdname)
             mdtext = read(mdpath, String)
 
             # Check if example failed with an error
-            # TODO: we might have better heurstic here? But I couldn't find a way to tell `Weave.jl` if an error has occured
+            # TODO: we might have better heuristic here? But I couldn't find a way to tell `Weave.jl` if an error has occurred
             # TODO: try to improve this later
             erroridx = findnext("```\nError:", mdtext, 1)
             if !isnothing(erroridx)
@@ -204,8 +241,8 @@ function Base.run(examplesrunner::ExamplesRunner)
             end
 
             # We simply remove pre-generated `.md` file if it has been marked as hidden
-            if example[:hidden]
-                @info "Skipping example $(example[:title]) as it has been marked as hidden"
+            if isequal(example[:category], :hidden_examples)
+                @info "Skipping example $(example[:title]) as it has been marked as hidden."
                 rm(mdpath, force = true)
                 return nothing
             end
@@ -215,32 +252,48 @@ function Base.run(examplesrunner::ExamplesRunner)
             id          = string("examples-", lowercase(join(split(example[:title]), "-")))
 
             if isnothing(findnext("# $(title)", mdtext, 1))
-                @error "Could not find cell `# $(title)` in the `$(mdpath)`"
-                error(-1)
+                error("Could not find cell `# $(title)` in the `$(mdpath)`")
             end
 
             open(mdpath, "w") do f
                 # In every examples we replace title with its `@id` equivalent, such that 
                 # `# Super cool title` becomes `[# Super cool title](@id examples-super-cool-title)`
-                fixtext = replace(mdtext, "# $(title)" => "# [$(title)](@id $(id))", fixpics, fixgifs...)
+                fixtext = replace(mdtext, "# $(title)" => "# [$(title)](@id $(id))", fixpics...)
                 output  = string("This example has been auto-generated from the [`examples/`](https://github.com/biaslab/RxInfer.jl/tree/main/examples) folder at GitHub repository.\n\n", fixtext)
                 write(f, output)
             end
 
-            write(io_overview, "- [$(title)](@ref $id): $description\n")
+            write(io_category_overviews[example.category].io, "- [$(title)](@ref $id): $description\n")
 
             return nothing
         end
 
         # Copy the `pics` folder from the examples to the assets
         if isdir(joinpath(efolder, "pics"))
+            # These are the static pics
             @info "Copying the `pics` folder from the examples."
             cp(joinpath(efolder, "pics"), joinpath(afolder, "pics"); force = true)
+            # These are the pics generated inside of the examples (e.g gifs)
+            @info "Copying the generated `pics` from the examples."
+            for generated_pic in readdir(joinpath(dfolder, "pics"))
+                cp(joinpath(dfolder, "pics", generated_pic), joinpath(afolder, "pics", generated_pic); force = true)
+            end
         end
 
+        # Write main overview
         open(joinpath(@__DIR__, "..", "docs", "src", "examples", "overview.md"), "w") do f
-            write(f, String(take!(io_overview)))
+            write(f, String(take!(io_main_overview)))
         end
+
+        # Write sub-categories overviews
+        foreach(pairs(io_category_overviews)) do (label, overview)
+            if !isequal(label, :hidden_examples)
+                open(joinpath(@__DIR__, "..", "docs", "src", "examples", string(label), "overview.md"), "w") do f
+                    write(f, String(take!(overview.io)))
+                end
+            end
+        end
+
     else
         @info "Skip overview generation for a specific example. Possible errors in the generated document are supressed. Check the generated document manually."
     end
@@ -249,6 +302,7 @@ function Base.run(examplesrunner::ExamplesRunner)
     rm(joinpath(dfolder, "Manifest.toml"), force = true)
     rm(joinpath(dfolder, "Project.toml"), force = true)
     rm(joinpath(dfolder, "data"), force = true, recursive = true)
+    rm(joinpath(dfolder, "pics"), force = true, recursive = true)
 
     @info "Finished."
 end

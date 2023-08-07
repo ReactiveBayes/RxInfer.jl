@@ -116,7 +116,7 @@ function __inference_process_error(err::StackOverflowError, rethrow)
     Stack overflow error occurred during the inference procedure. 
     The inference engine may execute message update rules recursively, hence, the model graph size might be causing this error. 
     To resolve this issue, try using `limit_stack_depth` inference option for model creation. See `?inference` documentation for more details.
-    The `limit_stack_depth` option does not help against over stack overflow errors that might hapenning outside of the model creation or message update rules execution.
+    The `limit_stack_depth` option does not help against over stack overflow errors that might happening outside of the model creation or message update rules execution.
     """
     if rethrow
         Base.rethrow(err) # Shows the original stack trace
@@ -196,7 +196,7 @@ This structure is used as a return value from the [`inference`](@ref) function.
 - `free_energy`: (optional) An array of Bethe Free Energy values per VMP iteration. See the `free_energy` argument for [`inference`](@ref).
 - `model`: `FactorGraphModel` object reference.
 - `returnval`: Return value from executed `@model`.
-- `error`: (optional) A reference to an exception, that might have occured during the inference. See the `catch_exception` argument for [`inference`](@ref).
+- `error`: (optional) A reference to an exception, that might have occurred during the inference. See the `catch_exception` argument for [`inference`](@ref).
 
 See also: [`inference`](@ref)
 """
@@ -233,7 +233,7 @@ function Base.show(io::IO, result::InferenceResult)
     if iserror(result)
         print(
             io,
-            "[ WARN ] An error has occured during the inference procedure. The result might not be complete. You can use the `.error` field to access the error and its backtrace. Use `Base.showerror` function to display the error."
+            "[ WARN ] An error has occurred during the inference procedure. The result might not be complete. You can use the `.error` field to access the error and its backtrace. Use `Base.showerror` function to display the error."
         )
     end
 end
@@ -481,10 +481,10 @@ If the `addons` argument has been used, automatically changes the default strate
 
 - ### `catch_exception`
 
-The `catch_exception` keyword argument specifies whether exceptions during the inference procedure should be catched in the `error` field of the 
+The `catch_exception` keyword argument specifies whether exceptions during the inference procedure should be caught in the `error` field of the 
 result. By default, if exception occurs during the inference procedure the result will be lost. Set `catch_exception = true` to obtain partial result 
 for the inference in case if an exception occurs. Use `RxInfer.issuccess` and `RxInfer.iserror` function to check if the inference completed successfully or failed.
-If an error occurs, the `error` field will store a tuple, where first element is the exception itself and the second element is the catched `backtrace`. Use the `stacktrace` function 
+If an error occurs, the `error` field will store a tuple, where first element is the exception itself and the second element is the caught `backtrace`. Use the `stacktrace` function 
 with the `backtrace` as an argument to recover the stacktrace of the error. Use `Base.showerror` function to display
 the error.
  

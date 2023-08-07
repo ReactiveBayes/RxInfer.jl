@@ -175,7 +175,7 @@ function write_pipeline_stage(fform, stage)
         elseif @capture(stage, RequireMarginal(args__))
             return :(ReactiveMP.RequireMarginalFunctionalDependencies($indices, $initials))
         else
-            error("Unreacheable reached in `write_pipeline_stage`.")
+            error("Unreachable reached in `write_pipeline_stage`.")
         end
     else
         return stage

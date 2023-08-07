@@ -119,11 +119,11 @@ function Base.run(testrunner::TestRunner)
             end
             return nothing
         end
-        # We save the created task for later syncronization
+        # We save the created task for later synchronization
         push!(testrunner.test_tasks, task)
     end
 
-    # For each remotelly called task we `fetch` its result or save an exception
+    # For each remotely called task we `fetch` its result or save an exception
     foreach(fetch, testrunner.test_tasks)
 
     # If exception are not empty we notify the user and force-fail
@@ -219,6 +219,7 @@ end
     addtests(testrunner, "constraints/test_form_constraints.jl")
     addtests(testrunner, "constraints/test_factorisation_constraints.jl")
     addtests(testrunner, "constraints/form/test_form_point_mass.jl")
+    addtests(testrunner, "constraints/form/test_form_sample_list.jl")
 
     addtests(testrunner, "test_node.jl")
     addtests(testrunner, "test_model.jl")
