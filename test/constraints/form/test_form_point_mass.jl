@@ -7,8 +7,8 @@ using Random, StableRNGs, DomainSets, Distributions
 import ReactiveMP: constrain_form
 import RxInfer: PointMassFormConstraint, is_point_mass_form_constraint, call_boundaries, call_starting_point, call_optimizer
 
-struct MyDistributionWithMode <: ContinuousUnivariateDistribution 
-    mode :: Float64
+struct MyDistributionWithMode <: ContinuousUnivariateDistribution
+    mode::Float64
 end
 
 # We are testing specifically that the point mass optimizer does not call `logpdf` and 
@@ -24,7 +24,6 @@ const arbitrary_dist_4 = ContinuousUnivariateLogPdf(HalfLine(), (x) -> logpdf(Ga
 const arbitrary_dist_5 = ContinuousUnivariateLogPdf(HalfLine(), (x) -> logpdf(GammaShapeRate(100, 100), x))
 
 @testset "PointMassFormConstraint" begin
-
     @testset "is_point_mass_form_constraint" begin
         @test is_point_mass_form_constraint(PointMassFormConstraint())
     end
