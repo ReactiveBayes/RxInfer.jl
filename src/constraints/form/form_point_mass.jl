@@ -82,6 +82,9 @@ call_starting_point(pmconstraint::PointMassFormConstraint, distribution::D) wher
 
 ReactiveMP.constrain_form(pmconstraint::PointMassFormConstraint, distribution) = call_optimizer(pmconstraint, distribution)
 
+# There is no need to call the optimizer on a `Distribution` object since they should have a well defined `mode`
+ReactiveMP.constrain_form(::PointMassFormConstraint, distribution::Distribution) = PointMass(mode(distribution))
+
 function default_point_mass_form_constraint_optimizer(::Type{Univariate}, ::Type{Continuous}, constraint::PointMassFormConstraint, distribution)
     target = let distribution = distribution
         (x) -> -logpdf(distribution, x[1])
