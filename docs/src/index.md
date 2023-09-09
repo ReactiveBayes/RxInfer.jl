@@ -57,14 +57,6 @@ taking advantage of local conjugate relationships in probabilistic models, and f
 various Bayesian inference algorithms in different parts of the factor graph of a single probabilistic model. This makes it easier
 to explore different "what-if" scenarios and enables very efficient inference in specific cases.
 
-## Ecosystem
-
-The `RxInfer` unites 3 core packages into one powerful reactive message passing-based Bayesian inference framework:
-
-- [`ReactiveMP.jl`](https://github.com/biaslab/ReactiveMP.jl) - core package for efficient and scalable for reactive message passing 
-- [`GraphPPL.jl`](https://github.com/biaslab/GraphPPL.jl) - package for model and constraints specification
-- [`Rocket.jl`](https://github.com/biaslab/Rocket.jl) - reactive programming tools
-
 ## How to get started?
 
 Head to the [Getting started](@ref user-guide-getting-started) section to get up and running with RxInfer. Alternatively, explore various [examples](@ref examples-overview) in the documentation.
@@ -90,9 +82,21 @@ Pages = [
 Depth = 2
 ```
 
-## Resources
+## References
 
-- For an introduction to message passing and FFGs, see [The Factor Graph Approach to Model-Based Signal Processing](https://ieeexplore.ieee.org/document/4282128/) by Loeliger et al. (2007).
+- [RxInfer: A Julia package for reactive real-time Bayesian inference](https://doi.org/10.21105/joss.05161) - a reference paper for the `RxInfer.jl` framwork.
+- [Variational Message Passing and Local Constraint Manipulation in Factor Graphs](https://doi.org/10.3390/e23070807) - describes theoretical aspects of the underlying Bayesian inference method.
+- [Reactive Message Passing for Scalable Bayesian Inference](https://doi.org/10.48550/arXiv.2112.13251) - describes implementation aspects of the Bayesian inference engine and performs benchmarks and accuracy comparison on various models.
+- [A Julia package for reactive variational Bayesian inference](https://doi.org/10.1016/j.simpa.2022.100299) - a reference paper for the `ReactiveMP.jl` package, the underlying inference engine.
+- [The Factor Graph Approach to Model-Based Signal Processing](https://ieeexplore.ieee.org/document/4282128/) - an introduction to message passing and FFGs.
+
+## Ecosystem
+
+The `RxInfer` unites 3 core packages into one powerful reactive message passing-based Bayesian inference framework:
+
+- [`ReactiveMP.jl`](https://github.com/biaslab/ReactiveMP.jl) - core package for efficient and scalable for reactive message passing 
+- [`GraphPPL.jl`](https://github.com/biaslab/GraphPPL.jl) - package for model and constraints specification
+- [`Rocket.jl`](https://github.com/biaslab/Rocket.jl) - reactive programming tools
 
 ## Index
 

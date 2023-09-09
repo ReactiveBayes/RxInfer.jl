@@ -12,4 +12,4 @@ In order to start the release process a person with the associated permissions s
 
 ![Release comment](../assets/img/release_comment.png)
 
-The Julia Registrator bot should automaticallly register a request for the new release. Once all checks have passed on the Julia Registrator's side, the new release will be published and tagged automatically.
+The Julia Registrator bot should automatically register a request for the new release. Once all checks have passed on the Julia Registrator's side, the new release will be published and tagged automatically.
