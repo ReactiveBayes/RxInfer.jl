@@ -632,9 +632,7 @@ function inference(;
                 error("datavar $(variable) has missings inside but does not allow it. Add `where {allow_missing = true }`")
             else
                 nothing
-            end,
-            keys(vardict),
-            values(vardict)
+            end, keys(vardict), values(vardict)
         )
         predictvars = Dict(
             variable => KeepLast() for (variable, value) in pairs(vardict) if

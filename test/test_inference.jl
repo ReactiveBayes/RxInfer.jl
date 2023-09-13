@@ -901,7 +901,7 @@ end
         end
     end
 
-    result = inference(model = coin_model(length(dataset)), data  = (y = dataset,))
+    result = inference(model = coin_model(length(dataset)), data = (y = dataset,))
 
     @test typeof(last(result.predictions[:y])) <: Bernoulli
 
@@ -916,7 +916,7 @@ end
         end
     end
 
-    @test_throws ErrorException inference(model = coin_model(length(dataset)), data  = (y = dataset,))
+    @test_throws ErrorException inference(model = coin_model(length(dataset)), data = (y = dataset,))
 
     #test #10 free_energy error handling
     @test_throws ErrorException inference(model = coin_model(length(dataset)), data = (y = dataset,), free_energy = true)
