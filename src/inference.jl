@@ -627,6 +627,7 @@ function inference(;
             end
         end
     else # In this case, the prediction functionality should only be performed if the data allows missings and actually contains missing values.
+        foreach((variable, value) -> isdata(value) && __inference_check_dataismissing(data[variable]) && !allows_missings(value) ? error("datavar $(variable) has missings inside but does not allow it. Add `where {allow_missing = true }`") : nothing, keys(vardict), values(vardict))
         predictvars = Dict(
             variable => KeepLast() for (variable, value) in pairs(vardict) if
             (isdata(value) && haskey(data, variable) && allows_missings(value) && __inference_check_dataismissing(data[variable]) && !isanonymous(value))
@@ -683,6 +684,10 @@ function inference(;
         subscriptions_pr   = Dict(variable => subscribe!(obtain_prediction(vardict[variable]) |> ensure_update(fmodel, on_marginal_update, variable, updates[variable]), actor) for (variable, actor) in pairs(actors_pr))
 
         is_free_energy, S, T = unwrap_free_energy_option(free_energy)
+
+        if !isempty(actors_pr) && is_free_energy
+            error("Cannot compute Bethe Free Energy for models with prediction variables. Please set `free_energy = false`.")
+        end
 
         if is_free_energy
             fe_actor        = ScoreActor(S, _iterations, 1)

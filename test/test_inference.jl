@@ -722,11 +722,6 @@ end
 
 @testset "Predictions functionality" begin
 
-    # Given the current implementation of RxInfer ecosystem, this rule needs to be predifined 
-    @rule NormalMeanPrecision(:μ, Marginalisation) (m_out::PointMass, q_τ::PointMass) = begin
-        return missing
-    end
-
     # test #1 (array with missing + predictvars)
     data = (y = [1.0, -500.0, missing, 100.0],)
 
@@ -857,7 +852,7 @@ end
     @test haskey(result.predictions, :y)
     @test typeof(result.predictions[:y]) <: NormalDistributionsFamily
 
-    # test vmp model
+    # test #7 vmp model
     data = (y = [1.0, -10.0, 5.0],)
     @model function vmp_model(n)
         x = randomvar(n + 1)
@@ -894,6 +889,52 @@ end
 
     @test first(result.posteriors[:γ]) != last(result.posteriors[:γ])
     @test first(result.predictions[:o]) != last(result.predictions[:o])
+
+
+    # test #8 non gaussian likelihood (single datavar missing)
+    dataset = [1.0, 0.0, 1.0, missing,]
+    @model function coin_model(n)
+
+        y = datavar(Float64, n) where {allow_missing = true}
+
+        θ ~ Beta(4.0, 8.0)
+        for i in 1:n
+            y[i] ~ Bernoulli(θ)
+        end
+
+    end
+
+    result = inference(
+        model = coin_model(length(dataset)), 
+        data  = (y = dataset, )
+    )
+
+    @test typeof(last(result.predictions[:y])) <: Bernoulli
+
+    # test #9 allow_missing error handling
+    dataset = [1.0, 0.0, 1.0, missing,]
+    @model function coin_model(n)
+
+        y = datavar(Float64, n)
+
+        θ ~ Beta(4.0, 8.0)
+        for i in 1:n
+            y[i] ~ Bernoulli(θ)
+        end
+
+    end
+
+    @test_throws ErrorException inference(
+        model = coin_model(length(dataset)), 
+        data  = (y = dataset, )
+    )
+
+    #test #10 free_energy error handling
+    @test_throws ErrorException inference(
+        model = coin_model(length(dataset)), 
+        data  = (y = dataset, ),
+        free_energy = true
+    )
 end
 
 end
