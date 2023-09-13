@@ -144,7 +144,7 @@ function __inference_check_dicttype(keyword::Symbol, ::T) where {T}
           """)
 end
 
-__inference_check_dataismissing(d) = (ismissing(d) || !isempty(findall(ismissing, d)))
+__inference_check_dataismissing(d) = (ismissing(d) || any(ismissing, d))
 
 # Return NamedTuple for predictions
 __inference_fill_predictions(s::Symbol, d::AbstractArray) = NamedTuple{Tuple([s])}([repeat([missing], length(d))])
