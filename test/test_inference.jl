@@ -755,6 +755,7 @@ end
     result = inference(model = model_1(length(data[:y])), iterations = 10, data = data, predictvars = (o = KeepLast(),))
 
     @test all(typeof.(result.predictions[:o]) .<: NormalDistributionsFamily)
+    @test length(result.predictions[:o]) === 2
     @test typeof(result.predictions[:y][3]) <: NormalDistributionsFamily
 
     # test #2 (array with missing + single entry for predictvars)
@@ -777,8 +778,9 @@ end
 
     result = inference(model = model_2(length(data[:y])), iterations = 10, data = data, predictvars = (o = KeepEach(),))
 
-    # note we used KeepEach for variable o with BP algorithm (10 iterations), we expect all predicted variables to be equal 
+    # note we used KeepEach for variable o with BP algorithm (10 iterations), we expect all predicted variables to be equal (because of the beleif propagation)
     @test all(y -> y == result.predictions[:o][1], result.predictions[:o])
+    @test length(result.predictions[:o]) === 10
     @test all(typeof.(result.predictions[:y]) .<: NormalDistributionsFamily)
 
     # test #3 (array + single entry for predictvars)
@@ -802,8 +804,9 @@ end
 
     @test !haskey(result.predictions, :y)
     @test haskey(result.predictions, :o)
+    @test typeof(result.predictions[:o]) <: NormalDistributionsFamily
 
-    # test #4 (array of missing + no predictvars)
+    # test #4 (array with a missing + no predictvars)
     data = (y = [1.0, 2.0, missing],)
     @model function model_4(n)
         x = randomvar(n)
@@ -833,6 +836,7 @@ end
     result = inference(model = model_5(), iterations = 1, predictvars = (o = KeepLast(),))
 
     @test haskey(result.predictions, :o)
+    @test typeof(result.predictions[:o]) <: NormalDistributionsFamily
 
     # test #6 (single datavar missing)
     @model function model_6()
@@ -851,6 +855,7 @@ end
     result = inference(model = model_6(), data = (y = missing, x_0 = 1.0), initmessages = (a = vague(NormalMeanPrecision),), iterations = 10, free_energy = false)
 
     @test haskey(result.predictions, :y)
+    @test typeof(result.predictions[:y]) <: NormalDistributionsFamily
 
     # test vmp model
     data = (y = [1.0, -10.0, 5.0],)
