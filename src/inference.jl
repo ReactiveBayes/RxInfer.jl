@@ -627,7 +627,15 @@ function inference(;
             end
         end
     else # In this case, the prediction functionality should only be performed if the data allows missings and actually contains missing values.
-        foreach((variable, value) -> isdata(value) && __inference_check_dataismissing(data[variable]) && !allows_missings(value) ? error("datavar $(variable) has missings inside but does not allow it. Add `where {allow_missing = true }`") : nothing, keys(vardict), values(vardict))
+        foreach(
+            (variable, value) -> if isdata(value) && __inference_check_dataismissing(data[variable]) && !allows_missings(value)
+                error("datavar $(variable) has missings inside but does not allow it. Add `where {allow_missing = true }`")
+            else
+                nothing
+            end,
+            keys(vardict),
+            values(vardict)
+        )
         predictvars = Dict(
             variable => KeepLast() for (variable, value) in pairs(vardict) if
             (isdata(value) && haskey(data, variable) && allows_missings(value) && __inference_check_dataismissing(data[variable]) && !isanonymous(value))
