@@ -150,7 +150,14 @@ result = inference(
 ![Coin Flip](docs/src/assets/img/coin-flip.svg?raw=true&sanitize=true "Coin-Flip readme results")
 
 # Where to go next?
+
 There are a set of [examples](https://biaslab.github.io/RxInfer.jl/stable/examples/overview/) available in `RxInfer` repository that demonstrate the more advanced features of the package. Alternatively, you can head to the [documentation](https://biaslab.github.io/RxInfer.jl/stable/) that provides more detailed information of how to use `RxInfer` to specify more complex probabilistic models.
+
+Additionally, checkout our [video from JuliaCon 2023](https://www.youtube.com/watch?v=qXrvDVm_fnE) for a high-level overview of the package
+
+<p align="center">
+    <a href="https://www.youtube.com/watch?v=qXrvDVm_fnE"><img width="460" src="https://img.youtube.com/vi/qXrvDVm_fnE/0.jpg"></a>
+</p>
 
 # Ecosystem
 
