@@ -909,11 +909,11 @@ end
     @test Bernoulli(mean(Beta(sum(dataset .!== missing) + 1.0, 1.0))) ≈ last(result.predictions[:y])
 
     # test #9 allow_missing error handling
-    dataset = [1.0, 0.0, 1.0, missing]
+    dataset = [1.0, 1.0, 1.0, missing]
     @model function coin_model(n)
         y = datavar(Float64, n)
 
-        θ ~ Beta(4.0, 8.0)
+        θ ~ Beta(1.0, 1.0)
         for i in 1:n
             y[i] ~ Bernoulli(θ)
         end
@@ -921,8 +921,21 @@ end
 
     @test_throws ErrorException inference(model = coin_model(length(dataset)), data = (y = dataset,))
 
-    #test #10 free_energy error handling
     @test_throws ErrorException inference(model = coin_model(length(dataset)), data = (y = dataset,), free_energy = true)
+
+    # test #10 predictvars, no dataset
+    @model function coin_model(n)
+        y = datavar(Float64, n)  where {allow_missing = true}
+    
+        θ ~ Beta(1.0, 1.0)
+        for i in 1:n
+            y[i] ~ Bernoulli(θ)
+        end
+    end
+    
+    result = inference(model = coin_model(length(dataset)), predictvars = (y = KeepLast(),))
+
+    @test result.predictions[:y] .== Bernoulli(mean(Beta(1.0, 1.0)))
 end
 
 end
