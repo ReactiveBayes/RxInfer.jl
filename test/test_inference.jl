@@ -891,11 +891,11 @@ end
     @test first(result.predictions[:o]) != last(result.predictions[:o])
 
     # test #8 non gaussian likelihood (single datavar missing)
-    dataset = [1.0, 0.0, 1.0, missing]
+    dataset = [1.0, 1.0, 1.0, missing]
     @model function coin_model(n)
         y = datavar(Float64, n) where {allow_missing = true}
 
-        θ ~ Beta(4.0, 8.0)
+        θ ~ Beta(1.0, 1.0)
         for i in 1:n
             y[i] ~ Bernoulli(θ)
         end
@@ -904,6 +904,9 @@ end
     result = inference(model = coin_model(length(dataset)), data = (y = dataset,))
 
     @test typeof(last(result.predictions[:y])) <: Bernoulli
+
+    # for θ ~ Beta(1.0, 1.0)
+    @test Bernoulli(mean(Beta(sum(dataset .!== missing) + 1.0, 1.0))) ≈ last(result.predictions[:y])
 
     # test #9 allow_missing error handling
     dataset = [1.0, 0.0, 1.0, missing]
