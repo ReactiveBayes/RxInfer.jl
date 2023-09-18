@@ -532,7 +532,7 @@ function inference(;
     options = nothing,
     # Return structure info, optional, defaults to return everything at each iteration
     returnvars = nothing,
-    # Return structure info, optional, defaults to return everything at each iteration
+    # Prediction structure info, optional, defaults to return everything at each iteration
     predictvars = nothing,
     # Number of iterations, defaults to 1, we do not distinguish between VMP or Loopy belief or EP iterations
     iterations = nothing,
