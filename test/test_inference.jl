@@ -892,7 +892,7 @@ end
 
     # test #8 non gaussian likelihood (single datavar missing)
     dataset = [1.0, 1.0, 1.0, missing]
-    @model function coin_model(n)
+    @model function coin_model1(n)
         y = datavar(Float64, n) where {allow_missing = true}
 
         θ ~ Beta(1.0, 1.0)
@@ -901,7 +901,7 @@ end
         end
     end
 
-    result = inference(model = coin_model(length(dataset)), data = (y = dataset,))
+    result = inference(model = coin_model1(length(dataset)), data = (y = dataset,))
 
     @test typeof(last(result.predictions[:y])) <: Bernoulli
 
@@ -910,7 +910,7 @@ end
 
     # test #9 allow_missing error handling
     dataset = [1.0, 1.0, 1.0, missing]
-    @model function coin_model(n)
+    @model function coin_model2(n)
         y = datavar(Float64, n)
 
         θ ~ Beta(1.0, 1.0)
@@ -919,12 +919,12 @@ end
         end
     end
 
-    @test_throws ErrorException inference(model = coin_model(length(dataset)), data = (y = dataset,))
+    @test_throws ErrorException inference(model = coin_model2(length(dataset)), data = (y = dataset,))
 
-    @test_throws ErrorException inference(model = coin_model(length(dataset)), data = (y = dataset,), free_energy = true)
+    @test_throws ErrorException inference(model = coin_model2(length(dataset)), data = (y = dataset,), free_energy = true)
 
     # test #10 predictvars, no dataset
-    @model function coin_model(n)
+    @model function coin_model3(n)
         y = datavar(Float64, n) where {allow_missing = true}
 
         θ ~ Beta(1.0, 1.0)
@@ -933,9 +933,9 @@ end
         end
     end
 
-    result = inference(model = coin_model(length(dataset)), predictvars = (y = KeepLast(),))
+    result = inference(model = coin_model3(length(dataset)), predictvars = (y = KeepLast(),))
 
-    @test result.predictions[:y] .== Bernoulli(mean(Beta(1.0, 1.0)))
+    @test all(result.predictions[:y] .== Bernoulli(mean(Beta(1.0, 1.0))))
 end
 
 end
