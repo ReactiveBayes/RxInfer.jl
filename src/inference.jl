@@ -692,7 +692,7 @@ function inference(;
         is_free_energy, S, T = unwrap_free_energy_option(free_energy)
 
         if !isempty(actors_pr) && is_free_energy
-            error("Cannot compute Bethe Free Energy for models with prediction variables. Please set `free_energy = false`.")
+            error("The Bethe Free Energy computation is not compatible with the prediction functionality. Set `free_energy = false` to suppress this error.")
         end
 
         if is_free_energy
