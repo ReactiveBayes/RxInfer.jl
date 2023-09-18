@@ -925,14 +925,14 @@ end
 
     # test #10 predictvars, no dataset
     @model function coin_model(n)
-        y = datavar(Float64, n)  where {allow_missing = true}
-    
+        y = datavar(Float64, n) where {allow_missing = true}
+
         θ ~ Beta(1.0, 1.0)
         for i in 1:n
             y[i] ~ Bernoulli(θ)
         end
     end
-    
+
     result = inference(model = coin_model(length(dataset)), predictvars = (y = KeepLast(),))
 
     @test result.predictions[:y] .== Bernoulli(mean(Beta(1.0, 1.0)))
