@@ -147,8 +147,8 @@ end
 __inference_check_dataismissing(d) = (ismissing(d) || any(ismissing, d))
 
 # Return NamedTuple for predictions
-__inference_fill_predictions(s::Symbol, d::AbstractArray) = NamedTuple{Tuple([s])}([repeat([missing], length(d))])
-__inference_fill_predictions(s::Symbol, d::DataVariable) = NamedTuple{Tuple([s])}([missing])
+__inference_fill_predictions(s::Symbol, d::AbstractArray) = NamedTuple{(s, )}((Iterators.repeated(missing, length(d)), ))
+__inference_fill_predictions(s::Symbol, d::DataVariable) = NamedTuple{(s, )}((missing, ))
 
 ## Inference results postprocessing
 
