@@ -555,7 +555,7 @@ function inference(;
     catch_exception = false
 )
     if isnothing(data) && isnothing(predictvars)
-        error("""One of keyword arguments `data` or `predictvars`` must be specified""")
+        error("""One of the keyword arguments `data` or `predictvars` must be specified""")
     end
     __inference_check_dicttype(:initmarginals, initmarginals)
     __inference_check_dicttype(:initmessages, initmessages)
