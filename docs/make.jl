@@ -96,10 +96,9 @@ end
 
 makedocs(;
     draft = false,
-    strict = [:doctest, :eval_block, :example_block, :meta_block, :parse_error, :setup_block],
+    warnonly = Documenter.except(:doctest, :eval_block, :example_block, :meta_block, :parse_error, :setup_block),
     modules = [RxInfer],
     authors = "Bagaev Dmitry <d.v.bagaev@tue.nl> and contributors",
-    repo = "https://github.com/biaslab/RxInfer.jl/blob/{commit}{path}#{line}",
     sitename = "RxInfer.jl",
     format = Documenter.HTML(;
         prettyurls = get(ENV, "CI", "false") == "true",
