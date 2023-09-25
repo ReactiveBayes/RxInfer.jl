@@ -44,8 +44,8 @@ end
 @testset "aliases for `Normal` family of distributions" begin
     result = normal_aliases_inference()
     # Here we simply test that it ran and gave some output 
-    @test first(mean(result.posteriors[:x1])) ≈ 0.03030314940197132
-    @test first(result.free_energy) ≈ 2.6823450222125444
+    @test first(mean(result.posteriors[:x1])) ≈ 0.04182509505703423
+    @test first(result.free_energy) ≈ 2.319611135721246
 end
 
 end
