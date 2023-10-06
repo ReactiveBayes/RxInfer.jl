@@ -22,7 +22,7 @@ Creates model inference options object. The list of available options is present
 ### Options
 
 - `limit_stack_depth`: limits the stack depth for computing messages, helps with `StackOverflowError` for some huge models, but reduces the performance of inference backend. Accepts integer as an argument that specifies the maximum number of recursive depth. Lower is better for stack overflow error, but worse for performance.
-- `warn`: flag to throw warnings during model creatino.
+- `warn`: (optional) flag to suppress warnings. Warnings are not displayed if set to `false`. Defaults to `true`.
 
 ### Advanced options
 
@@ -37,13 +37,15 @@ struct ModelInferenceOptions{P, S, A}
     addons    :: A
     warn      :: Bool
 end
+
 ModelInferenceOptions(pipeline, scheduler, addons) = ModelInferenceOptions(pipeline, scheduler, addons, true)
 
 UnspecifiedModelInferenceOptions() = convert(ModelInferenceOptions, (;))
 
-setpipeline(options::ModelInferenceOptions, pipeline) = ModelInferenceOptions(pipeline, options.scheduler, options.addons)
-setscheduler(options::ModelInferenceOptions, scheduler) = ModelInferenceOptions(options.pipeline, scheduler, options.addons)
-setaddons(options::ModelInferenceOptions, addons) = ModelInferenceOptions(options.pipeline, options.scheduler, addons)
+setpipeline(options::ModelInferenceOptions, pipeline) = ModelInferenceOptions(pipeline, options.scheduler, options.addons, options.warn)
+setscheduler(options::ModelInferenceOptions, scheduler) = ModelInferenceOptions(options.pipeline, scheduler, options.addons, options.warn)
+setaddons(options::ModelInferenceOptions, addons) = ModelInferenceOptions(options.pipeline, options.scheduler, addons, options.warn)
+setwarn(options::ModelInferenceOptions, warn) = ModelInferenceOptions(options.pipeline, options.scheduler, options.addons, warn)
 
 import Base: convert
 
@@ -72,7 +74,7 @@ function Base.convert(::Type{ModelInferenceOptions}, options::NamedTuple{keys}) 
     end
 
     if warn && haskey(options, :scheduler) && haskey(options, :limit_stack_depth)
-        @warn "Model options have `scheduler` and `limit_stack_depth` options specified together. Ignoring `limit_stack_depth`. Use `warn = false` to suppress this warning."
+        @warn "Model options have `scheduler` and `limit_stack_depth` options specified together. Ignoring `limit_stack_depth`. Use `warn = false` option in `ModelInferenceOptions` to suppress this warning."
     end
 
     if haskey(options, :scheduler)
@@ -169,6 +171,8 @@ end
 import ReactiveMP: activate!
 
 function ReactiveMP.activate!(model::FactorGraphModel)
+    warn = getoptions(model).warn
+
     filter!(getrandom(model)) do randomvar
         @assert degree(randomvar) !== 0 "Unused random variable has been found $(indexed_name(randomvar))."
         @assert degree(randomvar) !== 1 "Half-edge has been found: $(indexed_name(randomvar)). To terminate half-edges 'Uninformative' node can be used."
@@ -176,7 +180,7 @@ function ReactiveMP.activate!(model::FactorGraphModel)
     end
 
     foreach(getdata(model)) do datavar
-        if model.options.warn && !isconnected(datavar) && !isused(datavar)
+        if warn && !isconnected(datavar) && !isused(datavar)
             @warn "Unused data variable has been found: '$(indexed_name(datavar))'. Ignore if '$(indexed_name(datavar))' has been used in deterministic nonlinear transformation. Use `warn = false` to suppress this warning."
         end
     end
@@ -257,7 +261,7 @@ function (generator::ModelGenerator)(model::FactorGraphModel)
 end
 
 """
-    create_model(::ModelGenerator, constraints = nothing, meta = nothing, options = nothing, warn = true)
+    create_model(::ModelGenerator, constraints = nothing, meta = nothing, options = nothing)
 
 Creates an instance of `FactorGraphModel` from the given model specification as well as optional `constraints`, `meta` and `options`.
 
