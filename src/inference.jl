@@ -1680,7 +1680,7 @@ function rxinference(;
 
     datavarnames = fields(_T)::NTuple
     N            = length(datavarnames) # should be static
-    
+
     _options = convert(ModelInferenceOptions, options)
     # If the `options` does not have `warn` key inside, override it with the keyword `warn`
     if isnothing(options) || !haskey(options, :warn)
