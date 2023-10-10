@@ -20,7 +20,7 @@ Based on the above, RxInfer.jl supports the following deterministic transformati
 
 ## Gaussian Case
 
-In the context of Gaussian distributions, we recommend either the `Linearization` or `Unscented` method for delta node approximation. The `Linearization` method provides a first-order approximation, while the `Unscented` method delivers a more precise second-order approximation. It's worth noting that while the `Unscented` method is more accurate, it also requires a little more computational resources and has additional hyper-parameters, which may affect the result. By default, delta node approximation in RxInfer.jl employs the `Unscented` method.
+In the context of Gaussian distributions, we recommend either the `Linearization` or `Unscented` method for delta node approximation. The `Linearization` method provides a first-order approximation, while the `Unscented` method delivers a more precise second-order approximation. It's worth noting that while the `Unscented` method is more accurate, it also requires a little more computational resources and has additional hyper-parameters, which may affect the result. By default, the delta node approximation employed by RxInfer.jl is the `Unscented` method.
 
 
 For clarity, consider the following example:
