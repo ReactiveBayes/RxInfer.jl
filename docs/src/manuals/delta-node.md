@@ -60,7 +60,7 @@ delta_meta = @meta begin
 end
 ```
 
-To execute the inference:
+To execute the inference procedure:
 
 ```@example delta_node_example
 inference(model = delta_node_example(), meta=delta_meta, data = (z = 1.0,))
