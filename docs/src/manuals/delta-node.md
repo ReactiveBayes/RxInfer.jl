@@ -52,7 +52,7 @@ end
 
 For a deeper understanding of the [`Unscented`](@ref) method and its parameters, consult the package documentation.
 
-Given the invertibility of `tanh`, indicating its inverse function can optimize inference outcomes:
+Given the invertibility of `tanh`, indicating its inverse function can optimize the inference procedure:
 
 ```@example delta_node_example
 delta_meta = @meta begin 
