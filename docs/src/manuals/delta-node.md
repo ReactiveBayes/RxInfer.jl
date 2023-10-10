@@ -20,7 +20,7 @@ The table below summarizes the features of the delta node in RxInfer.jl, categor
 
 ## Gaussian Case
 
-In the context of Gaussian distributions, we recommend either the `Linearization` or `Unscented` method for delta node approximation. The `Linearization` method provides a first-order approximation, while the `Unscented` method delivers a more precise second-order approximation. It's worth noting that while the `Unscented` method is more accurate, it also requires a little more computational resources and has additional hyper-parameters, which may affect the result. By default, the delta node approximation employed by RxInfer.jl is the `Unscented` method.
+In the context of Gaussian distributions, we recommend either the `Linearization` or `Unscented` method for delta node approximation. The `Linearization` method provides a first-order approximation, while the `Unscented` method delivers a more precise second-order approximation. It's worth noting that while the `Unscented` method is more accurate, it may require hyper-parameters tuning.
 
 
 For clarity, consider the following example:
@@ -106,7 +106,7 @@ end
 
 ## Exponential Family Case
 
-When the delta node is associated with nodes from the exponential family (excluding Gaussians), the `Linearization` and `Unscented` methods are not applicable. In such cases, the CVI (Conjugate Variational Inference) becomes essential. Here's a modified example:
+When the delta node is associated with nodes from the exponential family (excluding Gaussians), the `Linearization` and `Unscented` methods are not applicable. In such cases, the CVI (Conjugate Variational Inference) is available. Here's a modified example:
 
 ```@example delta_node_example_cvi
 using RxInfer
