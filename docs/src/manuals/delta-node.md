@@ -69,7 +69,7 @@ inference(model = delta_node_example(), meta=delta_meta, data = (z = 1.0,))
 This methodology is consistent even when the delta node is associated with multiple nodes. For instance:
 
 ```@example delta_node_example
-f(x, y) = x*tanh(y)
+f(x, g) = x*tanh(g)
 ```
 
 ```@example delta_node_example
