@@ -75,7 +75,7 @@ f(x, y) = x*tanh(y)
 ```@example delta_node_example
 @model function delta_node_example()
     z = datavar(Float64)
-    x ~ Normal(mean=1.0, var=1)
+    x ~ Normal(mean=1.0, var=1.0)
     g ~ Normal(mean=1.0, var=1.0)
     y ~ f(x, g)
     z ~ Normal(mean=y, var=0.1)
