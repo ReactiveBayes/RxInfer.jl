@@ -130,4 +130,4 @@ delta_meta = @meta begin
 end
 ```
 
-The CVI method mandates four parameters. Consult the [`ProdCVI`](@ref) documentation for a detailed explanation of these parameters.
+Consult the `ProdCVI` docstrings for a detailed explanation of these parameters.
