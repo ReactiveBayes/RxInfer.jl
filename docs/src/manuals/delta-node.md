@@ -119,7 +119,7 @@ using RxInfer
 end
 ```
 
-The corresponding meta specification is:
+The corresponding meta specification can be represented as:
 
 ```@example delta_node_example_cvi
 using StableRNGs
