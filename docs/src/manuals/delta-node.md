@@ -50,7 +50,7 @@ delta_meta = @meta begin
 end
 ```
 
-For a deeper understanding of the [`Unscented`](@ref) method and its parameters, consult the package documentation.
+For a deeper understanding of the `Unscented` method and its parameters, consult the docstrings.
 
 Given the invertibility of `tanh`, indicating its inverse function can optimize the inference procedure:
 
