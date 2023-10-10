@@ -20,9 +20,8 @@ Based on the above, RxInfer.jl supports the following deterministic transformati
 
 ## Gaussian Case
 
-In the context of Gaussian distributions, we recommend either the `Linearization` or `Unscented` method for delta node approximation. The `Linearization` method provides a first-order approximation, while the `Unscented` method delivers a more precise second-order approximation. It's worth noting that while the `Unscented` method is more accurate, it also requires a little more computational resources, still pretty fast though. By default, delta node approximation in RxInfer.jl employs the `Unscented` method.
+In the context of Gaussian distributions, we recommend either the `Linearization` or `Unscented` method for delta node approximation. The `Linearization` method provides a first-order approximation, while the `Unscented` method delivers a more precise second-order approximation. It's worth noting that while the `Unscented` method is more accurate, it also requires a little more computational resources and has additional hyper-parameters, which may affect the result. By default, delta node approximation in RxInfer.jl employs the `Unscented` method.
 
-This version maintains the original information but presents it in a slightly more streamlined manner.
 
 For clarity, consider the following example:
 
@@ -70,13 +69,13 @@ inference(model = delta_node_example(), meta=delta_meta, data = (z = 1.0,))
 This methodology is consistent even when the delta node is associated with multiple nodes. For instance:
 
 ```@example delta_node_example
-f(x, y) = x*tanh(y)
+f(x, g) = x*tanh(g)
 ```
 
 ```@example delta_node_example
 @model function delta_node_example()
     z = datavar(Float64)
-    x ~ Normal(mean=1.0, var=1)
+    x ~ Normal(mean=1.0, var=1.0)
     g ~ Normal(mean=1.0, var=1.0)
     y ~ f(x, g)
     z ~ Normal(mean=y, var=0.1)
