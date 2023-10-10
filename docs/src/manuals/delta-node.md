@@ -4,6 +4,12 @@ RxInfer.jl offers a comprehensive set of stochastic nodes, with a primary emphas
 
 ## Features and Supported Inference Scenarios
 
+The delta node has several approximation methods for performing probabilistic inference. The desired approximation method depends on the nodes connected to the delta node. We differentiate the following deterministic transformation scenarios:
+
+1. **Gaussian Nodes**: For delta nodes linked to strictly multivariate or univariate Gaussian distributions, the recommended methods are Linearization or Unscented transforms.
+2. **Exponential Family Nodes**: For the delta node connected to nodes from the exponential family, the CVI (Conjugate Variational Inference) is the method of choice.
+3. **Stacking Delta Nodes**: For scenarios where delta nodes are stacked, either Linearization or Unscented transforms are suitable.
+
 The table below summarizes the features of the delta node in RxInfer.jl, categorized by the approximation method:
 
 | Methods       | Gaussian Nodes | Exponential Family Nodes | Stacking Delta Nodes 
@@ -11,12 +17,6 @@ The table below summarizes the features of the delta node in RxInfer.jl, categor
 | Linearization | ✓              | ✗                        | ✓                    
 | Unscented     | ✓              | ✗                        | ✓                    
 | CVI           | ✓              | ✓                        | ✗                    
-
-Based on the above, RxInfer.jl supports the following deterministic transformation scenarios:
-
-1. **Gaussian Nodes**: For delta nodes linked to strictly multivariate or univariate Gaussian distributions, the recommended methods are Linearization or Unscented transforms.
-2. **Exponential Family Nodes**: For the delta node connected to nodes from the exponential family, the CVI (Conjugate Variational Inference) is the method of choice.
-3. **Stacking Delta Nodes**: For scenarios where delta nodes are stacked, either Linearization or Unscented transforms are suitable.
 
 ## Gaussian Case
 
