@@ -49,10 +49,8 @@ end
 # Traits 
 - `is_point_mass_form_constraint` = `true`
 - `default_form_check_strategy`   = `FormConstraintCheckLast()`
-- `default_prod_constraint`       = `ProdGeneric()`
+- `default_prod_constraint`       = `GenericProd()`
 - `make_form_constraint`          = `PointMass` (for use in `@constraints` macro)
-
-See also: `ReactiveMP.constrain_form`, `ReactiveMP.DistProduct`
 """
 struct PointMassFormConstraint{F, P, B} <: AbstractFormConstraint
     optimizer      :: F
@@ -72,7 +70,7 @@ ReactiveMP.is_point_mass_form_constraint(::PointMassFormConstraint) = true
 
 ReactiveMP.default_form_check_strategy(::PointMassFormConstraint) = FormConstraintCheckLast()
 
-ReactiveMP.default_prod_constraint(::PointMassFormConstraint) = ProdGeneric()
+ReactiveMP.default_prod_constraint(::PointMassFormConstraint) = GenericProd()
 
 ReactiveMP.make_form_constraint(::Type{<:PointMass}, args...; kwargs...) = PointMassFormConstraint(args...; kwargs...)
 

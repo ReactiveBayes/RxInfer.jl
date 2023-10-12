@@ -1,7 +1,7 @@
 export LeftProposal, RightProposal, AutoProposal
 
 import ReactiveMP: is_point_mass_form_constraint, default_form_check_strategy, default_prod_constraint, make_form_constraint, constrain_form
-import ReactiveMP: AbstractContinuousGenericLogPdf, GenericLogPdfVectorisedProduct
+import BayesBase: AbstractContinuousGenericLogPdf
 
 using Random
 
@@ -28,10 +28,8 @@ One of the form constraint objects. Approximates `DistProduct` with a SampleList
 # Traits 
 - `is_point_mass_form_constraint` = `false`
 - `default_form_check_strategy`   = `FormConstraintCheckLast()`
-- `default_prod_constraint`       = `ProdGeneric()`
+- `default_prod_constraint`       = `GenericProd()`
 - `make_form_constraint`          = `SampleList` (for use in `@constraints` macro)
-
-See also: `ReactiveMP.constrain_form`, `ReactiveMP.DistProduct`
 """
 struct SampleListFormConstraint{N, R, S, M} <: AbstractFormConstraint
     rng      :: R
@@ -48,7 +46,7 @@ ReactiveMP.is_point_mass_form_constraint(::SampleListFormConstraint) = false
 
 ReactiveMP.default_form_check_strategy(::SampleListFormConstraint) = FormConstraintCheckLast()
 
-ReactiveMP.default_prod_constraint(::SampleListFormConstraint) = ProdGeneric()
+ReactiveMP.default_prod_constraint(::SampleListFormConstraint) = GenericProd()
 
 ReactiveMP.make_form_constraint(::Type{SampleList}, args...; kwargs...) = SampleListFormConstraint(args...; kwargs...)
 
@@ -59,7 +57,7 @@ __approximate(constraint::SampleListFormConstraint{N, R, S, M}, left, right) whe
 # which is not in the `AutoProposalLowPriorityCandidates` list
 # For example if we have a product of a `Gaussian` and a `ContinuousGenericLogPdf` the `AutoProposal` strategy
 # should pick the `Gaussian` as the proposal distribution
-const AutoProposalLowPriorityCandidates = Union{AbstractContinuousGenericLogPdf, GenericLogPdfVectorisedProduct}
+const AutoProposalLowPriorityCandidates = Union{AbstractContinuousGenericLogPdf, }
 
 function __approximate(constraint::SampleListFormConstraint{N, R, S, M}, left::AutoProposalLowPriorityCandidates, right) where {N, R, S <: AutoProposal, M}
     return ReactiveMP.approximate_prod_with_sample_list(constraint.rng, constraint.method, right, left, N)
@@ -81,8 +79,8 @@ function ReactiveMP.constrain_form(::SampleListFormConstraint, something)
     return something
 end
 
-function ReactiveMP.constrain_form(constraint::SampleListFormConstraint, product::DistProduct)
-    left  = ReactiveMP.constrain_form(constraint, ReactiveMP.getleft(product))
-    right = ReactiveMP.constrain_form(constraint, ReactiveMP.getright(product))
+function ReactiveMP.constrain_form(constraint::SampleListFormConstraint, product::ProductOf)
+    left  = ReactiveMP.constrain_form(constraint, BayesBase.getleft(product))
+    right = ReactiveMP.constrain_form(constraint, BayesBase.getright(product))
     return __approximate(constraint, left, right)
 end

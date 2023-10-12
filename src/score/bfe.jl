@@ -2,9 +2,10 @@ export BetheFreeEnergyCheckNaNs, BetheFreeEnergyCheckInfs
 export BetheFreeEnergyDefaultMarginalSkipStrategy, BetheFreeEnergyDefaultChecks
 export BetheFreeEnergy
 
+import BayesBase: CountingReal
 import ReactiveMP: is_point_mass_form_constraint
-import ReactiveMP: CountingReal, value_isnan, value_isinf
 import ReactiveMP: score, indexed_name, name
+
 
 """
     AbstractScoreObjective
@@ -43,12 +44,15 @@ See also: [`BetheFreeEnergyCheckInfs`](@ref)
 """
 struct BetheFreeEnergyCheckNaNs end
 
+check_isnan(something)              = isnan(something)
+check_isnan(counting::CountingReal) = check_isnan(BayesBase.value(counting))
+
 function apply_diagnostic_check(::BetheFreeEnergyCheckNaNs, ::Type{CountingReal}, stream)
     error_fn = (_) -> """
         Failed to compute the final Bethe Free Energy value. The result is `NaN` after subtracting `PointMass` entropies.
         Use `diagnostic_checks` field in `BetheFreeEnergy` constructor or `free_energy_diagnostics` keyword argument in the `inference` function to suppress this error.
     """
-    return stream |> error_if(value_isnan, error_fn)
+    return stream |> error_if(check_isnan, error_fn)
 end
 
 function apply_diagnostic_check(::BetheFreeEnergyCheckNaNs, node::AbstractFactorNode, stream)
@@ -59,7 +63,7 @@ function apply_diagnostic_check(::BetheFreeEnergyCheckNaNs, node::AbstractFactor
             $(node)
         """
     end
-    return stream |> error_if(value_isnan, error_fn)
+    return stream |> error_if(check_isnan, error_fn)
 end
 
 function apply_diagnostic_check(::BetheFreeEnergyCheckNaNs, variable::AbstractVariable, stream)
@@ -69,7 +73,7 @@ function apply_diagnostic_check(::BetheFreeEnergyCheckNaNs, variable::AbstractVa
             Use `diagnostic_checks` field in `BetheFreeEnergy` constructor or `free_energy_diagnostics` keyword argument in the `inference` function to suppress this error.
         """
     end
-    return stream |> error_if(value_isnan, error_fn)
+    return stream |> error_if(check_isnan, error_fn)
 end
 
 """
@@ -82,13 +86,16 @@ See also: [`BetheFreeEnergyCheckNaNs`](@ref)
 """
 struct BetheFreeEnergyCheckInfs end
 
+check_isinf(something)              = isinf(something)
+check_isinf(counting::CountingReal) = check_isinf(BayesBase.value(counting))
+
 function apply_diagnostic_check(::BetheFreeEnergyCheckInfs, ::Type{CountingReal}, stream)
     error_fn = (_) -> """
         Failed to compute the final Bethe Free Energy value. The result is `Inf` after subtracting `PointMass` entropies.
         This may indicate that some `PointMass` entropies did not cancel out during the computation procedure.
         Use `diagnostic_checks` field in `BetheFreeEnergy` constructor or `free_energy_diagnostics` keyword argument in the `inference` function to suppress this error.
     """
-    return stream |> error_if(value_isinf, error_fn)
+    return stream |> error_if(check_isinf, error_fn)
 end
 
 function apply_diagnostic_check(::BetheFreeEnergyCheckInfs, node::AbstractFactorNode, stream)
@@ -99,7 +106,7 @@ function apply_diagnostic_check(::BetheFreeEnergyCheckInfs, node::AbstractFactor
             $(node)
         """
     end
-    return stream |> error_if(value_isinf, error_fn)
+    return stream |> error_if(check_isinf, error_fn)
 end
 
 function apply_diagnostic_check(::BetheFreeEnergyCheckInfs, variable::AbstractVariable, stream)
@@ -109,7 +116,7 @@ function apply_diagnostic_check(::BetheFreeEnergyCheckInfs, variable::AbstractVa
             Use `diagnostic_checks` field in `BetheFreeEnergy` constructor or `free_energy_diagnostics` keyword argument in the `inference` function to suppress this error.
         """
     end
-    return stream |> error_if(value_isinf, error_fn)
+    return stream |> error_if(check_isinf, error_fn)
 end
 
 apply_diagnostic_check(::Nothing, something, stream)     = stream
