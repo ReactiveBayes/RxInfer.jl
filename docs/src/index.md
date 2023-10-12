@@ -66,6 +66,7 @@ Head to the [Getting started](@ref user-guide-getting-started) section to get up
 ```@contents
 Pages = [
   "manuals/background.md",
+  "manuals/comparison.md",
   "manuals/getting-started.md",
   "manuals/model-specification.md",
   "manuals/constraints-specification.md",

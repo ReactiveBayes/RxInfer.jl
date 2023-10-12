@@ -111,6 +111,7 @@ makedocs(;
         "User guide" => [
             # "Background: variational inference" => "manuals/background.md",
             "Getting started"           => "manuals/getting-started.md",
+            "RxInfer.jl vs. Others"     => "manuals/comparison.md",
             "Model specification"       => "manuals/model-specification.md",
             "Constraints specification" => "manuals/constraints-specification.md",
             "Meta specification"        => "manuals/meta-specification.md",
