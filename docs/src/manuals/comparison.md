@@ -8,14 +8,14 @@ There's a plethora of probabilistic programming languages and packages available
 
 
 
-| Toolbox                  | Universality | Efficiency | Expressiveness | Debugging & Visualization | Modularity | Inference Engine      | Language | Community & Ecosystem | 
-|--------------------------|--------------|------------|----------------|---------------------------|------------|-----------------------|----------|-----------------------|
-| **RxInfer.jl**           | –            | ✓          | ✓              | –                         | –          | Message-passing       | Julia    | –                     |
-| **Turing.jl**            | ✓            | –          | ✓              | –                         | –          | Sampling              | Julia    | ✓                     |
-| **PyMC**                 | ✓            | –          | –              | ✓                         | –          | Sampling              | Python   | ✓                     |
-| **Numpyro**              | ✓            | ✓          | –              | ✓                         | –          | Variational Inference | Python   | ✓                     |
-| **TensorFlow Probability** | ✓          | –          | –              | ✓                         | –          | Variational Inference | Python   | ✓                     |
-| **Infer.net**            | –            | ✓          | –              | ✓                         | –          | Message-passing       | C#       | –                     |
+| Toolbox                    | Universality | Efficiency | Expressiveness | Debugging & Visualization | Modularity | Inference Engine      | Language | Community & Ecosystem | 
+|----------------------------|--------------|------------|----------------|---------------------------|------------|-----------------------|----------|-----------------------|
+| **RxInfer.jl**             | –            | ✓          | ✓              | –                         | –          | Message-passing       | Julia    | –                     |
+| **Turing.jl**              | ✓            | –          | ✓              | –                         | –          | Sampling              | Julia    | ✓                     |
+| **PyMC**                   | ✓            | –          | ✓              | ✓                         | –          | Sampling              | Python   | ✓                     |
+| **Numpyro**                | ✓            | ✓          | –              | ✓                         | –          | Sampling              | Python   | ✓                     |
+| **TensorFlow Probability** | ✓            | –          | –              | ✓                         | –          | Sampling              | Python   | ✓                     |
+| **Infer.net**              | –            | ✓          | –              | ✓                         | –          | Message-passing       | C#       | –                     |
 
 
 **Notes**:
