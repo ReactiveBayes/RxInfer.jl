@@ -16,7 +16,7 @@ There's a plethora of probabilistic programming languages and packages available
 | **Numpyro**                | ✓            | ✓          | –              | ✓                         | –          | Sampling              | Python   | ✓                     |
 | **TensorFlow Probability** | ✓            | –          | –              | ✓                         | –          | Sampling              | Python   | ✓                     |
 | **Infer.net**              | –            | ✓          | –              | ✓                         | –          | Message-passing       | C#       | –                     |
-
+(Date of creation: 16/10/2023)
 
 **Notes**:
 - **Universality**: Denotes the capability to depict a vast array of probabilistic models.
@@ -32,7 +32,7 @@ There's a plethora of probabilistic programming languages and packages available
 
 # RxInfer.jl breakdown
 
-- **Universality**: `RxInfer.jl` shines in formulating intricate models derived from the exponential family distributions. The package encompasses specialized stochastic nodes that epitomize prevalent probabilistic models like Autoregressive models, Gamma Mixture models, among others. `RxInfer.jl` adeptly manages deterministic transformations of variables from the exponential family, [see](@ref delta-node-manual). Yet, for models outside the exponential family, `RxInfer.jl` might not be the prime choice. Such models would mandate the creation of novel nodes and corresponding rules, as illustrated [in](@id create-node).
+- **Universality**: `RxInfer.jl` shines in formulating intricate models derived from the exponential family distributions. The package encompasses not only commonly used distributions such as Gaussian or Bernoulli, but also specialized stochastic nodes that epitomize prevalent probabilistic models like [Autoregressive models](@ref ARmodel), [Gamma Mixture models](@ref GammaMixturemodel), among others. Furthermore, `RxInfer.jl` adeptly manages deterministic transformations of variables from the exponential family, see [Delta node](@ref delta-node-manual). Yet, for models outside the exponential family, `RxInfer.jl` might not be the prime choice. Such models would mandate the creation of novel nodes and corresponding rules, as illustrated [in](@id create-node).
   
 - **Efficiency**: `RxInfer.jl` distinguishes itself with its inference engine rooted in reactive message passing. This modus operandi is supremely efficient, facilitating real-time propagation of updates across the system, endorsing parallelization, interruptibility, and more. However, the current rendition of `RxInfer.jl` hasn't harnessed all these potentials.
 
@@ -58,6 +58,23 @@ end
 end
 ```
 
-- **Expressiveness**: `RxInfer.jl` empowers users to elegantly and succinctly craft models, closely mirroring probabilistic notation, thanks to Julia's macro capabilities.
+- **Expressiveness**: `RxInfer.jl` empowers users to elegantly and succinctly craft models, closely mirroring probabilistic notation, thanks to Julia's macro capabilities. To illustrate this, let's consider the following model:
+
+$$\begin{aligned}
+ x & \sim \mathrm{Normal}(0.0, 1.0)\\
+ w & \sim \mathrm{InverseGamma}(1.0, 1.0)\\
+ y & \sim \mathrm{Normal}(x, w)
+\end{aligned}$$
+
+The model then is expressed in `RxInfer.jl` as follows:
+```@example comparisondoc
+using RxInfer
+
+@model function example_model()
+    x ~ Normal(mean=0.0, var=1.0)
+    w ~ InverseGamma(α = 1, θ = 1)
+    y ~ Normal(mean = x, var = w)
+end
+```
 
 - **Debugging & Visualization**: While `RxInfer.jl` grapples with Julia's nascent debugging system, it does proffer a mechanism to debug the inference [procedure](@ref user-guide-debugging), albeit not as seamlessly as some other packages.
