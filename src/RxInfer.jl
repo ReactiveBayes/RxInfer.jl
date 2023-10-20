@@ -2,7 +2,7 @@ module RxInfer
 
 using Reexport
 
-@reexport using ReactiveMP, GraphPPL, Rocket, Distributions
+@reexport using ReactiveMP, GraphPPL, Rocket, Distributions, FastCholesky
 
 include("helpers.jl")
 include("rocket.jl")

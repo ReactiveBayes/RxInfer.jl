@@ -7,7 +7,6 @@
 [![Examples](https://img.shields.io/badge/examples-RxInfer-brightgreen)](https://biaslab.github.io/RxInfer.jl/stable/examples/overview/)
 [![Build Status](https://github.com/biaslab/RxInfer.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/biaslab/RxInfer.jl/actions/workflows/CI.yml?query=branch%3Amain)
 [![Coverage](https://codecov.io/gh/biaslab/RxInfer.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/biaslab/RxInfer.jl)
-[![PkgEval](https://JuliaCI.github.io/NanosoldierReports/pkgeval_badges/R/RxInfer.svg)](https://JuliaCI.github.io/NanosoldierReports/pkgeval_badges/report.html)
 [![DOI](https://img.shields.io/badge/Journal%20of%20Open%20Source%20Software-10.21105/joss.05161-critical)](https://doi.org/10.21105/joss.05161)
 [![Zenodo](https://img.shields.io/badge/Zenodo-10.5281/zenodo.7774921-important)](https://zenodo.org/badge/latestdoi/501995296)
 
@@ -151,7 +150,14 @@ result = inference(
 ![Coin Flip](docs/src/assets/img/coin-flip.svg?raw=true&sanitize=true "Coin-Flip readme results")
 
 # Where to go next?
+
 There are a set of [examples](https://biaslab.github.io/RxInfer.jl/stable/examples/overview/) available in `RxInfer` repository that demonstrate the more advanced features of the package. Alternatively, you can head to the [documentation](https://biaslab.github.io/RxInfer.jl/stable/) that provides more detailed information of how to use `RxInfer` to specify more complex probabilistic models.
+
+Additionally, checkout our [video from JuliaCon 2023](https://www.youtube.com/watch?v=qXrvDVm_fnE) for a high-level overview of the package
+
+<p align="center">
+    <a href="https://www.youtube.com/watch?v=qXrvDVm_fnE"><img width="460" src="https://img.youtube.com/vi/qXrvDVm_fnE/0.jpg"></a>
+</p>
 
 # Ecosystem
 
@@ -163,4 +169,4 @@ The `RxInfer` framework consists of three *core* packages developed by BIASlab:
 
 # License
 
-MIT License Copyright (c) 2021-2023 BIASlab
+[MIT License](LICENSE) Copyright (c) 2021-2023 BIASlab
