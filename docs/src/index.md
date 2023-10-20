@@ -57,6 +57,8 @@ taking advantage of local conjugate relationships in probabilistic models, and f
 various Bayesian inference algorithms in different parts of the factor graph of a single probabilistic model. This makes it easier
 to explore different "what-if" scenarios and enables very efficient inference in specific cases.
 
+**Curious about how RxInfer compares to other tools you might be considering?** We invite you to view a detailed [comparison](@ref user-guide-debugging), where we put RxInfer head-to-head with other popular packages in the field.
+
 ## How to get started?
 
 Head to the [Getting started](@ref user-guide-getting-started) section to get up and running with RxInfer. Alternatively, explore various [examples](@ref examples-overview) in the documentation.
@@ -104,3 +106,4 @@ The `RxInfer` unites 3 core packages into one powerful reactive message passing-
 
 ```@index
 ```
+

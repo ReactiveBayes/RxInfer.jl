@@ -1,4 +1,4 @@
-# Comparison to other packages
+# Comparison to other packages (@id comparison)
 
 There's a plethora of probabilistic programming languages and packages available today. While all pivot around Bayesian Inference, their methodologies vary. This section juxtaposes `RxInfer.jl` against other renowned probabilistic programming languages and packages. The goal is to enlighten potential users about the nuances and guide them in choosing the package that resonates best with their requirements.
 
@@ -8,15 +8,17 @@ There's a plethora of probabilistic programming languages and packages available
 
 
 
-| Toolbox                    | Universality | Efficiency | Expressiveness | Debugging & Visualization | Modularity | Inference Engine      | Language | Community & Ecosystem | 
-|----------------------------|--------------|------------|----------------|---------------------------|------------|-----------------------|----------|-----------------------|
-| **RxInfer.jl**             | –            | ✓          | ✓              | –                         | –          | Message-passing       | Julia    | –                     |
-| **Turing.jl**              | ✓            | –          | ✓              | –                         | –          | Sampling              | Julia    | ✓                     |
-| **PyMC**                   | ✓            | –          | ✓              | ✓                         | –          | Sampling              | Python   | ✓                     |
-| **Numpyro**                | ✓            | ✓          | –              | ✓                         | –          | Sampling              | Python   | ✓                     |
-| **TensorFlow Probability** | ✓            | –          | –              | ✓                         | –          | Sampling              | Python   | ✓                     |
-| **Infer.net**              | –            | ✓          | –              | ✓                         | –          | Message-passing       | C#       | –                     |
-(Date of creation: 16/10/2023)
+| Toolbox                                                              | Universality | Efficiency | Expressiveness | Debugging & Visualization | Modularity | Inference Engine | Language | Community & Ecosystem |
+| -------------------------------------------------------------------- | ------------ | ---------- | -------------- | ------------------------- | ---------- | ---------------- | -------- | --------------------- |
+| [**RxInfer.jl**](https://rxinfer.ml/)                                | –            | ✓          | ✓              | –                         | –          | Message-passing  | Julia    | –                     |
+| [**ForneyLab.jl**](https://github.com/biaslab/ForneyLab.jl)          | –            | –          | –              | ✓                         | –          | Message-passing  | Julia    | –                     |
+| [**Infer.net**](https://dotnet.github.io/infer/)                     | –            | ✓          | –              | ✓                         | –          | Message-passing  | C#       | –                     |
+| [**Turing.jl**](https://turing.ml/)                                  | ✓            | –          | ✓              | –                         | –          | Sampling         | Julia    | ✓                     |
+| [**PyMC**](https://www.pymc.io/welcome.html)                         | ✓            | –          | ✓              | ✓                         | –          | Sampling         | Python   | ✓                     |
+| [**NumPyro**](https://num.pyro.ai/en/stable/)                        | ✓            | ✓          | –              | ✓                         | –          | Sampling         | Python   | ✓                     |
+| [**TensorFlow Probability**](https://www.tensorflow.org/probability) | ✓            | –          | –              | ✓                         | –          | Sampling         | Python   | ✓                     |
+| [**Stan**](https://mc-stan.org/)                                     | –            | –          | –              | ✓                         | –          | Sampling         | Stan     | ✓                     |
+(Date of creation: 20/10/2023)
 
 **Notes**:
 - **Universality**: Denotes the capability to depict a vast array of probabilistic models.
