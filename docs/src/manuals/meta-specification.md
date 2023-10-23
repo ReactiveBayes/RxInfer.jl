@@ -69,7 +69,7 @@ You can have a list of as many meta specification entries as possible for differ
 ```julia
 meta = @meta begin 
     GCV(x1, k1, w1) -> GCVMetadata(GaussHermiteCubature(20))
-    GCV(x2, k2, w3) -> GCVMetadata(GaussHermiteCubature(30))
+    AR() -> ARMeta(artype, order, stype)
     NormalMeanVariance(y, x) -> MyCustomMetaObject(arg1, arg2)
 end
 ```
@@ -89,3 +89,34 @@ model, returnval = create_model(my_model(arguments...); meta = meta)
 ```
 
 Alternatively, it is possible to use constraints directly in the automatic [`inference`](@ref) and [`rxinference`](@ref) functions that accepts `meta` keyword argument. 
+
+## List of nodes with meta data in RxInfer
+
+
+|    Node   |   Meta  |
+| :------------- | -----------------: |
+| AR             | ARmeta             |
+| GCV            | GCVMetadata        |
+| DeltaFn        | DeltaMeta          |
+| Probit         | Union              |
+| BIFM           | BIFMMeta           |
+| Flow           | FlowMeta           |
+| dot            | Union              |
+| (*)            | Union              |
+
+
+## Create your own meta
+The meta is created by `struct` statement
+```julia
+struct MyCustomMeta
+    arg1 
+    arg2 
+end
+
+@meta function model_meta(arg1, arg2)
+    MyCustomNode() -> MyCustomMeta(arg1,arg2)
+end
+```
+## Example
+
+
