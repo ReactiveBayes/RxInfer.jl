@@ -309,6 +309,30 @@ end
         @test all(results1.free_energy[1:4] .=== results2.free_energy)
         @test all(results1.free_energy[1:5] .=== results3.free_energy)
     end
+    #Add a new case for testing warning of addons
+    @model function beta_model2(n)
+        y = datavar(Float64, n)
+    
+        θ ~ Beta(4.0, 8.0)
+    
+        for i in 1:n
+            y[i] ~ Bernoulli(θ)
+        end 
+    
+        return y, θ
+    end
+    #Add a new dataset for addons
+    n = 20
+    θ_real = 0.75
+    distribution = Bernoulli(θ_real)
+    dataset2 = float.(rand(Bernoulli(θ_real), n));
+
+    @testset "Test warning for addons" begin
+        #with warn
+        @test_logs (:warn, r"Both .* specify a value for the `addons`.*") result_2 = inference(model = beta_model2(length(dataset2)), data = (y = dataset2,), returnvars = (θ = KeepLast(),), free_energy = true, addons = AddonLogScale(), options = (addons = AddonLogScale(),),warn = true)
+        #without warn
+        @test_logs result_2 = inference(model = beta_model2(length(dataset2)), data = (y = dataset2,), returnvars = (θ = KeepLast(),), free_energy = true, addons = AddonLogScale(), options = (addons = AddonLogScale(),),warn = false)
+    end
 end
 
 @testset "Reactive inference with `rxinference` for test model #1" begin

@@ -186,6 +186,57 @@ using Random
 
         @test_throws ErrorException ReactiveMP.make_node(FactorGraphModel(), FactorNodeCreationOptions(), DummyDistributionTestModelError3, randomvar(:θ))
     end
+    @testset "Warning for unused datavars" begin
+        @model function test_model1(n)
+            x = randomvar(n)
+            y = datavar(Float64, n)
+        
+        
+            τ ~ Gamma(1.0, 1.0)
+        
+            x[1] ~ Normal(mean = 0.0, variance = 1.0)
+            y[1] ~ Normal(mean = x[1], precision = τ)
+        
+            for i in 2:n-1
+                x[i] ~ Normal(mean = x[i - 1], variance = 1.0)
+                y[i] ~ Normal(mean = x[i], precision = τ)
+            end
+            # y_n is unused
+            x[n] ~ Normal(mean = x[n - 1], variance = 1.0)
+            y[n-1] ~ Normal(mean = x[n], precision = τ)
+        
+        end
+        
+        @constraints function test_model1_constraints()
+            q(x, τ) = q(x)q(τ)
+        end
+        
+        @constraints function test_model1_constraints()
+            q(x, τ) = q(x)q(τ)
+        end
+        observations = rand(10)
+    
+        @test_logs (:warn, r"Unused data variable .*") result = inference(
+            model = test_model1(10),
+            constraints = test_model1_constraints(),
+            data = (y = observations,),
+            initmarginals = (τ = Gamma(1.0, 1.0),),
+            iterations = 10,
+            returnvars = KeepEach(),
+            free_energy = true,
+            warn=true,
+        )
+        @test_logs result = inference(
+            model = test_model1(10),
+            constraints = test_model1_constraints(),
+            data = (y = observations,),
+            initmarginals = (τ = Gamma(1.0, 1.0),),
+            iterations = 10,
+            returnvars = KeepEach(),
+            free_energy = true,
+            warn=false,
+        )
+    end
 end
 
 end
