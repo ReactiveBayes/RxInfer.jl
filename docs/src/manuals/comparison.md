@@ -10,16 +10,21 @@ There's a plethora of probabilistic programming languages and packages available
 
 | Toolbox                                                              | Universality | Efficiency | Expressiveness | Debugging & Visualization | Modularity | Inference Engine | Language | Community & Ecosystem |
 | -------------------------------------------------------------------- | ------------ | ---------- | -------------- | ------------------------- | ---------- | ---------------- | -------- | --------------------- |
-| [**RxInfer.jl**](https://rxinfer.ml/)                                | –            | ✓          | ✓              | –                         | –          | Message-passing  | Julia    | –                     |
-| [**ForneyLab.jl**](https://github.com/biaslab/ForneyLab.jl)          | –            | –          | –              | ✓                         | –          | Message-passing  | Julia    | –                     |
-| [**Infer.net**](https://dotnet.github.io/infer/)                     | –            | ✓          | –              | ✓                         | –          | Message-passing  | C#       | –                     |
-| [**PGMax**](https://github.com/google-deepmind/PGMax)                     | –            | ✓          | –              | ✓                         | –          | Message-passing  | Python       | –                     |
-| [**Turing.jl**](https://turing.ml/)                                  | ✓            | –          | ✓              | –                         | –          | Sampling         | Julia    | ✓                     |
-| [**PyMC**](https://www.pymc.io/welcome.html)                         | ✓            | –          | ✓              | ✓                         | –          | Sampling         | Python   | ✓                     |
-| [**NumPyro**](https://num.pyro.ai/en/stable/)                        | ✓            | ✓          | –              | ✓                         | –          | Sampling         | Python   | ✓                     |
-| [**TensorFlow Probability**](https://www.tensorflow.org/probability) | ✓            | –          | –              | ✓                         | –          | Sampling         | Python   | ✓                     |
-| [**Stan**](https://mc-stan.org/)                                     | –            | –          | –              | ✓                         | –          | Sampling         | Stan     | ✓                     |
+| [**RxInfer.jl**](https://rxinfer.ml/)                                | ~            | ✓          | ✓              | ~                         | ✗          | Message-passing  | Julia    | ✗                     |
+| [**ForneyLab.jl**](https://github.com/biaslab/ForneyLab.jl)          | ✗            | ~          | ✗              | ~                         | ✗          | Message-passing  | Julia    | ✗                     |
+| [**Infer.net**](https://dotnet.github.io/infer/)                     | ~            | ✓          | ✗              | ✓                         | ✗          | Message-passing  | C#       | ✗                     |
+| [**PGMax**](https://github.com/google-deepmind/PGMax)                | ✗            | ✓          | ✗              | ✓                         | ✗          | Message-passing  | Python   | ✗                     |
+| [**Turing.jl**](https://turing.ml/)                                  | ✓            | ✗          | ✓              | ~                         | ✗          | Sampling         | Julia    | ✓                     |
+| [**PyMC**](https://www.pymc.io/welcome.html)                         | ✓            | ✗          | ✓              | ✓                         | ✗          | Sampling         | Python   | ✓                     |
+| [**NumPyro**](https://num.pyro.ai/en/stable/)                        | ✓            | ✓          | ~              | ✓                         | ✗          | Sampling         | Python   | ✓                     |
+| [**TensorFlow Probability**](https://www.tensorflow.org/probability) | ✓            | ✗          | ~              | ✓                         | ✗          | Sampling         | Python   | ✓                     |
+| [**Stan**](https://mc-stan.org/)                                     | ✓            | ✗          | ✓              | ✓                         | ✗          | Sampling         | Stan     | ✓                     |
 (Date of creation: 20/10/2023)
+
+**Legend**
+- `✓` : Full capability or feature is present.
+- `~` : Partial capability or feature is present.
+- `✗` : No capability or feature.
 
 **Notes**:
 - **Universality**: Denotes the capability to depict a vast array of probabilistic models.
@@ -30,7 +35,6 @@ There's a plethora of probabilistic programming languages and packages available
 - **Inference Engines**: Pinpoints the primary inference strategy employed by the toolbox.
 - **Language**: Identifies the programming language integral to the toolbox.
 - **Community & Ecosystem**: Signifies the vibrancy of the ecosystem, inclusive of tools, libraries, and community backing.
-
 ---
 
 # RxInfer.jl breakdown
