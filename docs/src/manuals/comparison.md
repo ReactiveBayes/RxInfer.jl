@@ -1,6 +1,6 @@
-# Comparison to other packages (@id comparison)
+# [Comparison to other packages](@id comparison)
 
-There's a plethora of probabilistic programming languages and packages available today. While all pivot around Bayesian Inference, their methodologies vary. This section juxtaposes `RxInfer.jl` against other renowned probabilistic programming languages and packages. The goal is to enlighten potential users about the nuances and guide them in choosing the package that resonates best with their requirements.
+Nowadays there's plenty of probabilistic programming languages and packages available. While all of them are based on Bayesian Inference, their methodologies vary. This section compares `RxInfer.jl` against other renowned probabilistic programming languages and packages. The goal is to enlighten potential users about the nuances and guide them in choosing the package that best suits their requirements.
 
 **DISCLAIMER**: 
 1. This comparison isn't exhaustive and mirrors the author's hands-on experience with the packages. Some might have undergone more rigorous testing than others. If you're an author of one of these packages and believe the comparison doesn't do justice, please reach out, and we'll be more than willing to rectify.
@@ -28,10 +28,10 @@ There's a plethora of probabilistic programming languages and packages available
 
 **Notes**:
 - **Universality**: Denotes the capability to depict a vast array of probabilistic models.
-- **Efficiency**: Highlights computational prowess. A "–" in this context suggests perceived sluggishness.
-- **Expressiveness**: Assesses the ability to succinctly formulate intricate probabilistic models.
+- **Efficiency**: Highlights computational competence. A "–" in this context suggests perceived slowness.
+- **Expressiveness**: Assesses the ability to concisely formulate intricate probabilistic models.
 - **Debugging & Visualization**: Evaluates the suite of tools for model debugging and visualization.
-- **Modularity**: Reflects the potential to craft models by amalgamating smaller models.
+- **Modularity**: Reflects the potential to create models by integrating smaller models.
 - **Inference Engines**: Pinpoints the primary inference strategy employed by the toolbox.
 - **Language**: Identifies the programming language integral to the toolbox.
 - **Community & Ecosystem**: Signifies the vibrancy of the ecosystem, inclusive of tools, libraries, and community backing.
@@ -39,11 +39,11 @@ There's a plethora of probabilistic programming languages and packages available
 
 # RxInfer.jl breakdown
 
-- **Universality**: `RxInfer.jl` shines in formulating intricate models derived from the exponential family distributions. The package encompasses not only commonly used distributions such as Gaussian or Bernoulli, but also specialized stochastic nodes that epitomize prevalent probabilistic models like [Autoregressive models](@ref ARmodel), [Gamma Mixture models](@ref GammaMixturemodel), among others. Furthermore, `RxInfer.jl` adeptly manages deterministic transformations of variables from the exponential family, see [Delta node](@ref delta-node-manual). Yet, for models outside the exponential family, `RxInfer.jl` might not be the prime choice. Such models would mandate the creation of novel nodes and corresponding rules, as illustrated [in](@id create-node).
+- **Universality**: `RxInfer.jl` shines in formulating intricate models derived from the exponential family distributions. The package encompasses not only commonly used distributions such as Gaussian or Bernoulli, but also specialized stochastic nodes that represents prevalent probabilistic models like [Autoregressive models](@ref ARmodel), [Gamma Mixture models](@ref GammaMixturemodel), among others. Furthermore, `RxInfer.jl` proficiently manages deterministic transformations of variables from the exponential family, see [Delta node](@ref delta-node-manual). Nevertheless, for models outside the exponential family, `RxInfer.jl` might not be the good choice. Such models would require the creation of novel nodes and corresponding rules, as illustrated [in](@id create-node).
   
-- **Efficiency**: `RxInfer.jl` distinguishes itself with its inference engine rooted in reactive message passing. This modus operandi is supremely efficient, facilitating real-time propagation of updates across the system, endorsing parallelization, interruptibility, and more. However, the current rendition of `RxInfer.jl` hasn't harnessed all these potentials.
+- **Efficiency**: `RxInfer.jl` distinguishes itself with its inference engine rooted in reactive message passing. This approach is supremely efficient, facilitating real-time propagation of updates across the system, supporting parallelization, interruptibility, and more. However, the current version of `RxInfer.jl` hasn't harnessed all these potentials.
 
-- **Modularity**: Broadly, the toolboxes in the table aren't modular in the truest sense. They don't champion the fusion of models by integrating smaller models. While `RxInfer.jl` currently doesn't support this, a solution is on the horizon:
+- **Modularity**: Broadly, the toolboxes in the table aren't modular in the truest sense. They don't offer the fusion of models by integrating smaller models. While `RxInfer.jl` currently doesn't support this, a solution is on the horizon:
   
 ```julia
 @model function inner_inner(τ, y)
@@ -65,7 +65,7 @@ end
 end
 ```
 
-- **Expressiveness**: `RxInfer.jl` empowers users to elegantly and succinctly craft models, closely mirroring probabilistic notation, thanks to Julia's macro capabilities. To illustrate this, let's consider the following model:
+- **Expressiveness**: `RxInfer.jl` empowers users to elegantly and concisely craft models, closely mirroring probabilistic notation, thanks to Julia's macro capabilities. To illustrate this, let's consider the following model:
 
 $$\begin{aligned}
  x & \sim \mathrm{Normal}(0.0, 1.0)\\
@@ -84,4 +84,4 @@ using RxInfer
 end
 ```
 
-- **Debugging & Visualization**: While `RxInfer.jl` grapples with Julia's nascent debugging system, it does proffer a mechanism to debug the inference [procedure](@ref user-guide-debugging), albeit not as seamlessly as some other packages.
+- **Debugging & Visualization**: While `RxInfer.jl` struggles with Julia's early-stage debugging system, it does provide a mechanism to debug the inference [procedure](@ref user-guide-debugging), even though not as seamlessly as some other packages.
