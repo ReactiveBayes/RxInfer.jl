@@ -93,17 +93,19 @@ Alternatively, it is possible to use constraints directly in the automatic [`inf
 ## List of nodes with meta data in RxInfer
 
 
-|    Node   |   Meta  |
-| :------------- | -----------------: |
-| AR             | ARmeta             |
-| GCV            | GCVMetadata        |
-| DeltaFn        | DeltaMeta          |
-| Probit         | Union              |
-| BIFM           | BIFMMeta           |
-| Flow           | FlowMeta           |
-| dot            | Union              |
-| (*)            | Union              |
+|    Node        |   Meta                                                                   |
+| :------------- | :----------------------------------------------------------------------- |
+| AR             | ARmeta                                                                |
+| GCV            | GCVMetadata                                                              |
+| DeltaFn        | DeltaMeta                                                                |
+| Probit         | Union{Nothing, ProbitMeta}                                               |
+| BIFM           | BIFMMeta                                                                 |
+| Flow           | FlowMeta                                                                 |
+| dot            | Union{Nothing, MatrixCorrectionTools.AbstractCorrectionStrategy}         |
+| (*)            | Union{Nothing, MatrixCorrectionTools.AbstractCorrectionStrategy}         |
 
+
+**Notes**: The meta `Union{Nothing, ...}` in some nodes means it is optional to specify meta for those nodes.  
 
 ## Create your own meta
 The meta is created by `struct` statement
@@ -117,6 +119,3 @@ end
     MyCustomNode() -> MyCustomMeta(arg1,arg2)
 end
 ```
-## Example
-
-
