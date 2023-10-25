@@ -7,10 +7,13 @@ import DataStructures: CircularBuffer
 
 using MacroTools # for `@autoupdates`
 
-import ReactiveMP: israndom, isdata, isconst, isproxy, isanonymous
+import ReactiveMP: israndom, isdata, isconst, isproxy, isanonymous, allows_missings
 import ReactiveMP: CountingReal
 
 import ProgressMeter
+
+obtain_prediction(variable::AbstractVariable)                   = getprediction(variable)
+obtain_prediction(variables::AbstractArray{<:AbstractVariable}) = getpredictions(variables)
 
 obtain_marginal(variable::AbstractVariable, strategy = SkipInitial())                   = getmarginal(variable, strategy)
 obtain_marginal(variables::AbstractArray{<:AbstractVariable}, strategy = SkipInitial()) = getmarginals(variables, strategy)
@@ -24,19 +27,19 @@ assign_message!(variable::AbstractVariable, message)                    = setmes
 struct KeepEach end
 struct KeepLast end
 
-make_actor(::RandomVariable, ::KeepEach)                       = keep(Marginal)
-make_actor(::Array{<:RandomVariable, N}, ::KeepEach) where {N} = keep(Array{Marginal, N})
-make_actor(x::AbstractArray{<:RandomVariable}, ::KeepEach)     = keep(typeof(similar(x, Marginal)))
+make_actor(::AbstractVariable, ::KeepEach)                       = keep(Marginal)
+make_actor(::Array{<:AbstractVariable, N}, ::KeepEach) where {N} = keep(Array{Marginal, N})
+make_actor(x::AbstractArray{<:AbstractVariable}, ::KeepEach)     = keep(typeof(similar(x, Marginal)))
 
-make_actor(::RandomVariable, ::KeepEach, capacity::Integer)                       = circularkeep(Marginal, capacity)
-make_actor(::Array{<:RandomVariable, N}, ::KeepEach, capacity::Integer) where {N} = circularkeep(Array{Marginal, N}, capacity)
-make_actor(x::AbstractArray{<:RandomVariable}, ::KeepEach, capacity::Integer)     = circularkeep(typeof(similar(x, Marginal)), capacity)
+make_actor(::AbstractVariable, ::KeepEach, capacity::Integer)                       = circularkeep(Marginal, capacity)
+make_actor(::Array{<:AbstractVariable, N}, ::KeepEach, capacity::Integer) where {N} = circularkeep(Array{Marginal, N}, capacity)
+make_actor(x::AbstractArray{<:AbstractVariable}, ::KeepEach, capacity::Integer)     = circularkeep(typeof(similar(x, Marginal)), capacity)
 
-make_actor(::RandomVariable, ::KeepLast)                   = storage(Marginal)
-make_actor(x::AbstractArray{<:RandomVariable}, ::KeepLast) = buffer(Marginal, size(x))
+make_actor(::AbstractVariable, ::KeepLast)                   = storage(Marginal)
+make_actor(x::AbstractArray{<:AbstractVariable}, ::KeepLast) = buffer(Marginal, size(x))
 
-make_actor(::RandomVariable, ::KeepLast, capacity::Integer)                   = storage(Marginal)
-make_actor(x::AbstractArray{<:RandomVariable}, ::KeepLast, capacity::Integer) = buffer(Marginal, size(x))
+make_actor(::AbstractVariable, ::KeepLast, capacity::Integer)                   = storage(Marginal)
+make_actor(x::AbstractArray{<:AbstractVariable}, ::KeepLast, capacity::Integer) = buffer(Marginal, size(x))
 
 ## Inference ensure update
 
@@ -101,7 +104,7 @@ function __inference_process_error(err::StackOverflowError, rethrow)
     Stack overflow error occurred during the inference procedure. 
     The inference engine may execute message update rules recursively, hence, the model graph size might be causing this error. 
     To resolve this issue, try using `limit_stack_depth` inference option for model creation. See `?inference` documentation for more details.
-    The `limit_stack_depth` option does not help against over stack overflow errors that might hapenning outside of the model creation or message update rules execution.
+    The `limit_stack_depth` option does not help against over stack overflow errors that might happening outside of the model creation or message update rules execution.
     """
     if rethrow
         Base.rethrow(err) # Shows the original stack trace
@@ -140,6 +143,12 @@ function __inference_check_dicttype(keyword::Symbol, ::T) where {T}
               The second expression defines `NamedTuple` with `x` as a key and `something` as a value.
           """)
 end
+
+__inference_check_dataismissing(d) = (ismissing(d) || any(ismissing, d))
+
+# Return NamedTuple for predictions
+__inference_fill_predictions(s::Symbol, d::AbstractArray) = NamedTuple{Tuple([s])}([repeat([missing], length(d))])
+__inference_fill_predictions(s::Symbol, d::DataVariable) = NamedTuple{Tuple([s])}([missing])
 
 ## Inference results postprocessing
 
@@ -181,20 +190,21 @@ This structure is used as a return value from the [`inference`](@ref) function.
 - `free_energy`: (optional) An array of Bethe Free Energy values per VMP iteration. See the `free_energy` argument for [`inference`](@ref).
 - `model`: `FactorGraphModel` object reference.
 - `returnval`: Return value from executed `@model`.
-- `error`: (optional) A reference to an exception, that might have occured during the inference. See the `catch_exception` argument for [`inference`](@ref).
+- `error`: (optional) A reference to an exception, that might have occurred during the inference. See the `catch_exception` argument for [`inference`](@ref).
 
 See also: [`inference`](@ref)
 """
-struct InferenceResult{P, F, M, R, E}
+struct InferenceResult{P, A, F, M, R, E}
     posteriors  :: P
+    predictions :: A
     free_energy :: F
     model       :: M
     returnval   :: R
     error       :: E
 end
 
-Base.iterate(results::InferenceResult)      = iterate((getfield(results, :posteriors), getfield(results, :free_energy), getfield(results, :model), getfield(results, :returnval), getfield(results, :error)))
-Base.iterate(results::InferenceResult, any) = iterate((getfield(results, :posteriors), getfield(results, :free_energy), getfield(results, :model), getfield(results, :returnval), getfield(results, :error)), any)
+Base.iterate(results::InferenceResult)      = iterate((getfield(results, :posteriors), getfield(results, :predictions), getfield(results, :free_energy), getfield(results, :model), getfield(results, :returnval), getfield(results, :error)))
+Base.iterate(results::InferenceResult, any) = iterate((getfield(results, :posteriors), getfield(results, :predictions), getfield(results, :free_energy), getfield(results, :model), getfield(results, :returnval), getfield(results, :error)), any)
 
 issuccess(result::InferenceResult) = !iserror(result)
 iserror(result::InferenceResult) = !isnothing(result.error)
@@ -209,6 +219,13 @@ function Base.show(io::IO, result::InferenceResult)
     join(io, keys(getfield(result, :posteriors)), ", ")
     print(io, ")\n")
 
+    if !isempty(getfield(result, :predictions))
+        print(io, rpad("  Predictions", lcolumnlen), " | ")
+        print(io, "available for (")
+        join(io, keys(getfield(result, :predictions)), ", ")
+        print(io, ")\n")
+    end
+
     if !isnothing(getfield(result, :free_energy))
         print(io, rpad("  Free Energy:", lcolumnlen), " | ")
         print(IOContext(io, :compact => true, :limit => true, :displaysize => (1, 80)), result.free_energy)
@@ -218,7 +235,7 @@ function Base.show(io::IO, result::InferenceResult)
     if iserror(result)
         print(
             io,
-            "[ WARN ] An error has occured during the inference procedure. The result might not be complete. You can use the `.error` field to access the error and its backtrace. Use `Base.showerror` function to display the error."
+            "[ WARN ] An error has occurred during the inference procedure. The result might not be complete. You can use the `.error` field to access the error and its backtrace. Use `Base.showerror` function to display the error."
         )
     end
 end
@@ -271,6 +288,7 @@ unwrap_free_energy_option(option::Type{T}) where {T <: Real} = (true, T, Countin
         meta                    = nothing,
         options                 = nothing,
         returnvars              = nothing, 
+        predictvars             = nothing, 
         iterations              = nothing,
         free_energy             = false,
         free_energy_diagnostics = BetheFreeEnergyDefaultChecks,
@@ -294,6 +312,7 @@ For more information about some of the arguments, please check below.
 - `meta  = nothing`: meta specification object, optional, may be required for some models, see `@meta`
 - `options = nothing`: model creation options, optional, see `ModelInferenceOptions`
 - `returnvars = nothing`: return structure info, optional, defaults to return everything at each iteration, see below for more information
+- `predictvars = nothing`: return structure info, optional, see below for more information
 - `iterations = nothing`: number of iterations, optional, defaults to `nothing`, the inference engine does not distinguish between variational message passing or Loopy belief propagation or expectation propagation iterations, see below for more information
 - `free_energy = false`: compute the Bethe free energy, optional, defaults to false. Can be passed a floating point type, e.g. `Float64`, for better efficiency, but disables automatic differentiation packages, such as ForwardDiff.jl
 - `free_energy_diagnostics = BetheFreeEnergyDefaultChecks`: free energy diagnostic checks, optional, by default checks for possible `NaN`s and `Inf`s. `nothing` disables all checks.
@@ -405,6 +424,27 @@ result = inference(
 )
 ```
 
+- ### `predictvars`
+
+`predictvars` specifies the variables which should be predicted. In the model definition these variables are specified
+as datavars, although they should not be passed inside data argument.
+
+Similar to `returnvars`, `predictvars` accepts a `NamedTuple` or `Dict`. There are two specifications:
+- `KeepLast`: saves the last update for a variable, ignoring any intermediate results during iterations
+- `KeepEach`: saves all updates for a variable for all iterations
+
+Example: 
+
+```julia
+result = inference(
+    ...,
+    predictvars = (
+        o = KeepLast(),
+        τ = KeepEach()
+    )
+)
+```
+
 - ### `iterations`
 
 Specifies the number of variational (or loopy belief propagation) iterations. By default set to `nothing`, which is equivalent of doing 1 iteration. 
@@ -466,10 +506,10 @@ If the `addons` argument has been used, automatically changes the default strate
 
 - ### `catch_exception`
 
-The `catch_exception` keyword argument specifies whether exceptions during the inference procedure should be catched in the `error` field of the 
+The `catch_exception` keyword argument specifies whether exceptions during the inference procedure should be caught in the `error` field of the 
 result. By default, if exception occurs during the inference procedure the result will be lost. Set `catch_exception = true` to obtain partial result 
 for the inference in case if an exception occurs. Use `RxInfer.issuccess` and `RxInfer.iserror` function to check if the inference completed successfully or failed.
-If an error occurs, the `error` field will store a tuple, where first element is the exception itself and the second element is the catched `backtrace`. Use the `stacktrace` function 
+If an error occurs, the `error` field will store a tuple, where first element is the exception itself and the second element is the caught `backtrace`. Use the `stacktrace` function 
 with the `backtrace` as an argument to recover the stacktrace of the error. Use `Base.showerror` function to display
 the error.
  
@@ -478,8 +518,8 @@ See also: [`InferenceResult`](@ref), [`rxinference`](@ref)
 function inference(;
     # `model`: specifies a model generator, with the help of the `Model` function
     model::ModelGenerator,
-    # NamedTuple or Dict with data, required
-    data,
+    # NamedTuple or Dict with data, optional if predictvars are specified
+    data = nothing,
     # NamedTuple or Dict with initial marginals, optional, defaults to empty
     initmarginals = nothing,
     # NamedTuple or Dict with initial messages, optional, defaults to empty
@@ -492,6 +532,8 @@ function inference(;
     options = nothing,
     # Return structure info, optional, defaults to return everything at each iteration
     returnvars = nothing,
+    # Prediction structure info, optional, defaults to return everything at each iteration
+    predictvars = nothing,
     # Number of iterations, defaults to 1, we do not distinguish between VMP or Loopy belief or EP iterations
     iterations = nothing,
     # Do we compute FE, optional, defaults to false 
@@ -512,7 +554,9 @@ function inference(;
     # catch exceptions during the inference procedure, optional, defaults to false
     catch_exception = false
 )
-    __inference_check_dicttype(:data, data)
+    if isnothing(data) && isnothing(predictvars)
+        error("""One of the keyword arguments `data` or `predictvars` must be specified""")
+    end
     __inference_check_dicttype(:initmarginals, initmarginals)
     __inference_check_dicttype(:initmessages, initmessages)
     __inference_check_dicttype(:callbacks, callbacks)
@@ -563,7 +607,45 @@ function inference(;
         returnvars   = Dict(variable => returnoption for (variable, value) in pairs(vardict) if (israndom(value) && !isanonymous(value)))
     end
 
+    # Assume that the prediction variables are specified as `datavars` inside the `@model` block, e.g. `pred = datavar(Float64, n)`.
+    # Verify that `predictvars` is not `nothing` and that `data` does not have any missing values.
+    if !isnothing(predictvars)
+        for (variable, value) in pairs(vardict)
+            if !isnothing(data) && haskey(predictvars, variable) && haskey(data, variable)
+                @warn "$(variable) is present in both `data` and `predictvars`. The values in `data` will be ignored."
+            end
+            # The following logic creates and adds predictions to the data as missing values.
+            if isdata(value) && haskey(predictvars, variable) # Verify that the value is of a specified data type and is included in `predictvars`.
+                if allows_missings(value) # Allow missing values, otherwise raise an error.
+                    predictions = __inference_fill_predictions(variable, value)
+                    data = isnothing(data) ? predictions : merge(data, predictions)
+                else
+                    error("`predictvars` does not allow missing values for $(variable). Please add the following line: `$(variable) ~ datavar{...} where {allow_missing = true }`")
+                end
+            elseif isdata(value) && haskey(data, variable) && __inference_check_dataismissing(data[variable]) # The variable may be of a specified data type and contain missing values.
+                if allows_missings(value)
+                    predictvars = merge(predictvars, Dict(variable => KeepLast()))
+                else
+                    error("datavar $(variable) has missings inside but does not allow it. Add `where {allow_missing = true }`")
+                end
+            end
+        end
+    else # In this case, the prediction functionality should only be performed if the data allows missings and actually contains missing values.
+        foreach(keys(vardict), values(vardict)) do variable, value
+            if isdata(value) && haskey(data, variable) && __inference_check_dataismissing(data[variable]) && !allows_missings(value)
+                error(
+                    "The `data` entry for the $(variable) has `missing` values inside, but the `datavar` specification does not allow it. Use `where { allow_missing = true }` in the model specification"
+                )
+            end
+        end
+        predictvars = Dict(
+            variable => KeepLast() for (variable, value) in pairs(vardict) if
+            (isdata(value) && haskey(data, variable) && allows_missings(value) && __inference_check_dataismissing(data[variable]) && !isanonymous(value))
+        )
+    end
+
     __inference_check_dicttype(:returnvars, returnvars)
+    __inference_check_dicttype(:predictvars, predictvars)
 
     # Use `__check_has_randomvar` to filter out unknown or non-random variables in the `returnvar` specification
     __check_has_randomvar(vardict, variable) = begin
@@ -577,11 +659,24 @@ function inference(;
         return haskey_check && israndom_check
     end
 
-    # Second, for each random variable entry we create an actor
-    actors = Dict(variable => make_actor(vardict[variable], value) for (variable, value) in pairs(returnvars) if __check_has_randomvar(vardict, variable))
+    # Use `__check_has_prediction` to filter out unknown predictions variables in the `predictvar` specification
+    __check_has_prediction(vardict, variable) = begin
+        haskey_check = haskey(vardict, variable)
+        isdata_check = haskey_check ? isdata(vardict[variable]) : false
+        if warn && !haskey_check
+            @warn "`predictvars` object has `$(variable)` specification, but model has no variable named `$(variable)`. The `$(variable)` specification is ignored. Use `warn = false` to suppress this warning."
+        elseif warn && haskey_check && !isdata_check
+            @warn "`predictvars` object has `$(variable)` specification, but model has no **data** variable named `$(variable)`. The `$(variable)` specification is ignored. Use `warn = false` to suppress this warning."
+        end
+        return haskey_check && isdata_check
+    end
 
-    # At third, for each random variable entry we create a boolean flag to track their updates
-    updates = Dict(variable => MarginalHasBeenUpdated(false) for (variable, _) in pairs(actors))
+    # Second, for each random variable and predicting variable entry we create an actor
+    actors_rv = Dict(variable => make_actor(vardict[variable], value) for (variable, value) in pairs(returnvars) if __check_has_randomvar(vardict, variable))
+    actors_pr = Dict(variable => make_actor(vardict[variable], value) for (variable, value) in pairs(predictvars) if __check_has_prediction(vardict, variable))
+
+    # At third, for each variable entry we create a boolean flag to track their updates
+    updates = Dict(variable => MarginalHasBeenUpdated(false) for (variable, _) in pairs(merge(actors_rv, actors_pr)))
 
     _iterations = something(iterations, 1)
     _iterations isa Integer || error("`iterations` argument must be of type Integer or `nothing`")
@@ -595,9 +690,14 @@ function inference(;
 
     try
         on_marginal_update = inference_get_callback(callbacks, :on_marginal_update)
-        subscriptions      = Dict(variable => subscribe!(obtain_marginal(vardict[variable]) |> ensure_update(fmodel, on_marginal_update, variable, updates[variable]), actor) for (variable, actor) in pairs(actors))
+        subscriptions_rv   = Dict(variable => subscribe!(obtain_marginal(vardict[variable]) |> ensure_update(fmodel, on_marginal_update, variable, updates[variable]), actor) for (variable, actor) in pairs(actors_rv))
+        subscriptions_pr   = Dict(variable => subscribe!(obtain_prediction(vardict[variable]) |> ensure_update(fmodel, on_marginal_update, variable, updates[variable]), actor) for (variable, actor) in pairs(actors_pr))
 
         is_free_energy, S, T = unwrap_free_energy_option(free_energy)
+
+        if !isempty(actors_pr) && is_free_energy
+            error("The Bethe Free Energy computation is not compatible with the prediction functionality. Set `free_energy = false` to suppress this error.")
+        end
 
         if is_free_energy
             fe_actor        = ScoreActor(S, _iterations, 1)
@@ -630,7 +730,9 @@ function inference(;
         else
             foreach(filter(pair -> isdata(last(pair)) && !isproxy(last(pair)), pairs(vardict))) do pair
                 varname = first(pair)
-                haskey(data, varname) || error("Data entry `$(varname)` is missing in `data` argument. Double check `data = ($(varname) = ???, )`")
+                haskey(data, varname) || error(
+                    "Data entry `$(varname)` is missing in `data` or `predictvars` arguments. Double check `data = ($(varname) = ???, )` or `predictvars = ($(varname) = ???, )`"
+                )
             end
         end
 
@@ -672,7 +774,7 @@ function inference(;
             end
         end
 
-        for (_, subscription) in pairs(subscriptions)
+        for (_, subscription) in pairs(merge(subscriptions_pr, subscriptions_rv))
             unsubscribe!(subscription)
         end
 
@@ -687,10 +789,11 @@ function inference(;
 
     unsubscribe!(fe_subscription)
 
-    posterior_values = Dict(variable => __inference_postprocess(postprocess, getvalues(actor)) for (variable, actor) in pairs(actors))
+    posterior_values = Dict(variable => __inference_postprocess(postprocess, getvalues(actor)) for (variable, actor) in pairs(actors_rv))
+    predicted_values = Dict(variable => __inference_postprocess(postprocess, getvalues(actor)) for (variable, actor) in pairs(actors_pr))
     fe_values        = !isnothing(fe_actor) ? score_snapshot_iterations(fe_actor, executed_iterations) : nothing
 
-    return InferenceResult(posterior_values, fe_values, fmodel, freturval, potential_error)
+    return InferenceResult(posterior_values, predicted_values, fe_values, fmodel, freturval, potential_error)
 end
 
 ## ------------------------------------------------------------------------ ##

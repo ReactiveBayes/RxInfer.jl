@@ -192,6 +192,7 @@ function ReactiveMP.activate!(model::FactorGraphModel)
 
     filter!(c -> isconnected(c), getconstant(model))
     foreach(r -> activate!(r, options), getrandom(model))
+    foreach(d -> activate!(d, options), getdata(model))
     foreach(n -> activate!(n, options), getnodes(model))
 end
 
@@ -411,7 +412,23 @@ function ReactiveMP.make_node(
         return node, var
     else
         combinedvars = combineLatest(ReactiveMP.getmarginal.(args, IncludeAll()), PushNew())
-        mappedvars = combinedvars |> map(Message, (vars) -> Message(PointMass(fform(map((d) -> ReactiveMP.getpointmass(ReactiveMP.getdata(d)), vars)...)), false, false, nothing))
+
+        # Check if some of the `DataVariable` allow for missing values
+        possibly_missings = any(allows_missings, filter(arg -> arg isa ReactiveMP.DataVariable, args))
+        # If `missing` values are allowed, then the result type is a `Union` of `Message{Missing}` and `Message{PointMass}`
+        result_type = possibly_missings ? Union{Message{Missing}, Message{PointMass}} : Message{PointMass}
+        # By convention, if the result happens to be missing, the result is a `Message{Missing}` instead of `Message{PointMass}`
+        mapping_fn = let possibly_missings = possibly_missings
+            (vars) -> begin
+                result = fform(map((d) -> ReactiveMP.getpointmass(ReactiveMP.getdata(d)), vars)...)
+                return if (possibly_missings && ismissing(result))
+                    Message{Missing, Nothing}(missing, false, false, nothing)
+                else
+                    Message{PointMass, Nothing}(PointMass(result), false, false, nothing)
+                end
+            end
+        end
+        mappedvars = combinedvars |> map(result_type, mapping_fn)
         output = mappedvars |> share_recent()
         var = push!(model, ReactiveMP.datavar(DataVariableCreationOptions(output, true, false), ReactiveMP.name(autovar), Any))
         foreach(filter(ReactiveMP.isdata, args)) do datavar
