@@ -7,7 +7,7 @@ using DocumenterCitations
 ENV["GKSwstype"] = "100"
 
 DocMeta.setdocmeta!(RxInfer, :DocTestSetup, :(using RxInfer); recursive = true)
-bib = CitationBibliography(joinpath(@__DIR__, "src", "references.bib"))
+bib = CitationBibliography(joinpath(@__DIR__, "src", "references.bib"); style=:authoryear)
 
 # This must be auto-generated with `make examples`
 ExamplesPath = joinpath(@__DIR__, "src", "examples")
