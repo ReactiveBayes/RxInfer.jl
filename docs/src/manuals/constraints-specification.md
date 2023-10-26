@@ -1,165 +1,163 @@
 # [Constraints Specification](@id user-guide-constraints-specification)
+When conducting Variational Inference, `RxInfer.jl` minimizes the Bethe approximation to the Variational Free Energy, the Bethe Free Energy (BFE). More information on the BFE and it's implications can be found [here](https://rxinfer.ml). For the sake of this article, we will assume basic familiarity with the BFE and merely repeat its definition here.
 
-`RxInfer.jl` exports `@constraints` macro for the extra constraints specification that can be used during the inference step in `ReactiveMP.jl` engine package.
+The Bethe Free Energy, given a factorized model `` f(\mathbf{s}) = \prod_{a \in \mathcal{V}}f_a(\mathbf{s}_a) `` and a normalized probability distribution `` q(s) ``, is defined as follows:
+
+```math
+F[q, f] = \sum_{a \in \mathcal{V}} \int q_a(\mathbf{s}_a)\log \frac{q_a(\mathbf{s}_a)}{f_a(\mathbf{s}_a)}d\mathbf{s}_a + \sum_{i \in \mathcal{E}}\int q_i(s_i) \log \frac{1}{q_i(s_i)} ds_i
+```
+such that the factorized beliefs
+
+```math
+q(\mathbf{s}) = \prod_{a \in \mathcal{V}} q_a(\mathbf{s}_a) \prod_{i \in \mathcal{E}} q_i(s_i)^{-1}
+```
+satisfy the following constraints:
+
+```math
+\int q_a(\mathbf{s}_a)d\mathbf{s}_a = 1 \qquad \forall a \in \mathcal{V} \\
+\int q_a(\mathbf{s}_a)d\mathbf{s}_{a \setminus i} = q_i(s_i) \qquad \forall a \in \mathcal{V}, i \in \mathcal{E}
+```
+
+In `RxInfer`, we use the `@model` macro to specify our generative model ``f(\mathbf{s})``. In [csenoz2021variational](@cite), it has been shown that by including additional constraints on the variational posterior ``q(\mathbf{s})``, we can obtain many well known inference algorithms. Therefore, to `RxInfer` exports the `@constraints` macro to define additional constraints on the variational posterior, that will be passed to the inference engine.
+## `@constraints` syntax
+Additional constraints on the variational posterior can be defined with the `@constraints` macro. We will explain this syntax using an extended version of [the Bayesian Coin Toss example](https://biaslab.github.io/RxInfer.jl/stable/examples/basic_examples/Coin%20Toss%20Model/), where we put a non-conjugate prior on the parameters of the prior on ``\theta``:
 
 ```@example manual_constraints
 using RxInfer
-```
 
-## General syntax 
+@model function coin_model(n)
+    y = datavar(Float64, n)
 
-`@constraints` macro accepts either regular Julia function or a single `begin ... end` block. For example both are valid:
+    α ~ Gamma(1, 1)
+    β ~ Gamma(1, 1)
 
-```julia
-
-# `functional` style
-@constraints function create_my_constraints(arg1, arg2)
-    ...
-end
-
-# `block` style
-myconstraints = @constraints begin 
-    ...
-end
-
-```
-
-In the first case it returns a function that return constraints upon calling, e.g. 
-
-```@example manual_constraints
-@constraints function make_constraints(mean_field)
-    q(x) :: PointMass
-
-    if mean_field
-        q(x, y) = q(x)q(y)
+    θ ~ Beta(α, β)
+    for i in 1:n
+        y[i] ~ Bernoulli(θ)
     end
 end
-
-myconstraints = make_constraints(true)
 ```
- 
-and in the second case it evaluates automatically and returns constraints object directly.
+With `@constraints`, we can design additional constraints to impose on this model. The `@constraints` macro accepts a list of factorization- and functional form constraints.
+### Factorization Constraints
+A factorization constraint imposes additional independence constraints on factorized beliefs in the variational posterior:
+```math
+q_b(\mathbf{s}_b) = \prod_{n \in l(b)} q_b^n(\mathbf{s}_b^n)
+```
+for any partition ``l(b)`` of ``\mathbf{s}_b`` for a node ``b``. 
+
+An example of a factorization constraint is the mean-field approximation, where we assume that ``q_b(\mathbf{s}_b)`` decomposes into individual, independent components. In our Bayesian Coin toss example, we might want to assume independence in the variational posterior between `θ`,  `α` and `β`. We can do this with the following constraints:
 
 ```@example manual_constraints
-myconstraints = @constraints begin 
-    q(x) :: PointMass
-    q(x, y) = q(x)q(y)
+@constraints begin
+    q(θ, α, β) = q(θ)q(α)q(β)
+end
+```
+Note that this specifies a mean-field constraint on the `Beta` node in our model. The mean-field constraint enjoys a special place in our syntax, and we can also specify it using `MeanField()`:
+    
+```julia
+@constraints begin
+    q(θ, α, β) = MeanField()
+end
+```
+Here, we see the general syntax of adding factorization constraints to our model. We use the `q(__variables__) = __factorization__` pattern to specify which constraint to apply. `RxInfer` will derive in which nodes to apply this constraint. Note that, since `RxInfer` explicitly makes the Bethe assumption, that in order to assume independence between two variables in the variational posterior, they must share a factor node neighbor, as otherwise there does not exist a `q_b(\mathb{s}_b)` in which both variables occur.
+
+Factorization constraints over arrays of variables can also be specified with the same syntax. For example, if we want to add a factorization constraint between the `y` variables in our model (even though they are not connected in the factor graph), we can do so with the following syntax:
+
+```@example manual_constraints
+@constraints begin
+    q(y) = q(y[begin])..q(y[end])
 end
 ```
 
-### Options specification 
-
-`@constraints` macro accepts optional list of options as a first argument and specified as an array of `key = value` pairs, e.g. 
+Joining this with our previous mean-field assumption over `θ`,  `α` and `β`, this gives us the following constraints:
 
 ```julia
-myconstraints = @constraints [ warn = false ] begin 
-   ...
+@constraints begin
+    q(θ, α, β) = MeanField()
+    q(y) = q(y[begin])..q(y[end])
 end
 ```
+!!! note 
+    `@constraints` macro does not support matrix-based collections of variables. E.g. it is not possible to write `q(x[begin, begin])..q(x[end, end])` for a matrix `x`.
+### Functional Form Constraints
+Functional Form Constraints restrict the functional form of the variational posterior for a specific variable. For example, we might want to restrict the variational posterior of `θ` to be a `PointMass` distribution, such that we get the MAP estimate for `θ` as our variational posterior. We can add this constraint with the following syntax:
 
-List of available options:
-- `warn::Bool` - enables/disables various warnings with an incompatible model/constraints specification
-
-## Marginal and messages form constraints
-
-To specify marginal or messages form constraints `@constraints` macro uses `::` operator (in somewhat similar way as Julia uses it for multiple dispatch type specification)
-
-The following constraint:
-
-```@example manual_constraints
-@constraints begin 
-    q(x) :: PointMass
+```julia
+@constraints begin
+    q(θ, α, β) = MeanField()
+    q(y) = q(y[begin])..q(y[end])
+    q(θ) :: PointMass
 end
 ```
-
-indicates that the resulting marginal of the variable (or array of variables) named `x` must be approximated with a `PointMass` object. Message passing based algorithms compute posterior marginals as a normalized product of two colliding messages on corresponding edges of a factor graph. In a few words `q(x)::PointMass` reads as:
+This indicates that the resulting marginal of the variable (or array of variables) named `x` must be approximated with a `PointMass` object. Message passing based algorithms compute posterior marginals as a normalized product of two colliding messages on corresponding edges of a factor graph. Mathematically, `q(x)::PointMass` reads as:
 
 ```math
 \mathrm{approximate~} q(x) = \frac{\overrightarrow{\mu}(x)\overleftarrow{\mu}(x)}{\int \overrightarrow{\mu}(x)\overleftarrow{\mu}(x) \mathrm{d}x}\mathrm{~as~PointMass}
 ```
-
-Sometimes it might be useful to set a functional form constraint on messages too. For example if it is essential to keep a specific Gaussian parametrisation or if some messages are intractable and need approximation. To set messages form constraint `@constraints` macro uses `μ(...)` instead of `q(...)`:
-
-```@example manual_constraints
-@constraints begin 
-    q(x) :: PointMass
-    μ(x) :: SampleList(1000)
-    # it is possible to assign different form constraints on the same variable 
-    # both for the marginal and for the messages 
-end
-```
-
-`@constraints` macro understands "stacked" form constraints. For example the following form constraint
-
-```@example manual_constraints
-@constraints begin 
-    q(x) :: SampleList(1000) :: PointMass
-end
-```
-
-indicates that the `q(x)` first must be approximated with a `SampleList` and in addition the result of this approximation should be approximated as a `PointMass`. 
-
-!!! note
-    Not all combinations of "stacked" form constraints are compatible between each other.
-
-You can find more information about built-in functional form constraint in the [Built-in Functional Forms](@ref lib-forms) section. In addition, the [ReactiveMP library documentation](https://biaslab.github.io/ReactiveMP.jl/stable/) explains the functional form interfaces and shows how to build a custom functional form constraint that is compatible with `RxInfer.jl` and `ReactiveMP.jl` inference engine.
-
-## Factorisation constraints on posterior distribution `q()`
-
-`@model` macro specifies generative model `p(s, y)` where `s` is a set of random variables and `y` is a set of observations. In a nutshell the goal of probabilistic programming is to find `p(s|y)`. `RxInfer` approximates `p(s|y)` with a proxy distribution `q(x)` using KL divergence and Bethe Free Energy optimisation procedure. By default there are no extra factorisation constraints on `q(s)` and the optimal solution is `q(s) = p(s|y)`. However, inference may be not tractable for every model without extra factorisation constraints. To circumvent this, `RxInfer.jl` and `ReactiveMP.jl` accept optional factorisation constraints specification syntax:
-
-For example:
-
-```@example manual_constraints
-@constraints begin 
-    q(x, y) = q(x)q(y)
-end
-```
-
-specifies a so-called mean-field assumption on variables `x` and `y` in the model. Furthermore, if `x` is an array of variables in our model we may induce extra mean-field assumption on `x` in the following way.
-
-```@example manual_constraints
-@constraints begin 
-    q(x) = q(x[begin])..q(x[end])
-    q(x, y) = q(x)q(y)
-end
-```
-
-These constraints specify a mean-field assumption between variables `x` and `y` (either single variable or collection of variables) and additionally specify mean-field assumption on variables $x_i$.
-
-!!! note 
-    `@constraints` macro does not support matrix-based collections of variables. E.g. it is not possible to write `q(x[begin, begin])..q(x[end, end])`
-
-It is possible to write more complex factorisation constraints, for example:
-
-```@example manual_constraints
-@constraints begin 
-    q(x, y) = q(x[begin], y[begin])..q(x[end], y[end])
-end
-```
-
-specifies a mean-field assumption between collection of variables named `x` and `y` only for variables with different indices. Another example is
-
-```@example manual_constraints
-@constraints function make_constraints(k)
-    q(x) = q(x[begin:k])q(x[k+1:end])
-end
-```
-
-In this example we specify a mean-field assumption between a set of variables `x[begin:k]` and `x[k+1:end]`. 
-
-To create a model with extra constraints the user may pass an optional `constraints` keyword argument for the `create_model` function:
+Similar to factorization constraints, functional form constraints are parsed by `RxInfer` internally and will resolve constraints for array- or matrix-based variables. 
+## Constraints in submodels
+`RxInfer` allows you to define your generative model hierarchically, using previously defined `@model` modules as submodels in larger models. Because of this, users need to specify their constraints hierarchically as well to avoid ambiguities. Consider the following example:
 
 ```julia
-@model function my_model(arguments...)
-   ...
+@model function inner_inner(τ, y)
+    y ~ Normal(τ[1], τ[2])
 end
 
-constraints = @constraints begin 
-    ...
+@model function inner(θ, α)
+    β ~ Normal(0, 1)
+    α ~ Gamma(β, 1)
+    α ~ inner_inner(τ = θ)
 end
 
-model, returnval = create_model(my_model(arguments...); constraints = constraints)
+@model function outer()
+    local w
+    for i = 1:5
+        w[i] ~ inner(θ = Gamma(1, 1))
+    end
+    y ~ inner(θ = w[2:3])
+end
 ```
 
-Alternatively, it is possible to use constraints directly in the automatic [`inference`](@ref) and [`rxinference`](@ref) functions that accepts `constraints` keyword argument. 
+To access the variables in the submodels, we use the `for q in __submodel__` syntax, which will allow us to specify constraints over variables in the context of an inner submodel:
+
+```julia
+@constraints begin
+    for q in inner
+        q(α) :: PointMass
+        q(α, β) = q(a)q(b)
+    end
+end
+```
+
+Similarly, we can specify constraints over variables in the context of the innermost submodel by using the `for q in __submodel__` syntax twice:
+
+```julia
+@constraints begin
+    for q in inner
+        for q in inner_inner
+            q(y, τ) = q(y)q(τ[1])q(τ[2])
+        end
+        q(α) :: PointMass
+        q(α, β) = q(a)q(b)
+    end
+end
+```
+
+The `for q in __submodel__` applies the constraints specified in this code block to all instances of `__submodel__` in the current context. If we want to apply constraints to a specific instance of a submodel, we can use the `for q in (__submodel__, __identifier__)` syntax, where `__identifier__` is a counter integer. For example, if we want to specify constraints on the first instance of `inner` in our `outer` model, we can do so with the following syntax:
+
+```julia
+@constraints begin
+    for q in (inner, 1)
+        q(α) :: PointMass
+        q(α, β) = q(a)q(b)
+    end
+end
+```
+
+Factorization constraints specified in a context propagate to their child submodels. This means that we can specify factorization constraints over variables where the factor node that connects the two are in a submodel, without having to specify the factorization constraint in the submodel itself. For example, if we want to specify a factorization constraint between `w[2]` and `w[3]` in our `outer` model, we can specify it in the context of `outer`, and `RxInfer` will recognize that these variables are connected through the `Normal` node in the `inner_inner` submodel:
+
+```julia
+@constraints begin
+    q(w) = q(w[begin])..q(w[end])
+end
+```

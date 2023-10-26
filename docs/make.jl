@@ -1,11 +1,13 @@
 using RxInfer
 using Documenter
+using DocumenterCitations
 
 ## https://discourse.julialang.org/t/generation-of-documentation-fails-qt-qpa-xcb-could-not-connect-to-display/60988
 ## https://gr-framework.org/workstations.html#no-output
 ENV["GKSwstype"] = "100"
 
 DocMeta.setdocmeta!(RxInfer, :DocTestSetup, :(using RxInfer); recursive = true)
+bib = CitationBibliography(joinpath(@__DIR__, "src", "references.bib"))
 
 # This must be auto-generated with `make examples`
 ExamplesPath = joinpath(@__DIR__, "src", "examples")
@@ -131,7 +133,8 @@ makedocs(;
         ],
         "Contributing" =>
             ["Overview" => "contributing/overview.md", "Adding a new example" => "contributing/new-example.md", "Publishing a new release" => "contributing/new-release.md"]
-    ]
+    ],
+    plugins=[bib]
 )
 
 deploydocs(; repo = "github.com/biaslab/RxInfer.jl", devbranch = "main")
