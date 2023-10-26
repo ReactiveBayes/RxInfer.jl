@@ -1,6 +1,6 @@
 # [Meta Specification](@id user-guide-meta-specification)
 
-Some nodes in the `ReactiveMP.jl` inference engine require a meta structure that may be used to provide additional information to the nodes, or to customise the inference procedure or the way the nodes compute outbound messages. For instance, the `AR` node, modeling the Auto-Regressive process, necessitates knowledge of the order of the AR process, or the `GCV` node ([Gaussian Controlled Variance](https://ieeexplore.ieee.org/document/9173980)) needs an approximation method to handle non-conjugate relationships between variables in this node. To facilitate these requirements, `RxInfer.jl` exports `@meta` macro to specify node-specific meta and contextual information.
+Some nodes in the `RxInfer.jl` inference engine require a meta structure that may be used to either provide additional information to the nodes or customise the inference procedure or the way the nodes compute outbound messages. For instance, the `AR` node, modeling the Auto-Regressive process, necessitates knowledge of the order of the AR process, or the `GCV` node ([Gaussian Controlled Variance](https://ieeexplore.ieee.org/document/9173980)) needs an approximation method to handle non-conjugate relationships between variables in this node. To facilitate these requirements, `RxInfer.jl` exports `@meta` macro to specify node-specific meta and contextual information.
 
 ```@example manual_meta
 using RxInfer
@@ -80,7 +80,7 @@ my_meta = @meta begin
 end
 ```
 
-To create a model with extra constraints the user may pass an optional `meta` keyword argument for the `create_model` function:
+To create a model with meta structures the user may pass an optional `meta` keyword argument for the `create_model` function:
 
 ```julia
 @model function my_model(arguments...)
@@ -124,7 +124,7 @@ If you add node-specific meta to your model this way, then you do not need to us
 
 
 ## Create your own meta
-Although some nodes in `RxInfer.jl` already come with their own meta structure, you have the flexibility to define different meta structures for those nodes and also for your custorm ones. A meta structure is created by using the `struct` statement in `Julia`. For example, the following snippet of code illustrates how you can create your own meta structures for your custom node and for the `AR` node:
+Although some nodes in `RxInfer.jl` already come with their own meta structure, you have the flexibility to define different meta structures for those nodes and also for your custorm ones. A meta structure is created by using the `struct` statement in `Julia`. For example, the following snippet of code illustrates how you can create your own meta structures for your custom node:
 
 ```julia
 # create your own meta structure for your custom node
@@ -137,7 +137,11 @@ end
 @meta function model_meta(arg1, arg2)
     MyCustomNode() -> MyCustomMeta(arg1,arg2)
 end
-#---------------------------------------------------
+
+my_meta = model_meta(value_arg1, value_arg2)
+```
+or create different meta strutures for a node, e.g. `AR` node:
+```julia
 # create your own meta structure for the AR node
 struct MyARMeta
     arg1
@@ -148,10 +152,84 @@ end
 @meta function model_meta(arg1, arg2)
     AR() -> MyARMeta(arg1, arg2)
 end
+
+my_meta = model_meta(value_arg1, value_arg2)
 ```
 
-## Nodes with meta data in RxInfer
+## Example
+This section provides a concrete example of how to create and use meta in `RxInfer.jl`. Suppose that we have the following Gaussian model:
 
+$$\begin{aligned}
+ x & \sim \mathrm{Normal}(2.5, 0.5)\\
+ y & \sim \mathrm{Normal}(2*x, 2.0)
+\end{aligned}$$
+
+where $y$ is observable data and $x$ is a latent variable. In `RxInfer.jl`, the inference procedure for this model is well defined without the need of specifying any meta data for the `Normal` node.
+```julia
+using RxInfer
+
+#create data
+y_data = 4.0 
+
+#make model
+@model function gaussian_model()
+    y = datavar(Float64)
+
+    x ~ NormalMeanVariance(2.5, 0.5)
+    y ~ NormalMeanVariance(2*x, 2.)
+end
+
+#do inference
+inference_result = inference(
+    model = gaussian_model(),
+    data = (y = y_data,)
+)
+```
+However, let's say we would like to define a new inference procedure by introducing a meta structure to the `Normal` node that always yields a Normal distribution with mean $m$ for the outbound messages of the node. This is done as follows:
+```julia
+#create your new meta structure for Normal node
+struct MetaNormal
+    m::Real
+end
+
+#function that gets the parameter in meta
+getmean(meta::MetaNormal) = meta.m
+
+#define rules with meta for the Normal node
+@rule NormalMeanVariance(:out, Marginalisation) (q_μ::Any, q_v::PointMass, meta::MetaNormal) = begin
+    return NormalMeanVariance(getmean(meta), mean(m_v))
+end
+
+@rule NormalMeanVariance(:μ, Marginalisation) (q_out::Any, q_v::PointMass, meta::MetaNormal) = begin
+    return NormalMeanVarince(getmean(meta), mean(m_v))
+end
+
+#make model
+@model function gaussian_model_with_meta()
+    y = datavar(Float64)
+
+    x ~ NormalMeanVariance(2.5, 0.5)
+    y ~ NormalMeanVariance(2*x, 2.)
+end
+
+#specify meta for the model
+@meta function model_meta(m)
+    NormalMeanVariance(y,x) -> MetaNormal(m)
+end
+
+my_meta = model_meta(3) # mean = 3
+
+#do inference
+inference_result = inference(
+    model = gaussian_model(),
+    data = (y = y_data,),
+    meta = my_meta
+)
+```
+
+**Disclaimer**: The above example is not mathematically correct. It is only used to show how we can work with `@meta` as well as how to create a meta structure for a node in `RxInfer.jl`.
+
+## Nodes with meta data in RxInfer
 
 |    Node                                 |   Meta                                                                   |
 | :-------------------------------------- | :----------------------------------------------------------------------- |
@@ -165,4 +243,4 @@ end
 | (*)                                     | Union{Nothing, MatrixCorrectionTools.AbstractCorrectionStrategy}         |
 
 
-**Notes**: The meta `Union{Nothing, ...}` in some nodes means it is optional to specify meta for those nodes.
+**Notes**: The meta `Union{Nothing, ...}` in some nodes means it is optional to specify meta for those nodes, i.e. you do not need to specify meta for them. If you still want to specify meta, then use the latter argument. For example, if you want to specify meta for the `Probit` node, then use `ProbitMeta`.
