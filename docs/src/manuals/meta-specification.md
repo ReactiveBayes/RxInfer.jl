@@ -156,6 +156,7 @@ end
 my_meta = model_meta(value_arg1, value_arg2)
 ```
 **Note**: When you define a meta structure for a node, keep in mind that you must define message update rules with the meta for that node. See [node](@id create-node) for more details of how to define rules for a node.
+
 ## Example
 This section provides a concrete example of how to create and use meta in `RxInfer.jl`. Suppose that we have the following Gaussian model:
 
