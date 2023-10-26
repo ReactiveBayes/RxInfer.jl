@@ -1,4 +1,4 @@
-# Delta node manual
+# [Delta node manual](@id delta-node-manual)
 
 RxInfer.jl offers a comprehensive set of stochastic nodes, with a primary emphasis on distributions from the exponential family and its associated compositions, such as Gaussian with controlled variance (GCV) or autoregressive (AR) nodes. The `DeltaNode` stands out in this package, representing a deterministic transformation of either a single random variable or a group of them. This guide provides insights into the `DeltaNode` and its functionalities.
 

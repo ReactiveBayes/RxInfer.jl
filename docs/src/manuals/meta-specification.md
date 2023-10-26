@@ -1,6 +1,6 @@
 # [Meta Specification](@id user-guide-meta-specification)
 
-Some nodes in the `ReactiveMP.jl` inference engine require a meta structure that may be used to provide additional information to the nodes, customise the inference procedure or the way the nodes compute outbound messages. For instance, the `AR` node, modeling the Auto-Regressive process, necessitates knowledge of the order of the AR process, or the `GCV` node ([Gaussian Controlled Variance](https://ieeexplore.ieee.org/document/9173980)) needs an approximation method to handle non-conjugate relationships between variables in this node. To facilitate these requirements, `RxInfer.jl` exports `@meta` macro to specify node-specific meta and contextual information.
+Some nodes in the `ReactiveMP.jl` inference engine require a meta structure that may be used to provide additional information to the nodes, or to customise the inference procedure or the way the nodes compute outbound messages. For instance, the `AR` node, modeling the Auto-Regressive process, necessitates knowledge of the order of the AR process, or the `GCV` node ([Gaussian Controlled Variance](https://ieeexplore.ieee.org/document/9173980)) needs an approximation method to handle non-conjugate relationships between variables in this node. To facilitate these requirements, `RxInfer.jl` exports `@meta` macro to specify node-specific meta and contextual information.
 
 ```@example manual_meta
 using RxInfer
@@ -79,17 +79,6 @@ my_meta = @meta begin
     MyCustomNode() -> MyCustomMetaObject(arg1, arg2)
 end
 ```
-**Note**: You can also specify meta's for your nodes without using `@meta` but directly inside `@model`. For example:
-```julia
-@model function my_model()
-    ...
-
-    y ~ AR(x, θ, γ) where { meta = ARMeta(Univariate, 5, ARsafe()) }
-
-    ...
-end
-```
-
 
 To create a model with extra constraints the user may pass an optional `meta` keyword argument for the `create_model` function:
 
@@ -121,32 +110,59 @@ inferred_result = rxinference(
 )
 ```
 
-## Create your own meta
-The meta is created by `struct` statement
+**Note**: You can also specify metadata for your nodes directly inside `@model`, without the need to use `@meta`. For example:
 ```julia
+@model function my_model()
+    ...
+
+    y ~ AR(x, θ, γ) where { meta = ARMeta(Univariate, 5, ARsafe()) }
+
+    ...
+end
+```
+If you add node-specific meta to your model this way, then you do not need to use the `meta` keyword argument in the `inference` and `rxinference` functions.
+
+
+## Create your own meta
+Although some nodes in `RxInfer.jl` already come with their own meta structure, you have the flexibility to define different meta structures for those nodes and also for your custorm ones. A meta structure is created by using the `struct` statement in `Julia`. For example, the following snippet of code illustrates how you can create your own meta structures for your custom node and for the `AR` node:
+
+```julia
+# create your own meta structure for your custom node
 struct MyCustomMeta
     arg1 
     arg2 
 end
 
+# apply the new meta structure to your node
 @meta function model_meta(arg1, arg2)
     MyCustomNode() -> MyCustomMeta(arg1,arg2)
+end
+#---------------------------------------------------
+# create your own meta structure for the AR node
+struct MyARMeta
+    arg1
+    arg2
+end
+
+# apply the new meta structure to the AR node
+@meta function model_meta(arg1, arg2)
+    AR() -> MyARMeta(arg1, arg2)
 end
 ```
 
 ## Nodes with meta data in RxInfer
 
 
-|    Node        |   Meta                                                                   |
-| :------------- | :----------------------------------------------------------------------- |
-| AR             | ARmeta                                                                   |
-| GCV            | GCVMetadata                                                              |
-| DeltaFn        | DeltaMeta                                                                |
-| Probit         | Union{Nothing, ProbitMeta}                                               |
-| BIFM           | BIFMMeta                                                                 |
-| Flow           | FlowMeta                                                                 |
-| dot            | Union{Nothing, MatrixCorrectionTools.AbstractCorrectionStrategy}         |
-| (*)            | Union{Nothing, MatrixCorrectionTools.AbstractCorrectionStrategy}         |
+|    Node                                 |   Meta                                                                   |
+| :-------------------------------------- | :----------------------------------------------------------------------- |
+| AR                                      | ARmeta                                                                   |
+| GCV                                     | GCVMetadata                                                              |
+| [DeltaFn](@id delta-node-manual)        | DeltaMeta                                                                |
+| Probit                                  | Union{Nothing, ProbitMeta}                                               |
+| BIFM                                    | BIFMMeta                                                                 |
+| Flow                                    | FlowMeta                                                                 |
+| dot                                     | Union{Nothing, MatrixCorrectionTools.AbstractCorrectionStrategy}         |
+| (*)                                     | Union{Nothing, MatrixCorrectionTools.AbstractCorrectionStrategy}         |
 
 
-**Notes**: The meta `Union{Nothing, ...}` in some nodes means it is optional to specify meta for those nodes.  
+**Notes**: The meta `Union{Nothing, ...}` in some nodes means it is optional to specify meta for those nodes.
