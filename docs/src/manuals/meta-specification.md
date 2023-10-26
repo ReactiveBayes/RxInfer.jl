@@ -140,7 +140,7 @@ end
 
 my_meta = model_meta(value_arg1, value_arg2)
 ```
-or create different meta strutures for a node, e.g. `AR` node:
+or create different meta structures for a node, e.g. `AR` node:
 ```julia
 # create your own meta structure for the AR node
 struct MyARMeta
