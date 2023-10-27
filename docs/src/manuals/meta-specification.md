@@ -198,11 +198,11 @@ getmean(meta::MetaNormal) = meta.m
 
 #define rules with meta for the Normal node
 @rule NormalMeanVariance(:out, Marginalisation) (q_μ::Any, q_v::PointMass, meta::MetaNormal) = begin
-    return NormalMeanVariance(getmean(meta), mean(m_v))
+    return NormalMeanVariance(getmean(meta), mean(q_v))
 end
 
 @rule NormalMeanVariance(:μ, Marginalisation) (q_out::Any, q_v::PointMass, meta::MetaNormal) = begin
-    return NormalMeanVarince(getmean(meta), mean(m_v))
+    return NormalMeanVarince(getmean(meta), mean(q_v))
 end
 
 #make model
