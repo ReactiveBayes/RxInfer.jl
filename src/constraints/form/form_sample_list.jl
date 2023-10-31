@@ -1,7 +1,7 @@
 export LeftProposal, RightProposal, AutoProposal
 
 import ReactiveMP: is_point_mass_form_constraint, default_form_check_strategy, default_prod_constraint, make_form_constraint, constrain_form
-import BayesBase: AbstractContinuousGenericLogPdf
+import BayesBase: AbstractContinuousGenericLogPdf, BootstrapImportanceSampling
 
 using Random
 
@@ -39,8 +39,8 @@ end
 
 Base.show(io::IO, constraint::SampleListFormConstraint) = print(io, "SampleListFormConstraint(", constraint.rng, ", ", constraint.strategy, ", ", constraint.method, ")")
 
-SampleListFormConstraint(nsamples::Int, strategy::S = AutoProposal(), method::M = ReactiveMP.BootstrapImportanceSampling()) where {S, M}                           = SampleListFormConstraint(Random.GLOBAL_RNG, nsamples, strategy, method)
-SampleListFormConstraint(rng::R, nsamples::Int, strategy::S = AutoProposal(), method::M = ReactiveMP.BootstrapImportanceSampling()) where {R <: AbstractRNG, S, M} = SampleListFormConstraint{nsamples, R, S, M}(rng, strategy, method)
+SampleListFormConstraint(nsamples::Int, strategy::S = AutoProposal(), method::M = BootstrapImportanceSampling()) where {S, M}                           = SampleListFormConstraint(Random.GLOBAL_RNG, nsamples, strategy, method)
+SampleListFormConstraint(rng::R, nsamples::Int, strategy::S = AutoProposal(), method::M = BootstrapImportanceSampling()) where {R <: AbstractRNG, S, M} = SampleListFormConstraint{nsamples, R, S, M}(rng, strategy, method)
 
 ReactiveMP.is_point_mass_form_constraint(::SampleListFormConstraint) = false
 
@@ -50,8 +50,8 @@ ReactiveMP.default_prod_constraint(::SampleListFormConstraint) = GenericProd()
 
 ReactiveMP.make_form_constraint(::Type{SampleList}, args...; kwargs...) = SampleListFormConstraint(args...; kwargs...)
 
-__approximate(constraint::SampleListFormConstraint{N, R, S, M}, left, right) where {N, R, S <: LeftProposal, M}  = ReactiveMP.approximate_prod_with_sample_list(constraint.rng, constraint.method, left, right, N)
-__approximate(constraint::SampleListFormConstraint{N, R, S, M}, left, right) where {N, R, S <: RightProposal, M} = ReactiveMP.approximate_prod_with_sample_list(constraint.rng, constraint.method, right, left, N)
+__approximate(constraint::SampleListFormConstraint{N, R, S, M}, left, right) where {N, R, S <: LeftProposal, M}  = BayesBase.approximate_prod_with_sample_list(constraint.rng, constraint.method, left, right, N)
+__approximate(constraint::SampleListFormConstraint{N, R, S, M}, left, right) where {N, R, S <: RightProposal, M} = BayesBase.approximate_prod_with_sample_list(constraint.rng, constraint.method, right, left, N)
 
 # The logic here is that the `__aproximate` function will try to pick as a proposal candidate an object 
 # which is not in the `AutoProposalLowPriorityCandidates` list
@@ -60,11 +60,11 @@ __approximate(constraint::SampleListFormConstraint{N, R, S, M}, left, right) whe
 const AutoProposalLowPriorityCandidates = Union{AbstractContinuousGenericLogPdf, }
 
 function __approximate(constraint::SampleListFormConstraint{N, R, S, M}, left::AutoProposalLowPriorityCandidates, right) where {N, R, S <: AutoProposal, M}
-    return ReactiveMP.approximate_prod_with_sample_list(constraint.rng, constraint.method, right, left, N)
+    return BayesBase.approximate_prod_with_sample_list(constraint.rng, constraint.method, right, left, N)
 end
 
 function __approximate(constraint::SampleListFormConstraint{N, R, S, M}, left, right::AutoProposalLowPriorityCandidates) where {N, R, S <: AutoProposal, M}
-    return ReactiveMP.approximate_prod_with_sample_list(constraint.rng, constraint.method, left, right, N)
+    return BayesBase.approximate_prod_with_sample_list(constraint.rng, constraint.method, left, right, N)
 end
 
 function __approximate(

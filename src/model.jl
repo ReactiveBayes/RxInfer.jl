@@ -408,7 +408,7 @@ function ReactiveMP.make_node(
         # By convention, if the result happens to be missing, the result is a `Message{Missing}` instead of `Message{PointMass}`
         mapping_fn = let possibly_missings = possibly_missings
             (vars) -> begin
-                result = fform(map((d) -> ReactiveMP.getpointmass(ReactiveMP.getdata(d)), vars)...)
+                result = fform(map((d) -> BayesBase.getpointmass(ReactiveMP.getdata(d)), vars)...)
                 return if (possibly_missings && ismissing(result))
                     Message{Missing, Nothing}(missing, false, false, nothing)
                 else
