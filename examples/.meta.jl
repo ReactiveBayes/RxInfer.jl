@@ -5,7 +5,7 @@ return (
     categories = (
         basic_examples = (
             title = "Basic examples",
-            description = "Basic examples contain ``Hello World!`` of Bayesian inference in RxInfer.",
+            description = "Basic examples contain \"Hello World!\" of Bayesian inference in RxInfer.",
         ),
         advanced_examples = (
             title = "Advanced examples",
