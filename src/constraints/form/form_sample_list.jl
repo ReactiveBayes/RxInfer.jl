@@ -57,7 +57,7 @@ __approximate(constraint::SampleListFormConstraint{N, R, S, M}, left, right) whe
 # which is not in the `AutoProposalLowPriorityCandidates` list
 # For example if we have a product of a `Gaussian` and a `ContinuousGenericLogPdf` the `AutoProposal` strategy
 # should pick the `Gaussian` as the proposal distribution
-const AutoProposalLowPriorityCandidates = Union{AbstractContinuousGenericLogPdf, }
+const AutoProposalLowPriorityCandidates = Union{AbstractContinuousGenericLogPdf}
 
 function __approximate(constraint::SampleListFormConstraint{N, R, S, M}, left::AutoProposalLowPriorityCandidates, right) where {N, R, S <: AutoProposal, M}
     return BayesBase.approximate_prod_with_sample_list(constraint.rng, constraint.method, right, left, N)
