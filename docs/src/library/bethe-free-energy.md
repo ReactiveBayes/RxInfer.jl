@@ -58,6 +58,14 @@ For iterative optimization of the BFE, the variational distributions must first 
 For disambiguation, note that the initialization of the variational distribution is a different design consideration than the choice of priors. A prior specifies a factor in the model definition, while initialization concerns factors in the variational distribution.
 
 
+## [Further reading](@id lib-bethe-further-reading)
+
+- [Pearl (1986)](https://dl.acm.org/doi/pdf/10.1145/3501714.3501728) on the original foundations of Bayesian networks and belief propagation;
+- [Yedidia et al. (2005)](https://ieeexplore.ieee.org/iel5/18/31406/01459044.pdf) on the connections between belief propagation and regional approximations to the VFE;
+- [Dauwels (2007)](https://ieeexplore.ieee.org/iel5/4497218/4557062/04557602.pdf) on variational message passing on Forney-style factor graphs (FFGs);
+- [Senoz et al. (2021)](https://www.mdpi.com/1099-4300/23/7/807/htm) on constraint manipulation and message passing on FFGs.
+
+
 ```@docs
 RxInfer.AbstractScoreObjective
 RxInfer.BetheFreeEnergy
