@@ -103,3 +103,6 @@ The `RxInfer` unites 3 core packages into one powerful reactive message passing-
 
 ```@index
 ```
+## Bibliography
+```@bibliography
+```
