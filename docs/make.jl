@@ -116,7 +116,8 @@ makedocs(;
             "Meta specification"        => "manuals/meta-specification.md",
             "Inference specification"   => ["Overview" => "manuals/inference/overview.md", "Static dataset" => "manuals/inference/inference.md", "Real-time dataset / reactive inference" => "manuals/inference/rxinference.md", "Inference results postprocessing" => "manuals/inference/postprocess.md", "Manual inference specification" => "manuals/inference/manual.md"],
             "Inference customization"   => ["Defining a custom node and rules" => "manuals/custom-node.md"],
-            "Debugging"                 => "manuals/debugging.md"
+            "Debugging"                 => "manuals/debugging.md",
+            "Delta node"                => "manuals/delta-node.md"
         ],
         "Library" => [
             "Built-in functional form constraints" => "library/functional-forms.md",

@@ -73,6 +73,7 @@ Pages = [
   "manuals/inference-execution.md",
   "manuals/custom-node.md",
   "manuals/debugging.md",
+  "manuals/delta-node.md",
   "examples/overview.md",
   "library/exported-methods.md",
   "library/functional-forms.md",
