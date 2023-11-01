@@ -1,6 +1,8 @@
 [deps]
+BayesBase = "b4ee3484-f114-42fe-b91c-797d54a0c67e"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+ExponentialFamily = "62312e5e-252a-4322-ace9-a5f4bf9b357b"
 GraphPPL = "b3f8163a-e979-4e85-b43e-1f63d8c8b42c"
 Optimisers = "3bd65402-5787-11e9-1adc-39752487f4e2"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
