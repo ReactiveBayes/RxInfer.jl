@@ -3,8 +3,6 @@ on:
   workflow_dispatch:
   pull_request:
     types: [review_requested,reopened,synchronize]
-  pull_request_review:
-    types: [submitted,edited]
   push:
     branches:
       - 'main'
