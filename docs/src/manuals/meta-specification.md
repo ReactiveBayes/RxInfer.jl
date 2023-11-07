@@ -30,13 +30,13 @@ end
 my_meta = ARmodel_meta(5)
 ```
  
-In the second case it returns constraints directly. For example, the same meta for the `AR` node can also be defined as follows:
+In the second case it returns the meta object directly. For example, the same meta for the `AR` node can also be defined as follows:
 
 ```julia
 num_order = 5
 
 my_meta = @meta begin 
-    AR() -> ARMeta(Univariate, num_order, ARsafe())
+    AR() -> ARMeta(Multivariate, num_order, ARsafe())
 end
 ```
 Both syntax variations provide the same meta specification and there is no preference given to one over the other. 
@@ -75,7 +75,7 @@ You can have a list of as many meta specification entries as possible for differ
 ```julia
 my_meta = @meta begin 
     GCV(x1, k1, w1) -> GCVMetadata(GaussHermiteCubature(20))
-    AR() -> ARMeta(Univariate, 5, ARsafe())
+    AR() -> ARMeta(Multivariate, 5, ARsafe())
     MyCustomNode() -> MyCustomMetaObject(arg1, arg2)
 end
 ```
@@ -115,7 +115,7 @@ inferred_result = rxinference(
 @model function my_model()
     ...
 
-    y ~ AR(x, θ, γ) where { meta = ARMeta(Univariate, 5, ARsafe()) }
+    y ~ AR(x, θ, γ) where { meta = ARMeta(Multivariate, 5, ARsafe()) }
 
     ...
 end
