@@ -2,10 +2,6 @@
 
 Some nodes in the `RxInfer.jl` inference engine require a meta structure that may be used to either provide additional information to the nodes or customise the inference procedure or the way the nodes compute outbound messages. For instance, the `AR` node, modeling the Auto-Regressive process, necessitates knowledge of the order of the AR process, or the `GCV` node ([Gaussian Controlled Variance](https://ieeexplore.ieee.org/document/9173980)) needs an approximation method to handle non-conjugate relationships between variables in this node. To facilitate these requirements, `RxInfer.jl` exports `@meta` macro to specify node-specific meta and contextual information.
 
-```@example manual_meta
-using RxInfer
-```
-
 ## General syntax 
 
 `@meta` macro accepts either regular Julia `function` or a single `begin ... end` block:
@@ -155,9 +151,10 @@ end
 
 my_meta = model_meta(value_arg1, value_arg2)
 ```
-**Note**: When you define a meta structure for a node, keep in mind that you must define message update rules with the meta for that node. See [node](@id create-node) for more details of how to define rules for a node.
+**Note**: When you define a meta structure for a node, keep in mind that you must define message update rules with the meta for that node. See [node manual](@ref create-node) for more details of how to define rules for a node.
 
 ## Example
+
 This section provides a concrete example of how to create and use meta in `RxInfer.jl`. Suppose that we have the following Gaussian model:
 
 $$\begin{aligned}
@@ -166,7 +163,8 @@ $$\begin{aligned}
 \end{aligned}$$
 
 where $y$ is observable data and $x$ is a latent variable. In `RxInfer.jl`, the inference procedure for this model is well defined without the need of specifying any meta data for the `Normal` node.
-```julia
+
+```@example custom-meta
 using RxInfer
 
 #create data
@@ -186,25 +184,27 @@ inference_result = inference(
     data = (y = y_data,)
 )
 ```
-However, let's say we would like to define a new inference procedure by introducing a meta structure to the `Normal` node that always yields a Normal distribution with mean $m$ for the outbound messages of the node. This is done as follows:
-```julia
-#create your new meta structure for Normal node
-struct MetaNormal
-    m::Real
-end
 
-#function that gets the parameter in meta
-getmean(meta::MetaNormal) = meta.m
+However, let's say we would like to experiment with message update rules and define a new inference procedure by introducing a meta structure to the `Normal` node that always yields a Normal distribution with mean $m$ clamped between `lower_limit` and `upper_limit` for the outbound messages of the node. This is done as follows:
+
+```@example custom-meta
+#create your new meta structure for Normal node
+struct MetaConstrainedMeanNormal{T}
+    lower_limit :: T
+    upper_limit :: T
+end
 
 #define rules with meta for the Normal node
-@rule NormalMeanVariance(:out, Marginalisation) (q_μ::Any, q_v::PointMass, meta::MetaNormal) = begin
-    return NormalMeanVariance(getmean(meta), mean(q_v))
+@rule NormalMeanVariance(:out, Marginalisation) (q_μ::Any, q_v::Any, meta::MetaConstrainedMeanNormal) = begin
+    return NormalMeanVariance(clamp(mean(q_μ), meta.lower_limit, meta.upper_limit), mean(q_v))
 end
 
-@rule NormalMeanVariance(:μ, Marginalisation) (q_out::Any, q_v::PointMass, meta::MetaNormal) = begin
-    return NormalMeanVarince(getmean(meta), mean(q_v))
+@rule NormalMeanVariance(:μ, Marginalisation) (q_out::Any, q_v::Any, meta::MetaConstrainedMeanNormal) = begin
+    return NormalMeanVariance(clamp(mean(q_out), meta.lower_limit, meta.upper_limit), mean(q_v))
 end
+```
 
+```@example custom-meta
 #make model
 @model function gaussian_model_with_meta()
     y = datavar(Float64)
@@ -213,35 +213,16 @@ end
     y ~ NormalMeanVariance(2*x, 2.)
 end
 
-#specify meta for the model
-@meta function model_meta(m)
-    NormalMeanVariance(y,x) -> MetaNormal(m)
+custom_meta = @meta begin
+    NormalMeanVariance(y,x) -> MetaConstrainedMeanNormal(-1, 1)
 end
-
-my_meta = model_meta(3) # mean = 3
 
 #do inference
 inference_result = inference(
     model = gaussian_model(),
     data = (y = y_data,),
-    meta = my_meta
+    meta = custom_meta
 )
 ```
 
 **Disclaimer**: The above example is not mathematically correct. It is only used to show how we can work with `@meta` as well as how to create a meta structure for a node in `RxInfer.jl`.
-
-## Nodes with meta data in RxInfer
-
-|    Node                                 |   Meta                                                                   |
-| :-------------------------------------- | :----------------------------------------------------------------------- |
-| AR                                      | ARmeta                                                                   |
-| GCV                                     | GCVMetadata                                                              |
-| [DeltaFn](@id delta-node-manual)        | DeltaMeta                                                                |
-| Probit                                  | Union{Nothing, ProbitMeta}                                               |
-| BIFM                                    | BIFMMeta                                                                 |
-| Flow                                    | FlowMeta                                                                 |
-| dot                                     | Union{Nothing, MatrixCorrectionTools.AbstractCorrectionStrategy}         |
-| (*)                                     | Union{Nothing, MatrixCorrectionTools.AbstractCorrectionStrategy}         |
-
-
-**Notes**: The meta `Union{Nothing, ...}` in some nodes means it is optional to specify meta for those nodes, i.e. you do not need to specify meta for them. If you still want to specify meta, then use the latter argument. For example, if you want to specify meta for the `Probit` node, then use `ProbitMeta`.
