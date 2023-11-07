@@ -91,7 +91,7 @@ const arbitrary_dist_5 = ContinuousUnivariateLogPdf(HalfLine(), (x) -> logpdf(Ga
 
             opt = constrain_form(constraint, f)
 
-            analytical = prod(ProdAnalytical(), d1, d2)
+            analytical = prod(PreserveTypeProd(Distribution), d1, d2)
 
             @test isapprox(mode(opt), mode(analytical), atol = 1e-8)
         end
@@ -106,7 +106,7 @@ const arbitrary_dist_5 = ContinuousUnivariateLogPdf(HalfLine(), (x) -> logpdf(Ga
 
             opt = constrain_form(constraint, f)
 
-            analytical = prod(ProdAnalytical(), d1, d2)
+            analytical = prod(PreserveTypeProd(Distribution), d1, d2)
 
             @test isapprox(mode(opt), mode(analytical), atol = 1e-4)
         end

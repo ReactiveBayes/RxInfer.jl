@@ -21,8 +21,8 @@ import RxInfer: SampleListFormConstraint, is_point_mass_form_constraint, constra
             d = NormalMeanVariance(randn(irng), rand(irng))
             f = ContinuousUnivariateLogPdf((x) -> 0)
 
-            prod_df = prod(ProdGeneric(), d, f)
-            prod_fd = prod(ProdGeneric(), f, d)
+            prod_df = prod(GenericProd(), d, f)
+            prod_fd = prod(GenericProd(), f, d)
 
             for prod in (prod_df, prod_fd)
                 q = constrain_form(constraint, prod)
@@ -44,8 +44,8 @@ import RxInfer: SampleListFormConstraint, is_point_mass_form_constraint, constra
             d = MvNormalMeanCovariance(randn(irng, Float64, s), Diagonal(rand(irng, Float64, s)))
             f = ContinuousMultivariateLogPdf(s, (x) -> 0)
 
-            prod_df = prod(ProdGeneric(), d, f)
-            prod_fd = prod(ProdGeneric(), f, d)
+            prod_df = prod(GenericProd(), d, f)
+            prod_fd = prod(GenericProd(), f, d)
 
             for prod in (prod_df, prod_fd)
                 q = constrain_form(constraint, prod)

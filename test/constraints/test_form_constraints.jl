@@ -15,7 +15,7 @@ import ReactiveMP: activate!
         end
 
         @test let (form, prod) = resolve_marginal_form_prod(cs, :x)
-            form === PointMassFormConstraint() && prod === ProdGeneric()
+            form === PointMassFormConstraint() && prod === GenericProd()
         end
 
         @test let (form, prod) = resolve_messages_form_prod(cs, :x)
@@ -37,7 +37,7 @@ import ReactiveMP: activate!
         end
 
         @test let (form, prod) = resolve_marginal_form_prod(cs, :x)
-            form === UnspecifiedFormConstraint() && prod === ProdAnalytical()
+            form === UnspecifiedFormConstraint() && prod === GenericProd()
         end
 
         @test let (form, prod) = resolve_messages_form_prod(cs, :x)
@@ -59,7 +59,7 @@ import ReactiveMP: activate!
         end
 
         @test let (form, prod) = resolve_marginal_form_prod(cs, :x)
-            typeof(form) <: SampleListFormConstraint && prod === ProdGeneric()
+            typeof(form) <: SampleListFormConstraint && prod === GenericProd()
         end
 
         @test let (form, prod) = resolve_messages_form_prod(cs, :x)
@@ -81,7 +81,7 @@ import ReactiveMP: activate!
         end
 
         @test let (form, prod) = resolve_marginal_form_prod(cs, :x)
-            typeof(form) <: PointMassFormConstraint && prod === ProdGeneric()
+            typeof(form) <: PointMassFormConstraint && prod === GenericProd()
         end
 
         @test let (form, prod) = resolve_messages_form_prod(cs, :x)
@@ -103,7 +103,7 @@ import ReactiveMP: activate!
         end
 
         @test let (form, prod) = resolve_marginal_form_prod(cs, :x)
-            typeof(form) <: CompositeFormConstraint && prod === ProdGeneric()
+            typeof(form) <: CompositeFormConstraint && prod === GenericProd()
         end
 
         @test let (form, prod) = resolve_messages_form_prod(cs, :x)
@@ -127,7 +127,7 @@ import ReactiveMP: activate!
         end
 
         @test let (form, prod) = resolve_marginal_form_prod(cs5(true), :x)
-            form === PointMassFormConstraint() && prod === ProdGeneric()
+            form === PointMassFormConstraint() && prod === GenericProd()
         end
 
         @test let (form, prod) = resolve_messages_form_prod(cs5(true), :x)
@@ -169,7 +169,7 @@ import ReactiveMP: activate!
         end
 
         @test let (form, prod) = resolve_messages_form_prod(cs, :x)
-            form === PointMassFormConstraint() && prod === ProdGeneric()
+            form === PointMassFormConstraint() && prod === GenericProd()
         end
 
         @test let (form, prod) = resolve_marginal_form_prod(cs, :y)
@@ -191,7 +191,7 @@ import ReactiveMP: activate!
         end
 
         @test let (form, prod) = resolve_messages_form_prod(cs, :x)
-            form === UnspecifiedFormConstraint() && prod === ProdAnalytical()
+            form === UnspecifiedFormConstraint() && prod === GenericProd()
         end
 
         @test let (form, prod) = resolve_marginal_form_prod(cs, :y)
@@ -213,7 +213,7 @@ import ReactiveMP: activate!
         end
 
         @test let (form, prod) = resolve_messages_form_prod(cs, :x)
-            typeof(form) <: SampleListFormConstraint && prod === ProdGeneric()
+            typeof(form) <: SampleListFormConstraint && prod === GenericProd()
         end
 
         @test let (form, prod) = resolve_marginal_form_prod(cs, :y)
@@ -235,7 +235,7 @@ import ReactiveMP: activate!
         end
 
         @test let (form, prod) = resolve_messages_form_prod(cs, :x)
-            typeof(form) <: PointMassFormConstraint && prod === ProdGeneric()
+            typeof(form) <: PointMassFormConstraint && prod === GenericProd()
         end
 
         @test let (form, prod) = resolve_marginal_form_prod(cs, :y)
@@ -257,7 +257,7 @@ import ReactiveMP: activate!
         end
 
         @test let (form, prod) = resolve_messages_form_prod(cs, :x)
-            typeof(form) <: CompositeFormConstraint && prod === ProdGeneric()
+            typeof(form) <: CompositeFormConstraint && prod === GenericProd()
         end
 
         @test let (form, prod) = resolve_marginal_form_prod(cs, :y)
@@ -281,7 +281,7 @@ import ReactiveMP: activate!
         end
 
         @test let (form, prod) = resolve_messages_form_prod(cs5(true), :x)
-            form === PointMassFormConstraint() && prod === ProdGeneric()
+            form === PointMassFormConstraint() && prod === GenericProd()
         end
 
         @test let (form, prod) = resolve_marginal_form_prod(cs5(false), :x)
@@ -318,19 +318,19 @@ import ReactiveMP: activate!
         end
 
         @test let (form, prod) = resolve_marginal_form_prod(cs, :x)
-            form === PointMassFormConstraint() && prod === ProdGeneric()
+            form === PointMassFormConstraint() && prod === GenericProd()
         end
 
         @test let (form, prod) = resolve_messages_form_prod(cs, :x)
-            typeof(form) <: SampleListFormConstraint && prod === ProdGeneric()
+            typeof(form) <: SampleListFormConstraint && prod === GenericProd()
         end
 
         @test let (form, prod) = resolve_marginal_form_prod(cs, :y)
-            form === UnspecifiedFormConstraint() && prod === ProdAnalytical()
+            form === UnspecifiedFormConstraint() && prod === GenericProd()
         end
 
         @test let (form, prod) = resolve_messages_form_prod(cs, :y)
-            form === PointMassFormConstraint() && prod === ProdGeneric()
+            form === PointMassFormConstraint() && prod === GenericProd()
         end
     end
 

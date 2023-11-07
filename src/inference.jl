@@ -581,10 +581,14 @@ function inference(;
     end
 
     _options = convert(ModelInferenceOptions, options)
+    # If the `options` does not have `warn` key inside, override it with the keyword `warn`
+    if isnothing(options) || !haskey(options, :warn)
+        _options = setwarn(_options, warn)
+    end
 
     # Override `options` addons if the `addons` keyword argument is present 
     if !isnothing(addons)
-        if !isnothing(getaddons(_options))
+        if warn && !isnothing(getaddons(_options))
             @warn "Both `addons = ...` and `options = (addons = ..., )` specify a value for the `addons`. Ignoring the `options` setting. Set `warn = false` to supress this warning."
         end
         _options = setaddons(_options, addons)
@@ -1749,7 +1753,7 @@ function rxinference(;
     # Check for available callbacks
     if warn && !isnothing(callbacks)
         for key in keys(callbacks)
-            if key ∉ (:before_model_creation, :after_model_creation, :before_autostart, :after_autostart)
+            if warn && key ∉ (:before_model_creation, :after_model_creation, :before_autostart, :after_autostart)
                 @warn "Unknown callback specification: $(key). Available callbacks: before_model_creation, after_model_creation, before_autostart, after_autostart. Set `warn = false` to supress this warning."
             end
         end
@@ -1781,10 +1785,14 @@ function rxinference(;
     N            = length(datavarnames) # should be static
 
     _options = convert(ModelInferenceOptions, options)
+    # If the `options` does not have `warn` key inside, override it with the keyword `warn`
+    if isnothing(options) || !haskey(options, :warn)
+        _options = setwarn(_options, warn)
+    end
 
     # Override `options` addons if the `addons` keyword argument is present 
     if !isnothing(addons)
-        if !isnothing(getaddons(_options))
+        if warn && !isnothing(getaddons(_options))
             @warn "Both `addons = ...` and `options = (addons = ..., )` specify a value for the `addons`. Ignoring the `options` setting. Set `warn = false` to supress this warning."
         end
         _options = setaddons(_options, addons)

@@ -187,6 +187,8 @@ function Base.run(examplesrunner::ExamplesRunner)
     # Fix paths from the `pics/` folder located in the examples
     fixpics = ("![](pics/" => "![](../../assets/examples/pics/", "![](./pics/" => "![](../../assets/examples/pics/", "![](../pics/" => "![](../../assets/examples/pics/")
 
+    errors_found = false
+
     if isnothing(examplesrunner.specific_example)
 
         # If not failed we generate overview report and fix fig links
@@ -237,7 +239,7 @@ function Base.run(examplesrunner::ExamplesRunner)
                 errstart = reduce((idx, _) -> max(firstindex(mdtext), prevind(mdtext, idx)), 1:errwindow; init = first(erroridx))
                 errend = reduce((idx, _) -> min(lastindex(mdtext), nextind(mdtext, idx)), 1:errwindow; init = last(erroridx))
                 @error "Part of the error message:\n\n$(mdtext[errstart:errend])\n"
-                error(-1)
+                errors_found = true
             end
 
             # We simply remove pre-generated `.md` file if it has been marked as hidden
@@ -304,7 +306,12 @@ function Base.run(examplesrunner::ExamplesRunner)
     rm(joinpath(dfolder, "data"), force = true, recursive = true)
     rm(joinpath(dfolder, "pics"), force = true, recursive = true)
 
-    @info "Finished."
+    if !errors_found
+        @info "Finished."
+    else
+        @error "Errors have been found in the runned examples. See the log above for more info."
+        error(-1)
+    end
 end
 
 const runner = ExamplesRunner(ARGS)
