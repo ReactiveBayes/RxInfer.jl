@@ -90,7 +90,7 @@ end
 model, returnval = create_model(my_model(arguments...); meta = my_meta)
 ```
 
-Alternatively, it is possible to use constraints directly in the automatic [`inference`](@ref) and [`rxinference`](@ref) functions that accepts `meta` keyword argument:
+Alternatively, it is possible to use meta directly in the automatic [`inference`](@ref) and [`rxinference`](@ref) functions that accepts `meta` keyword argument:
 
 ```julia
 inferred_result = inference(
