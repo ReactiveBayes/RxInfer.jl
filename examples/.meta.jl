@@ -41,6 +41,13 @@ return (
         ),
 
         (
+            filename = "Predicting Bike Rental Demand.ipynb",
+            title = "Predicting Bike Rental Demand",
+            description = "An illustrative guide to implementing prediction mechanisms within RxInfer.jl, using bike rental demand forecasting as a contextual example.",
+            category = :basic_examples
+        ),
+
+        (
             filename  = "Hidden Markov Model.ipynb",
             title = "How to train your Hidden Markov Model",
             description = "An example of structured variational Bayesian inference in Hidden Markov Model with unknown transition and observational matrices.",
