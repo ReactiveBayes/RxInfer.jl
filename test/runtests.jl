@@ -47,6 +47,10 @@ if IS_USE_DEV
     Pkg.rm("ReactiveMP")
     Pkg.rm("GraphPPL")
     Pkg.rm("Rocket")
+    Pkg.rm("ExponentialFamily")
+    Pkg.rm("BayesBase")
+    Pkg.develop(Pkg.PackageSpec(path = joinpath(Pkg.devdir(), "BayesBase.jl")))
+    Pkg.develop(Pkg.PackageSpec(path = joinpath(Pkg.devdir(), "ExponentialFamily.jl")))
     Pkg.develop(Pkg.PackageSpec(path = joinpath(Pkg.devdir(), "ReactiveMP.jl")))
     Pkg.develop(Pkg.PackageSpec(path = joinpath(Pkg.devdir(), "GraphPPL.jl")))
     Pkg.develop(Pkg.PackageSpec(path = joinpath(Pkg.devdir(), "Rocket.jl")))
@@ -195,7 +199,7 @@ using Aqua
 if isempty(testrunner.enabled_tests)
     println("Running all tests (including Aqua)...")
     # We pirate some methods from ReactiveMP for now
-    Aqua.test_all(RxInfer; ambiguities = false, piracy = false, project_toml_formatting = false)
+    Aqua.test_all(RxInfer; ambiguities = false, piracies = false, deps_compat = (; check_extras = false, check_weakdeps = true),)
 else
     println("Running specific tests only:")
     foreach(testrunner.enabled_tests) do test
