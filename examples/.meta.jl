@@ -28,15 +28,9 @@ return (
             category = :basic_examples
         ),
         (
-            filename = "Bayesian Linear Regression.ipynb",
-            title = "Bayesian Linear Regression",
-            description = "An example of Bayesian linear regression.",
-            category = :basic_examples
-        ),
-        (
-            filename = "Bayesian Hierarchical Linear Regression.ipynb",
-            title = "Bayesian Hierarchical Linear Regression",
-            description = "An example of hierarchical Bayesian linear regression. This example is an adaptation of a tutorial implemented in NumPyro.",
+            filename = "Bayesian Linear Regression Tutorial.ipynb",
+            title = "Bayesian Linear Regression Tutorial",
+            description = "An extensive tutorial on Bayesian linear regression with RxInfer with a lot of examples, including multivariate and hierarchical linear regression.",
             category = :basic_examples
         ),
         (
