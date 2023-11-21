@@ -119,11 +119,11 @@ function Base.run(testrunner::TestRunner)
             end
             return nothing
         end
-        # We save the created task for later syncronization
+        # We save the created task for later synchronization
         push!(testrunner.test_tasks, task)
     end
 
-    # For each remotelly called task we `fetch` its result or save an exception
+    # For each remotely called task we `fetch` its result or save an exception
     foreach(fetch, testrunner.test_tasks)
 
     # If exception are not empty we notify the user and force-fail
@@ -195,7 +195,7 @@ using Aqua
 if isempty(testrunner.enabled_tests)
     println("Running all tests (including Aqua)...")
     # We pirate some methods from ReactiveMP for now
-    Aqua.test_all(RxInfer; ambiguities = false, piracy = false, project_toml_formatting = false)
+    Aqua.test_all(RxInfer; ambiguities = false, piracies = false, deps_compat = (; check_extras = false, check_weakdeps = true))
 else
     println("Running specific tests only:")
     foreach(testrunner.enabled_tests) do test

@@ -36,7 +36,7 @@ end
     m = rand(rng, d)
     L = randn(rng, d, d)
     C = L * L'
-    P = cholinv(C)
+    P = inv(C)
 
     data = rand(rng, MvNormalMeanPrecision(m, P), n) |> eachcol |> collect .|> collect
 

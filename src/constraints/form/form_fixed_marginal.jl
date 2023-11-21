@@ -10,10 +10,8 @@ Can be viewed as blocking of updates of a specific edge associated with the marg
 # Traits 
 - `is_point_mass_form_constraint` = `false`
 - `default_form_check_strategy`   = `FormConstraintCheckLast()`
-- `default_prod_constraint`       = `ProdAnalytical()`
+- `default_prod_constraint`       = `GenericProd()`
 - `make_form_constraint`          = `Marginal` (for use in `@constraints` macro)
-
-See also: `ReactiveMP.constrain_form`, `ReactiveMP.DistProduct`
 """
 mutable struct FixedMarginalFormConstraint <: ReactiveMP.AbstractFormConstraint
     fixed_value::Any
@@ -23,7 +21,7 @@ ReactiveMP.is_point_mass_form_constraint(::FixedMarginalFormConstraint) = false
 
 ReactiveMP.default_form_check_strategy(::FixedMarginalFormConstraint) = FormConstraintCheckLast()
 
-ReactiveMP.default_prod_constraint(::FixedMarginalFormConstraint) = ProdGeneric()
+ReactiveMP.default_prod_constraint(::FixedMarginalFormConstraint) = GenericProd()
 
 ReactiveMP.make_form_constraint(::Type{<:Marginal}, fixed_value) = FixedMarginalFormConstraint(fixed_value)
 

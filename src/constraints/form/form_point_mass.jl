@@ -1,8 +1,7 @@
 
 import ReactiveMP: is_point_mass_form_constraint, default_form_check_strategy, default_prod_constraint, make_form_constraint, constrain_form
 
-using Distributions
-using Optim
+using BayesBase, DomainSets, Distributions, ExponentialFamily, Optim
 
 """
     PointMassFormConstraint
@@ -49,10 +48,8 @@ end
 # Traits 
 - `is_point_mass_form_constraint` = `true`
 - `default_form_check_strategy`   = `FormConstraintCheckLast()`
-- `default_prod_constraint`       = `ProdGeneric()`
+- `default_prod_constraint`       = `GenericProd()`
 - `make_form_constraint`          = `PointMass` (for use in `@constraints` macro)
-
-See also: `ReactiveMP.constrain_form`, `ReactiveMP.DistProduct`
 """
 struct PointMassFormConstraint{F, P, B} <: AbstractFormConstraint
     optimizer      :: F
@@ -72,7 +69,7 @@ ReactiveMP.is_point_mass_form_constraint(::PointMassFormConstraint) = true
 
 ReactiveMP.default_form_check_strategy(::PointMassFormConstraint) = FormConstraintCheckLast()
 
-ReactiveMP.default_prod_constraint(::PointMassFormConstraint) = ProdGeneric()
+ReactiveMP.default_prod_constraint(::PointMassFormConstraint) = GenericProd()
 
 ReactiveMP.make_form_constraint(::Type{<:PointMass}, args...; kwargs...) = PointMassFormConstraint(args...; kwargs...)
 
@@ -81,6 +78,9 @@ call_boundaries(pmconstraint::PointMassFormConstraint, distribution::D) where {D
 call_starting_point(pmconstraint::PointMassFormConstraint, distribution::D) where {D} = pmconstraint.starting_point(variate_form(D), value_support(D), pmconstraint, distribution)
 
 ReactiveMP.constrain_form(pmconstraint::PointMassFormConstraint, distribution) = call_optimizer(pmconstraint, distribution)
+
+# There is no need to call the optimizer on a `Distribution` object since they should have a well defined `mode`
+ReactiveMP.constrain_form(::PointMassFormConstraint, distribution::Distribution) = PointMass(mode(distribution))
 
 function default_point_mass_form_constraint_optimizer(::Type{Univariate}, ::Type{Continuous}, constraint::PointMassFormConstraint, distribution)
     target = let distribution = distribution
@@ -115,11 +115,12 @@ function default_point_mass_form_constraint_optimizer(::Type{Univariate}, ::Type
 end
 
 function default_point_mass_form_constraint_boundaries(::Type{Univariate}, ::Type{Continuous}, constraint::PointMassFormConstraint, distribution)
-    support = Distributions.support(distribution)
-    lower   = Distributions.minimum(support)
-    upper   = Distributions.maximum(support)
-    return lower, upper
+    return __default_univariate_boundaries(support(distribution))
 end
+
+__default_univariate_boundaries(interval::AbstractRange) = (minimum(interval), maximum(interval))
+__default_univariate_boundaries(interval::Distributions.RealInterval) = (minimum(interval), maximum(interval))
+__default_univariate_boundaries(domain::DomainSets.Domain) = (infimum(domain), supremum(domain))
 
 function default_point_mass_form_constraint_starting_point(::Type{Univariate}, ::Type{Continuous}, constraint::PointMassFormConstraint, distribution)
     lower, upper = call_boundaries(constraint, distribution)

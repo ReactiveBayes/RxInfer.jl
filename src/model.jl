@@ -22,6 +22,7 @@ Creates model inference options object. The list of available options is present
 ### Options
 
 - `limit_stack_depth`: limits the stack depth for computing messages, helps with `StackOverflowError` for some huge models, but reduces the performance of inference backend. Accepts integer as an argument that specifies the maximum number of recursive depth. Lower is better for stack overflow error, but worse for performance.
+- `warn`: (optional) flag to suppress warnings. Warnings are not displayed if set to `false`. Defaults to `true`.
 
 ### Advanced options
 
@@ -34,13 +35,17 @@ struct ModelInferenceOptions{P, S, A}
     pipeline  :: P
     scheduler :: S
     addons    :: A
+    warn      :: Bool
 end
+
+ModelInferenceOptions(pipeline, scheduler, addons) = ModelInferenceOptions(pipeline, scheduler, addons, true)
 
 UnspecifiedModelInferenceOptions() = convert(ModelInferenceOptions, (;))
 
-setpipeline(options::ModelInferenceOptions, pipeline) = ModelInferenceOptions(pipeline, options.scheduler, options.addons)
-setscheduler(options::ModelInferenceOptions, scheduler) = ModelInferenceOptions(options.pipeline, scheduler, options.addons)
-setaddons(options::ModelInferenceOptions, addons) = ModelInferenceOptions(options.pipeline, options.scheduler, addons)
+setpipeline(options::ModelInferenceOptions, pipeline) = ModelInferenceOptions(pipeline, options.scheduler, options.addons, options.warn)
+setscheduler(options::ModelInferenceOptions, scheduler) = ModelInferenceOptions(options.pipeline, scheduler, options.addons, options.warn)
+setaddons(options::ModelInferenceOptions, addons) = ModelInferenceOptions(options.pipeline, options.scheduler, addons, options.warn)
+setwarn(options::ModelInferenceOptions, warn) = ModelInferenceOptions(options.pipeline, options.scheduler, options.addons, warn)
 
 import Base: convert
 
@@ -49,7 +54,7 @@ function Base.convert(::Type{ModelInferenceOptions}, options::Nothing)
 end
 
 function Base.convert(::Type{ModelInferenceOptions}, options::NamedTuple{keys}) where {keys}
-    available_options = (:pipeline, :scheduler, :limit_stack_depth, :addons)
+    available_options = (:pipeline, :scheduler, :limit_stack_depth, :addons, :warn)
 
     for key in keys
         key ∈ available_options || error("Unknown model inference options: $(key).")
@@ -58,13 +63,18 @@ function Base.convert(::Type{ModelInferenceOptions}, options::NamedTuple{keys}) 
     pipeline  = nothing
     scheduler = nothing
     addons    = nothing
+    warn      = true
+
+    if haskey(options, :warn)
+        warn = options[:warn]
+    end
 
     if haskey(options, :pipeline)
         pipeline = options[:pipeline]
     end
 
-    if haskey(options, :scheduler) && haskey(options, :limit_stack_depth)
-        @warn "Model options have `scheduler` and `limit_stack_depth` options specified together. Ignoring `limit_stack_depth`."
+    if warn && haskey(options, :scheduler) && haskey(options, :limit_stack_depth)
+        @warn "Model options have `scheduler` and `limit_stack_depth` options specified together. Ignoring `limit_stack_depth`. Use `warn = false` option in `ModelInferenceOptions` to suppress this warning."
     end
 
     if haskey(options, :scheduler)
@@ -77,7 +87,7 @@ function Base.convert(::Type{ModelInferenceOptions}, options::NamedTuple{keys}) 
         addons = options[:addons]
     end
 
-    return ModelInferenceOptions(pipeline, scheduler, addons)
+    return ModelInferenceOptions(pipeline, scheduler, addons, warn)
 end
 
 const DefaultModelInferenceOptions = UnspecifiedModelInferenceOptions()
@@ -161,6 +171,8 @@ end
 import ReactiveMP: activate!
 
 function ReactiveMP.activate!(model::FactorGraphModel)
+    warn = getoptions(model).warn
+
     filter!(getrandom(model)) do randomvar
         @assert degree(randomvar) !== 0 "Unused random variable has been found $(indexed_name(randomvar))."
         @assert degree(randomvar) !== 1 "Half-edge has been found: $(indexed_name(randomvar)). To terminate half-edges 'Uninformative' node can be used."
@@ -168,8 +180,8 @@ function ReactiveMP.activate!(model::FactorGraphModel)
     end
 
     foreach(getdata(model)) do datavar
-        if !isconnected(datavar) && !isused(datavar)
-            @warn "Unused data variable has been found: '$(indexed_name(datavar))'. Ignore if '$(indexed_name(datavar))' has been used in deterministic nonlinear tranformation."
+        if warn && !isconnected(datavar) && !isused(datavar)
+            @warn "Unused data variable has been found: '$(indexed_name(datavar))'. Ignore if '$(indexed_name(datavar))' has been used in deterministic nonlinear transformation. Use `warn = false` to suppress this warning."
         end
     end
 
@@ -180,6 +192,7 @@ function ReactiveMP.activate!(model::FactorGraphModel)
 
     filter!(c -> isconnected(c), getconstant(model))
     foreach(r -> activate!(r, options), getrandom(model))
+    foreach(d -> activate!(d, options), getdata(model))
     foreach(n -> activate!(n, options), getnodes(model))
 end
 
@@ -211,7 +224,7 @@ function randomvar_resolve_options(model::FactorGraphModel, options::RandomVaria
     qform, qprod = randomvar_resolve_marginal_form_prod(model, options, name)
     mform, mprod = randomvar_resolve_messages_form_prod(model, options, name)
 
-    rprod = resolve_prod_constraint(options.prod_constraint, resolve_prod_constraint(qprod, mprod))
+    rprod = resolve_prod_strategy(options.prod_constraint, resolve_prod_strategy(qprod, mprod))
 
     qoptions = randomvar_options_set_marginal_form_constraint(options, qform)
     moptions = randomvar_options_set_messages_form_constraint(qoptions, mform)
@@ -399,7 +412,23 @@ function ReactiveMP.make_node(
         return node, var
     else
         combinedvars = combineLatest(ReactiveMP.getmarginal.(args, IncludeAll()), PushNew())
-        mappedvars = combinedvars |> map(Message, (vars) -> Message(PointMass(fform(map((d) -> ReactiveMP.getpointmass(ReactiveMP.getdata(d)), vars)...)), false, false, nothing))
+
+        # Check if some of the `DataVariable` allow for missing values
+        possibly_missings = any(allows_missings, filter(arg -> arg isa ReactiveMP.DataVariable, args))
+        # If `missing` values are allowed, then the result type is a `Union` of `Message{Missing}` and `Message{PointMass}`
+        result_type = possibly_missings ? Union{Message{Missing}, Message{PointMass}} : Message{PointMass}
+        # By convention, if the result happens to be missing, the result is a `Message{Missing}` instead of `Message{PointMass}`
+        mapping_fn = let possibly_missings = possibly_missings
+            (vars) -> begin
+                result = fform(map((d) -> BayesBase.getpointmass(ReactiveMP.getdata(d)), vars)...)
+                return if (possibly_missings && ismissing(result))
+                    Message{Missing, Nothing}(missing, false, false, nothing)
+                else
+                    Message{PointMass, Nothing}(PointMass(result), false, false, nothing)
+                end
+            end
+        end
+        mappedvars = combinedvars |> map(result_type, mapping_fn)
         output = mappedvars |> share_recent()
         var = push!(model, ReactiveMP.datavar(DataVariableCreationOptions(output, true, false), ReactiveMP.name(autovar), Any))
         foreach(filter(ReactiveMP.isdata, args)) do datavar

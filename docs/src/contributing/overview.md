@@ -6,6 +6,13 @@ We welcome all possible contributors. This page details some of the guidelines t
 
 We track bugs using [GitHub issues](https://github.com/biaslab/RxInfer.jl/issues). We encourage you to write complete, specific, reproducible bug reports. Mention the versions of Julia and `RxInfer` for which you observe unexpected behavior. Please provide a concise description of the problem and complement it with code snippets, test cases, screenshots, tracebacks or any other information that you consider relevant. This will help us to replicate the problem and narrow the search space for solutions.
 
+### Nightly Julia status
+
+The badge that indicates if `RxInfer` can be installed on a Julia nightly version. The failing badge may indicate either a problem with `RxInfer` itself of with one if the dependencies. 
+Click on the badge to get the latest evaluation report.
+
+[![PkgEval](https://JuliaCI.github.io/NanosoldierReports/pkgeval_badges/R/RxInfer.svg)](https://JuliaCI.github.io/NanosoldierReports/pkgeval_badges/report.html)
+
 ## Suggesting features
 
 We welcome new feature proposals. However, before submitting a feature request, consider a few things:
