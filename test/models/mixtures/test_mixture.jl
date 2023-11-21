@@ -84,8 +84,8 @@ end
         # check inference results
         @test getdata(result1.posteriors[:θ]) == getdata(resultswitch.posteriors[:in1])
         @test getdata(result2.posteriors[:θ]) == getdata(resultswitch.posteriors[:in2])
-        @test getdata(resultswitch.posteriors[:in1]) == getdata(resultswitch.posteriors[:θ]).components[1]
-        @test getdata(resultswitch.posteriors[:in2]) == getdata(resultswitch.posteriors[:θ]).components[2]
+        @test getdata(resultswitch.posteriors[:in1]) == component(getdata(resultswitch.posteriors[:θ]), 1)
+        @test getdata(resultswitch.posteriors[:in2]) == component(getdata(resultswitch.posteriors[:θ]), 2)
         @test getdata(resultswitch.posteriors[:selector]).p ≈ getdata(resultswitch.posteriors[:θ]).weights
 
         # check free energies

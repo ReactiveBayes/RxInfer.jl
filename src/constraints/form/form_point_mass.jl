@@ -1,7 +1,8 @@
 
 import ReactiveMP: is_point_mass_form_constraint, default_form_check_strategy, default_prod_constraint, make_form_constraint, constrain_form
+import DomainSets: Domain, infimum, supremum
 
-using BayesBase, DomainSets, Distributions, ExponentialFamily, Optim
+using BayesBase, Distributions, ExponentialFamily, Optim
 
 """
     PointMassFormConstraint
@@ -120,7 +121,7 @@ end
 
 __default_univariate_boundaries(interval::AbstractRange) = (minimum(interval), maximum(interval))
 __default_univariate_boundaries(interval::Distributions.RealInterval) = (minimum(interval), maximum(interval))
-__default_univariate_boundaries(domain::DomainSets.Domain) = (infimum(domain), supremum(domain))
+__default_univariate_boundaries(domain::Domain) = (infimum(domain), supremum(domain))
 
 function default_point_mass_form_constraint_starting_point(::Type{Univariate}, ::Type{Continuous}, constraint::PointMassFormConstraint, distribution)
     lower, upper = call_boundaries(constraint, distribution)
