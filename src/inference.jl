@@ -1,5 +1,6 @@
 export KeepEach, KeepLast
 export DefaultPostprocess, UnpackMarginalPostprocess, NoopPostprocess
+export infer
 export inference, InferenceResult
 export rxinference, @autoupdates, RxInferenceEngine, RxInferenceEvent
 
@@ -1473,7 +1474,6 @@ For more information about some of the arguments, please check below.
 - `free_energy = false`: compute the Bethe free energy, optional, defaults to false. Can be passed a floating point type, e.g. `Float64`, for better efficiency, but disables automatic differentiation packages, such as ForwardDiff.jl
 - `free_energy_diagnostics = BetheFreeEnergyDefaultChecks`: free energy diagnostic checks, optional, by default checks for possible `NaN`s and `Inf`s. `nothing` disables all checks.
 - `autostart = true`: specifies whether to call `RxInfer.start` on the created engine automatically or not
-- `showprogress = false`: show progress module, optional, defaults to false
 - `events = nothing`: inference cycle events, optional, see below for more info
 - `callbacks = nothing`: inference cycle callbacks, optional, see below for more info
 - `addons = nothing`: inject and send extra computation information along messages, see below for more info
@@ -1985,4 +1985,81 @@ function rxinference(;
     end
 
     return engine
+end
+
+function infer(;
+    model::ModelGenerator,
+    data = nothing,
+    datastream = nothing, # rxinference specific
+    autoupdates = nothing, # rxinference specific
+    initmarginals = nothing,
+    initmessages = nothing,
+    constraints = nothing,
+    meta = nothing,
+    options = nothing,
+    returnvars = nothing,
+    historyvars = nothing, # rxinference specific
+    keephistory = nothing, # rxinference specific
+    predictvars = nothing, # supported in inference only
+    iterations = nothing,
+    free_energy = false,
+    free_energy_diagnostics = BetheFreeEnergyDefaultChecks,
+    showprogress = false, # inference specific
+    callbacks = nothing,
+    addons = nothing,
+    postprocess = DefaultPostprocess(), # rxinference specific
+    warn = true,
+    uselock = false, # rxinference  specific
+    autostart = true, # rxinference specific
+    catch_exception = false, # inference specific
+    setting = nothing # specifies the setting of the inference, e.g. :filtering or :smoothing
+)
+    if setting === :smoothing
+        inference(
+            model = model,
+            data = data,
+            initmarginals = initmarginals,
+            initmessages = initmessages,
+            constraints = constraints,
+            meta = meta,
+            options = options,
+            returnvars = returnvars,
+            predictvars = predictvars,
+            iterations = iterations,
+            free_energy = free_energy,
+            free_energy_diagnostics = free_energy_diagnostics,
+            showprogress = showprogress,
+            callbacks = callbacks,
+            addons = addons,
+            postprocess = postprocess,
+            warn = warn,
+            catch_exception = catch_exception
+        )
+    elseif setting === :filtering
+        rxinference(
+            model = model,
+            data = data,
+            datastream = datastream,
+            autoupdates = autoupdates,
+            initmarginals = initmarginals,
+            initmessages = initmessages,
+            constraints = constraints,
+            meta = meta,
+            options = options,
+            returnvars = returnvars,
+            historyvars = historyvars,
+            keephistory = keephistory,
+            iterations = iterations,
+            free_energy = free_energy,
+            free_energy_diagnostics = free_energy_diagnostics,
+            autostart = autostart,
+            callbacks = callbacks,
+            addons = addons,
+            postprocess = postprocess,
+            warn = warn,
+            uselock = uselock
+        )
+    else
+        error("`setting` keyword argument must be either `:filtering` or `:smoothing`")
+    end
 end
