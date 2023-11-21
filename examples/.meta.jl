@@ -34,6 +34,12 @@ return (
             category = :basic_examples
         ),
         (
+            filename = "Bayesian Hierarchical Linear Regression.ipynb",
+            title = "Bayesian Hierarchical Linear Regression",
+            description = "An example of hierarchical Bayesian linear regression. This example is an adaptation of a tutorial implemented in NumPyro.",
+            category = :basic_examples
+        ),
+        (
             filename = "Kalman filtering and smoothing.ipynb",
             title = "Kalman filtering and smoothing",
             description = "In this demo, we are interested in Bayesian state estimation in different types of State-Space Models, including linear, nonlinear, and cases with missing observations",
