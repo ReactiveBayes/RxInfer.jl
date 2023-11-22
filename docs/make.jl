@@ -133,8 +133,8 @@ makedocs(;
         "Contributing" => [
             "Overview" => "contributing/overview.md", 
             "Contributing to the documentation" => "contributing/new-documentation.md",
-            "Creating a new sub-package" => "contributing/new-package.md", 
-            "Creating a new example" => "contributing/new-example.md", 
+            "Contributing to the dependencies" => "contributing/new-package.md", 
+            "Contributing to the examples" => "contributing/new-example.md", 
             "Publishing a new release" => "contributing/new-release.md"
         ]
     ]
