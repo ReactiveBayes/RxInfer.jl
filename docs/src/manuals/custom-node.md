@@ -312,7 +312,7 @@ As a sanity check, we can create the same model with the `RxInfer` built-in node
 
 end
 
-result_bernoulli = inference(
+result_bernoulli = infer(
     model = coin_model(length(dataset)), 
     data  = (y = dataset, ),
 )

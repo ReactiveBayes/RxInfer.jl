@@ -29,7 +29,7 @@ Creates model inference options object. The list of available options is present
 - `pipeline`: changes the default pipeline for each factor node in the graph
 - `global_reactive_scheduler`: changes the scheduler of reactive streams, see Rocket.jl for more info, defaults to no scheduler
 
-See also: [`inference`](@ref), [`rxinference`](@ref)
+See also: [`infer`](@ref)
 """
 struct ModelInferenceOptions{P, S, A}
     pipeline  :: P

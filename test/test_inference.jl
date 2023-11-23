@@ -406,7 +406,7 @@ end
     end
 end
 
-@testset "Reactive inference with `rxinference` for test model #1" begin
+@testset "Streamline inference with `autoupdates` for test model #1" begin
 
     # A simple model for testing that resembles a simple kalman filter with
     # random walk state transition and unknown observational noise

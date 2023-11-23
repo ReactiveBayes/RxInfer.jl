@@ -63,7 +63,7 @@ end
 To execute the inference procedure:
 
 ```@example delta_node_example
-inference(model = delta_node_example(), meta=delta_meta, data = (z = 1.0,))
+infer(model = delta_node_example(), meta=delta_meta, data = (z = 1.0,))
 ```
 
 This methodology is consistent even when the delta node is associated with multiple nodes. For instance:

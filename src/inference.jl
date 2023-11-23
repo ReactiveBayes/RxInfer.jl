@@ -85,7 +85,7 @@ function __check_and_unset_updated!(updates)
     end
 end
 
-available_callbacks(::typeof(inference)) = (
+available_callbacks(::typeof(__inference)) = (
     :on_marginal_update,
     :before_model_creation,
     :after_model_creation,
@@ -97,7 +97,7 @@ available_callbacks(::typeof(inference)) = (
     :after_inference
 )
 
-available_callbacks(::typeof(rxinference)) = (:before_model_creation, :after_model_creation, :before_autostart, :after_autostart)
+available_callbacks(::typeof(__rxinference)) = (:before_model_creation, :after_model_creation, :before_autostart, :after_autostart)
 
 function __check_available_callbacks(warn, callbacks, available_callbacks)
     if warn && !isnothing(callbacks)
@@ -682,7 +682,7 @@ end
 This structure specifies to update our prior as soon as we have a new posterior `q(x_next)`. It then applies the `mean_cov` function on the updated posteriors and updates 
 `datavar`s `x_current_mean` and `x_current_var` automatically.
 
-See also: [`rxinference`](@ref)
+See also: [`infer`](@ref)
 """
 macro autoupdates(code)
     ((code isa Expr) && (code.head === :block)) || error("Autoupdate requires a block of code `begin ... end` as an input")
@@ -744,20 +744,20 @@ end
 The return value of the `rxinference` function. 
 
 # Public fields
-- `posteriors`: `Dict` or `NamedTuple` of 'random variable' - 'posterior stream' pairs. See the `returnvars` argument for the [`rxinference`](@ref).
-- `free_energy`: (optional) A stream of Bethe Free Energy values per VMP iteration. See the `free_energy` argument for the [`rxinference`](@ref).
-- `history`: (optional) Saves history of previous marginal updates. See the `historyvars` and `keephistory` arguments for the [`rxinference`](@ref).
+- `posteriors`: `Dict` or `NamedTuple` of 'random variable' - 'posterior stream' pairs. See the `returnvars` argument for the [`infer`](@ref).
+- `free_energy`: (optional) A stream of Bethe Free Energy values per VMP iteration. See the `free_energy` argument for the [`infer`](@ref).
+- `history`: (optional) Saves history of previous marginal updates. See the `historyvars` and `keephistory` arguments for the [`infer`](@ref).
 - `free_energy_history`: (optional) Free energy history, average over variational iterations 
 - `free_energy_raw_history`: (optional) Free energy history, returns returns computed values of all variational iterations for each data event (if available)
 - `free_energy_final_only_history`: (optional) Free energy history, returns computed values of final variational iteration for each data event (if available)
-- `events`: (optional) A stream of events send by the inference engine. See the `events` argument for the [`rxinference`](@ref).
+- `events`: (optional) A stream of events send by the inference engine. See the `events` argument for the [`infer`](@ref).
 - `model`: `FactorGraphModel` object reference.
 - `returnval`: Return value from executed `@model`.
 
 Use the `RxInfer.start(engine)` function to subscribe on the `data` source and start the inference procedure. Use `RxInfer.stop(engine)` to unsubscribe from the `data` source and stop the inference procedure. 
 Note, that it is not always possible to start/stop the inference procedure.
 
-See also: [`rxinference`](@ref), [`RxInferenceEvent`](@ref), [`RxInfer.start`](@ref), [`RxInfer.stop`](@ref)
+See also: [`infer`](@ref), [`RxInferenceEvent`](@ref), [`RxInfer.start`](@ref), [`RxInfer.stop`](@ref)
 """
 mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, R, I, M, N, X, E, J}
     datastream       :: D
@@ -1162,12 +1162,12 @@ end
 and later on:
 
 ```julia
-engine = rxinference(events = Val((:after_iteration, )), ...)
+engine = infer(events = Val((:after_iteration, )), ...)
 
 subscription = subscribe!(engine.events, MyEventListener(...))
 ```
 
-See also: [`rxinference`](@ref), [`RxInferenceEngine`](@ref)
+See also: [`infer`](@ref), [`RxInferenceEngine`](@ref)
 """
 struct RxInferenceEvent{T, D}
     data::D
@@ -1753,7 +1753,7 @@ function infer(;
     __infer_check_dicttype(:callbacks, callbacks)
 
     if isnothing(autoupdates)
-        __check_available_callbacks(warn, callbacks, available_callbacks(inference))
+        __check_available_callbacks(warn, callbacks, available_callbacks(__inference))
         __inference(
             model = model,
             data = data,
@@ -1775,7 +1775,7 @@ function infer(;
             catch_exception = catch_exception
         )
     else
-        __check_available_callbacks(warn, callbacks, available_callbacks(rxinference))
+        __check_available_callbacks(warn, callbacks, available_callbacks(__rxinference))
         __rxinference(
             model = model,
             data = data,
