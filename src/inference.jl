@@ -85,30 +85,6 @@ function __check_and_unset_updated!(updates)
     end
 end
 
-available_callbacks(::typeof(__inference)) = (
-    :on_marginal_update,
-    :before_model_creation,
-    :after_model_creation,
-    :before_inference,
-    :before_iteration,
-    :before_data_update,
-    :after_data_update,
-    :after_iteration,
-    :after_inference
-)
-
-available_callbacks(::typeof(__rxinference)) = (:before_model_creation, :after_model_creation, :before_autostart, :after_autostart)
-
-function __check_available_callbacks(warn, callbacks, available_callbacks)
-    if warn && !isnothing(callbacks)
-        for key in keys(callbacks)
-            if warn && key ∉ available_callbacks
-                @warn "Unknown callback specification: $(key). Available callbacks: $(available_callbacks). Set `warn = false` to supress this warning."
-            end
-        end
-    end
-end
-
 ## Extra error handling
 
 function __inference_process_error(error)
@@ -1437,6 +1413,30 @@ function rxinference(; kwargs)
     @warn "The `rxinference` function is deprecated and will be removed in the future.  Use `infer` with autoupdates keyword argument instead."
 
     infer(; kwargs...)
+end
+
+available_callbacks(::typeof(__inference)) = (
+    :on_marginal_update,
+    :before_model_creation,
+    :after_model_creation,
+    :before_inference,
+    :before_iteration,
+    :before_data_update,
+    :after_data_update,
+    :after_iteration,
+    :after_inference
+)
+
+available_callbacks(::typeof(__rxinference)) = (:before_model_creation, :after_model_creation, :before_autostart, :after_autostart)
+
+function __check_available_callbacks(warn, callbacks, available_callbacks)
+    if warn && !isnothing(callbacks)
+        for key in keys(callbacks)
+            if warn && key ∉ available_callbacks
+                @warn "Unknown callback specification: $(key). Available callbacks: $(available_callbacks). Set `warn = false` to supress this warning."
+            end
+        end
+    end
 end
 
 """
