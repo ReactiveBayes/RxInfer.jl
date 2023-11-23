@@ -130,8 +130,13 @@ makedocs(;
             "Overview" => "examples/overview.md", # This must be auto-generated with `make examples`
             ExamplesPages...
         ],
-        "Contributing" =>
-            ["Overview" => "contributing/overview.md", "Adding a new example" => "contributing/new-example.md", "Publishing a new release" => "contributing/new-release.md"]
+        "Contributing" => [
+            "Overview" => "contributing/overview.md", 
+            "Contributing to the documentation" => "contributing/new-documentation.md",
+            "Contributing to the dependencies" => "contributing/new-package.md", 
+            "Contributing to the examples" => "contributing/new-example.md", 
+            "Publishing a new release" => "contributing/new-release.md"
+        ]
     ]
 )
 
