@@ -53,7 +53,7 @@ end
 function inference_cvi(transformed, rng, iterations)
     T = length(transformed)
 
-    return inference(
+    return infer(
         model = non_linear_dynamics(T),
         data = (y = transformed,),
         iterations = iterations,

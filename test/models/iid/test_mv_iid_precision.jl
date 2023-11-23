@@ -28,7 +28,7 @@ end
 ## Inference definition
 
 function inference_mv_wishart(data, n, d)
-    return inference(
+    return infer(
         model = mv_iid_wishart(n, d),
         data = (y = data,),
         constraints = constraints_mv_iid_wishart(),

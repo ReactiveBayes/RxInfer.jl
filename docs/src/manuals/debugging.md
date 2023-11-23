@@ -36,7 +36,7 @@ dataset = convert.(Int64, rand(Bernoulli(θ_real), n))
 
 end
 
-result = inference(
+result = infer(
     model = coin_model(length(dataset)), 
     data  = (x = dataset, ),
 );
@@ -93,7 +93,7 @@ All the observations (purple, green, pink, blue) have much smaller rate paramete
 
 end
 
-result = inference(
+result = infer(
     model = coin_model(length(dataset)), 
     data  = (x = dataset, ),
 );

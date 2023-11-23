@@ -19,7 +19,7 @@ include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 end
 
 function ar_inference(inputs, outputs, order, niter)
-    return inference(
+    return infer(
         model         = ar_model(length(outputs), order),
         data          = (x = inputs, y = outputs),
         constraints   = MeanField(),

@@ -32,7 +32,7 @@ end
 
 ## Inference definition
 function multivariate_lgssm_inference(data, x0, A, B, Q, P)
-    return inference(model = multivariate_lgssm_model(length(data), x0, A, B, Q, P), data = (y = data,), free_energy = true, options = (limit_stack_depth = 500,))
+    return infer(model = multivariate_lgssm_model(length(data), x0, A, B, Q, P), data = (y = data,), free_energy = true, options = (limit_stack_depth = 500,))
 end
 
 @testset "Linear Gaussian State Space Model" begin

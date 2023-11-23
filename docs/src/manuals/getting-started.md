@@ -121,7 +121,7 @@ As you can see, `RxInfer` offers a model specification syntax that resembles clo
 Once we have defined our model, the next step is to use `RxInfer` API to infer quantities of interests. To do this we can use a generic `inference` function that supports static datasets.
 
 ```@example coin 
-result = inference(
+result = infer(
     model = coin_model(length(dataset)),
     data  = (y = dataset, )
 )

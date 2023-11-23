@@ -179,7 +179,7 @@ y_data = 4.0
 end
 
 #do inference
-inference_result = inference(
+inference_result = infer(
     model = gaussian_model(),
     data = (y = y_data,)
 )

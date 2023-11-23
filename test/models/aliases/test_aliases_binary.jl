@@ -16,7 +16,7 @@ using RxInfer, BenchmarkTools, Random, Plots, LinearAlgebra, StableRNGs
 end
 
 function binary_aliases_inference()
-    return inference(model = binary_aliases(), data = (y = 0.5,), free_energy = true)
+    return infer(model = binary_aliases(), data = (y = 0.5,), free_energy = true)
 end
 
 @testset "aliases for binary operations" begin

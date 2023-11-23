@@ -47,7 +47,7 @@ end
 
 # Inference function
 function fn_datavars_inference(modelfn, adata, bdata, ydata)
-    return inference(model = modelfn(), data = (a = adata, b = bdata, y = ydata), free_energy = true)
+    return infer(model = modelfn(), data = (a = adata, b = bdata, y = ydata), free_energy = true)
 end
 
 @testset "datavars" begin

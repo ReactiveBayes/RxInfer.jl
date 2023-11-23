@@ -25,7 +25,7 @@ end
 
 ## Inference definition
 function probit_inference(data_y)
-    return inference(model = probit_model(length(data_y)), data = (y = data_y,), iterations = 10, returnvars = (x = KeepLast(),), free_energy = true)
+    return infer(model = probit_model(length(data_y)), data = (y = data_y,), iterations = 10, returnvars = (x = KeepLast(),), free_energy = true)
 end
 
 @testset "Probit Model" begin

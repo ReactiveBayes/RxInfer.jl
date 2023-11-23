@@ -78,7 +78,7 @@ end
 function lar_inference(data, order, artype, stype, niter, τ)
     n = length(data)
     c = ReactiveMP.ar_unit(artype, order)
-    return inference(
+    return infer(
         model = lar_model(artype, n, order, c, stype, τ),
         data = (y = data,),
         initmarginals = lar_init_marginals(artype, order),

@@ -31,7 +31,7 @@ end
 
 ## Inference definition
 function hidden_markov_model_inference(data, vmp_iters)
-    return inference(
+    return infer(
         model = hidden_markov_model(length(data)),
         constraints = hidden_markov_constraints(),
         data = (x = data,),

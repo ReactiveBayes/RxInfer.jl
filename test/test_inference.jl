@@ -18,19 +18,19 @@ using Random
     @test_throws ErrorException __inference_check_itertype(:something, missing)
 end
 
-@testset "__inference_check_dicttype" begin
-    import RxInfer: __inference_check_dicttype
+@testset "__infer_check_dicttype" begin
+    import RxInfer: __infer_check_dicttype
 
-    @test __inference_check_dicttype(:something, nothing) === nothing
-    @test __inference_check_dicttype(:something, (x = 1,)) === nothing
-    @test __inference_check_dicttype(:something, (x = 1, y = 2)) === nothing
-    @test __inference_check_dicttype(:something, Dict(:x => 1)) === nothing
-    @test __inference_check_dicttype(:something, Dict(:x => 1, :y => 2)) === nothing
+    @test __infer_check_dicttype(:something, nothing) === nothing
+    @test __infer_check_dicttype(:something, (x = 1,)) === nothing
+    @test __infer_check_dicttype(:something, (x = 1, y = 2)) === nothing
+    @test __infer_check_dicttype(:something, Dict(:x => 1)) === nothing
+    @test __infer_check_dicttype(:something, Dict(:x => 1, :y => 2)) === nothing
 
-    @test_throws ErrorException __inference_check_dicttype(:something, 1)
-    @test_throws ErrorException __inference_check_dicttype(:something, (1))
-    @test_throws ErrorException __inference_check_dicttype(:something, missing)
-    @test_throws ErrorException __inference_check_dicttype(:something, (missing))
+    @test_throws ErrorException __infer_check_dicttype(:something, 1)
+    @test_throws ErrorException __infer_check_dicttype(:something, (1))
+    @test_throws ErrorException __infer_check_dicttype(:something, missing)
+    @test_throws ErrorException __infer_check_dicttype(:something, (missing))
 end
 
 @testset "`@autoupdates` macro" begin
@@ -172,7 +172,7 @@ end
         observations = rand(10)
 
         # Case #0: no errors at all
-        result = inference(
+        result = infer(
             model = test_model1(10),
             constraints = test_model1_constraints(),
             data = (y = observations,),
@@ -194,7 +194,7 @@ end
         @test contains(error_str, "The inference has completed successfully.")
 
         # Case #1: no error handling
-        @test_throws ErrorException inference(
+        @test_throws ErrorException infer(
             model = test_model1(10),
             constraints = test_model1_constraints(),
             data = (y = observations,),
@@ -211,7 +211,7 @@ end
             end,)
         )
 
-        result_with_error = inference(
+        result_with_error = infer(
             model = test_model1(10),
             constraints = test_model1_constraints(),
             data = (y = observations,),
@@ -250,7 +250,7 @@ end
         observations = rand(10)
 
         # Case #1: no halting
-        results1 = inference(
+        results1 = infer(
             model = test_model1(10),
             constraints = test_model1_constraints(),
             data = (y = observations,),
@@ -265,7 +265,7 @@ end
         @test length(results1.posteriors[:τ]) === 10
 
         # Case #2: halt before iteration starts
-        results2 = inference(
+        results2 = infer(
             model = test_model1(10),
             constraints = test_model1_constraints(),
             data = (y = observations,),
@@ -285,7 +285,7 @@ end
         @test length(results2.posteriors[:τ]) === 4
 
         # Case #3: halt after iteration ends
-        results3 = inference(
+        results3 = infer(
             model = test_model1(10),
             constraints = test_model1_constraints(),
             data = (y = observations,),
@@ -311,7 +311,7 @@ end
     end
 end
 
-@testset "Test warn argument in `inference()`" begin
+@testset "Test warn argument in `infer()`" begin
     @testset "Test warning for addons" begin
 
         #Add a new case for testing warning of addons
@@ -334,7 +334,7 @@ end
         dataset2 = float.(rand(Bernoulli(θ_real), n))
 
         #with warn
-        @test_logs (:warn, r"Both .* specify a value for the `addons`.*") result_2 = inference(
+        @test_logs (:warn, r"Both .* specify a value for the `addons`.*") result_2 = infer(
             model = beta_model2(length(dataset2)),
             data = (y = dataset2,),
             returnvars = (θ = KeepLast(),),
@@ -344,7 +344,7 @@ end
             warn = true
         )
         #without warn
-        @test_logs result_2 = inference(
+        @test_logs result_2 = infer(
             model = beta_model2(length(dataset2)),
             data = (y = dataset2,),
             returnvars = (θ = KeepLast(),),
@@ -383,7 +383,7 @@ end
         end
         observations = rand(10)
 
-        @test_logs (:warn, r"Unused data variable .*") result = inference(
+        @test_logs (:warn, r"Unused data variable .*") result = infer(
             model = test_model1(10),
             constraints = test_model1_constraints(),
             data = (y = observations,),
@@ -393,7 +393,7 @@ end
             free_energy = true,
             warn = true
         )
-        @test_logs result = inference(
+        @test_logs result = infer(
             model = test_model1(10),
             constraints = test_model1_constraints(),
             data = (y = observations,),
@@ -456,7 +456,7 @@ end
         for keephistory in (0, 1, 2), iterations in (3, 4), free_energy in (true, Float64, false), returnvars in ((:x_t,), (:x_t, :τ)), historyvars in ((:x_t,), (:x_t, :τ))
             historyvars = keephistory > 0 ? NamedTuple{historyvars}(map(_ -> KeepEach(), historyvars)) : nothing
 
-            engine = rxinference(
+            engine = infer(
                 model = test_model1(),
                 constraints = MeanField(),
                 data = (y = observedy,),
@@ -522,7 +522,7 @@ end
     @testset "Check callbacks usage: autostart enabled" begin
         callbacksdata = []
 
-        engine = rxinference(
+        engine = infer(
             model = test_model1(),
             constraints = MeanField(),
             data = (y = observedy,),
@@ -549,7 +549,7 @@ end
     @testset "Check callbacks usage: autostart disabled" begin
         callbacksdata = []
 
-        engine = rxinference(
+        engine = infer(
             model = test_model1(),
             constraints = MeanField(),
             data = (y = observedy,),
@@ -579,7 +579,7 @@ end
     @testset "Check callbacks usage: unknown callback warning" begin
         callbacksdata = []
 
-        @test_logs (:warn, r"Unknown callback specification.*hello_world.*Available callbacks.*") result = rxinference(
+        @test_logs (:warn, r"Unknown callback specification.*hello_world.*Available callbacks.*") result = infer(
             model = test_model1(),
             constraints = MeanField(),
             data = (y = observedy,),
@@ -606,7 +606,7 @@ end
         end
 
         for iterations in (2, 3), keephistory in (0, 1)
-            engine = rxinference(
+            engine = infer(
                 model = test_model1(),
                 constraints = MeanField(),
                 data = (y = observedy,),
@@ -762,7 +762,7 @@ end
     end
 
     @testset "Check postprocess usage: UnpackMarginalPostprocess" begin
-        engine = rxinference(
+        engine = infer(
             model = test_model1(),
             constraints = MeanField(),
             data = (y = observedy,),
@@ -781,7 +781,7 @@ end
 
     @testset "Check postprocess usage: NoopPostprocess & nothing" begin
         for postprocess in (RxInfer.NoopPostprocess(), nothing)
-            engine = rxinference(
+            engine = infer(
                 model = test_model1(),
                 constraints = MeanField(),
                 data = (y = observedy,),
@@ -807,11 +807,11 @@ end
     end
 
     @testset "Either `data` or `datastream` is required" begin
-        @test_throws ErrorException rxinference(model = test_model1())
+        @test_throws ErrorException infer(model = test_model1())
     end
 
     @testset "`data` and `datastream` cannot be used together" begin
-        @test_throws ErrorException rxinference(model = test_model1(), data = (y = observedy,), datastream = labeled(Val((:y,)), combineLatest(from(observedy))))
+        @test_throws ErrorException infer(model = test_model1(), data = (y = observedy,), datastream = labeled(Val((:y,)), combineLatest(from(observedy))))
     end
 end
 
@@ -842,7 +842,7 @@ end
         o[2] ~ NormalMeanPrecision(x[n + 2], 1.0)
     end
 
-    result = inference(model = model_1(length(data[:y])), iterations = 10, data = data, predictvars = (o = KeepLast(),))
+    result = infer(model = model_1(length(data[:y])), iterations = 10, data = data, predictvars = (o = KeepLast(),))
 
     @test all(typeof.(result.predictions[:o]) .<: NormalDistributionsFamily)
     @test length(result.predictions[:o]) === 2
@@ -866,7 +866,7 @@ end
         o ~ NormalMeanPrecision(x[n + 1], 1.0)
     end
 
-    result = inference(model = model_2(length(data[:y])), iterations = 10, data = data, predictvars = (o = KeepEach(),))
+    result = infer(model = model_2(length(data[:y])), iterations = 10, data = data, predictvars = (o = KeepEach(),))
 
     # note we used KeepEach for variable o with BP algorithm (10 iterations), we expect all predicted variables to be equal (because of the beleif propagation)
     @test all(y -> y == result.predictions[:o][1], result.predictions[:o])
@@ -890,7 +890,7 @@ end
         o ~ NormalMeanPrecision(x[n + 1], 1.0)
     end
 
-    result = inference(model = model_3(length(data[:y])), iterations = 10, data = data, predictvars = (o = KeepLast(),))
+    result = infer(model = model_3(length(data[:y])), iterations = 10, data = data, predictvars = (o = KeepLast(),))
 
     @test !haskey(result.predictions, :y)
     @test haskey(result.predictions, :o)
@@ -910,7 +910,7 @@ end
         end
     end
 
-    result = inference(model = model_4(length(data[:y])), iterations = 10, data = data)
+    result = infer(model = model_4(length(data[:y])), iterations = 10, data = data)
 
     @test all(typeof.(result.predictions[:y]) .<: NormalDistributionsFamily)
 
@@ -923,7 +923,7 @@ end
         o ~ NormalMeanPrecision(x, 10.0)
     end
 
-    result = inference(model = model_5(), iterations = 1, predictvars = (o = KeepLast(),))
+    result = infer(model = model_5(), iterations = 1, predictvars = (o = KeepLast(),))
 
     @test haskey(result.predictions, :o)
     @test typeof(result.predictions[:o]) <: NormalDistributionsFamily
@@ -942,7 +942,7 @@ end
         y ~ Normal(mean = d, var = 1.0)
     end
 
-    result = inference(model = model_6(), data = (y = missing, x_0 = 1.0), initmessages = (a = vague(NormalMeanPrecision),), iterations = 10, free_energy = false)
+    result = infer(model = model_6(), data = (y = missing, x_0 = 1.0), initmessages = (a = vague(NormalMeanPrecision),), iterations = 10, free_energy = false)
 
     @test haskey(result.predictions, :y)
     @test typeof(result.predictions[:y]) <: NormalDistributionsFamily
@@ -971,7 +971,7 @@ end
         q(x_0, x, γ) = q(x_0, x)q(γ)
     end
 
-    result = inference(
+    result = infer(
         model = vmp_model(length(data[:y])),
         data = data,
         constraints = constraints,
@@ -996,7 +996,7 @@ end
         end
     end
 
-    result = inference(model = coin_model1(length(dataset)), data = (y = dataset,))
+    result = infer(model = coin_model1(length(dataset)), data = (y = dataset,))
 
     @test typeof(last(result.predictions[:y])) <: Bernoulli
 
@@ -1014,9 +1014,9 @@ end
         end
     end
 
-    @test_throws ErrorException inference(model = coin_model2(length(dataset)), data = (y = dataset,))
+    @test_throws ErrorException infer(model = coin_model2(length(dataset)), data = (y = dataset,))
 
-    @test_throws ErrorException inference(model = coin_model2(length(dataset)), data = (y = dataset,), free_energy = true)
+    @test_throws ErrorException infer(model = coin_model2(length(dataset)), data = (y = dataset,), free_energy = true)
 
     # test #10 predictvars, no dataset
     @model function coin_model3(n)
@@ -1028,7 +1028,7 @@ end
         end
     end
 
-    result = inference(model = coin_model3(length(dataset)), predictvars = (y = KeepLast(),))
+    result = infer(model = coin_model3(length(dataset)), predictvars = (y = KeepLast(),))
 
     @test all(result.predictions[:y] .== Bernoulli(mean(Beta(1.0, 1.0))))
 end
