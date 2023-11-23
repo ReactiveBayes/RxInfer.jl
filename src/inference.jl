@@ -183,17 +183,17 @@ __inference_postprocess(::Nothing, result) = result
 """
     InferenceResult
 
-This structure is used as a return value from the [`inference`](@ref) function. 
+This structure is used as a return value from the [`infer`](@ref) function. 
 
 # Public Fields
 
-- `posteriors`: `Dict` or `NamedTuple` of 'random variable' - 'posterior' pairs. See the `returnvars` argument for [`inference`](@ref).
-- `free_energy`: (optional) An array of Bethe Free Energy values per VMP iteration. See the `free_energy` argument for [`inference`](@ref).
+- `posteriors`: `Dict` or `NamedTuple` of 'random variable' - 'posterior' pairs. See the `returnvars` argument for [`infer`](@ref).
+- `free_energy`: (optional) An array of Bethe Free Energy values per VMP iteration. See the `free_energy` argument for [`infer`](@ref).
 - `model`: `FactorGraphModel` object reference.
 - `returnval`: Return value from executed `@model`.
-- `error`: (optional) A reference to an exception, that might have occurred during the inference. See the `catch_exception` argument for [`inference`](@ref).
+- `error`: (optional) A reference to an exception, that might have occurred during the inference. See the `catch_exception` argument for [`infer`](@ref).
 
-See also: [`inference`](@ref)
+See also: [`infer`](@ref)
 """
 struct InferenceResult{P, A, F, M, R, E}
     posteriors  :: P

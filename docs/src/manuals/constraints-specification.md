@@ -162,4 +162,4 @@ end
 model, returnval = create_model(my_model(arguments...); constraints = constraints)
 ```
 
-Alternatively, it is possible to use constraints directly in the automatic [`inference`](@ref) and [`rxinference`](@ref) functions that accepts `constraints` keyword argument. 
+Alternatively, it is possible to use constraints directly in the automatic [`infer`](@ref) function that accepts `constraints` keyword argument. 

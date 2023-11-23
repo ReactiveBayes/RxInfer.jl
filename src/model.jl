@@ -238,9 +238,9 @@ end
 """
     ModelGenerator
 
-`ModelGenerator` is a special object that is used in the `inference` function to lazily create model later on given `constraints`, `meta` and `options`.
+`ModelGenerator` is a special object that is used in the `infer` function to lazily create model later on given `constraints`, `meta` and `options`.
 
-See also: [`inference`](@ref)
+See also: [`infer`](@ref)
 """
 struct ModelGenerator{G, A, K}
     generator :: G
