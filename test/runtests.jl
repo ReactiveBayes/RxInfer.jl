@@ -249,6 +249,7 @@ end
     addtests(testrunner, "models/iid/test_mv_iid_covariance_known_mean.jl")
 
     addtests(testrunner, "models/nonlinear/test_generic_applicability.jl")
+    addtests(testrunner, "models/nonlinear/test_static_inputs.jl")
     addtests(testrunner, "models/nonlinear/test_cvi.jl")
 
     addtests(testrunner, "models/regression/test_linreg.jl")
