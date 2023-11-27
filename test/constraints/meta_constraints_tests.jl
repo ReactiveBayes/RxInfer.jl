@@ -1,5 +1,6 @@
 @testitem "Meta specification with @meta macro" begin
     import ReactiveMP: resolve_meta, make_node, activate!
+    using Distributions
     using Logging
 
     struct SomeNode end

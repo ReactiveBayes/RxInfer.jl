@@ -1,7 +1,7 @@
 @testitem "PointMassFormConstraint" begin
-    using Test
-    using RxInfer, LinearAlgebra
+    using LinearAlgebra
     using Random, StableRNGs, DomainSets, Distributions
+    import RxInfer: PointMassFormConstraint, is_point_mass_form_constraint, call_boundaries, call_starting_point, call_optimizer
 
     struct MyDistributionWithMode <: ContinuousUnivariateDistribution
         mode::Float64

@@ -1,79 +1,76 @@
-module RxInferModelsGMMTest
+@testitem "Multivariate Gaussian Mixture model" begin
+    using BenchmarkTools, Plots, StableRNGs, LinearAlgebra
 
-using Test, InteractiveUtils
-using RxInfer, BenchmarkTools, Random, Plots, LinearAlgebra, StableRNGs
+    # `include(test/utiltests.jl)`
+    include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
-# `include(test/utiltests.jl)`
-include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
+    @model function multivariate_gaussian_mixture_model(rng, L, nmixtures, n)
+        z = randomvar(n)
+        m = randomvar(nmixtures)
+        w = randomvar(nmixtures)
 
-@model function multivariate_gaussian_mixture_model(rng, L, nmixtures, n)
-    z = randomvar(n)
-    m = randomvar(nmixtures)
-    w = randomvar(nmixtures)
+        basis_v = [1.0, 0.0]
 
-    basis_v = [1.0, 0.0]
+        for i in 1:nmixtures
+            # Assume we now only approximate location of cluters's mean
+            approximate_angle_prior = ((2π + +rand(rng)) / nmixtures) * (i - 1)
+            approximate_basis_v = L / 2 * (basis_v .+ rand(rng, 2))
+            approximate_rotation = [
+                cos(approximate_angle_prior) -sin(approximate_angle_prior)
+                sin(approximate_angle_prior) cos(approximate_angle_prior)
+            ]
+            mean_mean_prior = approximate_rotation * approximate_basis_v
+            mean_mean_cov = [1e6 0.0; 0.0 1e6]
 
-    for i in 1:nmixtures
-        # Assume we now only approximate location of cluters's mean
-        approximate_angle_prior = ((2π + +rand(rng)) / nmixtures) * (i - 1)
-        approximate_basis_v = L / 2 * (basis_v .+ rand(rng, 2))
-        approximate_rotation = [
-            cos(approximate_angle_prior) -sin(approximate_angle_prior)
-            sin(approximate_angle_prior) cos(approximate_angle_prior)
-        ]
-        mean_mean_prior = approximate_rotation * approximate_basis_v
-        mean_mean_cov = [1e6 0.0; 0.0 1e6]
+            m[i] ~ MvNormal(mean = mean_mean_prior, cov = mean_mean_cov)
+            w[i] ~ Wishart(3, [1e2 0.0; 0.0 1e2])
+        end
 
-        m[i] ~ MvNormal(mean = mean_mean_prior, cov = mean_mean_cov)
-        w[i] ~ Wishart(3, [1e2 0.0; 0.0 1e2])
+        s ~ Dirichlet(ones(nmixtures))
+
+        y = datavar(Vector{Float64}, n)
+
+        means = tuple(m...)
+        precs = tuple(w...)
+
+        for i in 1:n
+            z[i] ~ Categorical(s)
+            y[i] ~ NormalMixture(z[i], means, precs)
+        end
     end
 
-    s ~ Dirichlet(ones(nmixtures))
+    function inference_multivariate(rng, L, nmixtures, data, viters, constraints)
+        basis_v = [1.0, 0.0]
 
-    y = datavar(Vector{Float64}, n)
+        minitmarginals = []
+        winitmarginals = []
 
-    means = tuple(m...)
-    precs = tuple(w...)
+        for i in 1:nmixtures
+            # Assume we now only approximate location of cluters's mean
+            approximate_angle_prior = ((2π + +rand(rng)) / nmixtures) * (i - 1)
+            approximate_basis_v = L / 2 * (basis_v .+ rand(rng, 2))
+            approximate_rotation = [
+                cos(approximate_angle_prior) -sin(approximate_angle_prior)
+                sin(approximate_angle_prior) cos(approximate_angle_prior)
+            ]
+            mean_mean_prior = approximate_rotation * approximate_basis_v
+            mean_mean_cov = [1e6 0.0; 0.0 1e6]
 
-    for i in 1:n
-        z[i] ~ Categorical(s)
-        y[i] ~ NormalMixture(z[i], means, precs)
-    end
-end
+            push!(minitmarginals, MvNormalMeanCovariance(mean_mean_prior, mean_mean_cov))
+            push!(winitmarginals, Wishart(3, [1e2 0.0; 0.0 1e2]))
+        end
 
-function inference_multivariate(rng, L, nmixtures, data, viters, constraints)
-    basis_v = [1.0, 0.0]
-
-    minitmarginals = []
-    winitmarginals = []
-
-    for i in 1:nmixtures
-        # Assume we now only approximate location of cluters's mean
-        approximate_angle_prior = ((2π + +rand(rng)) / nmixtures) * (i - 1)
-        approximate_basis_v = L / 2 * (basis_v .+ rand(rng, 2))
-        approximate_rotation = [
-            cos(approximate_angle_prior) -sin(approximate_angle_prior)
-            sin(approximate_angle_prior) cos(approximate_angle_prior)
-        ]
-        mean_mean_prior = approximate_rotation * approximate_basis_v
-        mean_mean_cov = [1e6 0.0; 0.0 1e6]
-
-        push!(minitmarginals, MvNormalMeanCovariance(mean_mean_prior, mean_mean_cov))
-        push!(winitmarginals, Wishart(3, [1e2 0.0; 0.0 1e2]))
+        return inference(
+            model = multivariate_gaussian_mixture_model(rng, L, nmixtures, length(data)),
+            data = (y = data,),
+            constraints = constraints,
+            returnvars = KeepEach(),
+            free_energy = Float64,
+            iterations = viters,
+            initmarginals = (s = vague(Dirichlet, nmixtures), m = minitmarginals, w = winitmarginals)
+        )
     end
 
-    return inference(
-        model = multivariate_gaussian_mixture_model(rng, L, nmixtures, length(data)),
-        data = (y = data,),
-        constraints = constraints,
-        returnvars = KeepEach(),
-        free_energy = Float64,
-        iterations = viters,
-        initmarginals = (s = vague(Dirichlet, nmixtures), m = minitmarginals, w = winitmarginals)
-    )
-end
-
-@testset "Multivariate Gaussian Mixture model" begin
     rng = StableRNG(43)
 
     L         = 50.0
@@ -163,6 +160,4 @@ end
     end
 
     @test_benchmark "models" "gmm_multivariate" inference_multivariate(StableRNG(123), $L, $nmixtures, $y, 25, MeanField())
-end
-
 end

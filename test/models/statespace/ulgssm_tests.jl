@@ -1,33 +1,29 @@
-module RxInferModelsMLGSSMTest
+@testitem "Univariate Linear Gaussian State Space Model" begin
+    using BenchmarkTools, Random, Plots, Dates, LinearAlgebra, StableRNGs
 
-using Test, InteractiveUtils
-using RxInfer, BenchmarkTools, Random, Plots, Dates, LinearAlgebra, StableRNGs
+    # `include(test/utiltests.jl)`
+    include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
-# `include(test/utiltests.jl)`
-include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
+    @model function univariate_lgssm_model(n, x0, c_, P_)
+        x_prior ~ Normal(mean = mean(x0), var = var(x0))
 
-@model function univariate_lgssm_model(n, x0, c_, P_)
-    x_prior ~ Normal(mean = mean(x0), var = var(x0))
+        x = randomvar(n)
+        c = constvar(c_)
+        P = constvar(P_)
+        y = datavar(Float64, n)
 
-    x = randomvar(n)
-    c = constvar(c_)
-    P = constvar(P_)
-    y = datavar(Float64, n)
+        x_prev = x_prior
 
-    x_prev = x_prior
-
-    for i in 1:n
-        x[i] ~ x_prev + c
-        y[i] ~ Normal(mean = x[i], var = P)
-        x_prev = x[i]
+        for i in 1:n
+            x[i] ~ x_prev + c
+            y[i] ~ Normal(mean = x[i], var = P)
+            x_prev = x[i]
+        end
     end
-end
 
-function univariate_lgssm_inference(data, x0, c, P)
-    return inference(model = univariate_lgssm_model(length(data), x0, c, P), data = (y = data,), free_energy = true)
-end
-
-@testset "Univariate Linear Gaussian State Space Model" begin
+    function univariate_lgssm_inference(data, x0, c, P)
+        return inference(model = univariate_lgssm_model(length(data), x0, c, P), data = (y = data,), free_energy = true)
+    end
 
     ## Data creation
     rng      = StableRNG(123)
@@ -62,6 +58,4 @@ end
     end
 
     @test_benchmark "models" "ulgssm" univariate_lgssm_inference($data, $x0_prior, 1.0, $P)
-end
-
 end

@@ -1,42 +1,38 @@
-module RxInferModelsGMMTest
+@testitem "Univariate Gaussian Mixture model " begin    
+    using BenchmarkTools, Plots, LinearAlgebra, StableRNGs
 
-using Test, InteractiveUtils
-using RxInfer, BenchmarkTools, Random, Plots, LinearAlgebra, StableRNGs
+    # `include(test/utiltests.jl)`
+    include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
-# `include(test/utiltests.jl)`
-include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
+    @model function univariate_gaussian_mixture_model(n)
+        s ~ Beta(1.0, 1.0)
 
-@model function univariate_gaussian_mixture_model(n)
-    s ~ Beta(1.0, 1.0)
+        m1 ~ Normal(mean = -2.0, variance = 1e3)
+        w1 ~ Gamma(shape = 0.01, rate = 0.01)
 
-    m1 ~ Normal(mean = -2.0, variance = 1e3)
-    w1 ~ Gamma(shape = 0.01, rate = 0.01)
+        m2 ~ Normal(mean = 2.0, variance = 1e3)
+        w2 ~ Gamma(shape = 0.01, rate = 0.01)
 
-    m2 ~ Normal(mean = 2.0, variance = 1e3)
-    w2 ~ Gamma(shape = 0.01, rate = 0.01)
+        z = randomvar(n)
+        y = datavar(Float64, n)
 
-    z = randomvar(n)
-    y = datavar(Float64, n)
-
-    for i in 1:n
-        z[i] ~ Bernoulli(s)
-        y[i] ~ NormalMixture(z[i], (m1, m2), (w1, w2))
+        for i in 1:n
+            z[i] ~ Bernoulli(s)
+            y[i] ~ NormalMixture(z[i], (m1, m2), (w1, w2))
+        end
     end
-end
 
-function inference_univariate(data, n_its, constraints)
-    return inference(
-        model         = univariate_gaussian_mixture_model(length(data)),
-        data          = (y = data,),
-        constraints   = constraints,
-        returnvars    = KeepEach(),
-        free_energy   = Float64,
-        iterations    = n_its,
-        initmarginals = (s = vague(Beta), m1 = NormalMeanVariance(-2.0, 1e3), m2 = NormalMeanVariance(2.0, 1e3), w1 = vague(GammaShapeRate), w2 = vague(GammaShapeRate))
-    )
-end
-
-@testset "Univariate Gaussian Mixture model " begin
+    function inference_univariate(data, n_its, constraints)
+        return inference(
+            model         = univariate_gaussian_mixture_model(length(data)),
+            data          = (y = data,),
+            constraints   = constraints,
+            returnvars    = KeepEach(),
+            free_energy   = Float64,
+            iterations    = n_its,
+            initmarginals = (s = vague(Beta), m1 = NormalMeanVariance(-2.0, 1e3), m2 = NormalMeanVariance(2.0, 1e3), w1 = vague(GammaShapeRate), w2 = vague(GammaShapeRate))
+        )
+    end
     ## -------------------------------------------- ##
     ## Data creation
     ## -------------------------------------------- ##
@@ -133,6 +129,4 @@ end
     end
 
     @test_benchmark "models" "gmm_univariate" inference_univariate($y, 10, MeanField())
-end
-
 end
