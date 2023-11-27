@@ -1,9 +1,4 @@
-module RxInferHelpersTest
-
-using Test
-using RxInfer
-
-@testset "NamedTuple helpers" begin
+@testitem "NamedTuple helpers" begin
     import RxInfer: fields, nthasfield
 
     @test fields((x = 1, y = 2)) === (:x, :y)
@@ -17,7 +12,7 @@ using RxInfer
     @test nthasfield(:c, typeof((x = 1, y = 2))) === false
 end
 
-@testset "Tuple helpers" begin
+@testitem "Tuple helpers" begin
     import RxInfer: as_tuple
 
     @test as_tuple(1) === (1,)
@@ -27,7 +22,7 @@ end
     @test as_tuple(("string",)) === ("string",)
 end
 
-@testset "Val helpers" begin
+@testitem "Val helpers" begin
     import RxInfer: unval
 
     @test unval(Val(1)) === 1
@@ -39,4 +34,3 @@ end
     @test_throws ErrorException unval(nothing)
 end
 
-end
