@@ -1,29 +1,24 @@
-module RxInferPointMassFormConstraintTest
+@testitem "PointMassFormConstraint" begin
+    using Test
+    using RxInfer, LinearAlgebra
+    using Random, StableRNGs, DomainSets, Distributions
 
-using Test
-using RxInfer, LinearAlgebra
-using Random, StableRNGs, DomainSets, Distributions
+    struct MyDistributionWithMode <: ContinuousUnivariateDistribution
+        mode::Float64
+    end
 
-import ReactiveMP: constrain_form
-import RxInfer: PointMassFormConstraint, is_point_mass_form_constraint, call_boundaries, call_starting_point, call_optimizer
+    # We are testing specifically that the point mass optimizer does not call `logpdf` and 
+    # chooses a fast path with `mode` for `<: Distribution` objects
+    Distributions.logpdf(::MyDistributionWithMode, _) = error("This should not be called")
+    Distributions.mode(d::MyDistributionWithMode)     = d.mode
+    Distributions.support(::MyDistributionWithMode)   = RealInterval(-Inf, Inf)
 
-struct MyDistributionWithMode <: ContinuousUnivariateDistribution
-    mode::Float64
-end
+    const arbitrary_dist_1 = ContinuousUnivariateLogPdf(RealLine(), (x) -> logpdf(NormalMeanVariance(0, 1), x))
+    const arbitrary_dist_2 = ContinuousUnivariateLogPdf(HalfLine(), (x) -> logpdf(Gamma(1, 1), x))
+    const arbitrary_dist_3 = ContinuousUnivariateLogPdf(RealLine(), (x) -> logpdf(NormalMeanVariance(-10, 10), x))
+    const arbitrary_dist_4 = ContinuousUnivariateLogPdf(HalfLine(), (x) -> logpdf(GammaShapeRate(100, 10), x))
+    const arbitrary_dist_5 = ContinuousUnivariateLogPdf(HalfLine(), (x) -> logpdf(GammaShapeRate(100, 100), x))
 
-# We are testing specifically that the point mass optimizer does not call `logpdf` and 
-# chooses a fast path with `mode` for `<: Distribution` objects
-Distributions.logpdf(::MyDistributionWithMode, _) = error("This should not be called")
-Distributions.mode(d::MyDistributionWithMode)     = d.mode
-Distributions.support(::MyDistributionWithMode)   = RealInterval(-Inf, Inf)
-
-const arbitrary_dist_1 = ContinuousUnivariateLogPdf(RealLine(), (x) -> logpdf(NormalMeanVariance(0, 1), x))
-const arbitrary_dist_2 = ContinuousUnivariateLogPdf(HalfLine(), (x) -> logpdf(Gamma(1, 1), x))
-const arbitrary_dist_3 = ContinuousUnivariateLogPdf(RealLine(), (x) -> logpdf(NormalMeanVariance(-10, 10), x))
-const arbitrary_dist_4 = ContinuousUnivariateLogPdf(HalfLine(), (x) -> logpdf(GammaShapeRate(100, 10), x))
-const arbitrary_dist_5 = ContinuousUnivariateLogPdf(HalfLine(), (x) -> logpdf(GammaShapeRate(100, 100), x))
-
-@testset "PointMassFormConstraint" begin
     @testset "is_point_mass_form_constraint" begin
         @test is_point_mass_form_constraint(PointMassFormConstraint())
     end
@@ -111,6 +106,4 @@ const arbitrary_dist_5 = ContinuousUnivariateLogPdf(HalfLine(), (x) -> logpdf(Ga
             @test isapprox(mode(opt), mode(analytical), atol = 1e-4)
         end
     end
-end
-
 end
