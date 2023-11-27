@@ -1,6 +1,6 @@
 @testitem "Autoregressive model" begin
     using StableRNGs, BenchmarkTools
-    
+
     # `include(test/utiltests.jl)`
     include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
@@ -39,8 +39,6 @@
         return inputs, outputs
     end
     rng = StableRNG(1234)
-
-
 
     ## Inference execution and test inference results
     for order in 1:5

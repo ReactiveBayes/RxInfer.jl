@@ -41,5 +41,3 @@
     @test first(mean(result.posteriors[:x1])) ≈ 0.04182509505703423
     @test first(result.free_energy) ≈ 2.319611135721246
 end
-
-

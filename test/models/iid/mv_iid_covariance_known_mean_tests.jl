@@ -20,7 +20,6 @@
         return inference(model = mv_iid_inverse_wishart_known_mean(mean, n, d), data = (y = data,), iterations = 10, returnvars = KeepLast(), free_energy = Float64)
     end
 
-
     ## Data creation
     rng = StableRNG(123)
 

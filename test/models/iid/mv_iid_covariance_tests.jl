@@ -1,24 +1,24 @@
 @testitem "Multivariate IID: Covariance parametrisation" begin
     using StableRNGs, Plots, BenchmarkTools
-    
+
     # `include(test/utiltests.jl)`
     include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
-    
+
     @model function mv_iid_inverse_wishart(n, d)
         m ~ MvNormal(mean = zeros(d), precision = 100 * diageye(d))
         C ~ InverseWishart(d + 1, diageye(d))
-    
+
         y = datavar(Vector{Float64}, n)
-    
+
         for i in 1:n
             y[i] ~ MvNormal(mean = m, covariance = C)
         end
     end
-    
+
     @constraints function constraints_mv_iid_inverse_wishart()
         q(m, C) = q(m)q(C)
     end
-    
+
     function inference_mv_inverse_wishart(data, n, d)
         return inference(
             model = mv_iid_inverse_wishart(n, d),

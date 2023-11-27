@@ -1,4 +1,4 @@
-@testitem "Univariate Gaussian Mixture model " begin    
+@testitem "Univariate Gaussian Mixture model " begin
     using BenchmarkTools, Plots, LinearAlgebra, StableRNGs
 
     # `include(test/utiltests.jl)`

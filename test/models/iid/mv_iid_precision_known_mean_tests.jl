@@ -1,5 +1,5 @@
-@testitem "Multivariate IID: Precision parametrisation with known mean" begin 
-    using StableRNGs, BenchmarkTools, Plots   
+@testitem "Multivariate IID: Precision parametrisation with known mean" begin
+    using StableRNGs, BenchmarkTools, Plots
     # Please use StableRNGs for random number generators
 
     # `include(test/utiltests.jl)`

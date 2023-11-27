@@ -106,7 +106,6 @@
         return states[(1 + 3order):end], observations[(1 + 3order):end]
     end
 
-
     # Seed for reproducibility
     rng = StableRNG(123)
 

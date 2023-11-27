@@ -105,7 +105,9 @@
         )
 
         return map(metas) do meta
-            return inference(model = delta_1input(meta), data = (y2 = data,), free_energy = true, free_energy_diagnostics = (BetheFreeEnergyCheckNaNs(), BetheFreeEnergyCheckInfs()))
+            return inference(
+                model = delta_1input(meta), data = (y2 = data,), free_energy = true, free_energy_diagnostics = (BetheFreeEnergyCheckNaNs(), BetheFreeEnergyCheckInfs())
+            )
         end
     end
 
@@ -120,7 +122,9 @@
         )
 
         return map(metas) do meta
-            return inference(model = delta_2inputs(meta), data = (y2 = data,), free_energy = true, free_energy_diagnostics = (BetheFreeEnergyCheckNaNs(), BetheFreeEnergyCheckInfs()))
+            return inference(
+                model = delta_2inputs(meta), data = (y2 = data,), free_energy = true, free_energy_diagnostics = (BetheFreeEnergyCheckNaNs(), BetheFreeEnergyCheckInfs())
+            )
         end
     end
 
@@ -128,7 +132,9 @@
         metas = (DeltaMeta(method = Linearization()), DeltaMeta(method = Unscented()), Linearization(), Unscented())
 
         return map(metas) do meta
-            return inference(model = delta_3inputs(meta), data = (y2 = data,), free_energy = true, free_energy_diagnostics = (BetheFreeEnergyCheckNaNs(), BetheFreeEnergyCheckInfs()))
+            return inference(
+                model = delta_3inputs(meta), data = (y2 = data,), free_energy = true, free_energy_diagnostics = (BetheFreeEnergyCheckNaNs(), BetheFreeEnergyCheckInfs())
+            )
         end
     end
 

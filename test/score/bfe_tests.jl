@@ -1,5 +1,5 @@
 @testitem "BetheFreeEnergy score tests" begin
-    using  Random
+    using Random
     import RxInfer: get_skip_strategy, get_scheduler, apply_diagnostic_check
     import ReactiveMP: CountingReal, FactorNodeCreationOptions, make_node, activate!
     @testset "Diagnostic check tests" begin

@@ -630,4 +630,3 @@
         @test_throws ErrorException ReactiveMP.resolve_factorisation(cs, getvariables(model), fform, (x, y))
     end
 end
-

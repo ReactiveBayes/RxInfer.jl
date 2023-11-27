@@ -33,4 +33,3 @@ end
     @test_throws ErrorException unval(())
     @test_throws ErrorException unval(nothing)
 end
-
