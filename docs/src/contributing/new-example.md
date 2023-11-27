@@ -1,4 +1,4 @@
-# [Contributing: new example](@id contributing-new-example)
+# [Contributing to the examples](@id contributing-new-example)
 
 We welcome all possible contributors. This page details some of the guidelines that should be followed when adding a new example (in the `examples/` folder) to this package.
 
