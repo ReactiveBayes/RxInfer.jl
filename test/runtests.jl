@@ -1,8 +1,5 @@
 using Aqua, CpuId, ReTestItems, RxInfer
 
-# runtests(
-#     "./"; 
-# )
 Aqua.test_all(RxInfer; ambiguities = false, piracies = false, deps_compat = (; check_extras = false, check_weakdeps = true))
 
 nthreads = max(cputhreads(), 1)
