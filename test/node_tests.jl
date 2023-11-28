@@ -1,10 +1,4 @@
-module RxInferNodeTest
-
-using Test
-using RxInfer
-using Random
-
-@testset "@node macro integration tests" begin
+@testitem "@node macro integration tests" begin
     @testset "make_node compatibility tests for stochastic nodes" begin
         struct CustomStochasticNode end
 
@@ -715,6 +709,4 @@ using Random
             end
         end
     end
-end
-
 end

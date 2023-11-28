@@ -1,31 +1,26 @@
-module RxInferModelsMvIIDPrecisionKnownMeanTest
+@testitem "Multivariate IID: Precision parametrisation with known mean" begin
+    using StableRNGs, BenchmarkTools, Plots
+    # Please use StableRNGs for random number generators
 
-using Test, InteractiveUtils
-using RxInfer, BenchmarkTools, Random, Plots, Dates, LinearAlgebra, StableRNGs
+    # `include(test/utiltests.jl)`
+    include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
-# Please use StableRNGs for random number generators
+    ## Model and constraints definition
 
-# `include(test/utiltests.jl)`
-include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
+    @model function mv_iid_wishart_known_mean(mean, n, d)
+        P ~ Wishart(d + 1, diageye(d))
 
-## Model and constraints definition
+        m = constvar(mean)
+        y = datavar(Vector{Float64}, n)
 
-@model function mv_iid_wishart_known_mean(mean, n, d)
-    P ~ Wishart(d + 1, diageye(d))
-
-    m = constvar(mean)
-    y = datavar(Vector{Float64}, n)
-
-    for i in 1:n
-        y[i] ~ MvNormal(mean = m, precision = P)
+        for i in 1:n
+            y[i] ~ MvNormal(mean = m, precision = P)
+        end
     end
-end
 
-function inference_mv_wishart_known_mean(mean, data, n, d)
-    return inference(model = mv_iid_wishart_known_mean(mean, n, d), data = (y = data,), iterations = 10, returnvars = KeepLast(), free_energy = Float64)
-end
-
-@testset "Multivariate IID: Precision parametrisation with known mean" begin
+    function inference_mv_wishart_known_mean(mean, data, n, d)
+        return inference(model = mv_iid_wishart_known_mean(mean, n, d), data = (y = data,), iterations = 10, returnvars = KeepLast(), free_energy = Float64)
+    end
 
     ## Data creation
     rng = StableRNG(123)
@@ -58,6 +53,4 @@ end
     end
 
     @test_benchmark "models" "iid_wishart_known_mean" inference_mv_wishart_known_mean($m, $data, $n, $d)
-end
-
 end

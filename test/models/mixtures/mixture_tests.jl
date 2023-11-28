@@ -1,60 +1,55 @@
+@testitem "Model mixture" begin
+    using Distributions
+    using BenchmarkTools, LinearAlgebra, StableRNGs, Plots
 
-module RxInferModelsMixtureTest
+    # Please use StableRNGs for random number generators
 
-using Test, InteractiveUtils
-using RxInfer, Distributions
-using BenchmarkTools, Random, Plots, Dates, LinearAlgebra, StableRNGs
+    # `include(test/utiltests.jl)`
+    include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
-# Please use StableRNGs for random number generators
+    ## Model definition
+    ## -------------------------------------------- ##
 
-# `include(test/utiltests.jl)`
-include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
+    @model function beta_model1(n)
+        y = datavar(Float64, n)
 
-## Model definition
-## -------------------------------------------- ##
+        θ ~ Beta(4.0, 8.0)
 
-@model function beta_model1(n)
-    y = datavar(Float64, n)
+        for i in 1:n
+            y[i] ~ Bernoulli(θ)
+        end
 
-    θ ~ Beta(4.0, 8.0)
-
-    for i in 1:n
-        y[i] ~ Bernoulli(θ)
+        return y, θ
     end
 
-    return y, θ
-end
+    @model function beta_model2(n)
+        y = datavar(Float64, n)
 
-@model function beta_model2(n)
-    y = datavar(Float64, n)
+        θ ~ Beta(8.0, 4.0)
 
-    θ ~ Beta(8.0, 4.0)
+        for i in 1:n
+            y[i] ~ Bernoulli(θ)
+        end
 
-    for i in 1:n
-        y[i] ~ Bernoulli(θ)
+        return y, θ
     end
 
-    return y, θ
-end
+    @model function beta_mixture_model(n)
+        y = datavar(Float64, n)
 
-@model function beta_mixture_model(n)
-    y = datavar(Float64, n)
+        selector ~ Bernoulli(0.7)
 
-    selector ~ Bernoulli(0.7)
+        in1 ~ Beta(4.0, 8.0)
+        in2 ~ Beta(8.0, 4.0)
 
-    in1 ~ Beta(4.0, 8.0)
-    in2 ~ Beta(8.0, 4.0)
+        θ ~ Mixture(selector, (in1, in2))
 
-    θ ~ Mixture(selector, (in1, in2))
+        for i in 1:n
+            y[i] ~ Bernoulli(θ)
+        end
 
-    for i in 1:n
-        y[i] ~ Bernoulli(θ)
+        return y, θ
     end
-
-    return y, θ
-end
-
-@testset "Model mixture" begin
     @testset "Check inference results" begin
         ## -------------------------------------------- ##
         ## Data creation
@@ -109,6 +104,4 @@ end
             return p
         end
     end
-end
-
 end

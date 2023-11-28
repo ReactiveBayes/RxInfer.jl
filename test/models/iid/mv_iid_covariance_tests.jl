@@ -1,41 +1,35 @@
-module RxInferModelsMvIIDCovarianceTest
+@testitem "Multivariate IID: Covariance parametrisation" begin
+    using StableRNGs, Plots, BenchmarkTools
 
-using Test, InteractiveUtils
-using RxInfer, BenchmarkTools, Random, Plots, Dates, LinearAlgebra, StableRNGs
+    # `include(test/utiltests.jl)`
+    include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
-# Please use StableRNGs for random number generators
+    @model function mv_iid_inverse_wishart(n, d)
+        m ~ MvNormal(mean = zeros(d), precision = 100 * diageye(d))
+        C ~ InverseWishart(d + 1, diageye(d))
 
-# `include(test/utiltests.jl)`
-include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
+        y = datavar(Vector{Float64}, n)
 
-@model function mv_iid_inverse_wishart(n, d)
-    m ~ MvNormal(mean = zeros(d), precision = 100 * diageye(d))
-    C ~ InverseWishart(d + 1, diageye(d))
-
-    y = datavar(Vector{Float64}, n)
-
-    for i in 1:n
-        y[i] ~ MvNormal(mean = m, covariance = C)
+        for i in 1:n
+            y[i] ~ MvNormal(mean = m, covariance = C)
+        end
     end
-end
 
-@constraints function constraints_mv_iid_inverse_wishart()
-    q(m, C) = q(m)q(C)
-end
+    @constraints function constraints_mv_iid_inverse_wishart()
+        q(m, C) = q(m)q(C)
+    end
 
-function inference_mv_inverse_wishart(data, n, d)
-    return inference(
-        model = mv_iid_inverse_wishart(n, d),
-        data = (y = data,),
-        constraints = constraints_mv_iid_inverse_wishart(),
-        initmarginals = (m = vague(MvNormalMeanCovariance, d), C = vague(InverseWishart, d)),
-        returnvars = KeepLast(),
-        iterations = 10,
-        free_energy = Float64
-    )
-end
-
-@testset "Multivariate IID: Covariance parametrisation" begin
+    function inference_mv_inverse_wishart(data, n, d)
+        return inference(
+            model = mv_iid_inverse_wishart(n, d),
+            data = (y = data,),
+            constraints = constraints_mv_iid_inverse_wishart(),
+            initmarginals = (m = vague(MvNormalMeanCovariance, d), C = vague(InverseWishart, d)),
+            returnvars = KeepLast(),
+            iterations = 10,
+            free_energy = Float64
+        )
+    end
 
     ## Data creation
     rng = StableRNG(123)
@@ -67,6 +61,4 @@ end
     end
 
     @test_benchmark "models" "iid_inverse_wishart" inference_mv_inverse_wishart($data, $n, $d)
-end
-
 end

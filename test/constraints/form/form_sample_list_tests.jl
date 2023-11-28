@@ -1,13 +1,6 @@
-
-module RxInferSampleListFormConstraintTest
-
-using Test
-using RxInfer, LinearAlgebra
-using Random, StableRNGs, DomainSets
-
-import RxInfer: SampleListFormConstraint, is_point_mass_form_constraint, constrain_form
-
-@testset "PointMassFormConstraint" begin
+@testitem "PointMassFormConstraint" begin
+    using DomainSets, StableRNGs, DomainSets, Distributions, Random, LinearAlgebra
+    import RxInfer: SampleListFormConstraint, is_point_mass_form_constraint, constrain_form
     @testset "is_point_mass_form_constraint" begin
         @test !is_point_mass_form_constraint(SampleListFormConstraint(100))
     end
@@ -57,6 +50,4 @@ import RxInfer: SampleListFormConstraint, is_point_mass_form_constraint, constra
             end
         end
     end
-end
-
 end

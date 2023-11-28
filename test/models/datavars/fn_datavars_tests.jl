@@ -1,56 +1,52 @@
-module RxInferModelsDatavarsTest
+@testitem "datavars" begin
+    using StableRNGs
+    # Please use StableRNGs for random number generators
 
-using Test, InteractiveUtils
-using RxInfer, BenchmarkTools, Random, Plots, Dates, LinearAlgebra, StableRNGs
+    include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
-# Please use StableRNGs for random number generators
+    ## Model definition
+    @model function sum_datavars_as_gaussian_mean_1()
+        a = datavar(Float64)
+        b = datavar(Float64)
+        y = datavar(Float64)
 
-include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
+        x ~ Normal(mean = a + b, variance = 1.0)
+        y ~ Normal(mean = x, variance = 1.0)
+    end
 
-## Model definition
-@model function sum_datavars_as_gaussian_mean_1()
-    a = datavar(Float64)
-    b = datavar(Float64)
-    y = datavar(Float64)
+    @model function sum_datavars_as_gaussian_mean_2()
+        a = datavar(Float64)
+        b = datavar(Float64)
+        c = constvar(0.0) # Should not change the result
+        y = datavar(Float64)
 
-    x ~ Normal(mean = a + b, variance = 1.0)
-    y ~ Normal(mean = x, variance = 1.0)
-end
+        x ~ Normal(mean = (a + b) + c, variance = 1.0)
+        y ~ Normal(mean = x, variance = 1.0)
+    end
 
-@model function sum_datavars_as_gaussian_mean_2()
-    a = datavar(Float64)
-    b = datavar(Float64)
-    c = constvar(0.0) # Should not change the result
-    y = datavar(Float64)
+    @model function ratio_datavars_as_gaussian_mean()
+        a = datavar(Float64)
+        b = datavar(Float64)
+        y = datavar(Float64)
 
-    x ~ Normal(mean = (a + b) + c, variance = 1.0)
-    y ~ Normal(mean = x, variance = 1.0)
-end
+        x ~ Normal(mean = a / b, variance = 1.0)
+        y ~ Normal(mean = x, variance = 1.0)
+    end
 
-@model function ratio_datavars_as_gaussian_mean()
-    a = datavar(Float64)
-    b = datavar(Float64)
-    y = datavar(Float64)
+    @model function idx_datavars_as_gaussian_mean()
+        a = datavar(Vector{Float64})
+        b = datavar(Matrix{Float64})
+        y = datavar(Float64)
 
-    x ~ Normal(mean = a / b, variance = 1.0)
-    y ~ Normal(mean = x, variance = 1.0)
-end
+        x ~ Normal(mean = dot(a[1:2], b[1:2, 1]), variance = 1.0)
+        y ~ Normal(mean = x, variance = 1.0)
+    end
 
-@model function idx_datavars_as_gaussian_mean()
-    a = datavar(Vector{Float64})
-    b = datavar(Matrix{Float64})
-    y = datavar(Float64)
+    # Inference function
+    function fn_datavars_inference(modelfn, adata, bdata, ydata)
+        return inference(model = modelfn(), data = (a = adata, b = bdata, y = ydata), free_energy = true)
+    end
 
-    x ~ Normal(mean = dot(a[1:2], b[1:2, 1]), variance = 1.0)
-    y ~ Normal(mean = x, variance = 1.0)
-end
-
-# Inference function
-function fn_datavars_inference(modelfn, adata, bdata, ydata)
-    return inference(model = modelfn(), data = (a = adata, b = bdata, y = ydata), free_energy = true)
-end
-
-@testset "datavars" begin
     adata = 2.0
     bdata = 1.0
     ydata = 0.0
@@ -99,6 +95,4 @@ end
     A_data = [1.0, 2.0, 3.0]
     B_data = [1.0 0.5; 0.5 1.0]
     @test_broken result = fn_datavars_inference(idx_datavars_as_gaussian_mean, A_data, B_data, ydata)
-end
-
 end

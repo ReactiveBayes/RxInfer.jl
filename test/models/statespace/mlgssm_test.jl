@@ -1,41 +1,37 @@
-module RxInferModelsULGSSMTest
+@testitem "Linear Gaussian State Space Model" begin
+    using BenchmarkTools, Random, Plots, Dates, LinearAlgebra, StableRNGs
 
-using Test, InteractiveUtils
-using RxInfer, BenchmarkTools, Random, Plots, Dates, LinearAlgebra, StableRNGs
+    # `include(test/utiltests.jl)`
+    include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
-# `include(test/utiltests.jl)`
-include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
+    ## Model definition
+    @model function multivariate_lgssm_model(n, x0, A, B, Q, P)
 
-## Model definition
-@model function multivariate_lgssm_model(n, x0, A, B, Q, P)
+        # We create constvar references for better efficiency
+        cA = constvar(A)
+        cB = constvar(B)
+        cQ = constvar(Q)
+        cP = constvar(P)
 
-    # We create constvar references for better efficiency
-    cA = constvar(A)
-    cB = constvar(B)
-    cQ = constvar(Q)
-    cP = constvar(P)
+        # `x` is a sequence of hidden states
+        x = randomvar(n)
+        # `y` is a sequence of "clamped" observations
+        y = datavar(Vector{Float64}, n)
 
-    # `x` is a sequence of hidden states
-    x = randomvar(n)
-    # `y` is a sequence of "clamped" observations
-    y = datavar(Vector{Float64}, n)
+        x_prior ~ MvNormal(mean = mean(x0), cov = cov(x0))
+        x_prev = x_prior
 
-    x_prior ~ MvNormal(mean = mean(x0), cov = cov(x0))
-    x_prev = x_prior
-
-    for i in 1:n
-        x[i] ~ MvNormal(mean = cA * x_prev, cov = cQ)
-        y[i] ~ MvNormal(mean = cB * x[i], cov = cP)
-        x_prev = x[i]
+        for i in 1:n
+            x[i] ~ MvNormal(mean = cA * x_prev, cov = cQ)
+            y[i] ~ MvNormal(mean = cB * x[i], cov = cP)
+            x_prev = x[i]
+        end
     end
-end
 
-## Inference definition
-function multivariate_lgssm_inference(data, x0, A, B, Q, P)
-    return inference(model = multivariate_lgssm_model(length(data), x0, A, B, Q, P), data = (y = data,), free_energy = true, options = (limit_stack_depth = 500,))
-end
-
-@testset "Linear Gaussian State Space Model" begin
+    ## Inference definition
+    function multivariate_lgssm_inference(data, x0, A, B, Q, P)
+        return inference(model = multivariate_lgssm_model(length(data), x0, A, B, Q, P), data = (y = data,), free_energy = true, options = (limit_stack_depth = 500,))
+    end
 
     ## Data creation
     function generate_data(rng, A, B, Q, P)
@@ -110,6 +106,4 @@ end
     end
 
     @test_benchmark "models" "mlgssm" multivariate_lgssm_inference($y, $x0, $A, $B, $Q, $P)
-end
-
 end

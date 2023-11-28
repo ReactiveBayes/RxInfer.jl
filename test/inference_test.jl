@@ -1,10 +1,4 @@
-module RxInferInferenceTest
-
-using Test
-using RxInfer
-using Random
-
-@testset "__inference_check_itertype" begin
+@testitem "__inference_check_itertype" begin
     import RxInfer: __inference_check_itertype
 
     @test __inference_check_itertype(:something, nothing) === nothing
@@ -18,7 +12,7 @@ using Random
     @test_throws ErrorException __inference_check_itertype(:something, missing)
 end
 
-@testset "__inference_check_dicttype" begin
+@testitem "__inference_check_dicttype" begin
     import RxInfer: __inference_check_dicttype
 
     @test __inference_check_dicttype(:something, nothing) === nothing
@@ -33,7 +27,7 @@ end
     @test_throws ErrorException __inference_check_dicttype(:something, (missing))
 end
 
-@testset "`@autoupdates` macro" begin
+@testitem "`@autoupdates` macro" begin
     function somefunction(something)
         return nothing
     end
@@ -143,7 +137,7 @@ end
     end
 end
 
-@testset "Static inference with `inference`" begin
+@testitem "Static inference with `inference`" begin
 
     # A simple model for testing that resembles a simple kalman filter with
     # random walk state transition and unknown observational noise
@@ -311,7 +305,7 @@ end
     end
 end
 
-@testset "Test warn argument in `inference()`" begin
+@testitem "Test warn argument in `inference()`" begin
     @testset "Test warning for addons" begin
 
         #Add a new case for testing warning of addons
@@ -406,7 +400,7 @@ end
     end
 end
 
-@testset "Reactive inference with `rxinference` for test model #1" begin
+@testitem "Reactive inference with `rxinference` for test model #1" begin
 
     # A simple model for testing that resembles a simple kalman filter with
     # random walk state transition and unknown observational noise
@@ -815,7 +809,7 @@ end
     end
 end
 
-@testset "Predictions functionality" begin
+@testitem "Predictions functionality" begin
 
     # test #1 (array with missing + predictvars)
     data = (y = [1.0, -500.0, missing, 100.0],)
@@ -1031,6 +1025,4 @@ end
     result = inference(model = coin_model3(length(dataset)), predictvars = (y = KeepLast(),))
 
     @test all(result.predictions[:y] .== Bernoulli(mean(Beta(1.0, 1.0))))
-end
-
 end
