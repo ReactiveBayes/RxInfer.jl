@@ -1,72 +1,69 @@
-module ReactiveMPModelsNonLinearDynamicsTest
+@testitem "Non linear dynamics" begin
+    using Distributions
+    using BenchmarkTools, Plots, StableRNGs, Optimisers, Random, Dates
 
-using Test, InteractiveUtils
-using RxInfer, Distributions
-using BenchmarkTools, Random, Plots, Dates, StableRNGs, Optimisers
+    # Please use StableRNGs for random number generators
 
-# Please use StableRNGs for random number generators
+    # `include(test/utiltests.jl)`
+    include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
-# `include(test/utiltests.jl)`
-include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
-
-## Model definition
-## -------------------------------------------- ##
-sensor_location = 53
-P = 5
-sensor_var = 5
-function f(z)
-    (z - sensor_location)^2
-end
-
-@model function non_linear_dynamics(T)
-    z = randomvar(T)
-    x = randomvar(T)
-    y = datavar(Float64, T)
-
-    τ ~ GammaShapeRate(1.0, 1.0e-12)
-    θ ~ GammaShapeRate(1.0, 1.0e-12)
-
-    z[1] ~ NormalMeanPrecision(0, τ)
-    x[1] ~ f(z[1])
-    y[1] ~ NormalMeanPrecision(x[1], θ)
-
-    for t in 2:T
-        z[t] ~ NormalMeanPrecision(z[t - 1] + 1, τ)
-        x[t] ~ f(z[t])
-        y[t] ~ NormalMeanPrecision(x[t], θ)
+    ## Model definition
+    ## -------------------------------------------- ##
+    sensor_location = 53
+    P = 5
+    sensor_var = 5
+    function f(z)
+        (z - sensor_location)^2
     end
 
-    return z, x, y
-end
+    @model function non_linear_dynamics(T)
+        z = randomvar(T)
+        x = randomvar(T)
+        y = datavar(Float64, T)
 
-constraints = @constraints begin
-    q(z, x, τ, θ) = q(z)q(x)q(τ)q(θ)
-end
+        τ ~ GammaShapeRate(1.0, 1.0e-12)
+        θ ~ GammaShapeRate(1.0, 1.0e-12)
 
-@meta function model_meta(rng, n_iterations, n_samples, learning_rate)
-    f() -> CVI(rng, n_iterations, n_samples, Optimisers.Descent(learning_rate))
-end
+        z[1] ~ NormalMeanPrecision(0, τ)
+        x[1] ~ f(z[1])
+        y[1] ~ NormalMeanPrecision(x[1], θ)
 
-## -------------------------------------------- ##
-## Inference definition
-## -------------------------------------------- ##
-function inference_cvi(transformed, rng, iterations)
-    T = length(transformed)
+        for t in 2:T
+            z[t] ~ NormalMeanPrecision(z[t - 1] + 1, τ)
+            x[t] ~ f(z[t])
+            y[t] ~ NormalMeanPrecision(x[t], θ)
+        end
 
-    return inference(
-        model = non_linear_dynamics(T),
-        data = (y = transformed,),
-        iterations = iterations,
-        free_energy = true,
-        returnvars = (z = KeepLast(),),
-        constraints = constraints,
-        meta = model_meta(rng, 600, 600, 0.01),
-        initmessages = (z = NormalMeanVariance(0, P),),
-        initmarginals = (z = NormalMeanVariance(0, P), τ = GammaShapeRate(1.0, 1.0e-12), θ = GammaShapeRate(1.0, 1.0e-12))
-    )
-end
+        return z, x, y
+    end
 
-@testset "Non linear dynamics" begin
+    constraints = @constraints begin
+        q(z, x, τ, θ) = q(z)q(x)q(τ)q(θ)
+    end
+
+    @meta function model_meta(rng, n_iterations, n_samples, learning_rate)
+        f() -> CVI(rng, n_iterations, n_samples, Optimisers.Descent(learning_rate))
+    end
+
+    ## -------------------------------------------- ##
+    ## Inference definition
+    ## -------------------------------------------- ##
+    function inference_cvi(transformed, rng, iterations)
+        T = length(transformed)
+
+        return inference(
+            model = non_linear_dynamics(T),
+            data = (y = transformed,),
+            iterations = iterations,
+            free_energy = true,
+            returnvars = (z = KeepLast(),),
+            constraints = constraints,
+            meta = model_meta(rng, 600, 600, 0.01),
+            initmessages = (z = NormalMeanVariance(0, P),),
+            initmarginals = (z = NormalMeanVariance(0, P), τ = GammaShapeRate(1.0, 1.0e-12), θ = GammaShapeRate(1.0, 1.0e-12))
+        )
+    end
+
     @testset "Use case #1" begin
         ## -------------------------------------------- ##
         ## Data creation
@@ -122,6 +119,4 @@ end
 
         @test_benchmark "models" "cvi" inference_cvi($transformed, $rng, 110)
     end
-end
-
 end

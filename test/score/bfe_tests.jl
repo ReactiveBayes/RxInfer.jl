@@ -1,12 +1,7 @@
-module RxInferScoreTest
-
-using Test, Random
-using RxInfer
-
-import RxInfer: get_skip_strategy, get_scheduler, apply_diagnostic_check
-import ReactiveMP: CountingReal, FactorNodeCreationOptions, make_node, activate!
-
-@testset "BetheFreeEnergy score tests" begin
+@testitem "BetheFreeEnergy score tests" begin
+    using Random
+    import RxInfer: get_skip_strategy, get_scheduler, apply_diagnostic_check
+    import ReactiveMP: CountingReal, FactorNodeCreationOptions, make_node, activate!
     @testset "Diagnostic check tests" begin
         @testset "`BetheFreeEnergyCheckInfs` diagnostic" begin
             stream = Subject(Any)
@@ -95,6 +90,4 @@ import ReactiveMP: CountingReal, FactorNodeCreationOptions, make_node, activate!
             @test length(events) === 4
         end
     end
-end
-
 end

@@ -1,12 +1,9 @@
-module RxInferScoreActorTest
+@testitem "ScoreActor tests" begin
+    using Random
+    using RxInfer
 
-using Test, Random
-using RxInfer
-
-import RxInfer: ScoreActor, score_snapshot, score_snapshot_final, score_snapshot_iterations
-import Rocket: release!
-
-@testset "ScoreActor tests" begin
+    import RxInfer: ScoreActor, score_snapshot, score_snapshot_final, score_snapshot_iterations
+    import Rocket: release!
     @testset "Basic functionality #1" begin
         actor = ScoreActor(Float64, 10, 1)
 
@@ -174,6 +171,4 @@ import Rocket: release!
         @test length(aggregated) === 10
         @test aggregated == 21:30
     end
-end
-
 end
