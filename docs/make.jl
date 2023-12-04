@@ -111,6 +111,7 @@ makedocs(;
         "User guide" => [
             # "Background: variational inference" => "manuals/background.md",
             "Getting started"           => "manuals/getting-started.md",
+            "RxInfer.jl vs. Others"     => "manuals/comparison.md",
             "Model specification"       => "manuals/model-specification.md",
             "Constraints specification" => "manuals/constraints-specification.md",
             "Meta specification"        => "manuals/meta-specification.md",
@@ -129,8 +130,13 @@ makedocs(;
             "Overview" => "examples/overview.md", # This must be auto-generated with `make examples`
             ExamplesPages...
         ],
-        "Contributing" =>
-            ["Overview" => "contributing/overview.md", "Adding a new example" => "contributing/new-example.md", "Publishing a new release" => "contributing/new-release.md"]
+        "Contributing" => [
+            "Overview" => "contributing/overview.md", 
+            "Contributing to the documentation" => "contributing/new-documentation.md",
+            "Contributing to the dependencies" => "contributing/new-package.md", 
+            "Contributing to the examples" => "contributing/new-example.md", 
+            "Publishing a new release" => "contributing/new-release.md"
+        ]
     ]
 )
 

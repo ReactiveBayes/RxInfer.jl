@@ -1,8 +1,8 @@
 
 import ReactiveMP: is_point_mass_form_constraint, default_form_check_strategy, default_prod_constraint, make_form_constraint, constrain_form
+import DomainSets: Domain, infimum, supremum
 
-using Distributions
-using Optim
+using BayesBase, Distributions, ExponentialFamily, Optim
 
 """
     PointMassFormConstraint
@@ -49,10 +49,8 @@ end
 # Traits 
 - `is_point_mass_form_constraint` = `true`
 - `default_form_check_strategy`   = `FormConstraintCheckLast()`
-- `default_prod_constraint`       = `ProdGeneric()`
+- `default_prod_constraint`       = `GenericProd()`
 - `make_form_constraint`          = `PointMass` (for use in `@constraints` macro)
-
-See also: `ReactiveMP.constrain_form`, `ReactiveMP.DistProduct`
 """
 struct PointMassFormConstraint{F, P, B} <: AbstractFormConstraint
     optimizer      :: F
@@ -72,7 +70,7 @@ ReactiveMP.is_point_mass_form_constraint(::PointMassFormConstraint) = true
 
 ReactiveMP.default_form_check_strategy(::PointMassFormConstraint) = FormConstraintCheckLast()
 
-ReactiveMP.default_prod_constraint(::PointMassFormConstraint) = ProdGeneric()
+ReactiveMP.default_prod_constraint(::PointMassFormConstraint) = GenericProd()
 
 ReactiveMP.make_form_constraint(::Type{<:PointMass}, args...; kwargs...) = PointMassFormConstraint(args...; kwargs...)
 
@@ -118,11 +116,12 @@ function default_point_mass_form_constraint_optimizer(::Type{Univariate}, ::Type
 end
 
 function default_point_mass_form_constraint_boundaries(::Type{Univariate}, ::Type{Continuous}, constraint::PointMassFormConstraint, distribution)
-    support = Distributions.support(distribution)
-    lower   = Distributions.minimum(support)
-    upper   = Distributions.maximum(support)
-    return lower, upper
+    return __default_univariate_boundaries(support(distribution))
 end
+
+__default_univariate_boundaries(interval::AbstractRange) = (minimum(interval), maximum(interval))
+__default_univariate_boundaries(interval::Distributions.RealInterval) = (minimum(interval), maximum(interval))
+__default_univariate_boundaries(domain::Domain) = (infimum(domain), supremum(domain))
 
 function default_point_mass_form_constraint_starting_point(::Type{Univariate}, ::Type{Continuous}, constraint::PointMassFormConstraint, distribution)
     lower, upper = call_boundaries(constraint, distribution)

@@ -5,7 +5,7 @@ return (
     categories = (
         basic_examples = (
             title = "Basic examples",
-            description = "Basic examples contain ``Hello World!`` of Bayesian inference in RxInfer.",
+            description = "Basic examples contain \"Hello World!\" of Bayesian inference in RxInfer.",
         ),
         advanced_examples = (
             title = "Advanced examples",
@@ -28,15 +28,22 @@ return (
             category = :basic_examples
         ),
         (
-            filename = "Bayesian Linear Regression.ipynb",
-            title = "Bayesian Linear Regression",
-            description = "An example of Bayesian linear regression.",
+            filename = "Bayesian Linear Regression Tutorial.ipynb",
+            title = "Bayesian Linear Regression Tutorial",
+            description = "An extensive tutorial on Bayesian linear regression with RxInfer with a lot of examples, including multivariate and hierarchical linear regression.",
             category = :basic_examples
         ),
         (
             filename = "Kalman filtering and smoothing.ipynb",
             title = "Kalman filtering and smoothing",
             description = "In this demo, we are interested in Bayesian state estimation in different types of State-Space Models, including linear, nonlinear, and cases with missing observations",
+            category = :basic_examples
+        ),
+
+        (
+            filename = "Predicting Bike Rental Demand.ipynb",
+            title = "Predicting Bike Rental Demand",
+            description = "An illustrative guide to implementing prediction mechanisms within RxInfer.jl, using bike rental demand forecasting as a contextual example.",
             category = :basic_examples
         ),
 
