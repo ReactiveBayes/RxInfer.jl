@@ -154,6 +154,7 @@ Base.push!(::FactorGraphModel, ::Nothing) = nothing
 
 Base.push!(model::FactorGraphModel, node::AbstractFactorNode)   = push!(getnodes(model), node)
 Base.push!(model::FactorGraphModel, variable::AbstractVariable) = push!(getvariables(model), variable)
+Base.push!(model::FactorGraphModel, variable::ReactiveMP.DataVariable) = push!(ReactiveMP.MyImplementation(), getvariables(model), variable, variable.collection_type)
 
 Base.push!(model::FactorGraphModel, nodes::AbstractArray{N}) where {N <: AbstractFactorNode}   = push!(getnodes(model), nodes)
 Base.push!(model::FactorGraphModel, variables::AbstractArray{V}) where {V <: AbstractVariable} = push!(getvariables(model), variables)
@@ -316,17 +317,14 @@ function __check_variable_existence(model::FactorGraphModel, name::Symbol)
 end
 
 function ReactiveMP.randomvar(model::FactorGraphModel, options::RandomVariableCreationOptions, name::Symbol, args...)
-    __check_variable_existence(model, name)
     return push!(model, randomvar(randomvar_resolve_options(model, options, name), name, args...))
 end
 
 function ReactiveMP.datavar(model::FactorGraphModel, options::DataVariableCreationOptions, name::Symbol, args...)
-    __check_variable_existence(model, name)
-    return push!(model, datavar(options, name, args...))
+    return push!(model, ReactiveMP.datavar(options, name, args...))
 end
 
 function ReactiveMP.constvar(model::FactorGraphModel, name::Symbol, args...)
-    __check_variable_existence(model, name)
     return push!(model, constvar(name, args...))
 end
 

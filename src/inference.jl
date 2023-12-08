@@ -517,7 +517,7 @@ See also: [`InferenceResult`](@ref), [`rxinference`](@ref)
 """
 function inference(;
     # `model`: specifies a model generator, with the help of the `Model` function
-    model::ModelGenerator,
+    model::FactorGraphModel,
     # NamedTuple or Dict with data, optional if predictvars are specified
     data = nothing,
     # NamedTuple or Dict with initial marginals, optional, defaults to empty
@@ -595,7 +595,8 @@ function inference(;
     end
 
     inference_invoke_callback(callbacks, :before_model_creation)
-    fmodel, freturval = create_model(model, constraints = constraints, meta = meta, options = _options)
+    fmodel = model
+    freturval = nothing
     inference_invoke_callback(callbacks, :after_model_creation, fmodel, freturval)
     vardict = getvardict(fmodel)
 
@@ -687,7 +688,7 @@ function inference(;
 
     potential_error = nothing
     executed_iterations = 0
-
+    @show "start inference"
     try
         on_marginal_update = inference_get_callback(callbacks, :on_marginal_update)
         subscriptions_rv   = Dict(variable => subscribe!(obtain_marginal(vardict[variable]) |> ensure_update(fmodel, on_marginal_update, variable, updates[variable]), actor) for (variable, actor) in pairs(actors_rv))
