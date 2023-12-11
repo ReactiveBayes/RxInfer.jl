@@ -1410,7 +1410,7 @@ function __rxinference(;
 end
 
 function rxinference(; kwargs)
-    @warn "The `rxinference` function is deprecated and will be removed in the future.  Use `infer` with autoupdates keyword argument instead."
+    @warn "The `rxinference` function is deprecated and will be removed in the future.  Use `infer` with the `autoupdates` keyword argument instead."
 
     infer(; kwargs...)
 end
