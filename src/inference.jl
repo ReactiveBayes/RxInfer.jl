@@ -1577,7 +1577,7 @@ infer(...
 
 `returnvars` specifies latent variables of interest and their posterior updates. Its behavior depends on the inference type: streamline or batch.
 
-For batch inference:
+**Batch inference:**
 - Accepts a `NamedTuple` or `Dict` of return variable specifications.
 - Two specifications available: `KeepLast` (saves the last update) and `KeepEach` (saves all updates).
 - When `iterations` is set, returns every update for each iteration (equivalent to `KeepEach()`); if `nothing`, saves the last update (equivalent to `KeepLast()`).
@@ -1604,7 +1604,7 @@ result = infer(
 )
 ```
 
-For streamline inference:
+**Streamline inference:**
 - For each symbol in `returnvars`, `infer` creates an observable stream of posterior updates.
 - Agents can subscribe to these updates using the `Rocket.jl` package.
 
@@ -1686,11 +1686,9 @@ Specifies the buffer size for the updates history both for the `historyvars` and
 
 Specifies the number of variational (or loopy belief propagation) iterations. By default set to `nothing`, which is equivalent of doing 1 iteration. 
 
-Certainly, here's a more concise explanation for the `free_energy` setting in both streamline and batch versions:
-
 - ### `free_energy`
 
-**Streamline Version:**
+**Streamline inference:**
 
 Specifies if the `infer` function should create an observable stream of Bethe Free Energy (BFE) values, computed at each VMP iteration.
 
@@ -1699,7 +1697,7 @@ Specifies if the `infer` function should create an observable stream of Bethe Fr
   - `engine.free_energy_final_only_history`: BFE history of values computed in the last VMP iterations for each observation.
   - `engine.free_energy_raw_history`: Raw BFE history.
 
-**Batch Version:**
+**Batch inference:**
 
 Specifies if the `infer` function should return Bethe Free Energy (BFE) values.
 
