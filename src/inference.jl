@@ -1496,7 +1496,7 @@ For more information about some of the arguments, please check below.
 - `postprocess = DefaultPostprocess()`: inference results postprocessing step, optional, see below for more info
 - `events = nothing`: inference cycle events, optional, see below for more info (exclusive for streamline inference)
 - `uselock = false`: specifies either to use the lock structure for the inference or not, if set to true uses `Base.Threads.SpinLock`. Accepts custom `AbstractLock`. (exclusive for streamline inference)
-- `autostart = true`: specifies whether to call `RxInfer.start` on the created engine automatically or not (exclusive for streamline inference) (exclusive for streamline inference)
+- `autostart = true`: specifies whether to call `RxInfer.start` on the created engine automatically or not (exclusive for streamline inference)
 - `warn = true`: enables/disables warnings
 
 ## Note on NamedTuples
