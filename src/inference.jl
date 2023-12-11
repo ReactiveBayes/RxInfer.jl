@@ -1686,16 +1686,24 @@ Specifies the buffer size for the updates history both for the `historyvars` and
 
 Specifies the number of variational (or loopy belief propagation) iterations. By default set to `nothing`, which is equivalent of doing 1 iteration. 
 
-- ### `free_energy` 
+Certainly, here's a more concise explanation for the `free_energy` setting in both streamline and batch versions:
 
-This setting specifies whenever the `infer` function should create an observable of Bethe Free Energy (BFE) values. The BFE observable returns a new computed value for each VMP iteration.
-Note, however, that it may be not possible to compute BFE values for every model. If `free_energy = true` and `keephistory > 0` the engine exposes extra fields to access the history of the Bethe free energy updates:
+- ### `free_energy`
 
-- `engine.free_energy_history`: Returns a free energy history averaged over the VMP iterations
-- `engine.free_energy_final_only_history`: Returns a free energy history of values computed on last VMP iterations for every observation
-- `engine.free_energy_raw_history`: Returns a raw free energy history
+**Streamline Version:**
 
-Additionally, the argument may accept a floating point type, instead of a `Bool` value. Using this option, e.g.`Float64`, improves performance of Bethe Free Energy computation, but restricts using automatic differentiation packages.
+Specifies if the `infer` function should create an observable stream of Bethe Free Energy (BFE) values, computed at each VMP iteration.
+
+- When `free_energy = true` and `keephistory > 0`, additional fields are exposed in the engine for accessing the history of BFE updates.
+  - `engine.free_energy_history`: Averaged BFE history over VMP iterations.
+  - `engine.free_energy_final_only_history`: BFE history of values computed in the last VMP iterations for each observation.
+  - `engine.free_energy_raw_history`: Raw BFE history.
+
+**Batch Version:**
+
+Specifies if the `infer` function should return Bethe Free Energy (BFE) values.
+
+- Optionally accepts a floating-point type (e.g., `Float64`) for improved BFE computation performance, but restricts the use of automatic differentiation packages.
 
 - ### `free_energy_diagnostics`
 
