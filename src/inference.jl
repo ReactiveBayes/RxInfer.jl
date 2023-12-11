@@ -1575,8 +1575,40 @@ infer(...
 
 - ### `returnvars`
 
-`returnvars` accepts a tuple of symbols and specifies the latent variables of interests. For each symbol in the `returnvars` specification the `rxinference` function will prepare an observable stream (see `Rocket.jl`) of posterior updates. An agent may subscribe on the new posteriors events and perform some actions.
-For example:
+`returnvars` specifies latent variables of interest and their posterior updates. Its behavior depends on the inference type: streamline or batch.
+
+For batch inference:
+- Accepts a `NamedTuple` or `Dict` of return variable specifications.
+- Two specifications available: `KeepLast` (saves the last update) and `KeepEach` (saves all updates).
+- When `iterations` is set, returns every update for each iteration (equivalent to `KeepEach()`); if `nothing`, saves the last update (equivalent to `KeepLast()`).
+- Use `iterations = 1` to force `KeepEach()` for a single iteration or set `returnvars = KeepEach()` manually.
+
+Example:
+
+```julia
+result = infer(
+    ...,
+    returnvars = (
+        x = KeepLast(),
+        τ = KeepEach()
+    )
+)
+```
+
+Shortcut for setting the same option for all variables:
+
+```julia
+result = infer(
+    ...,
+    returnvars = KeepLast()  # or KeepEach()
+)
+```
+
+For streamline inference:
+- For each symbol in `returnvars`, `infer` creates an observable stream of posterior updates.
+- Agents can subscribe to these updates using the `Rocket.jl` package.
+
+Example:
 
 ```julia
 engine = infer(
@@ -1585,6 +1617,7 @@ engine = infer(
     returnvars = (:x, :τ),
     autostart  = false
 )
+```
 
 - ### `predictvars`
 
