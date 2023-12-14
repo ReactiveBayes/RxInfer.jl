@@ -1,7 +1,8 @@
 export KeepEach, KeepLast
 export DefaultPostprocess, UnpackMarginalPostprocess, NoopPostprocess
-export inference, InferenceResult
-export rxinference, @autoupdates, RxInferenceEngine, RxInferenceEvent
+export infer, inference, rxinference
+export InferenceResult
+export @autoupdates, RxInferenceEngine, RxInferenceEvent
 
 import DataStructures: CircularBuffer
 
@@ -128,13 +129,13 @@ function __inference_check_itertype(keyword::Symbol, ::T) where {T}
           """)
 end
 
-function __inference_check_dicttype(::Symbol, ::Union{Nothing, NamedTuple, Dict})
+function __infer_check_dicttype(::Symbol, ::Union{Nothing, NamedTuple, Dict})
     # This function check is the second argument is of type `Nothing`, `NamedTuple` or `Dict`. 
     # Does nothing is true, throws an error otherwise (see the second method below)
     nothing
 end
 
-function __inference_check_dicttype(keyword::Symbol, ::T) where {T}
+function __infer_check_dicttype(keyword::Symbol, ::T) where {T}
     error("""
           Keyword argument `$(keyword)` expects either `Dict` or `NamedTuple` as an input, but a value of type `$(T)` has been used.
           If you specify a `NamedTuple` with a single entry - make sure you put a trailing comma at then end, e.g. `(x = something, )`. 
@@ -182,17 +183,17 @@ __inference_postprocess(::Nothing, result) = result
 """
     InferenceResult
 
-This structure is used as a return value from the [`inference`](@ref) function. 
+This structure is used as a return value from the [`infer`](@ref) function. 
 
 # Public Fields
 
-- `posteriors`: `Dict` or `NamedTuple` of 'random variable' - 'posterior' pairs. See the `returnvars` argument for [`inference`](@ref).
-- `free_energy`: (optional) An array of Bethe Free Energy values per VMP iteration. See the `free_energy` argument for [`inference`](@ref).
+- `posteriors`: `Dict` or `NamedTuple` of 'random variable' - 'posterior' pairs. See the `returnvars` argument for [`infer`](@ref).
+- `free_energy`: (optional) An array of Bethe Free Energy values per VMP iteration. See the `free_energy` argument for [`infer`](@ref).
 - `model`: `FactorGraphModel` object reference.
 - `returnval`: Return value from executed `@model`.
-- `error`: (optional) A reference to an exception, that might have occurred during the inference. See the `catch_exception` argument for [`inference`](@ref).
+- `error`: (optional) A reference to an exception, that might have occurred during the inference. See the `catch_exception` argument for [`infer`](@ref).
 
-See also: [`inference`](@ref)
+See also: [`infer`](@ref)
 """
 struct InferenceResult{P, A, F, M, R, E}
     posteriors  :: P
@@ -278,244 +279,7 @@ inference_get_callback(::Nothing, name) = nothing
 unwrap_free_energy_option(option::Bool)                      = (option, Real, CountingReal)
 unwrap_free_energy_option(option::Type{T}) where {T <: Real} = (true, T, CountingReal{T})
 
-"""
-    inference(
-        model; 
-        data,
-        initmarginals           = nothing,
-        initmessages            = nothing,
-        constraints             = nothing,
-        meta                    = nothing,
-        options                 = nothing,
-        returnvars              = nothing, 
-        predictvars             = nothing, 
-        iterations              = nothing,
-        free_energy             = false,
-        free_energy_diagnostics = BetheFreeEnergyDefaultChecks,
-        showprogress            = false,
-        callbacks               = nothing,
-        addons                  = nothing,
-        postprocess             = DefaultPostprocess()
-    )
-
-This function provides a generic way to perform probabilistic inference in RxInfer.jl. Returns `InferenceResult`.
-
-## Arguments
-
-For more information about some of the arguments, please check below.
-
-- `model`: specifies a model generator, required
-- `data`: `NamedTuple` or `Dict` with data, required
-- `initmarginals = nothing`: `NamedTuple` or `Dict` with initial marginals, optional
-- `initmessages = nothing`: `NamedTuple` or `Dict` with initial messages, optional
-- `constraints = nothing`: constraints specification object, optional, see `@constraints`
-- `meta  = nothing`: meta specification object, optional, may be required for some models, see `@meta`
-- `options = nothing`: model creation options, optional, see `ModelInferenceOptions`
-- `returnvars = nothing`: return structure info, optional, defaults to return everything at each iteration, see below for more information
-- `predictvars = nothing`: return structure info, optional, see below for more information
-- `iterations = nothing`: number of iterations, optional, defaults to `nothing`, the inference engine does not distinguish between variational message passing or Loopy belief propagation or expectation propagation iterations, see below for more information
-- `free_energy = false`: compute the Bethe free energy, optional, defaults to false. Can be passed a floating point type, e.g. `Float64`, for better efficiency, but disables automatic differentiation packages, such as ForwardDiff.jl
-- `free_energy_diagnostics = BetheFreeEnergyDefaultChecks`: free energy diagnostic checks, optional, by default checks for possible `NaN`s and `Inf`s. `nothing` disables all checks.
-- `showprogress = false`: show progress module, optional, defaults to false
-- `callbacks = nothing`: inference cycle callbacks, optional, see below for more info
-- `addons = nothing`: inject and send extra computation information along messages, see below for more info
-- `postprocess = DefaultPostprocess()`: inference results postprocessing step, optional, see below for more info
-- `warn = true`: enables/disables warnings
-
-## Note on NamedTuples
-
-When passing `NamedTuple` as a value for some argument, make sure you use a trailing comma for `NamedTuple`s with a single entry. The reason is that Julia treats `returnvars = (x = KeepLast())` and `returnvars = (x = KeepLast(), )` expressions differently. This first expression creates (or **overwrites!**) new local/global variable named `x` with contents `KeepLast()`. The second expression (note trailing comma) creates `NamedTuple` with `x` as a key and `KeepLast()` as a value assigned for this key.
-
-## Extended information about some of the arguments
-
-- ### `model`
-
-The `model` argument accepts a `ModelGenerator` as its input. The easiest way to create the `ModelGenerator` is to use the `@model` macro. 
-For example:
-
-```julia
-@model function coin_toss(some_argument, some_keyword_argument = 3)
-   ...
-end
-
-result = inference(
-    model = coin_toss(some_argument; some_keyword_argument = 3)
-)
-```
-
-**Note**: The `model` keyword argument does not accept a `FactorGraphModel` instance as a value, as it needs to inject `constraints` and `meta` during the inference procedure.
-
-- ### `data`
-
-The `data` keyword argument must be a `NamedTuple` (or `Dict`) where keys (of `Symbol` type) correspond to all `datavar`s defined in the model specification. For example, if a model defines `x = datavar(Float64)` the 
-`data` field must have an `:x` key (of `Symbol` type) which holds a value of type `Float64`. The values in the `data` must have the exact same shape as the `datavar` container. In other words, if a model defines `x = datavar(Float64, n)` then 
-`data[:x]` must provide a container with length `n` and with elements of type `Float64`.
-
-**Note**: The behavior of the `data` keyword argument is different from that which is used in the `rxinference` function.
-
-- ### `initmarginals`
-
-For specific types of inference algorithms, such as variational message passing, it might be required to initialize (some of) the marginals before running the inference procedure in order to break the dependency loop. If this is not done, the inference algorithm will not be executed due to the lack of information and message and/or marginals will not be updated. In order to specify these initial marginals, you can use the `initmarginals` argument, such as
-```julia
-inference(...
-    initmarginals = (
-        # initialize the marginal distribution of x as a vague Normal distribution
-        # if x is a vector, then it simply uses the same value for all elements
-        # However, it is also possible to provide a vector of distributions to set each element individually 
-        x = vague(NormalMeanPrecision),  
-    ),
-)
-```
-This argument needs to be a named tuple, i.e. `initmarginals = (a = ..., )`, or dictionary.
-
-- ### `initmessages`
-
-For specific types of inference algorithms, such as loopy belief propagation or expectation propagation, it might be required to initialize (some of) the messages before running the inference procedure in order to break the dependency loop. If this is not done, the inference algorithm will not be executed due to the lack of information and message and/or marginals will not be updated. In order to specify these initial messages, you can use the `initmessages` argument, such as
-```julia
-inference(...
-    initmessages = (
-        # initialize the messages distribution of x as a vague Normal distribution
-        # if x is a vector, then it simply uses the same value for all elements
-        # However, it is also possible to provide a vector of distributions to set each element individually 
-        x = vague(NormalMeanPrecision),  
-    ),
-)
-```
-This argument needs to be a named tuple, i.e. `initmessages = (a = ..., )`, or dictionary.
-
-- ### `options`
-
-- `limit_stack_depth`: limits the stack depth for computing messages, helps with `StackOverflowError` for large models, but reduces the performance of the inference backend. Accepts integer as an argument that specifies the maximum number of recursive depth. Lower is better for stack overflow error, but worse for performance.
-- `pipeline`: changes the default pipeline for each factor node in the graph
-- `global_reactive_scheduler`: changes the scheduler of reactive streams, see Rocket.jl for more info, defaults to no scheduler
-
-- ### `returnvars`
-
-`returnvars` specifies the variables of interests and the amount of information to return about their posterior updates. 
-
-`returnvars` accepts a `NamedTuple` or `Dict` or return var specification. There are two specifications:
-- `KeepLast`: saves the last update for a variable, ignoring any intermediate results during iterations
-- `KeepEach`: saves all updates for a variable for all iterations
-
-Note: if `iterations` are specified as a number, the `inference` function tracks and returns every update for each iteration for every random variable in the model (equivalent to `KeepEach()`).
-If number of iterations is set to `nothing`, the `inference` function saves the 'last' (and the only one) update for every random variable in the model (equivalent to `KeepLast()`). 
-Use `iterations = 1` to force `KeepEach()` setting when number of iterations is equal to `1` or set `returnvars = KeepEach()` manually.
-
-Example: 
-
-```julia
-result = inference(
-    ...,
-    returnvars = (
-        x = KeepLast(),
-        τ = KeepEach()
-    )
-)
-```
-
-It is also possible to set either `returnvars = KeepLast()` or `returnvars = KeepEach()` that acts as an alias and sets the given option for __all__ random variables in the model.
-
-# Example: 
-
-```julia
-result = inference(
-    ...,
-    returnvars = KeepLast()
-)
-```
-
-- ### `predictvars`
-
-`predictvars` specifies the variables which should be predicted. In the model definition these variables are specified
-as datavars, although they should not be passed inside data argument.
-
-Similar to `returnvars`, `predictvars` accepts a `NamedTuple` or `Dict`. There are two specifications:
-- `KeepLast`: saves the last update for a variable, ignoring any intermediate results during iterations
-- `KeepEach`: saves all updates for a variable for all iterations
-
-Example: 
-
-```julia
-result = inference(
-    ...,
-    predictvars = (
-        o = KeepLast(),
-        τ = KeepEach()
-    )
-)
-```
-
-- ### `iterations`
-
-Specifies the number of variational (or loopy belief propagation) iterations. By default set to `nothing`, which is equivalent of doing 1 iteration. 
-
-- ### `free_energy` 
-
-This setting specifies whenever the `inference` function should return Bethe Free Energy (BFE) values. 
-Note, however, that it may be not possible to compute BFE values for every model. 
-
-Additionally, the argument may accept a floating point type, instead of a `Bool` value. Using his option, e.g.`Float64`, improves performance of Bethe Free Energy computation, but restricts using automatic differentiation packages.
-
-- ### `free_energy_diagnostics`
-
-This settings specifies either a single or a tuple of diagnostic checks for Bethe Free Energy values stream. By default checks for `NaN`s and `Inf`s. See also [`BetheFreeEnergyCheckNaNs`](@ref) and [`BetheFreeEnergyCheckInfs`](@ref).
-Pass `nothing` to disable any checks.
-
-- ### `callbacks`
-
-The inference function has its own lifecycle. The user is free to provide some (or none) of the callbacks to inject some extra logging or other procedures in the inference function, e.g.
-
-```julia
-result = inference(
-    ...,
-    callbacks = (
-        on_marginal_update = (model, name, update) -> println("\$(name) has been updated: \$(update)"),
-        after_inference    = (args...) -> println("Inference has been completed")
-    )
-)
-```
-
-
-The `callbacks` keyword argument accepts a named-tuple of 'name = callback' pairs. 
-The list of all possible callbacks and their arguments is present below:
-
-- `on_marginal_update`:    args: (model::FactorGraphModel, name::Symbol, update)
-- `before_model_creation`: args: ()
-- `after_model_creation`:  args: (model::FactorGraphModel, returnval)
-- `before_inference`:      args: (model::FactorGraphModel)
-- `before_iteration`:      args: (model::FactorGraphModel, iteration::Int)::Bool
-- `before_data_update`:    args: (model::FactorGraphModel, data)
-- `after_data_update`:     args: (model::FactorGraphModel, data)
-- `after_iteration`:       args: (model::FactorGraphModel, iteration::Int)::Bool
-- `after_inference`:       args: (model::FactorGraphModel)
-
-`before_iteration` and `after_iteration` callbacks are allowed to return `true/false` value.
-`true` indicates that iterations must be halted and no further inference should be made.
-
-- ### `addons`
-
-The `addons` field extends the default message computation rules with some extra information, e.g. computing log-scaling factors of messages or saving debug-information.
-Accepts a single addon or a tuple of addons. If set, replaces the corresponding setting in the `options`. Automatically changes the default value of the `postprocess` argument to `NoopPostprocess`.
- 
-- ### `postprocess`
-
-The `postprocess` keyword argument controls whether the inference results must be modified in some way before exiting the `inference` function.
-By default, the inference function uses the `DefaultPostprocess` strategy, which by default removes the `Marginal` wrapper type from the results.
-Change this setting to `NoopPostprocess` if you would like to keep the `Marginal` wrapper type, which might be useful in the combination with the `addons` argument.
-If the `addons` argument has been used, automatically changes the default strategy value to `NoopPostprocess`.
-
-- ### `catch_exception`
-
-The `catch_exception` keyword argument specifies whether exceptions during the inference procedure should be caught in the `error` field of the 
-result. By default, if exception occurs during the inference procedure the result will be lost. Set `catch_exception = true` to obtain partial result 
-for the inference in case if an exception occurs. Use `RxInfer.issuccess` and `RxInfer.iserror` function to check if the inference completed successfully or failed.
-If an error occurs, the `error` field will store a tuple, where first element is the exception itself and the second element is the caught `backtrace`. Use the `stacktrace` function 
-with the `backtrace` as an argument to recover the stacktrace of the error. Use `Base.showerror` function to display
-the error.
- 
-See also: [`InferenceResult`](@ref), [`rxinference`](@ref)
-"""
-function inference(;
+function __inference(;
     # `model`: specifies a model generator, with the help of the `Model` function
     model::ModelGenerator,
     # NamedTuple or Dict with data, optional if predictvars are specified
@@ -554,32 +318,6 @@ function inference(;
     # catch exceptions during the inference procedure, optional, defaults to false
     catch_exception = false
 )
-    if isnothing(data) && isnothing(predictvars)
-        error("""One of the keyword arguments `data` or `predictvars` must be specified""")
-    end
-    __inference_check_dicttype(:initmarginals, initmarginals)
-    __inference_check_dicttype(:initmessages, initmessages)
-    __inference_check_dicttype(:callbacks, callbacks)
-
-    # Check for available callbacks
-    if warn && !isnothing(callbacks)
-        for key in keys(callbacks)
-            if key ∉ (
-                :on_marginal_update,
-                :before_model_creation,
-                :after_model_creation,
-                :before_inference,
-                :before_iteration,
-                :before_data_update,
-                :after_data_update,
-                :after_iteration,
-                :after_inference
-            )
-                @warn "Unknown callback specification: $(key). Available callbacks: on_marginal_update, before_model_creation, after_model_creation, before_inference, before_iteration, before_data_update, after_data_update, after_iteration, after_inference. Set `warn = false` to supress this warning."
-            end
-        end
-    end
-
     _options = convert(ModelInferenceOptions, options)
     # If the `options` does not have `warn` key inside, override it with the keyword `warn`
     if isnothing(options) || !haskey(options, :warn)
@@ -644,8 +382,8 @@ function inference(;
         )
     end
 
-    __inference_check_dicttype(:returnvars, returnvars)
-    __inference_check_dicttype(:predictvars, predictvars)
+    __infer_check_dicttype(:returnvars, returnvars)
+    __infer_check_dicttype(:predictvars, predictvars)
 
     # Use `__check_has_randomvar` to filter out unknown or non-random variables in the `returnvar` specification
     __check_has_randomvar(vardict, variable) = begin
@@ -796,6 +534,11 @@ function inference(;
     return InferenceResult(posterior_values, predicted_values, fe_values, fmodel, freturval, potential_error)
 end
 
+function inference(; kwargs...)
+    @warn "inference is deprecated and will be removed in the future. Use `infer` instead."
+    return infer(; kwargs...)
+end
+
 ## ------------------------------------------------------------------------ ##
 
 struct FromMarginalAutoUpdate end
@@ -915,7 +658,7 @@ end
 This structure specifies to update our prior as soon as we have a new posterior `q(x_next)`. It then applies the `mean_cov` function on the updated posteriors and updates 
 `datavar`s `x_current_mean` and `x_current_var` automatically.
 
-See also: [`rxinference`](@ref)
+See also: [`infer`](@ref)
 """
 macro autoupdates(code)
     ((code isa Expr) && (code.head === :block)) || error("Autoupdate requires a block of code `begin ... end` as an input")
@@ -977,20 +720,20 @@ end
 The return value of the `rxinference` function. 
 
 # Public fields
-- `posteriors`: `Dict` or `NamedTuple` of 'random variable' - 'posterior stream' pairs. See the `returnvars` argument for the [`rxinference`](@ref).
-- `free_energy`: (optional) A stream of Bethe Free Energy values per VMP iteration. See the `free_energy` argument for the [`rxinference`](@ref).
-- `history`: (optional) Saves history of previous marginal updates. See the `historyvars` and `keephistory` arguments for the [`rxinference`](@ref).
+- `posteriors`: `Dict` or `NamedTuple` of 'random variable' - 'posterior stream' pairs. See the `returnvars` argument for the [`infer`](@ref).
+- `free_energy`: (optional) A stream of Bethe Free Energy values per VMP iteration. See the `free_energy` argument for the [`infer`](@ref).
+- `history`: (optional) Saves history of previous marginal updates. See the `historyvars` and `keephistory` arguments for the [`infer`](@ref).
 - `free_energy_history`: (optional) Free energy history, average over variational iterations 
 - `free_energy_raw_history`: (optional) Free energy history, returns returns computed values of all variational iterations for each data event (if available)
 - `free_energy_final_only_history`: (optional) Free energy history, returns computed values of final variational iteration for each data event (if available)
-- `events`: (optional) A stream of events send by the inference engine. See the `events` argument for the [`rxinference`](@ref).
+- `events`: (optional) A stream of events send by the inference engine. See the `events` argument for the [`infer`](@ref).
 - `model`: `FactorGraphModel` object reference.
 - `returnval`: Return value from executed `@model`.
 
 Use the `RxInfer.start(engine)` function to subscribe on the `data` source and start the inference procedure. Use `RxInfer.stop(engine)` to unsubscribe from the `data` source and stop the inference procedure. 
 Note, that it is not always possible to start/stop the inference procedure.
 
-See also: [`rxinference`](@ref), [`RxInferenceEvent`](@ref), [`RxInfer.start`](@ref), [`RxInfer.stop`](@ref)
+See also: [`infer`](@ref), [`RxInferenceEvent`](@ref), [`RxInfer.start`](@ref), [`RxInfer.stop`](@ref)
 """
 mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, R, I, M, N, X, E, J}
     datastream       :: D
@@ -1395,12 +1138,12 @@ end
 and later on:
 
 ```julia
-engine = rxinference(events = Val((:after_iteration, )), ...)
+engine = infer(events = Val((:after_iteration, )), ...)
 
 subscription = subscribe!(engine.events, MyEventListener(...))
 ```
 
-See also: [`rxinference`](@ref), [`RxInferenceEngine`](@ref)
+See also: [`infer`](@ref), [`RxInferenceEngine`](@ref)
 """
 struct RxInferenceEvent{T, D}
     data::D
@@ -1423,308 +1166,7 @@ function inference_invoke_event(::Val{Event}, ::Val{EnabledEvents}, events, args
     return nothing
 end
 
-##
-
-"""
-    rxinference(
-        model,
-        data = nothing,
-        datastream = nothing,
-        initmarginals = nothing,
-        initmessages = nothing,
-        autoupdates = nothing,
-        constraints = nothing,
-        meta = nothing,
-        options = nothing,
-        returnvars = nothing,
-        historyvars = nothing,
-        keephistory = nothing,
-        iterations = nothing,
-        free_energy = false,
-        free_energy_diagnostics = BetheFreeEnergyDefaultChecks,
-        autostart = true,
-        events = nothing,
-        callbacks = nothing,
-        addons = nothing,
-        postprocess = DefaultPostprocess(),
-        uselock = false,
-        warn = true
-    )
-
-This function provides a generic way to perform probabilistic inference in RxInfer.jl. Returns `RxInferenceEngine`.
-
-## Arguments
-
-For more information about some of the arguments, please check below.
-
-- `model`: specifies a model generator, required
-- `data`: `NamedTuple` or `Dict` with data, required (or `datastream`)
-- `datastream`: A stream of `NamedTuple` with data, required (or `data`)
-- `initmarginals = nothing`: `NamedTuple` or `Dict` with initial marginals, optional
-- `initmessages = nothing`: `NamedTuple` or `Dict` with initial messages, optional
-- `autoupdates = nothing`: auto-updates specification, required for many models, see `@autoupdates`
-- `constraints = nothing`: constraints specification object, optional, see `@constraints`
-- `meta  = nothing`: meta specification object, optional, may be required for some models, see `@meta`
-- `options = nothing`: model creation options, optional, see `ModelInferenceOptions`
-- `returnvars = nothing`: return structure info, optional, by default creates observables for all random variables that return posteriors at last vmp iteration, see below for more information
-- `historyvars = nothing`: history structure info, optional, defaults to no history, see below for more information
-- `keephistory = nothing`: history buffer size, defaults to empty buffer, see below for more information
-- `iterations = nothing`: number of iterations, optional, defaults to `nothing`, the inference engine does not distinguish between variational message passing or Loopy belief propagation or expectation propagation iterations, see below for more information
-- `free_energy = false`: compute the Bethe free energy, optional, defaults to false. Can be passed a floating point type, e.g. `Float64`, for better efficiency, but disables automatic differentiation packages, such as ForwardDiff.jl
-- `free_energy_diagnostics = BetheFreeEnergyDefaultChecks`: free energy diagnostic checks, optional, by default checks for possible `NaN`s and `Inf`s. `nothing` disables all checks.
-- `autostart = true`: specifies whether to call `RxInfer.start` on the created engine automatically or not
-- `showprogress = false`: show progress module, optional, defaults to false
-- `events = nothing`: inference cycle events, optional, see below for more info
-- `callbacks = nothing`: inference cycle callbacks, optional, see below for more info
-- `addons = nothing`: inject and send extra computation information along messages, see below for more info
-- `postprocess = DefaultPostprocess()`: inference results postprocessing step, optional, see below for more info
-- `uselock = false`: specifies either to use the lock structure for the inference or not, if set to true uses `Base.Threads.SpinLock`. Accepts custom `AbstractLock`.
-- `warn = true`: enables/disables warnings
-
-## Note on NamedTuples
-
-When passing `NamedTuple` as a value for some argument, make sure you use a trailing comma for `NamedTuple`s with a single entry. The reason is that Julia treats `returnvars = (x = KeepLast())` and `returnvars = (x = KeepLast(), )` expressions differently. This first expression creates (or **overwrites!**) new local/global variable named `x` with contents `KeepLast()`. The second expression (note trailing comma) creates `NamedTuple` with `x` as a key and `KeepLast()` as a value assigned for this key.
-
-## Extended information about some of the arguments
-
-- ### `data` or `datastream`
-
-Either `data` or `datastream` keyword argument is required, but specifying both is not supported and will result in an error.
-
-- ### `data`
-
-The `data` keyword argument must be a `NamedTuple` (or `Dict`) where keys (of `Symbol` type) correspond to all `datavar`s defined in the model specification. For example, if a model defines `x = datavar(Float64)` the `data` field must have an `:x` key (of `Symbol` type) which holds an iterable container with values of type `Float64`. The elements of such containers in the `data` must have the exact same shape as the `datavar` container. In other words, if a model defines `x = datavar(Float64, n)` then `data[:x]` must provide an iterable container with elements of type `Vector{Float64}`. 
-
-All entries in the `data` argument are zipped together with the `Base.zip` function to form one slice of the data chunck. This means all containers in the `data` argument must be of the same size (`zip` iterator finished as soon as one container has no remaining values).
-In order to use a fixed value for some specific `datavar` it is not necessary to create a container with that fixed value, but rather more efficient to use `Iterators.repeated` to create an infinite iterator.
-
-**Note**: The behavior of the `data` keyword argument is different from that which is used in the `inference` function.
-
-- ### `datastream`
-
-The `datastream` keyword argument must be an observable that supports `subscribe!` and `unsubscribe!` functions (streams from the `Rocket.jl` package are also supported).
-The elements of the observable must be of type `NamedTuple` where keys (of `Symbol` type) correspond to all `datavar`s defined in the model specification, except for those which are listed in the `autoupdates` specification. 
-For example, if a model defines `x = datavar(Float64)` (which is not part of the `autoupdates` specification) the named tuple from the observable must have an `:x` key (of `Symbol` type) which holds a value of type `Float64`. The values in the named tuple must have the exact same shape as the `datavar` container. In other words, if a model defines `x = datavar(Float64, n)` then 
-`namedtuple[:x]` must provide a container with length `n` and with elements of type `Float64`.
-
-**Note**: The behavior of the individual named tuples from the `datastream` observable is similar to that which is used in the `inference` function and its `data` argument.
-In fact, you can see the `rxinference` function as an efficient streamed version of the `inference` function, which automatically updates some `datavar`s with the `autoupdates` specification and listens to the `datastream` to update the rest of the `datavar`s.
-
-- ### `model`
-
-The `model` argument accepts a `ModelGenerator` as its input. The easiest way to create the `ModelGenerator` is to use the `@model` macro. 
-For example:
-
-```julia
-@model function coin_toss(some_argument, some_keyword_argument = 3)
-   ...
-end
-
-result = rxinference(
-    model = coin_toss(some_argument; some_keyword_argument = 3)
-)
-```
-
-**Note**: The `model` keyword argument does not accept a `FactorGraphModel` instance as a value, as it needs to inject `constraints` and `meta` during the inference procedure.
-
-- ### `initmarginals`
-
-For specific types of inference algorithms, such as variational message passing, it might be required to initialize (some of) the marginals before running the inference procedure in order to break the dependency loop. If this is not done, the inference algorithm will not be executed due to the lack of information and message and/or marginals will not be updated. In order to specify these initial marginals, you can use the `initmarginals` argument, such as
-```julia
-rxinference(...
-    initmarginals = (
-        # initialize the marginal distribution of x as a vague Normal distribution
-        # if x is a vector, then it simply uses the same value for all elements
-        # However, it is also possible to provide a vector of distributions to set each element individually 
-        x = vague(NormalMeanPrecision),  
-    ),
-)
-```
-This argument needs to be a named tuple, i.e. `initmarginals = (a = ..., )`, or dictionary.
-
-- ### `initmessages`
-
-For specific types of inference algorithms, such as loopy belief propagation or expectation propagation, it might be required to initialize (some of) the messages before running the inference procedure in order to break the dependency loop. If this is not done, the inference algorithm will not be executed due to the lack of information and message and/or marginals will not be updated. In order to specify these initial messages, you can use the `initmessages` argument, such as
-```julia
-rxinference(...
-    initmessages = (
-        # initialize the messages distribution of x as a vague Normal distribution
-        # if x is a vector, then it simply uses the same value for all elements
-        # However, it is also possible to provide a vector of distributions to set each element individually 
-        x = vague(NormalMeanPrecision),  
-    ),
-)
-```
-This argument needs to be a named tuple, i.e. `initmessages = (a = ..., )`, or dictionary.
-
-- ### `autoupdates`
-
-See `@autoupdates` for more information.
-
-- ### `options`
-
-- `limit_stack_depth`: limits the stack depth for computing messages, helps with `StackOverflowError` for some huge models, but reduces the performance of inference backend. Accepts integer as an argument that specifies the maximum number of recursive depth. Lower is better for stack overflow error, but worse for performance.
-- `pipeline`: changes the default pipeline for each factor node in the graph
-- `global_reactive_scheduler`: changes the scheduler of reactive streams, see Rocket.jl for more info, defaults to no scheduler
-
-- ### `returnvars`
-
-`returnvars` accepts a tuple of symbols and specifies the latent variables of interests. For each symbol in the `returnvars` specification the `rxinference` function will prepare an observable stream (see `Rocket.jl`) of posterior updates. An agent may subscribe on the new posteriors events and perform some actions.
-For example:
-
-```julia
-engine = rxinference(
-    ...,
-    returnvars = (:x, :τ),
-    autostart  = false
-)
-
-x_subscription = subscribe!(engine.posteriors[:x], (update) -> println("x variable has been updated: ", update))
-τ_subscription = subscribe!(engine.posteriors[:τ], (update) -> println("τ variable has been updated: ", update))
-
-RxInfer.start(engine)
-
-...
-
-unsubscribe!(x_subscription)
-unsubscribe!(τ_subscription)
-
-RxInfer.stop(engine)
-```
-
-- ### `historyvars`
-
-`historyvars` specifies the variables of interests and the amount of information to keep in history about the posterior updates. The specification is similar to the `returnvars` in the `inference` procedure.
-The `historyvars` requires `keephistory` to be greater than zero.
-
-`historyvars` accepts a `NamedTuple` or `Dict` or return var specification. There are two specifications:
-- `KeepLast`: saves the last update for a variable, ignoring any intermediate results during iterations
-- `KeepEach`: saves all updates for a variable for all iterations
-
-Example: 
-
-```julia
-result = rxinference(
-    ...,
-    historyvars = (
-        x = KeepLast(),
-        τ = KeepEach()
-    ),
-    keephistory = 10
-)
-```
-
-It is also possible to set either `historyvars = KeepLast()` or `historyvars = KeepEach()` that acts as an alias and sets the given option for __all__ random variables in the model.
-
-# Example: 
-
-```julia
-result = rxinference(
-    ...,
-    historyvars = KeepLast(),
-    keephistory = 10
-)
-```
-
-- ### `keep_history`
-
-Specifies the buffer size for the updates history both for the `historyvars` and the `free_energy` buffers.
-
-- ### `iterations`
-
-Specifies the number of variational (or loopy belief propagation) iterations. By default set to `nothing`, which is equivalent of doing 1 iteration. 
-
-- ### `free_energy` 
-
-This setting specifies whenever the `inference` function should create an observable of Bethe Free Energy (BFE) values. The BFE observable returns a new computed value for each VMP iteration.
-Note, however, that it may be not possible to compute BFE values for every model. If `free_energy = true` and `keephistory > 0` the engine exposes extra fields to access the history of the Bethe free energy updates:
-
-- `engine.free_energy_history`: Returns a free energy history averaged over the VMP iterations
-- `engine.free_energy_final_only_history`: Returns a free energy history of values computed on last VMP iterations for every observation
-- `engine.free_energy_raw_history`: Returns a raw free energy history
-
-Additionally, the argument may accept a floating point type, instead of a `Bool` value. Using this option, e.g.`Float64`, improves performance of Bethe Free Energy computation, but restricts using automatic differentiation packages.
-
-- ### `free_energy_diagnostics`
-
-This settings specifies either a single or a tuple of diagnostic checks for Bethe Free Energy values stream. By default checks for `NaN`s and `Inf`s. See also [`BetheFreeEnergyCheckNaNs`](@ref) and [`BetheFreeEnergyCheckInfs`](@ref).
-Pass `nothing` to disable any checks.
-
-- ### `events`
-
-The engine from the `rxinference` function has its own lifecycle. The events can be listened by subscribing to the `engine.events` field. E.g.
-
-```julia
-engine = rxinference(
-    ...,
-    autostart = false
-)
-
-subscription = subscribe!(engine.events, (event) -> println(event))
-
-RxInfer.start(engine)
-```
-
-By default all events are disabled, in order to enable an event its identifier must be listed in the `Val` tuple of symbols passed to the `events` keyword arguments.
-
-```julia
-engine = rxinference(
-    events = Val((:on_new_data, :before_history_save, :after_history_save))
-)
-```
-
-The list of all possible events and their event data is present below (see `RxInferenceEvent` for more information about the type of event data):
-
-- `on_new_data`:           args: (model::FactorGraphModel, data)
-- `before_iteration`       args: (model::FactorGraphModel, iteration)
-- `before_auto_update`     args: (model::FactorGraphModel, iteration, auto_updates)
-- `after_auto_update`      args: (model::FactorGraphModel, iteration, auto_updates)
-- `before_data_update`     args: (model::FactorGraphModel, iteration, data)
-- `after_data_update`      args: (model::FactorGraphModel, iteration, data)
-- `after_iteration`        args: (model::FactorGraphModel, iteration)
-- `before_history_save`    args: (model::FactorGraphModel, )
-- `after_history_save`     args: (model::FactorGraphModel, )
-- `on_tick`                args: (model::FactorGraphModel, )
-- `on_error`               args: (model::FactorGraphModel, err)
-- `on_complete`            args: (model::FactorGraphModel, )
-
-- ### `callbacks`
-
-The `rxinference` function has its own lifecycle. The user is free to provide some (or none) of the callbacks to inject some extra logging or other procedures in the preparation of the inference engine.
-To inject extra procedures during the inference use the `events`. Here is the example of the `callbacks`
-
-```julia
-result = rxinference(
-    ...,
-    callbacks = (
-        after_model_creation = (model, returnval) -> println("The model has been created. Number of nodes: \$(length(getnodes(model)))"),
-    )
-)
-```
-
-The `callbacks` keyword argument accepts a named-tuple of 'name = callback' pairs. 
-The list of all possible callbacks and their input arguments is present below:
-
-- `before_model_creation`:    args: ()
-- `after_model_creation`:     args: (model::FactorGraphModel, returnval)
-- `before_autostart`:         args: (engine::RxInferenceEngine)
-- `after_autostart`:          args: (engine::RxInferenceEngine)
-
-- ### `addons`
-
-The `addons` field extends the default message computation rules with some extra information, e.g. computing log-scaling factors of messages or saving debug-information.
-Accepts a single addon or a tuple of addons. If set, replaces the corresponding setting in the `options`. Automatically changes the default value of the `postprocess` argument to `NoopPostprocess`.
- 
-- ### `postprocess`
-
-The `postprocess` keyword argument controls whether the inference results must be modified in some way before exiting the `inference` function.
-By default, the inference function uses the `DefaultPostprocess` strategy, which by default removes the `Marginal` wrapper type from the results.
-Change this setting to `NoopPostprocess` if you would like to keep the `Marginal` wrapper type, which might be useful in the combination with the `addons` argument.
-If the `addons` argument has been used, automatically changes the default strategy value to `NoopPostprocess`.
-
-See also [`inference`](@ref)
-"""
-function rxinference(;
+function __rxinference(;
     model::ModelGenerator,
     data = nothing,
     datastream = nothing,
@@ -1748,27 +1190,10 @@ function rxinference(;
     uselock = false,
     warn = true
 )
-    __inference_check_dicttype(:callbacks, callbacks)
-
-    # Check for available callbacks
-    if warn && !isnothing(callbacks)
-        for key in keys(callbacks)
-            if warn && key ∉ (:before_model_creation, :after_model_creation, :before_autostart, :after_autostart)
-                @warn "Unknown callback specification: $(key). Available callbacks: before_model_creation, after_model_creation, before_autostart, after_autostart. Set `warn = false` to supress this warning."
-            end
-        end
-    end
-
-    # The `rxinference` support both static `data` and dynamic `datastream`
-    if !isnothing(data) && !isnothing(datastream) # Ensure that only one of them set
-        error("`data` and `datastream` keyword arguments cannot be used together.")
-    elseif isnothing(data) && isnothing(datastream) # Ensure that at least one of them set
-        error("The `rxinference` function requires either `data` or `datastream` keyword argument to be non-empty.")
-    end
 
     # In case if `data` is used we cast to a synchronous `datastream` with zip operator
     _datastream, _T = if isnothing(datastream) && !isnothing(data)
-        __inference_check_dicttype(:data, data)
+        __infer_check_dicttype(:data, data)
 
         names  = tuple(keys(data)...)
         items  = tuple(values(data)...)
@@ -1813,9 +1238,6 @@ function rxinference(;
 
     # Second we check autoupdates and pregenerate all necessary structures here
     _autoupdates = map((autoupdate) -> autoupdate(_model), something(autoupdates, ()))
-
-    __inference_check_dicttype(:initmarginals, initmarginals)
-    __inference_check_dicttype(:initmessages, initmessages)
 
     # If everything is ok with `datavars` and `redirectvars` next step is to initialise marginals and messages in the model
     # This happens only once at the creation, we do not reinitialise anything if the inference has been stopped and resumed with the `stop` and `start` functions
@@ -1909,7 +1331,7 @@ function rxinference(;
 
         historyvars = Dict((varkey => value) for (varkey, value) in pairs(historyvars) if __check_has_randomvar(:historyvars, vardict, varkey))
 
-        __inference_check_dicttype(:historyvars, historyvars)
+        __infer_check_dicttype(:historyvars, historyvars)
     else
         if !isnothing(historyvars) && warn
             @warn "`historyvars` keyword argument requires `keephistory > 0`. Ignoring `historyvars`. Use `warn = false` to suppress this warning."
@@ -1985,4 +1407,446 @@ function rxinference(;
     end
 
     return engine
+end
+
+function rxinference(; kwargs)
+    @warn "The `rxinference` function is deprecated and will be removed in the future.  Use `infer` with the `autoupdates` keyword argument instead."
+
+    infer(; kwargs...)
+end
+
+available_callbacks(::typeof(__inference)) = (
+    :on_marginal_update,
+    :before_model_creation,
+    :after_model_creation,
+    :before_inference,
+    :before_iteration,
+    :before_data_update,
+    :after_data_update,
+    :after_iteration,
+    :after_inference
+)
+
+available_callbacks(::typeof(__rxinference)) = (:before_model_creation, :after_model_creation, :before_autostart, :after_autostart)
+
+function __check_available_callbacks(warn, callbacks, available_callbacks)
+    if warn && !isnothing(callbacks)
+        for key in keys(callbacks)
+            if warn && key ∉ available_callbacks
+                @warn "Unknown callback specification: $(key). Available callbacks: $(available_callbacks). Set `warn = false` to supress this warning."
+            end
+        end
+    end
+end
+
+"""
+    infer(
+        model; 
+        data = nothing,
+        datastream = nothing,
+        autoupdates = nothing,
+        initmarginals = nothing,
+        initmessages = nothing,
+        constraints = nothing,
+        meta = nothing,
+        options = nothing,
+        returnvars = nothing, 
+        predictvars = nothing, 
+        historyvars = nothing,
+        keephistory = nothing,
+        iterations = nothing,
+        free_energy = false,
+        free_energy_diagnostics = BetheFreeEnergyDefaultChecks,
+        showprogress = false,
+        callbacks = nothing,
+        addons = nothing,
+        postprocess = DefaultPostprocess(),
+        warn = true,
+        events = nothing,
+        uselock = false,
+        autostart = true,
+        catch_exception = false
+    )
+This function provides a generic way to perform probabilistic inference for batch/static and streamline/online scenarios.
+Returns an `InferenceResult` (batch setting) or `RxInferenceEngine` (streamline setting) based on the parameters used.
+
+## Arguments
+
+For more information about some of the arguments, please check below. 
+- `model`: specifies a model generator, required
+- `data`: `NamedTuple` or `Dict` with data, required (or `datastream` or `predictvars`)
+- `datastream`: A stream of `NamedTuple` with data, required (or `data`)
+- `autoupdates = nothing`: auto-updates specification, required for streamline inference, see `@autoupdates`
+- `initmarginals = nothing`: `NamedTuple` or `Dict` with initial marginals, optional
+- `initmessages = nothing`: `NamedTuple` or `Dict` with initial messages, optional
+- `constraints = nothing`: constraints specification object, optional, see `@constraints`
+- `meta  = nothing`: meta specification object, optional, may be required for some models, see `@meta`
+- `options = nothing`: model creation options, optional, see `ModelInferenceOptions`
+- `returnvars = nothing`: return structure info, optional, defaults to return everything at each iteration, see below for more information
+- `predictvars = nothing`: return structure info, optional, see below for more information (exclusive for batch inference)
+- `historyvars = nothing`: history structure info, optional, defaults to no history, see below for more information (exclusive for streamline inference)
+- `keephistory = nothing`: history buffer size, defaults to empty buffer, see below for more information (exclusive for streamline inference)
+- `iterations = nothing`: number of iterations, optional, defaults to `nothing`, the inference engine does not distinguish between variational message passing or Loopy belief propagation or expectation propagation iterations, see below for more information
+- `free_energy = false`: compute the Bethe free energy, optional, defaults to false. Can be passed a floating point type, e.g. `Float64`, for better efficiency, but disables automatic differentiation packages, such as ForwardDiff.jl
+- `free_energy_diagnostics = BetheFreeEnergyDefaultChecks`: free energy diagnostic checks, optional, by default checks for possible `NaN`s and `Inf`s. `nothing` disables all checks.
+- `showprogress = false`: show progress module, optional, defaults to false (exclusive for batch inference)
+- `catch_exception`  specifies whether exceptions during the inference procedure should be caught, optional, defaults to false (exclusive for batch inference)
+- `callbacks = nothing`: inference cycle callbacks, optional, see below for more info
+- `addons = nothing`: inject and send extra computation information along messages, see below for more info
+- `postprocess = DefaultPostprocess()`: inference results postprocessing step, optional, see below for more info
+- `events = nothing`: inference cycle events, optional, see below for more info (exclusive for streamline inference)
+- `uselock = false`: specifies either to use the lock structure for the inference or not, if set to true uses `Base.Threads.SpinLock`. Accepts custom `AbstractLock`. (exclusive for streamline inference)
+- `autostart = true`: specifies whether to call `RxInfer.start` on the created engine automatically or not (exclusive for streamline inference)
+- `warn = true`: enables/disables warnings
+
+## Note on NamedTuples
+
+When passing `NamedTuple` as a value for some argument, make sure you use a trailing comma for `NamedTuple`s with a single entry. The reason is that Julia treats `returnvars = (x = KeepLast())` and `returnvars = (x = KeepLast(), )` expressions differently. This first expression creates (or **overwrites!**) new local/global variable named `x` with contents `KeepLast()`. The second expression (note trailing comma) creates `NamedTuple` with `x` as a key and `KeepLast()` as a value assigned for this key.
+
+The `model` argument accepts a `ModelGenerator` as its input. The easiest way to create the `ModelGenerator` is to use the `@model` macro. 
+For example:
+
+```julia
+@model function coin_toss(some_argument, some_keyword_argument = 3)
+    ...
+end
+
+result = infer(
+    model = coin_toss(some_argument; some_keyword_argument = 3)
+)
+```
+
+**Note**: The `model` keyword argument does not accept a `FactorGraphModel` instance as a value, as it needs to inject `constraints` and `meta` during the inference procedure.
+
+- ### `data`
+Either `data` or `datastream` or `predictvars` keyword argument is required. Specifying both `data` and `datastream` is not supported and will result in an error. Specifying both `datastream` and `predictvars` is not supported and will result in an error.
+
+**Note**: The behavior of the `data` keyword argument depends on the inference setting (batch or streamline).
+
+The `data` keyword argument must be a `NamedTuple` (or `Dict`) where keys (of `Symbol` type) correspond to all `datavar`s defined in the model specification. For example, if a model defines `x = datavar(Float64)` the 
+`data` field must have an `:x` key (of `Symbol` type) which holds a value of type `Float64`. The values in the `data` must have the exact same shape as the `datavar` container. In other words, if a model defines `x = datavar(Float64, n)` then 
+`data[:x]` must provide a container with length `n` and with elements of type `Float64`.
+
+- #### `streamline` setting
+All entries in the `data` argument are zipped together with the `Base.zip` function to form one slice of the data chunck. This means all containers in the `data` argument must be of the same size (`zip` iterator finished as soon as one container has no remaining values).
+In order to use a fixed value for some specific `datavar` it is not necessary to create a container with that fixed value, but rather more efficient to use `Iterators.repeated` to create an infinite iterator.
+
+- ### `datastream`
+
+The `datastream` keyword argument must be an observable that supports `subscribe!` and `unsubscribe!` functions (streams from the `Rocket.jl` package are also supported).
+The elements of the observable must be of type `NamedTuple` where keys (of `Symbol` type) correspond to all `datavar`s defined in the model specification, except for those which are listed in the `autoupdates` specification. 
+For example, if a model defines `x = datavar(Float64)` (which is not part of the `autoupdates` specification) the named tuple from the observable must have an `:x` key (of `Symbol` type) which holds a value of type `Float64`. The values in the named tuple must have the exact same shape as the `datavar` container. In other words, if a model defines `x = datavar(Float64, n)` then 
+`namedtuple[:x]` must provide a container with length `n` and with elements of type `Float64`.
+
+**Note**: The behavior of the individual named tuples from the `datastream` observable is similar to that which is used in the batch setting.
+In fact, you can see the streamline inference as an efficient version of the batch inference, which automatically updates some `datavar`s with the `autoupdates` specification and listens to the `datastream` to update the rest of the `datavar`s.
+
+For specific types of inference algorithms, such as variational message passing, it might be required to initialize (some of) the marginals before running the inference procedure in order to break the dependency loop. If this is not done, the inference algorithm will not be executed due to the lack of information and message and/or marginals will not be updated. In order to specify these initial marginals, you can use the `initmarginals` argument, such as
+```julia
+infer(...
+    initmarginals = (
+        # initialize the marginal distribution of x as a vague Normal distribution
+        # if x is a vector, then it simply uses the same value for all elements
+        # However, it is also possible to provide a vector of distributions to set each element individually 
+        x = vague(NormalMeanPrecision),  
+    ),
+)
+
+This argument needs to be a named tuple, i.e. `initmarginals = (a = ..., )`, or dictionary.
+
+- ### `initmessages`
+
+For specific types of inference algorithms, such as loopy belief propagation or expectation propagation, it might be required to initialize (some of) the messages before running the inference procedure in order to break the dependency loop. If this is not done, the inference algorithm will not be executed due to the lack of information and message and/or marginals will not be updated. In order to specify these initial messages, you can use the `initmessages` argument, such as
+```julia
+infer(...
+    initmessages = (
+        # initialize the messages distribution of x as a vague Normal distribution
+        # if x is a vector, then it simply uses the same value for all elements
+        # However, it is also possible to provide a vector of distributions to set each element individually 
+        x = vague(NormalMeanPrecision),  
+    ),
+)
+
+- ### `options`
+
+- `limit_stack_depth`: limits the stack depth for computing messages, helps with `StackOverflowError` for some huge models, but reduces the performance of inference backend. Accepts integer as an argument that specifies the maximum number of recursive depth. Lower is better for stack overflow error, but worse for performance.
+- `pipeline`: changes the default pipeline for each factor node in the graph
+- `global_reactive_scheduler`: changes the scheduler of reactive streams, see Rocket.jl for more info, defaults to no scheduler
+
+- ### `returnvars`
+
+`returnvars` specifies latent variables of interest and their posterior updates. Its behavior depends on the inference type: streamline or batch.
+
+**Batch inference:**
+- Accepts a `NamedTuple` or `Dict` of return variable specifications.
+- Two specifications available: `KeepLast` (saves the last update) and `KeepEach` (saves all updates).
+- When `iterations` is set, returns every update for each iteration (equivalent to `KeepEach()`); if `nothing`, saves the last update (equivalent to `KeepLast()`).
+- Use `iterations = 1` to force `KeepEach()` for a single iteration or set `returnvars = KeepEach()` manually.
+
+Example:
+
+```julia
+result = infer(
+    ...,
+    returnvars = (
+        x = KeepLast(),
+        τ = KeepEach()
+    )
+)
+```
+
+Shortcut for setting the same option for all variables:
+
+```julia
+result = infer(
+    ...,
+    returnvars = KeepLast()  # or KeepEach()
+)
+```
+
+**Streamline inference:**
+- For each symbol in `returnvars`, `infer` creates an observable stream of posterior updates.
+- Agents can subscribe to these updates using the `Rocket.jl` package.
+
+Example:
+
+```julia
+engine = infer(
+    ...,
+    autoupdates = my_autoupdates,
+    returnvars = (:x, :τ),
+    autostart  = false
+)
+```
+
+- ### `predictvars`
+
+`predictvars` specifies the variables which should be predicted. In the model definition these variables are specified
+as datavars, although they should not be passed inside data argument.
+
+Similar to `returnvars`, `predictvars` accepts a `NamedTuple` or `Dict`. There are two specifications:
+- `KeepLast`: saves the last update for a variable, ignoring any intermediate results during iterations
+- `KeepEach`: saves all updates for a variable for all iterations
+
+Example: 
+
+```julia
+result = infer(
+    ...,
+    predictvars = (
+        o = KeepLast(),
+        τ = KeepEach()
+    )
+)
+```
+
+**Note**: The `predictvars` argument is exclusive for batch setting.
+
+- ### `historyvars`
+
+`historyvars` specifies the variables of interests and the amount of information to keep in history about the posterior updates when performing streamline inference. The specification is similar to the `returnvars` when applied in batch setting.
+The `historyvars` requires `keephistory` to be greater than zero.
+
+`historyvars` accepts a `NamedTuple` or `Dict` or return var specification. There are two specifications:
+- `KeepLast`: saves the last update for a variable, ignoring any intermediate results during iterations
+- `KeepEach`: saves all updates for a variable for all iterations
+
+Example: 
+
+```julia
+result = infer(
+    ...,
+    autoupdates = my_autoupdates,
+    historyvars = (
+        x = KeepLast(),
+        τ = KeepEach()
+    ),
+    keephistory = 10
+)
+```
+
+It is also possible to set either `historyvars = KeepLast()` or `historyvars = KeepEach()` that acts as an alias and sets the given option for __all__ random variables in the model.
+
+# Example: 
+
+```julia
+result = infer(
+    ...,
+    autoupdates = my_autoupdates,
+    historyvars = KeepLast(),
+    keephistory = 10
+)
+```
+
+- ### `keep_history`
+
+Specifies the buffer size for the updates history both for the `historyvars` and the `free_energy` buffers in streamline inference.
+
+- ### `iterations`
+
+Specifies the number of variational (or loopy belief propagation) iterations. By default set to `nothing`, which is equivalent of doing 1 iteration. 
+
+- ### `free_energy`
+
+**Streamline inference:**
+
+Specifies if the `infer` function should create an observable stream of Bethe Free Energy (BFE) values, computed at each VMP iteration.
+
+- When `free_energy = true` and `keephistory > 0`, additional fields are exposed in the engine for accessing the history of BFE updates.
+  - `engine.free_energy_history`: Averaged BFE history over VMP iterations.
+  - `engine.free_energy_final_only_history`: BFE history of values computed in the last VMP iterations for each observation.
+  - `engine.free_energy_raw_history`: Raw BFE history.
+
+**Batch inference:**
+
+Specifies if the `infer` function should return Bethe Free Energy (BFE) values.
+
+- Optionally accepts a floating-point type (e.g., `Float64`) for improved BFE computation performance, but restricts the use of automatic differentiation packages.
+
+- ### `free_energy_diagnostics`
+
+This settings specifies either a single or a tuple of diagnostic checks for Bethe Free Energy values stream. By default checks for `NaN`s and `Inf`s. See also [`BetheFreeEnergyCheckNaNs`](@ref) and [`BetheFreeEnergyCheckInfs`](@ref).
+Pass `nothing` to disable any checks.
+
+- ### `catch_exception`
+
+The `catch_exception` keyword argument specifies whether exceptions during the batch inference procedure should be caught in the `error` field of the 
+result. By default, if exception occurs during the inference procedure the result will be lost. Set `catch_exception = true` to obtain partial result 
+for the inference in case if an exception occurs. Use `RxInfer.issuccess` and `RxInfer.iserror` function to check if the inference completed successfully or failed.
+If an error occurs, the `error` field will store a tuple, where first element is the exception itself and the second element is the caught `backtrace`. Use the `stacktrace` function 
+with the `backtrace` as an argument to recover the stacktrace of the error. Use `Base.showerror` function to display
+the error.
+
+- ### `callbacks`
+
+The inference function has its own lifecycle. The user is free to provide some (or none) of the callbacks to inject some extra logging or other procedures in the inference function, e.g.
+
+```julia
+result = infer(
+    ...,
+    callbacks = (
+        on_marginal_update = (model, name, update) -> println("\$(name) has been updated: \$(update)"),
+        after_inference    = (args...) -> println("Inference has been completed")
+    )
+)
+```
+
+
+The `callbacks` keyword argument accepts a named-tuple of 'name = callback' pairs. 
+The list of all possible callbacks for different inference setting (batch or streamline) and their arguments is present below:
+
+- `on_marginal_update`:    args: (model::FactorGraphModel, name::Symbol, update) (exlusive for batch inference)
+- `before_model_creation`: args: ()
+- `after_model_creation`:  args: (model::FactorGraphModel, returnval)
+- `before_inference`:      args: (model::FactorGraphModel) (exlusive for batch inference)
+- `before_iteration`:      args: (model::FactorGraphModel, iteration::Int)::Bool (exlusive for batch inference)
+- `before_data_update`:    args: (model::FactorGraphModel, data) (exlusive for batch inference)
+- `after_data_update`:     args: (model::FactorGraphModel, data) (exlusive for batch inference)
+- `after_iteration`:       args: (model::FactorGraphModel, iteration::Int)::Bool (exlusive for batch inference)
+- `after_inference`:       args: (model::FactorGraphModel) (exlusive for batch inference)
+- `before_autostart`:      args: (engine::RxInferenceEngine) (exlusive for streamline inference)
+- `after_autostart`:       args: (engine::RxInferenceEngine) (exlusive for streamline inference)
+
+`before_iteration` and `after_iteration` callbacks are allowed to return `true/false` value.
+`true` indicates that iterations must be halted and no further inference should be made.
+
+- ### `addons`
+
+The `addons` field extends the default message computation rules with some extra information, e.g. computing log-scaling factors of messages or saving debug-information.
+Accepts a single addon or a tuple of addons. If set, replaces the corresponding setting in the `options`. Automatically changes the default value of the `postprocess` argument to `NoopPostprocess`.
+
+- ### `postprocess`
+
+The `postprocess` keyword argument controls whether the inference results must be modified in some way before exiting the `inference` function.
+By default, the inference function uses the `DefaultPostprocess` strategy, which by default removes the `Marginal` wrapper type from the results.
+Change this setting to `NoopPostprocess` if you would like to keep the `Marginal` wrapper type, which might be useful in the combination with the `addons` argument.
+If the `addons` argument has been used, automatically changes the default strategy value to `NoopPostprocess`.
+
+"""
+function infer(;
+    model::ModelGenerator,
+    data = nothing,
+    datastream = nothing, # streamline specific
+    autoupdates = nothing, # streamline specific
+    initmarginals = nothing,
+    initmessages = nothing,
+    constraints = nothing,
+    meta = nothing,
+    options = nothing,
+    returnvars = nothing,
+    predictvars = nothing, # batch specific
+    historyvars = nothing, # streamline specific
+    keephistory = nothing, # streamline specific
+    iterations = nothing,
+    free_energy = false,
+    free_energy_diagnostics = BetheFreeEnergyDefaultChecks,
+    showprogress = false, # batch specific
+    catch_exception = false, # batch specific
+    callbacks = nothing,
+    addons = nothing,
+    postprocess = DefaultPostprocess(), # streamline specific
+    events = nothing, # streamline specific
+    uselock = false, # streamline  specific
+    autostart = true, # streamline specific
+    warn = true
+)
+    if !isnothing(data) && !isnothing(datastream)
+        error("""`data` and `datastream` keyword arguments cannot be used together. """)
+    elseif isnothing(data) && isnothing(predictvars) && isnothing(datastream)
+        error("""One of the keyword arguments `data` or `predictvars` or `datastream` must be specified""")
+    end
+
+    __infer_check_dicttype(:initmarginals, initmarginals)
+    __infer_check_dicttype(:initmessages, initmessages)
+    __infer_check_dicttype(:callbacks, callbacks)
+
+    if isnothing(autoupdates)
+        __check_available_callbacks(warn, callbacks, available_callbacks(__inference))
+        __inference(
+            model = model,
+            data = data,
+            initmarginals = initmarginals,
+            initmessages = initmessages,
+            constraints = constraints,
+            meta = meta,
+            options = options,
+            returnvars = returnvars,
+            predictvars = predictvars,
+            iterations = iterations,
+            free_energy = free_energy,
+            free_energy_diagnostics = free_energy_diagnostics,
+            showprogress = showprogress,
+            callbacks = callbacks,
+            addons = addons,
+            postprocess = postprocess,
+            warn = warn,
+            catch_exception = catch_exception
+        )
+    else
+        __check_available_callbacks(warn, callbacks, available_callbacks(__rxinference))
+        __rxinference(
+            model = model,
+            data = data,
+            datastream = datastream,
+            autoupdates = autoupdates,
+            initmarginals = initmarginals,
+            initmessages = initmessages,
+            constraints = constraints,
+            meta = meta,
+            options = options,
+            returnvars = returnvars,
+            historyvars = historyvars,
+            keephistory = keephistory,
+            iterations = iterations,
+            free_energy = free_energy,
+            free_energy_diagnostics = free_energy_diagnostics,
+            autostart = autostart,
+            callbacks = callbacks,
+            addons = addons,
+            postprocess = postprocess,
+            warn = warn,
+            events = events,
+            uselock = uselock
+        )
+    end
 end

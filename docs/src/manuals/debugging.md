@@ -36,7 +36,7 @@ dataset = convert.(Int64, rand(Bernoulli(θ_real), n))
 
 end
 
-result = inference(
+result = infer(
     model = coin_model(length(dataset)), 
     data  = (x = dataset, ),
 );
@@ -56,7 +56,7 @@ vline!([θ_real], label="Real θ", title = "Inference results")
 We can figure out what's wrong by looking at the Memory Addon. To obtain the trace, we have to add `addons = (AddonMemory(),)` as an argument to the inference function.
 
 ```@example addoncoin
-result = inference(
+result = infer(
     model = coin_model(length(dataset)), 
     data  = (x = dataset, ),
     addons = (AddonMemory(),)
@@ -93,7 +93,7 @@ All the observations (purple, green, pink, blue) have much smaller rate paramete
 
 end
 
-result = inference(
+result = infer(
     model = coin_model(length(dataset)), 
     data  = (x = dataset, ),
 );

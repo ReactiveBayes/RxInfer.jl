@@ -48,7 +48,7 @@
             xt_min_mean, xt_min_var = mean_var(q(xt))
         end
 
-        return rxinference(
+        return infer(
             model         = hgf(real_k, real_w, z_variance, y_variance),
             constraints   = hgfconstraints(),
             meta          = hgfmeta(),

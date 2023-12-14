@@ -23,7 +23,7 @@
     end
 
     function inference_univariate(data, n_its, constraints)
-        return inference(
+        return infer(
             model         = univariate_gaussian_mixture_model(length(data)),
             data          = (y = data,),
             constraints   = constraints,

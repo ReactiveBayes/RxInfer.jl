@@ -22,7 +22,7 @@
     end
 
     function univariate_lgssm_inference(data, x0, c, P)
-        return inference(model = univariate_lgssm_model(length(data), x0, c, P), data = (y = data,), free_energy = true)
+        return infer(model = univariate_lgssm_model(length(data), x0, c, P), data = (y = data,), free_energy = true)
     end
 
     ## Data creation

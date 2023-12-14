@@ -125,9 +125,9 @@
         testsets = [(prior = Beta(4.0, 8.0), answer = Beta(43.0, 19.0)), (prior = Beta(54.0, 1.0), answer = Beta(93.0, 12.0)), (prior = Beta(1.0, 12.0), answer = Beta(40.0, 23.0))]
 
         for ts in testsets
-            @test inference(model = coin_model_priors1(n, ts[:prior]), data = (y = data,)).posteriors[:θ] == ts[:answer]
-            @test inference(model = coin_model_priors2(n, ts[:prior]), data = (y = data,)).posteriors[:θ] == ts[:answer]
-            @test inference(model = coin_model_priors3(n, [ts[:prior]]), data = (y = data,)).posteriors[:θ] == [ts[:answer]]
+            @test infer(model = coin_model_priors1(n, ts[:prior]), data = (y = data,)).posteriors[:θ] == ts[:answer]
+            @test infer(model = coin_model_priors2(n, ts[:prior]), data = (y = data,)).posteriors[:θ] == ts[:answer]
+            @test infer(model = coin_model_priors3(n, [ts[:prior]]), data = (y = data,)).posteriors[:θ] == [ts[:answer]]
         end
     end
 

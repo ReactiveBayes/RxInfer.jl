@@ -90,16 +90,10 @@ end
 model, returnval = create_model(my_model(arguments...); meta = my_meta)
 ```
 
-Alternatively, it is possible to use meta directly in the automatic [`inference`](@ref) and [`rxinference`](@ref) functions that accepts `meta` keyword argument:
+Alternatively, it is possible to use meta directly in the automatic [`infer`](@ref) function that accepts `meta` keyword argument:
 
 ```julia
-inferred_result = inference(
-    model = my_model(arguments...),
-    meta = my_meta,
-    ...
-)
-
-inferred_result = rxinference(
+inferred_result = infer(
     model = my_model(arguments...),
     meta = my_meta,
     ...
@@ -116,7 +110,7 @@ inferred_result = rxinference(
     ...
 end
 ```
-If you add node-specific meta to your model this way, then you do not need to use the `meta` keyword argument in the `inference` and `rxinference` functions.
+If you add node-specific meta to your model this way, then you do not need to use the `meta` keyword argument in the `infer` function.
 
 
 ## Create your own meta
@@ -179,7 +173,7 @@ y_data = 4.0
 end
 
 #do inference
-inference_result = inference(
+inference_result = infer(
     model = gaussian_model(),
     data = (y = y_data,)
 )

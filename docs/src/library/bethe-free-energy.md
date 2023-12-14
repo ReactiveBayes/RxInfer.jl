@@ -53,7 +53,7 @@ which internalizes the factors of the  model. The last two terms specify entropi
 
 Crucially, the BFE can be iteratively optimized for each individual variational distribution in turn. Optimization of the BFE is thus more manageable than direct optimization of the VFE.
 
-For iterative optimization of the BFE, the variational distributions must first be initialized. The `initmarginals` keyword argument to the [`inference`](@ref) and [`rxinference`](@ref) functions initializes the variational distributions of the BFE.
+For iterative optimization of the BFE, the variational distributions must first be initialized. The `initmarginals` keyword argument to the [`infer`](@ref) function initializes the variational distributions of the BFE.
 
 For disambiguation, note that the initialization of the variational distribution is a different design consideration than the choice of priors. A prior specifies a factor in the model definition, while initialization concerns factors in the variational distribution.
 

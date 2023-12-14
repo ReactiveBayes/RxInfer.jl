@@ -11,12 +11,12 @@ The inference engine itself isn't aware of different algorithm types and simply 
 
 ## [Automatic inference specification on static datasets](@id user-guide-inference-execution-automatic-specification-static)
 
-`RxInfer` exports the `inference` function to quickly run and test you model with static datasets. See more information about the `inference` function on the separate [documentation section](@ref user-guide-inference). 
+`RxInfer` exports the `infer` function to quickly run and test you model with static datasets. See more information about the `infer` function on the separate [documentation section](@ref user-guide-inference). 
 
 ## [Automatic inference specification on real-time datasets](@id user-guide-inference-execution-automatic-specification-realtime)
 
-`RxInfer` exports the `rxinference` function to quickly run and test you model with dynamic and potentially real-time datasets. See more information about the `rxinference` function on the separate [documentation section](@ref user-guide-rxinference). 
+`RxInfer` supports running inference the with dynamic and potentially real-time datasets with enabled `autoupdates` keyword. See more information about the `infer` function on the separate [documentation section](@ref user-guide-inference). 
 
 ## [Manual inference specification](@id user-guide-inference-execution-manual-specification)
 
-While both `inference` and `rxinference` use most of the `RxInfer` inference engine capabilities in some situations it might be beneficial to write inference code manually. The [Manual inference](@ref user-guide-manual-inference) documentation section explains how to write your custom inference routines.
+While `infer` uses most of the `RxInfer` inference engine capabilities in some situations it might be beneficial to write inference code manually. The [Manual inference](@ref user-guide-manual-inference) documentation section explains how to write your custom inference routines.

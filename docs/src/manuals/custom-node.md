@@ -279,7 +279,7 @@ end
 Finally, we can run inference with this model and the generated dataset:
 
 ```@example create-node
-result_mybernoulli = inference(
+result_mybernoulli = infer(
     model = coin_model_mybernoulli(length(dataset)), 
     data  = (y = dataset, ),
 )
@@ -312,7 +312,7 @@ As a sanity check, we can create the same model with the `RxInfer` built-in node
 
 end
 
-result_bernoulli = inference(
+result_bernoulli = infer(
     model = coin_model(length(dataset)), 
     data  = (y = dataset, ),
 )

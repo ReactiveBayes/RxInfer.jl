@@ -210,7 +210,7 @@ function pendulum_experiment(observations)
         noise_scale = scale(q(noise))
     end
 
-    results = rxinference(
+    results = infer(
         model = pendulum(),
         constraints = pendulum_constraint(),
         meta = pendulum_meta(),

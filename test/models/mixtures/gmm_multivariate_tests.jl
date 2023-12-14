@@ -60,7 +60,7 @@
             push!(winitmarginals, Wishart(3, [1e2 0.0; 0.0 1e2]))
         end
 
-        return inference(
+        return infer(
             model = multivariate_gaussian_mixture_model(rng, L, nmixtures, length(data)),
             data = (y = data,),
             constraints = constraints,
