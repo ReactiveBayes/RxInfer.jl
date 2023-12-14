@@ -1,12 +1,7 @@
-module RxInferFactorisationConstraintsTest
-
-using Test, Logging
-using RxInfer
-
-import ReactiveMP: resolve_factorisation, setanonymous!
-import ReactiveMP: activate!
-
-@testset "Factorisation constraints resolution with @constraints" begin
+@testitem "Factorisation constraints resolution with @constraints" begin
+    using Logging
+    import ReactiveMP: resolve_factorisation, setanonymous!
+    import ReactiveMP: activate!
 
     # Factorisation constrains resolution function accepts a `fform` symbol as an input for error printing
     # We don't care about actual symbol in tests
@@ -634,6 +629,4 @@ import ReactiveMP: activate!
 
         @test_throws ErrorException ReactiveMP.resolve_factorisation(cs, getvariables(model), fform, (x, y))
     end
-end
-
 end

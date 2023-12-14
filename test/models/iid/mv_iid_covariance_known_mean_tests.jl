@@ -1,29 +1,24 @@
-module RxInferModelsMvIIDCovarianceKnownMeanTest
+@testitem "Multivariate IID: Covariance parametrisation with known mean" begin
+    using StableRNGs, Plots, BenchmarkTools
+    # Please use StableRNGs for random number generators
 
-using Test, InteractiveUtils
-using RxInfer, BenchmarkTools, Random, Plots, Dates, LinearAlgebra, StableRNGs
+    # `include(test/utiltests.jl)`
+    include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
-# Please use StableRNGs for random number generators
+    @model function mv_iid_inverse_wishart_known_mean(mean, n, d)
+        C ~ InverseWishart(d + 1, diageye(d))
 
-# `include(test/utiltests.jl)`
-include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
+        m = constvar(mean)
+        y = datavar(Vector{Float64}, n)
 
-@model function mv_iid_inverse_wishart_known_mean(mean, n, d)
-    C ~ InverseWishart(d + 1, diageye(d))
-
-    m = constvar(mean)
-    y = datavar(Vector{Float64}, n)
-
-    for i in 1:n
-        y[i] ~ MvNormal(mean = m, covariance = C)
+        for i in 1:n
+            y[i] ~ MvNormal(mean = m, covariance = C)
+        end
     end
-end
 
-function inference_mv_inverse_wishart_known_mean(mean, data, n, d)
-    return infer(model = mv_iid_inverse_wishart_known_mean(mean, n, d), data = (y = data,), iterations = 10, returnvars = KeepLast(), free_energy = Float64)
-end
-
-@testset "Multivariate IID: Covariance parametrisation with known mean" begin
+    function inference_mv_inverse_wishart_known_mean(mean, data, n, d)
+        return infer(model = mv_iid_inverse_wishart_known_mean(mean, n, d), data = (y = data,), iterations = 10, returnvars = KeepLast(), free_energy = Float64)
+    end
 
     ## Data creation
     rng = StableRNG(123)
@@ -55,6 +50,4 @@ end
     end
 
     @test_benchmark "models" "iid_inverse_wishart_known_mean" inference_mv_inverse_wishart_known_mean($m, $data, $n, $d)
-end
-
 end

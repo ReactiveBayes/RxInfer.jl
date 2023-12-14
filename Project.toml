@@ -1,7 +1,7 @@
 name = "RxInfer"
 uuid = "86711068-29c9-4ff7-b620-ae75d7495b3d"
 authors = ["Bagaev Dmitry <d.v.bagaev@tue.nl> and contributors"]
-version = "2.14.2"
+version = "2.15.0"
 
 [deps]
 BayesBase = "b4ee3484-f114-42fe-b91c-797d54a0c67e"
@@ -34,7 +34,7 @@ MacroTools = "0.5.6"
 Optim = "1.0.0"
 ProgressMeter = "1.0.0"
 Random = "1.9"
-ReactiveMP = "~3.12.0"
+ReactiveMP = "~3.13.0"
 Reexport = "1.2.0"
 Rocket = "1.7.0"
 TupleTools = "1.2.0"
@@ -45,6 +45,7 @@ Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 BenchmarkCI = "20533458-34a3-403d-a444-e18f38190b5b"
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 Coverage = "a2441757-f6aa-5fb2-8edb-039e3f45d037"
+CpuId = "adafc99b-e345-5852-983c-f28acb93d879"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
@@ -54,10 +55,11 @@ Optimisers = "3bd65402-5787-11e9-1adc-39752487f4e2"
 Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 PkgBenchmark = "32113eaa-f34f-5b0d-bd6c-c81e245fc73d"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+ReTestItems = "817f1d60-ba6b-4fd5-9520-3cf149f6a823"
 StableRNGs = "860ef19b-820b-49d6-a774-d7a799459cd3"
 StatsFuns = "4c63d2b9-4356-54db-8cca-17b64c39e42c"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 TestSetExtensions = "98d24dd4-01ad-11ea-1b02-c9a08f80db04"
 
 [targets]
-test = ["Test", "Pkg", "Logging", "InteractiveUtils", "TestSetExtensions", "Coverage", "Dates", "Distributed", "Documenter", "Plots", "BenchmarkCI", "BenchmarkTools", "PkgBenchmark", "Aqua", "StableRNGs", "StatsFuns", "Optimisers"]
+test = ["Test", "Pkg", "Logging", "InteractiveUtils", "TestSetExtensions", "Coverage", "CpuId", "Dates", "Distributed", "Documenter", "Plots", "BenchmarkCI", "BenchmarkTools", "PkgBenchmark", "Aqua", "StableRNGs", "StatsFuns", "Optimisers", "ReTestItems"]

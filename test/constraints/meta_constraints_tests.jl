@@ -1,12 +1,7 @@
-module ReactiveMPMetaSpecificationHelpers
-
-using Test
-using RxInfer
-using Distributions
-using Logging
-
-@testset "Meta specification with @meta macro" begin
+@testitem "Meta specification with @meta macro" begin
     import ReactiveMP: resolve_meta, make_node, activate!
+    using Distributions
+    using Logging
 
     struct SomeNode end
     struct SomeOtherNode end
@@ -230,6 +225,4 @@ using Logging
         @test resolve_meta(meta, SomeNode, (y, z)) === nothing
         @test resolve_meta(meta, SomeNode, (z,)) === nothing
     end
-end
-
 end

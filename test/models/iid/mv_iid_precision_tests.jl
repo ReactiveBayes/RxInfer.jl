@@ -1,45 +1,40 @@
-module RxInferModelsMvIIDPrecisionTest
+@testitem "Multivariate IID: Precision parametrisation" begin
+    using StableRNGs, BenchmarkTools, Plots
+    # Please use StableRNGs for random number generators
 
-using Test, InteractiveUtils
-using RxInfer, BenchmarkTools, Random, Plots, Dates, LinearAlgebra, StableRNGs
+    # `include(test/utiltests.jl)`
+    include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
-# Please use StableRNGs for random number generators
+    ## Model and constraints definition
 
-# `include(test/utiltests.jl)`
-include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
+    @model function mv_iid_wishart(n, d)
+        m ~ MvNormal(mean = zeros(d), precision = 100 * diageye(d))
+        P ~ Wishart(d + 1, diageye(d))
 
-## Model and constraints definition
+        y = datavar(Vector{Float64}, n)
 
-@model function mv_iid_wishart(n, d)
-    m ~ MvNormal(mean = zeros(d), precision = 100 * diageye(d))
-    P ~ Wishart(d + 1, diageye(d))
-
-    y = datavar(Vector{Float64}, n)
-
-    for i in 1:n
-        y[i] ~ MvNormal(mean = m, precision = P)
+        for i in 1:n
+            y[i] ~ MvNormal(mean = m, precision = P)
+        end
     end
-end
 
-@constraints function constraints_mv_iid_wishart()
-    q(m, P) = q(m)q(P)
-end
+    @constraints function constraints_mv_iid_wishart()
+        q(m, P) = q(m)q(P)
+    end
 
-## Inference definition
+    ## Inference definition
 
-function inference_mv_wishart(data, n, d)
-    return infer(
-        model = mv_iid_wishart(n, d),
-        data = (y = data,),
-        constraints = constraints_mv_iid_wishart(),
-        initmarginals = (m = vague(MvNormalMeanCovariance, d), P = vague(Wishart, d)),
-        returnvars = KeepLast(),
-        iterations = 10,
-        free_energy = Float64
-    )
-end
-
-@testset "Multivariate IID: Precision parametrisation" begin
+    function inference_mv_wishart(data, n, d)
+        return infer(
+            model = mv_iid_wishart(n, d),
+            data = (y = data,),
+            constraints = constraints_mv_iid_wishart(),
+            initmarginals = (m = vague(MvNormalMeanCovariance, d), P = vague(Wishart, d)),
+            returnvars = KeepLast(),
+            iterations = 10,
+            free_energy = Float64
+        )
+    end
 
     ## Data creation
     rng = StableRNG(123)
@@ -72,6 +67,4 @@ end
     end
 
     @test_benchmark "models" "iid_mv_wishart" inference_mv_wishart($data, $n, $d)
-end
-
 end

@@ -1,34 +1,30 @@
-module RxInferModelsProbitTest
+@testitem "Probit Model" begin
+    using BenchmarkTools, Random, Plots, Dates, LinearAlgebra, StableRNGs
 
-using Test, InteractiveUtils
-using RxInfer, BenchmarkTools, Random, Plots, Dates, LinearAlgebra, StableRNGs
+    using StatsFuns: normcdf
 
-using StatsFuns: normcdf
+    # `include(test/utiltests.jl)`
+    include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
-# `include(test/utiltests.jl)`
-include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
+    # Please use StableRNGs for random number generators
 
-# Please use StableRNGs for random number generators
+    ## Model definition
+    @model function probit_model(nr_samples::Int64)
+        x = randomvar(nr_samples + 1)
+        y = datavar(Float64, nr_samples)
 
-## Model definition
-@model function probit_model(nr_samples::Int64)
-    x = randomvar(nr_samples + 1)
-    y = datavar(Float64, nr_samples)
+        x[1] ~ Normal(mean = 0.0, precision = 0.01)
 
-    x[1] ~ Normal(mean = 0.0, precision = 0.01)
-
-    for k in 2:(nr_samples + 1)
-        x[k] ~ Normal(mean = x[k - 1] + 0.1, precision = 100)
-        y[k - 1] ~ Probit(x[k]) where {pipeline = RequireMessage(in = NormalMeanPrecision(0, 1.0))}
+        for k in 2:(nr_samples + 1)
+            x[k] ~ Normal(mean = x[k - 1] + 0.1, precision = 100)
+            y[k - 1] ~ Probit(x[k]) where {pipeline = RequireMessage(in = NormalMeanPrecision(0, 1.0))}
+        end
     end
-end
 
-## Inference definition
-function probit_inference(data_y)
-    return infer(model = probit_model(length(data_y)), data = (y = data_y,), iterations = 10, returnvars = (x = KeepLast(),), free_energy = true)
-end
-
-@testset "Probit Model" begin
+    ## Inference definition
+    function probit_inference(data_y)
+        return infer(model = probit_model(length(data_y)), data = (y = data_y,), iterations = 10, returnvars = (x = KeepLast(),), free_energy = true)
+    end
 
     ## Data creation
     function generate_data(nr_samples::Int64; seed = 123)
@@ -86,6 +82,4 @@ end
     end
 
     @test_benchmark "models" "probit" probit_inference($data_y)
-end
-
 end

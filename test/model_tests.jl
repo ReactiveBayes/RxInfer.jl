@@ -1,10 +1,4 @@
-module RxInferModelTest
-
-using Test
-using RxInfer
-using Random
-
-@testset "@model macro tests" begin
+@testitem "@model macro tests" begin
     @testset "Tuple based variables usage #1" begin
         @model function mixture_model()
             mean1 ~ Normal(mean = 10, variance = 10000)
@@ -97,6 +91,7 @@ using Random
     end
 
     @testset "Priors in arguments" begin
+        import Random: MersenneTwister
         @model function coin_model_priors1(n, prior)
             y = datavar(Float64, n)
             θ ~ prior
@@ -186,6 +181,4 @@ using Random
 
         @test_throws ErrorException ReactiveMP.make_node(FactorGraphModel(), FactorNodeCreationOptions(), DummyDistributionTestModelError3, randomvar(:θ))
     end
-end
-
 end
