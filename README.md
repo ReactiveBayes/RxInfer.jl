@@ -173,7 +173,7 @@ Our high-level project roadmap outlines the key milestones and focus areas for t
 | 🧩 **Nested models with [GraphPPL.jl](https://github.com/biaslab/GraphPPL.jl)**     | 🛡️ **Robustness (NaN, Inf free)** | 🌐 **Stochastic Processes** | 🔄 **Automated inference with non-exponential family** 
 | 🔄 **Automated inference with [ExponentialFamily.jl](https://github.com/biaslab/ExponentialFamily.jl)**                 | 🧠 **Memory-efficiency** | 🚀 **Efficient message passing on a huge graph** | 📊 **Inference over graph structure**
 
-For a more granular view of our progress and ongoing tasks, refer to our [project board](https://github.com/orgs/biaslab/projects/10/views/5).
+For a more granular view of our progress and ongoing tasks, check out our [project board](https://github.com/orgs/biaslab/projects/10/views/5).
 
 
 # Ecosystem
