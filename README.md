@@ -171,7 +171,7 @@ Our high-level project roadmap outlines the key milestones and focus areas for t
 | Q1/Q2 2024          | Q3/Q4 2024                | 2025                | 2026                                      |
 |---------------------|---------------------------|--------------------|-------------------------------------------|
 | 🧩 **Nested models with [GraphPPL.jl](https://github.com/biaslab/GraphPPL.jl)**     | 🛡️ **Robustness (NaN, Inf free)** | 🌐 **Stochastic Processes** | 🔄 **Automated inference with non-exponential family** 
-| 🔄 **Automated inference with [ExponentialFamily.jl](https://github.com/biaslab/ExponentialFamily.jl)**                 | 🧠 **Memory-efficiency** | 🚀 **Efficient message passing on a huge graph** | 📊 **Inference over graph structure**
+| 🔄 **Automated inference with [ExponentialFamily.jl](https://github.com/biaslab/ExponentialFamily.jl)**                 | 🧠 **Memory-efficiency** | 🚀 **Resource-adaptive inference** | 📊 **Inference over graph structure**
 
 For a more granular view of our progress and ongoing tasks, check out our [project board](https://github.com/orgs/biaslab/projects/10/views/5).
 
