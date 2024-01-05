@@ -166,7 +166,7 @@ Certainly! Here's an updated version of the roadmap section with added emojis:
 
 # Roadmap
 
-Our high-level project roadmap outlines the key milestones and focus areas over the next few quarters:
+Our high-level project roadmap outlines the key milestones and focus areas for the upcoming years:
 
 | Q1/Q2 2024          | Q3/Q4 2024                | 2025                | 2026                                      |
 |---------------------|---------------------------|--------------------|-------------------------------------------|
