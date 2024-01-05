@@ -6,6 +6,7 @@
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://biaslab.github.io/RxInfer.jl/dev/)
 [![Examples](https://img.shields.io/badge/examples-RxInfer-brightgreen)](https://biaslab.github.io/RxInfer.jl/stable/examples/overview/)
 [![Q&A](https://img.shields.io/badge/Q&A-RxInfer-orange)](https://github.com/biaslab/RxInfer.jl/discussions)
+[![Roadmap](https://img.shields.io/badge/roadmap-RxInfer-yellow)](#roadmap)
 [![Build Status](https://github.com/biaslab/RxInfer.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/biaslab/RxInfer.jl/actions/workflows/CI.yml?query=branch%3Amain)
 [![Coverage](https://codecov.io/gh/biaslab/RxInfer.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/biaslab/RxInfer.jl)
 [![DOI](https://img.shields.io/badge/Journal%20of%20Open%20Source%20Software-10.21105/joss.05161-critical)](https://doi.org/10.21105/joss.05161)
@@ -160,6 +161,20 @@ Additionally, checkout our [video from JuliaCon 2023](https://www.youtube.com/wa
 <p align="center">
     <a href="https://www.youtube.com/watch?v=qXrvDVm_fnE"><img width="460" src="https://img.youtube.com/vi/qXrvDVm_fnE/0.jpg"></a>
 </p>
+
+Certainly! Here's an updated version of the roadmap section with added emojis:
+
+# Roadmap
+
+Our high-level project roadmap outlines the key milestones and focus areas for the upcoming years:
+
+| Q1/Q2 2024          | Q3/Q4 2024                | 2025                | 2026                                      |
+|---------------------|---------------------------|--------------------|-------------------------------------------|
+| 🧩 **Nested models with [GraphPPL.jl](https://github.com/biaslab/GraphPPL.jl)**     | 🛡️ **Robustness (NaN, Inf free)** | 🌐 **Stochastic Processes** | 🔄 **Automated inference with non-exponential family** 
+| 🔄 **Automated inference with [ExponentialFamily.jl](https://github.com/biaslab/ExponentialFamily.jl)**                 | 🧠 **Memory-efficiency** | 🚀 **Resource-adaptive inference** | 📊 **Inference over graph structure**
+
+For a more granular view of our progress and ongoing tasks, check out our [project board](https://github.com/orgs/biaslab/projects/10/views/5).
+
 
 # Ecosystem
 
