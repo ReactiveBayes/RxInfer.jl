@@ -162,8 +162,6 @@ Additionally, checkout our [video from JuliaCon 2023](https://www.youtube.com/wa
     <a href="https://www.youtube.com/watch?v=qXrvDVm_fnE"><img width="460" src="https://img.youtube.com/vi/qXrvDVm_fnE/0.jpg"></a>
 </p>
 
-Certainly! Here's an updated version of the roadmap section with added emojis:
-
 # Roadmap
 
 Our high-level project roadmap outlines the key milestones and focus areas for the upcoming years:
@@ -174,7 +172,6 @@ Our high-level project roadmap outlines the key milestones and focus areas for t
 | 🔄 **Automated inference with [ExponentialFamily.jl](https://github.com/biaslab/ExponentialFamily.jl)**                 | 🧠 **Memory-efficiency** | 🚀 **Resource-adaptive inference** | 📊 **Inference over graph structure**
 
 For a more granular view of our progress and ongoing tasks, check out our [project board](https://github.com/orgs/biaslab/projects/10/views/5).
-
 
 # Ecosystem
 
