@@ -50,7 +50,7 @@ nothing #hide
 
 ## [Posterior marginal updates](@id user-guide-manual-inference-marginal-updates)
 
-The `RxInfer` inference engine has a reactive API and operates in terms of Observables and Actors. For detailed information about these concepts we refer to [Rocket.jl documentation](https://biaslab.github.io/Rocket.jl/stable/observables/about/).
+The `RxInfer` inference engine has a reactive API and operates in terms of Observables and Actors. For detailed information about these concepts we refer to [Rocket.jl documentation](https://reactivebayes.github.io/Rocket.jl/stable/observables/about/).
 
 We use `getmarginal` function from `ReactiveMP` to get a posterior marginal updates observable:
 

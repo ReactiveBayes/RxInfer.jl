@@ -4,7 +4,7 @@ This section describes built-in functional forms that can be used for posterior 
 
 ## [Custom functional forms](@id lib-forms-custom-constraints)
 
-See the [ReactiveMP.jl library documentation](https://biaslab.github.io/ReactiveMP.jl/stable/) for more information about defining novel custom functional forms that are compatible with `ReactiveMP` inference backend.
+See the [ReactiveMP.jl library documentation](https://reactivebayes.github.io/ReactiveMP.jl/stable/) for more information about defining novel custom functional forms that are compatible with `ReactiveMP` inference backend.
 
 ## [UnspecifiedFormConstraint](@id lib-forms-unspecified-constraint)
 

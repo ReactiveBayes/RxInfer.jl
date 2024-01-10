@@ -102,7 +102,7 @@ makedocs(;
     sitename = "RxInfer.jl",
     format = Documenter.HTML(;
         prettyurls = get(ENV, "CI", "false") == "true",
-        canonical = "https://biaslab.github.io/RxInfer.jl",
+        canonical = "https://reactivebayes.github.io/RxInfer.jl",
         edit_link = "main",
         assets = String["assets/theme.css", "assets/header.css", "assets/header.js"]
     ),
@@ -140,4 +140,4 @@ makedocs(;
     ]
 )
 
-deploydocs(; repo = "github.com/biaslab/RxInfer.jl", devbranch = "main")
+deploydocs(; repo = "github.com/reactivebayes/RxInfer.jl", devbranch = "main")

@@ -202,7 +202,7 @@ function Base.run(examplesrunner::ExamplesRunner)
         write(io_main_overview, "!!! note\n")
         write(
             io_main_overview,
-            "\tAll examples have been pre-generated automatically from the [`examples/`](https://github.com/biaslab/RxInfer.jl/tree/main/examples) folder at GitHub repository.\n\n"
+            "\tAll examples have been pre-generated automatically from the [`examples/`](https://github.com/reactivebayes/RxInfer.jl/tree/main/examples) folder at GitHub repository.\n\n"
         )
 
         foreach(pairs(io_category_overviews)) do (label, overview)
@@ -216,7 +216,7 @@ function Base.run(examplesrunner::ExamplesRunner)
                 write(overview.io, "!!! note\n")
                 write(
                     overview.io,
-                    "\tAll examples have been pre-generated automatically from the [`examples/`](https://github.com/biaslab/RxInfer.jl/tree/main/examples) folder at GitHub repository.\n\n"
+                    "\tAll examples have been pre-generated automatically from the [`examples/`](https://github.com/reactivebayes/RxInfer.jl/tree/main/examples) folder at GitHub repository.\n\n"
                 )
                 write(overview.io, "$(overview.category.description)\n\n")
             end
@@ -261,7 +261,7 @@ function Base.run(examplesrunner::ExamplesRunner)
                 # In every examples we replace title with its `@id` equivalent, such that 
                 # `# Super cool title` becomes `[# Super cool title](@id examples-super-cool-title)`
                 fixtext = replace(mdtext, "# $(title)" => "# [$(title)](@id $(id))", fixpics...)
-                output  = string("This example has been auto-generated from the [`examples/`](https://github.com/biaslab/RxInfer.jl/tree/main/examples) folder at GitHub repository.\n\n", fixtext)
+                output  = string("This example has been auto-generated from the [`examples/`](https://github.com/reactivebayes/RxInfer.jl/tree/main/examples) folder at GitHub repository.\n\n", fixtext)
                 write(f, output)
             end
 

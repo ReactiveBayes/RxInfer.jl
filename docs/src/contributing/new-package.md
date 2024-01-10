@@ -29,7 +29,7 @@ You can use the following template to generate a new package:
 ```julia
 julia> using PkgTemplates
 
-julia> USER = "your github user name" # Use `biaslab` if developing within the BIASlab organisation
+julia> USER = "your github user name" # Use `reactivebayes` if developing within the ReactiveBayes organisation
 
 julia> template = Template(
     user = USER, 

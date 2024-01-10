@@ -109,7 +109,7 @@ We present **RxInfer.jl**, a package for processing infinite data streams by rea
 
 # Overview of functionality
 
-**RxInfer.jl** is an open source package, available at [https://github.com/biaslab/RxInfer.jl](https://github.com/biaslab/RxInfer.jl), 
+**RxInfer.jl** is an open source package, available at [https://github.com/reactivebayes/RxInfer.jl](https://github.com/reactivebayes/RxInfer.jl), 
   and enjoys the following features:
 
 - A user-friendly specification of probabilistic models. Through Julia macros, **RxInfer.jl** is capable of 
@@ -137,7 +137,7 @@ We present **RxInfer.jl**, a package for processing infinite data streams by rea
     or **ReverseDiff.jl**.
 - The inference engine supports different types of floating-point numbers, such as `Float32`, `Float64`, and `BigFloat`.
 
-A large collection of examples is available at [https://biaslab.github.io/RxInfer.jl/stable/examples/overview/](https://biaslab.github.io/RxInfer.jl/stable/examples/overview/).
+A large collection of examples is available at [https://reactivebayes.github.io/RxInfer.jl/stable/examples/overview/](https://reactivebayes.github.io/RxInfer.jl/stable/examples/overview/).
 
 # Example usage
 
