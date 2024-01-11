@@ -140,4 +140,4 @@ makedocs(;
     ]
 )
 
-deploydocs(; repo = "github.com/ReactiveBayes/RxInfer.jl", devbranch = "main")
+deploydocs(; repo = "github.com/ReactiveBayes/RxInfer.jl", devbranch = "main", forcepush = true)
