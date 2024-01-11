@@ -171,7 +171,7 @@ Our high-level project roadmap outlines the key milestones and focus areas for t
 | 🧩 **Nested models with [GraphPPL.jl](https://github.com/reactivebayes/GraphPPL.jl)**     | 🛡️ **Robustness (NaN, Inf free)** | 🌐 **Stochastic Processes** | 🔄 **Automated inference with non-exponential family** 
 | 🔄 **Automated inference with [ExponentialFamily.jl](https://github.com/reactivebayes/ExponentialFamily.jl)**                 | 🧠 **Memory-efficiency** | 🚀 **Resource-adaptive inference** | 📊 **Inference over graph structure**
 
-For a more granular view of our progress and ongoing tasks, check out our [project board](https://github.com/orgs/reactivebayes/projects/10/views/5).
+For a more granular view of our progress and ongoing tasks, check out our [project board](https://github.com/orgs/reactivebayes/projects/2/views/4).
 
 # Ecosystem
 
