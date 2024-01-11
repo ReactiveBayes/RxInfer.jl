@@ -1,14 +1,14 @@
 
 ![](docs/src/assets/biglogo-blacktheme.svg?raw=true&sanitize=true)
 
-[![Official page](https://img.shields.io/badge/official%20page%20-RxInfer-blue)](https://biaslab.github.io/rxinfer-website/)
-[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://biaslab.github.io/RxInfer.jl/stable/)
-[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://biaslab.github.io/RxInfer.jl/dev/)
-[![Examples](https://img.shields.io/badge/examples-RxInfer-brightgreen)](https://biaslab.github.io/RxInfer.jl/stable/examples/overview/)
-[![Q&A](https://img.shields.io/badge/Q&A-RxInfer-orange)](https://github.com/biaslab/RxInfer.jl/discussions)
+[![Official page](https://img.shields.io/badge/official%20page%20-RxInfer-blue)](https://reactivebayes.github.io/rxinfer-website/)
+[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://reactivebayes.github.io/RxInfer.jl/stable/)
+[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://reactivebayes.github.io/RxInfer.jl/dev/)
+[![Examples](https://img.shields.io/badge/examples-RxInfer-brightgreen)](https://reactivebayes.github.io/RxInfer.jl/stable/examples/overview/)
+[![Q&A](https://img.shields.io/badge/Q&A-RxInfer-orange)](https://github.com/reactivebayes/RxInfer.jl/discussions)
 [![Roadmap](https://img.shields.io/badge/roadmap-RxInfer-yellow)](#roadmap)
-[![Build Status](https://github.com/biaslab/RxInfer.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/biaslab/RxInfer.jl/actions/workflows/CI.yml?query=branch%3Amain)
-[![Coverage](https://codecov.io/gh/biaslab/RxInfer.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/biaslab/RxInfer.jl)
+[![Build Status](https://github.com/reactivebayes/RxInfer.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/reactivebayes/RxInfer.jl/actions/workflows/CI.yml?query=branch%3Amain)
+[![Coverage](https://codecov.io/gh/reactivebayes/RxInfer.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/reactivebayes/RxInfer.jl)
 [![DOI](https://img.shields.io/badge/Journal%20of%20Open%20Source%20Software-10.21105/joss.05161-critical)](https://doi.org/10.21105/joss.05161)
 [![Zenodo](https://img.shields.io/badge/Zenodo-10.5281/zenodo.7774921-important)](https://zenodo.org/badge/latestdoi/501995296)
 
@@ -21,7 +21,7 @@ Given a probabilistic model, RxInfer allows for an efficient message-passing bas
 
 ### Performance and scalability
 
-RxInfer.jl has been designed with a focus on efficiency, scalability and maximum performance for running Bayesian inference with message passing. Below is a comparison between RxInfer.jl and Turing.jl on latent state estimation in a linear multi-variate Gaussian state-space model. [Turing.jl](https://github.com/TuringLang/Turing.jl) is a state-of-the-art Julia-based general-purpose probabilistic programming package and is capable of running inference in a broader class of models. Still, RxInfer.jl executes the inference task in [various models](https://biaslab.github.io/RxInfer.jl/stable/examples/overview/) faster and more accurately. RxInfer.jl accomplishes this by taking advantage of any conjugate likelihood-prior pairings in the model, which have analytical posteriors that are known by RxInfer.jl. As a result, in models with conjugate pairings, RxInfer.jl often beats general-purpose probabilistic programming packages in terms of computational load, speed, memory and accuracy. Note, however, that RxInfer.jl also supports non-conjugate inference and is continually improving in order to support a larger class of models.
+RxInfer.jl has been designed with a focus on efficiency, scalability and maximum performance for running Bayesian inference with message passing. Below is a comparison between RxInfer.jl and Turing.jl on latent state estimation in a linear multi-variate Gaussian state-space model. [Turing.jl](https://github.com/TuringLang/Turing.jl) is a state-of-the-art Julia-based general-purpose probabilistic programming package and is capable of running inference in a broader class of models. Still, RxInfer.jl executes the inference task in [various models](https://reactivebayes.github.io/RxInfer.jl/stable/examples/overview/) faster and more accurately. RxInfer.jl accomplishes this by taking advantage of any conjugate likelihood-prior pairings in the model, which have analytical posteriors that are known by RxInfer.jl. As a result, in models with conjugate pairings, RxInfer.jl often beats general-purpose probabilistic programming packages in terms of computational load, speed, memory and accuracy. Note, however, that RxInfer.jl also supports non-conjugate inference and is continually improving in order to support a larger class of models.
 
 Turing comparison             |  Scalability performance
 :-------------------------:|:-------------------------:
@@ -29,7 +29,7 @@ Turing comparison             |  Scalability performance
 
 ### Faster inference with better results
 
-RxInfer.jl not only beats generic-purpose Bayesian inference methods in conjugate models, executes faster, and scales better, but also provides more accurate results. Check out the [documentation](https://biaslab.github.io/RxInfer.jl/stable/examples/overview/) for more examples!
+RxInfer.jl not only beats generic-purpose Bayesian inference methods in conjugate models, executes faster, and scales better, but also provides more accurate results. Check out the [documentation](https://reactivebayes.github.io/RxInfer.jl/stable/examples/overview/) for more examples!
 
 Inference with RxInfer             |  Inference with HMC
 :-------------------------:|:-------------------------:
@@ -58,7 +58,7 @@ Optionally, use `] test RxInfer` to validate the installation by running the tes
 
 # Getting Started
 
-There are examples available to get you started in the `examples/` folder. Alternatively, preview the same examples in the [documentation](https://biaslab.github.io/RxInfer.jl/stable/examples/overview/).
+There are examples available to get you started in the `examples/` folder. Alternatively, preview the same examples in the [documentation](https://reactivebayes.github.io/RxInfer.jl/stable/examples/overview/).
 
 ### Coin flip simulation
 
@@ -154,7 +154,7 @@ result = inference(
 
 # Where to go next?
 
-There are a set of [examples](https://biaslab.github.io/RxInfer.jl/stable/examples/overview/) available in `RxInfer` repository that demonstrate the more advanced features of the package. Alternatively, you can head to the [documentation](https://biaslab.github.io/RxInfer.jl/stable/) that provides more detailed information of how to use `RxInfer` to specify more complex probabilistic models.
+There are a set of [examples](https://reactivebayes.github.io/RxInfer.jl/stable/examples/overview/) available in `RxInfer` repository that demonstrate the more advanced features of the package. Alternatively, you can head to the [documentation](https://reactivebayes.github.io/RxInfer.jl/stable/) that provides more detailed information of how to use `RxInfer` to specify more complex probabilistic models.
 
 Additionally, checkout our [video from JuliaCon 2023](https://www.youtube.com/watch?v=qXrvDVm_fnE) for a high-level overview of the package
 
@@ -168,19 +168,19 @@ Our high-level project roadmap outlines the key milestones and focus areas for t
 
 | Q1/Q2 2024          | Q3/Q4 2024                | 2025                | 2026                                      |
 |---------------------|---------------------------|--------------------|-------------------------------------------|
-| 🧩 **Nested models with [GraphPPL.jl](https://github.com/biaslab/GraphPPL.jl)**     | 🛡️ **Robustness (NaN, Inf free)** | 🌐 **Stochastic Processes** | 🔄 **Automated inference with non-exponential family** 
-| 🔄 **Automated inference with [ExponentialFamily.jl](https://github.com/biaslab/ExponentialFamily.jl)**                 | 🧠 **Memory-efficiency** | 🚀 **Resource-adaptive inference** | 📊 **Inference over graph structure**
+| 🧩 **Nested models with [GraphPPL.jl](https://github.com/reactivebayes/GraphPPL.jl)**     | 🛡️ **Robustness (NaN, Inf free)** | 🌐 **Stochastic Processes** | 🔄 **Automated inference with non-exponential family** 
+| 🔄 **Automated inference with [ExponentialFamily.jl](https://github.com/reactivebayes/ExponentialFamily.jl)**                 | 🧠 **Memory-efficiency** | 🚀 **Resource-adaptive inference** | 📊 **Inference over graph structure**
 
-For a more granular view of our progress and ongoing tasks, check out our [project board](https://github.com/orgs/biaslab/projects/10/views/5).
+For a more granular view of our progress and ongoing tasks, check out our [project board](https://github.com/orgs/reactivebayes/projects/10/views/5).
 
 # Ecosystem
 
-The `RxInfer` framework consists of three *core* packages developed by BIASlab:
+The `RxInfer` framework consists of three *core* packages developed by reactivebayes:
 
-- [`ReactiveMP.jl`](https://github.com/biaslab/ReactiveMP.jl) - the underlying message passing-based inference engine
-- [`GraphPPL.jl`](https://github.com/biaslab/GraphPPL.jl) - model and constraints specification package
-- [`Rocket.jl`](https://github.com/biaslab/Rocket.jl) - reactive extensions package for Julia 
+- [`ReactiveMP.jl`](https://github.com/reactivebayes/ReactiveMP.jl) - the underlying message passing-based inference engine
+- [`GraphPPL.jl`](https://github.com/reactivebayes/GraphPPL.jl) - model and constraints specification package
+- [`Rocket.jl`](https://github.com/reactivebayes/Rocket.jl) - reactive extensions package for Julia 
 
 # License
 
-[MIT License](LICENSE) Copyright (c) 2021-2024 BIASlab
+[MIT License](LICENSE) Copyright (c) 2021-2024 BIASlab, 2024-present ReactiveBayes

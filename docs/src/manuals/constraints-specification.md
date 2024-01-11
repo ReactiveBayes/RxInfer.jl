@@ -102,7 +102,7 @@ indicates that the `q(x)` first must be approximated with a `SampleList` and in 
 !!! note
     Not all combinations of "stacked" form constraints are compatible between each other.
 
-You can find more information about built-in functional form constraint in the [Built-in Functional Forms](@ref lib-forms) section. In addition, the [ReactiveMP library documentation](https://biaslab.github.io/ReactiveMP.jl/stable/) explains the functional form interfaces and shows how to build a custom functional form constraint that is compatible with `RxInfer.jl` and `ReactiveMP.jl` inference engine.
+You can find more information about built-in functional form constraint in the [Built-in Functional Forms](@ref lib-forms) section. In addition, the [ReactiveMP library documentation](https://reactivebayes.github.io/ReactiveMP.jl/stable/) explains the functional form interfaces and shows how to build a custom functional form constraint that is compatible with `RxInfer.jl` and `ReactiveMP.jl` inference engine.
 
 ## Factorisation constraints on posterior distribution `q()`
 
