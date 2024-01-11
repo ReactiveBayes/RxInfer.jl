@@ -141,10 +141,10 @@ As you can see, `RxInfer` offers a model specification syntax that resembles clo
 
 ### Inference specification
 
-Once we have defined our model, the next step is to use `RxInfer` API to infer quantities of interests. To do this we can use a generic `inference` function from `RxInfer.jl` that supports static datasets.
+Once we have defined our model, the next step is to use `RxInfer` API to infer quantities of interests. To do this we can use a generic `infer` function from `RxInfer.jl` that supports static datasets.
 
 ```julia
-result = inference(
+result = infer(
     model = coin_model(length(dataset)),
     data  = (y = dataset, )
 )
