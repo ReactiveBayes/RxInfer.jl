@@ -1409,7 +1409,7 @@ function __rxinference(;
     return engine
 end
 
-function rxinference(; kwargs)
+function rxinference(; kwargs...)
     @warn "The `rxinference` function is deprecated and will be removed in the future.  Use `infer` with the `autoupdates` keyword argument instead."
 
     infer(; kwargs...)
