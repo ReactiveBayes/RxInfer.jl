@@ -21,16 +21,15 @@ jobs:
     name: Julia Formatter
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: julia-actions/setup-julia@v1         
-        with:
-          version: '1.10'
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v1
+      - uses: julia-actions/cache@v1         
       - run: make lint
   paper:
     name: Paper Preview
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - uses: openjournals/openjournals-draft-action@master
         with:
           journal: joss
@@ -60,9 +59,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: julia-actions/setup-julia@v1
-        with:
-          version: ${{ matrix.version }}
-          arch: ${{ matrix.arch }}
       - uses: julia-actions/cache@v1
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
@@ -84,10 +80,9 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - uses: julia-actions/setup-julia@v1
-        with:
-          version: '1.10'
+      - uses: julia-actions/cache@v1
       - uses: julia-actions/julia-buildpkg@v1
       - uses: actions/cache@v3
         id: examples
@@ -109,8 +104,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: julia-actions/setup-julia@v1
-        with:
-          version: '1.10'
       - uses: actions/cache@v3
         id: examples
         with:
@@ -118,6 +111,7 @@ jobs:
             docs/src/examples
             docs/src/assets/examples
           key: ${{ github.sha }}
+      - uses: julia-actions/cache@v1
       - uses: julia-actions/julia-buildpkg@v1
       - run: make docs
         env:

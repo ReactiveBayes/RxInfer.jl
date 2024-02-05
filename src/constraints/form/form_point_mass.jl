@@ -1,8 +1,9 @@
 
 import ReactiveMP: is_point_mass_form_constraint, default_form_check_strategy, default_prod_constraint, make_form_constraint, constrain_form
 import DomainSets: Domain, infimum, supremum
+import Optim
 
-using BayesBase, Distributions, ExponentialFamily, Optim
+using BayesBase, Distributions, ExponentialFamily
 
 """
     PointMassFormConstraint
@@ -91,9 +92,9 @@ function default_point_mass_form_constraint_optimizer(::Type{Univariate}, ::Type
     lower, upper = call_boundaries(constraint, distribution)
 
     result = if isinf(lower) && isinf(upper)
-        optimize(target, call_starting_point(constraint, distribution), LBFGS())
+        Optim.optimize(target, call_starting_point(constraint, distribution), Optim.LBFGS())
     else
-        optimize(target, [lower], [upper], call_starting_point(constraint, distribution), Fminbox(GradientDescent()))
+        Optim.optimize(target, [lower], [upper], call_starting_point(constraint, distribution), Optim.Fminbox(Optim.GradientDescent()))
     end
 
     if Optim.converged(result)
