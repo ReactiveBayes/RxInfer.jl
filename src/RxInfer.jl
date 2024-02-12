@@ -6,8 +6,9 @@ using Reexport
 
 include("helpers.jl")
 include("rocket.jl")
-include("graphppl.jl")
 include("model.jl")
+
+include("compatibility/old_graphppl.jl")
 
 include("constraints/form/form_fixed_marginal.jl")
 include("constraints/form/form_point_mass.jl")

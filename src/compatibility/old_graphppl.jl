@@ -1,4 +1,5 @@
 
+module OldGraphPPL
 using GraphPPL, TupleTools, MacroTools
 
 import MacroTools: @capture, postwalk, prewalk, walk
@@ -7,7 +8,7 @@ export @model, @constraints, @meta
 
 struct RxInferBackend end
 
-function GraphPPL.write_model_structure(::RxInferBackend, ms_name, ms_model, ms_args_checks, ms_args_const_init_block, ms_args, ms_kwargs, ms_body)
+function GraphPPL.Old.write_model_structure(::RxInferBackend, ms_name, ms_model, ms_args_checks, ms_args_const_init_block, ms_args, ms_kwargs, ms_body)
     generator = gensym(ms_name)
 
     # Extract symbols from the arguments specification
@@ -41,65 +42,65 @@ function GraphPPL.write_model_structure(::RxInferBackend, ms_name, ms_model, ms_
     end
 end
 
-function GraphPPL.write_argument_guard(::RxInferBackend, argument::Symbol)
+function GraphPPL.Old.write_argument_guard(::RxInferBackend, argument::Symbol)
     return :(@assert !($argument isa ReactiveMP.AbstractVariable) "It is not allowed to pass AbstractVariable objects to a model definition arguments. ConstVariables should be passed as their raw values.")
 end
 
-function GraphPPL.write_randomvar_expression(::RxInferBackend, model, varexp, options, arguments)
-    return :($varexp = ReactiveMP.randomvar($model, $options, $(GraphPPL.fquote(varexp)), $(arguments...)); $varexp)
+function GraphPPL.Old.write_randomvar_expression(::RxInferBackend, model, varexp, options, arguments)
+    return :($varexp = ReactiveMP.randomvar($model, $options, $(GraphPPL.Old.fquote(varexp)), $(arguments...)); $varexp)
 end
 
-function GraphPPL.write_datavar_expression(::RxInferBackend, model, varexpr, options, type, arguments)
+function GraphPPL.Old.write_datavar_expression(::RxInferBackend, model, varexpr, options, type, arguments)
     errstr    = "The expression `$varexpr = datavar($(type))` is incorrect. datavar(::Type, [ dims... ]) requires `Type` as a first argument, but `$(type)` is not a `Type`."
-    checktype = :(GraphPPL.ensure_type($(type)) || error($errstr))
-    return :($checktype; $varexpr = ReactiveMP.datavar($model, $options, $(GraphPPL.fquote(varexpr)), ReactiveMP.PointMass{$type}, $(arguments...)); $varexpr)
+    checktype = :(GraphPPL.Old.ensure_type($(type)) || error($errstr))
+    return :($checktype; $varexpr = ReactiveMP.datavar($model, $options, $(GraphPPL.Old.fquote(varexpr)), ReactiveMP.PointMass{$type}, $(arguments...)); $varexpr)
 end
 
-function GraphPPL.write_constvar_expression(::RxInferBackend, model, varexpr, arguments)
-    return :($varexpr = ReactiveMP.constvar($model, $(GraphPPL.fquote(varexpr)), $(arguments...)); $varexpr)
+function GraphPPL.Old.write_constvar_expression(::RxInferBackend, model, varexpr, arguments)
+    return :($varexpr = ReactiveMP.constvar($model, $(GraphPPL.Old.fquote(varexpr)), $(arguments...)); $varexpr)
 end
 
-function GraphPPL.write_as_variable(::RxInferBackend, model, varexpr)
+function GraphPPL.Old.write_as_variable(::RxInferBackend, model, varexpr)
     return :(ReactiveMP.as_variable($model, $varexpr))
 end
 
-function GraphPPL.write_undo_as_variable(::RxInferBackend, varexpr)
+function GraphPPL.Old.write_undo_as_variable(::RxInferBackend, varexpr)
     return :(ReactiveMP.undo_as_variable($varexpr))
 end
 
-function GraphPPL.write_anonymous_variable(::RxInferBackend, model, varexpr)
+function GraphPPL.Old.write_anonymous_variable(::RxInferBackend, model, varexpr)
     return :(ReactiveMP.setanonymous!($varexpr, true))
 end
 
-function GraphPPL.write_make_node_expression(::RxInferBackend, model, fform, variables, options, nodeexpr, varexpr)
+function GraphPPL.Old.write_make_node_expression(::RxInferBackend, model, fform, variables, options, nodeexpr, varexpr)
     return :($nodeexpr = ReactiveMP.make_node($model, $options, $fform, $varexpr, $(variables...)))
 end
 
-function GraphPPL.write_make_auto_node_expression(::RxInferBackend, model, rhs, nodeexpr, varexpr)
+function GraphPPL.Old.write_make_auto_node_expression(::RxInferBackend, model, rhs, nodeexpr, varexpr)
     return :($nodeexpr = ReactiveMP.make_node($model, RxInfer.AutoNode(), $varexpr, $rhs))
 end
 
-function GraphPPL.write_broadcasted_make_node_expression(::RxInferBackend, model, fform, variables, options, nodeexpr, varexpr)
+function GraphPPL.Old.write_broadcasted_make_node_expression(::RxInferBackend, model, fform, variables, options, nodeexpr, varexpr)
     return :($nodeexpr = ReactiveMP.make_node.($model, $options, $fform, $varexpr, $(variables...)))
 end
 
-function GraphPPL.write_broadcasted_make_auto_node_expression(::RxInferBackend, model, rhs, nodeexpr, varexpr)
+function GraphPPL.Old.write_broadcasted_make_auto_node_expression(::RxInferBackend, model, rhs, nodeexpr, varexpr)
     return :($nodeexpr = ReactiveMP.make_node.($model, RxInfer.AutoNode(), $varexpr, $rhs))
 end
 
-function GraphPPL.write_autovar_make_node_expression(::RxInferBackend, model, fform, variables, options, nodeexpr, varexpr, autovarid)
-    return :(($nodeexpr, $varexpr) = ReactiveMP.make_node($model, $options, $fform, RxInfer.AutoVar($(GraphPPL.fquote(autovarid))), $(variables...)))
+function GraphPPL.Old.write_autovar_make_node_expression(::RxInferBackend, model, fform, variables, options, nodeexpr, varexpr, autovarid)
+    return :(($nodeexpr, $varexpr) = ReactiveMP.make_node($model, $options, $fform, RxInfer.AutoVar($(GraphPPL.Old.fquote(autovarid))), $(variables...)))
 end
 
-function GraphPPL.write_autovar_make_auto_node_expression(::RxInferBackend, model, rhs, nodeexpr, varexpr, autovarid)
-    return :(($nodeexpr, $varexpr) = ReactiveMP.make_node($model, RxInfer.AutoNode(), RxInfer.AutoVar($(GraphPPL.fquote(autovarid))), $rhs))
+function GraphPPL.Old.write_autovar_make_auto_node_expression(::RxInferBackend, model, rhs, nodeexpr, varexpr, autovarid)
+    return :(($nodeexpr, $varexpr) = ReactiveMP.make_node($model, RxInfer.AutoNode(), RxInfer.AutoVar($(GraphPPL.Old.fquote(autovarid))), $rhs))
 end
 
-function GraphPPL.write_check_variable_existence(::RxInferBackend, model, varid, errormsg)
+function GraphPPL.Old.write_check_variable_existence(::RxInferBackend, model, varid, errormsg)
     return :(Base.haskey($model, $(QuoteNode(varid))) || Base.error($errormsg))
 end
 
-function GraphPPL.write_node_options(::RxInferBackend, model, fform, variables, options)
+function GraphPPL.Old.write_node_options(::RxInferBackend, model, fform, variables, options)
     is_factorisation_option_present = false
     is_meta_option_present          = false
     is_pipeline_option_present      = false
@@ -162,7 +163,7 @@ function write_pipeline_stage(fform, stage)
             end
         end
 
-        indices  = Expr(:tuple, map(s -> :(ReactiveMP.interface_get_index(Val{$(GraphPPL.fquote(fform))}, Val{$(GraphPPL.fquote(first(s)))})), specs)...)
+        indices  = Expr(:tuple, map(s -> :(ReactiveMP.interface_get_index(Val{$(GraphPPL.Old.fquote(fform))}, Val{$(GraphPPL.Old.fquote(first(s)))})), specs)...)
         initials = Expr(:tuple, map(s -> :($(last(s))), specs)...)
 
         if @capture(stage, (RequireInbound(args__)) | (RequireMessage(args__)))
@@ -190,7 +191,7 @@ function factorisation_replace_var_name(varnames, arg::Symbol)
 end
 
 function factorisation_name_to_index(form, name)
-    return :(ReactiveMP.interface_get_index(Val{$(GraphPPL.fquote(form))}, Val{ReactiveMP.interface_get_name(Val{$(GraphPPL.fquote(form))}, Val{$(GraphPPL.fquote(name))})}))
+    return :(ReactiveMP.interface_get_index(Val{$(GraphPPL.Old.fquote(form))}, Val{ReactiveMP.interface_get_name(Val{$(GraphPPL.Old.fquote(form))}, Val{$(GraphPPL.Old.fquote(name))})}))
 end
 
 function check_uniqueness(t)
@@ -230,7 +231,7 @@ end
 
 ## 
 
-function GraphPPL.write_randomvar_options(::RxInferBackend, variable, options)
+function GraphPPL.Old.write_randomvar_options(::RxInferBackend, variable, options)
     is_pipeline_option_present                     = false
     is_prod_constraint_option_present              = false
     is_prod_strategy_option_present                = false
@@ -298,7 +299,7 @@ function GraphPPL.write_randomvar_options(::RxInferBackend, variable, options)
     ))
 end
 
-function GraphPPL.write_datavar_options(::RxInferBackend, variable, type, options)
+function GraphPPL.Old.write_datavar_options(::RxInferBackend, variable, type, options)
     is_subject_option_present       = false
     is_allow_missing_option_present = false
 
@@ -327,11 +328,11 @@ end
 
 ## Factorisations constraints specification language
 
-function GraphPPL.write_constraints_specification(::RxInferBackend, factorisation, marginalsform, messagesform, options)
+function GraphPPL.Old.write_constraints_specification(::RxInferBackend, factorisation, marginalsform, messagesform, options)
     return :(ReactiveMP.ConstraintsSpecification($factorisation, $marginalsform, $messagesform, $options))
 end
 
-function GraphPPL.write_constraints_specification_options(::RxInferBackend, options)
+function GraphPPL.Old.write_constraints_specification_options(::RxInferBackend, options)
     @capture(options, [entries__]) || error("Invalid constraints specification options syntax. Should be `@constraints [ option1 = value1, ... ] ...`, but `$(options)` found.")
 
     is_warn_option_present = false
@@ -352,53 +353,53 @@ function GraphPPL.write_constraints_specification_options(::RxInferBackend, opti
     return :(ReactiveMP.ConstraintsSpecificationOptions($warn_option))
 end
 
-function GraphPPL.write_factorisation_constraint(::RxInferBackend, names, entries)
+function GraphPPL.Old.write_factorisation_constraint(::RxInferBackend, names, entries)
     return :(ReactiveMP.FactorisationConstraintsSpecification($names, $entries))
 end
 
-function GraphPPL.write_factorisation_constraint_entry(::RxInferBackend, names, entries)
+function GraphPPL.Old.write_factorisation_constraint_entry(::RxInferBackend, names, entries)
     return :(ReactiveMP.FactorisationConstraintsEntry($names, $entries))
 end
 
-function GraphPPL.write_init_factorisation_not_defined(::RxInferBackend, spec, name)
+function GraphPPL.Old.write_init_factorisation_not_defined(::RxInferBackend, spec, name)
     return :($spec = ReactiveMP.FactorisationSpecificationNotDefinedYet{$(QuoteNode(name))}())
 end
 
-function GraphPPL.write_check_factorisation_is_not_defined(::RxInferBackend, spec)
+function GraphPPL.Old.write_check_factorisation_is_not_defined(::RxInferBackend, spec)
     return :($spec isa ReactiveMP.FactorisationSpecificationNotDefinedYet)
 end
 
-function GraphPPL.write_factorisation_split(::RxInferBackend, left, right)
+function GraphPPL.Old.write_factorisation_split(::RxInferBackend, left, right)
     return :(ReactiveMP.factorisation_split($left, $right))
 end
 
-function GraphPPL.write_factorisation_combined_range(::RxInferBackend, left, right)
+function GraphPPL.Old.write_factorisation_combined_range(::RxInferBackend, left, right)
     return :(ReactiveMP.CombinedRange($left, $right))
 end
 
-function GraphPPL.write_factorisation_splitted_range(::RxInferBackend, left, right)
+function GraphPPL.Old.write_factorisation_splitted_range(::RxInferBackend, left, right)
     return :(ReactiveMP.SplittedRange($left, $right))
 end
 
-function GraphPPL.write_factorisation_functional_index(::RxInferBackend, repr, fn)
+function GraphPPL.Old.write_factorisation_functional_index(::RxInferBackend, repr, fn)
     return :(ReactiveMP.FunctionalIndex{$(QuoteNode(repr))}($fn))
 end
 
-function GraphPPL.write_form_constraint_specification_entry(::RxInferBackend, T, args, kwargs)
+function GraphPPL.Old.write_form_constraint_specification_entry(::RxInferBackend, T, args, kwargs)
     return :(ReactiveMP.make_form_constraint($T, $args...; $kwargs...))
 end
 
-function GraphPPL.write_form_constraint_specification(::RxInferBackend, specification)
+function GraphPPL.Old.write_form_constraint_specification(::RxInferBackend, specification)
     return :(ReactiveMP.FormConstraintSpecification($specification))
 end
 
 ## Meta specification language
 
-function GraphPPL.write_meta_specification(::RxInferBackend, entries, options)
+function GraphPPL.Old.write_meta_specification(::RxInferBackend, entries, options)
     return :(ReactiveMP.MetaSpecification($entries, $options))
 end
 
-function GraphPPL.write_meta_specification_options(::RxInferBackend, options)
+function GraphPPL.Old.write_meta_specification_options(::RxInferBackend, options)
     @capture(options, [entries__]) || error("Invalid meta specification options syntax. Should be `@meta [ option1 = value1, ... ] ...`, but `$(options)` found.")
 
     is_warn_option_present = false
@@ -419,7 +420,7 @@ function GraphPPL.write_meta_specification_options(::RxInferBackend, options)
     return :(ReactiveMP.MetaSpecificationOptions($warn_option))
 end
 
-function GraphPPL.write_meta_specification_entry(::RxInferBackend, F, N, meta)
+function GraphPPL.Old.write_meta_specification_entry(::RxInferBackend, F, N, meta)
     return :(ReactiveMP.MetaSpecificationEntry(Val($F), Val($N), $meta))
 end
 
@@ -442,8 +443,8 @@ ReactiveMPNodeAliases = (
         (expression) -> @capture(expression, (¬a_) | (!a_)) ? :(ReactiveMP.NOT($a)) : expression,
         "`¬a` and `!a`: alias for `NOT(a)` node (Unicode `\\neg`, operator precedence `||`, `&&`, `->` and `!` is the same as in Julia)."
     ),
-    ((expression) -> @capture(expression, +(args__)) ? GraphPPL.fold_linear_operator_call(expression) : expression, "`a + b + c`: alias for `(a + b) + c`"),
-    ((expression) -> @capture(expression, *(args__)) ? GraphPPL.fold_linear_operator_call(expression) : expression, "`a * b * c`: alias for `(a * b) * c`"),
+    ((expression) -> @capture(expression, +(args__)) ? GraphPPL.Old.fold_linear_operator_call(expression) : expression, "`a + b + c`: alias for `(a + b) + c`"),
+    ((expression) -> @capture(expression, *(args__)) ? GraphPPL.Old.fold_linear_operator_call(expression) : expression, "`a * b * c`: alias for `(a * b) * c`"),
     (
         (expression) -> if @capture(expression, (Normal | Gaussian)((μ) | (m) | (mean) = mean_, (σ²) | (τ⁻¹) | (v) | (var) | (variance) = var_))
             :(NormalMeanVariance($mean, $var))
@@ -514,7 +515,7 @@ ReactiveMPNodeAliases = (
     )
 )
 
-function GraphPPL.show_tilderhs_alias(::RxInferBackend, io = stdout)
+function GraphPPL.Old.show_tilderhs_alias(::RxInferBackend, io = stdout)
     foreach(skipmissing(map(last, ReactiveMPNodeAliases))) do alias
         println(io, "- ", alias)
     end
@@ -532,7 +533,7 @@ function apply_alias_transformation(expression::Expr, alias)
     return (_expression, _expression !== expression)
 end
 
-function GraphPPL.write_inject_tilderhs_aliases(::RxInferBackend, model, tilderhs)
+function GraphPPL.Old.write_inject_tilderhs_aliases(::RxInferBackend, model, tilderhs)
     return postwalk(tilderhs) do expression
         # We short-circuit if `mflag` is true
         _expression, _ = foldl(ReactiveMPNodeAliases; init = (expression, false)) do (expression, mflag), alias
@@ -555,26 +556,27 @@ end
 `@model` macro generates a function that returns an equivalent graph-representation of the given probabilistic model description.
 
 ## Supported alias in the model specification
-$(begin io = IOBuffer(); GraphPPL.show_tilderhs_alias(RxInferBackend(), io); String(take!(io)) end)
+$(begin io = IOBuffer(); GraphPPL.Old.show_tilderhs_alias(RxInferBackend(), io); String(take!(io)) end)
 """
 macro model end
 
 macro model(model_specification)
-    return GraphPPL.generate_model_expression(RxInferBackend(), model_specification)
+    return GraphPPL.Old.generate_model_expression(RxInferBackend(), model_specification)
 end
 
 macro constraints(constraints_specification)
-    return GraphPPL.generate_constraints_expression(RxInferBackend(), :([]), constraints_specification)
+    return GraphPPL.Old.generate_constraints_expression(RxInferBackend(), :([]), constraints_specification)
 end
 
 macro constraints(constraints_options, constraints_specification)
-    return GraphPPL.generate_constraints_expression(RxInferBackend(), constraints_options, constraints_specification)
+    return GraphPPL.Old.generate_constraints_expression(RxInferBackend(), constraints_options, constraints_specification)
 end
 
 macro meta(meta_specification)
-    return GraphPPL.generate_meta_expression(RxInferBackend(), :([]), meta_specification)
+    return GraphPPL.Old.generate_meta_expression(RxInferBackend(), :([]), meta_specification)
 end
 
 macro meta(meta_options, meta_specification)
-    return GraphPPL.generate_meta_expression(RxInferBackend(), meta_options, meta_specification)
+    return GraphPPL.Old.generate_meta_expression(RxInferBackend(), meta_options, meta_specification)
+end
 end
