@@ -101,28 +101,20 @@ ReactiveMP.getaddons(options::ModelInferenceOptions, addons::ReactiveMP.Abstract
 ReactiveMP.getaddons(options::ModelInferenceOptions, addons::Nothing) = addons                      # Do nothing if addons is `nothing`
 ReactiveMP.getaddons(options::ModelInferenceOptions, addons::Tuple) = addons                        # Do nothing if addons is a `Tuple`
 
-struct FactorGraphModel{Constrains, Meta, Options <: ModelInferenceOptions}
-    constraints :: Constrains
-    meta        :: Meta
-    options     :: Options
-    nodes       :: FactorNodesCollection
-    variables   :: VariablesCollection
+struct FactorGraphModel{M}
+    model::M
 end
 
-Base.show(io::IO, ::Type{<:FactorGraphModel}) = print(io, "FactorGraphModel")
-Base.show(io::IO, model::FactorGraphModel)    = print(io, "FactorGraphModel()")
+getmodel(model::FactorGraphModel)     = model.model
+getvariables(model::FactorGraphModel) = getvariables(model, getmodel(model))
 
-FactorGraphModel() = FactorGraphModel(DefaultConstraints, DefaultMeta, DefaultModelInferenceOptions)
-
-function FactorGraphModel(constraints::C, meta::M, options::O) where {C, M, O}
-    return FactorGraphModel{C, M, O}(constraints, meta, options, FactorNodesCollection(), VariablesCollection())
-end
+# If the underlying model is a `GraphPPL.Model` then we simply return the underlying context
+getvariables(::FactorGraphModel, model::GraphPPL.Model) = GraphPPL.getcontext(model)
 
 getconstraints(model::FactorGraphModel) = model.constraints
 getmeta(model::FactorGraphModel)        = model.meta
 getoptions(model::FactorGraphModel)     = model.options
 getnodes(model::FactorGraphModel)       = model.nodes
-getvariables(model::FactorGraphModel)   = model.variables
 
 import ReactiveMP: getrandom, getconstant, getdata, getvardict
 
@@ -132,7 +124,7 @@ ReactiveMP.getdata(model::FactorGraphModel)     = getdata(getvariables(model))
 ReactiveMP.getvardict(model::FactorGraphModel)  = getvardict(getvariables(model))
 
 function Base.getindex(model::FactorGraphModel, symbol::Symbol)
-    return getindex(getvariables(model), symbol)
+    return getindex(getmodel(model), getindex(getvariables(model), symbol))
 end
 
 function Base.haskey(model::FactorGraphModel, symbol::Symbol)

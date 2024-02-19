@@ -32,7 +32,7 @@
 
     ## Inference definition
     function linreg_inference(modelfn, niters, xdata, ydata)
-        return inference(
+        return infer(
             model = modelfn(length(xdata)),
             data = (x = xdata, y = ydata),
             returnvars = (a = KeepLast(), b = KeepLast()),

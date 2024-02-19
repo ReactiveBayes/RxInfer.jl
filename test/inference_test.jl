@@ -27,6 +27,26 @@ end
     @test_throws ErrorException __infer_check_dicttype(:something, (missing))
 end
 
+@testitem "__infer_create_factor_graph_model" begin 
+
+    @model function simple_model_for_infer_create_model(y, a, b)    
+        x ~ Beta(a, b)
+        y ~ Normal(x, 1.0)
+    end
+
+    import RxInfer: __infer_create_factor_graph_model, FactorGraphModel
+    import GraphPPL: is_data, is_random, is_constant, is_variable, is_factor, getproperties
+
+    @testset let model = __infer_create_factor_graph_model(simple_model_for_infer_create_model(a = 1, b = 2), (y = 3, ))
+        @test model isa FactorGraphModel
+        @test is_variable(model[:y])
+        @test is_variable(model[:x])
+        @test is_data(getproperties(model[:y]))
+        @test is_random(getproperties(model[:x]))
+    end
+
+end
+
 @testitem "`@autoupdates` macro" begin
     function somefunction(something)
         return nothing

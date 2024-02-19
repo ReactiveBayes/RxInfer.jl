@@ -6,6 +6,7 @@ using Reexport
 
 include("helpers.jl")
 include("rocket.jl")
+include("graphppl.jl")
 include("model.jl")
 
 include("compatibility/old_graphppl.jl")

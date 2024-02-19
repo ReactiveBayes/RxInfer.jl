@@ -280,8 +280,8 @@ unwrap_free_energy_option(option::Bool)                      = (option, Real, Co
 unwrap_free_energy_option(option::Type{T}) where {T <: Real} = (true, T, CountingReal{T})
 
 function __inference(;
-    # `model`: specifies a model generator, with the help of the `Model` function
-    model::ModelGenerator,
+    # `model` must be a materialized graph object from GraphPPL 
+    model = nothing,
     # NamedTuple or Dict with data, optional if predictvars are specified
     data = nothing,
     # NamedTuple or Dict with initial marginals, optional, defaults to empty
@@ -318,6 +318,10 @@ function __inference(;
     # catch exceptions during the inference procedure, optional, defaults to false
     catch_exception = false
 )
+    if isnothing(model)
+        error("The `model` argument is required for the inference procedure.")
+    end
+
     _options = convert(ModelInferenceOptions, options)
     # If the `options` does not have `warn` key inside, override it with the keyword `warn`
     if isnothing(options) || !haskey(options, :warn)
@@ -1439,6 +1443,29 @@ function __check_available_callbacks(warn, callbacks, available_callbacks)
     end
 end
 
+# This function works for static data, such as `NamedTuple` or a `Dict`
+function __infer_create_factor_graph_model(generator::GraphPPL.ModelGenerator, data::Union{NamedTuple, Dict})
+    # If the data is already a `NamedTuple` this should not really matter 
+    # But it makes it easier to deal with the `Dict` type, which is unordered by default
+    ntdata = NamedTuple(data)::NamedTuple
+    model  = GraphPPL.create_model(generator) do model, ctx
+        ikeys = keys(ntdata)
+        interfaces = map(ikeys) do key
+            return __infer_create_data_interface(model, ctx, key, ntdata[key])
+        end
+        return NamedTuple{ikeys}(interfaces)
+    end
+    return FactorGraphModel(model)
+end
+
+function __infer_create_data_interface(model, context, key::Symbol, data)
+    return GraphPPL.getorcreate!(model, context, GraphPPL.NodeCreationOptions(kind = :data), key, nothing)
+end
+
+function __infer_create_data_interface(model, context, key::Symbol, data::AbstractArray)
+    error("TODO: Not implemented for now.")
+end
+
 """
     infer(
         model; 
@@ -1764,7 +1791,7 @@ If the `addons` argument has been used, automatically changes the default strate
 
 """
 function infer(;
-    model::ModelGenerator,
+    model::GraphPPL.ModelGenerator = nothing,
     data = nothing,
     datastream = nothing, # streamline specific
     autoupdates = nothing, # streamline specific
@@ -1790,7 +1817,9 @@ function infer(;
     autostart = true, # streamline specific
     warn = true
 )
-    if !isnothing(data) && !isnothing(datastream)
+    if isnothing(model)
+        error("The `model` keyword argument is required for the `infer` function.")
+    elseif !isnothing(data) && !isnothing(datastream)
         error("""`data` and `datastream` keyword arguments cannot be used together. """)
     elseif isnothing(data) && isnothing(predictvars) && isnothing(datastream)
         error("""One of the keyword arguments `data` or `predictvars` or `datastream` must be specified""")
@@ -1800,10 +1829,22 @@ function infer(;
     __infer_check_dicttype(:initmessages, initmessages)
     __infer_check_dicttype(:callbacks, callbacks)
 
+    # We create a model with the `GraphPPL` package and insert a certain RxInfer related 
+    # plugins which include the VI plugin, meta plugin and the ReactiveMP integration plugin
+    modelplugins = GraphPPL.PluginsCollection(GraphPPL.VariationalConstraintsPlugin(constraints), GraphPPL.MetaPlugin(meta), RxInfer.ReactiveMPIntegrationPlugin(options))
+
+    # The `_model` here still must be a `ModelGenerator`
+    _model = GraphPPL.with_plugins(model, modelplugins)
+
+    # The actual model is being created in the `__infer_create_model` based on the data type
+    inference_invoke_callback(callbacks, :before_model_creation)
+    fgmodel = __infer_create_factor_graph_model(_model, data)
+    inference_invoke_callback(callbacks, :after_model_creation, fmodel, freturval)
+
     if isnothing(autoupdates)
         __check_available_callbacks(warn, callbacks, available_callbacks(__inference))
         __inference(
-            model = model,
+            model = fgmodel,
             data = data,
             initmarginals = initmarginals,
             initmessages = initmessages,
@@ -1825,7 +1866,7 @@ function infer(;
     else
         __check_available_callbacks(warn, callbacks, available_callbacks(__rxinference))
         __rxinference(
-            model = model,
+            model = fgmodel,
             data = data,
             datastream = datastream,
             autoupdates = autoupdates,
