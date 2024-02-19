@@ -1,16 +1,11 @@
 
-export FactorGraphModel, create_model, model_name
-export AutoVar
+export FactorGraphModel
 export getoptions, getconstraints, getmeta
 export getnodes, getvariables, getrandom, getconstant, getdata
 
 import Base: push!, show, getindex, haskey, firstindex, lastindex
 import ReactiveMP: get_pipeline_stages, getaddons, AbstractFactorNode, isconnected, isused
 import Rocket: getscheduler
-
-function create_model end
-
-function model_name end
 
 # Model Inference Options
 
@@ -31,29 +26,29 @@ Creates model inference options object. The list of available options is present
 
 See also: [`infer`](@ref)
 """
-struct ModelInferenceOptions{P, S, A}
+struct InferenceOptions{P, S, A}
     pipeline  :: P
     scheduler :: S
     addons    :: A
     warn      :: Bool
 end
 
-ModelInferenceOptions(pipeline, scheduler, addons) = ModelInferenceOptions(pipeline, scheduler, addons, true)
+InferenceOptions(pipeline, scheduler, addons) = InferenceOptions(pipeline, scheduler, addons, true)
 
-UnspecifiedModelInferenceOptions() = convert(ModelInferenceOptions, (;))
+UnspecifiedInferenceOptions() = convert(InferenceOptions, (;))
 
-setpipeline(options::ModelInferenceOptions, pipeline) = ModelInferenceOptions(pipeline, options.scheduler, options.addons, options.warn)
-setscheduler(options::ModelInferenceOptions, scheduler) = ModelInferenceOptions(options.pipeline, scheduler, options.addons, options.warn)
-setaddons(options::ModelInferenceOptions, addons) = ModelInferenceOptions(options.pipeline, options.scheduler, addons, options.warn)
-setwarn(options::ModelInferenceOptions, warn) = ModelInferenceOptions(options.pipeline, options.scheduler, options.addons, warn)
+setpipeline(options::InferenceOptions, pipeline) = InferenceOptions(pipeline, options.scheduler, options.addons, options.warn)
+setscheduler(options::InferenceOptions, scheduler) = InferenceOptions(options.pipeline, scheduler, options.addons, options.warn)
+setaddons(options::InferenceOptions, addons) = InferenceOptions(options.pipeline, options.scheduler, addons, options.warn)
+setwarn(options::InferenceOptions, warn) = InferenceOptions(options.pipeline, options.scheduler, options.addons, warn)
 
 import Base: convert
 
-function Base.convert(::Type{ModelInferenceOptions}, options::Nothing)
-    return UnspecifiedModelInferenceOptions()
+function Base.convert(::Type{InferenceOptions}, options::Nothing)
+    return UnspecifiedInferenceOptions()
 end
 
-function Base.convert(::Type{ModelInferenceOptions}, options::NamedTuple{keys}) where {keys}
+function Base.convert(::Type{InferenceOptions}, options::NamedTuple{keys}) where {keys}
     available_options = (:pipeline, :scheduler, :limit_stack_depth, :addons, :warn)
 
     for key in keys
@@ -87,362 +82,119 @@ function Base.convert(::Type{ModelInferenceOptions}, options::NamedTuple{keys}) 
         addons = options[:addons]
     end
 
-    return ModelInferenceOptions(pipeline, scheduler, addons, warn)
+    return InferenceOptions(pipeline, scheduler, addons, warn)
 end
 
-const DefaultModelInferenceOptions = UnspecifiedModelInferenceOptions()
+const DefaultModelInferenceOptions = UnspecifiedInferenceOptions()
 
-Rocket.getscheduler(options::ModelInferenceOptions) = something(options.scheduler, AsapScheduler())
+Rocket.getscheduler(options::InferenceOptions) = something(options.scheduler, AsapScheduler())
 
-ReactiveMP.get_pipeline_stages(options::ModelInferenceOptions) = something(options.pipeline, EmptyPipelineStage())
+ReactiveMP.get_pipeline_stages(options::InferenceOptions) = something(options.pipeline, EmptyPipelineStage())
 
-ReactiveMP.getaddons(options::ModelInferenceOptions) = ReactiveMP.getaddons(options, options.addons)
-ReactiveMP.getaddons(options::ModelInferenceOptions, addons::ReactiveMP.AbstractAddon) = (addons,) # ReactiveMP expects addons to be of type tuple
-ReactiveMP.getaddons(options::ModelInferenceOptions, addons::Nothing) = addons                      # Do nothing if addons is `nothing`
-ReactiveMP.getaddons(options::ModelInferenceOptions, addons::Tuple) = addons                        # Do nothing if addons is a `Tuple`
+ReactiveMP.getaddons(options::InferenceOptions) = ReactiveMP.getaddons(options, options.addons)
+ReactiveMP.getaddons(options::InferenceOptions, addons::ReactiveMP.AbstractAddon) = (addons,) # ReactiveMP expects addons to be of type tuple
+ReactiveMP.getaddons(options::InferenceOptions, addons::Nothing) = addons                      # Do nothing if addons is `nothing`
+ReactiveMP.getaddons(options::InferenceOptions, addons::Tuple) = addons                        # Do nothing if addons is a `Tuple`
 
 struct FactorGraphModel{M}
     model::M
 end
 
-getmodel(model::FactorGraphModel)     = model.model
-getvariables(model::FactorGraphModel) = getvariables(model, getmodel(model))
+# getmodel(model::FactorGraphModel)     = model.model
+# getvariables(model::FactorGraphModel) = getvariables(model, getmodel(model))
+# 
+# # If the underlying model is a `GraphPPL.Model` then we simply return the underlying context
+# getvariables(::FactorGraphModel, model::GraphPPL.Model) = GraphPPL.getcontext(model)
+# 
+# getconstraints(model::FactorGraphModel) = model.constraints
+# getmeta(model::FactorGraphModel)        = model.meta
+# getoptions(model::FactorGraphModel)     = model.options
+# getnodes(model::FactorGraphModel)       = model.nodes
+# 
+# import ReactiveMP: getrandom, getconstant, getdata, getvardict
+# 
+# ReactiveMP.getrandom(model::FactorGraphModel)   = getrandom(getvariables(model))
+# ReactiveMP.getconstant(model::FactorGraphModel) = getconstant(getvariables(model))
+# ReactiveMP.getdata(model::FactorGraphModel)     = getdata(getvariables(model))
+# ReactiveMP.getvardict(model::FactorGraphModel)  = getvardict(getvariables(model))
+# 
+# function Base.getindex(model::FactorGraphModel, symbol::Symbol)
+#     return getindex(getmodel(model), getindex(getvariables(model), symbol))
+# end
+# 
+# function Base.haskey(model::FactorGraphModel, symbol::Symbol)
+#     return haskey(getvariables(model), symbol)
+# end
 
-# If the underlying model is a `GraphPPL.Model` then we simply return the underlying context
-getvariables(::FactorGraphModel, model::GraphPPL.Model) = GraphPPL.getcontext(model)
-
-getconstraints(model::FactorGraphModel) = model.constraints
-getmeta(model::FactorGraphModel)        = model.meta
-getoptions(model::FactorGraphModel)     = model.options
-getnodes(model::FactorGraphModel)       = model.nodes
-
-import ReactiveMP: getrandom, getconstant, getdata, getvardict
-
-ReactiveMP.getrandom(model::FactorGraphModel)   = getrandom(getvariables(model))
-ReactiveMP.getconstant(model::FactorGraphModel) = getconstant(getvariables(model))
-ReactiveMP.getdata(model::FactorGraphModel)     = getdata(getvariables(model))
-ReactiveMP.getvardict(model::FactorGraphModel)  = getvardict(getvariables(model))
-
-function Base.getindex(model::FactorGraphModel, symbol::Symbol)
-    return getindex(getmodel(model), getindex(getvariables(model), symbol))
-end
-
-function Base.haskey(model::FactorGraphModel, symbol::Symbol)
-    return haskey(getvariables(model), symbol)
-end
-
-Base.broadcastable(model::FactorGraphModel) = (model,)
+# Base.broadcastable(model::FactorGraphModel) = (model,)
 
 import ReactiveMP: hasrandomvar, hasdatavar, hasconstvar
 
-ReactiveMP.hasrandomvar(model::FactorGraphModel, symbol::Symbol) = hasrandomvar(getvariables(model), symbol)
-ReactiveMP.hasdatavar(model::FactorGraphModel, symbol::Symbol)   = hasdatavar(getvariables(model), symbol)
-ReactiveMP.hasconstvar(model::FactorGraphModel, symbol::Symbol)  = hasconstvar(getvariables(model), symbol)
+# ReactiveMP.hasrandomvar(model::FactorGraphModel, symbol::Symbol) = hasrandomvar(getvariables(model), symbol)
+# ReactiveMP.hasdatavar(model::FactorGraphModel, symbol::Symbol)   = hasdatavar(getvariables(model), symbol)
+# ReactiveMP.hasconstvar(model::FactorGraphModel, symbol::Symbol)  = hasconstvar(getvariables(model), symbol)
 
-Base.firstindex(model::FactorGraphModel, symbol::Symbol) = firstindex(getvariables(model), symbol)
-Base.lastindex(model::FactorGraphModel, symbol::Symbol)  = lastindex(getvariables(model), symbol)
+##  We extend integrate `ReactiveMP` and `GraphPPL` functionalities here
 
-Base.push!(::FactorGraphModel, ::Nothing) = nothing
-
-Base.push!(model::FactorGraphModel, node::AbstractFactorNode)   = push!(getnodes(model), node)
-Base.push!(model::FactorGraphModel, variable::AbstractVariable) = push!(getvariables(model), variable)
-
-Base.push!(model::FactorGraphModel, nodes::AbstractArray{N}) where {N <: AbstractFactorNode}   = push!(getnodes(model), nodes)
-Base.push!(model::FactorGraphModel, variables::AbstractArray{V}) where {V <: AbstractVariable} = push!(getvariables(model), variables)
-
-function Base.push!(model::FactorGraphModel, collection::Tuple)
-    foreach((d) -> push!(model, d), collection)
-    return collection
-end
-
-function Base.push!(model::FactorGraphModel, array::AbstractArray)
-    foreach((d) -> add!(model, d), array)
-    return array
-end
-
-import ReactiveMP: activate!
-
-function ReactiveMP.activate!(model::FactorGraphModel)
-    warn = getoptions(model).warn
-
-    filter!(getrandom(model)) do randomvar
-        @assert degree(randomvar) !== 0 "Unused random variable has been found $(indexed_name(randomvar))."
-        @assert degree(randomvar) !== 1 "Half-edge has been found: $(indexed_name(randomvar)). To terminate half-edges 'Uninformative' node can be used."
-        return degree(randomvar) >= 2
-    end
-
-    foreach(getdata(model)) do datavar
-        if warn && !isconnected(datavar) && !isused(datavar)
-            @warn "Unused data variable has been found: '$(indexed_name(datavar))'. Ignore if '$(indexed_name(datavar))' has been used in deterministic nonlinear transformation. Use `warn = false` to suppress this warning."
-        end
-    end
-
-    activate!(getconstraints(model), getnodes(model), getvariables(model))
-    activate!(getmeta(model), getnodes(model), getvariables(model))
-
-    options = getoptions(model)
-
-    filter!(c -> isconnected(c), getconstant(model))
-    foreach(r -> activate!(r, options), getrandom(model))
-    foreach(d -> activate!(d, options), getdata(model))
-    foreach(n -> activate!(n, options), getnodes(model))
-end
-
-## constraints 
-
-import ReactiveMP: resolve_factorisation
-
-node_resolve_factorisation(model::FactorGraphModel, something, fform, variables) = something
-node_resolve_factorisation(model::FactorGraphModel, ::Nothing, fform, variables) = node_resolve_constraints_factorisation(model, getconstraints(model), fform, variables)
-
-node_resolve_constraints_factorisation(model::FactorGraphModel, constraints, fform, variables)                         = resolve_factorisation(constraints, getvariables(model), fform, variables)
-node_resolve_constraints_factorisation(model::FactorGraphModel, ::ConstraintsSpecification{Tuple{}}, fform, variables) = resolve_factorisation(UnspecifiedConstraints(), getvariables(model), fform, variables)
-
-## meta 
-
-import ReactiveMP: resolve_meta
-
-node_resolve_meta(model::FactorGraphModel, something, fform, variables) = something
-node_resolve_meta(model::FactorGraphModel, ::Nothing, fform, variables) = resolve_meta(getmeta(model), fform, variables)
-
-## randomvar
-
-import ReactiveMP: randomvar_options_set_marginal_form_check_strategy, randomvar_options_set_marginal_form_constraint
-import ReactiveMP: randomvar_options_set_messages_form_check_strategy, randomvar_options_set_messages_form_constraint
-import ReactiveMP: randomvar_options_set_pipeline, randomvar_options_set_prod_constraint
-import ReactiveMP: randomvar_options_set_prod_strategy, randomvar_options_set_proxy_variables
-
-function randomvar_resolve_options(model::FactorGraphModel, options::RandomVariableCreationOptions, name)
-    qform, qprod = randomvar_resolve_marginal_form_prod(model, options, name)
-    mform, mprod = randomvar_resolve_messages_form_prod(model, options, name)
-
-    rprod = resolve_prod_strategy(options.prod_constraint, resolve_prod_strategy(qprod, mprod))
-
-    qoptions = randomvar_options_set_marginal_form_constraint(options, qform)
-    moptions = randomvar_options_set_messages_form_constraint(qoptions, mform)
-    roptions = randomvar_options_set_prod_constraint(moptions, rprod)
-
-    return roptions
-end
-
-# Model Generator
+import GraphPPL: plugin_type, FactorAndVariableNodesPlugin, preprocess_plugin, postprocess_plugin
+import GraphPPL: Model, Context, NodeLabel, NodeData, FactorNodeProperties, VariableNodeProperties, NodeCreationOptions, hasextra, getextra, setextra!, getproperties
+import GraphPPL: as_variable, is_data, is_random, degree
 
 """
-    ModelGenerator
-
-`ModelGenerator` is a special object that is used in the `infer` function to lazily create model later on given `constraints`, `meta` and `options`.
-
-See also: [`infer`](@ref)
+- `options`: An instance of `InferenceOptions`
 """
-struct ModelGenerator{G, A, K}
-    generator :: G
-    args      :: A
-    kwargs    :: K
-
-    ModelGenerator(generator::G, args::A, kwargs::K) where {G, A, K} = new{G, A, K}(generator, args, kwargs)
+struct ReactiveMPIntegrationPlugin{T}
+    options::T
 end
 
-function (generator::ModelGenerator)(; constraints = nothing, meta = nothing, options = nothing)
-    sconstraints = something(constraints, UnspecifiedConstraints())
-    smeta        = something(meta, UnspecifiedMeta())
-    soptions     = something(options, UnspecifiedModelInferenceOptions())
-    return generator(FactorGraphModel(sconstraints, smeta, soptions))
+ReactiveMPIntegrationPlugin(options) = ReactiveMPIntegrationPlugin(convert(InferenceOptions, options))
+ReactiveMPIntegrationPlugin(options::T) where {T <: InferenceOptions} = ReactiveMPIntegrationPlugin{T}(options)
+
+getoptions(plugin::ReactiveMPIntegrationPlugin) = plugin.options
+
+GraphPPL.plugin_type(::ReactiveMPIntegrationPlugin) = FactorAndVariableNodesPlugin()
+
+function GraphPPL.preprocess_plugin(plugin::ReactiveMPIntegrationPlugin, model::Model, context::Context, label::NodeLabel, nodedata::NodeData, options::NodeCreationOptions)
+    preprocess_reactivemp_plugin!(plugin, nodedata, getproperties(nodedata), options)
+    return label, nodedata
 end
 
-function (generator::ModelGenerator)(model::FactorGraphModel)
-    return generator.generator(model, generator.args...; generator.kwargs...)
+function preprocess_reactivemp_plugin!(::ReactiveMPIntegrationPlugin, nodedata::NodeData, nodeproperties::FactorNodeProperties, options::NodeCreationOptions)
+    return nothing
 end
 
-"""
-    create_model(::ModelGenerator, constraints = nothing, meta = nothing, options = nothing)
-
-Creates an instance of `FactorGraphModel` from the given model specification as well as optional `constraints`, `meta` and `options`.
-
-Returns a tuple of 2 values:
-- 1. an instance of `FactorGraphModel`
-- 2. return value from the `@model` macro function definition
-"""
-function create_model(generator::ModelGenerator; constraints = nothing, meta = nothing, options = nothing)
-    sconstraints = something(constraints, UnspecifiedConstraints())
-    smeta        = something(meta, UnspecifiedMeta())
-    soptions     = something(options, UnspecifiedModelInferenceOptions())
-    model        = FactorGraphModel(sconstraints, smeta, soptions)
-    returnvars   = generator(model)
-    # `activate!` function creates reactive connections in the factor graph model and finalises model structure
-    activate!(model)
-    return model, returnvars
+function preprocess_reactivemp_plugin!(::ReactiveMPIntegrationPlugin, nodedata::NodeData, nodeproperties::VariableNodeProperties, options::NodeCreationOptions)
+    return nothing
 end
 
-## constraints
+function GraphPPL.postprocess_plugin(plugin::ReactiveMPIntegrationPlugin, model::Model)
+    # The variable nodes must be postprocessed before the factor nodes
+    foreach(filter(as_variable(), model)) do label
+        variable = model[label]::NodeData
+        properties = getproperties(variable)::VariableNodeProperties
 
-import ReactiveMP: marginal_form_constraint, messages_form_constraint, prod_constraint
-import ReactiveMP: resolve_marginal_form_prod, resolve_messages_form_prod
-
-randomvar_resolve_marginal_form_prod(model::FactorGraphModel, options::RandomVariableCreationOptions, name)            = randomvar_resolve_marginal_form_prod(model, options, marginal_form_constraint(options), name)
-randomvar_resolve_marginal_form_prod(model::FactorGraphModel, options::RandomVariableCreationOptions, something, name) = (something, nothing)
-randomvar_resolve_marginal_form_prod(model::FactorGraphModel, options::RandomVariableCreationOptions, ::Nothing, name) = randomvar_resolve_marginal_form_prod(model, getconstraints(model), name)
-
-randomvar_resolve_marginal_form_prod(model::FactorGraphModel, ::UnspecifiedConstraints, name) = (nothing, nothing)
-randomvar_resolve_marginal_form_prod(model::FactorGraphModel, constraints, name)              = resolve_marginal_form_prod(constraints, name)
-
-randomvar_resolve_messages_form_prod(model::FactorGraphModel, options::RandomVariableCreationOptions, name)            = randomvar_resolve_messages_form_prod(model, options, messages_form_constraint(options), name)
-randomvar_resolve_messages_form_prod(model::FactorGraphModel, options::RandomVariableCreationOptions, something, name) = (something, nothing)
-randomvar_resolve_messages_form_prod(model::FactorGraphModel, options::RandomVariableCreationOptions, ::Nothing, name) = randomvar_resolve_messages_form_prod(model, getconstraints(model), name)
-
-randomvar_resolve_messages_form_prod(model::FactorGraphModel, ::UnspecifiedConstraints, name) = (nothing, nothing)
-randomvar_resolve_messages_form_prod(model::FactorGraphModel, constraints, name)              = resolve_messages_form_prod(constraints, name)
-
-# We extend `ReactiveMP` functionality here
-import ReactiveMP: RandomVariable, DataVariable, ConstVariable
-import ReactiveMP: RandomVariableCreationOptions, DataVariableCreationOptions
-import ReactiveMP: randomvar, datavar, constvar, make_node
-
-ReactiveMP.randomvar(model::FactorGraphModel, name::Symbol, args...) = randomvar(model, RandomVariableCreationOptions(), name, args...)
-ReactiveMP.datavar(model::FactorGraphModel, name::Symbol, args...)   = datavar(model, DataVariableCreationOptions(Any), name, args...)
-
-function __check_variable_existence(model::FactorGraphModel, name::Symbol)
-    if haskey(getvardict(model), name)
-        # Anonymous variables are allowed to be overwritten with the same name
-        isanonymous(model[name]) || error("Variable named `$(name)` has been redefined")
-    end
-end
-
-function ReactiveMP.randomvar(model::FactorGraphModel, options::RandomVariableCreationOptions, name::Symbol, args...)
-    __check_variable_existence(model, name)
-    return push!(model, randomvar(randomvar_resolve_options(model, options, name), name, args...))
-end
-
-function ReactiveMP.datavar(model::FactorGraphModel, options::DataVariableCreationOptions, name::Symbol, args...)
-    __check_variable_existence(model, name)
-    return push!(model, datavar(options, name, args...))
-end
-
-function ReactiveMP.constvar(model::FactorGraphModel, name::Symbol, args...)
-    __check_variable_existence(model, name)
-    return push!(model, constvar(name, args...))
-end
-
-import ReactiveMP: as_variable, undo_as_variable
-
-ReactiveMP.as_variable(model::FactorGraphModel, x)        = push!(model, ReactiveMP.as_variable(x))
-ReactiveMP.as_variable(model::FactorGraphModel, t::Tuple) = map((d) -> ReactiveMP.as_variable(model, d), t)
-
-ReactiveMP.as_variable(model::FactorGraphModel, v::AbstractVariable) = v
-ReactiveMP.as_variable(model::FactorGraphModel, v::AbstractVector{<:AbstractVariable}) = v
-
-## node creation
-
-import ReactiveMP: make_node, FactorNodeCreationOptions
-import ReactiveMP: factorisation, metadata, getpipeline
-
-function node_resolve_options(model::FactorGraphModel, options, fform, variables)
-    return FactorNodeCreationOptions(
-        node_resolve_factorisation(model, factorisation(options), fform, variables), node_resolve_meta(model, metadata(options), fform, variables), getpipeline(options)
-    )
-end
-
-function ReactiveMP.make_node(model::FactorGraphModel, options::FactorNodeCreationOptions, fform, args...)
-    return push!(model, make_node(fform, node_resolve_options(model, options, fform, args), args...))
-end
-
-## AutoVar 
-
-import ReactiveMP: name
-
-struct AutoVar
-    name::Symbol
-end
-
-ReactiveMP.name(autovar::AutoVar) = autovar.name
-
-# This function either returns a saved version of a variable from `vardict`
-# Or creates a new one in two cases:
-# - variable did not exist before
-# - variable exists, but has been declared as anyonymous (only if `rewrite_anonymous` argument is set to true)
-function make_autovar(model::FactorGraphModel, options::RandomVariableCreationOptions, name::Symbol, rewrite_anonymous::Bool = true)
-    if haskey(getvardict(model), name)
-        var = model[name]
-        if rewrite_anonymous && isanonymous(var)
-            return ReactiveMP.randomvar(model, options, name)
-        else
-            return var
+        # Additional check for the model, since `ReactiveMP` does not allow half-edges
+        if is_random(properties)
+            degree(model, label) !== 0 || error(lazy"Unused random variable has been found $(indexed_name(randomvar)).")
+            degree(model, label) !== 1 || error(lazy"Half-edge has been found: $(indexed_name(randomvar)). To terminate half-edges 'Uninformative' node can be used.")
         end
-    else
-        return ReactiveMP.randomvar(model, options, name)
+
+        postprocess_reactivemp_node(plugin, model, variable, properties)
+    end
+
+    # The nodes must be postprocessed after all variables has been instantiated
+    foreach(filter(as_node(), model)) do label
+        factor = model[label]::NodeData
+        properties = getproperties(factor)::FactorNodeProperties
+
+        postprocess_reactivemp_node(plugin, model, factor, properties)
     end
 end
 
-function ReactiveMP.make_node(model::FactorGraphModel, options::FactorNodeCreationOptions, fform, autovar::AutoVar, args::Vararg)
-    foreach(args) do arg
-        @assert (typeof(arg) <: AbstractVariable || eltype(arg) <: AbstractVariable) "`make_node` cannot create a node with the given arguments autovar = $(autovar), args = [ $(args...) ]"
-    end
-
-    proxy     = isdeterministic(sdtype(fform)) ? args : nothing
-    rvoptions = ReactiveMP.randomvar_options_set_proxy_variables(ReactiveMP.EmptyRandomVariableCreationOptions, proxy)
-    var       = make_autovar(model, rvoptions, ReactiveMP.name(autovar), true) # add! is inside
-    node      = ReactiveMP.make_node(model, options, fform, var, args...) # add! is inside
-    return node, var
+function postprocess_reactivemp_node(plugin::ReactiveMPIntegrationPlugin, model::Model, nodedata::NodeData, nodeproperties::VariableNodeProperties)
+    return nothing
 end
 
-function ReactiveMP.make_node(model::FactorGraphModel, options::FactorNodeCreationOptions, fform, autovar::AutoVar, args::Vararg{<:ReactiveMP.ConstVariable})
-    if isstochastic(sdtype(fform))
-        var  = make_autovar(model, ReactiveMP.EmptyRandomVariableCreationOptions, ReactiveMP.name(autovar), true)
-        node = ReactiveMP.make_node(model, options, fform, var, args...) # add! is inside
-        return node, var
-    else
-        var = push!(model, ReactiveMP.constvar(ReactiveMP.name(autovar), fform(map((d) -> ReactiveMP.getconst(d), args)...)))
-        return nothing, var
-    end
-end
-
-function ReactiveMP.make_node(
-    model::FactorGraphModel, options::FactorNodeCreationOptions, fform, autovar::AutoVar, args::Vararg{<:Union{ReactiveMP.ConstVariable, ReactiveMP.DataVariable}}
-)
-    if isstochastic(sdtype(fform))
-        var  = make_autovar(model, ReactiveMP.EmptyRandomVariableCreationOptions, ReactiveMP.name(autovar), true)
-        node = ReactiveMP.make_node(model, options, fform, var, args...) # add! is inside
-        return node, var
-    else
-        combinedvars = combineLatest(ReactiveMP.getmarginal.(args, IncludeAll()), PushNew())
-
-        # Check if some of the `DataVariable` allow for missing values
-        possibly_missings = any(allows_missings, filter(arg -> arg isa ReactiveMP.DataVariable, args))
-        # If `missing` values are allowed, then the result type is a `Union` of `Message{Missing}` and `Message{PointMass}`
-        result_type = possibly_missings ? Union{Message{Missing}, Message{PointMass}} : Message{PointMass}
-        # By convention, if the result happens to be missing, the result is a `Message{Missing}` instead of `Message{PointMass}`
-        mapping_fn = let possibly_missings = possibly_missings
-            (vars) -> begin
-                result = fform(map((d) -> BayesBase.getpointmass(ReactiveMP.getdata(d)), vars)...)
-                return if (possibly_missings && ismissing(result))
-                    Message{Missing, Nothing}(missing, false, false, nothing)
-                else
-                    Message{PointMass, Nothing}(PointMass(result), false, false, nothing)
-                end
-            end
-        end
-        mappedvars = combinedvars |> map(result_type, mapping_fn)
-        output = mappedvars |> share_recent()
-        var = push!(model, ReactiveMP.datavar(DataVariableCreationOptions(output, true, false), ReactiveMP.name(autovar), Any))
-        foreach(filter(ReactiveMP.isdata, args)) do datavar
-            datavar.isused = true
-        end
-        return nothing, var
-    end
-end
-
-## AutoNode 
-
-struct AutoNode end
-
-Base.broadcastable(::AutoNode) = Ref(AutoNode())
-
-function ReactiveMP.make_node(model::FactorGraphModel, ::AutoNode, autovar::AutoVar, distribution::Distribution)
-    var = make_autovar(model, ReactiveMP.EmptyRandomVariableCreationOptions, ReactiveMP.name(autovar), true)
-    return ReactiveMP.make_node(model, AutoNode(), var, distribution)
-end
-
-function ReactiveMP.make_node(model::FactorGraphModel, ::AutoNode, var::RandomVariable, distribution::Distribution)
-    args = map(v -> as_variable(model, v), params(distribution))
-    node = ReactiveMP.make_node(model, FactorNodeCreationOptions(), typeof(distribution), var, args...)
-    return node, var
+function postprocess_reactivemp_node(plugin::ReactiveMPIntegrationPlugin, model::Model, nodedata::NodeData, nodeproperties::FactorNodeProperties)
+    return nothing
 end
