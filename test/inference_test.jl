@@ -1040,25 +1040,31 @@ end
     observations = [[1.0; zeros(5)], [zeros(5); 1.0]]
 
     @testset "Test misspecified data" begin
-        @test_throws ErrorException infer(model = rolling_die(2), data = (y = observations))
+        @test_throws "Keyword argument `data` expects either `Dict` or `NamedTuple` as an input" infer(model = rolling_die(2), data = (y = observations))
         result = infer(model = rolling_die(2), data = (y = observations,))
         @test isequal(first(mean(result.posteriors[:θ])), last(mean(result.posteriors[:θ])))
     end
 
     @testset "Test misspecified initmarginals" begin
-        @test_throws ErrorException infer(model = rolling_die(2), data = (y = observations,), initmarginals = (θ = Dirichlet(ones(6))))
+        @test_throws "Keyword argument `initmarginals` expects either `Dict` or `NamedTuple` as an input" infer(
+            model = rolling_die(2), data = (y = observations,), initmarginals = (θ = Dirichlet(ones(6)))
+        )
         result = infer(model = rolling_die(2), data = (y = observations,), initmarginals = (θ = Dirichlet(ones(6)),))
         @test isequal(first(mean(result.posteriors[:θ])), last(mean(result.posteriors[:θ])))
     end
 
     @testset "Test misspecified initmessages" begin
-        @test_throws ErrorException infer(model = rolling_die(2), data = (y = observations,), initmessages = (θ = Dirichlet(ones(6))))
+        @test_throws "Keyword argument `initmessages` expects either `Dict` or `NamedTuple` as an input" infer(
+            model = rolling_die(2), data = (y = observations,), initmessages = (θ = Dirichlet(ones(6)))
+        )
         result = infer(model = rolling_die(2), data = (y = observations,), initmessages = (θ = Dirichlet(ones(6)),))
         @test isequal(first(mean(result.posteriors[:θ])), last(mean(result.posteriors[:θ])))
     end
 
     @testset "Test misspecified callbacks" begin
-        @test_throws ErrorException infer(model = rolling_die(2), data = (y = observations,), callbacks = (before_model_creation = (args...) -> nothing))
+        @test_throws "Keyword argument `callbacks` expects either `Dict` or `NamedTuple` as an input" infer(
+            model = rolling_die(2), data = (y = observations,), callbacks = (before_model_creation = (args...) -> nothing)
+        )
         result = infer(model = rolling_die(2), data = (y = observations,), callbacks = (before_model_creation = (args...) -> nothing,))
         @test isequal(first(mean(result.posteriors[:θ])), last(mean(result.posteriors[:θ])))
     end
