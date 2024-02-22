@@ -1,31 +1,28 @@
 # Understating why we need to initialize messages in RxInfer
 
-In certain models, after completing the model specification step and moving on to execute the inference procedure, you may encounter an error prompting you to "initialize marginals and messages." Understanding why this step is necessary can be perplexing. This tutorial is designed to delve into the intuition behind model initialization using a practical example.
+In certain models, after completing the model specification step and moving on to execute the inference procedure, you may encounter an error prompting you to _initialize required marginals and messages_. Understanding why this step is necessary can be perplexing. This tutorial is designed to delve into the intuition behind model initialization using a practical example.
 
-```julia
-import Pkg; Pkg.activate(".."); Pkg.instantiate();
-using RxInfer, Random, Plots, StableRNGs, LinearAlgebra, StatsPlots, LaTeXStrings, DataFrames, CSV, GLM
-```
 
 ## Part 1. Framing the problem 
 
-John has recently acquired a new car and is keenly interested in its `fuel consumption` rate. He holds the belief that this rate follows a linear relationship with the variable `speed`. To validate this hypothesis, he plans to conduct tests by driving his car on the urban roads close to his home, meticulously recording both the `fuel consumption` and `speed` data. To ascertain the fuel consumption rate, John has opted for Bayesian linear regression as his analytical method.
+John has recently acquired a new car and is keenly interested in its `fuel consumption` rate. He holds the belief that this rate follows a linear relationship with the variable `speed`. To validate this hypothesis, he plans to conduct tests by driving his car on the urban roads close to his home, recording both the `fuel consumption` and `speed` data. To ascertain the fuel consumption rate, John has opted for Bayesian linear regression as his analytical method.
 
-```julia
-function generate_data(a, b, v, nr_samples; rng=StableRNG(1234))
+```@example init-tutorial
+using Random, Plots, StableRNGs
+
+function generate_data(a, b, v, nr_samples; rng = StableRNG(1234))
     x = float.(collect(1:nr_samples))
     y = a .* x .+ b .+ randn(rng, nr_samples) .* sqrt(v)
     return x, y
 end;
 
+# For demonstration purposes we generate some fake data 
 x_data, y_data = generate_data(0.5, 25.0, 1.0, 250)
 
 scatter(x_data, y_data, title = "Dataset (City road)", legend=false)
 xlabel!("Speed")
 ylabel!("Fuel consumption")
-
 ```
- ![Addons_messages](../assets/img/dataset_city_road.png)
 
 
 ### Univariate regression with known noise
@@ -49,7 +46,9 @@ where the goal is to infer the posterior distributions $p(a \mid y)$ and $p(b\mi
 
 In order to estimate the two parameters with the recorded data, he uses a `RxInfer.jl` to create the above described model.
 
-```julia
+```@example init-tutorial
+using RxInfer
+
 @model function linear_regression(nr_samples)
     a ~ Normal(mean = 0.0, variance = 1.0)
     b ~ Normal(mean = 0.0, variance = 100.0)
@@ -61,14 +60,7 @@ In order to estimate the two parameters with the recorded data, he uses a `RxInf
 end
 ```
 
-Delighted with the convenience offered by the package's inference function (infer), he appreciates the time saved from building everything from the ground up. This feature allows him to effortlessly obtain the desired results for his specific road. Upon consulting the documentation, he proceeds to run the inference function. However, being his first attempt, he overlooks the `initmessages` argument as he doesn't know what to initialize.  After running and error appears prompting him to `initialize all messages and marginals`. Now, John is left pondering the reason behind this requirement. Should he indeed initialize all messages and marginals? And if so, how might this impact the inference procedure? This tutorial seeks to address these queries and shed light on the significance of `proper initialization in the inference process`.
-
-However once, he tried to run `infer` over his model he obtained an error message:
-
-```
-Variables [ a, b ] have not been updated after an update event.
-...
-```
+Delighted with the convenience offered by the package's inference function ([`infer`](@ref)), he appreciates the time saved from building everything from the ground up. This feature allows him to effortlessly obtain the desired results for his specific road. Upon consulting the documentation, he proceeds to run the inference function.
 
 ```julia
 results = infer(
@@ -80,11 +72,22 @@ results = infer(
 )
 ```
 
+Oeps! Exception?
+
+```
+exception =
+│    Variables [ a, b ] have not been updated after an update event. 
+│    Therefore, make sure to initialize all required marginals and messages. See `initmarginals` and `initmessages` keyword arguments for the inference function. 
+│    See the function documentation for detailed information regarding the initialization.
+```
+
+After running the inference procedure an error appears, which prompts him to _initialize all required messages and marginals_. Now, John is left pondering the reason behind this requirement. Why is it necessary? Should he indeed initialize all messages and marginals? And if so, how might this impact the inference procedure?
+
 ## Part 2. Why and What to initialize
 
-Before delving too deeply into the details, it's important to understand that RxInfer constructs a factorized representation of your model using a Forney Style Factor Graph (FFG). In this structure, inference is executed through message passing. Notably, RxInfer differs from conventional FFGs, which rely on pre-scheduled message passing. Instead, RxInfer computes updates once all the necessary data for the computation arrives. This approach is known as reactive message passing.
+Before delving too deeply into the details, it's important to understand that RxInfer constructs a factorized representation of your model using a Forney Style Factor Graph (FFG). In this structure, inference is executed through message passing.
 
-A challenge arises when RxInfer generates the FFG representation and detects loops in certain parts of the graph. These loops indicate that a message or marginal within the loop depends not only on its prior but also on itself. Consequently, proper initialization is crucial for initiating the inference process. Two general rules of thumb guide this initialization, although the intricate details are beyond the scope of this tutorial:
+A challenge arises when RxInfer generates the FFG representation with structural loops in certain parts of the graph. These loops indicate that a message or marginal within the loop depends not only on its prior but also on itself. Consequently, proper initialization is crucial for initiating the inference process. Two general rules of thumb guide this initialization, although the intricate details are beyond the scope of this tutorial:
 
 1.	Initiate as few messages/marginals as possible when dealing with a loop structure, it will be more efficient and accurate.
 2.	Prioritize initializing marginals over messages.
@@ -104,11 +107,11 @@ John proceeds to derive the FFG for his problem where he identifies where the lo
 
 ![Addons_messages](../assets/img/linear_regresion_model.png)
 
- He does note that there is a loop in his model, namely all $a$ and $b$ variables are connected over all observations, therefore he needs to initialize one of the messages and run multiple iterations for the loopy belief propagation algorithm. It is worth noting that loopy belief propagation is not guaranteed to converge in general and might be highly influenced by the choice of the initial messages in the `initmessages` argument. He is going to evaluate the convergency performance of the algorithm with the `free_energy = true` option:
+He does note that there is a loop in his model, namely all $a$ and $b$ variables are connected over all observations, therefore he needs to initialize one of the messages and run multiple iterations for the loopy belief propagation algorithm. It is worth noting that loopy belief propagation is not guaranteed to converge in general and might be highly influenced by the choice of the initial messages in the `initmessages` argument. He is going to evaluate the convergency performance of the algorithm with the `free_energy = true` option:
  
 
- ```julia
- results = infer(
+```@example init-tutorial
+results = infer(
     model        = linear_regression(length(x_data)), 
     data         = (y = y_data, x = x_data), 
     initmessages = (b = NormalMeanVariance(0.0, 100.0), ), 
@@ -119,14 +122,12 @@ John proceeds to derive the FFG for his problem where he identifies where the lo
 
 # drop first iteration, which is influenced by the `initmessages`
 plot(2:20, results.free_energy[2:end], title="Free energy", xlabel="Iteration", ylabel="Free energy [nats]", legend=false)
- ```
+```
 
-![Addons_messages](../assets/img/free_energy.png)
+Now the inference runs without the error! 🎉
 
- He sees that in the presence of more noise the inference result is more uncertain about the actual values for $a$ and $b$ parameters.
-
- ```julia
- as = rand(results.posteriors[:a], 100)
+```@example init-tutorial
+as = rand(results.posteriors[:a], 100)
 bs = rand(results.posteriors[:b], 100)
 p = scatter(x_data, y_data, title = "Linear regression with more noise", legend=false)
 xlabel!("Speed")
@@ -134,8 +135,5 @@ ylabel!("Fuel consumption")
 for (a, b) in zip(as, bs)
     global p = plot!(p, x_data, a .* x_data .+ b, alpha = 0.05, color = :red)
 end
-
 plot(p, size = (900, 400))
- ```
-
- ![Addons_messages](../assets/img/result_linear_regression.png)
+```

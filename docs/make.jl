@@ -50,9 +50,7 @@ end
 
 # Create an array of pages for each category
 ExamplesCategoriesPages = map(collect(pairs(ExamplesCategories))) do (label, category)
-    return label => (title = category.title, pages = [
-        "Overview" => joinpath("examples", string(label), "overview.md")
-    ])
+    return label => (title = category.title, pages = ["Overview" => joinpath("examples", string(label), "overview.md")])
 end |> NamedTuple
 
 # The `pages` argument in the `makedocs` needs only a short path, so we ignore the full path
@@ -69,6 +67,7 @@ end
 foreach(vcat(ExamplesOverviewPath, ExamplesCategoriesOverviewPaths)) do path
     if !isfile(path)
         @warn "`$(path)` does not exist. Generating an empty overview. Use the `make examples` command to generate the overview and all examples."
+        mkpath(dirname(path))
         open(path, "w") do f
             write(f, "The overview is missing. Use the `make examples` command to generate the overview and all examples.")
         end
@@ -117,6 +116,7 @@ makedocs(;
             "Meta specification"        => "manuals/meta-specification.md",
             "Inference specification"   => ["Overview" => "manuals/inference/overview.md", "Static vs Streamline inference" => "manuals/inference/infer.md", "Inference results postprocessing" => "manuals/inference/postprocess.md", "Manual inference specification" => "manuals/inference/manual.md"],
             "Inference customization"   => ["Defining a custom node and rules" => "manuals/custom-node.md"],
+            "Messages initialization"   => "manuals/understanding-why-to-initialize-messages.md",
             "Debugging"                 => "manuals/debugging.md",
             "Delta node"                => "manuals/delta-node.md"
         ],
@@ -131,10 +131,10 @@ makedocs(;
             ExamplesPages...
         ],
         "Contributing" => [
-            "Overview" => "contributing/overview.md", 
+            "Overview" => "contributing/overview.md",
             "Contributing to the documentation" => "contributing/new-documentation.md",
-            "Contributing to the dependencies" => "contributing/new-package.md", 
-            "Contributing to the examples" => "contributing/new-example.md", 
+            "Contributing to the dependencies" => "contributing/new-package.md",
+            "Contributing to the examples" => "contributing/new-example.md",
             "Publishing a new release" => "contributing/new-release.md"
         ]
     ]
