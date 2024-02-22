@@ -100,6 +100,11 @@ struct FactorGraphModel{M}
     model::M
 end
 
+getmodel(model::FactorGraphModel) = model.model
+
+getvardict(model::FactorGraphModel) = getvardict(getmodel(model))
+getvardict(model::GraphPPL.Model) = GraphPPL.getcontext(model)
+
 # getmodel(model::FactorGraphModel)     = model.model
 # getvariables(model::FactorGraphModel) = getvariables(model, getmodel(model))
 # 
@@ -139,16 +144,20 @@ import ReactiveMP: hasrandomvar, hasdatavar, hasconstvar
 import GraphPPL: plugin_type, FactorAndVariableNodesPlugin, preprocess_plugin, postprocess_plugin
 import GraphPPL: Model, Context, NodeLabel, NodeData, FactorNodeProperties, VariableNodeProperties, NodeCreationOptions, hasextra, getextra, setextra!, getproperties
 import GraphPPL: as_variable, is_data, is_random, degree
+import GraphPPL: variable_nodes, factor_nodes
 
 """
 - `options`: An instance of `InferenceOptions`
 """
 struct ReactiveMPIntegrationPlugin{T}
     options::T
+
+    function ReactiveMPIntegrationPlugin(options::T) where {T <: InferenceOptions} 
+        return new{T}(options)
+    end
 end
 
 ReactiveMPIntegrationPlugin(options) = ReactiveMPIntegrationPlugin(convert(InferenceOptions, options))
-ReactiveMPIntegrationPlugin(options::T) where {T <: InferenceOptions} = ReactiveMPIntegrationPlugin{T}(options)
 
 getoptions(plugin::ReactiveMPIntegrationPlugin) = plugin.options
 
@@ -169,8 +178,7 @@ end
 
 function GraphPPL.postprocess_plugin(plugin::ReactiveMPIntegrationPlugin, model::Model)
     # The variable nodes must be postprocessed before the factor nodes
-    foreach(filter(as_variable(), model)) do label
-        variable = model[label]::NodeData
+    variable_nodes(model) do label, variable
         properties = getproperties(variable)::VariableNodeProperties
 
         # Additional check for the model, since `ReactiveMP` does not allow half-edges

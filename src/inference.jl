@@ -346,7 +346,7 @@ function __inference(;
 
     inference_invoke_callback(callbacks, :before_model_creation)
     fmodel = __infer_create_factor_graph_model(_model, data)
-    inference_invoke_callback(callbacks, :after_model_creation, fmodel, freturval)
+    inference_invoke_callback(callbacks, :after_model_creation, fmodel)
     vardict = getvardict(fmodel)
 
     # First what we do - we check if `returnvars` is nothing or one of the two possible values: `KeepEach` and `KeepLast`. 
