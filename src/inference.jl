@@ -1467,19 +1467,7 @@ function __infer_create_factor_graph_model(generator::ModelGenerator, data::Unio
 end
 
 function __infer_create_data_interface(model, context, key::Symbol, data)
-    return GraphPPL.getorcreate!(model, context, GraphPPL.NodeCreationOptions(kind = :data, factorized = true), key, nothing)
-end
-
-function __infer_create_data_interface(model, context, key::Symbol, data::AbstractVector)
-    foreach(eachindex(data)) do i
-        GraphPPL.getorcreate!(model, context, GraphPPL.NodeCreationOptions(kind = :data, factorized = true), key, i)
-    end
-    # Should return the entire collection
-    return GraphPPL.getorcreate!(model, context, GraphPPL.NodeCreationOptions(kind = :data, factorized = true), key, firstindex(data))
-end
-
-function __infer_create_data_interface(model, context, key::Symbol, data::AbstractArray)
-    error("TODO: Not implemented for now.")
+    return GraphPPL.getorcreate!(model, context, GraphPPL.NodeCreationOptions(kind = :data, factorized = true), key, GraphPPL.LazyIndex(data))
 end
 
 """
