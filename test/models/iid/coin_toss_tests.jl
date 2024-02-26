@@ -1,5 +1,6 @@
 @testitem "Coin Toss Model" begin
     using StableRNGs
+    using Distributions
 
     n = 500  # Number of coin flips
     p = 0.75 # Bias of a coin
@@ -8,7 +9,6 @@
     dataset      = float.(rand(StableRNG(42), Bernoulli(p), n))
 
     @model function coin_model(y)
-        y = datavar(Float64, n)
         θ ~ Beta(2.0, 7.0)
 
         for i in eachindex(y)

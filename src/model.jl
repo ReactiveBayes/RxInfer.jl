@@ -153,7 +153,7 @@ import GraphPPL: variable_nodes, factor_nodes
 struct ReactiveMPIntegrationPlugin{T}
     options::T
 
-    function ReactiveMPIntegrationPlugin(options::T) where {T <: InferenceOptions} 
+    function ReactiveMPIntegrationPlugin(options::T) where {T <: InferenceOptions}
         return new{T}(options)
     end
 end
@@ -165,23 +165,38 @@ getoptions(plugin::ReactiveMPIntegrationPlugin) = plugin.options
 GraphPPL.plugin_type(::ReactiveMPIntegrationPlugin) = FactorAndVariableNodesPlugin()
 
 function GraphPPL.preprocess_plugin(plugin::ReactiveMPIntegrationPlugin, model::Model, context::Context, label::NodeLabel, nodedata::NodeData, options::NodeCreationOptions)
-    preprocess_reactivemp_plugin!(plugin, nodedata, getproperties(nodedata), options)
+    preprocess_reactivemp_plugin!(plugin, model, context, nodedata, getproperties(nodedata), options)
     return label, nodedata
 end
 
-function preprocess_reactivemp_plugin!(::ReactiveMPIntegrationPlugin, nodedata::NodeData, nodeproperties::FactorNodeProperties, options::NodeCreationOptions)
-    error("Factor node preprocessing is not implemented.")
+function preprocess_reactivemp_plugin!(
+    plugin::ReactiveMPIntegrationPlugin, model::Model, context::Context, nodedata::NodeData, nodeproperties::FactorNodeProperties, options::NodeCreationOptions
+)
+
+    interfaces = map(options[:interfaces]) do interface
+        inodedata = model[interface]::NodeData
+        iproperties = getproperties(inodedata)::VariableNodeProperties
+        if !hasextra(inodedata, :rmp_properties)
+            preprocess_reactivemp_plugin!(plugin, model, context, inodedata, iproperties, NodeCreationOptions())
+        end       
+        return (inodedata, iproperties)
+    end
+
+    setextra!(nodedata, :rmp_properties, ReactiveMP.FactorNodeProperties(interfaces))
+
     return nothing
 end
 
-function preprocess_reactivemp_plugin!(::ReactiveMPIntegrationPlugin, nodedata::NodeData, nodeproperties::VariableNodeProperties, options::NodeCreationOptions)
+function preprocess_reactivemp_plugin!(
+    ::ReactiveMPIntegrationPlugin, model::Model, context::Context, nodedata::NodeData, nodeproperties::VariableNodeProperties, options::NodeCreationOptions
+)
     if is_random(nodeproperties)
-        setextra!(nodedata, :randomvar, RandomVariableProperties()) # TODO: bvdmitri, use functional form constraints
+        setextra!(nodedata, :rmp_properties, RandomVariableProperties()) # TODO: bvdmitri, use functional form constraints
     elseif is_data(nodeproperties)
-        setextra!(nodedata, :datavar, DataVariableProperties())
+        setextra!(nodedata, :rmp_properties, DataVariableProperties())
     elseif is_constant(nodeproperties)
-        setextra!(nodedata, :constvar, ConstVariableProperties(GraphPPL.value(nodeproperties)))
-    else 
+        setextra!(nodedata, :rmp_properties, ConstVariableProperties(GraphPPL.value(nodeproperties)))
+    else
         error("Unknown `kind` in the node properties `$(nodeproperties)` for variable node `$(nodedata)`. Expected `random`, `constant` or `data`.")
     end
     return nothing
@@ -217,7 +232,7 @@ function postprocess_reactivemp_node(plugin::ReactiveMPIntegrationPlugin, model:
         error("Not implemented. Data variable is not supported by `ReactiveMP`.")
     elseif is_constant(nodeproperties)
         error("Not implemented. Constant variable is not supported by `ReactiveMP`.")
-    else 
+    else
         error("Unknown `kind` in the node properties `$(nodeproperties)` for variable node `$(nodedata)`. Expected `random`, `constant` or `data`.")
     end
     return nothing
@@ -226,4 +241,18 @@ end
 function postprocess_reactivemp_node(plugin::ReactiveMPIntegrationPlugin, model::Model, nodedata::NodeData, nodeproperties::FactorNodeProperties)
     error("Not implemented")
     return nothing
+end
+
+## ReactiveMP <-> GraphPPL connections, techically a piracy, but that is the purpose of the plugin
+function ReactiveMP.setmessagein!(spec::Tuple{NodeData, VariableNodeProperties}, observable::ReactiveMP.MessageObservable)
+    nodedata, nodeproperties = spec
+    if is_random(nodeproperties)
+        return ReactiveMP.setmessagein!(getextra(nodedata, :rmp_properties)::RandomVariableProperties, observable)
+    elseif is_data(nodeproperties)
+        return ReactiveMP.setmessagein!(getextra(nodedata, :rmp_properties)::DataVariableProperties, observable)
+    elseif is_constant(nodeproperties)
+        return ReactiveMP.setmessagein!(getextra(nodedata, :rmp_properties)::ConstVariableProperties, observable)
+    else
+        error("Unknown `kind` in the node properties `$(nodeproperties)` for variable node `$(nodedata)`. Expected `random`, `constant` or `data`.")
+    end
 end
