@@ -14,34 +14,33 @@ import ReactiveMP: CountingReal
 
 import ProgressMeter
 
-obtain_prediction(variable::AbstractVariable)                   = getprediction(variable)
-obtain_prediction(variables::AbstractArray{<:AbstractVariable}) = getpredictions(variables)
+obtain_prediction(variable::Any) = getprediction(variable)
+obtain_prediction(variables::AbstractArray) = getpredictions(variables)
 
-obtain_marginal(variable::AbstractVariable, strategy = SkipInitial())                   = getmarginal(variable, strategy)
-obtain_marginal(variables::AbstractArray{<:AbstractVariable}, strategy = SkipInitial()) = getmarginals(variables, strategy)
+obtain_marginal(variable::Any, strategy = SkipInitial()) = getmarginal(variable, strategy)
+obtain_marginal(variables::AbstractArray, strategy = SkipInitial()) = getmarginals(variables, strategy)
 
-assign_marginal!(variables::AbstractArray{<:AbstractVariable}, marginals) = setmarginals!(variables, marginals)
-assign_marginal!(variable::AbstractVariable, marginal)                    = setmarginal!(variable, marginal)
+assign_marginal!(variable::Any, marginal) = setmarginal!(variable, marginal)
+assign_marginal!(variables::AbstractArray, marginals) = setmarginals!(variables, marginals)
 
-assign_message!(variables::AbstractArray{<:AbstractVariable}, messages) = setmessages!(variables, messages)
-assign_message!(variable::AbstractVariable, message)                    = setmessage!(variable, message)
+assign_message!(variable::Any, message) = setmessage!(variable, message)
+assign_message!(variables::AbstractArray, messages) = setmessages!(variables, messages)
 
 struct KeepEach end
 struct KeepLast end
 
-make_actor(::AbstractVariable, ::KeepEach)                       = keep(Marginal)
-make_actor(::Array{<:AbstractVariable, N}, ::KeepEach) where {N} = keep(Array{Marginal, N})
-make_actor(x::AbstractArray{<:AbstractVariable}, ::KeepEach)     = keep(typeof(similar(x, Marginal)))
+make_actor(::Any, ::KeepEach) = keep(Marginal)
+# make_actor(::Array{<:AbstractVariable, N}, ::KeepEach) where {N} = keep(Array{Marginal, N})
+make_actor(x::AbstractArray, ::KeepEach) = keep(typeof(similar(x, Marginal)))
 
-make_actor(::AbstractVariable, ::KeepEach, capacity::Integer)                       = circularkeep(Marginal, capacity)
-make_actor(::Array{<:AbstractVariable, N}, ::KeepEach, capacity::Integer) where {N} = circularkeep(Array{Marginal, N}, capacity)
-make_actor(x::AbstractArray{<:AbstractVariable}, ::KeepEach, capacity::Integer)     = circularkeep(typeof(similar(x, Marginal)), capacity)
+make_actor(::Any, ::KeepEach, capacity::Integer) = circularkeep(Marginal, capacity)
+make_actor(x::AbstractArray, ::KeepEach, capacity::Integer) = circularkeep(typeof(similar(x, Marginal)), capacity)
 
-make_actor(::AbstractVariable, ::KeepLast)                   = storage(Marginal)
-make_actor(x::AbstractArray{<:AbstractVariable}, ::KeepLast) = buffer(Marginal, size(x))
+make_actor(::Any, ::KeepLast) = storage(Marginal)
+make_actor(x::AbstractArray, ::KeepLast) = buffer(Marginal, size(x))
 
-make_actor(::AbstractVariable, ::KeepLast, capacity::Integer)                   = storage(Marginal)
-make_actor(x::AbstractArray{<:AbstractVariable}, ::KeepLast, capacity::Integer) = buffer(Marginal, size(x))
+make_actor(::Any, ::KeepLast, capacity::Integer) = storage(Marginal)
+make_actor(x::AbstractArray, ::KeepLast, capacity::Integer) = buffer(Marginal, size(x))
 
 ## Inference ensure update
 
@@ -196,12 +195,11 @@ This structure is used as a return value from the [`infer`](@ref) function.
 
 See also: [`infer`](@ref)
 """
-struct InferenceResult{P, A, F, M, R, E}
+struct InferenceResult{P, A, F, M, E}
     posteriors  :: P
     predictions :: A
     free_energy :: F
     model       :: M
-    returnval   :: R
     error       :: E
 end
 
@@ -335,11 +333,7 @@ function __inference(;
 
     # We create a model with the `GraphPPL` package and insert a certain RxInfer related 
     # plugins which include the VI plugin, meta plugin and the ReactiveMP integration plugin
-    modelplugins = GraphPPL.PluginsCollection(
-        GraphPPL.VariationalConstraintsPlugin(constraints), 
-        GraphPPL.MetaPlugin(meta), 
-        RxInfer.ReactiveMPIntegrationPlugin(_options)
-    )
+    modelplugins = GraphPPL.PluginsCollection(GraphPPL.VariationalConstraintsPlugin(constraints), GraphPPL.MetaPlugin(meta), RxInfer.ReactiveMPIntegrationPlugin(_options))
 
     # The `_model` here still must be a `ModelGenerator`
     _model = GraphPPL.with_plugins(model, modelplugins)
@@ -543,7 +537,7 @@ function __inference(;
     predicted_values = Dict(variable => __inference_postprocess(postprocess, getvalues(actor)) for (variable, actor) in pairs(actors_pr))
     fe_values        = !isnothing(fe_actor) ? score_snapshot_iterations(fe_actor, executed_iterations) : nothing
 
-    return InferenceResult(posterior_values, predicted_values, fe_values, fmodel, freturval, potential_error)
+    return InferenceResult(posterior_values, predicted_values, fe_values, fmodel, potential_error)
 end
 
 function inference(; kwargs...)

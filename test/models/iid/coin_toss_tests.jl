@@ -2,7 +2,7 @@
     using StableRNGs
     using Distributions
 
-    n = 500  # Number of coin flips
+    n = 5000  # Number of coin flips
     p = 0.75 # Bias of a coin
 
     distribution = Bernoulli(p)

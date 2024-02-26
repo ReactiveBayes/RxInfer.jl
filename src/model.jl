@@ -103,7 +103,51 @@ end
 getmodel(model::FactorGraphModel) = model.model
 
 getvardict(model::FactorGraphModel) = getvardict(getmodel(model))
-getvardict(model::GraphPPL.Model) = GraphPPL.getcontext(model)
+
+function getvardict(model::GraphPPL.Model)
+    ctx = GraphPPL.getcontext(model)
+    vardict = Dict{Symbol, Tuple{NodeData, VariableNodeProperties}}()
+    # TODO very ugly code just to make things running
+    return map(merge(ctx.individual_variables, ctx.vector_variables)) do value
+        nodedata = model[value]
+        if nodedata isa GraphPPL.NodeData
+            return (nodedata, GraphPPL.getproperties(nodedata))
+        else
+            return map(v -> (v, GraphPPL.getproperties(v)), nodedata)
+        end
+    end
+    return vardict
+end
+
+# TODO very ugly code just to make things running
+import GraphPPL: NodeData, VariableNodeProperties
+
+# TODO very ugly code just to make things running
+ReactiveMP.allows_missings(::Vector{Tuple{NodeData, VariableNodeProperties}}) = false
+ReactiveMP.allows_missings(::Tuple{NodeData, VariableNodeProperties}) = false
+
+# TODO very ugly code just to make things running
+ReactiveMP.israndom(t::Vector{Tuple{NodeData, VariableNodeProperties}}) = all(ReactiveMP.israndom, t)
+ReactiveMP.isdata(t::Vector{Tuple{NodeData, VariableNodeProperties}}) = all(ReactiveMP.isdata, t)
+ReactiveMP.isconst(t::Vector{Tuple{NodeData, VariableNodeProperties}}) = all(ReactiveMP.isconst, t)
+ReactiveMP.isproxy(t::Vector{Tuple{NodeData, VariableNodeProperties}}) = false
+ReactiveMP.isanonymous(t::Vector{Tuple{NodeData, VariableNodeProperties}}) = false
+
+# TODO very ugly code just to make things running
+ReactiveMP.israndom(t::Tuple{NodeData, VariableNodeProperties}) = GraphPPL.is_random(t[2])
+ReactiveMP.isdata(t::Tuple{NodeData, VariableNodeProperties}) = GraphPPL.is_data(t[2])
+ReactiveMP.isconst(t::Tuple{NodeData, VariableNodeProperties}) = GraphPPL.is_constant(t[2])
+ReactiveMP.isproxy(t::Tuple{NodeData, VariableNodeProperties}) = false
+ReactiveMP.isanonymous(t::Tuple{NodeData, VariableNodeProperties}) = false
+
+function ReactiveMP.getmarginal(t::Tuple{NodeData, VariableNodeProperties}, strategy) 
+    return ReactiveMP.getmarginal(getextra(t[1], :rmp_properties), strategy)
+end
+
+function ReactiveMP.update!(t::Vector{Tuple{GraphPPL.NodeData, GraphPPL.VariableNodeProperties}}, something)
+    rmpprops = map(i -> getextra(i[1], :rmp_properties), t)
+    return ReactiveMP.update!(rmpprops, something)
+end
 
 # getmodel(model::FactorGraphModel)     = model.model
 # getvariables(model::FactorGraphModel) = getvariables(model, getmodel(model))
