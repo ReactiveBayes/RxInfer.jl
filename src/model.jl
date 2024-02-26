@@ -172,13 +172,12 @@ end
 function preprocess_reactivemp_plugin!(
     plugin::ReactiveMPIntegrationPlugin, model::Model, context::Context, nodedata::NodeData, nodeproperties::FactorNodeProperties, options::NodeCreationOptions
 )
-
     interfaces = map(options[:interfaces]) do interface
         inodedata = model[interface]::NodeData
         iproperties = getproperties(inodedata)::VariableNodeProperties
         if !hasextra(inodedata, :rmp_properties)
             preprocess_reactivemp_plugin!(plugin, model, context, inodedata, iproperties, NodeCreationOptions())
-        end       
+        end
         return (inodedata, iproperties)
     end
 
@@ -227,11 +226,12 @@ end
 
 function postprocess_reactivemp_node(plugin::ReactiveMPIntegrationPlugin, model::Model, nodedata::NodeData, nodeproperties::VariableNodeProperties)
     if is_random(nodeproperties)
-        error("Not implemented. Random variable is not supported by `ReactiveMP`.")
+        ReactiveMP.activate!(getextra(nodedata, :rmp_properties)::RandomVariableProperties, ReactiveMP.RandomVariableActivationOptions(Rocket.getscheduler(getoptions(plugin))))
     elseif is_data(nodeproperties)
-        error("Not implemented. Data variable is not supported by `ReactiveMP`.")
+        ReactiveMP.activate!(getextra(nodedata, :rmp_properties)::DataVariableProperties, ReactiveMP.DataVariableActivationOptions(false))
     elseif is_constant(nodeproperties)
-        error("Not implemented. Constant variable is not supported by `ReactiveMP`.")
+        # Properties for constant labels do not require extra activation
+        return nothing
     else
         error("Unknown `kind` in the node properties `$(nodeproperties)` for variable node `$(nodedata)`. Expected `random`, `constant` or `data`.")
     end
@@ -239,7 +239,7 @@ function postprocess_reactivemp_node(plugin::ReactiveMPIntegrationPlugin, model:
 end
 
 function postprocess_reactivemp_node(plugin::ReactiveMPIntegrationPlugin, model::Model, nodedata::NodeData, nodeproperties::FactorNodeProperties)
-    error("Not implemented")
+    ReactiveMP.activate!(GraphPPL.fform(nodeproperties), getextra(nodedata, :rmp_properties)::ReactiveMP.FactorNodeProperties, ReactiveMP.FactorNodeActivationOptions())
     return nothing
 end
 
