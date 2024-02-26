@@ -134,6 +134,7 @@ getvardict(model::GraphPPL.Model) = GraphPPL.getcontext(model)
 # Base.broadcastable(model::FactorGraphModel) = (model,)
 
 import ReactiveMP: hasrandomvar, hasdatavar, hasconstvar
+import ReactiveMP: RandomVariableProperties, DataVariableProperties, ConstVariableProperties
 
 # ReactiveMP.hasrandomvar(model::FactorGraphModel, symbol::Symbol) = hasrandomvar(getvariables(model), symbol)
 # ReactiveMP.hasdatavar(model::FactorGraphModel, symbol::Symbol)   = hasdatavar(getvariables(model), symbol)
@@ -143,7 +144,7 @@ import ReactiveMP: hasrandomvar, hasdatavar, hasconstvar
 
 import GraphPPL: plugin_type, FactorAndVariableNodesPlugin, preprocess_plugin, postprocess_plugin
 import GraphPPL: Model, Context, NodeLabel, NodeData, FactorNodeProperties, VariableNodeProperties, NodeCreationOptions, hasextra, getextra, setextra!, getproperties
-import GraphPPL: as_variable, is_data, is_random, degree
+import GraphPPL: as_variable, is_data, is_random, is_constant, degree
 import GraphPPL: variable_nodes, factor_nodes
 
 """
@@ -169,10 +170,20 @@ function GraphPPL.preprocess_plugin(plugin::ReactiveMPIntegrationPlugin, model::
 end
 
 function preprocess_reactivemp_plugin!(::ReactiveMPIntegrationPlugin, nodedata::NodeData, nodeproperties::FactorNodeProperties, options::NodeCreationOptions)
+    error("Factor node preprocessing is not implemented.")
     return nothing
 end
 
 function preprocess_reactivemp_plugin!(::ReactiveMPIntegrationPlugin, nodedata::NodeData, nodeproperties::VariableNodeProperties, options::NodeCreationOptions)
+    if is_random(nodeproperties)
+        setextra!(nodedata, :randomvar, RandomVariableProperties()) # TODO: bvdmitri, use functional form constraints
+    elseif is_data(nodeproperties)
+        setextra!(nodedata, :datavar, DataVariableProperties())
+    elseif is_constant(nodeproperties)
+        setextra!(nodedata, :constvar, ConstVariableProperties(GraphPPL.value(nodeproperties)))
+    else 
+        error("Unknown `kind` in the node properties `$(nodeproperties)` for variable node `$(nodedata)`. Expected `random`, `constant` or `data`.")
+    end
     return nothing
 end
 
@@ -200,9 +211,19 @@ function GraphPPL.postprocess_plugin(plugin::ReactiveMPIntegrationPlugin, model:
 end
 
 function postprocess_reactivemp_node(plugin::ReactiveMPIntegrationPlugin, model::Model, nodedata::NodeData, nodeproperties::VariableNodeProperties)
+    if is_random(nodeproperties)
+        error("Not implemented. Random variable is not supported by `ReactiveMP`.")
+    elseif is_data(nodeproperties)
+        error("Not implemented. Data variable is not supported by `ReactiveMP`.")
+    elseif is_constant(nodeproperties)
+        error("Not implemented. Constant variable is not supported by `ReactiveMP`.")
+    else 
+        error("Unknown `kind` in the node properties `$(nodeproperties)` for variable node `$(nodedata)`. Expected `random`, `constant` or `data`.")
+    end
     return nothing
 end
 
 function postprocess_reactivemp_node(plugin::ReactiveMPIntegrationPlugin, model::Model, nodedata::NodeData, nodeproperties::FactorNodeProperties)
+    error("Not implemented")
     return nothing
 end
