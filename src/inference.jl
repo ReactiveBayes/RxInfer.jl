@@ -9,7 +9,7 @@ import GraphPPL: ModelGenerator, create_model
 
 using MacroTools # for `@autoupdates`
 
-import ReactiveMP: israndom, isdata, isconst, isproxy, isanonymous, allows_missings
+import ReactiveMP: israndom, isdata, isconst, allows_missings
 import ReactiveMP: CountingReal
 
 import ProgressMeter
@@ -348,7 +348,7 @@ function __inference(;
     if returnvars === nothing || returnvars === KeepEach() || returnvars === KeepLast()
         # Checks if the first argument is `nothing`, in which case returns the second argument
         returnoption = something(returnvars, iterations isa Number ? KeepEach() : KeepLast())
-        returnvars   = Dict(variable => returnoption for (variable, value) in pairs(vardict) if (israndom(value) && !isanonymous(value)))
+        returnvars   = Dict(variable => returnoption for (variable, value) in pairs(vardict) if (israndom(value)))
     end
 
     # Assume that the prediction variables are specified as `datavars` inside the `@model` block, e.g. `pred = datavar(Float64, n)`.
@@ -384,7 +384,7 @@ function __inference(;
         end
         predictvars = Dict(
             variable => KeepLast() for (variable, value) in pairs(vardict) if
-            (isdata(value) && haskey(data, variable) && allows_missings(value) && __inference_check_dataismissing(data[variable]) && !isanonymous(value))
+            (isdata(value) && haskey(data, variable) && allows_missings(value) && __inference_check_dataismissing(data[variable]))
         )
     end
 
@@ -472,7 +472,7 @@ function __inference(;
         if isnothing(data) || isempty(data)
             error("Data is empty. Make sure you used `data` keyword argument with correct value.")
         else
-            foreach(filter(pair -> isdata(last(pair)) && !isproxy(last(pair)), pairs(vardict))) do pair
+            foreach(filter(pair -> isdata(last(pair)), pairs(vardict))) do pair
                 varname = first(pair)
                 haskey(data, varname) || error(
                     "Data entry `$(varname)` is missing in `data` or `predictvars` arguments. Double check `data = ($(varname) = ???, )` or `predictvars = ($(varname) = ???, )`"
@@ -1312,7 +1312,7 @@ function __rxinference(;
 
     # We check if `returnvars` argument is empty, in which case we return names of all random (non-proxy) variables in the model
     if isnothing(returnvars)
-        returnvars = [name(variable) for (variable, value) in pairs(vardict) if (israndom(value) && !isanonymous(value))]
+        returnvars = [name(variable) for (variable, value) in pairs(vardict) if (israndom(value))]
     end
 
     eltype(returnvars) === Symbol || error("`returnvars` must contain a list of symbols") # TODO?
@@ -1332,7 +1332,7 @@ function __rxinference(;
         elseif historyvars === KeepEach() || historyvars === KeepLast()
             # Second we check if it is one of the two possible global values: `KeepEach` and `KeepLast`. 
             # If so, we replace it with either `KeepEach` or `KeepLast` for each random and not-proxied variable in a model
-            historyvars = Dict(name(variable) => historyvars for (variable, value) in pairs(vardict) if (israndom(value) && !isproxy(value)))
+            historyvars = Dict(name(variable) => historyvars for (variable, value) in pairs(vardict) if (israndom(value)))
         end
 
         historyvars = Dict((varkey => value) for (varkey, value) in pairs(historyvars) if __check_has_randomvar(:historyvars, vardict, varkey))

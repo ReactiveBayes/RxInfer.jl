@@ -4,7 +4,7 @@ export getoptions, getconstraints, getmeta
 export getnodes, getvariables, getrandom, getconstant, getdata
 
 import Base: push!, show, getindex, haskey, firstindex, lastindex
-import ReactiveMP: get_pipeline_stages, getaddons, AbstractFactorNode, isconnected, isused
+import ReactiveMP: get_pipeline_stages, getaddons, AbstractFactorNode
 import Rocket: getscheduler
 
 # Model Inference Options
@@ -130,15 +130,11 @@ ReactiveMP.allows_missings(::Tuple{NodeData, VariableNodeProperties}) = false
 ReactiveMP.israndom(t::Vector{Tuple{NodeData, VariableNodeProperties}}) = all(ReactiveMP.israndom, t)
 ReactiveMP.isdata(t::Vector{Tuple{NodeData, VariableNodeProperties}}) = all(ReactiveMP.isdata, t)
 ReactiveMP.isconst(t::Vector{Tuple{NodeData, VariableNodeProperties}}) = all(ReactiveMP.isconst, t)
-ReactiveMP.isproxy(t::Vector{Tuple{NodeData, VariableNodeProperties}}) = false
-ReactiveMP.isanonymous(t::Vector{Tuple{NodeData, VariableNodeProperties}}) = false
 
 # TODO very ugly code just to make things running
 ReactiveMP.israndom(t::Tuple{NodeData, VariableNodeProperties}) = GraphPPL.is_random(t[2])
 ReactiveMP.isdata(t::Tuple{NodeData, VariableNodeProperties}) = GraphPPL.is_data(t[2])
 ReactiveMP.isconst(t::Tuple{NodeData, VariableNodeProperties}) = GraphPPL.is_constant(t[2])
-ReactiveMP.isproxy(t::Tuple{NodeData, VariableNodeProperties}) = false
-ReactiveMP.isanonymous(t::Tuple{NodeData, VariableNodeProperties}) = false
 
 function ReactiveMP.getmarginal(t::Tuple{NodeData, VariableNodeProperties}, strategy) 
     return ReactiveMP.getmarginal(getextra(t[1], :rmp_properties), strategy)
@@ -178,7 +174,6 @@ end
 # Base.broadcastable(model::FactorGraphModel) = (model,)
 
 import ReactiveMP: hasrandomvar, hasdatavar, hasconstvar
-import ReactiveMP: DataVariableProperties, ConstVariableProperties
 
 # ReactiveMP.hasrandomvar(model::FactorGraphModel, symbol::Symbol) = hasrandomvar(getvariables(model), symbol)
 # ReactiveMP.hasdatavar(model::FactorGraphModel, symbol::Symbol)   = hasdatavar(getvariables(model), symbol)
@@ -187,7 +182,7 @@ import ReactiveMP: DataVariableProperties, ConstVariableProperties
 ##  We extend integrate `ReactiveMP` and `GraphPPL` functionalities here
 
 import GraphPPL: plugin_type, FactorAndVariableNodesPlugin, preprocess_plugin, postprocess_plugin
-import GraphPPL: Model, Context, NodeLabel, NodeData, FactorNodeProperties, VariableNodeProperties, NodeCreationOptions, hasextra, getextra, setextra!, getproperties
+import GraphPPL: Model, Context, NodeLabel, NodeData, FactorNodeProperties, NodeCreationOptions, hasextra, getextra, setextra!, getproperties
 import GraphPPL: as_variable, is_data, is_random, is_constant, degree
 import GraphPPL: variable_nodes, factor_nodes
 
@@ -236,9 +231,9 @@ function preprocess_reactivemp_plugin!(
     if is_random(nodeproperties)
         setextra!(nodedata, :rmp_properties, RandomVariable()) # TODO: bvdmitri, use functional form constraints
     elseif is_data(nodeproperties)
-        setextra!(nodedata, :rmp_properties, DataVariableProperties())
+        setextra!(nodedata, :rmp_properties, DataVariable())
     elseif is_constant(nodeproperties)
-        setextra!(nodedata, :rmp_properties, ConstVariableProperties(GraphPPL.value(nodeproperties)))
+        setextra!(nodedata, :rmp_properties, ConstVariable(GraphPPL.value(nodeproperties)))
     else
         error("Unknown `kind` in the node properties `$(nodeproperties)` for variable node `$(nodedata)`. Expected `random`, `constant` or `data`.")
     end
@@ -271,7 +266,7 @@ function postprocess_reactivemp_node(plugin::ReactiveMPIntegrationPlugin, model:
     if is_random(nodeproperties)
         ReactiveMP.activate!(getextra(nodedata, :rmp_properties)::RandomVariable, ReactiveMP.RandomVariableActivationOptions(Rocket.getscheduler(getoptions(plugin))))
     elseif is_data(nodeproperties)
-        ReactiveMP.activate!(getextra(nodedata, :rmp_properties)::DataVariableProperties, ReactiveMP.DataVariableActivationOptions(false))
+        ReactiveMP.activate!(getextra(nodedata, :rmp_properties)::DataVariable, ReactiveMP.DataVariableActivationOptions(false))
     elseif is_constant(nodeproperties)
         # Properties for constant labels do not require extra activation
         return nothing
@@ -296,9 +291,9 @@ function Base.convert(::Type{ReactiveMP.AbstractVariable}, spec::Tuple{NodeData,
     if is_random(nodeproperties)
         return getextra(nodedata, :rmp_properties)::RandomVariable
     elseif is_data(nodeproperties)
-        return getextra(nodedata, :rmp_properties)::DataVariableProperties
+        return getextra(nodedata, :rmp_properties)::DataVariable
     elseif is_constant(nodeproperties)
-        return getextra(nodedata, :rmp_properties)::ConstVariableProperties
+        return getextra(nodedata, :rmp_properties)::ConstVariable
     else
         error("Unknown `kind` in the node properties `$(nodeproperties)` for variable node `$(nodedata)`. Expected `random`, `constant` or `data`.")
     end
