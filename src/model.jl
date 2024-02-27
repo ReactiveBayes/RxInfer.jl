@@ -178,7 +178,7 @@ end
 # Base.broadcastable(model::FactorGraphModel) = (model,)
 
 import ReactiveMP: hasrandomvar, hasdatavar, hasconstvar
-import ReactiveMP: RandomVariableProperties, DataVariableProperties, ConstVariableProperties
+import ReactiveMP: DataVariableProperties, ConstVariableProperties
 
 # ReactiveMP.hasrandomvar(model::FactorGraphModel, symbol::Symbol) = hasrandomvar(getvariables(model), symbol)
 # ReactiveMP.hasdatavar(model::FactorGraphModel, symbol::Symbol)   = hasdatavar(getvariables(model), symbol)
@@ -234,7 +234,7 @@ function preprocess_reactivemp_plugin!(
     ::ReactiveMPIntegrationPlugin, model::Model, context::Context, nodedata::NodeData, nodeproperties::VariableNodeProperties, options::NodeCreationOptions
 )
     if is_random(nodeproperties)
-        setextra!(nodedata, :rmp_properties, RandomVariableProperties()) # TODO: bvdmitri, use functional form constraints
+        setextra!(nodedata, :rmp_properties, RandomVariable()) # TODO: bvdmitri, use functional form constraints
     elseif is_data(nodeproperties)
         setextra!(nodedata, :rmp_properties, DataVariableProperties())
     elseif is_constant(nodeproperties)
@@ -269,7 +269,7 @@ end
 
 function postprocess_reactivemp_node(plugin::ReactiveMPIntegrationPlugin, model::Model, nodedata::NodeData, nodeproperties::VariableNodeProperties)
     if is_random(nodeproperties)
-        ReactiveMP.activate!(getextra(nodedata, :rmp_properties)::RandomVariableProperties, ReactiveMP.RandomVariableActivationOptions(Rocket.getscheduler(getoptions(plugin))))
+        ReactiveMP.activate!(getextra(nodedata, :rmp_properties)::RandomVariable, ReactiveMP.RandomVariableActivationOptions(Rocket.getscheduler(getoptions(plugin))))
     elseif is_data(nodeproperties)
         ReactiveMP.activate!(getextra(nodedata, :rmp_properties)::DataVariableProperties, ReactiveMP.DataVariableActivationOptions(false))
     elseif is_constant(nodeproperties)
@@ -291,14 +291,14 @@ function postprocess_reactivemp_node(plugin::ReactiveMPIntegrationPlugin, model:
 end
 
 ## ReactiveMP <-> GraphPPL connections, techically a piracy, but that is the purpose of the plugin
-function ReactiveMP.setmessagein!(spec::Tuple{NodeData, VariableNodeProperties}, observable::ReactiveMP.MessageObservable)
+function Base.convert(::Type{ReactiveMP.AbstractVariable}, spec::Tuple{NodeData, VariableNodeProperties})
     nodedata, nodeproperties = spec
     if is_random(nodeproperties)
-        return ReactiveMP.setmessagein!(getextra(nodedata, :rmp_properties)::RandomVariableProperties, observable)
+        return getextra(nodedata, :rmp_properties)::RandomVariable
     elseif is_data(nodeproperties)
-        return ReactiveMP.setmessagein!(getextra(nodedata, :rmp_properties)::DataVariableProperties, observable)
+        return getextra(nodedata, :rmp_properties)::DataVariableProperties
     elseif is_constant(nodeproperties)
-        return ReactiveMP.setmessagein!(getextra(nodedata, :rmp_properties)::ConstVariableProperties, observable)
+        return getextra(nodedata, :rmp_properties)::ConstVariableProperties
     else
         error("Unknown `kind` in the node properties `$(nodeproperties)` for variable node `$(nodedata)`. Expected `random`, `constant` or `data`.")
     end
