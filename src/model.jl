@@ -260,10 +260,9 @@ function GraphPPL.postprocess_plugin(plugin::ReactiveMPIntegrationPlugin, model:
     end
 
     # The nodes must be postprocessed after all variables has been instantiated
-    foreach(filter(as_node(), model)) do label
-        factor = model[label]::NodeData
+    factor_nodes(model) do label, factor
         properties = getproperties(factor)::FactorNodeProperties
-
+        
         postprocess_reactivemp_node(plugin, model, factor, properties)
     end
 end
