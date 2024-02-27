@@ -180,8 +180,6 @@ end
 
 # Base.broadcastable(model::FactorGraphModel) = (model,)
 
-import ReactiveMP: hasrandomvar, hasdatavar, hasconstvar
-
 # ReactiveMP.hasrandomvar(model::FactorGraphModel, symbol::Symbol) = hasrandomvar(getvariables(model), symbol)
 # ReactiveMP.hasdatavar(model::FactorGraphModel, symbol::Symbol)   = hasdatavar(getvariables(model), symbol)
 # ReactiveMP.hasconstvar(model::FactorGraphModel, symbol::Symbol)  = hasconstvar(getvariables(model), symbol)
