@@ -288,9 +288,10 @@ function postprocess_reactivemp_node(plugin::ReactiveMPIntegrationPlugin, model:
     # TODO: bvdmitri, Wouter is working on a faster version of this
     factorization = Tuple.(getextra(nodedata, :factorization_constraint_indices))
     metadata = hasextra(nodedata, :meta) ? getextra(nodedata, :meta) : nothing
+    pipeline = hasextra(nodedata, :pipeline) ? getextra(nodedata, :pipeline) : nothing
     scheduler = getscheduler(getoptions(plugin))
     addons = getaddons(getoptions(plugin))
-    options = ReactiveMP.FactorNodeActivationOptions(GraphPPL.fform(nodeproperties), factorization, metadata, addons, scheduler)
+    options = ReactiveMP.FactorNodeActivationOptions(GraphPPL.fform(nodeproperties), factorization, metadata, pipeline, addons, scheduler)
 
     ReactiveMP.activate!(getextra(nodedata, :rmp_properties)::ReactiveMP.FactorNodeProperties, options)
     return nothing
