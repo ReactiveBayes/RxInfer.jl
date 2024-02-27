@@ -286,7 +286,7 @@ function postprocess_reactivemp_node(plugin::ReactiveMPIntegrationPlugin, model:
     # TODO: bvdmitri, Wouter is working on a faster version of this
     clusters = Tuple.(getextra(nodedata, :factorization_constraint_indices))
 
-    ReactiveMP.activate!(GraphPPL.fform(nodeproperties), getextra(nodedata, :rmp_properties)::ReactiveMP.FactorNodeProperties, ReactiveMP.FactorNodeActivationOptions(clusters))
+    ReactiveMP.activate!(getextra(nodedata, :rmp_properties)::ReactiveMP.FactorNodeProperties, ReactiveMP.FactorNodeActivationOptions(GraphPPL.fform(nodeproperties), clusters))
     return nothing
 end
 
