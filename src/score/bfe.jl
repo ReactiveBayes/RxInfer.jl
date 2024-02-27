@@ -4,7 +4,7 @@ export BetheFreeEnergy
 
 import BayesBase: CountingReal
 import ReactiveMP: is_point_mass_form_constraint
-import ReactiveMP: score, indexed_name, name
+import ReactiveMP: score, name
 
 """
     AbstractScoreObjective
@@ -68,7 +68,7 @@ end
 function apply_diagnostic_check(::BetheFreeEnergyCheckNaNs, variable::AbstractVariable, stream)
     error_fn = let variable = variable
         (_) -> """
-            Failed to compute variable bound free energy component for `$(indexed_name(variable))` variable. The result is `NaN`. 
+            Failed to compute variable bound free energy component for `$(variable)` variable. The result is `NaN`. 
             Use `diagnostic_checks` field in `BetheFreeEnergy` constructor or `free_energy_diagnostics` keyword argument in the `inference` function to suppress this error.
         """
     end
@@ -111,7 +111,7 @@ end
 function apply_diagnostic_check(::BetheFreeEnergyCheckInfs, variable::AbstractVariable, stream)
     error_fn = let variable = variable
         (_) -> """
-            Failed to compute variable bound free energy component for `$(indexed_name(variable))` variable. The result is `Inf`. 
+            Failed to compute variable bound free energy component for `$(variable)` variable. The result is `Inf`. 
             Use `diagnostic_checks` field in `BetheFreeEnergy` constructor or `free_energy_diagnostics` keyword argument in the `inference` function to suppress this error.
         """
     end

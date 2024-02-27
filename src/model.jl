@@ -247,8 +247,8 @@ function GraphPPL.postprocess_plugin(plugin::ReactiveMPIntegrationPlugin, model:
 
         # Additional check for the model, since `ReactiveMP` does not allow half-edges
         if is_random(properties)
-            degree(model, label) !== 0 || error(lazy"Unused random variable has been found $(indexed_name(randomvar)).")
-            degree(model, label) !== 1 || error(lazy"Half-edge has been found: $(indexed_name(randomvar)). To terminate half-edges 'Uninformative' node can be used.")
+            degree(model, label) !== 0 || error(lazy"Unused random variable has been found $(label).")
+            degree(model, label) !== 1 || error(lazy"Half-edge has been found: $(label). To terminate half-edges 'Uninformative' node can be used.")
         end
 
         postprocess_reactivemp_node(plugin, model, variable, properties)
