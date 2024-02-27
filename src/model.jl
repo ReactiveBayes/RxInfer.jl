@@ -136,8 +136,15 @@ ReactiveMP.israndom(t::Tuple{NodeData, VariableNodeProperties}) = GraphPPL.is_ra
 ReactiveMP.isdata(t::Tuple{NodeData, VariableNodeProperties}) = GraphPPL.is_data(t[2])
 ReactiveMP.isconst(t::Tuple{NodeData, VariableNodeProperties}) = GraphPPL.is_constant(t[2])
 
-function ReactiveMP.getmarginal(t::Tuple{NodeData, VariableNodeProperties}, strategy) 
+function ReactiveMP.getmarginal(t::Tuple{NodeData, VariableNodeProperties}, strategy)
     return ReactiveMP.getmarginal(getextra(t[1], :rmp_properties), strategy)
+end
+
+function ReactiveMP.getmarginals(t::Vector{Tuple{NodeData, VariableNodeProperties}}, strategy)
+    tt = map(t) do _t
+        getextra(_t[1], :rmp_properties)
+    end
+    return ReactiveMP.getmarginals(tt, strategy)
 end
 
 function ReactiveMP.update!(t::Vector{Tuple{GraphPPL.NodeData, GraphPPL.VariableNodeProperties}}, something)
@@ -257,7 +264,7 @@ function GraphPPL.postprocess_plugin(plugin::ReactiveMPIntegrationPlugin, model:
     # The nodes must be postprocessed after all variables has been instantiated
     factor_nodes(model) do label, factor
         properties = getproperties(factor)::FactorNodeProperties
-        
+
         postprocess_reactivemp_node(plugin, model, factor, properties)
     end
 end
@@ -280,8 +287,10 @@ function postprocess_reactivemp_node(plugin::ReactiveMPIntegrationPlugin, model:
 
     # TODO: bvdmitri, Wouter is working on a faster version of this
     clusters = Tuple.(getextra(nodedata, :factorization_constraint_indices))
+    scheduler = getscheduler(getoptions(plugin))
+    options = ReactiveMP.FactorNodeActivationOptions(GraphPPL.fform(nodeproperties), clusters, scheduler)
 
-    ReactiveMP.activate!(getextra(nodedata, :rmp_properties)::ReactiveMP.FactorNodeProperties, ReactiveMP.FactorNodeActivationOptions(GraphPPL.fform(nodeproperties), clusters))
+    ReactiveMP.activate!(getextra(nodedata, :rmp_properties)::ReactiveMP.FactorNodeProperties, options)
     return nothing
 end
 
