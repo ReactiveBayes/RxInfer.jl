@@ -284,7 +284,7 @@ end
 function postprocess_reactivemp_node(plugin::ReactiveMPIntegrationPlugin, model::Model, nodedata::NodeData, nodeproperties::FactorNodeProperties)
 
     # TODO: bvdmitri, Wouter is working on a faster version of this
-    factorization = Tuple.(getextra(nodedata, :factorization_constraint_indices))
+    factorization = getextra(nodedata, :factorization_constraint_indices)
     metadata = hasextra(nodedata, :meta) ? getextra(nodedata, :meta) : nothing
     pipeline = hasextra(nodedata, :pipeline) ? getextra(nodedata, :pipeline) : nothing
     scheduler = getscheduler(getoptions(plugin))
