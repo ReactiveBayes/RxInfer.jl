@@ -218,7 +218,7 @@ function preprocess_reactivemp_plugin!(
         return (inodedata, iproperties)
     end
 
-    setextra!(nodedata, :rmp_properties, ReactiveMP.FactorNodeProperties(interfaces))
+    setextra!(nodedata, :rmp_properties, GenericFactorNode(GraphPPL.fform(nodeproperties), interfaces))
 
     return nothing
 end
@@ -282,9 +282,9 @@ function postprocess_reactivemp_node(plugin::ReactiveMPIntegrationPlugin, model:
     pipeline = hasextra(nodedata, :pipeline) ? getextra(nodedata, :pipeline) : nothing
     scheduler = getscheduler(getoptions(plugin))
     addons = getaddons(getoptions(plugin))
-    options = ReactiveMP.FactorNodeActivationOptions(GraphPPL.fform(nodeproperties), factorization, metadata, pipeline, addons, scheduler)
+    options = ReactiveMP.FactorNodeActivationOptions(factorization, metadata, pipeline, addons, scheduler)
 
-    ReactiveMP.activate!(getextra(nodedata, :rmp_properties)::ReactiveMP.FactorNodeProperties, options)
+    ReactiveMP.activate!(getextra(nodedata, :rmp_properties)::GenericFactorNode, options)
     return nothing
 end
 
