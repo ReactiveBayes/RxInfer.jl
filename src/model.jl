@@ -104,19 +104,12 @@ getmodel(model::FactorGraphModel) = model.model
 
 getvardict(model::FactorGraphModel) = getvardict(getmodel(model))
 
+__vardict_transform(model::GraphPPL.Model, label::GraphPPL.NodeLabel) = __vardict_transform(model, model[label])
+__vardict_transform(model::GraphPPL.Model, data::GraphPPL.NodeData) = (data, getproperties(data))
+__vardict_transform(model::GraphPPL.Model, container::GraphPPL.ResizableArray) = map(element -> __vardict_transform(model, element), container)
+
 function getvardict(model::GraphPPL.Model)
-    ctx = GraphPPL.getcontext(model)
-    vardict = Dict{Symbol, Tuple{NodeData, VariableNodeProperties}}()
-    # TODO very ugly code just to make things running
-    return map(merge(ctx.individual_variables, ctx.vector_variables)) do value
-        nodedata = model[value]
-        if nodedata isa GraphPPL.NodeData
-            return (nodedata, GraphPPL.getproperties(nodedata))
-        else
-            return map(v -> (v, GraphPPL.getproperties(v)), nodedata)
-        end
-    end
-    return vardict
+    return map(v -> __vardict_transform(model, v), GraphPPL.VarDict(GraphPPL.getcontext(model)))
 end
 
 # TODO very ugly code just to make things running

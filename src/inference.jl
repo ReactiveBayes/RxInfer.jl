@@ -129,8 +129,8 @@ function __inference_check_itertype(keyword::Symbol, ::T) where {T}
           """)
 end
 
-function __infer_check_dicttype(::Symbol, ::Union{Nothing, NamedTuple, Dict})
-    # This function check is the second argument is of type `Nothing`, `NamedTuple` or `Dict`. 
+function __infer_check_dicttype(::Symbol, ::Union{Nothing, NamedTuple, Dict, GraphPPL.VarDict})
+    # This function check is the second argument is of type `Nothing`, `NamedTuple`, `Dict` or `VarDict`. 
     # Does nothing is true, throws an error otherwise (see the second method below)
     nothing
 end
@@ -342,6 +342,7 @@ function __inference(;
     fmodel = __infer_create_factor_graph_model(_model, data)
     inference_invoke_callback(callbacks, :after_model_creation, fmodel)
     vardict = getvardict(fmodel)
+    vardict = GraphPPL.variables(vardict) # TODO bvdmitri, should work recursively as well
 
     # First what we do - we check if `returnvars` is nothing or one of the two possible values: `KeepEach` and `KeepLast`. 
     # If so, we replace it with either `KeepEach` or `KeepLast` for each random and not-proxied variable in a model
@@ -375,7 +376,7 @@ function __inference(;
             end
         end
     else # In this case, the prediction functionality should only be performed if the data allows missings and actually contains missing values.
-        foreach(keys(vardict), values(vardict)) do variable, value
+        foreach(pairs(vardict)) do (variable, value)
             if isdata(value) && haskey(data, variable) && __inference_check_dataismissing(data[variable]) && !allows_missings(value)
                 error(
                     "The `data` entry for the $(variable) has `missing` values inside, but the `datavar` specification does not allow it. Use `where { allow_missing = true }` in the model specification"
