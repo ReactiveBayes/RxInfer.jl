@@ -218,7 +218,7 @@ function preprocess_reactivemp_plugin!(
         return (inodedata, iproperties)
     end
 
-    setextra!(nodedata, :rmp_properties, FactorNode(GraphPPL.fform(nodeproperties), interfaces))
+    setextra!(nodedata, :rmp_properties, factornode(GraphPPL.fform(nodeproperties), interfaces))
 
     return nothing
 end
@@ -227,11 +227,11 @@ function preprocess_reactivemp_plugin!(
     ::ReactiveMPIntegrationPlugin, model::Model, context::Context, nodedata::NodeData, nodeproperties::VariableNodeProperties, options::NodeCreationOptions
 )
     if is_random(nodeproperties)
-        setextra!(nodedata, :rmp_properties, RandomVariable()) # TODO: bvdmitri, use functional form constraints
+        setextra!(nodedata, :rmp_properties, randomvar()) # TODO: bvdmitri, use functional form constraints
     elseif is_data(nodeproperties)
-        setextra!(nodedata, :rmp_properties, DataVariable())
+        setextra!(nodedata, :rmp_properties, datavar())
     elseif is_constant(nodeproperties)
-        setextra!(nodedata, :rmp_properties, ConstVariable(GraphPPL.value(nodeproperties)))
+        setextra!(nodedata, :rmp_properties, constvar(GraphPPL.value(nodeproperties)))
     else
         error("Unknown `kind` in the node properties `$(nodeproperties)` for variable node `$(nodedata)`. Expected `random`, `constant` or `data`.")
     end
