@@ -1,5 +1,5 @@
 
-export FactorGraphModel
+export ProbabilisticModel
 export getoptions, getconstraints, getmeta
 export getnodes, getvariables, getrandom, getconstant, getdata
 
@@ -21,26 +21,23 @@ Creates model inference options object. The list of available options is present
 
 ### Advanced options
 
-- `pipeline`: changes the default pipeline for each factor node in the graph
-- `global_reactive_scheduler`: changes the scheduler of reactive streams, see Rocket.jl for more info, defaults to no scheduler
+- `scheduler`: changes the scheduler of reactive streams, see Rocket.jl for more info, defaults to no scheduler
 
 See also: [`infer`](@ref)
 """
-struct InferenceOptions{P, S, A}
-    pipeline  :: P
+struct InferenceOptions{S, A}
     scheduler :: S
     addons    :: A
     warn      :: Bool
 end
 
-InferenceOptions(pipeline, scheduler, addons) = InferenceOptions(pipeline, scheduler, addons, true)
+InferenceOptions(scheduler, addons) = InferenceOptions(scheduler, addons, true)
 
 UnspecifiedInferenceOptions() = convert(InferenceOptions, (;))
 
-setpipeline(options::InferenceOptions, pipeline) = InferenceOptions(pipeline, options.scheduler, options.addons, options.warn)
-setscheduler(options::InferenceOptions, scheduler) = InferenceOptions(options.pipeline, scheduler, options.addons, options.warn)
-setaddons(options::InferenceOptions, addons) = InferenceOptions(options.pipeline, options.scheduler, addons, options.warn)
-setwarn(options::InferenceOptions, warn) = InferenceOptions(options.pipeline, options.scheduler, options.addons, warn)
+setscheduler(options::InferenceOptions, scheduler) = InferenceOptions(scheduler, options.addons, options.warn)
+setaddons(options::InferenceOptions, addons) = InferenceOptions(options.scheduler, addons, options.warn)
+setwarn(options::InferenceOptions, warn) = InferenceOptions(options.scheduler, options.addons, warn)
 
 import Base: convert
 
@@ -49,144 +46,52 @@ function Base.convert(::Type{InferenceOptions}, options::Nothing)
 end
 
 function Base.convert(::Type{InferenceOptions}, options::NamedTuple{keys}) where {keys}
-    available_options = (:pipeline, :scheduler, :limit_stack_depth, :addons, :warn)
+    available_options = (:scheduler, :limit_stack_depth, :addons, :warn)
 
     for key in keys
         key ∈ available_options || error("Unknown model inference options: $(key).")
     end
 
-    pipeline  = nothing
-    scheduler = nothing
-    addons    = nothing
-    warn      = true
-
-    if haskey(options, :warn)
-        warn = options[:warn]
-    end
-
-    if haskey(options, :pipeline)
-        pipeline = options[:pipeline]
-    end
+    warn = haskey(options, :warn) ? options.warn : true
+    addons = haskey(options, :addons) ? options.addons : nothing
 
     if warn && haskey(options, :scheduler) && haskey(options, :limit_stack_depth)
-        @warn "Model options have `scheduler` and `limit_stack_depth` options specified together. Ignoring `limit_stack_depth`. Use `warn = false` option in `ModelInferenceOptions` to suppress this warning."
+        @warn "Inference options have `scheduler` and `limit_stack_depth` options specified together. Ignoring `limit_stack_depth`. Use `warn = false` option in `ModelInferenceOptions` to suppress this warning."
     end
 
-    if haskey(options, :scheduler)
-        scheduler = options[:scheduler]
+    scheduler = if haskey(options, :scheduler)
+        options[:scheduler]
     elseif haskey(options, :limit_stack_depth)
-        scheduler = LimitStackScheduler(options[:limit_stack_depth]...)
+        LimitStackScheduler(options[:limit_stack_depth]...)
+    else
+        nothing
     end
 
-    if haskey(options, :addons)
-        addons = options[:addons]
-    end
-
-    return InferenceOptions(pipeline, scheduler, addons, warn)
+    return InferenceOptions(scheduler, addons, warn)
 end
 
 const DefaultModelInferenceOptions = UnspecifiedInferenceOptions()
 
 Rocket.getscheduler(options::InferenceOptions) = something(options.scheduler, AsapScheduler())
 
-ReactiveMP.get_pipeline_stages(options::InferenceOptions) = something(options.pipeline, EmptyPipelineStage())
-
 ReactiveMP.getaddons(options::InferenceOptions) = ReactiveMP.getaddons(options, options.addons)
 ReactiveMP.getaddons(options::InferenceOptions, addons::ReactiveMP.AbstractAddon) = (addons,) # ReactiveMP expects addons to be of type tuple
-ReactiveMP.getaddons(options::InferenceOptions, addons::Nothing) = addons                      # Do nothing if addons is `nothing`
-ReactiveMP.getaddons(options::InferenceOptions, addons::Tuple) = addons                        # Do nothing if addons is a `Tuple`
+ReactiveMP.getaddons(options::InferenceOptions, addons::Nothing) = addons                     # Do nothing if addons is `nothing`
+ReactiveMP.getaddons(options::InferenceOptions, addons::Tuple) = addons                       # Do nothing if addons is a `Tuple`
 
-struct FactorGraphModel{M}
+struct ProbabilisticModel{M}
     model::M
 end
 
-getmodel(model::FactorGraphModel) = model.model
+getmodel(model::ProbabilisticModel) = model.model
 
-getvardict(model::FactorGraphModel) = getvardict(getmodel(model))
-
-__vardict_transform(model::GraphPPL.Model, label::GraphPPL.NodeLabel) = __vardict_transform(model, model[label])
-__vardict_transform(model::GraphPPL.Model, data::GraphPPL.NodeData) = (data, getproperties(data))
-__vardict_transform(model::GraphPPL.Model, container::GraphPPL.ResizableArray) = map(element -> __vardict_transform(model, element), container)
-
-function getvardict(model::GraphPPL.Model)
-    return map(v -> __vardict_transform(model, v), GraphPPL.VarDict(GraphPPL.getcontext(model)))
-end
-
-# TODO very ugly code just to make things running
-import GraphPPL: NodeData, VariableNodeProperties
-
-# TODO very ugly code just to make things running
-ReactiveMP.allows_missings(::Vector{Tuple{NodeData, VariableNodeProperties}}) = false
-ReactiveMP.allows_missings(::Tuple{NodeData, VariableNodeProperties}) = false
-
-# TODO very ugly code just to make things running
-ReactiveMP.israndom(t::Vector{Tuple{NodeData, VariableNodeProperties}}) = all(ReactiveMP.israndom, t)
-ReactiveMP.isdata(t::Vector{Tuple{NodeData, VariableNodeProperties}}) = all(ReactiveMP.isdata, t)
-ReactiveMP.isconst(t::Vector{Tuple{NodeData, VariableNodeProperties}}) = all(ReactiveMP.isconst, t)
-
-# TODO very ugly code just to make things running
-ReactiveMP.israndom(t::Tuple{NodeData, VariableNodeProperties}) = GraphPPL.is_random(t[2])
-ReactiveMP.isdata(t::Tuple{NodeData, VariableNodeProperties}) = GraphPPL.is_data(t[2])
-ReactiveMP.isconst(t::Tuple{NodeData, VariableNodeProperties}) = GraphPPL.is_constant(t[2])
-
-function ReactiveMP.getmarginal(t::Tuple{NodeData, VariableNodeProperties}, strategy)
-    return ReactiveMP.getmarginal(getextra(t[1], :rmp_properties), strategy)
-end
-
-function ReactiveMP.getmarginals(t::Vector{Tuple{NodeData, VariableNodeProperties}}, strategy)
-    tt = map(t) do _t
-        getextra(_t[1], :rmp_properties)
-    end
-    return ReactiveMP.getmarginals(tt, strategy)
-end
-
-function ReactiveMP.update!(t::Vector{Tuple{GraphPPL.NodeData, GraphPPL.VariableNodeProperties}}, something)
-    rmpprops = map(i -> getextra(i[1], :rmp_properties), t)
-    return ReactiveMP.update!(rmpprops, something)
-end
-
-# getmodel(model::FactorGraphModel)     = model.model
-# getvariables(model::FactorGraphModel) = getvariables(model, getmodel(model))
-# 
-# # If the underlying model is a `GraphPPL.Model` then we simply return the underlying context
-# getvariables(::FactorGraphModel, model::GraphPPL.Model) = GraphPPL.getcontext(model)
-# 
-# getconstraints(model::FactorGraphModel) = model.constraints
-# getmeta(model::FactorGraphModel)        = model.meta
-# getoptions(model::FactorGraphModel)     = model.options
-# getnodes(model::FactorGraphModel)       = model.nodes
-# 
-# import ReactiveMP: getrandom, getconstant, getdata, getvardict
-# 
-# ReactiveMP.getrandom(model::FactorGraphModel)   = getrandom(getvariables(model))
-# ReactiveMP.getconstant(model::FactorGraphModel) = getconstant(getvariables(model))
-# ReactiveMP.getdata(model::FactorGraphModel)     = getdata(getvariables(model))
-# ReactiveMP.getvardict(model::FactorGraphModel)  = getvardict(getvariables(model))
-# 
-# function Base.getindex(model::FactorGraphModel, symbol::Symbol)
-#     return getindex(getmodel(model), getindex(getvariables(model), symbol))
-# end
-# 
-# function Base.haskey(model::FactorGraphModel, symbol::Symbol)
-#     return haskey(getvariables(model), symbol)
-# end
-
-# Base.broadcastable(model::FactorGraphModel) = (model,)
-
-# ReactiveMP.hasrandomvar(model::FactorGraphModel, symbol::Symbol) = hasrandomvar(getvariables(model), symbol)
-# ReactiveMP.hasdatavar(model::FactorGraphModel, symbol::Symbol)   = hasdatavar(getvariables(model), symbol)
-# ReactiveMP.hasconstvar(model::FactorGraphModel, symbol::Symbol)  = hasconstvar(getvariables(model), symbol)
-
-##  We extend integrate `ReactiveMP` and `GraphPPL` functionalities here
+getvardict(model::ProbabilisticModel) = getvardict(getmodel(model))
 
 import GraphPPL: plugin_type, FactorAndVariableNodesPlugin, preprocess_plugin, postprocess_plugin
-import GraphPPL: Model, Context, NodeLabel, NodeData, FactorNodeProperties, NodeCreationOptions, hasextra, getextra, setextra!, getproperties
+import GraphPPL: Model, Context, NodeLabel, NodeData, FactorNodeProperties, VariableNodeProperties, NodeCreationOptions, hasextra, getextra, setextra!, getproperties
 import GraphPPL: as_variable, is_data, is_random, is_constant, degree
 import GraphPPL: variable_nodes, factor_nodes
 
-"""
-- `options`: An instance of `InferenceOptions`
-"""
 struct ReactiveMPIntegrationPlugin{T}
     options::T
 
@@ -275,8 +180,6 @@ function postprocess_reactivemp_node(plugin::ReactiveMPIntegrationPlugin, model:
 end
 
 function postprocess_reactivemp_node(plugin::ReactiveMPIntegrationPlugin, model::Model, nodedata::NodeData, nodeproperties::FactorNodeProperties)
-
-    # TODO: bvdmitri, Wouter is working on a faster version of this
     factorization = getextra(nodedata, :factorization_constraint_indices)
     metadata = hasextra(nodedata, :meta) ? getextra(nodedata, :meta) : nothing
     dependencies = hasextra(nodedata, :dependencies) ? getextra(nodedata, :dependencies) : nothing
@@ -302,4 +205,43 @@ function Base.convert(::Type{ReactiveMP.AbstractVariable}, spec::Tuple{NodeData,
     else
         error("Unknown `kind` in the node properties `$(nodeproperties)` for variable node `$(nodedata)`. Expected `random`, `constant` or `data`.")
     end
+end
+
+struct GraphVariableRef
+    nodelabel::GraphPPL.NodeLabel
+    nodedata::GraphPPL.NodeData
+    nodeproperties::GraphPPL.VariableNodeProperties
+end
+
+function getvardict(model::GraphPPL.Model)
+    return map(v -> getvarref(model, v), GraphPPL.VarDict(GraphPPL.getcontext(model)))
+end
+
+getvarref(model::GraphPPL.Model, label::GraphPPL.NodeLabel, data::GraphPPL.NodeData) =
+    GraphVariableRef(label::GraphPPL.NodeLabel, data::GraphPPL.NodeData, getproperties(data)::GraphPPL.VariableNodeProperties)
+getvarref(model::GraphPPL.Model, label::GraphPPL.NodeLabel) = getvarref(model, label, model[label])
+getvarref(model::GraphPPL.Model, container::AbstractArray) = map(element -> getvarref(model, element), container)
+
+ReactiveMP.allows_missings(::AbstractArray{GraphVariableRef}) = false
+ReactiveMP.allows_missings(::GraphVariableRef) = false
+
+ReactiveMP.israndom(collection::AbstractArray{GraphVariableRef}) = all(ReactiveMP.israndom, collection)
+ReactiveMP.isdata(collection::AbstractArray{GraphVariableRef}) = all(ReactiveMP.isdata, collection)
+ReactiveMP.isconst(collection::AbstractArray{GraphVariableRef}) = all(ReactiveMP.isconst, collection)
+
+ReactiveMP.israndom(ref::GraphVariableRef) = GraphPPL.is_random(ref.nodeproperties)
+ReactiveMP.isdata(ref::GraphVariableRef) = GraphPPL.is_data(ref.nodeproperties)
+ReactiveMP.isconst(ref::GraphVariableRef) = GraphPPL.is_constant(ref.nodeproperties)
+
+function ReactiveMP.getmarginal(ref::GraphVariableRef, strategy)
+    return ReactiveMP.getmarginal(getextra(ref.nodedata, :rmp_properties), strategy)
+end
+
+function ReactiveMP.getmarginals(collection::AbstractArray{GraphVariableRef}, strategy)
+    return ReactiveMP.getmarginals(map(ref -> getextra(ref.nodedata, :rmp_properties), collection), strategy)
+end
+
+function ReactiveMP.update!(collection::Vector{GraphVariableRef}, something)
+    # TODO: cache the result of the `getextra` call in the `inference` procedure
+    return ReactiveMP.update!(map(ref -> getextra(ref.nodedata, :rmp_properties), collection), something)
 end

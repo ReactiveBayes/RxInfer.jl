@@ -60,13 +60,13 @@ Rocket.on_complete!(updated::MarginalHasBeenUpdated)       = begin end
 
 # This creates a `tap` operator that will set the `updated` flag to true. 
 # Later on we check flags and `unset!` them after the `update!` procedure
-ensure_update(model::FactorGraphModel, callback, variable_name::Symbol, updated::MarginalHasBeenUpdated) =
+ensure_update(model::ProbabilisticModel, callback, variable_name::Symbol, updated::MarginalHasBeenUpdated) =
     tap() do update
         __set_updated!(updated)
         callback(model, variable_name, update)
     end
 
-ensure_update(model::FactorGraphModel, ::Nothing, variable_name::Symbol, updated::MarginalHasBeenUpdated) =
+ensure_update(model::ProbabilisticModel, ::Nothing, variable_name::Symbol, updated::MarginalHasBeenUpdated) =
     tap() do _
         __set_updated!(updated) # If `callback` is nothing we simply set updated flag
     end
@@ -573,7 +573,7 @@ Base.string(indexed::RxInferenceAutoUpdateIndexedVariable) = string(indexed.vari
 hasdatavar(model, variable::RxInferenceAutoUpdateIndexedVariable)   = hasdatavar(model, variable.variable)
 hasrandomvar(model, variable::RxInferenceAutoUpdateIndexedVariable) = hasrandomvar(model, variable.variable)
 
-function Base.getindex(model::FactorGraphModel, indexed::RxInferenceAutoUpdateIndexedVariable)
+function Base.getindex(model::ProbabilisticModel, indexed::RxInferenceAutoUpdateIndexedVariable)
     return model[indexed.variable][indexed.index...]
 end
 
@@ -588,7 +588,7 @@ function Base.show(io::IO, specification::RxInferenceAutoUpdateSpecification)
     print(io, join(specification.labels, ","), " = ", string(specification.callback), "(", string(specification.from), "(", string(specification.variable), "))")
 end
 
-function (specification::RxInferenceAutoUpdateSpecification)(model::FactorGraphModel)
+function (specification::RxInferenceAutoUpdateSpecification)(model::ProbabilisticModel)
     datavars = map(specification.labels) do label
         hasdatavar(model, label) || error("Autoupdate specification defines an update for `$(label)`, but the model has no datavar named `$(label)`")
         return model[label]
@@ -1458,7 +1458,7 @@ function __infer_create_factor_graph_model(generator::ModelGenerator, data::Unio
         end
         return NamedTuple{ikeys}(interfaces)
     end
-    return FactorGraphModel(model)
+    return ProbabilisticModel(model)
 end
 
 function __infer_create_data_interface(model, context, key::Symbol, data)

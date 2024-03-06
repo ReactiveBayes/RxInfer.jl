@@ -16,7 +16,14 @@
         end
     end
 
-    result = infer(model = coin_model(), data  = (y = dataset,))
+    result = infer(
+        model = coin_model(), 
+        data = (y = dataset,),
+        # free_energy = true,
+        iterations = 10
+    )
 
-    @test mean(result.posteriors[:θ]) ≈ p atol = 0.01
+    @test allequal(result.posteriors[:θ])
+    @test mean(result.posteriors[:θ][end]) ≈ p atol = 0.01
+    
 end

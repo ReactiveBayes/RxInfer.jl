@@ -19,8 +19,8 @@ abstract type AbstractScoreObjective end
 
 # Default version is differentiable
 # Specialized versions like score(Float64, ...) are not differentiable, but could be faster
-score(model::FactorGraphModel, objective::AbstractScoreObjective)                              = score(model, CountingReal, objective)
-score(model::FactorGraphModel, ::Type{T}, objective::AbstractScoreObjective) where {T <: Real} = score(model, CountingReal{T}, objective)
+score(model::ProbabilisticModel, objective::AbstractScoreObjective)                              = score(model, CountingReal, objective)
+score(model::ProbabilisticModel, ::Type{T}, objective::AbstractScoreObjective) where {T <: Real} = score(model, CountingReal{T}, objective)
 
 # Bethe Free Energy objective
 
@@ -142,7 +142,8 @@ get_scheduler(objective::BetheFreeEnergy)     = objective.scheduler
 
 apply_diagnostic_check(objective::BetheFreeEnergy, something, stream) = apply_diagnostic_check(objective.diagnostic_checks, something, stream)
 
-function score(model::FactorGraphModel, ::Type{T}, objective::BetheFreeEnergy) where {T <: CountingReal}
+function score(model::ProbabilisticModel, ::Type{T}, objective::BetheFreeEnergy) where {T <: CountingReal}
+
     stochastic_variables = filter(r -> !is_point_mass_form_constraint(marginal_form_constraint(r)), getrandom(model))
     point_mass_estimates = filter(r -> is_point_mass_form_constraint(marginal_form_constraint(r)), getrandom(model))
 
