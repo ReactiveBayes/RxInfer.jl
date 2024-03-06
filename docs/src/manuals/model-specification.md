@@ -334,7 +334,7 @@ where `RecognitionFactorisationConstraint` can be the following
 
 1. `MeanField()`
 
-Automatically specifies a mean-field factorisation
+Automatically specifies a naive mean-field factorisation
 
 Example:
 
@@ -342,14 +342,14 @@ Example:
 y ~ NormalMeanVariance(y_mean, y_var) where { q = MeanField() }
 ```
 
-2. `FullFactorisation()`
+2. `BetheFactorisation()`
 
-Automatically specifies a full factorisation
+Automatically specifies the Bethe factorisation. For more information on Bethe factorisation, please the section on [Bethe approximation](/docs/src/library/bethe-free-energy.md#bethe-approximationid-lib-bethe-approximation).
 
 Example:
 
 ```julia
-y ~ NormalMeanVariance(y_mean, y_var) where { q = FullFactorisation() }
+y ~ NormalMeanVariance(y_mean, y_var) where { q = BetheFactorisation() }
 ```
 
 3. `q(μ)q(v)q(out)` or `q(μ) * q(v) * q(out)`
