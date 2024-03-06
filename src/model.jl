@@ -208,18 +208,23 @@ function Base.convert(::Type{ReactiveMP.AbstractVariable}, spec::Tuple{NodeData,
 end
 
 struct GraphVariableRef
-    nodelabel::GraphPPL.NodeLabel
-    nodedata::GraphPPL.NodeData
-    nodeproperties::GraphPPL.VariableNodeProperties
+    label::GraphPPL.NodeLabel
+    properties::GraphPPL.VariableNodeProperties
+    variable::AbstractVariable
+end
+
+function GraphVariableRef(model::GraphPPL.Model, label::GraphPPL.NodeLabel)
+    nodedata = model[label]::GraphPPL.NodeData
+    properties = getproperties(nodedata)::GraphPPL.VariableNodeProperties
+    variable = getextra(nodedata, :rmp_properties)::AbstractVariable
+    return GraphVariableRef(label, properties, variable)
 end
 
 function getvardict(model::GraphPPL.Model)
     return map(v -> getvarref(model, v), GraphPPL.VarDict(GraphPPL.getcontext(model)))
 end
 
-getvarref(model::GraphPPL.Model, label::GraphPPL.NodeLabel, data::GraphPPL.NodeData) =
-    GraphVariableRef(label::GraphPPL.NodeLabel, data::GraphPPL.NodeData, getproperties(data)::GraphPPL.VariableNodeProperties)
-getvarref(model::GraphPPL.Model, label::GraphPPL.NodeLabel) = getvarref(model, label, model[label])
+getvarref(model::GraphPPL.Model, label::GraphPPL.NodeLabel) = GraphVariableRef(model, label)
 getvarref(model::GraphPPL.Model, container::AbstractArray) = map(element -> getvarref(model, element), container)
 
 ReactiveMP.allows_missings(::AbstractArray{GraphVariableRef}) = false
@@ -229,19 +234,19 @@ ReactiveMP.israndom(collection::AbstractArray{GraphVariableRef}) = all(ReactiveM
 ReactiveMP.isdata(collection::AbstractArray{GraphVariableRef}) = all(ReactiveMP.isdata, collection)
 ReactiveMP.isconst(collection::AbstractArray{GraphVariableRef}) = all(ReactiveMP.isconst, collection)
 
-ReactiveMP.israndom(ref::GraphVariableRef) = GraphPPL.is_random(ref.nodeproperties)
-ReactiveMP.isdata(ref::GraphVariableRef) = GraphPPL.is_data(ref.nodeproperties)
-ReactiveMP.isconst(ref::GraphVariableRef) = GraphPPL.is_constant(ref.nodeproperties)
+ReactiveMP.israndom(ref::GraphVariableRef) = GraphPPL.is_random(ref.properties)
+ReactiveMP.isdata(ref::GraphVariableRef) = GraphPPL.is_data(ref.properties)
+ReactiveMP.isconst(ref::GraphVariableRef) = GraphPPL.is_constant(ref.properties)
 
 function ReactiveMP.getmarginal(ref::GraphVariableRef, strategy)
-    return ReactiveMP.getmarginal(getextra(ref.nodedata, :rmp_properties), strategy)
+    return ReactiveMP.getmarginal(ref.variable, strategy)
 end
 
 function ReactiveMP.getmarginals(collection::AbstractArray{GraphVariableRef}, strategy)
-    return ReactiveMP.getmarginals(map(ref -> getextra(ref.nodedata, :rmp_properties), collection), strategy)
+    return ReactiveMP.getmarginals(map(ref -> ref.variable, collection), strategy)
 end
 
 function ReactiveMP.update!(collection::Vector{GraphVariableRef}, something)
     # TODO: cache the result of the `getextra` call in the `inference` procedure
-    return ReactiveMP.update!(map(ref -> getextra(ref.nodedata, :rmp_properties), collection), something)
+    return ReactiveMP.update!(map(ref -> ref.variable, collection), something)
 end
