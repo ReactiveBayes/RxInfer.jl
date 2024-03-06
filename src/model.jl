@@ -86,6 +86,8 @@ end
 getmodel(model::ProbabilisticModel) = model.model
 
 getvardict(model::ProbabilisticModel) = getvardict(getmodel(model))
+getrandomvars(model::ProbabilisticModel) = getrandomvars(getmodel(model))
+getfactornodes(model::ProbabilisticModel) = getfactornodes(getmodel(model))
 
 import GraphPPL: plugin_type, FactorAndVariableNodesPlugin, preprocess_plugin, postprocess_plugin
 import GraphPPL: Model, Context, NodeLabel, NodeData, FactorNodeProperties, VariableNodeProperties, NodeCreationOptions, hasextra, getextra, setextra!, getproperties
@@ -107,44 +109,11 @@ getoptions(plugin::ReactiveMPIntegrationPlugin) = plugin.options
 GraphPPL.plugin_type(::ReactiveMPIntegrationPlugin) = FactorAndVariableNodesPlugin()
 
 function GraphPPL.preprocess_plugin(plugin::ReactiveMPIntegrationPlugin, model::Model, context::Context, label::NodeLabel, nodedata::NodeData, options::NodeCreationOptions)
-    preprocess_reactivemp_plugin!(plugin, model, context, nodedata, getproperties(nodedata), options)
     return label, nodedata
 end
 
-function preprocess_reactivemp_plugin!(
-    plugin::ReactiveMPIntegrationPlugin, model::Model, context::Context, nodedata::NodeData, nodeproperties::FactorNodeProperties, options::NodeCreationOptions
-)
-    interfaces = map(options[:interfaces]) do interface
-        inodedata = model[interface]::NodeData
-        iproperties = getproperties(inodedata)::VariableNodeProperties
-        if !hasextra(inodedata, :rmp_properties)
-            preprocess_reactivemp_plugin!(plugin, model, context, inodedata, iproperties, NodeCreationOptions())
-        end
-        return (inodedata, iproperties)
-    end
-
-    setextra!(nodedata, :rmp_properties, factornode(GraphPPL.fform(nodeproperties), interfaces))
-
-    return nothing
-end
-
-function preprocess_reactivemp_plugin!(
-    ::ReactiveMPIntegrationPlugin, model::Model, context::Context, nodedata::NodeData, nodeproperties::VariableNodeProperties, options::NodeCreationOptions
-)
-    if is_random(nodeproperties)
-        setextra!(nodedata, :rmp_properties, randomvar()) # TODO: bvdmitri, use functional form constraints
-    elseif is_data(nodeproperties)
-        setextra!(nodedata, :rmp_properties, datavar())
-    elseif is_constant(nodeproperties)
-        setextra!(nodedata, :rmp_properties, constvar(GraphPPL.value(nodeproperties)))
-    else
-        error("Unknown `kind` in the node properties `$(nodeproperties)` for variable node `$(nodedata)`. Expected `random`, `constant` or `data`.")
-    end
-    return nothing
-end
-
 function GraphPPL.postprocess_plugin(plugin::ReactiveMPIntegrationPlugin, model::Model)
-    # The variable nodes must be postprocessed before the factor nodes
+    # The variable nodes must be instantiated before the factor nodes
     variable_nodes(model) do label, variable
         properties = getproperties(variable)::VariableNodeProperties
 
@@ -154,32 +123,60 @@ function GraphPPL.postprocess_plugin(plugin::ReactiveMPIntegrationPlugin, model:
             degree(model, label) !== 1 || error(lazy"Half-edge has been found: $(label). To terminate half-edges 'Uninformative' node can be used.")
         end
 
-        postprocess_reactivemp_node(plugin, model, variable, properties)
+        set_rmp_variable!(plugin, model, variable, properties)
     end
 
     # The nodes must be postprocessed after all variables has been instantiated
     factor_nodes(model) do label, factor
-        properties = getproperties(factor)::FactorNodeProperties
+        set_rmp_factornode!(plugin, model, factor, getproperties(factor)::FactorNodeProperties)
+    end
 
-        postprocess_reactivemp_node(plugin, model, factor, properties)
+    # The variable nodes must be activated before the factor nodes
+    variable_nodes(model) do _, variable
+        activate_rmp_variable!(plugin, model, variable, getproperties(variable)::VariableNodeProperties)
+    end
+
+    # The variable nodes must be activated after the variable nodes
+    factor_nodes(model) do label, factor
+        activate_rmp_factornode!(plugin, model, factor, getproperties(factor)::FactorNodeProperties)
     end
 end
 
-function postprocess_reactivemp_node(plugin::ReactiveMPIntegrationPlugin, model::Model, nodedata::NodeData, nodeproperties::VariableNodeProperties)
+function set_rmp_variable!(plugin::ReactiveMPIntegrationPlugin, model::Model, nodedata::NodeData, nodeproperties::VariableNodeProperties)
     if is_random(nodeproperties)
-        ReactiveMP.activate!(getextra(nodedata, :rmp_properties)::RandomVariable, ReactiveMP.RandomVariableActivationOptions(Rocket.getscheduler(getoptions(plugin))))
+        return setextra!(nodedata, :rmp_variable, randomvar())
     elseif is_data(nodeproperties)
-        ReactiveMP.activate!(getextra(nodedata, :rmp_properties)::DataVariable, ReactiveMP.DataVariableActivationOptions(false))
+        return setextra!(nodedata, :rmp_variable, datavar())
     elseif is_constant(nodeproperties)
-        # Properties for constant labels do not require extra activation
+        return setextra!(nodedata, :rmp_variable, constvar(GraphPPL.value(nodeproperties)))
+    else
+        error("Unknown `kind` in the node properties `$(nodeproperties)` for variable node `$(nodedata)`. Expected `random`, `constant` or `data`.")
+    end
+end
+
+function activate_rmp_variable!(plugin::ReactiveMPIntegrationPlugin, model::Model, nodedata::NodeData, nodeproperties::VariableNodeProperties)
+    if is_random(nodeproperties)
+        # TODO: bvdmitri, use functional form constraints
+        return ReactiveMP.activate!(getextra(nodedata, :rmp_variable)::RandomVariable, ReactiveMP.RandomVariableActivationOptions(Rocket.getscheduler(getoptions(plugin))))
+    elseif is_data(nodeproperties)
+        # TODO: bvdmitri use allow_missings
+        return ReactiveMP.activate!(getextra(nodedata, :rmp_variable)::DataVariable, ReactiveMP.DataVariableActivationOptions(false))
+    elseif is_constant(nodeproperties)
+        # The constant does not require extra activation
         return nothing
     else
         error("Unknown `kind` in the node properties `$(nodeproperties)` for variable node `$(nodedata)`. Expected `random`, `constant` or `data`.")
     end
-    return nothing
 end
 
-function postprocess_reactivemp_node(plugin::ReactiveMPIntegrationPlugin, model::Model, nodedata::NodeData, nodeproperties::FactorNodeProperties)
+function set_rmp_factornode!(plugin::ReactiveMPIntegrationPlugin, model::Model, nodedata::NodeData, nodeproperties::FactorNodeProperties)
+    interfaces = map(GraphPPL.neighbors(nodeproperties)) do (label, edge)
+        return (GraphPPL.getname(edge), getextra(model[label], :rmp_variable))
+    end
+    return setextra!(nodedata, :rmp_factornode, factornode(GraphPPL.fform(nodeproperties), interfaces))
+end
+
+function activate_rmp_factornode!(plugin::ReactiveMPIntegrationPlugin, model::Model, nodedata::NodeData, nodeproperties::FactorNodeProperties)
     factorization = getextra(nodedata, :factorization_constraint_indices)
     metadata = hasextra(nodedata, :meta) ? getextra(nodedata, :meta) : nothing
     dependencies = hasextra(nodedata, :dependencies) ? getextra(nodedata, :dependencies) : nothing
@@ -189,22 +186,7 @@ function postprocess_reactivemp_node(plugin::ReactiveMPIntegrationPlugin, model:
     addons = getaddons(getoptions(plugin))
     options = ReactiveMP.FactorNodeActivationOptions(factorization, metadata, dependencies, pipeline, addons, scheduler)
 
-    ReactiveMP.activate!(getextra(nodedata, :rmp_properties)::FactorNode, options)
-    return nothing
-end
-
-## ReactiveMP <-> GraphPPL connections, techically a piracy, but that is the purpose of the plugin
-function Base.convert(::Type{ReactiveMP.AbstractVariable}, spec::Tuple{NodeData, VariableNodeProperties})
-    nodedata, nodeproperties = spec
-    if is_random(nodeproperties)
-        return getextra(nodedata, :rmp_properties)::RandomVariable
-    elseif is_data(nodeproperties)
-        return getextra(nodedata, :rmp_properties)::DataVariable
-    elseif is_constant(nodeproperties)
-        return getextra(nodedata, :rmp_properties)::ConstVariable
-    else
-        error("Unknown `kind` in the node properties `$(nodeproperties)` for variable node `$(nodedata)`. Expected `random`, `constant` or `data`.")
-    end
+    return ReactiveMP.activate!(getextra(nodedata, :rmp_factornode), options)
 end
 
 struct GraphVariableRef
@@ -216,7 +198,7 @@ end
 function GraphVariableRef(model::GraphPPL.Model, label::GraphPPL.NodeLabel)
     nodedata = model[label]::GraphPPL.NodeData
     properties = getproperties(nodedata)::GraphPPL.VariableNodeProperties
-    variable = getextra(nodedata, :rmp_properties)::AbstractVariable
+    variable = getextra(nodedata, :rmp_variable)::AbstractVariable
     return GraphVariableRef(label, properties, variable)
 end
 
@@ -226,6 +208,20 @@ end
 
 getvarref(model::GraphPPL.Model, label::GraphPPL.NodeLabel) = GraphVariableRef(model, label)
 getvarref(model::GraphPPL.Model, container::AbstractArray) = map(element -> getvarref(model, element), container)
+
+function getrandomvars(model::GraphPPL.Model)
+    # TODO replace with filter predicate
+    return Iterators.filter(GraphPPL.labels(model)) do label
+        error(1)
+    end
+end
+
+function getfactornodes(model::GraphPPL.Model)
+    # TODO replace with filter predicate
+    return map(factor_nodes(model)) do label
+        return getextra(model[label], :rmp_properties)
+    end
+end
 
 ReactiveMP.allows_missings(::AbstractArray{GraphVariableRef}) = false
 ReactiveMP.allows_missings(::GraphVariableRef) = false
