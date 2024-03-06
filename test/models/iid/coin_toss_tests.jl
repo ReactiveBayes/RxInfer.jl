@@ -17,13 +17,31 @@
     end
 
     result = infer(
-        model = coin_model(), 
-        data = (y = dataset,),
-        # free_energy = true,
-        iterations = 10
+        model = coin_model(),
+        data = (y = dataset,), 
+        iterations = 10,
+        free_energy = false
     )
 
     @test allequal(result.posteriors[:θ])
+    @test_broken allequal(result.free_energy)
     @test mean(result.posteriors[:θ][end]) ≈ p atol = 0.01
-    
+
+    # In this model the result should not depend on the initial marginals or messages
+    # But it should run anyway
+    result_with_init = infer(
+        model = coin_model(), 
+        data = (y = dataset,), 
+        iterations = 10,
+        initmarginals = (
+            θ = Beta(1.0, 1.0),
+        ),
+        initmessages = (
+            θ = Beta(1.0, 1.0),
+        ),
+        free_energy = false
+    )
+
+    @test all(t -> t[1] == t[2], Iterators.zip(result.posteriors[:θ], result_with_init.posteriors[:θ]))
+    @test_broken all(t -> t[1] == t[2], Iterators.zip(result.free_energy, result_with_init.free_energy))
 end

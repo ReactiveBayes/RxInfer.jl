@@ -238,13 +238,14 @@ ReactiveMP.israndom(ref::GraphVariableRef) = GraphPPL.is_random(ref.properties)
 ReactiveMP.isdata(ref::GraphVariableRef) = GraphPPL.is_data(ref.properties)
 ReactiveMP.isconst(ref::GraphVariableRef) = GraphPPL.is_constant(ref.properties)
 
-function ReactiveMP.getmarginal(ref::GraphVariableRef, strategy)
-    return ReactiveMP.getmarginal(ref.variable, strategy)
-end
+ReactiveMP.getmarginal(ref::GraphVariableRef, strategy) = ReactiveMP.getmarginal(ref.variable, strategy)
+ReactiveMP.getmarginals(collection::AbstractArray{GraphVariableRef}, strategy) = ReactiveMP.getmarginals(map(ref -> ref.variable, collection), strategy)
 
-function ReactiveMP.getmarginals(collection::AbstractArray{GraphVariableRef}, strategy)
-    return ReactiveMP.getmarginals(map(ref -> ref.variable, collection), strategy)
-end
+ReactiveMP.setmarginal!(ref::GraphVariableRef, marginal) = setmarginal!(ref.variable, marginal)
+ReactiveMP.setmarginals!(collection::AbstractArray{GraphVariableRef}, marginal) = ReactiveMP.setmarginals!(map(ref -> ref.variable, collection), marginal)
+
+ReactiveMP.setmessage!(ref::GraphVariableRef, marginal) = setmessage!(ref.variable, marginal)
+ReactiveMP.setmessages!(collection::AbstractArray{GraphVariableRef}, marginal) = ReactiveMP.setmessages!(map(ref -> ref.variable, collection), marginal)
 
 function ReactiveMP.update!(collection::Vector{GraphVariableRef}, something)
     # TODO: cache the result of the `getextra` call in the `inference` procedure
