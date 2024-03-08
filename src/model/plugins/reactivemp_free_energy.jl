@@ -7,17 +7,19 @@ import ReactiveMP: score, name
 
 Creates Bethe Free Energy values stream when passed to the `score` function. 
 """
-struct BetheFreeEnergy{T, M, C, S}
+struct BetheFreeEnergy{T, M, S}
     skip_strategy::M
     scheduler::S
-    diagnostic_checks::C
 
-    function BetheFreeEnergy(::Type{T}, skip_strategy::M, scheduler::S, diagnostic_checks::C) where {T, M, S, C}
-        return new{T, M, C, S}(skip_strategy, scheduler, diagnostic_checks)
+    function BetheFreeEnergy(::Type{T}, skip_strategy::M, scheduler::S) where {T, M, S}
+        return new{T, M, S}(skip_strategy, scheduler)
     end
 end
 
 const BetheFreeEnergyDefaultMarginalSkipStrategy = SkipInitial()
+const BetheFreeEnergyDefaultScheduler = AsapScheduler()
+
+BetheFreeEnergy(::Type{T}) where {T} = BetheFreeEnergy(T, BetheFreeEnergyDefaultMarginalSkipStrategy, BetheFreeEnergyDefaultScheduler)
 
 get_skip_strategy(objective::BetheFreeEnergy) = objective.skip_strategy
 get_scheduler(objective::BetheFreeEnergy)     = objective.scheduler

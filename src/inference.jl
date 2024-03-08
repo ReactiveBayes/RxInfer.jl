@@ -342,7 +342,7 @@ function __inference(;
     is_free_energy, S = unwrap_free_energy_option(free_energy)
 
     if is_free_energy
-        fe_objective = BetheFreeEnergy(S, BetheFreeEnergyDefaultMarginalSkipStrategy, AsapScheduler(), free_energy_diagnostics)
+        fe_objective = BetheFreeEnergy(S)
         modelplugins = modelplugins + ReactiveMPFreeEnergyPlugin(fe_objective)
     end
 
