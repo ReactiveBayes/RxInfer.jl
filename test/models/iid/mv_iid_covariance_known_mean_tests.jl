@@ -5,19 +5,17 @@
     # `include(test/utiltests.jl)`
     include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
-    @model function mv_iid_inverse_wishart_known_mean(mean, n, d)
+    @model function mv_iid_inverse_wishart_known_mean(y, m, d)
         C ~ InverseWishart(d + 1, diageye(d))
 
-        m = constvar(mean)
-        y = datavar(Vector{Float64}, n)
-
-        for i in 1:n
-            y[i] ~ MvNormal(mean = m, covariance = C)
+        for i in eachindex(y)
+            # y[i] ~ MvNormal(mean = m, covariance = C)
+            y[i] ~ MvNormal(μ = m, Σ = C)
         end
     end
 
-    function inference_mv_inverse_wishart_known_mean(mean, data, n, d)
-        return infer(model = mv_iid_inverse_wishart_known_mean(mean, n, d), data = (y = data,), iterations = 10, returnvars = KeepLast(), free_energy = Float64)
+    function inference_mv_inverse_wishart_known_mean(data, m, d)
+        return infer(model = mv_iid_inverse_wishart_known_mean(m = m, d = d), data = (y = data,), iterations = 10, returnvars = KeepLast(), free_energy = Float64)
     end
 
     ## Data creation
@@ -33,7 +31,7 @@
     data = rand(rng, MvNormalMeanCovariance(m, C), n) |> eachcol |> collect .|> collect
 
     ## Inference execution
-    result_km = inference_mv_inverse_wishart_known_mean(m, data, n, d)
+    result_km = inference_mv_inverse_wishart_known_mean(data, m, d)
 
     ## Test inference results
     @test isapprox(mean(result_km.posteriors[:C]), C, atol = 0.15)

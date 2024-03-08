@@ -15,6 +15,7 @@ include("model/plugins/reactivemp_inference.jl")
 include("model/plugins/reactivemp_free_energy.jl")
 
 include("compatibility/old_graphppl.jl")
+include("graphppl.jl")
 
 include("constraints/form/form_fixed_marginal.jl")
 include("constraints/form/form_point_mass.jl")
