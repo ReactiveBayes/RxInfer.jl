@@ -3,7 +3,7 @@
 
 This function applies a `check` to the `stream`. Does nothing if `check` is of type `Nothing`. 
 """
-apply_diagnostic_check(::Nothing, something, stream) = stream
+function apply_diagnostic_check end
 
 """
     ObjectiveDiagnosticCheckNaNs
