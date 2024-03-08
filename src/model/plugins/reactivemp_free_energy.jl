@@ -30,6 +30,8 @@ end
 
 getobjective(plugin::ReactiveMPFreeEnergyPlugin) = plugin.objective
 
+const ReactiveMPExtraBetheFreeEnergyStreamKey = GraphPPL.NodeDataExtraKey{:bfe_stream, Rocket.Subscribable}()
+
 GraphPPL.plugin_type(::ReactiveMPFreeEnergyPlugin) = FactorAndVariableNodesPlugin()
 
 function GraphPPL.preprocess_plugin(::ReactiveMPFreeEnergyPlugin, ::Model, ::Context, label::NodeLabel, nodedata::NodeData, ::NodeCreationOptions)
@@ -45,18 +47,18 @@ function GraphPPL.postprocess_plugin(::ReactiveMPFreeEnergyPlugin, objective::Be
     scheduler     = get_scheduler(objective)
 
     factor_nodes(model) do _, node
-        factornode = getextra(node, :rmp_factornode)
+        factornode = getextra(node, ReactiveMPExtraFactorNodeKey)
         meta = hasextra(node, :meta) ? getextra(node, :meta) : nothing
         bfe_stream = score(__as_counting_real_type(T), FactorBoundFreeEnergy(), factornode, meta, skip_strategy, scheduler)
-        setextra!(node, :bfe_stream, bfe_stream)
+        setextra!(node, ReactiveMPExtraBetheFreeEnergyStreamKey, bfe_stream)
     end
 
     variable_nodes(model) do _, node
         nodeproperties = getproperties(node)::GraphPPL.VariableNodeProperties
         if is_random(nodeproperties)
-            variable = getextra(node, :rmp_variable)
+            variable = getextra(node, ReactiveMPExtraVariableKey)
             bfe_stream = score(__as_counting_real_type(T), VariableBoundEntropy(), variable, skip_strategy, scheduler)
-            setextra!(node, :bfe_stream, bfe_stream)
+            setextra!(node, ReactiveMPExtraBetheFreeEnergyStreamKey, bfe_stream)
         end
     end
 
@@ -70,13 +72,13 @@ function score(model::ProbabilisticModel, ::BetheFreeEnergy{T}, diagnostic_check
 
     node_bound_free_energies = map(getfactornodes(model)) do nodedata
         nodeproperties = getproperties(nodedata)::GraphPPL.FactorNodeProperties
-        stream = getextra(nodedata, :bfe_stream)
+        stream = getextra(nodedata, ReactiveMPExtraBetheFreeEnergyStreamKey)
         return apply_diagnostic_check(diagnostic_checks, nodeproperties, stream)
     end
 
     variable_bound_entropies = map(getrandomvars(model)) do nodedata
         nodeproperties = getproperties(nodedata)::GraphPPL.VariableNodeProperties
-        stream = getextra(nodedata, :bfe_stream)
+        stream = getextra(nodedata, ReactiveMPExtraBetheFreeEnergyStreamKey)
         return apply_diagnostic_check(diagnostic_checks, nodeproperties, stream)
     end
 

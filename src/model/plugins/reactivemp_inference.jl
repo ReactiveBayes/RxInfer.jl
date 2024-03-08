@@ -75,6 +75,11 @@ end
 
 getoptions(plugin::ReactiveMPInferencePlugin) = plugin.options
 
+const ReactiveMPExtraFactorNodeKey = GraphPPL.NodeDataExtraKey{:rmp_factornode, ReactiveMP.AbstractFactorNode}()
+const ReactiveMPExtraVariableKey = GraphPPL.NodeDataExtraKey{:rmp_variable, ReactiveMP.AbstractVariable}()
+const ReactiveMPExtraDependenciesKey = GraphPPL.NodeDataExtraKey{:dependencies, ReactiveMP.Any}()
+const ReactiveMPExtraPipelineKey = GraphPPL.NodeDataExtraKey{:pipeline, ReactiveMP.Any}()
+
 GraphPPL.plugin_type(::ReactiveMPInferencePlugin) = FactorAndVariableNodesPlugin()
 
 function GraphPPL.preprocess_plugin(plugin::ReactiveMPInferencePlugin, model::Model, context::Context, label::NodeLabel, nodedata::NodeData, options::NodeCreationOptions)
@@ -113,11 +118,11 @@ end
 
 function set_rmp_variable!(plugin::ReactiveMPInferencePlugin, model::Model, nodedata::NodeData, nodeproperties::VariableNodeProperties)
     if is_random(nodeproperties)
-        return setextra!(nodedata, :rmp_variable, randomvar())
+        return setextra!(nodedata, ReactiveMPExtraVariableKey, randomvar())
     elseif is_data(nodeproperties)
-        return setextra!(nodedata, :rmp_variable, datavar())
+        return setextra!(nodedata, ReactiveMPExtraVariableKey, datavar())
     elseif is_constant(nodeproperties)
-        return setextra!(nodedata, :rmp_variable, constvar(GraphPPL.value(nodeproperties)))
+        return setextra!(nodedata, ReactiveMPExtraVariableKey, constvar(GraphPPL.value(nodeproperties)))
     else
         error("Unknown `kind` in the node properties `$(nodeproperties)` for variable node `$(nodedata)`. Expected `random`, `constant` or `data`.")
     end
@@ -126,10 +131,12 @@ end
 function activate_rmp_variable!(plugin::ReactiveMPInferencePlugin, model::Model, nodedata::NodeData, nodeproperties::VariableNodeProperties)
     if is_random(nodeproperties)
         # TODO: bvdmitri, use functional form constraints
-        return ReactiveMP.activate!(getextra(nodedata, :rmp_variable)::RandomVariable, ReactiveMP.RandomVariableActivationOptions(Rocket.getscheduler(getoptions(plugin))))
+        return ReactiveMP.activate!(
+            getextra(nodedata, ReactiveMPExtraVariableKey)::RandomVariable, ReactiveMP.RandomVariableActivationOptions(Rocket.getscheduler(getoptions(plugin)))
+        )
     elseif is_data(nodeproperties)
         # TODO: bvdmitri use allow_missings
-        return ReactiveMP.activate!(getextra(nodedata, :rmp_variable)::DataVariable, ReactiveMP.DataVariableActivationOptions(false))
+        return ReactiveMP.activate!(getextra(nodedata, ReactiveMPExtraVariableKey)::DataVariable, ReactiveMP.DataVariableActivationOptions(false))
     elseif is_constant(nodeproperties)
         # The constant does not require extra activation
         return nothing
@@ -139,23 +146,23 @@ function activate_rmp_variable!(plugin::ReactiveMPInferencePlugin, model::Model,
 end
 
 function set_rmp_factornode!(plugin::ReactiveMPInferencePlugin, model::Model, nodedata::NodeData, nodeproperties::FactorNodeProperties)
-    interfaces = map(GraphPPL.neighbors(nodeproperties)) do (label, edge)
-        return (GraphPPL.getname(edge), getextra(model[label], :rmp_variable))
+    interfaces = map(GraphPPL.neighbors(nodeproperties)) do (_, edge, data)
+        return (GraphPPL.getname(edge), getextra(data, ReactiveMPExtraVariableKey))
     end
-    factorization = getextra(nodedata, :factorization_constraint_indices)
-    return setextra!(nodedata, :rmp_factornode, factornode(GraphPPL.fform(nodeproperties), interfaces, factorization))
+    factorization = getextra(nodedata, GraphPPL.VariationalConstraintsFactorizationIndicesKey)
+    return setextra!(nodedata, ReactiveMPExtraFactorNodeKey, factornode(GraphPPL.fform(nodeproperties), interfaces, factorization))
 end
 
 function activate_rmp_factornode!(plugin::ReactiveMPInferencePlugin, model::Model, nodedata::NodeData, nodeproperties::FactorNodeProperties)
-    metadata = hasextra(nodedata, :meta) ? getextra(nodedata, :meta) : nothing
-    dependencies = hasextra(nodedata, :dependencies) ? getextra(nodedata, :dependencies) : nothing
-    pipeline = hasextra(nodedata, :pipeline) ? getextra(nodedata, :pipeline) : nothing
+    metadata = hasextra(nodedata, GraphPPL.MetaExtraKey) ? getextra(nodedata, GraphPPL.MetaExtraKey) : nothing
+    dependencies = hasextra(nodedata, ReactiveMPExtraDependenciesKey) ? getextra(nodedata, ReactiveMPExtraDependenciesKey) : nothing
+    pipeline = hasextra(nodedata, ReactiveMPExtraPipelineKey) ? getextra(nodedata, ReactiveMPExtraPipelineKey) : nothing
 
     scheduler = getscheduler(getoptions(plugin))
     addons = getaddons(getoptions(plugin))
     options = ReactiveMP.FactorNodeActivationOptions(metadata, dependencies, pipeline, addons, scheduler)
 
-    return ReactiveMP.activate!(getextra(nodedata, :rmp_factornode), options)
+    return ReactiveMP.activate!(getextra(nodedata, ReactiveMPExtraFactorNodeKey), options)
 end
 
 struct GraphVariableRef
