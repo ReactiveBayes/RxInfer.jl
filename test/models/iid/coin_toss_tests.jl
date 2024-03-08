@@ -25,7 +25,7 @@
 
     @test allequal(result.posteriors[:θ])
     @test allequal(result.free_energy)
-    @show result.free_energy
+    @test all(v -> v ≈ 2828.0533343622483, result.free_energy)
     @test mean(result.posteriors[:θ][end]) ≈ p atol = 0.01
 
     # In this model the result should not depend on the initial marginals or messages
@@ -44,5 +44,5 @@
     )
 
     @test all(t -> t[1] == t[2], Iterators.zip(result.posteriors[:θ], result_with_init.posteriors[:θ]))
-    @test_broken all(t -> t[1] == t[2], Iterators.zip(result.free_energy, result_with_init.free_energy))
+    @test all(t -> t[1] == t[2], Iterators.zip(result.free_energy, result_with_init.free_energy))
 end

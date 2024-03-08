@@ -15,4 +15,6 @@ getmodel(model::ProbabilisticModel) = model.model
 
 getvardict(model::ProbabilisticModel) = getvardict(getmodel(model))
 getrandomvars(model::ProbabilisticModel) = getrandomvars(getmodel(model))
+getdatavars(model::ProbabilisticModel) = getdatavars(getmodel(model))
+getconstantvars(model::ProbabilisticModel) = getconstantvars(getmodel(model))
 getfactornodes(model::ProbabilisticModel) = getfactornodes(getmodel(model))

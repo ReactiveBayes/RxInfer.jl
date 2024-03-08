@@ -179,18 +179,31 @@ getvarref(model::GraphPPL.Model, label::GraphPPL.NodeLabel) = GraphVariableRef(m
 getvarref(model::GraphPPL.Model, container::AbstractArray) = map(element -> getvarref(model, element), container)
 
 function getrandomvars(model::GraphPPL.Model)
-    # TODO replace with filter predicate
-    return Iterators.filter(GraphPPL.labels(model)) do label
-        error(1)
+    # TODO improve performance here
+    randomlabels = filter(collect(variable_nodes(model))) do label
+        is_random(getproperties(model[label])::GraphPPL.VariableNodeProperties)
     end
+    return map(label -> model[label]::GraphPPL.NodeData, randomlabels)
+end
+
+function getdatavars(model::GraphPPL.Model)
+    # TODO improve performance here
+    datalabels = filter(collect(variable_nodes(model))) do label
+        is_data(getproperties(model[label])::GraphPPL.VariableNodeProperties)
+    end
+    return map(label -> model[label]::GraphPPL.NodeData, datalabels)
+end
+
+function getconstantvars(model::GraphPPL.Model)
+    # TODO improve performance here
+    constantlabels = filter(collect(variable_nodes(model))) do label
+        is_constant(getproperties(model[label])::GraphPPL.VariableNodeProperties)
+    end
+    return map(label -> model[label]::GraphPPL.NodeData, constantlabels)
 end
 
 function getfactornodes(model::GraphPPL.Model)
-    # TODO replace with filter predicate
-    return map(factor_nodes(model)) do label
-        error(2)
-        return getextra(model[label], :rmp_properties)
-    end
+    return map(label -> model[label]::GraphPPL.NodeData, factor_nodes(model))
 end
 
 ReactiveMP.allows_missings(::AbstractArray{GraphVariableRef}) = false
