@@ -6,7 +6,10 @@ using Reexport
 
 include("helpers.jl")
 include("rocket.jl")
-include("model.jl")
+
+include("model/model.jl")
+include("model/plugins/reactivemp_inference.jl")
+include("model/plugins/reactivemp_free_energy.jl")
 
 include("compatibility/old_graphppl.jl")
 

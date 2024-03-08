@@ -333,7 +333,11 @@ function __inference(;
 
     # We create a model with the `GraphPPL` package and insert a certain RxInfer related 
     # plugins which include the VI plugin, meta plugin and the ReactiveMP integration plugin
-    modelplugins = GraphPPL.PluginsCollection(GraphPPL.VariationalConstraintsPlugin(constraints), GraphPPL.MetaPlugin(meta), RxInfer.ReactiveMPIntegrationPlugin(_options))
+    modelplugins = GraphPPL.PluginsCollection(
+        GraphPPL.VariationalConstraintsPlugin(constraints), 
+        GraphPPL.MetaPlugin(meta), 
+        RxInfer.ReactiveMPInferencePlugin(_options)
+    )
 
     # The `_model` here still must be a `ModelGenerator`
     _model = GraphPPL.with_plugins(model, modelplugins)
@@ -384,8 +388,8 @@ function __inference(;
             end
         end
         predictvars = Dict(
-            variable => KeepLast() for (variable, value) in pairs(vardict) if
-            (isdata(value) && haskey(data, variable) && allows_missings(value) && __inference_check_dataismissing(data[variable]))
+            variable => KeepLast() for
+            (variable, value) in pairs(vardict) if (isdata(value) && haskey(data, variable) && allows_missings(value) && __inference_check_dataismissing(data[variable]))
         )
     end
 

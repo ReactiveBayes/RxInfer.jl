@@ -1,118 +1,27 @@
-
-export ProbabilisticModel
-export getoptions, getconstraints, getmeta
-export getnodes, getvariables, getrandom, getconstant, getdata
-
-import Base: push!, show, getindex, haskey, firstindex, lastindex
-import ReactiveMP: get_pipeline_stages, getaddons, AbstractFactorNode
-import Rocket: getscheduler
-
-# Model Inference Options
-
-"""
-    ModelInferenceOptions(; kwargs...)
-
-Creates model inference options object. The list of available options is present below.
-
-### Options
-
-- `limit_stack_depth`: limits the stack depth for computing messages, helps with `StackOverflowError` for some huge models, but reduces the performance of inference backend. Accepts integer as an argument that specifies the maximum number of recursive depth. Lower is better for stack overflow error, but worse for performance.
-- `warn`: (optional) flag to suppress warnings. Warnings are not displayed if set to `false`. Defaults to `true`.
-
-### Advanced options
-
-- `scheduler`: changes the scheduler of reactive streams, see Rocket.jl for more info, defaults to no scheduler
-
-See also: [`infer`](@ref)
-"""
-struct InferenceOptions{S, A}
-    scheduler :: S
-    addons    :: A
-    warn      :: Bool
-end
-
-InferenceOptions(scheduler, addons) = InferenceOptions(scheduler, addons, true)
-
-UnspecifiedInferenceOptions() = convert(InferenceOptions, (;))
-
-setscheduler(options::InferenceOptions, scheduler) = InferenceOptions(scheduler, options.addons, options.warn)
-setaddons(options::InferenceOptions, addons) = InferenceOptions(options.scheduler, addons, options.warn)
-setwarn(options::InferenceOptions, warn) = InferenceOptions(options.scheduler, options.addons, warn)
-
-import Base: convert
-
-function Base.convert(::Type{InferenceOptions}, options::Nothing)
-    return UnspecifiedInferenceOptions()
-end
-
-function Base.convert(::Type{InferenceOptions}, options::NamedTuple{keys}) where {keys}
-    available_options = (:scheduler, :limit_stack_depth, :addons, :warn)
-
-    for key in keys
-        key ∈ available_options || error("Unknown model inference options: $(key).")
-    end
-
-    warn = haskey(options, :warn) ? options.warn : true
-    addons = haskey(options, :addons) ? options.addons : nothing
-
-    if warn && haskey(options, :scheduler) && haskey(options, :limit_stack_depth)
-        @warn "Inference options have `scheduler` and `limit_stack_depth` options specified together. Ignoring `limit_stack_depth`. Use `warn = false` option in `ModelInferenceOptions` to suppress this warning."
-    end
-
-    scheduler = if haskey(options, :scheduler)
-        options[:scheduler]
-    elseif haskey(options, :limit_stack_depth)
-        LimitStackScheduler(options[:limit_stack_depth]...)
-    else
-        nothing
-    end
-
-    return InferenceOptions(scheduler, addons, warn)
-end
-
-const DefaultModelInferenceOptions = UnspecifiedInferenceOptions()
-
-Rocket.getscheduler(options::InferenceOptions) = something(options.scheduler, AsapScheduler())
-
-ReactiveMP.getaddons(options::InferenceOptions) = ReactiveMP.getaddons(options, options.addons)
-ReactiveMP.getaddons(options::InferenceOptions, addons::ReactiveMP.AbstractAddon) = (addons,) # ReactiveMP expects addons to be of type tuple
-ReactiveMP.getaddons(options::InferenceOptions, addons::Nothing) = addons                     # Do nothing if addons is `nothing`
-ReactiveMP.getaddons(options::InferenceOptions, addons::Tuple) = addons                       # Do nothing if addons is a `Tuple`
-
-struct ProbabilisticModel{M}
-    model::M
-end
-
-getmodel(model::ProbabilisticModel) = model.model
-
-getvardict(model::ProbabilisticModel) = getvardict(getmodel(model))
-getrandomvars(model::ProbabilisticModel) = getrandomvars(getmodel(model))
-getfactornodes(model::ProbabilisticModel) = getfactornodes(getmodel(model))
-
 import GraphPPL: plugin_type, FactorAndVariableNodesPlugin, preprocess_plugin, postprocess_plugin
 import GraphPPL: Model, Context, NodeLabel, NodeData, FactorNodeProperties, VariableNodeProperties, NodeCreationOptions, hasextra, getextra, setextra!, getproperties
 import GraphPPL: as_variable, is_data, is_random, is_constant, degree
 import GraphPPL: variable_nodes, factor_nodes
 
-struct ReactiveMPIntegrationPlugin{T}
+struct ReactiveMPInferencePlugin{T}
     options::T
 
-    function ReactiveMPIntegrationPlugin(options::T) where {T <: InferenceOptions}
+    function ReactiveMPInferencePlugin(options::T) where {T <: InferenceOptions}
         return new{T}(options)
     end
 end
 
-ReactiveMPIntegrationPlugin(options) = ReactiveMPIntegrationPlugin(convert(InferenceOptions, options))
+ReactiveMPInferencePlugin(options) = ReactiveMPInferencePlugin(convert(InferenceOptions, options))
 
-getoptions(plugin::ReactiveMPIntegrationPlugin) = plugin.options
+getoptions(plugin::ReactiveMPInferencePlugin) = plugin.options
 
-GraphPPL.plugin_type(::ReactiveMPIntegrationPlugin) = FactorAndVariableNodesPlugin()
+GraphPPL.plugin_type(::ReactiveMPInferencePlugin) = FactorAndVariableNodesPlugin()
 
-function GraphPPL.preprocess_plugin(plugin::ReactiveMPIntegrationPlugin, model::Model, context::Context, label::NodeLabel, nodedata::NodeData, options::NodeCreationOptions)
+function GraphPPL.preprocess_plugin(plugin::ReactiveMPInferencePlugin, model::Model, context::Context, label::NodeLabel, nodedata::NodeData, options::NodeCreationOptions)
     return label, nodedata
 end
 
-function GraphPPL.postprocess_plugin(plugin::ReactiveMPIntegrationPlugin, model::Model)
+function GraphPPL.postprocess_plugin(plugin::ReactiveMPInferencePlugin, model::Model)
     # The variable nodes must be instantiated before the factor nodes
     variable_nodes(model) do label, variable
         properties = getproperties(variable)::VariableNodeProperties
@@ -142,7 +51,7 @@ function GraphPPL.postprocess_plugin(plugin::ReactiveMPIntegrationPlugin, model:
     end
 end
 
-function set_rmp_variable!(plugin::ReactiveMPIntegrationPlugin, model::Model, nodedata::NodeData, nodeproperties::VariableNodeProperties)
+function set_rmp_variable!(plugin::ReactiveMPInferencePlugin, model::Model, nodedata::NodeData, nodeproperties::VariableNodeProperties)
     if is_random(nodeproperties)
         return setextra!(nodedata, :rmp_variable, randomvar())
     elseif is_data(nodeproperties)
@@ -154,7 +63,7 @@ function set_rmp_variable!(plugin::ReactiveMPIntegrationPlugin, model::Model, no
     end
 end
 
-function activate_rmp_variable!(plugin::ReactiveMPIntegrationPlugin, model::Model, nodedata::NodeData, nodeproperties::VariableNodeProperties)
+function activate_rmp_variable!(plugin::ReactiveMPInferencePlugin, model::Model, nodedata::NodeData, nodeproperties::VariableNodeProperties)
     if is_random(nodeproperties)
         # TODO: bvdmitri, use functional form constraints
         return ReactiveMP.activate!(getextra(nodedata, :rmp_variable)::RandomVariable, ReactiveMP.RandomVariableActivationOptions(Rocket.getscheduler(getoptions(plugin))))
@@ -169,22 +78,22 @@ function activate_rmp_variable!(plugin::ReactiveMPIntegrationPlugin, model::Mode
     end
 end
 
-function set_rmp_factornode!(plugin::ReactiveMPIntegrationPlugin, model::Model, nodedata::NodeData, nodeproperties::FactorNodeProperties)
+function set_rmp_factornode!(plugin::ReactiveMPInferencePlugin, model::Model, nodedata::NodeData, nodeproperties::FactorNodeProperties)
     interfaces = map(GraphPPL.neighbors(nodeproperties)) do (label, edge)
         return (GraphPPL.getname(edge), getextra(model[label], :rmp_variable))
     end
-    return setextra!(nodedata, :rmp_factornode, factornode(GraphPPL.fform(nodeproperties), interfaces))
+    factorization = getextra(nodedata, :factorization_constraint_indices)
+    return setextra!(nodedata, :rmp_factornode, factornode(GraphPPL.fform(nodeproperties), interfaces, factorization))
 end
 
-function activate_rmp_factornode!(plugin::ReactiveMPIntegrationPlugin, model::Model, nodedata::NodeData, nodeproperties::FactorNodeProperties)
-    factorization = getextra(nodedata, :factorization_constraint_indices)
+function activate_rmp_factornode!(plugin::ReactiveMPInferencePlugin, model::Model, nodedata::NodeData, nodeproperties::FactorNodeProperties)
     metadata = hasextra(nodedata, :meta) ? getextra(nodedata, :meta) : nothing
     dependencies = hasextra(nodedata, :dependencies) ? getextra(nodedata, :dependencies) : nothing
     pipeline = hasextra(nodedata, :pipeline) ? getextra(nodedata, :pipeline) : nothing
 
     scheduler = getscheduler(getoptions(plugin))
     addons = getaddons(getoptions(plugin))
-    options = ReactiveMP.FactorNodeActivationOptions(factorization, metadata, dependencies, pipeline, addons, scheduler)
+    options = ReactiveMP.FactorNodeActivationOptions(metadata, dependencies, pipeline, addons, scheduler)
 
     return ReactiveMP.activate!(getextra(nodedata, :rmp_factornode), options)
 end
