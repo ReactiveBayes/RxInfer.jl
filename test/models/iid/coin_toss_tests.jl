@@ -16,12 +16,9 @@
         end
     end
 
-    result = infer(
-        model = coin_model(),
-        data = (y = dataset,), 
-        iterations = 10,
-        free_energy = true
-    )
+    # A simple execution of the inference, here the model is simple enough to be solved exactly
+    # But we test for several iterations to make sure that the result is equal acros the iterationsl
+    result = infer(model = coin_model(), data = (y = dataset,), iterations = 10, free_energy = true)
 
     @test allequal(result.posteriors[:θ])
     @test allequal(result.free_energy)
@@ -31,18 +28,18 @@
     # In this model the result should not depend on the initial marginals or messages
     # But it should run anyway
     result_with_init = infer(
-        model = coin_model(), 
-        data = (y = dataset,), 
-        iterations = 10,
-        initmarginals = (
-            θ = Beta(1.0, 1.0),
-        ),
-        initmessages = (
-            θ = Beta(1.0, 1.0),
-        ),
-        free_energy = true
+        model = coin_model(), data = (y = dataset,), iterations = 10, initmarginals = (θ = Beta(1.0, 1.0),), initmessages = (θ = Beta(1.0, 1.0),), free_energy = true
     )
 
     @test all(t -> t[1] == t[2], Iterators.zip(result.posteriors[:θ], result_with_init.posteriors[:θ]))
     @test all(t -> t[1] == t[2], Iterators.zip(result.free_energy, result_with_init.free_energy))
+
+    # Free energy allows for a specific type for the result of the free energy to make it a little more efficient
+    for T in (BigFloat, Float64, Float32)
+        result_with_specific_free_energy_type = infer(model = coin_model(), data = (y = dataset,), iterations = 10, free_energy = T)
+
+        @test all(t -> t[1] == t[2], Iterators.zip(result.posteriors[:θ], result_with_specific_free_energy_type.posteriors[:θ]))
+        @test all(t -> t[1] ≈ t[2], Iterators.zip(result.free_energy, result_with_specific_free_energy_type.free_energy))
+        @test all(value -> value isa T, result_with_specific_free_energy_type.free_energy)
+    end
 end

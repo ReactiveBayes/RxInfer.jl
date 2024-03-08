@@ -47,7 +47,7 @@ function GraphPPL.postprocess_plugin(::ReactiveMPFreeEnergyPlugin, objective::Be
     factor_nodes(model) do _, node
         factornode = getextra(node, :rmp_factornode)
         meta = hasextra(node, :meta) ? getextra(node, :meta) : nothing
-        bfe_stream = score(CountingReal{<:T}, FactorBoundFreeEnergy(), factornode, meta, skip_strategy, scheduler)
+        bfe_stream = score(__as_counting_real_type(T), FactorBoundFreeEnergy(), factornode, meta, skip_strategy, scheduler)
         setextra!(node, :bfe_stream, bfe_stream)
     end
 
@@ -55,7 +55,7 @@ function GraphPPL.postprocess_plugin(::ReactiveMPFreeEnergyPlugin, objective::Be
         nodeproperties = getproperties(node)::GraphPPL.VariableNodeProperties
         if is_random(nodeproperties)
             variable = getextra(node, :rmp_variable)
-            bfe_stream = score(CountingReal{<:T}, VariableBoundEntropy(), variable, skip_strategy, scheduler)
+            bfe_stream = score(__as_counting_real_type(T), VariableBoundEntropy(), variable, skip_strategy, scheduler)
             setextra!(node, :bfe_stream, bfe_stream)
         end
     end
@@ -63,7 +63,7 @@ function GraphPPL.postprocess_plugin(::ReactiveMPFreeEnergyPlugin, objective::Be
     return nothing
 end
 
-function score(model::ProbabilisticModel, objective::BetheFreeEnergy{T}, diagnostic_checks) where {T}
+function score(model::ProbabilisticModel, ::BetheFreeEnergy{T}, diagnostic_checks) where {T}
 
     # stochastic_variables = filter(r -> !is_point_mass_form_constraint(marginal_form_constraint(r)), getrandom(model))
     # point_mass_estimates = filter(r -> is_point_mass_form_constraint(marginal_form_constraint(r)), getrandom(model))
@@ -80,7 +80,7 @@ function score(model::ProbabilisticModel, objective::BetheFreeEnergy{T}, diagnos
         return apply_diagnostic_check(diagnostic_checks, nodeproperties, stream)
     end
 
-    CT = CountingReal{<:T}
+    CT = __as_counting_real_type(T)
 
     node_bound_free_energies_sum = collectLatest(CT, CT, node_bound_free_energies, sumreduce)
     variable_bound_entropies_sum = collectLatest(CT, CT, variable_bound_entropies, sumreduce)
@@ -140,3 +140,8 @@ function apply_diagnostic_check(::ObjectiveDiagnosticCheckInfs, variable::GraphP
     end
     return stream |> error_if(check_isinf, error_fn)
 end
+
+## 
+
+__as_counting_real_type(::Type{Real}) = CountingReal{<:Real}
+__as_counting_real_type(::Type{T}) where {T <: Real} = CountingReal{T}
