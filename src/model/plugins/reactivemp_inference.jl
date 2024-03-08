@@ -3,15 +3,75 @@ import GraphPPL: Model, Context, NodeLabel, NodeData, FactorNodeProperties, Vari
 import GraphPPL: as_variable, is_data, is_random, is_constant, degree
 import GraphPPL: variable_nodes, factor_nodes
 
-struct ReactiveMPInferencePlugin{T}
-    options::T
+"""
+    ReactiveMPInferenceOptions(; kwargs...)
 
-    function ReactiveMPInferencePlugin(options::T) where {T <: InferenceOptions}
-        return new{T}(options)
-    end
+Creates model inference options object. The list of available options is present below.
+
+### Options
+
+- `limit_stack_depth`: limits the stack depth for computing messages, helps with `StackOverflowError` for some huge models, but reduces the performance of inference backend. Accepts integer as an argument that specifies the maximum number of recursive depth. Lower is better for stack overflow error, but worse for performance.
+- `warn`: (optional) flag to suppress warnings. Warnings are not displayed if set to `false`. Defaults to `true`.
+
+### Advanced options
+
+- `scheduler`: changes the scheduler of reactive streams, see Rocket.jl for more info, defaults to no scheduler
+
+See also: [`infer`](@ref)
+"""
+struct ReactiveMPInferenceOptions{S, A}
+    scheduler :: S
+    addons    :: A
+    warn      :: Bool
 end
 
-ReactiveMPInferencePlugin(options) = ReactiveMPInferencePlugin(convert(InferenceOptions, options))
+ReactiveMPInferenceOptions(scheduler, addons) = ReactiveMPInferenceOptions(scheduler, addons, true)
+
+setscheduler(options::ReactiveMPInferenceOptions, scheduler) = ReactiveMPInferenceOptions(scheduler, options.addons, options.warn)
+setaddons(options::ReactiveMPInferenceOptions, addons) = ReactiveMPInferenceOptions(options.scheduler, addons, options.warn)
+setwarn(options::ReactiveMPInferenceOptions, warn) = ReactiveMPInferenceOptions(options.scheduler, options.addons, warn)
+
+import Base: convert
+
+function Base.convert(::Type{ReactiveMPInferenceOptions}, options::Nothing)
+    return convert(ReactiveMPInferenceOptions, (;))
+end
+
+function Base.convert(::Type{ReactiveMPInferenceOptions}, options::NamedTuple{keys}) where {keys}
+    available_options = (:scheduler, :limit_stack_depth, :addons, :warn)
+
+    for key in keys
+        key ∈ available_options || error("Unknown model inference options: $(key).")
+    end
+
+    warn = haskey(options, :warn) ? options.warn : true
+    addons = haskey(options, :addons) ? options.addons : nothing
+
+    if warn && haskey(options, :scheduler) && haskey(options, :limit_stack_depth)
+        @warn "Inference options have `scheduler` and `limit_stack_depth` options specified together. Ignoring `limit_stack_depth`. Use `warn = false` option in `ModelInferenceOptions` to suppress this warning."
+    end
+
+    scheduler = if haskey(options, :scheduler)
+        options[:scheduler]
+    elseif haskey(options, :limit_stack_depth)
+        LimitStackScheduler(options[:limit_stack_depth]...)
+    else
+        nothing
+    end
+
+    return ReactiveMPInferenceOptions(scheduler, addons, warn)
+end
+
+Rocket.getscheduler(options::ReactiveMPInferenceOptions) = something(options.scheduler, AsapScheduler())
+
+ReactiveMP.getaddons(options::ReactiveMPInferenceOptions) = ReactiveMP.getaddons(options, options.addons)
+ReactiveMP.getaddons(options::ReactiveMPInferenceOptions, addons::ReactiveMP.AbstractAddon) = (addons,) # ReactiveMP expects addons to be of type tuple
+ReactiveMP.getaddons(options::ReactiveMPInferenceOptions, addons::Nothing) = addons                     # Do nothing if addons is `nothing`
+ReactiveMP.getaddons(options::ReactiveMPInferenceOptions, addons::Tuple) = addons                       # Do nothing if addons is a `Tuple`
+
+struct ReactiveMPInferencePlugin{Options <: ReactiveMPInferenceOptions}
+    options::Options
+end
 
 getoptions(plugin::ReactiveMPInferencePlugin) = plugin.options
 
@@ -128,6 +188,7 @@ end
 function getfactornodes(model::GraphPPL.Model)
     # TODO replace with filter predicate
     return map(factor_nodes(model)) do label
+        error(2)
         return getextra(model[label], :rmp_properties)
     end
 end
