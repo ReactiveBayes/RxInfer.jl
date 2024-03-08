@@ -275,8 +275,8 @@ inference_invoke_callback(::Nothing, name, args...) = nothing
 inference_get_callback(callbacks, name) = get(() -> nothing, callbacks, name)
 inference_get_callback(::Nothing, name) = nothing
 
-unwrap_free_energy_option(option::Bool)                      = (option, Real, CountingReal)
-unwrap_free_energy_option(option::Type{T}) where {T <: Real} = (true, T, CountingReal{T})
+unwrap_free_energy_option(option::Bool)                      = (option, Real)
+unwrap_free_energy_option(option::Type{T}) where {T <: Real} = (true, T)
 
 function __inference(;
     # `model` must be a materialized graph object from GraphPPL 
@@ -303,7 +303,7 @@ function __inference(;
     # Can be passed a floating point type, e.g. `Float64`, for better efficiency, but disables automatic differentiation packages, such as ForwardDiff.jl
     free_energy = false,
     # Default BFE stream checks
-    free_energy_diagnostics = BetheFreeEnergyDefaultChecks,
+    free_energy_diagnostics = DefaultObjectiveDiagnosticChecks,
     # Show progress module, optional, defaults to false
     showprogress = false,
     # Inference cycle callbacks
@@ -338,6 +338,13 @@ function __inference(;
         GraphPPL.MetaPlugin(meta), 
         RxInfer.ReactiveMPInferencePlugin(_options)
     )
+
+    is_free_energy, S = unwrap_free_energy_option(free_energy)
+
+    if is_free_energy
+        fe_objective = BetheFreeEnergy(S, BetheFreeEnergyDefaultMarginalSkipStrategy, AsapScheduler(), free_energy_diagnostics)
+        modelplugins = modelplugins + ReactiveMPFreeEnergyPlugin(fe_objective)
+    end
 
     # The `_model` here still must be a `ModelGenerator`
     _model = GraphPPL.with_plugins(model, modelplugins)
@@ -442,16 +449,13 @@ function __inference(;
         subscriptions_rv   = Dict(variable => subscribe!(obtain_marginal(vardict[variable]) |> ensure_update(fmodel, on_marginal_update, variable, updates[variable]), actor) for (variable, actor) in pairs(actors_rv))
         subscriptions_pr   = Dict(variable => subscribe!(obtain_prediction(vardict[variable]) |> ensure_update(fmodel, on_marginal_update, variable, updates[variable]), actor) for (variable, actor) in pairs(actors_pr))
 
-        is_free_energy, S, T = unwrap_free_energy_option(free_energy)
-
         if !isempty(actors_pr) && is_free_energy
             error("The Bethe Free Energy computation is not compatible with the prediction functionality. Set `free_energy = false` to suppress this error.")
         end
 
         if is_free_energy
             fe_actor        = ScoreActor(S, _iterations, 1)
-            fe_objective    = BetheFreeEnergy(BetheFreeEnergyDefaultMarginalSkipStrategy, AsapScheduler(), free_energy_diagnostics)
-            fe_subscription = subscribe!(score(fmodel, T, fe_objective), fe_actor)
+            fe_subscription = subscribe!(score(fmodel, fe_objective, free_energy_diagnostics), fe_actor)
         end
 
         if !isnothing(initmarginals)
@@ -1192,7 +1196,7 @@ function __rxinference(;
     keephistory = nothing,
     iterations = nothing,
     free_energy = false,
-    free_energy_diagnostics = BetheFreeEnergyDefaultChecks,
+    free_energy_diagnostics = DefaultObjectiveDiagnosticChecks,
     autostart = true,
     events = nothing,
     addons = nothing,
@@ -1486,7 +1490,7 @@ end
         keephistory = nothing,
         iterations = nothing,
         free_energy = false,
-        free_energy_diagnostics = BetheFreeEnergyDefaultChecks,
+        free_energy_diagnostics = DefaultObjectiveDiagnosticChecks,
         showprogress = false,
         callbacks = nothing,
         addons = nothing,
@@ -1518,7 +1522,7 @@ For more information about some of the arguments, please check below.
 - `keephistory = nothing`: history buffer size, defaults to empty buffer, see below for more information (exclusive for streamline inference)
 - `iterations = nothing`: number of iterations, optional, defaults to `nothing`, the inference engine does not distinguish between variational message passing or Loopy belief propagation or expectation propagation iterations, see below for more information
 - `free_energy = false`: compute the Bethe free energy, optional, defaults to false. Can be passed a floating point type, e.g. `Float64`, for better efficiency, but disables automatic differentiation packages, such as ForwardDiff.jl
-- `free_energy_diagnostics = BetheFreeEnergyDefaultChecks`: free energy diagnostic checks, optional, by default checks for possible `NaN`s and `Inf`s. `nothing` disables all checks.
+- `free_energy_diagnostics = DefaultObjectiveDiagnosticChecks`: free energy diagnostic checks, optional, by default checks for possible `NaN`s and `Inf`s. `nothing` disables all checks.
 - `showprogress = false`: show progress module, optional, defaults to false (exclusive for batch inference)
 - `catch_exception`  specifies whether exceptions during the inference procedure should be caught, optional, defaults to false (exclusive for batch inference)
 - `callbacks = nothing`: inference cycle callbacks, optional, see below for more info
@@ -1809,7 +1813,7 @@ function infer(;
     keephistory = nothing, # streamline specific
     iterations = nothing,
     free_energy = false,
-    free_energy_diagnostics = BetheFreeEnergyDefaultChecks,
+    free_energy_diagnostics = DefaultObjectiveDiagnosticChecks,
     showprogress = false, # batch specific
     catch_exception = false, # batch specific
     callbacks = nothing,

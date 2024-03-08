@@ -20,11 +20,12 @@
         model = coin_model(),
         data = (y = dataset,), 
         iterations = 10,
-        free_energy = false
+        free_energy = true
     )
 
     @test allequal(result.posteriors[:θ])
-    @test_broken allequal(result.free_energy)
+    @test allequal(result.free_energy)
+    @show result.free_energy
     @test mean(result.posteriors[:θ][end]) ≈ p atol = 0.01
 
     # In this model the result should not depend on the initial marginals or messages
@@ -39,7 +40,7 @@
         initmessages = (
             θ = Beta(1.0, 1.0),
         ),
-        free_energy = false
+        free_energy = true
     )
 
     @test all(t -> t[1] == t[2], Iterators.zip(result.posteriors[:θ], result_with_init.posteriors[:θ]))
