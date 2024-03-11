@@ -22,7 +22,7 @@
     ## Data creation
     rng      = StableRNG(123)
     P        = 100.0
-    n        = 500
+    n        = 5
     hidden   = collect(1:n)
     data     = hidden + rand(rng, Normal(0.0, sqrt(P)), n)
     x0_prior = NormalMeanVariance(0.0, 10000.0)
