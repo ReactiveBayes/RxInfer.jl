@@ -21,8 +21,14 @@
 
     @test allequal(result.posteriors[:θ])
     @test allequal(result.free_energy)
+    @test length(result.free_energy) === 10
     @test all(v -> v ≈ 2828.0533343622483, result.free_energy)
     @test mean(result.posteriors[:θ][end]) ≈ p atol = 1e-2
+
+    # Double check that Free Energy computes properly even with no iterations specified (not equal to saying `iterations = 1`)
+    result_with_no_iterations = infer(model = coin_model(a = 2.0, b = 7.0), data = (y = dataset,), free_energy = true)
+    @test length(result_with_no_iterations.free_energy) === 1
+    @test all(v -> v ≈ 2828.0533343622483, result_with_no_iterations.free_energy)
 
     # Double check for different values of `p`
     for p in (0.75, 0.5, 0.25), n in (5_000, 10_000)

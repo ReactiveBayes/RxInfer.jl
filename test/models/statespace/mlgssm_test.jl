@@ -5,32 +5,21 @@
     include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
     ## Model definition
-    @model function multivariate_lgssm_model(n, x0, A, B, Q, P)
+    @model function multivariate_lgssm_model(y, x0, A, B, Q, P)
 
-        # We create constvar references for better efficiency
-        cA = constvar(A)
-        cB = constvar(B)
-        cQ = constvar(Q)
-        cP = constvar(P)
-
-        # `x` is a sequence of hidden states
-        x = randomvar(n)
-        # `y` is a sequence of "clamped" observations
-        y = datavar(Vector{Float64}, n)
-
-        x_prior ~ MvNormal(mean = mean(x0), cov = cov(x0))
+        x_prior ~ MvNormal(μ = mean(x0), Σ = cov(x0))
         x_prev = x_prior
 
-        for i in 1:n
-            x[i] ~ MvNormal(mean = cA * x_prev, cov = cQ)
-            y[i] ~ MvNormal(mean = cB * x[i], cov = cP)
+        for i in eachindex(y)
+            x[i] ~ MvNormal(μ = A * x_prev, Σ = Q)
+            y[i] ~ MvNormal(μ = B * x[i], Σ = P)
             x_prev = x[i]
         end
     end
 
     ## Inference definition
     function multivariate_lgssm_inference(data, x0, A, B, Q, P)
-        return infer(model = multivariate_lgssm_model(length(data), x0, A, B, Q, P), data = (y = data,), free_energy = true, options = (limit_stack_depth = 500,))
+        return infer(model = multivariate_lgssm_model(x0 = x0, A = A, B = B, Q = Q, P = P), data = (y = data,), free_energy = true, options = (limit_stack_depth = 500,))
     end
 
     ## Data creation
