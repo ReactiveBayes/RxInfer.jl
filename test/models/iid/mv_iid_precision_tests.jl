@@ -63,5 +63,5 @@
         p = contour!(p, X, Y, (x, y) -> pdf(MvNormalMeanPrecision(m, P), [x, y]), label = "Real")
     end
 
-    @test_benchmark "models" "iid_mv_wishart" inference_mv_wishart($data, $n, $d)
+    @test_benchmark "models" "iid_mv_wishart" inference_mv_wishart($data, $d)
 end
