@@ -6,6 +6,7 @@
         x4 ~ Bernoulli(0.5)
 
         x ~ x1 -> x2 && x3 || ¬x4
+        # x ~ IMPLY(x1, AND(x2, OR(x3, NOT(x4))))
 
         x ~ Bernoulli(y)
     end
