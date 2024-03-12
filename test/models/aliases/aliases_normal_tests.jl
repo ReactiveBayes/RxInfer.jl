@@ -12,8 +12,8 @@
         y4 ~ MvNormal(mean = zeros(2), cov = diageye(2))
         y5 ~ MvNormal(mean = zeros(2), covariance = diageye(2))
 
-        x ~ x1 + (x2 + (x3 + (x4 + x5)))
-        y ~ y1 + (y2 + (y3 + (y4 + y5)))
+        x ~ x1 + x2 + x3 + x4 + x5
+        y ~ y1 + y2 + y3 + y4 + y5
 
         r1 ~ Normal(μ = dot(x + y, ones(2)), τ = 1.0)
         r2 ~ Normal(m = r1, γ = 1.0)
