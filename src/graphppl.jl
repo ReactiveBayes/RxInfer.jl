@@ -1,13 +1,39 @@
 import GraphPPL
 import ExponentialFamily
 
-GraphPPL.factor_alias(::Type{Normal}, ::Val{(:mean, :var)}) = ExponentialFamily.NormalMeanVariance
-GraphPPL.factor_alias(::Type{Normal}, ::Val{(:mean, :variance)}) = ExponentialFamily.NormalMeanVariance
-GraphPPL.factor_alias(::Type{Normal}, ::Val{(:m, :v)}) = ExponentialFamily.NormalMeanVariance
 GraphPPL.factor_alias(::Type{Normal}, ::Val{(:μ, :v)}) = ExponentialFamily.NormalMeanVariance
+GraphPPL.factor_alias(::Type{Normal}, ::Val{(:μ, :τ)}) = ExponentialFamily.NormalMeanPrecision
 
-GraphPPL.factor_alias(::Type{MvNormal}, ::Val{(:mean, :covariance)}) = ExponentialFamily.MvNormalMeanCovariance
+GraphPPL.interfaces(::Type{<:ExponentialFamily.NormalMeanVariance}, _) = GraphPPL.StaticInterfaces((:out, :μ, :v))
+GraphPPL.interfaces(::Type{<:ExponentialFamily.NormalMeanPrecision}, _) = GraphPPL.StaticInterfaces((:out, :μ, :τ))
+
+GraphPPL.interface_aliases(::Type{Normal}) = GraphPPL.StaticInterfaceAliases((
+    (:mean, :μ),
+    (:m, :μ),
+    (:variance, :v),
+    (:var, :v),
+    (:τ⁻¹, :v),
+    (:σ², :v),
+    (:precision, :τ),
+    (:prec, :τ),
+    (:p, :τ),
+    (:w, :τ),
+    (:σ⁻², :τ),
+    (:γ, :τ)
+))
+
 GraphPPL.factor_alias(::Type{MvNormal}, ::Val{(:μ, :Σ)}) = ExponentialFamily.MvNormalMeanCovariance
-
-GraphPPL.factor_alias(::Type{MvNormal}, ::Val{(:mean, :precision)}) = ExponentialFamily.MvNormalMeanPrecision
 GraphPPL.factor_alias(::Type{MvNormal}, ::Val{(:μ, :Λ)}) = ExponentialFamily.MvNormalMeanPrecision
+
+GraphPPL.interface_aliases(::Type{MvNormal}) = GraphPPL.StaticInterfaceAliases((
+    (:mean, :μ),
+    (:m, :μ),
+    (:covariance, :Σ),
+    (:cov, :Σ),
+    (:Λ⁻¹, :Σ),
+    (:V, :Σ),
+    (:precision, :Λ),
+    (:prec, :Λ),
+    (:W, :Λ),
+    (:Σ⁻¹, :Λ)
+))

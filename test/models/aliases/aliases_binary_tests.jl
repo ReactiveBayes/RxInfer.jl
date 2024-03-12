@@ -1,5 +1,5 @@
 @testitem "aliases for binary operations" begin
-    @model function binary_aliases()
+    @model function binary_aliases(y)
         x1 ~ Bernoulli(0.5)
         x2 ~ Bernoulli(0.5)
         x3 ~ Bernoulli(0.5)
@@ -7,7 +7,6 @@
 
         x ~ x1 -> x2 && x3 || ¬x4
 
-        y = datavar(Float64)
         x ~ Bernoulli(y)
     end
 

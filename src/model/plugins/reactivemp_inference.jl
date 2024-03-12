@@ -233,7 +233,12 @@ ReactiveMP.setmarginals!(collection::AbstractArray{GraphVariableRef}, marginal) 
 ReactiveMP.setmessage!(ref::GraphVariableRef, marginal) = setmessage!(ref.variable, marginal)
 ReactiveMP.setmessages!(collection::AbstractArray{GraphVariableRef}, marginal) = ReactiveMP.setmessages!(map(ref -> ref.variable, collection), marginal)
 
-function ReactiveMP.update!(collection::Vector{GraphVariableRef}, something)
+function ReactiveMP.update!(ref::GraphVariableRef, something)
+    # TODO: cache the result of the `getextra` call in the `inference` procedure
+    return ReactiveMP.update!(ref.variable, something)
+end
+
+function ReactiveMP.update!(collection::AbstractArray{<:GraphVariableRef}, something)
     # TODO: cache the result of the `getextra` call in the `inference` procedure
     return ReactiveMP.update!(map(ref -> ref.variable, collection), something)
 end
