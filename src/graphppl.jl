@@ -24,3 +24,5 @@ GraphPPL.interfaces(::Type{<:ExponentialFamily.GammaShapeScale}, _) = GraphPPL.S
 GraphPPL.interfaces(::Type{<:ExponentialFamily.GammaShapeRate}, _) = GraphPPL.StaticInterfaces((:out, :α, :β))
 
 GraphPPL.interface_aliases(::Type{Gamma}) = GraphPPL.StaticInterfaceAliases(((:a, :α), (:shape, :α), (:β⁻¹, :θ), (:scale, :θ), (:θ⁻¹, :β), (:rate, :β)))
+
+GraphPPL.NodeBehaviour(::Type{ReactiveMP.AR}) = GraphPPL.Stochastic()
