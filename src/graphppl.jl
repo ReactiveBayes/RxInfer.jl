@@ -26,3 +26,14 @@ GraphPPL.interfaces(::Type{<:ExponentialFamily.GammaShapeRate}, _) = GraphPPL.St
 GraphPPL.interface_aliases(::Type{Gamma}) = GraphPPL.StaticInterfaceAliases(((:a, :α), (:shape, :α), (:β⁻¹, :θ), (:scale, :θ), (:θ⁻¹, :β), (:rate, :β)))
 
 GraphPPL.NodeBehaviour(::Type{ReactiveMP.AR}) = GraphPPL.Stochastic()
+GraphPPL.NodeBehaviour(::Type{ReactiveMP.BIFMHelper}) = GraphPPL.Stochastic()
+GraphPPL.NodeBehaviour(::Type{ReactiveMP.ContinuousTransition}) = GraphPPL.Stochastic()
+GraphPPL.NodeBehaviour(::Type{ReactiveMP.GammaMixtureNode}) = GraphPPL.Stochastic()
+GraphPPL.NodeBehaviour(::Type{ReactiveMP.NormalMixtureNode}) = GraphPPL.Stochastic()
+GraphPPL.NodeBehaviour(::Type{ReactiveMP.MixtureNode}) = GraphPPL.Stochastic()
+GraphPPL.NodeBehaviour(::Type{ReactiveMP.GCV}) = GraphPPL.Stochastic()
+GraphPPL.NodeBehaviour(::Type{ExponentialFamily.MatrixDirichlet}) = GraphPPL.Stochastic()
+GraphPPL.NodeBehaviour(::Type{ReactiveMP.Probit}) = GraphPPL.Stochastic()
+GraphPPL.NodeBehaviour(::Type{ReactiveMP.Uninformative}) = GraphPPL.Stochastic()
+GraphPPL.NodeBehaviour(::Type{ReactiveMP.Transition}) = GraphPPL.Stochastic()
+
