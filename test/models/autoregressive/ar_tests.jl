@@ -4,21 +4,20 @@
     # `include(test/utiltests.jl)`
     include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
-    @model function ar_model(n, order)
-        x = datavar(Vector{Float64}, n)
-        y = datavar(Float64, n)
-
+    @model function ar_model(y, x, order)
         γ ~ Gamma(shape = 1.0, rate = 1.0)
         θ ~ MvNormal(mean = zeros(order), precision = diageye(order))
 
-        for i in 1:n
-            y[i] ~ Normal(mean = dot(x[i], θ), precision = γ)
+        # `i` and `k` should be the same here, but the code is more 
+        # generic with `zip` over `eachindex`
+        for (i, k) in zip(eachindex(y), eachindex(x))
+            y[i] ~ Normal(mean = dot(x[k], θ), precision = γ)
         end
     end
 
     function ar_inference(inputs, outputs, order, niter)
-        return inference(
-            model         = ar_model(length(outputs), order),
+        return infer(
+            model         = ar_model(order = order),
             data          = (x = inputs, y = outputs),
             constraints   = MeanField(),
             options       = (limit_stack_depth = 500,),
