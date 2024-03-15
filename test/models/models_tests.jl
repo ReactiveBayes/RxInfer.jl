@@ -44,19 +44,27 @@ end
         end
     end
 
-    rng  = StableRNG(42)
-    n    = 50
-    data = float.(rand(rng, Bernoulli(0.75), n))
+    for seed in (123, 456), n in (50, 100)
+        rng  = StableRNG(seed)
+        data = float.(rand(rng, Bernoulli(0.75), n))
 
-    testsets = [(prior = Beta(4.0, 8.0), answer = Beta(43.0, 19.0)), (prior = Beta(54.0, 1.0), answer = Beta(93.0, 12.0)), (prior = Beta(1.0, 12.0), answer = Beta(40.0, 23.0))]
+        count_trues = count(isone, data)
+        count_falses = count(iszero, data)
 
-    for ts in testsets
-        @test infer(model = coin_model_priors(prior = ts[:prior]), data = (y = data,)).posteriors[:θ] == ts[:answer]
+        testsets = [
+            (prior = Beta(4.0, 8.0), answer = Beta(4 + count_trues, 8 + count_falses)),
+            (prior = Beta(54.0, 1.0), answer = Beta(54 + count_trues, 1 + count_falses)),
+            (prior = Beta(1.0, 12.0), answer = Beta(1 + count_trues, 12 + count_falses))
+        ]
+
+        for ts in testsets
+            @test infer(model = coin_model_priors(prior = ts[:prior]), data = (y = data,)).posteriors[:θ] == ts[:answer]
+        end
     end
 
-    struct ArbitraryNonExistingDistribution <: UnivariateDistribution end
+    struct ArbitraryNonExistingDistribution <: ContinuousUnivariateDistribution end
 
-    @test_throws "It is not possible to materialize a factor `ArbitraryNonExistingDistribution()` without prespecified interfaces." infer(
-        model = coin_model_priors(prior = ArbitraryNonExistingDistribution()), data = (y = data,)
+    @test_throws r"It is not possible to materialize a factor.*without prespecified interfaces." infer(
+        model = coin_model_priors(prior = ArbitraryNonExistingDistribution()), data = (y = [1.0, 0.0],)
     )
 end

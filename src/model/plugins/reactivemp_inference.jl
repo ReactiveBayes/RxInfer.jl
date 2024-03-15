@@ -187,14 +187,14 @@ function set_rmp_factornode!(plugin::ReactiveMPInferencePlugin, model::Model, ff
         set_rmp_variable!(plugin, model, nodedata, GraphPPL.getproperties(nodedata))
         distparamconstant
     end
+    # We indicate that the original node should be skipped in the postprocessing step
+    setextra!(nodedata, ReactiveMPSkipNodeKey, true)
     # We create a new node, and we mark that the actual prior node must be skipped in the postprocessing
     new_nodelabel, _ = GraphPPL.make_node!(model, ctx, GraphPPL.EmptyNodeCreationOptions, typeof(fform), lhs_interface, NamedTuple{I}(Tuple(rhs_interfaces)))
-    new_nodedata = model[new_nodelabel]
-    for (key, value) in pairs(GraphPPL.getextra(nodedata))
-        setextra!(new_nodedata, key, value)
-    end
-    set_rmp_factornode!(plugin, model, typeof(fform), new_nodedata, GraphPPL.getproperties(new_nodedata))
-    setextra!(nodedata, ReactiveMPSkipNodeKey, true)
+    new_nodedata = model[new_nodelabel]::NodeData
+    new_nodeproperties = GraphPPL.getproperties(new_nodedata)::FactorNodeProperties
+    setextra!(new_nodedata, GraphPPL.VariationalConstraintsFactorizationIndicesKey, ntuple(i -> (i, ), length(I) + 1))
+    set_rmp_factornode!(plugin, model, typeof(fform), new_nodedata, new_nodeproperties)
 end
 
 function activate_rmp_factornode!(plugin::ReactiveMPInferencePlugin, model::Model, nodedata::NodeData, nodeproperties::FactorNodeProperties)
