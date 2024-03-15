@@ -1,3 +1,18 @@
+@testitem "error_datavar_constvar_randomvar" begin 
+    import RxInfer: error_datavar_constvar_randomvar
+    import GraphPPL: apply_pipeline
+    import MacroTools: @capture
+
+    input = :(a = randomvar())
+    @test @capture(apply_pipeline(input, error_datavar_constvar_randomvar), error(_))
+
+    input = :(a = datavar())
+    @test @capture(apply_pipeline(input, error_datavar_constvar_randomvar), error(_))
+
+    input = :(a = constvar())
+    @test @capture(apply_pipeline(input, error_datavar_constvar_randomvar), error(_))
+end
+
 @testitem "compose_simple_operators_with_brackets pipeline" begin
     import RxInfer: compose_simple_operators_with_brackets
     import GraphPPL: apply_pipeline
