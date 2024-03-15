@@ -11,6 +11,9 @@
 
     input = :(a = constvar())
     @test @capture(apply_pipeline(input, error_datavar_constvar_randomvar), error(_))
+
+    input = :(x ~ Normal(0, 1))
+    @test apply_pipeline(input, error_datavar_constvar_randomvar) == input
 end
 
 @testitem "compose_simple_operators_with_brackets pipeline" begin
