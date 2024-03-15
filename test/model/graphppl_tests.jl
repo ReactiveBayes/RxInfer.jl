@@ -31,3 +31,42 @@
     output = :(s ~ (((s1 * s2) * s3) * s4) * s5)
     @test apply_pipeline(input, compose_simple_operators_with_brackets) == output
 end
+
+@testitem "inject_tilderhs_aliases" begin
+    import RxInfer: inject_tilderhs_aliases
+    import GraphPPL: apply_pipeline
+    import MacroTools: prettify
+
+    input = :(a ~ b || c)
+    output = :(a ~ ReactiveMP.OR(b, c))
+    @test prettify(apply_pipeline(input, inject_tilderhs_aliases)) == prettify(output)
+
+    input = :(b || c)
+    output = :(b || c)
+    @test prettify(apply_pipeline(input, inject_tilderhs_aliases)) == prettify(output)
+
+    input = :(a ~ b && c)
+    output = :(a ~ ReactiveMP.AND(b, c))
+    @test prettify(apply_pipeline(input, inject_tilderhs_aliases)) == prettify(output)
+
+    input = :(b && c)
+    output = :(b && c)
+    @test prettify(apply_pipeline(input, inject_tilderhs_aliases)) == prettify(output)
+
+    input = :(a ~ b -> c)
+    output = :(a ~ ReactiveMP.IMPLY(b, c))
+    @test prettify(apply_pipeline(input, inject_tilderhs_aliases)) == prettify(output)
+
+    input = :(a = b -> b + 1)
+    output = :(a = b -> b + 1)
+    @test prettify(apply_pipeline(input, inject_tilderhs_aliases)) == prettify(output)
+
+    input = :(a ~ ¬b)
+    output = :(a ~ ReactiveMP.NOT(b))
+    @test prettify(apply_pipeline(input, inject_tilderhs_aliases)) == prettify(output)
+
+    input = :(a ~ !b)
+    output = :(a ~ ReactiveMP.NOT(b))
+    @test prettify(apply_pipeline(input, inject_tilderhs_aliases)) == prettify(output)
+    
+end

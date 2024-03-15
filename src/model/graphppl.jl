@@ -15,7 +15,11 @@ GraphPPL.model_macro_interior_pipelines(::ReactiveMPGraphPPLBackend) = GraphPPL.
 
 function GraphPPL.model_macro_interior_pipelines(::ReactiveMPGraphPPLBackend)
     default_pipelines = GraphPPL.model_macro_interior_pipelines(GraphPPL.DefaultBackend())
-    return (RxInfer.compose_simple_operators_with_brackets, default_pipelines...)
+    return (
+        RxInfer.compose_simple_operators_with_brackets, 
+        RxInfer.inject_tilderhs_aliases,
+        default_pipelines...
+    )
 end
 
 """
@@ -47,6 +51,58 @@ function recursive_brackets_expression(operator, args)
         return Expr(:call, operator, args...)
     end
 end
+
+function show_tilderhs_alias(io = stdout)
+    foreach(skipmissing(map(last, ReactiveMPNodeAliases))) do alias
+        println(io, "- ", alias)
+    end
+end
+
+function apply_alias_transformation(notanexpression, alias)
+    # We always short-circuit on non-expression
+    return (notanexpression, true)
+end
+
+function apply_alias_transformation(expression::Expr, alias)
+    _expression = first(alias)(expression)
+    # Returns potentially modified expression and a Boolean flag, 
+    # which indicates if expression actually has been modified
+    return (_expression, _expression !== expression)
+end
+
+function inject_tilderhs_aliases(e::Expr)
+    if @capture(e, lhs_ ~ rhs_)
+        newrhs = MacroTools.postwalk(rhs) do expression
+            # We short-circuit if `mflag` is true
+            _expression, _ = foldl(ReactiveMPNodeAliases; init = (expression, false)) do (expression, mflag), alias
+                return mflag ? (expression, true) : apply_alias_transformation(expression, alias)
+            end
+            return _expression
+        end
+        return :($lhs ~ $newrhs)
+    else
+        return e
+    end
+end
+
+ReactiveMPNodeAliases = (
+    (
+        (expression) -> @capture(expression, a_ || b_) ? :(ReactiveMP.OR($a, $b)) : expression,
+        "`a || b`: alias for `OR(a, b)` node (operator precedence between `||`, `&&`, `->` and `!` is the same as in Julia)."
+    ),
+    (
+        (expression) -> @capture(expression, a_ && b_) ? :(ReactiveMP.AND($a, $b)) : expression,
+        "`a && b`: alias for `AND(a, b)` node (operator precedence `||`, `&&`, `->` and `!` is the same as in Julia)."
+    ),
+    (
+        (expression) -> @capture(expression, a_ -> b_) ? :(ReactiveMP.IMPLY($a, $b)) : expression,
+        "`a -> b`: alias for `IMPLY(a, b)` node (operator precedence `||`, `&&`, `->` and `!` is the same as in Julia)."
+    ),
+    (
+        (expression) -> @capture(expression, (¬a_) | (!a_)) ? :(ReactiveMP.NOT($a)) : expression,
+        "`¬a` and `!a`: alias for `NOT(a)` node (Unicode `\\neg`, operator precedence `||`, `&&`, `->` and `!` is the same as in Julia)."
+    )
+)
 
 export @model
 
