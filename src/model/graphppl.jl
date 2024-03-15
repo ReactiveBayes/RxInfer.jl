@@ -11,8 +11,6 @@ struct ReactiveMPGraphPPLBackend end
 
 # Model specification with `@model` macro
 
-GraphPPL.model_macro_interior_pipelines(::ReactiveMPGraphPPLBackend) = GraphPPL.model_macro_interior_pipelines(GraphPPL.DefaultBackend())
-
 function GraphPPL.model_macro_interior_pipelines(::ReactiveMPGraphPPLBackend)
     default_pipelines = GraphPPL.model_macro_interior_pipelines(GraphPPL.DefaultBackend())
     return (
@@ -88,25 +86,39 @@ end
 ReactiveMPNodeAliases = (
     (
         (expression) -> @capture(expression, a_ || b_) ? :(ReactiveMP.OR($a, $b)) : expression,
-        "`a || b`: alias for `OR(a, b)` node (operator precedence between `||`, `&&`, `->` and `!` is the same as in Julia)."
+        "`a || b`: alias for `ReactiveMP.OR(a, b)` node (operator precedence between `||`, `&&`, `->` and `!` is the same as in Julia)."
     ),
     (
         (expression) -> @capture(expression, a_ && b_) ? :(ReactiveMP.AND($a, $b)) : expression,
-        "`a && b`: alias for `AND(a, b)` node (operator precedence `||`, `&&`, `->` and `!` is the same as in Julia)."
+        "`a && b`: alias for `ReactiveMP.AND(a, b)` node (operator precedence `||`, `&&`, `->` and `!` is the same as in Julia)."
     ),
     (
         (expression) -> @capture(expression, a_ -> b_) ? :(ReactiveMP.IMPLY($a, $b)) : expression,
-        "`a -> b`: alias for `IMPLY(a, b)` node (operator precedence `||`, `&&`, `->` and `!` is the same as in Julia)."
+        "`a -> b`: alias for `ReactiveMP.IMPLY(a, b)` node (operator precedence `||`, `&&`, `->` and `!` is the same as in Julia)."
     ),
     (
         (expression) -> @capture(expression, (¬a_) | (!a_)) ? :(ReactiveMP.NOT($a)) : expression,
-        "`¬a` and `!a`: alias for `NOT(a)` node (Unicode `\\neg`, operator precedence `||`, `&&`, `->` and `!` is the same as in Julia)."
+        "`¬a` and `!a`: alias for `ReactiveMP.NOT(a)` node (Unicode `\\neg`, operator precedence `||`, `&&`, `->` and `!` is the same as in Julia)."
     )
 )
 
 export @model
 
 # This is a special `@model` macro that uses `ReactiveMP` backend
+
+"""
+```julia
+@model function model_name(model_arguments...)
+    # model description
+end
+```
+
+`@model` macro generates a function that returns an equivalent graph-representation of the given probabilistic model description.
+See the documentation to `GraphPPL.@model` for more information.
+
+## Supported aliases in the model specification specifically for RxInfer.jl and ReactiveMP.jl
+$(begin io = IOBuffer(); RxInfer.show_tilderhs_alias(io); String(take!(io)) end)
+"""
 macro model(model_specification)
     return esc(GraphPPL.model_macro_interior(ReactiveMPGraphPPLBackend(), model_specification))
 end
