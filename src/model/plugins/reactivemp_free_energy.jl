@@ -30,7 +30,7 @@ end
 
 getobjective(plugin::ReactiveMPFreeEnergyPlugin) = plugin.objective
 
-const ReactiveMPExtraBetheFreeEnergyStreamKey = GraphPPL.NodeDataExtraKey{:bfe_stream, Rocket.Subscribable}()
+const ReactiveMPExtraBetheFreeEnergyStreamKey = GraphPPL.NodeDataExtraKey{:bfe_stream, Any}()
 
 GraphPPL.plugin_type(::ReactiveMPFreeEnergyPlugin) = FactorAndVariableNodesPlugin()
 

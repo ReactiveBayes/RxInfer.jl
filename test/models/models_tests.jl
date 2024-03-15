@@ -44,6 +44,13 @@ end
         end
     end
 
+    @model function coin_model_without_prior_for_check(y, a, b)
+        θ ~ Beta(a, b)
+        for i in eachindex(y)
+            y[i] ~ Bernoulli(θ)
+        end
+    end
+
     for seed in (123, 456), n in (50, 100)
         rng  = StableRNG(seed)
         data = float.(rand(rng, Bernoulli(0.75), n))
@@ -58,13 +65,16 @@ end
         ]
 
         for ts in testsets
-            @test infer(model = coin_model_priors(prior = ts[:prior]), data = (y = data,)).posteriors[:θ] == ts[:answer]
+            result_with_prior_as_input = infer(model = coin_model_priors(prior = ts[:prior]), returnvars = KeepLast(), data = (y = data,), iterations = 10, free_energy = true)
+            result_with_parameters_as_input = infer(
+                model = coin_model_without_prior_for_check(a = ts[:prior].α, b = ts[:prior].β), returnvars = KeepLast(), data = (y = data,), iterations = 10, free_energy = true
+            )
+
+            @test result_with_prior_as_input.posteriors[:θ] == ts[:answer]
+            @test result_with_parameters_as_input.posteriors[:θ] == ts[:answer]
+            # `≈` here because the average energy computation is different for such nodes, basically it avoid creating 
+            # nodes for constants `α` and `β`
+            @test all(result_with_prior_as_input.free_energy .≈ result_with_parameters_as_input.free_energy)
         end
     end
-
-    struct ArbitraryNonExistingDistribution <: ContinuousUnivariateDistribution end
-
-    @test_throws r"It is not possible to materialize a factor.*without prespecified interfaces." infer(
-        model = coin_model_priors(prior = ArbitraryNonExistingDistribution()), data = (y = [1.0, 0.0],)
-    )
 end
