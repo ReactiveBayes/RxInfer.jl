@@ -24,15 +24,15 @@
         end
     end
 
-    constraints = @constraints begin
+    @constraints function ar_constraints()
         q(γ, θ) = q(γ)q(θ)
     end
 
-    function ar_inference(inputs, outputs, order, niter, constraints)
+    function ar_inference(inputs, outputs, order, niter)
         return infer(
             model         = ar_model(order = order),
             data          = (x = inputs, y = outputs),
-            constraints   = constraints,
+            constraints   = ar_constraints(),
             options       = (limit_stack_depth = 500,),
             initmarginals = (γ = GammaShapeRate(1.0, 1.0),),
             returnvars    = (γ = KeepEach(), θ = KeepEach()),
@@ -47,7 +47,7 @@
     for order in 1:5
         series = randn(rng, 1_000)
         inputs, outputs = ar_ssm_data(series, order)
-        result = ar_inference(inputs, outputs, order, 15, constraints)
+        result = ar_inference(inputs, outputs, order, 15)
 
         qs     = result.posteriors
         (γ, θ) = (qs[:γ], qs[:θ])

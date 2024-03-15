@@ -54,7 +54,7 @@
     end
 
     # We specify structured constraints over the states and mean-field over the autoregressive coefficients/parameters
-    constraints = @constraints begin
+    @constraints function lar_constraints()
         q(x, x0, γ, θ) = q(x, x0)q(γ)q(θ)
     end
 
@@ -77,7 +77,7 @@
             data = (y = data,),
             initmarginals = lar_init_marginals(artype, order),
             returnvars = (γ = KeepEach(), θ = KeepEach(), x = KeepLast()),
-            constraints = constraints,
+            constraints = lar_constraints(),
             iterations = iterations,
             free_energy = Float64
         )
