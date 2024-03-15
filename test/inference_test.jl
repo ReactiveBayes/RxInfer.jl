@@ -163,21 +163,18 @@ end
 
     # A simple model for testing that resembles a simple kalman filter with
     # random walk state transition and unknown observational noise
-    @model function test_model1(n)
-        x = randomvar(n)
-        y = datavar(Float64, n)
+    @model function test_model1(y)
 
         τ ~ Gamma(1.0, 1.0)
 
         x[1] ~ Normal(mean = 0.0, variance = 1.0)
         y[1] ~ Normal(mean = x[1], precision = τ)
 
-        for i in 2:n
+        for i in 2:length(y)
             x[i] ~ Normal(mean = x[i - 1], variance = 1.0)
             y[i] ~ Normal(mean = x[i], precision = τ)
         end
 
-        return 2, 3.0, "hello world" # test returnval
     end
 
     @constraints function test_model1_constraints()
@@ -189,7 +186,7 @@ end
 
         # Case #0: no errors at all
         result = infer(
-            model = test_model1(10),
+            model = test_model1(),
             constraints = test_model1_constraints(),
             data = (y = observations,),
             initmarginals = (τ = Gamma(1.0, 1.0),),
@@ -210,8 +207,8 @@ end
         @test contains(error_str, "The inference has completed successfully.")
 
         # Case #1: no error handling
-        @test_throws ErrorException infer(
-            model = test_model1(10),
+        @test_throws "bang!" infer(
+            model = test_model1(),
             constraints = test_model1_constraints(),
             data = (y = observations,),
             initmarginals = (τ = Gamma(1.0, 1.0),),
@@ -228,7 +225,7 @@ end
         )
 
         result_with_error = infer(
-            model = test_model1(10),
+            model = test_model1(),
             constraints = test_model1_constraints(),
             data = (y = observations,),
             initmarginals = (τ = Gamma(1.0, 1.0),),
@@ -267,7 +264,7 @@ end
 
         # Case #1: no halting
         results1 = infer(
-            model = test_model1(10),
+            model = test_model1(),
             constraints = test_model1_constraints(),
             data = (y = observations,),
             initmarginals = (τ = Gamma(1.0, 1.0),),
@@ -282,7 +279,7 @@ end
 
         # Case #2: halt before iteration starts
         results2 = infer(
-            model = test_model1(10),
+            model = test_model1(),
             constraints = test_model1_constraints(),
             data = (y = observations,),
             initmarginals = (τ = Gamma(1.0, 1.0),),
@@ -302,7 +299,7 @@ end
 
         # Case #3: halt after iteration ends
         results3 = infer(
-            model = test_model1(10),
+            model = test_model1(),
             constraints = test_model1_constraints(),
             data = (y = observations,),
             initmarginals = (τ = Gamma(1.0, 1.0),),
@@ -331,16 +328,11 @@ end
     @testset "Test warning for addons" begin
 
         #Add a new case for testing warning of addons
-        @model function beta_model2(n)
-            y = datavar(Float64, n)
-
+        @model function beta_model2(y)
             θ ~ Beta(4.0, 8.0)
-
-            for i in 1:n
+            for i in eachindex(y)
                 y[i] ~ Bernoulli(θ)
             end
-
-            return y, θ
         end
 
         #Add a new dataset for addons
@@ -351,7 +343,7 @@ end
 
         #with warn
         @test_logs (:warn, r"Both .* specify a value for the `addons`.*") result_2 = infer(
-            model = beta_model2(length(dataset2)),
+            model = beta_model2(),
             data = (y = dataset2,),
             returnvars = (θ = KeepLast(),),
             free_energy = true,
@@ -361,7 +353,7 @@ end
         )
         #without warn
         @test_logs result_2 = infer(
-            model = beta_model2(length(dataset2)),
+            model = beta_model2(),
             data = (y = dataset2,),
             returnvars = (θ = KeepLast(),),
             free_energy = true,
@@ -400,7 +392,7 @@ end
         observations = rand(10)
 
         @test_logs (:warn, r"Unused data variable .*") result = infer(
-            model = test_model1(10),
+            model = test_model1(),
             constraints = test_model1_constraints(),
             data = (y = observations,),
             initmarginals = (τ = Gamma(1.0, 1.0),),
