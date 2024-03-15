@@ -30,6 +30,11 @@
     @test length(result_with_no_iterations.free_energy) === 1
     @test all(v -> v ≈ 2828.0533343622483, result_with_no_iterations.free_energy)
 
+    # Double check that Free Energy is exactly the same for `MeanField` constraints because the model is simple enough and has only one variable
+    result_mean_field = infer(model = coin_model(a = 2.0, b = 7.0), constraints = MeanField(), data = (y = dataset,), iterations = 10, free_energy = true)
+    @test length(result_mean_field.free_energy) === 10
+    @test all(v -> v ≈ 2828.0533343622483, result_mean_field.free_energy)
+
     # Double check for different values of `p`
     for p in (0.75, 0.5, 0.25), n in (5_000, 10_000)
         result_for_different_p = infer(model = coin_model(a = 1.0, b = 1.0), data = (y = float.(rand(StableRNG(123), Bernoulli(p), n)),))

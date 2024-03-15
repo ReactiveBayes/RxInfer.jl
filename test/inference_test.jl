@@ -34,15 +34,17 @@ end
         y ~ Normal(x, 1.0)
     end
 
-    import RxInfer: __infer_create_factor_graph_model, FactorGraphModel
-    import GraphPPL: is_data, is_random, is_constant, is_variable, is_factor, getproperties
+    import RxInfer: __infer_create_factor_graph_model, ProbabilisticModel, getmodel
+    import GraphPPL: is_data, is_random, is_constant, is_variable, is_factor, getproperties, getcontext
 
     @testset let model = __infer_create_factor_graph_model(simple_model_for_infer_create_model(a = 1, b = 2), (y = 3, ))
-        @test model isa FactorGraphModel
-        @test is_variable(model[:y])
-        @test is_variable(model[:x])
-        @test is_data(getproperties(model[:y]))
-        @test is_random(getproperties(model[:x]))
+        @test model isa ProbabilisticModel
+        graphicalmodel = getmodel(model)
+        ctx = getcontext(getmodel(model))
+        @test is_variable(graphicalmodel[ctx[:y]])
+        @test is_variable(graphicalmodel[ctx[:x]])
+        @test is_data(getproperties(graphicalmodel[ctx[:y]]))
+        @test is_random(getproperties(graphicalmodel[ctx[:x]]))
     end
 
 end
