@@ -175,10 +175,11 @@ function set_rmp_factornode!(plugin::ReactiveMPInferencePlugin, model::Model, ff
     if !isequal(length(distparams), length(I))
         error("The number of parameters of the distribution `$(fform)` does not match the number of interfaces `$(I)`.")
     end
+    # The nodeproperties should have exactly one neighbour because it has been created as `var ~ prior`
     if !isequal(length(GraphPPL.neighbors(nodeproperties)), 1)
         error("The factor node `$(nodedata)` must have exactly one neighbour.")
     end
-    # The nodeproperties should have exactly one neighbour because it has been created as `var ~ prior`
+    # This single neighbour is the `lhs_interface`
     lhs_interface, _, _ = first(GraphPPL.neighbors(nodeproperties))
     # We extract `rhs_interfaces` from `params()` of the actual `fform` 
     rhs_interfaces = map(enumerate(params(fform))) do (index, constant)
