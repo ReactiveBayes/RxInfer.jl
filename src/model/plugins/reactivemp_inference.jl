@@ -79,6 +79,7 @@ const ReactiveMPExtraFactorNodeKey = GraphPPL.NodeDataExtraKey{:rmp_factornode, 
 const ReactiveMPExtraVariableKey = GraphPPL.NodeDataExtraKey{:rmp_variable, ReactiveMP.AbstractVariable}()
 const ReactiveMPExtraDependenciesKey = GraphPPL.NodeDataExtraKey{:dependencies, ReactiveMP.Any}()
 const ReactiveMPExtraPipelineKey = GraphPPL.NodeDataExtraKey{:pipeline, ReactiveMP.Any}()
+const ReactiveMPSkipNodeKey = GraphPPL.NodeDataExtraKey{:skip, Bool}()
 
 GraphPPL.plugin_type(::ReactiveMPInferencePlugin) = FactorAndVariableNodesPlugin()
 
@@ -146,23 +147,71 @@ function activate_rmp_variable!(plugin::ReactiveMPInferencePlugin, model::Model,
 end
 
 function set_rmp_factornode!(plugin::ReactiveMPInferencePlugin, model::Model, nodedata::NodeData, nodeproperties::FactorNodeProperties)
+    return set_rmp_factornode!(plugin, model, GraphPPL.fform(nodeproperties), nodedata, nodeproperties)
+end
+
+function set_rmp_factornode!(plugin::ReactiveMPInferencePlugin, model::Model, fform::F, nodedata::NodeData, nodeproperties::FactorNodeProperties) where {F}
     interfaces = map(GraphPPL.neighbors(nodeproperties)) do (_, edge, data)
         return (GraphPPL.getname(edge), getextra(data, ReactiveMPExtraVariableKey))
     end
     factorization = getextra(nodedata, GraphPPL.VariationalConstraintsFactorizationIndicesKey)
-    return setextra!(nodedata, ReactiveMPExtraFactorNodeKey, factornode(GraphPPL.fform(nodeproperties), interfaces, factorization))
+    return setextra!(nodedata, ReactiveMPExtraFactorNodeKey, factornode(fform, interfaces, factorization))
+end
+
+# Special case if the `fform` of the node is an actual created distribution object and not just a type 
+# In this case we must materialize the distribution and its neighbouring constants
+function set_rmp_factornode!(plugin::ReactiveMPInferencePlugin, model::Model, fform::Distribution, nodedata::NodeData, nodeproperties::FactorNodeProperties)
+    return set_rmp_factornode!(plugin, model, fform, ReactiveMP.inputinterfaces(typeof(fform)), nodedata, nodeproperties)
+end
+
+function set_rmp_factornode!(plugin::ReactiveMPInferencePlugin, model::Model, fform::Distribution, ::Nothing, nodedata::NodeData, nodeproperties::FactorNodeProperties)
+    error("It is not possible to materialize a factor `$(fform)` without prespecified interfaces.")
+end
+
+function set_rmp_factornode!(plugin::ReactiveMPInferencePlugin, model::Model, fform::Distribution, ::Val{I}, nodedata::NodeData, nodeproperties::FactorNodeProperties) where {I}
+    ctx = GraphPPL.getcontext(nodedata)
+    distparams = params(fform)
+    # First check if the number of parameters of the distribution matches the number of interfaces defined in `ReactiveMP`
+    if !isequal(length(distparams), length(I))
+        error("The number of parameters of the distribution `$(fform)` does not match the number of interfaces `$(I)`.")
+    end
+    if !isequal(length(GraphPPL.neighbors(nodeproperties)), 1)
+        error("The factor node `$(nodedata)` must have exactly one neighbour.")
+    end
+    # The nodeproperties should have exactly one neighbour because it has been created as `var ~ prior`
+    lhs_interface, _, _ = first(GraphPPL.neighbors(nodeproperties))
+    # We extract `rhs_interfaces` from `params()` of the actual `fform` 
+    rhs_interfaces = map(enumerate(params(fform))) do (index, constant)
+        local distparamconstant = GraphPPL.add_variable_node!(model, ctx, NodeCreationOptions(kind = :constant, value = constant), I[index], nothing)
+        local nodedata = model[distparamconstant]
+        set_rmp_variable!(plugin, model, nodedata, GraphPPL.getproperties(nodedata))
+        distparamconstant
+    end
+    # We create a new node, and we mark that the actual prior node must be skipped in the postprocessing
+    new_nodelabel, _ = GraphPPL.make_node!(model, ctx, GraphPPL.EmptyNodeCreationOptions, typeof(fform), lhs_interface, NamedTuple{I}(Tuple(rhs_interfaces)))
+    new_nodedata = model[new_nodelabel]
+    for (key, value) in pairs(GraphPPL.getextra(nodedata))
+        setextra!(new_nodedata, key, value)
+    end
+    set_rmp_factornode!(plugin, model, typeof(fform), new_nodedata, GraphPPL.getproperties(new_nodedata))
+    setextra!(nodedata, ReactiveMPSkipNodeKey, true)
 end
 
 function activate_rmp_factornode!(plugin::ReactiveMPInferencePlugin, model::Model, nodedata::NodeData, nodeproperties::FactorNodeProperties)
-    metadata = hasextra(nodedata, GraphPPL.MetaExtraKey) ? getextra(nodedata, GraphPPL.MetaExtraKey) : nothing
-    dependencies = hasextra(nodedata, ReactiveMPExtraDependenciesKey) ? getextra(nodedata, ReactiveMPExtraDependenciesKey) : nothing
-    pipeline = hasextra(nodedata, ReactiveMPExtraPipelineKey) ? getextra(nodedata, ReactiveMPExtraPipelineKey) : nothing
+    skip = hasextra(nodedata, ReactiveMPSkipNodeKey) ? getextra(nodedata, ReactiveMPSkipNodeKey) : false
+    if !skip
+        metadata = hasextra(nodedata, GraphPPL.MetaExtraKey) ? getextra(nodedata, GraphPPL.MetaExtraKey) : nothing
+        dependencies = hasextra(nodedata, ReactiveMPExtraDependenciesKey) ? getextra(nodedata, ReactiveMPExtraDependenciesKey) : nothing
+        pipeline = hasextra(nodedata, ReactiveMPExtraPipelineKey) ? getextra(nodedata, ReactiveMPExtraPipelineKey) : nothing
 
-    scheduler = getscheduler(getoptions(plugin))
-    addons = getaddons(getoptions(plugin))
-    options = ReactiveMP.FactorNodeActivationOptions(metadata, dependencies, pipeline, addons, scheduler)
+        scheduler = getscheduler(getoptions(plugin))
+        addons = getaddons(getoptions(plugin))
+        options = ReactiveMP.FactorNodeActivationOptions(metadata, dependencies, pipeline, addons, scheduler)
 
-    return ReactiveMP.activate!(getextra(nodedata, ReactiveMPExtraFactorNodeKey), options)
+        return ReactiveMP.activate!(getextra(nodedata, ReactiveMPExtraFactorNodeKey), options)
+    else
+        return nothing
+    end
 end
 
 struct GraphVariableRef
