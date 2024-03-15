@@ -131,9 +131,9 @@ makedocs(;
             ExamplesPages...
         ],
         "Contributing" => [
-            "Overview" => "contributing/overview.md",
+            "Contribution guide" => "contributing/guide.md",
+            "Contribution guidelines"=> "contributing/guidelines.md",
             "Contributing to the documentation" => "contributing/new-documentation.md",
-            "Contributing to the dependencies" => "contributing/new-package.md",
             "Contributing to the examples" => "contributing/new-example.md",
             "Publishing a new release" => "contributing/new-release.md"
         ]
