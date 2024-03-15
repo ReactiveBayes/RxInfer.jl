@@ -28,11 +28,11 @@
         q(γ, θ) = q(γ)q(θ)
     end
 
-    function ar_inference(inputs, outputs, order, niter)
+    function ar_inference(inputs, outputs, order, niter, constraints)
         return infer(
             model         = ar_model(order = order),
             data          = (x = inputs, y = outputs),
-            constraints   = ar_constraints(),
+            constraints   = constraints,
             options       = (limit_stack_depth = 500,),
             initmarginals = (γ = GammaShapeRate(1.0, 1.0),),
             returnvars    = (γ = KeepEach(), θ = KeepEach()),
@@ -47,25 +47,23 @@
     for order in 1:5
         series = randn(rng, 1_000)
         inputs, outputs = ar_ssm_data(series, order)
-        result = ar_inference(inputs, outputs, order, 15)
+        for constraints in [ar_constraints(), MeanField()]
+            result = ar_inference(inputs, outputs, order, 15, constraints)
 
-        qs     = result.posteriors
-        (γ, θ) = (qs[:γ], qs[:θ])
-        fe     = result.free_energy
+            qs     = result.posteriors
+            (γ, θ) = (qs[:γ], qs[:θ])
+            fe     = result.free_energy
 
-        @test length(γ) === 15
-        @test length(θ) === 15
-        @test length(fe) === 15
-        @test last(fe) < first(fe)
-        @test all(filter(e -> abs(e) > 1e-3, diff(fe)) .< 0)
+            @test length(γ) === 15
+            @test length(θ) === 15
+            @test length(fe) === 15
+            @test last(fe) < first(fe)
+            @test all(filter(e -> abs(e) > 1e-3, diff(fe)) .< 0)
+        end
     end
 
     benchrng          = randn(StableRNG(32), 1_000)
     inputs5, outputs5 = ar_ssm_data(benchrng, 5)
-
-    # Double check that the inference with `MeanField` constraints produces the same results
-    # TODO: (bvdmitri) broken for now, but should be fixed before releasing
-    @test_broken ar_inference(inputs, outputs, order, 15, MeanField())
 
     @test_benchmark "models" "ar" ar_inference($inputs5, $outputs5, 5, 15)
 end
