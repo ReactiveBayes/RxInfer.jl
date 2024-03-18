@@ -130,10 +130,19 @@ end
 
 function activate_rmp_variable!(plugin::ReactiveMPInferencePlugin, model::Model, nodedata::NodeData, nodeproperties::VariableNodeProperties)
     if is_random(nodeproperties)
-        # TODO: bvdmitri, use functional form constraints
-        return ReactiveMP.activate!(
-            getextra(nodedata, ReactiveMPExtraVariableKey)::RandomVariable, ReactiveMP.RandomVariableActivationOptions(Rocket.getscheduler(getoptions(plugin)))
-        )
+        # TODO: (bvdmitri) simplify code
+        messages_prod_strategy = hasextra(nodedata, :message_prod_strategy) ? getextra(nodedata, :message_prod_strategy) : ReactiveMP.FoldLeftProdStrategy()
+        marginal_prod_strategy = hasextra(nodedata, :marginal_prod_strategy) ? getextra(nodedata, :marginal_prod_strategy) : ReactiveMP.FoldLeftProdStrategy()
+        messages_form_constraint = hasextra(nodedata, :message_form_constraint) ? getextra(nodedata, :message_form_constraint) : ReactiveMP.UnspecifiedFormConstraint()
+        marginal_form_constraint = hasextra(nodedata, :posterior_form_constraint) ? getextra(nodedata, :posterior_form_constraint) : ReactiveMP.UnspecifiedFormConstraint()
+        messages_prod_constraint = ReactiveMP.default_prod_constraint(messages_form_constraint)
+        marginal_prod_constraint = ReactiveMP.default_prod_constraint(marginal_form_constraint)
+        messages_form_check_strategy = ReactiveMP.default_form_check_strategy(messages_form_constraint)
+        marginal_form_check_strategy = ReactiveMP.default_form_check_strategy(marginal_form_constraint)
+        messages_prod_fn = ReactiveMP.messages_prod_fn(messages_prod_strategy, messages_prod_constraint, messages_form_constraint, messages_form_check_strategy)
+        marginal_prod_fn = ReactiveMP.marginal_prod_fn(marginal_prod_strategy, marginal_prod_constraint, marginal_form_constraint, marginal_form_check_strategy)
+        options = ReactiveMP.RandomVariableActivationOptions(Rocket.getscheduler(getoptions(plugin)), messages_prod_fn, marginal_prod_fn)
+        return ReactiveMP.activate!(getextra(nodedata, ReactiveMPExtraVariableKey)::RandomVariable, options)
     elseif is_data(nodeproperties)
         # TODO: bvdmitri use allow_missings
         return ReactiveMP.activate!(getextra(nodedata, ReactiveMPExtraVariableKey)::DataVariable, ReactiveMP.DataVariableActivationOptions(false))

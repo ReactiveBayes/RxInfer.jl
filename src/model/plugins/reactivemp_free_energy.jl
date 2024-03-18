@@ -67,9 +67,6 @@ end
 
 function score(model::ProbabilisticModel, ::BetheFreeEnergy{T}, diagnostic_checks) where {T}
 
-    # stochastic_variables = filter(r -> !is_point_mass_form_constraint(marginal_form_constraint(r)), getrandom(model))
-    # point_mass_estimates = filter(r -> is_point_mass_form_constraint(marginal_form_constraint(r)), getrandom(model))
-
     node_bound_free_energies = map(getfactornodes(model)) do nodedata
         nodeproperties = getproperties(nodedata)::GraphPPL.FactorNodeProperties
         stream = getextra(nodedata, ReactiveMPExtraBetheFreeEnergyStreamKey)

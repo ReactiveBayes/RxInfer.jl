@@ -61,13 +61,31 @@
     greturnvars    = (s = KeepLast(), z = KeepLast(), as = KeepEach(), bs = KeepEach())
 
     gresult = infer(
-        model         = gmodel,
-        data          = gdata,
-        constraints   = constraints,
-        options       = (limit_stack_depth = 100,),
+        model = gmodel,
+        data = gdata,
+        constraints = constraints,
+        options = (limit_stack_depth = 100,),
         initmarginals = ginitmarginals,
-        returnvars    = greturnvars,
-        free_energy   = true,
-        iterations    = 50
+        returnvars = greturnvars,
+        free_energy = true,
+        iterations = 50
+        # free_energy_diagnostics = nothing
     )
+
+    # extract inferred parameters
+    _as, _bs = mean.(gresult.posteriors[:as][end]), mean.(gresult.posteriors[:bs][end])
+    _dists   = map(g -> Gamma(g[1], inv(g[2])), zip(_as, _bs))
+    _mixing  = mean(gresult.posteriors[:s])
+
+    # create model from inferred parameters
+    _mixture = MixtureModel(_dists, _mixing)
+
+    # report on outcome of inference
+    println("Dataset:", dataset[1:5])
+    println("Generated means: $(mean(mixtures[1])) and $(mean(mixtures[2]))")
+    println("Inferred means: $(mean(_dists[1])) and $(mean(_dists[2]))")
+    println("========")
+    println("Generated mixing: $(mixing)")
+    println("Inferred mixing: $(_mixing)")
+    println("Free energy:", gresult.free_energy)
 end
