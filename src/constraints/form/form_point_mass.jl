@@ -1,3 +1,4 @@
+export PointMassFormConstraint
 
 import ReactiveMP: is_point_mass_form_constraint, default_form_check_strategy, default_prod_constraint, make_form_constraint, constrain_form
 import DomainSets: Domain, infimum, supremum
@@ -72,8 +73,6 @@ ReactiveMP.is_point_mass_form_constraint(::PointMassFormConstraint) = true
 ReactiveMP.default_form_check_strategy(::PointMassFormConstraint) = FormConstraintCheckLast()
 
 ReactiveMP.default_prod_constraint(::PointMassFormConstraint) = GenericProd()
-
-ReactiveMP.make_form_constraint(::Type{<:PointMass}, args...; kwargs...) = PointMassFormConstraint(args...; kwargs...)
 
 call_optimizer(pmconstraint::PointMassFormConstraint, distribution::D) where {D}      = pmconstraint.optimizer(variate_form(D), value_support(D), pmconstraint, distribution)
 call_boundaries(pmconstraint::PointMassFormConstraint, distribution::D) where {D}     = pmconstraint.boundaries(variate_form(D), value_support(D), pmconstraint, distribution)

@@ -1,4 +1,4 @@
-export LeftProposal, RightProposal, AutoProposal
+export SampleListFormConstraint, LeftProposal, RightProposal, AutoProposal
 
 import ReactiveMP: is_point_mass_form_constraint, default_form_check_strategy, default_prod_constraint, make_form_constraint, constrain_form
 import BayesBase: AbstractContinuousGenericLogPdf, BootstrapImportanceSampling
@@ -47,8 +47,6 @@ ReactiveMP.is_point_mass_form_constraint(::SampleListFormConstraint) = false
 ReactiveMP.default_form_check_strategy(::SampleListFormConstraint) = FormConstraintCheckLast()
 
 ReactiveMP.default_prod_constraint(::SampleListFormConstraint) = GenericProd()
-
-ReactiveMP.make_form_constraint(::Type{SampleList}, args...; kwargs...) = SampleListFormConstraint(args...; kwargs...)
 
 __approximate(constraint::SampleListFormConstraint{N, R, S, M}, left, right) where {N, R, S <: LeftProposal, M}  = BayesBase.approximate_prod_with_sample_list(constraint.rng, constraint.method, left, right, N)
 __approximate(constraint::SampleListFormConstraint{N, R, S, M}, left, right) where {N, R, S <: RightProposal, M} = BayesBase.approximate_prod_with_sample_list(constraint.rng, constraint.method, right, left, N)

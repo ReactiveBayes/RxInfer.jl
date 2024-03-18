@@ -1,3 +1,4 @@
+export FixedMarginalFormConstraint
 
 import ReactiveMP: is_point_mass_form_constraint, default_form_check_strategy, default_prod_constraint, make_form_constraint, constrain_form
 
@@ -22,7 +23,5 @@ ReactiveMP.is_point_mass_form_constraint(::FixedMarginalFormConstraint) = false
 ReactiveMP.default_form_check_strategy(::FixedMarginalFormConstraint) = FormConstraintCheckLast()
 
 ReactiveMP.default_prod_constraint(::FixedMarginalFormConstraint) = GenericProd()
-
-ReactiveMP.make_form_constraint(::Type{<:Marginal}, fixed_value) = FixedMarginalFormConstraint(fixed_value)
 
 ReactiveMP.constrain_form(constraint::FixedMarginalFormConstraint, something) = constraint.fixed_value !== nothing ? constraint.fixed_value : something
