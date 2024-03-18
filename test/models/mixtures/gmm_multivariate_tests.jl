@@ -4,16 +4,14 @@
     # `include(test/utiltests.jl)`
     include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
-    @model function multivariate_gaussian_mixture_model(rng, L, nmixtures, n)
-        z = randomvar(n)
-        m = randomvar(nmixtures)
-        w = randomvar(nmixtures)
+    @model function multivariate_gaussian_mixture_model(rng, L, nmixtures, y)
+        local m
+        local w
 
         basis_v = [1.0, 0.0]
-
         for i in 1:nmixtures
             # Assume we now only approximate location of cluters's mean
-            approximate_angle_prior = ((2π + +rand(rng)) / nmixtures) * (i - 1)
+            approximate_angle_prior = ((2π + rand(rng)) / nmixtures) * (i - 1)
             approximate_basis_v = L / 2 * (basis_v .+ rand(rng, 2))
             approximate_rotation = [
                 cos(approximate_angle_prior) -sin(approximate_angle_prior)
@@ -28,14 +26,9 @@
 
         s ~ Dirichlet(ones(nmixtures))
 
-        y = datavar(Vector{Float64}, n)
-
-        means = tuple(m...)
-        precs = tuple(w...)
-
-        for i in 1:n
+        for i in eachindex(y)
             z[i] ~ Categorical(s)
-            y[i] ~ NormalMixture(z[i], means, precs)
+            y[i] ~ NormalMixture(switch = z[i], m = m, p = w)
         end
     end
 
@@ -61,7 +54,7 @@
         end
 
         return infer(
-            model = multivariate_gaussian_mixture_model(rng, L, nmixtures, length(data)),
+            model = multivariate_gaussian_mixture_model(rng = rng, L = L, nmixtures = nmixtures),
             data = (y = data,),
             constraints = constraints,
             returnvars = KeepEach(),

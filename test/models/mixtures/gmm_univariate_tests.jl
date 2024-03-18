@@ -7,15 +7,15 @@
     @model function univariate_gaussian_mixture_model(y)
         s ~ Beta(1.0, 1.0)
 
-        m1 ~ Normal(mean = -2.0, variance = 1e3)
-        w1 ~ Gamma(shape = 0.01, rate = 0.01)
+        m[1] ~ Normal(mean = -2.0, variance = 1e3)
+        p[1] ~ Gamma(shape = 0.01, rate = 0.01)
 
-        m2 ~ Normal(mean = 2.0, variance = 1e3)
-        w2 ~ Gamma(shape = 0.01, rate = 0.01)
+        m[2] ~ Normal(mean = 2.0, variance = 1e3)
+        p[2] ~ Gamma(shape = 0.01, rate = 0.01)
 
         for i in eachindex(y)
             z[i] ~ Bernoulli(s)
-            y[i] ~ NormalMixture(switch = z[i], m = [m1, m2], p = [w1, w2])
+            y[i] ~ NormalMixture(switch = z[i], m = m, p = p)
         end
     end
 
@@ -27,7 +27,7 @@
             returnvars    = KeepEach(),
             free_energy   = Float64,
             iterations    = n_its,
-            initmarginals = (s = vague(Beta), m1 = NormalMeanVariance(-2.0, 1e3), m2 = NormalMeanVariance(2.0, 1e3), w1 = vague(GammaShapeRate), w2 = vague(GammaShapeRate))
+            initmarginals = (s = vague(Beta), m = [NormalMeanVariance(-2.0, 1e3), NormalMeanVariance(2.0, 1e3)], p = [vague(GammaShapeRate), vague(GammaShapeRate)])
         )
     end
     ## -------------------------------------------- ##
@@ -54,14 +54,15 @@
 
     ## Inference execution
     constraints = @constraints begin
-        q(z, s, m1, m2, w1, w2) = q(z)q(s)q(m1)q(m2)q(w1)q(w2)
+        q(z, s, m, p) = q(z)q(s)q(m)q(p)
+        q(m) = q(m[begin]) .. q(m[end])
+        q(p) = q(p[begin]) .. q(p[end])
     end
 
     # Execute inference for different constraints specifications
     results = map((constraints) -> inference_univariate(y, 10, constraints), [MeanField(), constraints])
 
     fresult = results[begin]
-
     # All execution must be equivalent (check against first)
     foreach(results[(begin + 1):end]) do result
         foreach(zip(fresult.posteriors, result.posteriors)) do (l, r)
@@ -70,10 +71,10 @@
     end
 
     mswitch = fresult.posteriors[:s]
-    mm1 = fresult.posteriors[:m1]
-    mm2 = fresult.posteriors[:m2]
-    mw1 = fresult.posteriors[:w1]
-    mw2 = fresult.posteriors[:w2]
+    mm1 = getindex.(fresult.posteriors[:m], 1)
+    mm2 = getindex.(fresult.posteriors[:m], 2)
+    mw1 = getindex.(fresult.posteriors[:p], 1)
+    mw2 = getindex.(fresult.posteriors[:p], 2)
     fe = fresult.free_energy
 
     # Test inference results
@@ -102,6 +103,11 @@
     foreach(zip(rws, ews)) do (r, e)
         @test abs(r - mean(e)) < 0.15
     end
+
+    @test_throws "must be the naive mean-field" inference_univariate(y, 10, BetheFactorization())
+    @test_throws "must be the naive mean-field" inference_univariate(y, 10, @constraints(
+        begin end
+    ))
 
     @test_plot "models" "gmm_univariate" begin
         dim(d) = (a) -> map(r -> r[d], a)
