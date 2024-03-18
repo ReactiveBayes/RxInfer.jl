@@ -10,45 +10,28 @@
     ## Model definition
     ## -------------------------------------------- ##
 
-    @model function beta_model1(n)
-        y = datavar(Float64, n)
-
+    @model function beta_model1(y)
         θ ~ Beta(4.0, 8.0)
-
-        for i in 1:n
+        for i in eachindex(y)
             y[i] ~ Bernoulli(θ)
         end
-
-        return y, θ
     end
 
-    @model function beta_model2(n)
-        y = datavar(Float64, n)
-
+    @model function beta_model2(y)
         θ ~ Beta(8.0, 4.0)
-
-        for i in 1:n
+        for i in eachindex(y)
             y[i] ~ Bernoulli(θ)
         end
-
-        return y, θ
     end
 
-    @model function beta_mixture_model(n)
-        y = datavar(Float64, n)
-
+    @model function beta_mixture_model(y)
         selector ~ Bernoulli(0.7)
-
         in1 ~ Beta(4.0, 8.0)
         in2 ~ Beta(8.0, 4.0)
-
-        θ ~ Mixture(selector, (in1, in2))
-
-        for i in 1:n
+        θ ~ Mixture(switch = selector, inputs = [in1, in2])
+        for i in eachindex(y)
             y[i] ~ Bernoulli(θ)
         end
-
-        return y, θ
     end
     @testset "Check inference results" begin
         ## -------------------------------------------- ##
@@ -62,12 +45,11 @@
 
         ## -------------------------------------------- ##
         ## Inference execution
-        result1 = infer(model = beta_model1(length(dataset)), data = (y = dataset,), returnvars = (θ = KeepLast(),), free_energy = true, addons = AddonLogScale())
-
-        result2 = infer(model = beta_model2(length(dataset)), data = (y = dataset,), returnvars = (θ = KeepLast(),), free_energy = true, addons = AddonLogScale())
+        result1 = infer(model = beta_model1(), data = (y = dataset,), returnvars = (θ = KeepLast(),), free_energy = true, addons = AddonLogScale())
+        result2 = infer(model = beta_model2(), data = (y = dataset,), returnvars = (θ = KeepLast(),), free_energy = true, addons = AddonLogScale())
 
         resultswitch = infer(
-            model = beta_mixture_model(length(dataset)),
+            model = beta_mixture_model(),
             data = (y = dataset,),
             returnvars = (θ = KeepLast(), in1 = KeepLast(), in2 = KeepLast(), selector = KeepLast()),
             addons = AddonLogScale()
