@@ -4,7 +4,7 @@
     # `include(test/utiltests.jl)`
     include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
-    @model function univariate_gaussian_mixture_model(n)
+    @model function univariate_gaussian_mixture_model(y)
         s ~ Beta(1.0, 1.0)
 
         m1 ~ Normal(mean = -2.0, variance = 1e3)
@@ -13,18 +13,15 @@
         m2 ~ Normal(mean = 2.0, variance = 1e3)
         w2 ~ Gamma(shape = 0.01, rate = 0.01)
 
-        z = randomvar(n)
-        y = datavar(Float64, n)
-
-        for i in 1:n
+        for i in eachindex(y)
             z[i] ~ Bernoulli(s)
-            y[i] ~ NormalMixture(z[i], (m1, m2), (w1, w2))
+            y[i] ~ NormalMixture(switch = z[i], m = [m1, m2], p = [w1, w2])
         end
     end
 
     function inference_univariate(data, n_its, constraints)
         return infer(
-            model         = univariate_gaussian_mixture_model(length(data)),
+            model         = univariate_gaussian_mixture_model(),
             data          = (y = data,),
             constraints   = constraints,
             returnvars    = KeepEach(),
@@ -57,7 +54,7 @@
 
     ## Inference execution
     constraints = @constraints begin
-        q(z, s, m1, m2, w1, w2) = q(z)q(s)q(m1)q(w1)q(m2)q(w2)
+        q(z, s, m1, m2, w1, w2) = q(z)q(s)q(m1)q(m2)q(w1)q(w2)
     end
 
     # Execute inference for different constraints specifications

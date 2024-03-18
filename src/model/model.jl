@@ -4,7 +4,7 @@ export getoptions, getconstraints, getmeta
 export getnodes, getvariables, getrandom, getconstant, getdata
 
 import Base: push!, show, getindex, haskey, firstindex, lastindex
-import ReactiveMP: get_pipeline_stages, getaddons, AbstractFactorNode
+import ReactiveMP: getaddons, AbstractFactorNode
 import Rocket: getscheduler
 
 struct ProbabilisticModel{M}
