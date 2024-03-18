@@ -465,7 +465,7 @@
         # But it would be nice to support this case too
         @test_throws ErrorException ReactiveMP.resolve_factorisation(cs, getvariables(model), TestFactorisationStochastic, (d, z))
         # Deterministic node should ignore `resolve_factorisation` and multiple proxy vars
-        @test ReactiveMP.resolve_factorisation(cs, getvariables(model), TestFactorisationDeterministic, (d, z)) == FullFactorisation()
+        @test ReactiveMP.resolve_factorisation(cs, getvariables(model), TestFactorisationDeterministic, (d, z)) == BetheFactorisation()
     end
 
     ## Warning testing below

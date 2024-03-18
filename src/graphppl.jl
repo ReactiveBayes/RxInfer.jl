@@ -222,7 +222,9 @@ function write_fconstraint_option(form, variables, fconstraint)
     elseif @capture(fconstraint, MeanField())
         return :(ReactiveMP.MeanField())
     elseif @capture(fconstraint, FullFactorisation())
-        return :(ReactiveMP.FullFactorisation())
+        return :(ReactiveMP.BetheFactorisation())
+    elseif @capture(fconstraint, BetheFactorisation())
+        return :(ReactiveMP.BetheFactorisation())
     else
         error("Invalid factorisation constraint: $fconstraint")
     end
