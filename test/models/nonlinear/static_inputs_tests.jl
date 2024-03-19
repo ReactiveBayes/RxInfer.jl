@@ -2,10 +2,7 @@
     using Test, InteractiveUtils
     using RxInfer, BenchmarkTools, Random, Plots, LinearAlgebra, StableRNGs
 
-    # `include(test/utiltests.jl)`
     include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
-
-    # Please use StableRNGs for random number generators
 
     ## Model definition
     ## -------------------------------------------- ##
@@ -14,50 +11,24 @@
         return x .+ θ
     end
 
-    @model function delta_2inputs_θ_datavar_fixed(meta)
-        y2 = datavar(Float64)
-        c = zeros(2)
-        c[1] = 1.0
-
-        θ = datavar(Vector{Float64})
-        x ~ MvNormal(μ = zeros(2), Λ = diageye(2))
-        z ~ f₂(x, θ) where {meta = meta}
-        y1 ~ Normal(μ = dot(z, c), σ² = 1.0)
-        y2 ~ Normal(μ = y1, σ² = 0.5)
-    end
-
-    @model function delta_2inputs_θ_constvar_fixed(meta, θ)
-        y2 = datavar(Float64)
+    @model function delta_2inputs_θ_fixed(meta, θ, y)
         c = zeros(2)
         c[1] = 1.0
 
         x ~ MvNormal(μ = zeros(2), Λ = diageye(2))
         z ~ f₂(x, θ) where {meta = meta}
-        y1 ~ Normal(μ = dot(z, c), σ² = 1.0)
-        y2 ~ Normal(μ = y1, σ² = 0.5)
+        w ~ Normal(μ = dot(z, c), σ² = 1.0)
+        y ~ Normal(μ = w, σ² = 0.5)
     end
 
-    @model function delta_2inputs_x_datavar_fixed(meta)
-        y2 = datavar(Float64)
-        c = zeros(2)
-        c[1] = 1.0
-
-        θ ~ MvNormal(μ = ones(2), Λ = diageye(2))
-        x = datavar(Vector{Float64})
-        z ~ f₂(x, θ) where {meta = meta}
-        y1 ~ Normal(μ = dot(z, c), σ² = 1.0)
-        y2 ~ Normal(μ = y1, σ² = 0.5)
-    end
-
-    @model function delta_2inputs_x_constvar_fixed(meta, x)
-        y2 = datavar(Float64)
+    @model function delta_2inputs_x_fixed(meta, x, y)
         c = zeros(2)
         c[1] = 1.0
 
         θ ~ MvNormal(μ = ones(2), Λ = diageye(2))
         z ~ f₂(x, θ) where {meta = meta}
-        y1 ~ Normal(μ = dot(z, c), σ² = 1.0)
-        y2 ~ Normal(μ = y1, σ² = 0.5)
+        w ~ Normal(μ = dot(z, c), σ² = 1.0)
+        y ~ Normal(μ = w, σ² = 0.5)
     end
 
     ## -------------------------------------------- ##
@@ -68,11 +39,11 @@
         metas = (DeltaMeta(method = Linearization()), DeltaMeta(method = Unscented()), Linearization(), Unscented())
 
         datavar_based = map(metas) do meta
-            return inference(model = delta_2inputs_θ_datavar_fixed(meta), data = (y2 = data, θ = θ), free_energy = true)
+            return infer(model = delta_2inputs_θ_fixed(meta = meta), data = (y = data, θ = θ), free_energy = true)
         end
 
         constvar_based = map(metas) do meta
-            return inference(model = delta_2inputs_θ_constvar_fixed(meta, θ), data = (y2 = data,), free_energy = true)
+            return infer(model = delta_2inputs_θ_fixed(meta = meta, θ = θ), data = (y = data,), free_energy = true)
         end
 
         foreach(zip(datavar_based, constvar_based)) do (d, c)
@@ -88,11 +59,11 @@
         metas = (DeltaMeta(method = Linearization()), DeltaMeta(method = Unscented()), Linearization(), Unscented())
 
         datavar_based = map(metas) do meta
-            return inference(model = delta_2inputs_x_datavar_fixed(meta), data = (y2 = data, x = x), free_energy = true)
+            return infer(model = delta_2inputs_x_fixed(meta = meta), data = (y = data, x = x), free_energy = true)
         end
 
         constvar_based = map(metas) do meta
-            return inference(model = delta_2inputs_x_constvar_fixed(meta, x), data = (y2 = data,), free_energy = true)
+            return infer(model = delta_2inputs_x_fixed(meta = meta, x = x), data = (y = data,), free_energy = true)
         end
 
         foreach(zip(datavar_based, constvar_based)) do (d, c)
