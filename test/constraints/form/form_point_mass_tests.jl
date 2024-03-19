@@ -106,4 +106,27 @@
             @test isapprox(mode(opt), mode(analytical), atol = 1e-4)
         end
     end
+
+    @model function beta_bernoulli(y, prior)
+        θ ~ prior
+        for i in eachindex(y)
+            y[i] ~ Bernoulli(θ)
+        end
+    end
+
+    @testset "Application within a simple model" begin
+        using StableRNGs
+        using Distributions
+
+        constraints = @constraints begin
+            q(θ)::PointMassFormConstraint(starting_point = (args...) -> [0.5])
+        end
+
+        for p in [0.25, 0.5, 0.75], prior in [Beta(2.0, 2.0), Truncated(Normal(0.5, 1.0), 0.0, 1.0), Truncated(Gamma(10.0, 10.0), 0.0, 1.0)]
+            dataset = float.(rand(StableRNG(42), Bernoulli(p), 500))
+            result = infer(model = beta_bernoulli(prior = prior), data = (y = dataset,), constraints = constraints)
+            @test result.posteriors[:θ] isa PointMass
+            @test mean(result.posteriors[:θ]) ≈ p atol = 1e-1
+        end
+    end
 end

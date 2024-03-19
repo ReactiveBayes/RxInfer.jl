@@ -133,8 +133,16 @@ function activate_rmp_variable!(plugin::ReactiveMPInferencePlugin, model::Model,
         # TODO: (bvdmitri) simplify code
         messages_prod_strategy = hasextra(nodedata, :message_prod_strategy) ? getextra(nodedata, :message_prod_strategy) : ReactiveMP.FoldLeftProdStrategy()
         marginal_prod_strategy = hasextra(nodedata, :marginal_prod_strategy) ? getextra(nodedata, :marginal_prod_strategy) : ReactiveMP.FoldLeftProdStrategy()
-        messages_form_constraint = hasextra(nodedata, :message_form_constraint) ? getextra(nodedata, :message_form_constraint) : ReactiveMP.UnspecifiedFormConstraint()
-        marginal_form_constraint = hasextra(nodedata, :posterior_form_constraint) ? getextra(nodedata, :posterior_form_constraint) : ReactiveMP.UnspecifiedFormConstraint()
+        messages_form_constraint = if hasextra(nodedata, GraphPPL.VariationalConstraintsMessagesFormConstraintKey)
+            getextra(nodedata, GraphPPL.VariationalConstraintsMessagesFormConstraintKey)
+        else
+            ReactiveMP.UnspecifiedFormConstraint()
+        end
+        marginal_form_constraint = if hasextra(nodedata, GraphPPL.VariationalConstraintsMarginalFormConstraintKey)
+            getextra(nodedata, GraphPPL.VariationalConstraintsMarginalFormConstraintKey)
+        else
+            ReactiveMP.UnspecifiedFormConstraint()
+        end
         messages_prod_constraint = ReactiveMP.default_prod_constraint(messages_form_constraint)
         marginal_prod_constraint = ReactiveMP.default_prod_constraint(marginal_form_constraint)
         messages_form_check_strategy = ReactiveMP.default_form_check_strategy(messages_form_constraint)
