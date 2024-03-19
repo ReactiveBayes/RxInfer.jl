@@ -33,8 +33,10 @@
     )
 
     results = map(metas) do meta
-        return inference(model = delta_1input(meta = meta), data = (y = 1.0,), free_energy = true)
+        return infer(model = delta_1input(meta = meta), data = (y = 1.0,), free_energy = true)
     end
+
+    @test all(result -> result isa RxInfer.InferenceResult, results)
 end
 
 @testitem "Nonlinear models: generic applicability" begin
