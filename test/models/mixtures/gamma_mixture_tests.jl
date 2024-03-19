@@ -1,4 +1,4 @@
-@testitem "Model mixture" begin
+@testitem "Gamma mixture model" begin
     using Distributions
     using BenchmarkTools, LinearAlgebra, StableRNGs, Plots
 
