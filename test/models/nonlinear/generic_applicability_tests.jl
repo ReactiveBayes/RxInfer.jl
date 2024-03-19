@@ -1,15 +1,7 @@
-@testitem "Nonlinear models: generic applicability" begin
-    using BenchmarkTools, Random, Plots, LinearAlgebra, StableRNGs
-
-    # `include(test/utiltests.jl)`
+@testitem "Nonlinear models: single univariate input - single univariate output" begin
     include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
-    # Please use StableRNGs for random number generators
-
-    ## Model definition
-    ## -------------------------------------------- ##
-
-    # We test that the function can depend on a global variable
+    # As a bonus we test that the function can depend on a global variable
     # A particular value does not matter here, only the fact that it runs
     globalvar = 0
 
@@ -21,16 +13,36 @@
         return x .^ 2
     end
 
-    @model function delta_1input(meta)
-        y2 = datavar(Float64)
+    @model function delta_1input(y, meta)
         c = zeros(2)
         c[1] = 1.0
-
         x ~ MvNormal(μ = ones(2), Λ = diageye(2))
         z ~ f₁(x) where {meta = meta}
-        y1 ~ Normal(μ = dot(z, c), σ² = 1.0)
-        y2 ~ Normal(μ = y1, σ² = 0.5)
+        θ ~ Normal(μ = dot(z, c), σ² = 1.0)
+        y ~ Normal(μ = θ, σ² = 0.5)
     end
+
+    # We test here different approximation methods
+    metas = (
+        DeltaMeta(method = Linearization(), inverse = f₁_inv),
+        DeltaMeta(method = Unscented(), inverse = f₁_inv),
+        DeltaMeta(method = Linearization()),
+        DeltaMeta(method = Unscented()),
+        Linearization(),
+        Unscented()
+    )
+
+    results = map(metas) do meta
+        return inference(model = delta_1input(meta = meta), data = (y = 1.0,), free_energy = true)
+    end
+end
+
+@testitem "Nonlinear models: generic applicability" begin
+    using BenchmarkTools, Random, Plots, LinearAlgebra, StableRNGs
+
+    include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
+
+    # Please use StableRNGs for random number generators
 
     function f₂(x, θ)
         return x .+ θ

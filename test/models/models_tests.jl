@@ -136,3 +136,19 @@ end
         end
     end
 end
+
+@testitem "Unknown object in the model specification should throw a user-friendly error" begin
+    struct SomeArbitraryDistribution
+        a::Float64
+        b::Float64
+    end
+
+    @model function a_model_with_unknown_distribution(y)
+        θ ~ SomeArbitraryDistribution(1.0, 2.0)
+        for i in eachindex(y)
+            y[i] ~ Bernoulli(θ)
+        end
+    end
+
+    @test_throws "`$(SomeArbitraryDistribution)` cannot be used as a factor node" infer(model = a_model_with_unknown_distribution(), data = (y = ones(3),)).posteriors[:θ]
+end
