@@ -130,23 +130,25 @@ end
 
 function activate_rmp_variable!(plugin::ReactiveMPInferencePlugin, model::Model, nodedata::NodeData, nodeproperties::VariableNodeProperties)
     if is_random(nodeproperties)
-        # TODO: (bvdmitri) simplify code
-        messages_prod_strategy = hasextra(nodedata, :message_prod_strategy) ? getextra(nodedata, :message_prod_strategy) : ReactiveMP.FoldLeftProdStrategy()
-        marginal_prod_strategy = hasextra(nodedata, :marginal_prod_strategy) ? getextra(nodedata, :marginal_prod_strategy) : ReactiveMP.FoldLeftProdStrategy()
-        messages_form_constraint = if hasextra(nodedata, GraphPPL.VariationalConstraintsMessagesFormConstraintKey)
-            getextra(nodedata, GraphPPL.VariationalConstraintsMessagesFormConstraintKey)
-        else
-            ReactiveMP.UnspecifiedFormConstraint()
-        end
-        marginal_form_constraint = if hasextra(nodedata, GraphPPL.VariationalConstraintsMarginalFormConstraintKey)
-            getextra(nodedata, GraphPPL.VariationalConstraintsMarginalFormConstraintKey)
-        else
-            ReactiveMP.UnspecifiedFormConstraint()
-        end
-        messages_prod_constraint = ReactiveMP.default_prod_constraint(messages_form_constraint)
-        marginal_prod_constraint = ReactiveMP.default_prod_constraint(marginal_form_constraint)
-        messages_form_check_strategy = ReactiveMP.default_form_check_strategy(messages_form_constraint)
-        marginal_form_check_strategy = ReactiveMP.default_form_check_strategy(marginal_form_constraint)
+        # Fetch "prod-strategy" for messages and marginals. The prod-strategy usually defines the order of messages multiplication (left-to-right)
+        # But can use some custom logic for product, e.g. parallel products
+        messages_prod_strategy = getextra(nodedata, :messages_prod_strategy, ReactiveMP.FoldLeftProdStrategy())
+        marginal_prod_strategy = getextra(nodedata, :marginal_prod_strategy, ReactiveMP.FoldLeftProdStrategy())
+        # Fetch "form-constraint" for messages and marginals. The form-constraint usually defines the form of the resulting distribution
+        # By default it is `UnspecifiedFormConstraint` which means that the form of the resulting distribution is not specified in advance
+        # and follows from the computation, but users may override it with other form constraints, e.g. `PointMassFormConstraint`, which
+        # constraints the resulting distribution to be of a point mass form
+        messages_form_constraint = getextra(nodedata, GraphPPL.VariationalConstraintsMessagesFormConstraintKey, ReactiveMP.UnspecifiedFormConstraint())
+        marginal_form_constraint = getextra(nodedata, GraphPPL.VariationalConstraintsMarginalFormConstraintKey, ReactiveMP.UnspecifiedFormConstraint())
+        # Fetch "prod-constraint" for messages and marginals. The prod-constraint usually defines the constraints for a single product of messages
+        # It can for example preserve a specific parametrization of distribution 
+        messages_prod_constraint = getextra(nodedata, :messages_prod_constraint, ReactiveMP.default_prod_constraint(messages_form_constraint))
+        marginal_prod_constraint = getextra(nodedata, :marginal_prod_constraint, ReactiveMP.default_prod_constraint(marginal_form_constraint))
+        # Fetch "form-check-strategy" for messages and marginals. The form-check-strategy usually defines the strategy for checking the form of the resulting distribution
+        # The functional form constraint can be applied either after all products are computed or after each product
+        messages_form_check_strategy = getextra(nodedata, :messages_form_check_strategy, ReactiveMP.default_form_check_strategy(messages_form_constraint))
+        marginal_form_check_strategy = getextra(nodedata, :marginal_form_check_strategy, ReactiveMP.default_form_check_strategy(marginal_form_constraint))
+        # Create the activation options for the random variable which consists of the messages and marginal product functions and a scheduler
         messages_prod_fn = ReactiveMP.messages_prod_fn(messages_prod_strategy, messages_prod_constraint, messages_form_constraint, messages_form_check_strategy)
         marginal_prod_fn = ReactiveMP.marginal_prod_fn(marginal_prod_strategy, marginal_prod_constraint, marginal_form_constraint, marginal_form_check_strategy)
         options = ReactiveMP.RandomVariableActivationOptions(Rocket.getscheduler(getoptions(plugin)), messages_prod_fn, marginal_prod_fn)
