@@ -1,4 +1,4 @@
-@testitem "Non linear dynamics" begin
+@testitem "Non linear dynamics with the CVI algorithm" begin
     using Distributions
     using BenchmarkTools, Plots, StableRNGs, Optimisers, Random, Dates
 
@@ -16,25 +16,19 @@
         (z - sensor_location)^2
     end
 
-    @model function non_linear_dynamics(T)
-        z = randomvar(T)
-        x = randomvar(T)
-        y = datavar(Float64, T)
+    @model function non_linear_dynamics(y)
+        τ ~ GammaShapeRate(shape = 1.0, rate = 1.0e-12)
+        θ ~ GammaShapeRate(shape = 1.0, rate = 1.0e-12)
 
-        τ ~ GammaShapeRate(1.0, 1.0e-12)
-        θ ~ GammaShapeRate(1.0, 1.0e-12)
+        z[1] ~ Normal(mean = 0, precision = τ)
+        x[1] := f(z[1])
+        y[1] ~ Normal(mean = x[1], precision = θ)
 
-        z[1] ~ NormalMeanPrecision(0, τ)
-        x[1] ~ f(z[1])
-        y[1] ~ NormalMeanPrecision(x[1], θ)
-
-        for t in 2:T
-            z[t] ~ NormalMeanPrecision(z[t - 1] + 1, τ)
-            x[t] ~ f(z[t])
-            y[t] ~ NormalMeanPrecision(x[t], θ)
+        for t in 2:length(y)
+            z[t] ~ Normal(mean = z[t - 1] + 1, precision = τ)
+            x[t] := f(z[t])
+            y[t] ~ Normal(mean = x[t], precision = θ)
         end
-
-        return z, x, y
     end
 
     constraints = @constraints begin
@@ -45,14 +39,9 @@
         f() -> CVI(rng, n_iterations, n_samples, Optimisers.Descent(learning_rate))
     end
 
-    ## -------------------------------------------- ##
-    ## Inference definition
-    ## -------------------------------------------- ##
     function inference_cvi(transformed, rng, iterations)
-        T = length(transformed)
-
         return infer(
-            model = non_linear_dynamics(T),
+            model = non_linear_dynamics(),
             data = (y = transformed,),
             iterations = iterations,
             free_energy = true,
@@ -64,59 +53,42 @@
         )
     end
 
-    @testset "Use case #1" begin
-        ## -------------------------------------------- ##
-        ## Data creation
-        ## -------------------------------------------- ##
-        seed = 123
+    seed = 123
+    rng = MersenneTwister(seed)
+    T = 50
 
-        rng = MersenneTwister(seed)
+    sensor_location = 53
 
-        # For large `n` apply: smoothing(model_options(limit_stack_depth = 500), ...)
-        T = 50
+    hidden = collect(1:T)
+    data = (hidden + rand(rng, NormalMeanVariance(0.0, sqrt(P)), T))
+    transformed = (data .- sensor_location) .^ 2 + rand(rng, NormalMeanVariance(0.0, sensor_var), T)
+    ## -------------------------------------------- ##
+    ## Inference execution
+    res = inference_cvi(transformed, rng, 110)
+    ## -------------------------------------------- ##
+    mz = res.posteriors[:z]
+    fe = res.free_energy
+    @test length(res.posteriors[:z]) === T
+    @test all(mean.(mz) .- 6 .* std.(mz) .< hidden .< (mean.(mz) .+ 6 .* std.(mz)))
+    @test (sum((mean.(mz) .- 4 .* std.(mz)) .< hidden .< (mean.(mz) .+ 4 .* std.(mz))) / T) > 0.95
+    @test (sum((mean.(mz) .- 3 .* std.(mz)) .< hidden .< (mean.(mz) .+ 3 .* std.(mz))) / T) > 0.90
 
-        sensor_location = 53
+    # Free energy for the CVI may fluctuate
+    @test all(d -> d < 1.0, diff(fe)[5:end]) # Check that the fluctuations are not big
+    @test abs(last(fe) - 363) < 1.0          # Check the final result with relatively low precision
+    @test (first(fe) - last(fe)) > 0
 
-        hidden = collect(1:T)
-        data = (hidden + rand(rng, NormalMeanVariance(0.0, sqrt(P)), T))
-        transformed = (data .- sensor_location) .^ 2 + rand(rng, NormalMeanVariance(0.0, sensor_var), T)
-        ## -------------------------------------------- ##
-        ## Inference execution
-        res = inference_cvi(transformed, rng, 110)
-        ## -------------------------------------------- ##
-        ## Test inference results should be there
-        ## -------------------------------------------- ##
-        mz = res.posteriors[:z]
-        fe = res.free_energy
-        @test length(res.posteriors[:z]) === T
-        @test all(mean.(mz) .- 6 .* std.(mz) .< hidden .< (mean.(mz) .+ 6 .* std.(mz)))
-        @test (sum((mean.(mz) .- 4 .* std.(mz)) .< hidden .< (mean.(mz) .+ 4 .* std.(mz))) / T) > 0.95
-        @test (sum((mean.(mz) .- 3 .* std.(mz)) .< hidden .< (mean.(mz) .+ 3 .* std.(mz))) / T) > 0.90
+    ## Create output plots
+    @test_plot "models" "cvi" begin
+        px = plot()
 
-        # Free energy for the CVI may fluctuate
-        @test all(d -> d < 1.0, diff(fe)[5:end]) # Check that the fluctuations are not big
-        @test abs(last(fe) - 363) < 1.0          # Check the final result with relatively low precision
+        px = plot!(px, hidden, label = "Hidden Signal", color = :red)
+        px = plot!(px, map(mean, res.posteriors[:z]), label = "Estimated signal location", color = :orange)
+        px = plot!(px, map(mean, res.posteriors[:z]), ribbon = (9 .* var.(res.posteriors[:z])) .|> sqrt, fillalpha = 0.5, label = "Estimated Signal confidence", color = :blue)
+        pf = plot(fe, label = "Bethe Free Energy")
 
-        @test (first(fe) - last(fe)) > 0
-        ## Form debug output
-        base_output = joinpath(pwd(), "_output", "models")
-        mkpath(base_output)
-        timestamp        = Dates.format(now(), "dd-mm-yyyy-HH-MM")
-        plot_output      = joinpath(base_output, "cvi_plot_$(timestamp)_v$(VERSION).png")
-        benchmark_output = joinpath(base_output, "non_linear_dynamics_$(timestamp)_v$(VERSION).txt")
-
-        ## Create output plots
-        @test_plot "models" "cvi" begin
-            px = plot()
-
-            px = plot!(px, hidden, label = "Hidden Signal", color = :red)
-            px = plot!(px, map(mean, res.posteriors[:z]), label = "Estimated signal location", color = :orange)
-            px = plot!(px, map(mean, res.posteriors[:z]), ribbon = (9 .* var.(res.posteriors[:z])) .|> sqrt, fillalpha = 0.5, label = "Estimated Signal confidence", color = :blue)
-            pf = plot(fe, label = "Bethe Free Energy")
-
-            return plot(px, pf, layout = @layout([a; b]))
-        end
-
-        @test_benchmark "models" "cvi" inference_cvi($transformed, $rng, 110)
+        return plot(px, pf, layout = @layout([a; b]))
     end
+
+    @test_benchmark "models" "cvi" inference_cvi($transformed, $rng, 110)
 end

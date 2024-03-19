@@ -17,7 +17,7 @@
         c = zeros(2)
         c[1] = 1.0
         x ~ MvNormal(μ = ones(2), Λ = diageye(2))
-        z ~ f₁(x) where {meta = meta}
+        z := f₁(x) where {meta = meta}
         θ ~ Normal(μ = dot(z, c), σ² = 1.0)
         y ~ Normal(μ = θ, σ² = 0.5)
     end
@@ -61,7 +61,7 @@ end
 
         θ ~ MvNormal(μ = ones(2), Λ = diageye(2))
         x ~ MvNormal(μ = zeros(2), Λ = diageye(2))
-        z ~ f₂(x, θ) where {meta = meta}
+        z := f₂(x, θ) where {meta = meta}
         w ~ Normal(μ = dot(z, c), σ² = 1.0)
         y ~ Normal(μ = w, σ² = 0.5)
     end
@@ -97,7 +97,7 @@ end
         θ ~ MvNormal(μ = ones(2), Λ = diageye(2))
         ζ ~ MvNormal(μ = 0.5ones(2), Λ = diageye(2))
         x ~ MvNormal(μ = zeros(2), Λ = diageye(2))
-        z ~ f₃(x, θ, ζ) where {meta = meta}
+        z := f₃(x, θ, ζ) where {meta = meta}
         w ~ Normal(μ = dot(z, c), σ² = 1.0)
         y ~ Normal(μ = w, σ² = 0.5)
     end
@@ -125,7 +125,7 @@ end
 
         θ ~ Normal(μ = 0.5, γ = 1.0)
         x ~ MvNormal(μ = zeros(2), Λ = diageye(2))
-        z ~ f₄(x, θ) where {meta = meta}
+        z := f₄(x, θ) where {meta = meta}
         w ~ Normal(μ = dot(z, c), σ² = 1.0)
         y ~ Normal(μ = w, σ² = 0.5)
     end
