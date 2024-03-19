@@ -1,4 +1,4 @@
-@testitem "Nonlinear models: single univariate input - single univariate output" begin
+@testitem "Nonlinear models: single multivariate input - single multivariate output" begin
     include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
     # As a bonus we test that the function can depend on a global variable
