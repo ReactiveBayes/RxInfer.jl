@@ -17,8 +17,8 @@
     end
 
     @model function non_linear_dynamics(y)
-        τ ~ GammaShapeRate(shape = 1.0, rate = 1.0e-12)
-        θ ~ GammaShapeRate(shape = 1.0, rate = 1.0e-12)
+        τ ~ Gamma(shape = 1.0, rate = 1.0e-12)
+        θ ~ Gamma(shape = 1.0, rate = 1.0e-12)
 
         z[1] ~ Normal(mean = 0, precision = τ)
         x[1] := f(z[1])
