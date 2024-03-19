@@ -68,9 +68,9 @@
         @testset "Default functional dependencies" begin
             import ReactiveMP: DefaultFunctionalDependencies
 
-            @testset "Default functional dependencies: FullFactorisation" begin
-                # We test `FullFactorisation` case here
-                m, x, y, z, node = make_dummy_model(FullFactorisation(), DefaultFunctionalDependencies())
+            @testset "Default functional dependencies: BetheFactorisation" begin
+                # We test `BetheFactorisation` case here
+                m, x, y, z, node = make_dummy_model(BetheFactorisation(), DefaultFunctionalDependencies())
 
                 # Test that pipeline dependencies have been set properly
                 @test ReactiveMP.get_pipeline_dependencies(ReactiveMP.getpipeline(node)) === DefaultFunctionalDependencies()
@@ -187,12 +187,12 @@
         @testset "Require inbound message functional dependencies" begin
             import ReactiveMP: RequireMessageFunctionalDependencies
 
-            @testset "Require inbound message functional dependencies: FullFactorisation" begin
+            @testset "Require inbound message functional dependencies: BetheFactorisation" begin
                 # Require inbound message on `x`
                 pipeline = RequireMessageFunctionalDependencies((1,), (NormalMeanVariance(0.123, 0.123),))
 
-                # We test `FullFactorisation` case here
-                m, x, y, z, node = make_dummy_model(FullFactorisation(), pipeline)
+                # We test `BetheFactorisation` case here
+                m, x, y, z, node = make_dummy_model(BetheFactorisation(), pipeline)
 
                 # Test that pipeline dependencies have been set properly
                 @test ReactiveMP.get_pipeline_dependencies(ReactiveMP.getpipeline(node)) === pipeline
@@ -218,8 +218,8 @@
                 # Require inbound message on `y` and `z`
                 pipeline = RequireMessageFunctionalDependencies((2, 3), (NormalMeanVariance(0.123, 0.123), nothing))
 
-                # We test `FullFactorisation` case here
-                m, x, y, z, node = make_dummy_model(FullFactorisation(), pipeline)
+                # We test `BetheFactorisation` case here
+                m, x, y, z, node = make_dummy_model(BetheFactorisation(), pipeline)
 
                 # Test that pipeline dependencies have been set properly
                 @test ReactiveMP.get_pipeline_dependencies(ReactiveMP.getpipeline(node)) === pipeline
@@ -385,12 +385,12 @@
         @testset "Require marginal functional dependencies" begin
             import ReactiveMP: RequireMarginalFunctionalDependencies
 
-            @testset "Require marginal functional dependencies: FullFactorisation" begin
+            @testset "Require marginal functional dependencies: BetheFactorisation" begin
                 # Require marginal on `x`
                 pipeline = RequireMarginalFunctionalDependencies((1,), (NormalMeanVariance(0.123, 0.123),))
 
-                # We test `FullFactorisation` case here
-                m, x, y, z, node = make_dummy_model(FullFactorisation(), pipeline)
+                # We test `BetheFactorisation` case here
+                m, x, y, z, node = make_dummy_model(BetheFactorisation(), pipeline)
 
                 # Test that pipeline dependencies have been set properly
                 @test ReactiveMP.get_pipeline_dependencies(ReactiveMP.getpipeline(node)) === pipeline
@@ -416,8 +416,8 @@
                 # Require marginals on `y` and `z`
                 pipeline = RequireMarginalFunctionalDependencies((2, 3), (NormalMeanVariance(0.123, 0.123), nothing))
 
-                # We test `FullFactorisation` case here
-                m, x, y, z, node = make_dummy_model(FullFactorisation(), pipeline)
+                # We test `BetheFactorisation` case here
+                m, x, y, z, node = make_dummy_model(BetheFactorisation(), pipeline)
 
                 # Test that pipeline dependencies have been set properly
                 @test ReactiveMP.get_pipeline_dependencies(ReactiveMP.getpipeline(node)) === pipeline
@@ -583,11 +583,11 @@
         @testset "Require everything functional dependencies" begin
             import ReactiveMP: RequireEverythingFunctionalDependencies
 
-            @testset "Require everything functional dependencies: FullFactorisation" begin
+            @testset "Require everything functional dependencies: BetheFactorisation" begin
                 pipeline = RequireEverythingFunctionalDependencies()
 
-                # We test `FullFactorisation` case here
-                m, x, y, z, node = make_dummy_model(FullFactorisation(), pipeline)
+                # We test `BetheFactorisation` case here
+                m, x, y, z, node = make_dummy_model(BetheFactorisation(), pipeline)
 
                 # Test that pipeline dependencies have been set properly
                 @test ReactiveMP.get_pipeline_dependencies(ReactiveMP.getpipeline(node)) === pipeline

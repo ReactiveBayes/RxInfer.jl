@@ -85,7 +85,7 @@ m_n_updates = getmarginals(m_n)
 
 ## [Feeding observations](@id user-guide-manual-inference-observations)
 
-By default (without any extra factorisation constraints) model specification implies Belief Propagation message passing update rules. In case of BP algorithm `RxInfer` package computes an exact Bayesian posteriors with a single message passing iteration. To enforce Belief Propagation message passing update rule for some specific factor node user may use `where { q = FullFactorisation() }` option. Read more in [Model Specification](@ref user-guide-model-specification) section. To perform a message passing iteration we need to pass some data to all our data inputs that were created with [`datavar` function](@ref user-guide-model-specification-data-variables) during model specification.
+By default (without any extra factorisation constraints) model specification implies Belief Propagation message passing update rules. In case of BP algorithm `RxInfer` package computes an exact Bayesian posteriors with a single message passing iteration. To enforce Belief Propagation message passing update rule for some specific factor node user may use `where { q = BetheFactorisation() }` option. Read more in [Model Specification](@ref user-guide-model-specification) section. To perform a message passing iteration we need to pass some data to all our data inputs that were created with [`datavar` function](@ref user-guide-model-specification-data-variables) during model specification.
 
 To feed an observation for a specific data input we use `update!` function:
 
