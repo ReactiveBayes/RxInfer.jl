@@ -83,7 +83,22 @@ const ReactiveMPExtraPipelineKey = GraphPPL.NodeDataExtraKey{:pipeline, Reactive
 GraphPPL.plugin_type(::ReactiveMPInferencePlugin) = FactorAndVariableNodesPlugin()
 
 function GraphPPL.preprocess_plugin(plugin::ReactiveMPInferencePlugin, model::Model, context::Context, label::NodeLabel, nodedata::NodeData, options::NodeCreationOptions)
+    preprocess_plugin(plugin, nodedata, getproperties(nodedata), options)
     return label, nodedata
+end
+
+function GraphPPL.preprocess_plugin(plugin::ReactiveMPInferencePlugin, nodedata::NodeData, nodeproperties::VariableNodeProperties, options::NodeCreationOptions)
+    return nothing
+end
+
+function GraphPPL.preprocess_plugin(plugin::ReactiveMPInferencePlugin, nodedata::NodeData, nodeproperties::FactorNodeProperties, options::NodeCreationOptions)
+    if haskey(options, GraphPPL.getkey(ReactiveMPExtraDependenciesKey))
+        setextra!(nodedata, ReactiveMPExtraDependenciesKey, options[GraphPPL.getkey(ReactiveMPExtraDependenciesKey)])
+    end
+    if haskey(options, GraphPPL.getkey(ReactiveMPExtraPipelineKey))
+        setextra!(nodedata, ReactiveMPExtraPipelineKey, options[GraphPPL.getkey(ReactiveMPExtraPipelineKey)])
+    end
+    return nothing
 end
 
 function GraphPPL.postprocess_plugin(plugin::ReactiveMPInferencePlugin, model::Model)
@@ -173,9 +188,9 @@ function set_rmp_factornode!(plugin::ReactiveMPInferencePlugin, model::Model, no
 end
 
 function activate_rmp_factornode!(plugin::ReactiveMPInferencePlugin, model::Model, nodedata::NodeData, nodeproperties::FactorNodeProperties)
-    metadata = hasextra(nodedata, GraphPPL.MetaExtraKey) ? getextra(nodedata, GraphPPL.MetaExtraKey) : nothing
-    dependencies = hasextra(nodedata, ReactiveMPExtraDependenciesKey) ? getextra(nodedata, ReactiveMPExtraDependenciesKey) : nothing
-    pipeline = hasextra(nodedata, ReactiveMPExtraPipelineKey) ? getextra(nodedata, ReactiveMPExtraPipelineKey) : nothing
+    metadata = getextra(nodedata, GraphPPL.MetaExtraKey, nothing)
+    dependencies = getextra(nodedata, ReactiveMPExtraDependenciesKey, nothing)
+    pipeline = getextra(nodedata, ReactiveMPExtraPipelineKey, nothing)
 
     scheduler = getscheduler(getoptions(plugin))
     addons = getaddons(getoptions(plugin))

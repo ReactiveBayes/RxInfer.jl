@@ -48,8 +48,8 @@ function GraphPPL.postprocess_plugin(::ReactiveMPFreeEnergyPlugin, objective::Be
 
     factor_nodes(model) do _, node
         factornode = getextra(node, ReactiveMPExtraFactorNodeKey)
-        meta = hasextra(node, :meta) ? getextra(node, :meta) : nothing
-        bfe_stream = score(__as_counting_real_type(T), FactorBoundFreeEnergy(), factornode, meta, skip_strategy, scheduler)
+        metadata = getextra(node, GraphPPL.MetaExtraKey, nothing)
+        bfe_stream = score(__as_counting_real_type(T), FactorBoundFreeEnergy(), factornode, metadata, skip_strategy, scheduler)
         setextra!(node, ReactiveMPExtraBetheFreeEnergyStreamKey, bfe_stream)
     end
 
@@ -66,7 +66,6 @@ function GraphPPL.postprocess_plugin(::ReactiveMPFreeEnergyPlugin, objective::Be
 end
 
 function score(model::ProbabilisticModel, ::BetheFreeEnergy{T}, diagnostic_checks) where {T}
-
     node_bound_free_energies = map(getfactornodes(model)) do nodedata
         nodeproperties = getproperties(nodedata)::GraphPPL.FactorNodeProperties
         stream = getextra(nodedata, ReactiveMPExtraBetheFreeEnergyStreamKey)
