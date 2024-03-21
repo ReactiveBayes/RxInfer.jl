@@ -5,46 +5,30 @@
     include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
     ## Model definition
-    @model function sum_datavars_as_gaussian_mean_1()
-        a = datavar(Float64)
-        b = datavar(Float64)
-        y = datavar(Float64)
-
-        x ~ Normal(mean = a + b, variance = 1.0)
+    @model function sum_datavars_as_gaussian_mean_1(y, a, b)
+        x ~ Normal(mean = a + b, precision = 1.0)
         y ~ Normal(mean = x, variance = 1.0)
     end
 
-    @model function sum_datavars_as_gaussian_mean_2()
-        a = datavar(Float64)
-        b = datavar(Float64)
-        c = constvar(0.0) # Should not change the result
-        y = datavar(Float64)
-
+    @model function sum_datavars_as_gaussian_mean_2(y, a, b)
+        c = 0.0
         x ~ Normal(mean = (a + b) + c, variance = 1.0)
         y ~ Normal(mean = x, variance = 1.0)
     end
 
-    @model function ratio_datavars_as_gaussian_mean()
-        a = datavar(Float64)
-        b = datavar(Float64)
-        y = datavar(Float64)
-
+    @model function ratio_datavars_as_gaussian_mean(y, a, b)
         x ~ Normal(mean = a / b, variance = 1.0)
         y ~ Normal(mean = x, variance = 1.0)
     end
 
-    @model function idx_datavars_as_gaussian_mean()
-        a = datavar(Vector{Float64})
-        b = datavar(Matrix{Float64})
-        y = datavar(Float64)
-
+    @model function idx_datavars_as_gaussian_mean(y, a, b)
         x ~ Normal(mean = dot(a[1:2], b[1:2, 1]), variance = 1.0)
         y ~ Normal(mean = x, variance = 1.0)
     end
 
     # Inference function
     function fn_datavars_inference(modelfn, adata, bdata, ydata)
-        return infer(model = modelfn(), data = (a = adata, b = bdata, y = ydata), free_energy = true)
+        return infer(model = modelfn(), data = (a = adata, b = bdata, y = ydata), returnvars = (x = KeepLast(), ), free_energy = true)
     end
 
     adata = 2.0
