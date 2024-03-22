@@ -55,21 +55,64 @@
 
     # Double check for different values of `p`
     for p in (0.75, 0.5, 0.25), n in (5_000, 10_000)
-        local data_for_specific_p = float.(rand(StableRNG(123), Bernoulli(p), n)) 
+        local data_for_specific_p = float.(rand(StableRNG(123), Bernoulli(p), n))
 
         result_for_specific_p = infer(model = beta_bernoulli(a = 1.0, b = 1.0), data = (y = data_for_specific_p,))
         @test mean(result_for_specific_p.posteriors[:θ]) ≈ p atol = 1e-2
 
+        # Here we also double check the streaming version on this simple case
+        # In the test we keep a small history of the size `1` since we are only interested in the last value
+        # Additionally we subscribe on the posteriors to save the last value just to double check
         result_for_streaming_version = infer(
             model = beta_bernoulli_streaming(),
-            data = (y = data_for_specific_p,), 
+            data = (y = data_for_specific_p,),
             autoupdates = autoupdates,
-            initmarginals = (θ = Beta(1.0, 1.0), ),
+            initmarginals = (θ = Beta(1.0, 1.0),),
             keephistory = 1, # Only keep the last one
+            autostart = false
         )
+
+        streaming_saved_result = Ref{Any}(nothing)
+        streaming_analytical_i = Ref{Int}(0)
+        streaming_analytical_a = Ref{Float64}(1.0) # The prior is `Beta(1.0, 1.0)`
+        streaming_analytical_b = Ref{Float64}(1.0) # Thus we start with `a` and `b` equal to `1.0`
+        streaming_analytical_check = Ref{Bool}(true)
+        # During posteriors updates we double check that the result is consistent with the analytical solution
+        streaming_subscription = subscribe!(result_for_streaming_version.posteriors[:θ], (new_posterior) -> begin 
+            streaming_analytical_i[] = streaming_analytical_i[] + 1
+            streaming_analytical_observation = data_for_specific_p[streaming_analytical_i[]]
+
+            # We know the analytical solution for the Beta-Bernoulli model
+            # The `a` parameter should be incremented by `1` if the observation is `1`
+            # The `b` parameter should be incremented by `1` if the observation is `0`
+            streaming_analytical_a[] += isone(streaming_analytical_observation)
+            streaming_analytical_b[] += iszero(streaming_analytical_observation)
+
+            # We fetch the parameters of the posterior given from RxInfer inference engine
+            new_posterior_a, new_posterior_b = params(new_posterior)
+
+            if new_posterior_a !== streaming_analytical_a[] || new_posterior_b !== streaming_analytical_b[]
+                # If the intermediate result does not match the analytical solution we set the flag to `false`
+                # We avoid doing `@test` here since it generates hundreds of thousands of tests
+                streaming_analytical_check[] = false
+            end
+        
+            # Save for later checking
+            streaming_saved_result[] = new_posterior
+        end)
+
+        # `autostart` was set to false
+        @test streaming_saved_result[] === nothing
+        @test streaming_analytical_i[] === 0
+
+        RxInfer.start(result_for_streaming_version)
+
+        @test streaming_analytical_check[]
+        @test streaming_analytical_i[] === n
 
         # Test that the result is the same for the streaming version
         @test result_for_specific_p.posteriors[:θ] == result_for_streaming_version.history[:θ][1]
+        @test result_for_specific_p.posteriors[:θ] == streaming_saved_result[]
     end
 
     # In this model the result should not depend on the initial marginals or messages
