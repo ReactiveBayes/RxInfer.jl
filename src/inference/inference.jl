@@ -2,12 +2,10 @@ export KeepEach, KeepLast
 export DefaultPostprocess, UnpackMarginalPostprocess, NoopPostprocess
 export infer, inference, rxinference
 export InferenceResult
-export @autoupdates, RxInferenceEngine, RxInferenceEvent
+export RxInferenceEngine, RxInferenceEvent
 
 import DataStructures: CircularBuffer
 import GraphPPL: ModelGenerator, create_model
-
-using MacroTools # for `@autoupdates`
 
 import ReactiveMP: israndom, isdata, isconst, allows_missings
 import ReactiveMP: CountingReal
@@ -333,11 +331,7 @@ function __inference(;
 
     # We create a model with the `GraphPPL` package and insert a certain RxInfer related 
     # plugins which include the VI plugin, meta plugin and the ReactiveMP integration plugin
-    modelplugins = GraphPPL.PluginsCollection(
-        GraphPPL.VariationalConstraintsPlugin(constraints), 
-        GraphPPL.MetaPlugin(meta), 
-        RxInfer.ReactiveMPInferencePlugin(_options)
-    )
+    modelplugins = GraphPPL.PluginsCollection(GraphPPL.VariationalConstraintsPlugin(constraints), GraphPPL.MetaPlugin(meta), RxInfer.ReactiveMPInferencePlugin(_options))
 
     is_free_energy, S = unwrap_free_energy_option(free_energy)
 
@@ -554,180 +548,7 @@ function inference(; kwargs...)
     return infer(; kwargs...)
 end
 
-## ------------------------------------------------------------------------ ##
-
-struct FromMarginalAutoUpdate end
-struct FromMessageAutoUpdate end
-
-import Base: string
-
-Base.string(::FromMarginalAutoUpdate) = "q"
-Base.string(::FromMessageAutoUpdate) = "μ"
-
-import Base: fetch
-
-Base.fetch(strategy::Union{FromMarginalAutoUpdate, FromMessageAutoUpdate}, variables::AbstractArray) = (Base.fetch(strategy, variable) for variable in variables)
-Base.fetch(::FromMarginalAutoUpdate, variable::Union{DataVariable, RandomVariable}) = ReactiveMP.getmarginal(variable, IncludeAll())
-Base.fetch(::FromMessageAutoUpdate, variable::RandomVariable) = ReactiveMP.messagein(variable, 1) # Here we assume that predictive message has index `1`
-Base.fetch(::FromMessageAutoUpdate, variable::DataVariable) = error("`FromMessageAutoUpdate` fetch strategy is not implemented for `DataVariable`")
-
-struct RxInferenceAutoUpdateIndexedVariable{V, I}
-    variable :: V
-    index    :: I
-end
-
-Base.string(indexed::RxInferenceAutoUpdateIndexedVariable) = string(indexed.variable, "[", join(indexed.index, ", "), "]")
-
-hasdatavar(model, variable::RxInferenceAutoUpdateIndexedVariable)   = hasdatavar(model, variable.variable)
-hasrandomvar(model, variable::RxInferenceAutoUpdateIndexedVariable) = hasrandomvar(model, variable.variable)
-
-function Base.getindex(model::ProbabilisticModel, indexed::RxInferenceAutoUpdateIndexedVariable)
-    return model[indexed.variable][indexed.index...]
-end
-
-struct RxInferenceAutoUpdateSpecification{N, F, C, V}
-    labels   :: NTuple{N, Symbol}
-    from     :: F
-    callback :: C
-    variable :: V
-end
-
-function Base.show(io::IO, specification::RxInferenceAutoUpdateSpecification)
-    print(io, join(specification.labels, ","), " = ", string(specification.callback), "(", string(specification.from), "(", string(specification.variable), "))")
-end
-
-function (specification::RxInferenceAutoUpdateSpecification)(model::ProbabilisticModel)
-    datavars = map(specification.labels) do label
-        hasdatavar(model, label) || error("Autoupdate specification defines an update for `$(label)`, but the model has no datavar named `$(label)`")
-        return model[label]
-    end
-
-    (hasrandomvar(model, specification.variable) || hasdatavar(model, specification.variable)) ||
-        error("Autoupdate specification defines an update from `$(specification.variable)`, but the model has no randomvar/datavar named `$(specification.variable)`")
-
-    variable = model[specification.variable]
-
-    return RxInferenceAutoUpdate(datavars, specification.callback, fetch(specification.from, variable))
-end
-
-struct RxInferenceAutoUpdate{N, C, R}
-    datavars :: N
-    callback :: C
-    recent   :: R
-end
-
-import Base: fetch
-
-Base.fetch(autoupdate::RxInferenceAutoUpdate) = fetch(autoupdate, autoupdate.recent)
-Base.fetch(autoupdate::RxInferenceAutoUpdate, something) = fetch(autoupdate, something, ReactiveMP.getdata(ReactiveMP.getrecent(something)))
-Base.fetch(autoupdate::RxInferenceAutoUpdate, something::Union{AbstractArray, Base.Generator}) = fetch(autoupdate, something, ReactiveMP.getdata.(ReactiveMP.getrecent.(something)))
-
-Base.fetch(autoupdate::RxInferenceAutoUpdate, _, data) = zip(as_tuple(autoupdate.datavars), as_tuple(autoupdate.callback(data)))
-
-"""
-    @autoupdates
-
-Creates the auto-updates specification for the `rxinference` function. In the online-streaming Bayesian inference procedure it is important to update your priors for the future 
-states based on the new updated posteriors. The `@autoupdates` structure simplify such a specification. It accepts a single block of code where each line defines how to update 
-the `datavar`'s in the probabilistic model specification. 
-
-Each line of code in the auto-update specification defines `datavar`s, which need to be updated, on the left hand side of the equality expression and the update function on the right hand side of the expression.
-The update function operates on posterior marginals in the form of the `q(symbol)` expression.
-
-For example:
-
-```julia
-@autoupdates begin 
-    x = f(q(z))
-end
-```
-
-This structure specifies to automatically update `x = datavar(...)` as soon as the inference engine computes new posterior over `z` variable. It then applies the `f` function
-to the new posterior and calls `update!(x, ...)` automatically. 
-
-As an example consider the following model and auto-update specification:
-
-```julia
-@model function kalman_filter()
-    x_current_mean = datavar(Float64)
-    x_current_var  = datavar(Float64)
-
-    x_current ~ Normal(mean = x_current_mean, var = x_current_var)
-
-    x_next ~ Normal(mean = x_current, var = 1.0)
-
-    y = datavar(Float64)
-    y ~ Normal(mean = x_next, var = 1.0)
-end
-```
-
-This model has two `datavar`s that represent our prior knowledge of the `x_current` state of the system. The `x_next` random variable represent the next state of the system that 
-is connected to the observed variable `y`. The auto-update specification could look like:
-
-```julia
-autoupdates = @autoupdates begin
-    x_current_mean, x_current_var = mean_cov(q(x_next))
-end
-```
-
-This structure specifies to update our prior as soon as we have a new posterior `q(x_next)`. It then applies the `mean_cov` function on the updated posteriors and updates 
-`datavar`s `x_current_mean` and `x_current_var` automatically.
-
-See also: [`infer`](@ref)
-"""
-macro autoupdates(code)
-    ((code isa Expr) && (code.head === :block)) || error("Autoupdate requires a block of code `begin ... end` as an input")
-
-    specifications = []
-
-    code = MacroTools.postwalk(code) do expression
-        # We modify all expression of the form `... = callback(q(...))` or `... = callback(μ(...))`
-        if @capture(expression, (lhs_ = callback_(rhs_)) | (lhs_ = callback_(rhs__)))
-            if @capture(rhs, (q(variable_)) | (μ(variable_)))
-                # First we check that `variable` is a plain Symbol or an index operation
-                if (variable isa Symbol)
-                    variable = QuoteNode(variable)
-                elseif (variable isa Expr) && (variable.head === :ref)
-                    variable = :(RxInfer.RxInferenceAutoUpdateIndexedVariable($(QuoteNode(variable.args[1])), ($(variable.args[2:end])...,)))
-                else
-                    error("Variable in the expression `$(expression)` must be a plain name or and indexing operation, but a complex expression `$(variable)` found.")
-                end
-                # Next we extract `datavars` specification from the `lhs`                    
-                datavars = if lhs isa Symbol
-                    (lhs,)
-                elseif lhs isa Expr && lhs.head === :tuple && all(arg -> arg isa Symbol, lhs.args)
-                    Tuple(lhs.args)
-                else
-                    error("Left hand side of the expression `$(expression)` must be a single symbol or a tuple of symbols")
-                end
-                # Only two options are possible within this `if` block
-                from = @capture(rhs, q(smth_)) ? :(RxInfer.FromMarginalAutoUpdate()) : :(RxInfer.FromMessageAutoUpdate())
-
-                push!(specifications, :(RxInfer.RxInferenceAutoUpdateSpecification($(datavars...,), $from, $callback, $variable)))
-
-                return :(nothing)
-            else
-                error("Complex call expression `$(expression)` in the `@autoupdates` macro")
-            end
-        else
-            return expression
-        end
-    end
-
-    isempty(specifications) && error("`@autoupdates` did not find any auto-updates specifications. Check the documentation for more information.")
-
-    output = quote
-        begin
-            $code
-
-            ($(specifications...),)
-        end
-    end
-
-    return esc(output)
-end
-
-## ------------------------------------------------------------------------ ##
+include("autoupdates.jl")
 
 """
     RxInferenceEngine
@@ -743,14 +564,13 @@ The return value of the `rxinference` function.
 - `free_energy_final_only_history`: (optional) Free energy history, returns computed values of final variational iteration for each data event (if available)
 - `events`: (optional) A stream of events send by the inference engine. See the `events` argument for the [`infer`](@ref).
 - `model`: `FactorGraphModel` object reference.
-- `returnval`: Return value from executed `@model`.
 
 Use the `RxInfer.start(engine)` function to subscribe on the `data` source and start the inference procedure. Use `RxInfer.stop(engine)` to unsubscribe from the `data` source and stop the inference procedure. 
 Note, that it is not always possible to start/stop the inference procedure.
 
 See also: [`infer`](@ref), [`RxInferenceEvent`](@ref), [`RxInfer.start`](@ref), [`RxInfer.stop`](@ref)
 """
-mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, R, I, M, N, X, E, J}
+mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FS, R, I, M, N, X, E, J}
     datastream       :: D
     tickscheduler    :: L
     mainsubscription :: Teardown
@@ -770,8 +590,6 @@ mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, R, I
 
     # free energy related
     fe_actor        :: FA
-    fe_scheduler    :: FH
-    fe_objective    :: FO
     fe_source       :: FS
     fe_subscription :: Teardown
 
@@ -779,7 +597,7 @@ mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, R, I
     postprocess  :: R
     iterations   :: I
     model        :: M
-    returnval    :: N
+    vardict      :: N
     events       :: E
     is_running   :: Bool
     is_errored   :: Bool
@@ -798,18 +616,16 @@ mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, R, I
         historyactors::S,
         autoupdates::A,
         fe_actor::FA,
-        fe_scheduler::FH,
-        fe_objective::FO,
         fe_source::FS,
         postprocess::R,
         iterations::I,
         model::M,
-        returnval::N,
+        vardict::N,
         enabledevents::Val{X},
         events::E,
         ticklock::J
-    ) where {T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, R, I, M, N, X, E, J} = begin
-        return new{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, R, I, M, N, X, E, J}(
+    ) where {T, D, L, V, P, H, S, U, A, FA, FS, R, I, M, N, X, E, J} = begin
+        return new{T, D, L, V, P, H, S, U, A, FA, FS, R, I, M, N, X, E, J}(
             datastream,
             tickscheduler,
             voidTeardown,
@@ -822,14 +638,12 @@ mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, R, I
             Teardown[],
             autoupdates,
             fe_actor,
-            fe_scheduler,
-            fe_objective,
             fe_source,
             voidTeardown,
             postprocess,
             iterations,
             model,
-            returnval,
+            vardict,
             events,
             false,
             false,
@@ -873,7 +687,7 @@ function Base.show(io::IO, engine::RxInferenceEngine)
     print(io, "[ ", join(enabled_events(engine), ", "), " ]")
 end
 
-enabled_events(::RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, R, I, M, N, X, E}) where {T, D, L, V, P, H, S, U, A, FA, FH, FO, FS, R, I, M, N, X, E} = X
+enabled_events(::RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FS, R, I, M, N, X, E}) where {T, D, L, V, P, H, S, U, A, FA, FS, R, I, M, N, X, E} = X
 
 function Base.getproperty(result::RxInferenceEngine, property::Symbol)
     if property === :enabled_events
@@ -931,12 +745,12 @@ function start(engine::RxInferenceEngine{T}) where {T}
 
         # This subscription tracks updates of all `posteriors`
         engine.updatesubscriptions = map(keys(engine.updateflags), values(engine.updateflags)) do name, updateflag
-            return subscribe!(obtain_marginal(engine.model[name]), updateflag)
+            return subscribe!(obtain_marginal(engine.vardict[name]), updateflag)
         end
 
         if !isnothing(engine.historyactors) && !isnothing(engine.history)
             engine.historysubscriptions = map(keys(engine.historyactors), values(engine.historyactors)) do name, actor
-                return subscribe!(obtain_marginal(engine.model[name]), actor)
+                return subscribe!(obtain_marginal(engine.vardict[name]), actor)
             end
         end
 
@@ -1030,7 +844,6 @@ function Rocket.on_next!(executor::RxInferenceEventExecutor{T}, event::T) where 
         _history        = executor.engine.history
         _historyactors  = executor.engine.historyactors
         _fe_actor       = executor.engine.fe_actor
-        _fe_scheduler   = executor.engine.fe_scheduler
         _enabled_events = executor.engine.enabled_events
         _events         = executor.engine.events
 
@@ -1061,10 +874,6 @@ function Rocket.on_next!(executor::RxInferenceEventExecutor{T}, event::T) where 
             inference_invoke_event(Val(:after_data_update), Val(_enabled_events), _events, _model, iteration, event)
 
             __check_and_unset_updated!(_updateflags)
-
-            if !isnothing(_fe_scheduler)
-                release!(_fe_scheduler)
-            end
 
             inference_invoke_event(Val(:after_iteration), Val(_enabled_events), _events, _model, iteration)
         end
@@ -1238,21 +1047,38 @@ function __rxinference(;
         _options = setaddons(_options, addons)
     end
 
+    # We create a model with the `GraphPPL` package and insert a certain RxInfer related 
+    # plugins which include the VI plugin, meta plugin and the ReactiveMP integration plugin
+    modelplugins = GraphPPL.PluginsCollection(GraphPPL.VariationalConstraintsPlugin(constraints), GraphPPL.MetaPlugin(meta), RxInfer.ReactiveMPInferencePlugin(_options))
+
+    is_free_energy, S = unwrap_free_energy_option(free_energy)
+
+    if is_free_energy
+        fe_objective = BetheFreeEnergy(S)
+        modelplugins = modelplugins + ReactiveMPFreeEnergyPlugin(fe_objective)
+    end
+
+    # The `_model` here still must be a `ModelGenerator`
+    _model = GraphPPL.with_plugins(model, modelplugins)
+    _autoupdates = something(autoupdates, ())
+
     inference_invoke_callback(callbacks, :before_model_creation)
-    _model, _returnval = create_model(model, constraints = constraints, meta = meta, options = _options)
-    inference_invoke_callback(callbacks, :after_model_creation, _model, _returnval)
-    vardict = getvardict(_model)
+    fmodel = __infer_create_factor_graph_model(_model, datavarnames, _datastream, _autoupdates)
+    inference_invoke_callback(callbacks, :after_model_creation, fmodel)
+
+    vardict = getvardict(fmodel)
+    vardict = GraphPPL.variables(vardict) # TODO: Should work recursively as well
+
+    _autoupdates = map((autoupdate) -> autoupdate(vardict), _autoupdates)
 
     # At the very beginning we try to preallocate handles for the `datavar` labels that are present in the `T` (from `datastream`)
     # This is not very type-stable-friendly but we do it once and it should pay-off in the inference procedure
     datavars = ntuple(N) do i
         datavarname = datavarnames[i]
-        hasdatavar(_model, datavarname) || error("The `datastream` produces data for `$(datavarname)`, but the model does not have a datavar named `$(datavarname)`")
-        return _model[datavarname]
+        (haskey(vardict, datavarname) && is_data(vardict[datavarname])) ||
+            error("The `datastream` produces data for `$(datavarname)`, but the model does not have a datavar named `$(datavarname)`")
+        return vardict[datavarname]
     end
-
-    # Second we check autoupdates and pregenerate all necessary structures here
-    _autoupdates = map((autoupdate) -> autoupdate(_model), something(autoupdates, ()))
 
     # If everything is ok with `datavars` and `redirectvars` next step is to initialise marginals and messages in the model
     # This happens only once at the creation, we do not reinitialise anything if the inference has been stopped and resumed with the `stop` and `start` functions
@@ -1289,22 +1115,14 @@ function __rxinference(;
     tickscheduler = PendingScheduler()
 
     # Here we prepare our free energy streams (if requested)
-    fe_actor     = nothing
-    fe_objective = nothing
-    fe_scheduler = nothing
-    fe_source    = nothing
-
-    # `free_energy` may accept a type specification (e.g. `Float64`) in which case it counts as `true` as well
-    # An explicit type specification makes `fe_source` be a bit more efficient, but makes it hard to differentiate the model
-    is_free_energy, S, FE_T = unwrap_free_energy_option(free_energy)
+    fe_actor  = nothing
+    fe_source = nothing
 
     if is_free_energy
         if _keephistory > 0
             fe_actor = ScoreActor(S, _iterations[], _keephistory)
         end
-        fe_scheduler = PendingScheduler()
-        fe_objective = BetheFreeEnergy(BetheFreeEnergyDefaultMarginalSkipStrategy, fe_scheduler, free_energy_diagnostics)
-        fe_source    = score(_model, FE_T, fe_objective)
+        fe_source = score(fmodel, fe_objective, free_energy_diagnostics)
     end
 
     # Use `__check_has_randomvar` to filter out unknown or non-random variables in the `returnvars` and `historyvars` specification
@@ -1403,13 +1221,11 @@ function __rxinference(;
         historyactors,
         _autoupdates,
         fe_actor,
-        fe_scheduler,
-        fe_objective,
         fe_source,
         postprocess,
         _iterations,
         _model,
-        _returnval,
+        vardict,
         _enabledevents,
         _events,
         _ticklock
@@ -1467,6 +1283,22 @@ function __infer_create_factor_graph_model(generator::ModelGenerator, data::Unio
         return NamedTuple{ikeys}(interfaces)
     end
     return ProbabilisticModel(model)
+end
+
+function __infer_create_factor_graph_model(generator::ModelGenerator, datanames, datastream::AbstractSubscribable, autoupdates::Tuple)
+    # @show autoupdates[1] |> dump
+    ikeys = Tuple(Iterators.flatten((datanames, map(getlabels, autoupdates)...)))
+    model = create_model(generator) do model, ctx
+        interfaces = map(ikeys) do key
+            return __infer_create_data_interface(model, ctx, key)
+        end
+        return NamedTuple{ikeys}(interfaces)
+    end
+    return ProbabilisticModel(model)
+end
+
+function __infer_create_data_interface(model, context, key::Symbol)
+    return GraphPPL.getorcreate!(model, context, GraphPPL.NodeCreationOptions(kind = :data, factorized = true), key, GraphPPL.LazyIndex())
 end
 
 function __infer_create_data_interface(model, context, key::Symbol, data)

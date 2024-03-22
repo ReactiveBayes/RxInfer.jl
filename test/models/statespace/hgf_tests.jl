@@ -6,16 +6,7 @@
 
     # We create a single-time step of corresponding state-space process to
     # perform online learning (filtering)
-    @model function hgf(real_k, real_w, z_variance, y_variance)
-
-        # Priors from previous time step for `z`
-        zt_min_mean = datavar(Float64)
-        zt_min_var  = datavar(Float64)
-
-        # Priors from previous time step for `x`
-        xt_min_mean = datavar(Float64)
-        xt_min_var  = datavar(Float64)
-
+    @model function hgf(real_k, real_w, z_variance, y_variance, zt_min_mean, zt_min_var, xt_min_mean, xt_min_var, y)
         zt_min ~ Normal(mean = zt_min_mean, var = zt_min_var)
         xt_min ~ Normal(mean = xt_min_mean, var = xt_min_var)
 
@@ -23,13 +14,9 @@
         zt ~ Normal(mean = zt_min, var = z_variance)
 
         # Lower layer is modelled with `GCV` node
-        gcvnode, xt ~ GCV(xt_min, zt, real_k, real_w)
+        xt ~ GCV(xt_min, zt, real_k, real_w)
 
-        # Noisy observations 
-        y = datavar(Float64)
         y ~ Normal(mean = xt, var = y_variance)
-
-        return gcvnode
     end
 
     @constraints function hgfconstraints()
@@ -49,7 +36,7 @@
         end
 
         return infer(
-            model         = hgf(real_k, real_w, z_variance, y_variance),
+            model         = hgf(real_k = real_k, real_w = real_w, z_variance = z_variance, y_variance = y_variance),
             constraints   = hgfconstraints(),
             meta          = hgfmeta(),
             data          = (y = data,),
@@ -60,9 +47,9 @@
             iterations    = vmp_iters,
             free_energy   = true,
             autostart     = true,
-            callbacks     = (after_model_creation = (model, returnval) -> begin
-                gcvnode = returnval
-                setmarginal!(gcvnode, :y_x, MvNormalMeanCovariance([0.0, 0.0], [5.0, 5.0]))
+            callbacks     = (after_model_creation = (model) -> begin
+                # gcvnode = returnval
+                # setmarginal!(gcvnode, :y_x, MvNormalMeanCovariance([0.0, 0.0], [5.0, 5.0]))
             end,)
         )
     end

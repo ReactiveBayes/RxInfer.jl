@@ -205,6 +205,13 @@ struct GraphVariableRef
     variable::AbstractVariable
 end
 
+getlabel(ref::GraphVariableRef) = ref.label
+getvariable(ref::GraphVariableRef) = ref.variable
+
+GraphPPL.is_data(ref::GraphVariableRef) = GraphPPL.is_data(ref.properties)
+GraphPPL.is_random(ref::GraphVariableRef) = GraphPPL.is_random(ref.properties)
+GraphPPL.is_constant(ref::GraphVariableRef) = GraphPPL.is_constant(ref.properties)
+
 function GraphVariableRef(model::GraphPPL.Model, label::GraphPPL.NodeLabel)
     nodedata = model[label]::GraphPPL.NodeData
     properties = getproperties(nodedata)::GraphPPL.VariableNodeProperties
@@ -268,11 +275,9 @@ ReactiveMP.setmessage!(ref::GraphVariableRef, marginal) = setmessage!(ref.variab
 ReactiveMP.setmessages!(collection::AbstractArray{GraphVariableRef}, marginal) = ReactiveMP.setmessages!(map(ref -> ref.variable, collection), marginal)
 
 function ReactiveMP.update!(ref::GraphVariableRef, something)
-    # TODO: cache the result of the `getextra` call in the `inference` procedure
     return ReactiveMP.update!(ref.variable, something)
 end
 
 function ReactiveMP.update!(collection::AbstractArray{<:GraphVariableRef}, something)
-    # TODO: cache the result of the `getextra` call in the `inference` procedure
     return ReactiveMP.update!(map(ref -> ref.variable, collection), something)
 end
