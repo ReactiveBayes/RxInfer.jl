@@ -1,7 +1,6 @@
 
 export ProbabilisticModel
-export getoptions, getconstraints, getmeta
-export getnodes, getvariables, getrandom, getconstant, getdata
+export getmodel, getvardict, getrandomvars, getconstantvars, getdatavars, getfactornodes
 
 import Base: push!, show, getindex, haskey, firstindex, lastindex
 import ReactiveMP: getaddons, AbstractFactorNode

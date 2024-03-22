@@ -27,9 +27,8 @@ end
     @test_throws ErrorException __infer_check_dicttype(:something, (missing))
 end
 
-@testitem "__infer_create_factor_graph_model" begin 
-
-    @model function simple_model_for_infer_create_model(y, a, b)    
+@testitem "__infer_create_factor_graph_model" begin
+    @model function simple_model_for_infer_create_model(y, a, b)
         x ~ Beta(a, b)
         y ~ Normal(x, 1.0)
     end
@@ -37,7 +36,7 @@ end
     import RxInfer: __infer_create_factor_graph_model, ProbabilisticModel, getmodel
     import GraphPPL: is_data, is_random, is_constant, is_variable, is_factor, getproperties, getcontext
 
-    @testset let model = __infer_create_factor_graph_model(simple_model_for_infer_create_model(a = 1, b = 2), (y = 3, ))
+    @testset let model = __infer_create_factor_graph_model(simple_model_for_infer_create_model(a = 1, b = 2), (y = 3,))
         @test model isa ProbabilisticModel
         graphicalmodel = getmodel(model)
         ctx = getcontext(getmodel(model))
@@ -46,7 +45,6 @@ end
         @test is_data(getproperties(graphicalmodel[ctx[:y]]))
         @test is_random(getproperties(graphicalmodel[ctx[:x]]))
     end
-
 end
 
 @testitem "`@autoupdates` macro" begin
@@ -164,7 +162,6 @@ end
     # A simple model for testing that resembles a simple kalman filter with
     # random walk state transition and unknown observational noise
     @model function test_model1(y)
-
         τ ~ Gamma(1.0, 1.0)
 
         x[1] ~ Normal(mean = 0.0, variance = 1.0)
@@ -174,7 +171,6 @@ end
             x[i] ~ Normal(mean = x[i - 1], variance = 1.0)
             y[i] ~ Normal(mean = x[i], precision = τ)
         end
-
     end
 
     @constraints function test_model1_constraints()
@@ -325,91 +321,49 @@ end
 end
 
 @testitem "Test warn argument in `infer()`" begin
-    @testset "Test warning for addons" begin
-
-        #Add a new case for testing warning of addons
-        @model function beta_model2(y)
-            θ ~ Beta(4.0, 8.0)
-            for i in eachindex(y)
-                y[i] ~ Bernoulli(θ)
-            end
+    @model function beta_bernoulli(y)
+        θ ~ Beta(4.0, 8.0)
+        for i in eachindex(y)
+            y[i] ~ Bernoulli(θ)
         end
+    end
 
-        #Add a new dataset for addons
-        n = 20
-        θ_real = 0.75
-        distribution = Bernoulli(θ_real)
-        dataset2 = float.(rand(Bernoulli(θ_real), n))
+    observations = float.(rand(Bernoulli(0.75), 10))
 
-        #with warn
-        @test_logs (:warn, r"Both .* specify a value for the `addons`.*") result_2 = infer(
-            model = beta_model2(),
-            data = (y = dataset2,),
-            returnvars = (θ = KeepLast(),),
-            free_energy = true,
-            addons = AddonLogScale(),
-            options = (addons = AddonLogScale(),),
-            warn = true
+    @testset "Test warning for addons" begin
+        # Should display a warning if `warn` is set to `true`
+        @test_logs (:warn, r"Both .* specify a value for the `addons`.*") infer(
+            model = beta_bernoulli(), data = (y = observations,), addons = AddonLogScale(), options = (addons = AddonLogScale(),), warn = true
         )
-        #without warn
-        @test_logs result_2 = infer(
-            model = beta_model2(),
-            data = (y = dataset2,),
-            returnvars = (θ = KeepLast(),),
-            free_energy = true,
-            addons = AddonLogScale(),
-            options = (addons = AddonLogScale(),),
-            warn = false
-        )
+        # Should not display a warning if `warn` is set to `true`
+        @test_logs infer(model = beta_bernoulli(), data = (y = observations,), addons = AddonLogScale(), options = (addons = AddonLogScale(),), warn = false)
+    end
+end
+
+@testitem "Invalid data size error" begin
+    @model function test_model1(y)
+        n = length(y)
+        τ ~ Gamma(1.0, 1.0)
+
+        x[1] ~ Normal(mean = 0.0, variance = 1.0)
+        y[1] ~ Normal(mean = x[1], precision = τ)
+
+        for i in 2:(n - 1)
+            x[i] ~ Normal(mean = x[i - 1], variance = 1.0)
+            y[i] ~ Normal(mean = x[i], precision = τ)
+        end
+        # y_n is unused intentionally
+        x[n] ~ Normal(mean = x[n - 1], variance = 1.0)
+        y[n - 1] ~ Normal(mean = x[n], precision = τ)
     end
 
     @testset "Warning for unused datavars" begin
-        @model function test_model1(n)
-            x = randomvar(n)
-            y = datavar(Float64, n)
-
-            τ ~ Gamma(1.0, 1.0)
-
-            x[1] ~ Normal(mean = 0.0, variance = 1.0)
-            y[1] ~ Normal(mean = x[1], precision = τ)
-
-            for i in 2:(n - 1)
-                x[i] ~ Normal(mean = x[i - 1], variance = 1.0)
-                y[i] ~ Normal(mean = x[i], precision = τ)
-            end
-            # y_n is unused
-            x[n] ~ Normal(mean = x[n - 1], variance = 1.0)
-            y[n - 1] ~ Normal(mean = x[n], precision = τ)
-        end
-
         @constraints function test_model1_constraints()
             q(x, τ) = q(x)q(τ)
         end
 
-        @constraints function test_model1_constraints()
-            q(x, τ) = q(x)q(τ)
-        end
-        observations = rand(10)
-
-        @test_logs (:warn, r"Unused data variable .*") result = infer(
-            model = test_model1(),
-            constraints = test_model1_constraints(),
-            data = (y = observations,),
-            initmarginals = (τ = Gamma(1.0, 1.0),),
-            iterations = 10,
-            returnvars = KeepEach(),
-            free_energy = true,
-            warn = true
-        )
-        @test_logs result = infer(
-            model = test_model1(10),
-            constraints = test_model1_constraints(),
-            data = (y = observations,),
-            initmarginals = (τ = Gamma(1.0, 1.0),),
-            iterations = 10,
-            returnvars = KeepEach(),
-            free_energy = true,
-            warn = false
+        @test_throws "size of datavar array and data must match" infer(
+            model = test_model1(), constraints = test_model1_constraints(), data = (y = rand(10),), initmarginals = (τ = Gamma(1.0, 1.0),)
         )
     end
 end
@@ -418,28 +372,13 @@ end
 
     # A simple model for testing that resembles a simple kalman filter with
     # random walk state transition and unknown observational noise
-    @model function test_model1()
-
-        # Reactive prior inputs for `x_t_min`
-        x_t_min_mean = datavar(Float64)
-        x_t_min_var  = datavar(Float64)
-
+    @model function test_model1(x_t_min_mean, x_t_min_var, τ_shape, τ_rate, y)
         x_t_min ~ Normal(mean = x_t_min_mean, variance = x_t_min_var)
-
-        # Reactive prior inputs for `τ`
-        τ_shape = datavar(Float64)
-        τ_rate  = datavar(Float64)
-
         τ ~ Gamma(shape = τ_shape, rate = τ_rate)
-
         # State transition
         x_t ~ Normal(mean = x_t_min, precision = 1.0)
-
-        # Observations
-        y = datavar(Float64)
         y ~ Normal(mean = x_t, precision = τ)
-
-        return 2, 3.0, "hello world" # test returnval
+        # return 2, 3.0, "hello world" # test returnval (this was removed in new version of GraphPPL)
     end
 
     autoupdates = @autoupdates begin
@@ -457,7 +396,7 @@ end
         nexty = rand(NormalMeanPrecision(nextx, 10.0))
         push!(hiddenx, nextx)
         push!(observedy, nexty)
-        prevx = nextx
+        global prevx = nextx
     end
 
     @testset "Check basic usage" begin
@@ -478,13 +417,14 @@ end
             )
 
             # Test that the `.model` reference is correct
-            @test length(getnodes(engine.model)) === 4
-            @test length(getrandom(engine.model)) === 3
-            @test length(getdata(engine.model)) === 5
-            @test length(getconstant(engine.model)) === 1
+            @test length(getfactornodes(engine.model)) === 4
+            @test length(getrandomvars(engine.model)) === 3
+            @test length(getdatavars(engine.model)) === 5
+            @test length(getconstantvars(engine.model)) === 1
 
             # Test that the `.returnval` reference is correct
-            @test engine.returnval === (2, 3.0, "hello world")
+            # (this was removed in new version of GraphPPL)
+            @test_broken engine.returnval === (2, 3.0, "hello world")
 
             # Test that the `.posteriors` field is constructed correctly
             @test sort(collect(keys(engine.posteriors))) == sort(collect(returnvars))
@@ -548,10 +488,10 @@ end
         # First check the order
         @test first.(callbacksdata) == [:before_model_creation, :after_model_creation, :before_autostart, :after_autostart]
 
-        @test typeof(callbacksdata[1][2]) <: Tuple{}                                              # before_model_creation
-        @test typeof(callbacksdata[2][2]) <: Tuple{FactorGraphModel, Tuple{Int, Float64, String}} # after_model_creation 
-        @test typeof(callbacksdata[3][2]) <: Tuple{RxInferenceEngine}                             # before_autostart 
-        @test typeof(callbacksdata[4][2]) <: Tuple{RxInferenceEngine}                             # after_autostart
+        @test typeof(callbacksdata[1][2]) <: Tuple{}                   # before_model_creation
+        @test typeof(callbacksdata[2][2]) <: Tuple{ProbabilisticModel} # after_model_creation 
+        @test typeof(callbacksdata[3][2]) <: Tuple{RxInferenceEngine}  # before_autostart 
+        @test typeof(callbacksdata[4][2]) <: Tuple{RxInferenceEngine}  # after_autostart
     end
 
     @testset "Check callbacks usage: autostart disabled" begin
@@ -575,8 +515,8 @@ end
         # First check the order
         @test first.(callbacksdata) == [:before_model_creation, :after_model_creation]
 
-        @test typeof(callbacksdata[1][2]) <: Tuple{}                                              # before_model_creation
-        @test typeof(callbacksdata[2][2]) <: Tuple{FactorGraphModel, Tuple{Int, Float64, String}} # after_model_creation 
+        @test typeof(callbacksdata[1][2]) <: Tuple{}                   # before_model_creation
+        @test typeof(callbacksdata[2][2]) <: Tuple{ProbabilisticModel} # after_model_creation 
 
         RxInfer.start(engine)
 
@@ -994,7 +934,7 @@ end
     @test first(result.predictions[:o]) != last(result.predictions[:o])
 
     # test #8 non gaussian likelihood (single datavar missing)
-    dataset = [1.0, 1.0, 1.0, missing]
+    observations = [1.0, 1.0, 1.0, missing]
     @model function coin_model1(n)
         y = datavar(Float64, n) where {allow_missing = true}
 
@@ -1004,15 +944,15 @@ end
         end
     end
 
-    result = infer(model = coin_model1(length(dataset)), data = (y = dataset,))
+    result = infer(model = coin_model1(length(observations)), data = (y = observations,))
 
     @test typeof(last(result.predictions[:y])) <: Bernoulli
 
     # for θ ~ Beta(1.0, 1.0)
-    @test Bernoulli(mean(Beta(sum(dataset .!== missing) + 1.0, 1.0))) ≈ last(result.predictions[:y])
+    @test Bernoulli(mean(Beta(sum(observations .!== missing) + 1.0, 1.0))) ≈ last(result.predictions[:y])
 
     # test #9 allow_missing error handling
-    dataset = [1.0, 1.0, 1.0, missing]
+    observations = [1.0, 1.0, 1.0, missing]
     @model function coin_model2(n)
         y = datavar(Float64, n)
 
@@ -1022,9 +962,9 @@ end
         end
     end
 
-    @test_throws ErrorException infer(model = coin_model2(length(dataset)), data = (y = dataset,))
+    @test_throws ErrorException infer(model = coin_model2(length(observations)), data = (y = observations,))
 
-    @test_throws ErrorException infer(model = coin_model2(length(dataset)), data = (y = dataset,), free_energy = true)
+    @test_throws ErrorException infer(model = coin_model2(length(observations)), data = (y = observations,), free_energy = true)
 
     # test #10 predictvars, no dataset
     @model function coin_model3(n)
@@ -1036,7 +976,7 @@ end
         end
     end
 
-    result = infer(model = coin_model3(length(dataset)), predictvars = (y = KeepLast(),))
+    result = infer(model = coin_model3(length(observations)), predictvars = (y = KeepLast(),))
 
     @test all(result.predictions[:y] .== Bernoulli(mean(Beta(1.0, 1.0))))
 end

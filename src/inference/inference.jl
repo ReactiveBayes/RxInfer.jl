@@ -1224,7 +1224,7 @@ function __rxinference(;
         fe_source,
         postprocess,
         _iterations,
-        _model,
+        fmodel,
         vardict,
         _enabledevents,
         _events,

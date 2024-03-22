@@ -207,6 +207,7 @@ end
 
 getlabel(ref::GraphVariableRef) = ref.label
 getvariable(ref::GraphVariableRef) = ref.variable
+name(ref::GraphVariableRef) = GraphPPL.getname(getlabel(ref))
 
 GraphPPL.is_data(ref::GraphVariableRef) = GraphPPL.is_data(ref.properties)
 GraphPPL.is_random(ref::GraphVariableRef) = GraphPPL.is_random(ref.properties)
