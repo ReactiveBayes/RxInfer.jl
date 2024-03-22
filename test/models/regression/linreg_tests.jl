@@ -48,7 +48,7 @@
 
     ## Inference execution
     result  = linreg_inference(linear_regression, 25, xdata, ydata)
-    @test_broken resultb = linreg_inference(linear_regression_broadcasted, 25, xdata, ydata)
+    resultb = linreg_inference(linear_regression_broadcasted, 25, xdata, ydata)
 
     ares = result.posteriors[:a]
     bres = result.posteriors[:b]
