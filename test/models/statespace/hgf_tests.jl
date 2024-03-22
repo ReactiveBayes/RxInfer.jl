@@ -47,10 +47,6 @@
             iterations    = vmp_iters,
             free_energy   = true,
             autostart     = true,
-            callbacks     = (after_model_creation = (model) -> begin
-                # gcvnode = returnval
-                # setmarginal!(gcvnode, :y_x, MvNormalMeanCovariance([0.0, 0.0], [5.0, 5.0]))
-            end,)
         )
     end
 
