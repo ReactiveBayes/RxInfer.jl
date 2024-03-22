@@ -53,10 +53,11 @@ function (specification::RxInferenceAutoUpdateSpecification)(vardict)
 
     variable = getvariable(vardict[specification.variable])
 
-    return RxInferenceAutoUpdate(datavars, specification.callback, fetch(specification.from, variable))
+    return RxInferenceAutoUpdate(specification.variable, datavars, specification.callback, fetch(specification.from, variable))
 end
 
-struct RxInferenceAutoUpdate{N, C, R}
+struct RxInferenceAutoUpdate{L, N, C, R}
+    varlabel :: L
     datavars :: N
     callback :: C
     recent   :: R
@@ -69,6 +70,8 @@ Base.fetch(autoupdate::RxInferenceAutoUpdate, something) = fetch(autoupdate, som
 Base.fetch(autoupdate::RxInferenceAutoUpdate, something::Union{AbstractArray, Base.Generator}) = fetch(autoupdate, something, ReactiveMP.getdata.(ReactiveMP.getrecent.(something)))
 
 Base.fetch(autoupdate::RxInferenceAutoUpdate, _, data) = zip(as_tuple(autoupdate.datavars), as_tuple(autoupdate.callback(data)))
+Base.fetch(autoupdate::RxInferenceAutoUpdate, _, data::Nothing) =
+    error("The initial value for `$(autoupdate.varlabel)` in the `@autoupdates` has not been specified. Consider using `initmarginals` or `initmessages`.")
 
 import MacroTools
 import MacroTools: @capture
