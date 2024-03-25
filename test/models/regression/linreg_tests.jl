@@ -18,9 +18,9 @@
     @model function linear_regression_broadcasted(x, y)
         a ~ Normal(mean = 0.0, var = 1.0)
         b ~ Normal(mean = 0.0, var = 1.0)
-        # Variance over-complicated for a purpose of checking that this expressions are allowed, it should be equal to `1.0`
-        # TODO (bvdmitri): fix the broadcasting
-        # y .~ Normal(mean = x .* b .+ a, var = det((diageye(2) .+ diageye(2)) ./ 2))
+        # Variance over-complicated for a purpose of checking that this expressions is allowed, 
+        # it should be equal to `1.0`, but it shouldn't create any extra factor nodes
+        y .~ Normal(mean = x .* b .+ a, var = det((diageye(2) .+ diageye(2)) ./ 2))
     end
 
     ## Inference definition
@@ -54,14 +54,14 @@
     bres = result.posteriors[:b]
     fres = result.free_energy
 
-    # aresb = resultb.posteriors[:a]
-    # bresb = resultb.posteriors[:b]
-    # fresb = resultb.free_energy
+    aresb = resultb.posteriors[:a]
+    bresb = resultb.posteriors[:b]
+    fresb = resultb.free_energy
 
     ## Test inference results
-    @test_broken mean(ares) ≈ mean(aresb) && var(ares) ≈ var(aresb) # Broadcasting may change the order of computations, so slight 
-    @test_broken mean(bres) ≈ mean(bresb) && var(bres) ≈ var(bresb) # differences are allowed
-    @test_broken all(fres .≈ fresb)
+    @test mean(ares) ≈ mean(aresb) && var(ares) ≈ var(aresb) # Broadcasting may change the order of computations, so slight 
+    @test mean(bres) ≈ mean(bresb) && var(bres) ≈ var(bresb) # differences are allowed
+    @test all(fres .≈ fresb)
     @test isapprox(mean(ares), reala, atol = 5)
     @test isapprox(mean(bres), realb, atol = 0.1)
     @test fres[end] < fres[2] # Loopy belief propagation has no guaranties though

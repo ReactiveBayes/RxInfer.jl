@@ -1,6 +1,6 @@
 import BayesBase: CountingReal
 import ReactiveMP: is_point_mass_form_constraint
-import ReactiveMP: score, name
+import ReactiveMP: score
 
 """
     BetheFreeEnergy(marginal_skip_strategy, scheduler, diagnostic_checks)
