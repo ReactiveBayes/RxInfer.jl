@@ -378,7 +378,7 @@ end
         # State transition
         x_t ~ Normal(mean = x_t_min, precision = 1.0)
         y ~ Normal(mean = x_t, precision = τ)
-        # return 2, 3.0, "hello world" # test returnval (this was removed in new version of GraphPPL)
+        return 2, 3.0, "hello world" # test returnval
     end
 
     autoupdates = @autoupdates begin
@@ -422,9 +422,8 @@ end
             @test length(getdatavars(engine.model)) === 5
             @test length(getconstantvars(engine.model)) === 1
 
-            # Test that the `.returnval` reference is correct
-            # (this was removed in new version of GraphPPL)
-            @test_broken engine.returnval === (2, 3.0, "hello world")
+            # Test that the `returnval` reference is correct
+            @test getreturnval(engine.model) === (2, 3.0, "hello world")
 
             # Test that the `.posteriors` field is constructed correctly
             @test sort(collect(keys(engine.posteriors))) == sort(collect(returnvars))

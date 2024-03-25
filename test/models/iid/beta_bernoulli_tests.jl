@@ -13,6 +13,7 @@
         for i in eachindex(y)
             y[i] ~ Bernoulli(θ)
         end
+        return a + b
     end
 
     # Check the streaming version of the same model
@@ -42,6 +43,7 @@
     @test length(result.free_energy) === 10
     @test all(v -> v ≈ 2828.0533343622483, result.free_energy)
     @test mean(result.posteriors[:θ][end]) ≈ p atol = 1e-2
+    @test getreturnval(result.model) === 9.0
 
     # Double check that Free Energy computes properly even with no iterations specified (not equal to saying `iterations = 1`)
     result_with_no_iterations = infer(model = beta_bernoulli(a = 2.0, b = 7.0), data = (y = dataset,), free_energy = true)
@@ -59,6 +61,7 @@
 
         result_for_specific_p = infer(model = beta_bernoulli(a = 1.0, b = 1.0), data = (y = data_for_specific_p,))
         @test mean(result_for_specific_p.posteriors[:θ]) ≈ p atol = 1e-2
+        @test getreturnval(result_for_specific_p.model) === 2.0
 
         # Here we also double check the streaming version on this simple case
         # In the test we keep a small history of the size `1` since we are only interested in the last value

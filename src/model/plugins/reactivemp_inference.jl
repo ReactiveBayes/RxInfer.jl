@@ -232,6 +232,10 @@ function GraphVariableRef(model::GraphPPL.Model, label::GraphPPL.NodeLabel)
     return GraphVariableRef(label, properties, variable)
 end
 
+function getreturnval(model::GraphPPL.Model)
+    return GraphPPL.returnval(GraphPPL.getcontext(model))
+end
+
 function getvardict(model::GraphPPL.Model)
     return map(v -> getvarref(model, v), GraphPPL.VarDict(GraphPPL.getcontext(model)))
 end
