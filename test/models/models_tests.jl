@@ -152,3 +152,95 @@ end
 
     @test_throws "`$(SomeArbitraryDistribution)` cannot be used as a factor node" infer(model = a_model_with_unknown_distribution(), data = (y = ones(3),)).posteriors[:θ]
 end
+
+@testitem "Data variables should fold automatically" begin
+    using StableRNGs
+    import RxInfer: getdatavars
+
+    include(joinpath(@__DIR__, "..", "utiltests.jl"))
+
+    ## Model definition
+    @model function sum_datavars_as_gaussian_mean_1(y, a, b)
+        x ~ Normal(mean = a + b + 1 - 1, precision = 1.0)
+        y ~ Normal(mean = x, variance = 1.0)
+    end
+
+    @model function sum_datavars_as_gaussian_mean_2(y, a, b)
+        c = 1.0
+        x ~ Normal(mean = (a + b) + c - c, variance = 1.0)
+        y ~ Normal(mean = x, variance = 1.0)
+    end
+
+    @testset for modelfn in [sum_datavars_as_gaussian_mean_1, sum_datavars_as_gaussian_mean_2]
+        result = infer(model = modelfn(), data = (a = 2.0, b = 1.0, y = 0.0), returnvars = (x = KeepLast(),), free_energy = true)
+        model = result.model
+        xres = result.posteriors[:x]
+        fres = result.free_energy
+
+        @test length(getdatavars(model)) == 6
+        @test typeof(xres) <: NormalDistributionsFamily
+        @test isapprox(mean(xres), 1.5, atol = 0.1)
+        @test isapprox(fres[end], 3.51551, atol = 0.1)
+    end
+
+    @model function sum_datavars_as_gaussian_mean_3(y, v)
+        x ~ Normal(mean = v[1] + v[2], precision = 1.0)
+        y ~ Normal(mean = x, variance = 1.0)
+    end
+
+    @model function sum_datavars_as_gaussian_mean_4(y, v)
+        # `+ 0` here is purely for the resulting length 
+        # (such that it equals to `4` and tests can be joined)
+        x ~ Normal(mean = sum(v) + 0, precision = 1.0)
+        y ~ Normal(mean = x, variance = 1.0)
+    end
+
+    @testset for modelfn in [sum_datavars_as_gaussian_mean_3, sum_datavars_as_gaussian_mean_4]
+        result = infer(model = modelfn(), data = (v = [1.0, 2.0], y = 0.0), returnvars = (x = KeepLast(),), free_energy = true)
+        model = result.model
+        xres = result.posteriors[:x]
+        fres = result.free_energy
+
+        @test length(getdatavars(model)) == 4
+        @test typeof(xres) <: NormalDistributionsFamily
+        @test isapprox(mean(xres), 1.5, atol = 0.1)
+        @test isapprox(fres[end], 3.51551, atol = 0.1)
+    end
+
+    @model function ratio_datavars_as_gaussian_mean(y, a, b)
+        x ~ Normal(mean = a / b, variance = 1.0)
+        y ~ Normal(mean = x, variance = 1.0)
+    end
+
+    @testset begin
+        result = infer(model = ratio_datavars_as_gaussian_mean(), data = (a = 2.0, b = 1.0, y = 0.0), returnvars = (x = KeepLast(),), free_energy = true)
+        model = result.model
+        xres = result.posteriors[:x]
+        fres = result.free_energy
+
+        @test length(getdatavars(model)) == 4
+        @test typeof(xres) <: NormalDistributionsFamily
+        @test isapprox(mean(xres), 1.0, atol = 0.1)
+        @test isapprox(fres[end], 2.26551, atol = 0.1)
+    end
+
+    @model function idx_datavars_as_gaussian_mean(y, a, b)
+        x ~ Normal(mean = dot(getindex(a, 1:2), getindex(b, 1:2, 1)), variance = 1.0)
+        y ~ Normal(mean = x, variance = 1.0)
+    end
+
+    @testset begin
+        A_data = [1.0, 2.0, 3.0]
+        B_data = [1.0 0.5; 0.5 1.0]
+
+        result = infer(model = idx_datavars_as_gaussian_mean(), data = (a = A_data, b = B_data, y = 0.0), returnvars = (x = KeepLast(),), free_energy = true)
+        model = result.model
+        xres = result.posteriors[:x]
+        fres = result.free_energy
+
+        @test length(getdatavars(model)) == 6
+        @test typeof(xres) <: NormalDistributionsFamily
+        @test isapprox(mean(xres), 1.0, atol = 0.1)
+        @test isapprox(fres[end], 2.26551, atol = 0.1)
+    end
+end

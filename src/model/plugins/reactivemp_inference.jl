@@ -170,7 +170,19 @@ function activate_rmp_variable!(plugin::ReactiveMPInferencePlugin, model::Model,
         return ReactiveMP.activate!(getextra(nodedata, ReactiveMPExtraVariableKey)::RandomVariable, options)
     elseif is_data(nodeproperties)
         # TODO: bvdmitri use allow_missings
-        return ReactiveMP.activate!(getextra(nodedata, ReactiveMPExtraVariableKey)::DataVariable, ReactiveMP.DataVariableActivationOptions(false))
+        properties = getproperties(nodedata)::GraphPPL.VariableNodeProperties
+        # The datavar can be linked to another variable via a `transform` function, which should be stored in the `value` 
+        # field of the properties. In this case the `datavar` gets its values from the linked variable and does not create an explicit factor node
+        transform = nothing
+        args = nothing
+        value = GraphPPL.value(properties)
+        if !isnothing(value)
+            _transform, _args = value
+            transform = _transform
+            args = map(arg -> GraphPPL.is_nodelabel(arg) ? getvariable(getvarref(model, arg)) : arg, _args)
+        end
+        options = ReactiveMP.DataVariableActivationOptions(false, !isnothing(value), transform, args)
+        return ReactiveMP.activate!(getextra(nodedata, ReactiveMPExtraVariableKey)::DataVariable, options)
     elseif is_constant(nodeproperties)
         # The constant does not require extra activation
         return nothing
@@ -216,7 +228,7 @@ GraphPPL.is_constant(ref::GraphVariableRef) = GraphPPL.is_constant(ref.propertie
 function GraphVariableRef(model::GraphPPL.Model, label::GraphPPL.NodeLabel)
     nodedata = model[label]::GraphPPL.NodeData
     properties = getproperties(nodedata)::GraphPPL.VariableNodeProperties
-    variable = getextra(nodedata, :rmp_variable)::AbstractVariable
+    variable = getvariable(nodedata)
     return GraphVariableRef(label, properties, variable)
 end
 
@@ -226,6 +238,9 @@ end
 
 getvarref(model::GraphPPL.Model, label::GraphPPL.NodeLabel) = GraphVariableRef(model, label)
 getvarref(model::GraphPPL.Model, container::AbstractArray) = map(element -> getvarref(model, element), container)
+
+getvariable(nodedata::GraphPPL.NodeData) = getextra(nodedata, ReactiveMPExtraVariableKey)
+getvariable(container::AbstractArray) = map(getvariable, container)
 
 function getrandomvars(model::GraphPPL.Model)
     # TODO improve performance here
@@ -265,6 +280,9 @@ ReactiveMP.isconst(collection::AbstractArray{GraphVariableRef}) = all(ReactiveMP
 ReactiveMP.israndom(ref::GraphVariableRef) = GraphPPL.is_random(ref.properties)
 ReactiveMP.isdata(ref::GraphVariableRef) = GraphPPL.is_data(ref.properties)
 ReactiveMP.isconst(ref::GraphVariableRef) = GraphPPL.is_constant(ref.properties)
+
+isanonymous(collection::AbstractArray{GraphVariableRef}) = all(isanonymous, collection)
+isanonymous(ref::GraphVariableRef) = GraphPPL.is_anonymous(ref.properties)
 
 ReactiveMP.getmarginal(ref::GraphVariableRef, strategy) = ReactiveMP.getmarginal(ref.variable, strategy)
 ReactiveMP.getmarginals(collection::AbstractArray{GraphVariableRef}, strategy) = ReactiveMP.getmarginals(map(ref -> ref.variable, collection), strategy)
