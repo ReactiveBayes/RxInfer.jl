@@ -171,10 +171,19 @@ end
             x[i] ~ Normal(mean = x[i - 1], variance = 1.0)
             y[i] ~ Normal(mean = x[i], precision = τ)
         end
+
+        return length(y), 2, 3.0, "hello world" # test returnval
     end
 
     @constraints function test_model1_constraints()
         q(x, τ) = q(x)q(τ)
+    end
+
+    @testset "returnval should be set properly" begin
+        for n in 2:5
+            result = infer(model = test_model1(), constraints = test_model1_constraints(), data = (y = rand(n),), initmarginals = (τ = Gamma(1.0, 1.0),))
+            @test getreturnval(result.model) === (n, 2, 3.0, "hello world")
+        end
     end
 
     @testset "Test `catch_exception` functionality" begin
