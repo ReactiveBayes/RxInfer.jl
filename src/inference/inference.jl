@@ -354,7 +354,7 @@ function __inference(;
     if returnvars === nothing || returnvars === KeepEach() || returnvars === KeepLast()
         # Checks if the first argument is `nothing`, in which case returns the second argument
         returnoption = something(returnvars, iterations isa Number ? KeepEach() : KeepLast())
-        returnvars   = Dict(variable => returnoption for (variable, value) in pairs(vardict) if (israndom(value)))
+        returnvars   = Dict(variable => returnoption for (variable, value) in pairs(vardict) if (israndom(value) && !isanonymous(value)))
     end
 
     # Assume that the prediction variables are specified as `datavars` inside the `@model` block, e.g. `pred = datavar(Float64, n)`.
@@ -1139,7 +1139,7 @@ function __rxinference(;
 
     # We check if `returnvars` argument is empty, in which case we return names of all random (non-proxy) variables in the model
     if isnothing(returnvars)
-        returnvars = [name(variable) for (variable, value) in pairs(vardict) if (israndom(value))]
+        returnvars = [variable for (variable, value) in pairs(vardict) if (israndom(value))]
     end
 
     eltype(returnvars) === Symbol || error("`returnvars` must contain a list of symbols") # TODO?
@@ -1159,7 +1159,7 @@ function __rxinference(;
         elseif historyvars === KeepEach() || historyvars === KeepLast()
             # Second we check if it is one of the two possible global values: `KeepEach` and `KeepLast`. 
             # If so, we replace it with either `KeepEach` or `KeepLast` for each random and not-proxied variable in a model
-            historyvars = Dict(name(variable) => historyvars for (variable, value) in pairs(vardict) if (israndom(value)))
+            historyvars = Dict(variable => historyvars for (variable, value) in pairs(vardict) if (israndom(value) && !isanonymous(value)))
         end
 
         historyvars = Dict((varkey => value) for (varkey, value) in pairs(historyvars) if __check_has_randomvar(:historyvars, vardict, varkey))
