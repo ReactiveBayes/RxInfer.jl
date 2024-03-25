@@ -45,7 +45,7 @@ end
 function (specification::RxInferenceAutoUpdateSpecification)(vardict)
     datavars = map(specification.labels) do label
         haskey(vardict, label) || error("Autoupdate specification defines an update for `$(label)`, but the model has no variable named `$(label)`")
-        return vardict[label]
+        return getvariable(vardict[label])
     end
 
     (haskey(vardict, specification.variable)) ||

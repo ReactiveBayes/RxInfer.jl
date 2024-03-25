@@ -495,6 +495,7 @@ function __inference(;
         end
 
         progress_meter = showprogress ? ProgressMeter.Progress(_iterations) : nothing
+        cacheddatavars = Dict((key => getvariable(vardict[key]) for key in keys(fdata)))
 
         for iteration in 1:_iterations
             if something(ensure_bool_or_nothing(inference_invoke_callback(callbacks, :before_iteration, fmodel, iteration)), false)::Bool
@@ -502,7 +503,7 @@ function __inference(;
             end
             inference_invoke_callback(callbacks, :before_data_update, fmodel, data)
             for (key, value) in fdata
-                update!(vardict[key], value)
+                update!(cacheddatavars[key], value)
             end
             inference_invoke_callback(callbacks, :after_data_update, fmodel, data)
 
@@ -1077,7 +1078,7 @@ function __rxinference(;
         datavarname = datavarnames[i]
         (haskey(vardict, datavarname) && is_data(vardict[datavarname])) ||
             error("The `datastream` produces data for `$(datavarname)`, but the model does not have a datavar named `$(datavarname)`")
-        return vardict[datavarname]
+        return getvariable(vardict[datavarname])
     end
 
     # If everything is ok with `datavars` and `redirectvars` next step is to initialise marginals and messages in the model
