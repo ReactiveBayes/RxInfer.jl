@@ -79,7 +79,7 @@ n = 500  # Number of coin flips
 p = 0.75 # Bias of a coin
 
 distribution = Bernoulli(p) 
-dataset      = float.(rand(Bernoulli(p), n))
+dataset      = float.(rand(distribution, n))
 ```
 
 ### Model specification
@@ -117,19 +117,14 @@ Now let's see how to specify this model using GraphPPL's package syntax.
 
 # GraphPPL.jl export `@model` macro for model specification
 # It accepts a regular Julia function and builds an FFG under the hood
-@model function coin_model(n)
-
-    # `datavar` creates data 'inputs' in our model
-    # We will pass data later on to these inputs
-    # In this example we create a sequence of inputs that accepts Float64
-    y = datavar(Float64, n)
+@model function coin_model(y)
     
     # We endow θ parameter of our model with some prior
     θ ~ Beta(2.0, 7.0)
     
     # We assume that outcome of each coin flip 
     # is governed by the Bernoulli distribution
-    for i in 1:n
+    for i in eachindex(y)
         y[i] ~ Bernoulli(θ)
     end
     
@@ -145,7 +140,7 @@ Once we have defined our model, the next step is to use `RxInfer` API to infer q
 
 ```julia
 result = infer(
-    model = coin_model(length(dataset)),
+    model = coin_model(),
     data  = (y = dataset, )
 )
 ```
