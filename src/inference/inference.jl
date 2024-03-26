@@ -361,23 +361,13 @@ function __inference(;
     # Verify that `predictvars` is not `nothing` and that `data` does not have any missing values.
     if !isnothing(predictvars)
         for (variable, value) in pairs(vardict)
-            if !isnothing(data) && haskey(predictvars, variable) && haskey(data, variable)
-                @warn "$(variable) is present in both `data` and `predictvars`. The values in `data` will be ignored."
-            end
             # The following logic creates and adds predictions to the data as missing values.
-            if isdata(value) && haskey(predictvars, variable) # Verify that the value is of a specified data type and is included in `predictvars`.
-                if allows_missings(value) # Allow missing values, otherwise raise an error.
-                    predictions = __inference_fill_predictions(variable, value)
-                    data = isnothing(data) ? predictions : merge(data, predictions)
-                else
-                    error("`predictvars` does not allow missing values for $(variable). Please add the following line: `$(variable) ~ datavar{...} where {allow_missing = true }`")
-                end
-            elseif isdata(value) && haskey(data, variable) && __inference_check_dataismissing(data[variable]) # The variable may be of a specified data type and contain missing values.
-                if allows_missings(value)
-                    predictvars = merge(predictvars, Dict(variable => KeepLast()))
-                else
-                    error("datavar $(variable) has missings inside but does not allow it. Add `where {allow_missing = true }`")
-                end
+            # Verify that the value is of a specified data type and is included in `predictvars`.
+            if isdata(value) && haskey(predictvars, variable) && !haskey(data, variable)
+                predictions = __inference_fill_predictions(variable, value)
+                data = isnothing(data) ? predictions : merge(data, predictions)
+            elseif isdata(value) && !haskey(predictvars, variable) && haskey(data, variable) && __inference_check_dataismissing(data[variable]) # The variable may be of a specified data type and contain missing values.
+                predictvars = merge(predictvars, Dict(variable => KeepLast()))
             end
         end
     else # In this case, the prediction functionality should only be performed if the data allows missings and actually contains missing values.

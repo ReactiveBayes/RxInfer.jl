@@ -274,9 +274,6 @@ function getfactornodes(model::GraphPPL.Model)
     return map(label -> model[label]::GraphPPL.NodeData, factor_nodes(model))
 end
 
-ReactiveMP.allows_missings(::AbstractArray{GraphVariableRef}) = false
-ReactiveMP.allows_missings(::GraphVariableRef) = false
-
 ReactiveMP.israndom(collection::AbstractArray{GraphVariableRef}) = all(ReactiveMP.israndom, collection)
 ReactiveMP.isdata(collection::AbstractArray{GraphVariableRef}) = all(ReactiveMP.isdata, collection)
 ReactiveMP.isconst(collection::AbstractArray{GraphVariableRef}) = all(ReactiveMP.isconst, collection)
@@ -291,8 +288,12 @@ isanonymous(ref::GraphVariableRef) = GraphPPL.is_anonymous(ref.properties)
 ReactiveMP.getmarginal(ref::GraphVariableRef, strategy) = ReactiveMP.getmarginal(ref.variable, strategy)
 ReactiveMP.getmarginals(collection::AbstractArray{GraphVariableRef}, strategy) = ReactiveMP.getmarginals(map(ref -> ref.variable, collection), strategy)
 
+ReactiveMP.getprediction(ref::GraphVariableRef) = ReactiveMP.getprediction(ref.variable)
+ReactiveMP.getpredictions(collection::AbstractArray{GraphVariableRef}) = ReactiveMP.getpredictions(map(ref -> ref.variable, collection))
+
 ReactiveMP.setmarginal!(ref::GraphVariableRef, marginal) = setmarginal!(ref.variable, marginal)
 ReactiveMP.setmarginals!(collection::AbstractArray{GraphVariableRef}, marginal) = ReactiveMP.setmarginals!(map(ref -> ref.variable, collection), marginal)
 
 ReactiveMP.setmessage!(ref::GraphVariableRef, marginal) = setmessage!(ref.variable, marginal)
 ReactiveMP.setmessages!(collection::AbstractArray{GraphVariableRef}, marginal) = ReactiveMP.setmessages!(map(ref -> ref.variable, collection), marginal)
+
