@@ -342,6 +342,26 @@ function __inference(;
 
     # The `_model` here still must be a `ModelGenerator`
     _model = GraphPPL.with_plugins(model, modelplugins)
+    
+    # If `predictvars` is specified implicitly as `KeepEach` or `KeepLast`, we replace it with the same value for each data variable
+    if (predictvars === KeepEach() || predictvars === KeepLast())
+        if !isnothing(data)
+            predictoption = predictvars
+            predictvars = Dict(variable => predictoption for (variable, value) in pairs(data))
+        else # else we throw an error
+            error("`predictvar` is specified as `$(predictvars)`, but `data` is not provided. Make sure to provide `data` or specify `predictvars` explicitly.")
+        end
+    # If `predictvar` is specified, but `data` is not, we initialize the `data` with missing values
+    elseif !isnothing(predictvars) && isnothing(data)
+        data = Dict(variable => missing for (variable, value) in pairs(predictvars))
+    # If `predictvar` is not specified, but `data` is, we initialize the `predictvars` with `KeepLast` or `KeepEach` depending on the `iterations` value
+    # But only if the data has missing values in it
+    elseif isnothing(predictvars) && !isnothing(data)
+        predictoption = iterations isa Number ? KeepEach() : KeepLast()
+        predictvars = Dict(variable => predictoption for (variable, value) in pairs(data) if __inference_check_dataismissing(data[variable]))
+    end
+
+    __infer_check_dicttype(:predictvars, predictvars)
 
     inference_invoke_callback(callbacks, :before_model_creation)
     fmodel = __infer_create_factor_graph_model(_model, data)
@@ -351,41 +371,13 @@ function __inference(;
 
     # First what we do - we check if `returnvars` is nothing or one of the two possible values: `KeepEach` and `KeepLast`. 
     # If so, we replace it with either `KeepEach` or `KeepLast` for each random and not-proxied variable in a model
-    if returnvars === nothing || returnvars === KeepEach() || returnvars === KeepLast()
+    if isnothing(returnvars) || returnvars === KeepEach() || returnvars === KeepLast()
         # Checks if the first argument is `nothing`, in which case returns the second argument
         returnoption = something(returnvars, iterations isa Number ? KeepEach() : KeepLast())
         returnvars   = Dict(variable => returnoption for (variable, value) in pairs(vardict) if (israndom(value) && !isanonymous(value)))
     end
 
-    # Assume that the prediction variables are specified as `datavars` inside the `@model` block, e.g. `pred = datavar(Float64, n)`.
-    # Verify that `predictvars` is not `nothing` and that `data` does not have any missing values.
-    if !isnothing(predictvars)
-        for (variable, value) in pairs(vardict)
-            # The following logic creates and adds predictions to the data as missing values.
-            # Verify that the value is of a specified data type and is included in `predictvars`.
-            if isdata(value) && haskey(predictvars, variable) && !haskey(data, variable)
-                predictions = __inference_fill_predictions(variable, value)
-                data = isnothing(data) ? predictions : merge(data, predictions)
-            elseif isdata(value) && !haskey(predictvars, variable) && haskey(data, variable) && __inference_check_dataismissing(data[variable]) # The variable may be of a specified data type and contain missing values.
-                predictvars = merge(predictvars, Dict(variable => KeepLast()))
-            end
-        end
-    else # In this case, the prediction functionality should only be performed if the data allows missings and actually contains missing values.
-        foreach(pairs(vardict)) do (variable, value)
-            if isdata(value) && haskey(data, variable) && __inference_check_dataismissing(data[variable]) && !allows_missings(value)
-                error(
-                    "The `data` entry for the $(variable) has `missing` values inside, but the `datavar` specification does not allow it. Use `where { allow_missing = true }` in the model specification"
-                )
-            end
-        end
-        predictvars = Dict(
-            variable => KeepLast() for
-            (variable, value) in pairs(vardict) if (isdata(value) && haskey(data, variable) && allows_missings(value) && __inference_check_dataismissing(data[variable]))
-        )
-    end
-
     __infer_check_dicttype(:returnvars, returnvars)
-    __infer_check_dicttype(:predictvars, predictvars)
 
     # Use `__check_has_randomvar` to filter out unknown or non-random variables in the `returnvar` specification
     __check_has_randomvar(vardict, variable) = begin
