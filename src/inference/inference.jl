@@ -859,13 +859,13 @@ function Rocket.on_next!(executor::RxInferenceEventExecutor{T}, event::T) where 
             inference_invoke_event(Val(:before_iteration), Val(_enabled_events), _events, _model, iteration)
 
             # At first we update all our priors (auto updates) with the fixed values from the `redirectupdate` field
-            inference_invoke_event(Val(:before_auto_update), Val(_enabled_events), _events, _model, iteration, fupdates)
+            inference_invoke_event(Val(:before_auto_update), Val(_enabled_events), _events, _model, iteration, _autoupdates)
             foreach(fupdates) do fupdate
                 for (datavar, value) in fupdate
                     update!(datavar, value)
                 end
             end
-            inference_invoke_event(Val(:after_auto_update), Val(_enabled_events), _events, _model, iteration, fupdates)
+            inference_invoke_event(Val(:after_auto_update), Val(_enabled_events), _events, _model, iteration, _autoupdates)
 
             # At second we pass our observations
             inference_invoke_event(Val(:before_data_update), Val(_enabled_events), _events, _model, iteration, event)

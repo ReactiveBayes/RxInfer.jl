@@ -63,6 +63,8 @@ struct RxInferenceAutoUpdate{L, N, C, R}
     recent   :: R
 end
 
+getvarlabel(autoupdate::RxInferenceAutoUpdate) = autoupdate.varlabel
+
 import Base: fetch
 
 Base.fetch(autoupdate::RxInferenceAutoUpdate) = fetch(autoupdate, autoupdate.recent)

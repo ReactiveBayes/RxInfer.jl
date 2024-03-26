@@ -643,8 +643,7 @@ end
                     @test model === engine.model
                     @test iteration === ii
                     @test length(fupdate) === 3
-                    @test name.(getindex.(Iterators.flatten(collect.(fupdate)), 1)) == [:x_t_min_mean, :x_t_min_var, :τ_shape, :τ_rate]
-                    @test eltype(getindex.(Iterators.flatten(collect.(fupdate)), 2)) === Float64
+                    @test RxInfer.getvarlabel.(fupdate) == (:x_t, :τ, :τ)
                 end
 
                 # Check the associated data with the `:after_auto_update` events
@@ -653,8 +652,7 @@ end
                     @test model === engine.model
                     @test iteration === ii
                     @test length(fupdate) === 3
-                    @test name.(getindex.(Iterators.flatten(collect.(fupdate)), 1)) == [:x_t_min_mean, :x_t_min_var, :τ_shape, :τ_rate]
-                    @test eltype(getindex.(Iterators.flatten(collect.(fupdate)), 2)) === Float64
+                    @test RxInfer.getvarlabel.(fupdate) == (:x_t, :τ, :τ)
                 end
 
                 # Check the correct ordering of the `:before_auto_update` and `:after_auto_update` events
