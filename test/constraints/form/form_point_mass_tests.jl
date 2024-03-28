@@ -1,7 +1,7 @@
 @testitem "PointMassFormConstraint" begin
     using LinearAlgebra
     using Random, StableRNGs, DomainSets, Distributions
-    import RxInfer: PointMassFormConstraint, is_point_mass_form_constraint, call_boundaries, call_starting_point, call_optimizer
+    import RxInfer: PointMassFormConstraint, call_boundaries, call_starting_point, call_optimizer
 
     struct MyDistributionWithMode <: ContinuousUnivariateDistribution
         mode::Float64
@@ -18,10 +18,6 @@
     const arbitrary_dist_3 = ContinuousUnivariateLogPdf(RealLine(), (x) -> logpdf(NormalMeanVariance(-10, 10), x))
     const arbitrary_dist_4 = ContinuousUnivariateLogPdf(HalfLine(), (x) -> logpdf(GammaShapeRate(100, 10), x))
     const arbitrary_dist_5 = ContinuousUnivariateLogPdf(HalfLine(), (x) -> logpdf(GammaShapeRate(100, 100), x))
-
-    @testset "is_point_mass_form_constraint" begin
-        @test is_point_mass_form_constraint(PointMassFormConstraint())
-    end
 
     @testset "boundaries" begin
         constraint = PointMassFormConstraint()
