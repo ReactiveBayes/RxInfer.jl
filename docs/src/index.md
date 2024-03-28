@@ -28,10 +28,7 @@ Given a probabilistic model, RxInfer allows for an efficient message-passing bas
 ## Package Features
 
 - User friendly syntax for specification of probabilistic models.
-- Automatic generation of message passing algorithms including
-    - [Belief propagation](https://en.wikipedia.org/wiki/Belief_propagation)
-    - [Variational message passing](https://en.wikipedia.org/wiki/Variational_message_passing)
-    - [Expectation maximization](https://en.wikipedia.org/wiki/Expectation-maximization_algorithm)
+- Automatic generation of message passing algorithms
 - Support for hybrid models combining discrete and continuous latent variables.
 - Support for hybrid distinct message passing inference algorithm under a unified paradigm.
 - Factorisation and functional form constraints specification.

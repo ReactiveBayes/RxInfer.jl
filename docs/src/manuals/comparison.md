@@ -39,13 +39,13 @@ Nowadays there's plenty of probabilistic programming languages and packages avai
 
 # RxInfer.jl breakdown
 
-- **Universality**: `RxInfer.jl` shines in formulating intricate models derived from the exponential family distributions. The package encompasses not only commonly used distributions such as Gaussian or Bernoulli, but also specialized stochastic nodes that represents prevalent probabilistic models like Autoregressive models, Gamma Mixture models, among others. Furthermore, `RxInfer.jl` proficiently manages deterministic transformations of variables from the exponential family, see [Delta node](@ref delta-node-manual). Nevertheless, for models outside the exponential family, `RxInfer.jl` might not be the good choice. Such models would require the creation of novel nodes and corresponding rules, as illustrated [in this section](@ref create-node).
+- **Universality**: `RxInfer.jl` shines in formulating models derived from the exponential family distributions. The package encompasses not only commonly used distributions such as Gaussian or Bernoulli, but also specialized stochastic nodes that represents prevalent probabilistic models like Autoregressive models, Gamma Mixture models, among others. Furthermore, `RxInfer.jl` proficiently manages deterministic transformations of variables from the exponential family, see [Delta node](@ref delta-node-manual). Nevertheless, for models outside the exponential family, `RxInfer.jl` might not be the good choice. Such models would require the creation of novel nodes and corresponding rules, as illustrated [in this section](@ref create-node).
   
-- **Efficiency**: `RxInfer.jl` distinguishes itself with its inference engine rooted in reactive message passing. This approach is supremely efficient, facilitating real-time propagation of updates across the system, supporting parallelization, interruptibility, and more. However, the current version of `RxInfer.jl` hasn't harnessed all these potentials.
+- **Efficiency**: `RxInfer.jl` distinguishes itself with its inference engine rooted in reactive message passing. This approach is supremely efficient, facilitating real-time propagation of updates across the system, supporting parallelization, interruptibility, and more. 
 
-- **Modularity**: Broadly, the toolboxes in the table aren't modular in the truest sense. They don't offer the fusion of models by integrating smaller models. While `RxInfer.jl` currently doesn't support this, a solution is on the horizon:
+- **Modularity**: Broadly, the toolboxes in the table aren't modular in the truest sense. They don't offer the fusion of models by integrating smaller models. `RxInfer.jl` on the other hand provides a way to compose different models:
   
-```julia
+```@example comparison-hierarchical-models
 @model function inner_inner(τ, y)
     y ~ Normal(τ[1], τ[2])
 end
@@ -78,10 +78,10 @@ The model then is expressed in `RxInfer.jl` as follows:
 using RxInfer
 
 @model function example_model()
-    x ~ Normal(mean=0.0, var=1.0)
+    x ~ Normal(mean = 0.0, var = 1.0)
     w ~ InverseGamma(α = 1, θ = 1)
     y ~ Normal(mean = x, var = w)
 end
 ```
 
-- **Debugging & Visualization**: While `RxInfer.jl` struggles with Julia's early-stage debugging system, it does provide a mechanism to debug the inference [procedure](@ref user-guide-debugging), even though not as seamlessly as some other packages.
+- **Debugging & Visualization**: `RxInfer.jl` does provide a mechanism to debug the inference [procedure](@ref user-guide-debugging), even though not as seamlessly as some other packages.
