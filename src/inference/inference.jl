@@ -7,7 +7,7 @@ export RxInferenceEngine, RxInferenceEvent
 import DataStructures: CircularBuffer
 import GraphPPL: ModelGenerator, create_model
 
-import ReactiveMP: israndom, isdata, isconst, allows_missings
+import ReactiveMP: israndom, isdata, isconst
 import ReactiveMP: CountingReal
 
 import ProgressMeter
