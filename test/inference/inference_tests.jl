@@ -378,6 +378,7 @@ end
 end
 
 @testitem "Streamline inference with `autoupdates` for test model #1" begin
+    import RxInfer: event_name
 
     # A simple model for testing that resembles a simple kalman filter with
     # random walk state transition and unknown observational noise
@@ -630,7 +631,7 @@ end
                 end
 
                 # Check the correct ordering of the `:before_iteration` and `:after_iteration` events
-                @test map(name, filter(event -> event isa RxInferenceEvent{:before_iteration} || event isa RxInferenceEvent{:after_iteration}, events)) ==
+                @test map(event_name, filter(event -> event isa RxInferenceEvent{:before_iteration} || event isa RxInferenceEvent{:after_iteration}, events)) ==
                     repeat([:before_iteration, :after_iteration], iterations)
 
                 # Check that the number of `:before_auto_update` and `:after_auto_update` events depends on the number of iterations
@@ -656,7 +657,7 @@ end
                 end
 
                 # Check the correct ordering of the `:before_auto_update` and `:after_auto_update` events
-                @test map(name, filter(event -> event isa RxInferenceEvent{:before_auto_update} || event isa RxInferenceEvent{:after_auto_update}, events)) ==
+                @test map(event_name, filter(event -> event isa RxInferenceEvent{:before_auto_update} || event isa RxInferenceEvent{:after_auto_update}, events)) ==
                     repeat([:before_auto_update, :after_auto_update], iterations)
 
                 # Check that the number of `:before_data_update` and `:after_data_update` events depends on the number of iterations
@@ -680,12 +681,12 @@ end
                 end
 
                 # Check the correct ordering of the `:before_auto_update` and `:after_auto_update` events
-                @test map(name, filter(event -> event isa RxInferenceEvent{:before_data_update} || event isa RxInferenceEvent{:after_data_update}, events)) ==
+                @test map(event_name, filter(event -> event isa RxInferenceEvent{:before_data_update} || event isa RxInferenceEvent{:after_data_update}, events)) ==
                     repeat([:before_data_update, :after_data_update], iterations)
 
                 # Check the correct ordering of the iteration related events
                 @test map(
-                    name,
+                    event_name,
                     filter(events) do event
                         return event isa RxInferenceEvent{:before_iteration} ||
                                event isa RxInferenceEvent{:before_auto_update} ||

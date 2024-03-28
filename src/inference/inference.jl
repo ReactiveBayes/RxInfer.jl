@@ -958,7 +958,7 @@ struct RxInferenceEvent{T, D}
     RxInferenceEvent(::Val{T}, data::D) where {T, D} = new{T, D}(data)
 end
 
-RxInfer.name(::RxInferenceEvent{T}) where {T} = T
+event_name(::RxInferenceEvent{T}) where {T} = T
 
 Base.show(io::IO, ::RxInferenceEvent{T}) where {T} = print(io, "RxInferenceEvent(:", T, ")")
 
