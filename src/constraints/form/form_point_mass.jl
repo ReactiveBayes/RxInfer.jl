@@ -1,6 +1,6 @@
 export PointMassFormConstraint
 
-import ReactiveMP: is_point_mass_form_constraint, default_form_check_strategy, default_prod_constraint, make_form_constraint, constrain_form
+import ReactiveMP: default_form_check_strategy, default_prod_constraint, constrain_form
 import DomainSets: Domain, infimum, supremum
 import Optim
 
@@ -47,12 +47,6 @@ function custom_boundaries(::Type{ Univariate }, ::Type{ Continuous }, constrain
     return (-Inf, Inf)
 end
 ```
-
-# Traits 
-- `is_point_mass_form_constraint` = `true`
-- `default_form_check_strategy`   = `FormConstraintCheckLast()`
-- `default_prod_constraint`       = `GenericProd()`
-- `make_form_constraint`          = `PointMass` (for use in `@constraints` macro)
 """
 struct PointMassFormConstraint{F, P, B} <: AbstractFormConstraint
     optimizer      :: F
@@ -67,8 +61,6 @@ PointMassFormConstraint(;
     starting_point = default_point_mass_form_constraint_starting_point,
     boundaries     = default_point_mass_form_constraint_boundaries
 ) = PointMassFormConstraint(optimizer, starting_point, boundaries)
-
-ReactiveMP.is_point_mass_form_constraint(::PointMassFormConstraint) = true
 
 ReactiveMP.default_form_check_strategy(::PointMassFormConstraint) = FormConstraintCheckLast()
 
