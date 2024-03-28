@@ -315,6 +315,7 @@ function __inference(;
     # catch exceptions during the inference procedure, optional, defaults to false
     catch_exception = false
 )
+
     _options = convert(ReactiveMPInferenceOptions, options)
     # If the `options` does not have `warn` key inside, override it with the keyword `warn`
     if isnothing(options) || !haskey(options, :warn)
@@ -342,7 +343,9 @@ function __inference(;
 
     # The `_model` here still must be a `ModelGenerator`
     _model = GraphPPL.with_plugins(model, modelplugins)
-    
+
+    __infer_check_dicttype(:data, data)
+
     # If `predictvars` is specified implicitly as `KeepEach` or `KeepLast`, we replace it with the same value for each data variable
     if (predictvars === KeepEach() || predictvars === KeepLast())
         if !isnothing(data)
@@ -351,14 +354,29 @@ function __inference(;
         else # else we throw an error
             error("`predictvar` is specified as `$(predictvars)`, but `data` is not provided. Make sure to provide `data` or specify `predictvars` explicitly.")
         end
-    # If `predictvar` is specified, but `data` is not, we initialize the `data` with missing values
+        # If `predictvar` is specified, but `data` is not, we initialize the `data` with missing values
     elseif !isnothing(predictvars) && isnothing(data)
         data = Dict(variable => missing for (variable, value) in pairs(predictvars))
-    # If `predictvar` is not specified, but `data` is, we initialize the `predictvars` with `KeepLast` or `KeepEach` depending on the `iterations` value
-    # But only if the data has missing values in it
+        # If `predictvar` is not specified, but `data` is, we initialize the `predictvars` with `KeepLast` or `KeepEach` depending on the `iterations` value
+        # But only if the data has missing values in it
     elseif isnothing(predictvars) && !isnothing(data)
         predictoption = iterations isa Number ? KeepEach() : KeepLast()
-        predictvars = Dict(variable => predictoption for (variable, value) in pairs(data) if __inference_check_dataismissing(data[variable]))
+        predictvars = Dict(variable => predictoption for (variable, value) in pairs(data) if __inference_check_dataismissing(value))
+        # If both `predictvar` and `data` are specified we double check if there are some entries in the `predictvars`
+        # which are not specified in the `data` and inject them
+        # We do the same the other way around for the `data` entries which are not specified in the `predictvars`
+    elseif !isnothing(predictvars) && !isnothing(data)
+        for (variable, _) in pairs(predictvars)
+            if !haskey(data, variable)
+                data = merge(data, Dict(variable => missing))
+            end
+        end
+        for (variable, value) in pairs(data)
+            if !haskey(predictvars, variable) && __inference_check_dataismissing(value)
+                predictoption = iterations isa Number ? KeepEach() : KeepLast()
+                predictvars = merge(predictvars, Dict(variable => predictoption))
+            end
+        end
     end
 
     __infer_check_dicttype(:predictvars, predictvars)
