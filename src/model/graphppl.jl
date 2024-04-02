@@ -133,7 +133,7 @@ See the documentation to `GraphPPL.@model` for more information.
 $(begin io = IOBuffer(); RxInfer.show_tilderhs_alias(io); String(take!(io)) end)
 """
 macro model(model_specification)
-    return esc(GraphPPL.model_macro_interior(ReactiveMPGraphPPLBackend(), model_specification))
+    return esc(GraphPPL.model_macro_interior(ReactiveMPGraphPPLBackend, model_specification))
 end
 
 # Backend specific methods
@@ -195,6 +195,10 @@ function GraphPPL.default_parametrization(backend::ReactiveMPGraphPPLBackend, ::
 end
 function GraphPPL.default_parametrization(backend::ReactiveMPGraphPPLBackend, nodetype, ::Nothing, something::F, rhs) where {F}
     return GraphPPL.default_parametrization(GraphPPL.DefaultBackend(), nodetype, something, rhs)
+end
+
+function GraphPPL.instantiate(::Type{ReactiveMPGraphPPLBackend}) 
+    return ReactiveMPGraphPPLBackend()
 end
 
 # Node specific aliases
