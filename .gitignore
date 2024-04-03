@@ -11,6 +11,7 @@ examples/*.jl
 examples/*WIP*
 examples/*gif
 !examples/.meta.jl
+!examples/Manifest.toml
 
 _output
 test/_output
