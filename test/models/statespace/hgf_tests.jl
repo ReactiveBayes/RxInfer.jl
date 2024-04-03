@@ -46,7 +46,7 @@
             initmarginals = (zt = NormalMeanVariance(0.0, 5.0), xt = NormalMeanVariance(0.0, 5.0)),
             iterations    = vmp_iters,
             free_energy   = true,
-            autostart     = true,
+            autostart     = true
         )
     end
 

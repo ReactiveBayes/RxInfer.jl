@@ -291,7 +291,7 @@ end
 
     @testset "test #5 vmp model" begin
         data = (y = [1.0, -10.0, 5.0],)
-    
+
         constraints = @constraints begin
             q(x_0, x, γ) = q(x_0, x)q(γ)
         end
@@ -320,5 +320,4 @@ end
         @test length(result.posteriors[:γ]) === 10
         @test length(result.predictions[:o]) === 10
     end
-    
 end
