@@ -13,12 +13,7 @@ struct ReactiveMPGraphPPLBackend end
 
 function GraphPPL.model_macro_interior_pipelines(::ReactiveMPGraphPPLBackend)
     default_pipelines = GraphPPL.model_macro_interior_pipelines(GraphPPL.DefaultBackend())
-    return (
-        RxInfer.error_datavar_constvar_randomvar,
-        RxInfer.compose_simple_operators_with_brackets, 
-        RxInfer.inject_tilderhs_aliases,
-        default_pipelines...
-    )
+    return (RxInfer.error_datavar_constvar_randomvar, RxInfer.compose_simple_operators_with_brackets, RxInfer.inject_tilderhs_aliases, default_pipelines...)
 end
 
 """
@@ -28,7 +23,9 @@ Notify the user that the `datavar`, `constvar` and `randomvar` syntax has been r
 """
 function error_datavar_constvar_randomvar(e::Expr)
     if @capture(e, ((lhs_ = datavar(args__)) | (lhs_ = constvar(args__)) | (lhs_ = randomvar(args__))))
-        return :(error("`datavar`, `constvar` and `randomvar` syntax has been removed from new versions of `RxInfer.jl`. Please refer to `GraphPPL` documentation for new model creation syntax."))
+        return :(error(
+            "`datavar`, `constvar` and `randomvar` syntax has been removed from new versions of `RxInfer.jl`. Please refer to `GraphPPL` documentation for new model creation syntax."
+        ))
     end
     return e
 end
@@ -197,7 +194,7 @@ function GraphPPL.default_parametrization(backend::ReactiveMPGraphPPLBackend, no
     return GraphPPL.default_parametrization(GraphPPL.DefaultBackend(), nodetype, something, rhs)
 end
 
-function GraphPPL.instantiate(::Type{ReactiveMPGraphPPLBackend}) 
+function GraphPPL.instantiate(::Type{ReactiveMPGraphPPLBackend})
     return ReactiveMPGraphPPLBackend()
 end
 

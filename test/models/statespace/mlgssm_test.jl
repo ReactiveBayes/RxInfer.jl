@@ -34,12 +34,12 @@
     @model function prod_distributions(a, b, c)
         a ~ b * c
     end
-    
+
     @model function state_transition_with_submodel(y_next, x_next, x_prev, A, B, P, Q)
         x_next ~ MvNormal(μ = prod_distributions(b = A, c = x_prev), Σ = Q)
         y_next ~ MvNormal(μ = prod_distributions(b = B, c = x_next), Σ = P)
     end
-    
+
     @model function multivariate_lgssm_model_with_several_submodel(y, x0, A, B, Q, P)
         x_prev ~ MvNormal(μ = mean(x0), Σ = cov(x0))
         for i in eachindex(y)
@@ -88,7 +88,7 @@
     v_marginals = []
     v_fe = []
 
-    for model in [multivariate_lgssm_model, multivariate_lgssm_model_with_submodel,multivariate_lgssm_model_with_several_submodel]
+    for model in [multivariate_lgssm_model, multivariate_lgssm_model_with_submodel, multivariate_lgssm_model_with_several_submodel]
         mresult = multivariate_lgssm_inference(model, y, x0, A, B, Q, P)
         xmarginals = mresult.posteriors[:x]
         fe = mresult.free_energy

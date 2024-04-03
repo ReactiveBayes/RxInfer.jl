@@ -81,28 +81,30 @@
         streaming_analytical_b = Ref{Float64}(1.0) # Thus we start with `a` and `b` equal to `1.0`
         streaming_analytical_check = Ref{Bool}(true)
         # During posteriors updates we double check that the result is consistent with the analytical solution
-        streaming_subscription = subscribe!(result_for_streaming_version.posteriors[:θ], (new_posterior) -> begin 
-            streaming_analytical_i[] = streaming_analytical_i[] + 1
-            streaming_analytical_observation = data_for_specific_p[streaming_analytical_i[]]
+        streaming_subscription = subscribe!(
+            result_for_streaming_version.posteriors[:θ], (new_posterior) -> begin
+                streaming_analytical_i[] = streaming_analytical_i[] + 1
+                streaming_analytical_observation = data_for_specific_p[streaming_analytical_i[]]
 
-            # We know the analytical solution for the Beta-Bernoulli model
-            # The `a` parameter should be incremented by `1` if the observation is `1`
-            # The `b` parameter should be incremented by `1` if the observation is `0`
-            streaming_analytical_a[] += isone(streaming_analytical_observation)
-            streaming_analytical_b[] += iszero(streaming_analytical_observation)
+                # We know the analytical solution for the Beta-Bernoulli model
+                # The `a` parameter should be incremented by `1` if the observation is `1`
+                # The `b` parameter should be incremented by `1` if the observation is `0`
+                streaming_analytical_a[] += isone(streaming_analytical_observation)
+                streaming_analytical_b[] += iszero(streaming_analytical_observation)
 
-            # We fetch the parameters of the posterior given from RxInfer inference engine
-            new_posterior_a, new_posterior_b = params(new_posterior)
+                # We fetch the parameters of the posterior given from RxInfer inference engine
+                new_posterior_a, new_posterior_b = params(new_posterior)
 
-            if new_posterior_a !== streaming_analytical_a[] || new_posterior_b !== streaming_analytical_b[]
-                # If the intermediate result does not match the analytical solution we set the flag to `false`
-                # We avoid doing `@test` here since it generates hundreds of thousands of tests
-                streaming_analytical_check[] = false
+                if new_posterior_a !== streaming_analytical_a[] || new_posterior_b !== streaming_analytical_b[]
+                    # If the intermediate result does not match the analytical solution we set the flag to `false`
+                    # We avoid doing `@test` here since it generates hundreds of thousands of tests
+                    streaming_analytical_check[] = false
+                end
+
+                # Save for later checking
+                streaming_saved_result[] = new_posterior
             end
-        
-            # Save for later checking
-            streaming_saved_result[] = new_posterior
-        end)
+        )
 
         # `autostart` was set to false
         @test streaming_saved_result[] === nothing

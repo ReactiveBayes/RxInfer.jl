@@ -315,7 +315,6 @@ function __inference(;
     # catch exceptions during the inference procedure, optional, defaults to false
     catch_exception = false
 )
-
     _options = convert(ReactiveMPInferenceOptions, options)
     # If the `options` does not have `warn` key inside, override it with the keyword `warn`
     if isnothing(options) || !haskey(options, :warn)

@@ -296,4 +296,3 @@ ReactiveMP.setmarginals!(collection::AbstractArray{GraphVariableRef}, marginal) 
 
 ReactiveMP.setmessage!(ref::GraphVariableRef, marginal) = setmessage!(ref.variable, marginal)
 ReactiveMP.setmessages!(collection::AbstractArray{GraphVariableRef}, marginal) = ReactiveMP.setmessages!(map(ref -> ref.variable, collection), marginal)
-
