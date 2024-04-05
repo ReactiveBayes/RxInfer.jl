@@ -1,4 +1,4 @@
-# [Model construction in RxInfer](@id lib-model-specification)
+# [Model construction in RxInfer](@id lib-model-construction)
 
 Model creation in `RxInfer` largely depends on [`GraphPPL`](https://github.com/ReactiveBayes/GraphPPL.jl) package.
 `RxInfer` re-exports the `@model` macro from `GraphPPL` and defines extra plugins and data structures on top of the default functionality.
