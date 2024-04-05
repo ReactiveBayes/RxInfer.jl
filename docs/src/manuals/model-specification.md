@@ -157,13 +157,14 @@ not only creates a latent variable `x₁` but also a factor node `Normal`.
 !!! note
     Generally it is not necessary to label all the arguments with their names, as `mean = ...` or `variance = ...` and many factor nodes 
     do not require it explicitly. However, for nodes, which have many different useful parametrizations (e.g. `Normal`) labeling the arguments 
-    is a requirement that helps to avoid any possible confusion.
+    is a requirement that helps to avoid any possible confusion. Read more about `Distributions` compatibility [here](@ref user-guide-model-specification-distributions).
 
 ### [Control flow statements](@id user-guide-model-specification-node-creation-control-flow)
 
-In general, it is possible to use any Julia code within model specification function, including control flow statements, such as `for`, `while` and `if` statements. However, it is not possible to use any latent states within such statements. This is due to the fact that it is necessary to know exactly the structure of the graph before the inference. Thus it is not possible to write statements like:
+In general, it is possible to use any Julia code within model specification function, including control flow statements, such as `for`, `while` and `if` statements. However, it is not possible to use any latent states within such statements. This is due to the fact that it is necessary to know exactly the structure of the graph before the inference. Thus it is **not possible** to write statements like:
 ```julia
 c ~ Categorical([ 1/2, 1/2 ])
+# This is NOT possible in `RxInfer`'s model specification language
 if c > 1
 # ...
 end
@@ -200,7 +201,6 @@ y ~ MvNormal(mean = zeros(3), covariance = Matrix(Diagonal(ones(3))))
 ```
 In this case, the expression `Matrix(Diagonal(ones(3)))` can (and will) be precomputed upon model creation and does not require to perform probabilistic inference.
 
-
 ### [Indexing operations](@id user-guide-model-specification-node-creation-indexing)
 
 The `ref` expressions, such as `x[i]`, are handled in a special way.
@@ -209,7 +209,7 @@ Technically, in Julia, the `x[i]` call is translated to a function call `getinde
 !!! warning
     It is not allowed to use latent variables within square brackets in the model specification or for control flow statements such as `if`, `for` or `while`.
 
-### Broadcasting syntax 
+### [Broadcasting syntax](@id user-guide-model-specification-node-creation-broadcasting)
 
 `GraphPPL` support broadcasting for `~` operator in the exact same way as Julia itself. 
 A user is free to write an expression of the following form:
@@ -230,7 +230,7 @@ y        .~ MvNormal(mean = x, precision = w) # <- Observations with unknown pre
 Note, however, that shapes of all variables that take part in the broadcasting operation must be defined in advance. That means that it is not possible to 
 use broadcasting with [deffered data](@ref user-guide-model-specification-conditioning). Read more about how broadcasting machinery works in Julia in [the official documentation](https://docs.julialang.org/en/v1/manual/arrays/#Broadcasting).
 
-### `Distributions.jl` compatibility
+### [`Distributions.jl` compatibility](@id user-guide-model-specification-distributions)
 
 For some factor nodes we rely on the syntax from `Distributions.jl` to make it easy to adopt `RxInfer.jl` for these users. These nodes include for example the [`Beta`](https://en.wikipedia.org/wiki/Beta_distribution) and [`Wishart`](https://en.wikipedia.org/wiki/Wishart_distribution) distributions. These nodes can be created using the `~` syntax with the arguments as specified in `Distributions.jl`. Unfortunately, we `RxInfer.jl` is not yet compatible with all possible distributions to be used as factor nodes. If you feel that you would like to see another node implemented, please file an issue.
 
@@ -243,36 +243,7 @@ Specifically for the Gaussian/Normal case we have custom implementations that yi
 2. Depending on the update rules, we might favor different parameterizations of the normal distributions. `ReactiveMP.jl` has quite a variety in parameterizations that allow us to efficient computations where we convert between parameterizations as little as possible.
 3. In certain situations we value stability a lot, especially when inverting matrices. `PDMats.jl`, and hence `Distributions.jl`, is not capable to fulfill all needs that we have here. Therefore we use `PositiveFactorizations.jl` to cope with the corner-cases.
 
-### Node creation options
-
-To pass optional arguments to the node creation constructor the user can use the `where { options...  }` options specification syntax.
-
-Example:
-
-```julia
-y ~ Normal(mean = y_mean, var = y_var) where { ... }
-```
-
-A list of the available options specific to the `ReactiveMP` inference engine is presented below.
-
-#### Metadata option
-
-Is is possible to pass any extra metadata to a factor node with the `meta` option. Metadata can be later accessed in message computation rules. See also [Meta specification](@ref user-guide-meta-specification) section.
-
-```julia
-z ~ f(x, y) where { meta = ... }
-```
-
-#### Dependencies option
-
-A user can modify default computational pipeline of a node with the `dependencies` options. 
-Read more about different options in the [`ReactiveMP.jl` documentation](https://reactivebayes.github.io/ReactiveMP.jl/stable/).
-
-```julia
-y[k - 1] ~ Probit(x[k]) where { dependencies = ... }
-```
-
-## Model structure visualisation
+## [Model structure visualisation](@id user-guide-model-specification-visualization)
 
 It is also possible to visualize the model structure after conditioning on data. For that we need two extra packages installed: `Cairo` and `GraphPlot`. Note, that those packages are not included in the `RxInfer` package and must be installed separately.
 
@@ -285,3 +256,43 @@ model = RxInfer.create_model(conditioned)
 # Call `gplot` function from `GraphPlot` to visualise the structure of the graph
 GraphPlot.gplot(RxInfer.getmodel(model))
 ```
+
+### [Node creation options](@id user-guide-model-specification-node-creation-options)
+
+`GraphPPL` allows to pass optional arguments to the node creation constructor with the `where { options...  }` options specification syntax.
+
+Example:
+```julia
+y ~ Normal(mean = y_mean, var = y_var) where { meta = ... }
+```
+
+A list of the available options specific to the `ReactiveMP` inference engine is presented below.
+
+#### Metadata option
+
+Is is possible to pass any extra metadata to a factor node with the `meta` option. Metadata can be later accessed in message computation rules.
+```julia
+z ~ f(x, y) where { meta = Linearization() }
+d ~ g(a, b) where { meta = Unscented() }
+```
+This option might be useful to change message passing rules around a specific factor node. Read more about this feature in [Meta Specification](@ref user-guide-meta-specification) section.
+
+#### Dependencies option
+
+A user can modify default computational pipeline of a node with the `dependencies` options. 
+Read more about different options in the [`ReactiveMP.jl` documentation](https://reactivebayes.github.io/ReactiveMP.jl/stable/).
+
+```julia
+y[k - 1] ~ Probit(x[k]) where {
+    # This specification indicates that in order to compute an outbound message from the `in` interface
+    # We need an inbound message from the same edge initialized to `NormalMeanPrecision(0.0, 1.0)`
+    dependencies = RequireMessageFunctionalDependencies(in = NormalMeanPrecision(0.0, 1.0))
+}
+```
+
+## Read also
+
+- [Constraints specification](@ref user-guide-constraints-specification)
+- [Meta specification](@ref user-guide-meta-specification)
+- [Inference execution](@ref user-guide-inference-execution)
+- [Debugging inference](@ref user-guide-debugging)
