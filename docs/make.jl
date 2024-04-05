@@ -80,23 +80,9 @@ ExamplesPages = map(collect(pairs(ExamplesCategoriesPages))) do (label, info)
     return info.title => info.pages
 end
 
-# WIP: Keep it as a nice starting approach for adding a header, currently we are using `assets/header.js`
-# struct DocumentationWriter <: Documenter.Writer
-#     base :: Documenter.HTML
-# end
-
-# abstract type ExtendedHTMLFormat <: Documenter.Writers.FormatSelector end
-
-# Documenter.Selectors.order(::Type{ExtendedHTMLFormat})            = 4.0
-# Documenter.Selectors.matcher(::Type{ExtendedHTMLFormat}, fmt, _)  = isa(fmt, DocumentationWriter)
-
-# function Documenter.Selectors.runner(::Type{ExtendedHTMLFormat}, fmt, doc) 
-#     return Documenter.Writers.HTMLWriter.render(doc, fmt.base)
-# end
-
 makedocs(;
     draft = false,
-    warnonly = Documenter.except(:doctest, :eval_block, :example_block, :meta_block, :parse_error, :setup_block),
+    warnonly = true,
     modules = [RxInfer],
     authors = "Bagaev Dmitry <d.v.bagaev@tue.nl> and contributors",
     sitename = "RxInfer.jl",

@@ -46,4 +46,9 @@ end
 apply_diagnostic_check(::Nothing, something, stream)     = stream
 apply_diagnostic_check(checks::Tuple, something, stream) = foldl((folded, check) -> apply_diagnostic_check(check, something, folded), checks; init = stream)
 
+"""
+    const DefaultObjectiveDiagnosticChecks = (ObjectiveDiagnosticCheckNaNs(), ObjectiveDiagnosticCheckInfs())
+
+A constant that defines the default objective diagnostic checks.
+"""
 const DefaultObjectiveDiagnosticChecks = (ObjectiveDiagnosticCheckNaNs(), ObjectiveDiagnosticCheckInfs())
