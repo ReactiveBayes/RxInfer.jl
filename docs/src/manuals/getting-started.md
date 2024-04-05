@@ -124,6 +124,72 @@ As you can see, `RxInfer` offers a model specification syntax that resembles clo
 !!! note
     To quickly check the list of all available factor nodes that can be used in the model specification language call `?ReactiveMP.is_predefined_node` or `Base.doc(ReactiveMP.is_predefined_node)`.
 
+### [Conditioning on data and inspecting the model structure](@id getting-started-conditioning)
+
+Given the model specification we can construct an actual model graph and visualize it. In order to do that we can use the `|` operator to condition on data and the `RxInfer.create_model` function to create the graph. Read more about condition in the [corresponding section](@ref user-guide-model-specification-conditioning) of the documentation.
+
+```@example coin
+conditioned = coin_model(a = 2.0, b = 7.0) | (y = [ 1.0, 0.0, 1.0 ], )
+```
+
+We can use `GraphPPL.jl` visualisation capabilities to show the structure of the resulting graph. For that we need two extra packages installed: `Cairo` and `GraphPlot`. Note, that those packages are not included in the `RxInfer` package and must be installed separately.
+
+```@example coin
+using Cairo, GraphPlot
+
+# `Create` the actual graph of the model conditioned on the data
+model = RxInfer.create_model(conditioned)
+
+# Call `gplot` function from `GraphPlot` to visualise the structure of the graph
+GraphPlot.gplot(RxInfer.getmodel(model))
+```
+
+In addition, we can also programatically query the structure of the graph:
+
+```@example coin
+RxInfer.getvardict(model)
+```
+
+```@example coin
+RxInfer.getrandomvars(model)
+```
+
+```@example coin
+RxInfer.getdatavars(model)
+```
+
+```@example coin
+RxInfer.getconstantvars(model)
+```
+
+```@example coin
+RxInfer.getfactornodes(model)
+```
+
+### Conditioning on data that is not available at model creation time
+
+Sometimes the data is not known at model creation time, for example, during reactive inference.
+For that purpose `RxInfer` uses [`DefferedDataHandler`](@ref) structure.
+
+```@example coin
+# The only difference here is that we do not specify `a` and `b` as hyper-parameters 
+# But rather indicate that the data for them will be available later during the inference
+conditioned_with_deffered_data = coin_model() | (
+    y = [ 1.0, 0.0, 1.0 ], 
+    a = RxInfer.DefferedDataHandler(), 
+    b = RxInfer.DefferedDataHandler()
+)
+
+# The graph creation API does not change
+model_with_deffered_data = RxInfer.create_model(conditioned_with_deffered_data)
+
+# We can visualise the graph with missing data handles as well
+GraphPlot.gplot(RxInfer.getmodel(model_with_deffered_data))
+```
+
+From the model structure visualisation we can see now that both `a` and `b` are no longer indicated as constants.
+Read more about the structure of the graph in [`GraphPPL` documentation](https://reactivebayes.github.io/GraphPPL.jl/stable/).
+
 ### [Inference specification](@id getting-started-inference-specification)
 
 #### Automatic inference specification
@@ -138,6 +204,7 @@ result = infer(
 )
 ```
 
+As you can see we don't need to condition on the data manually, the [`infer`](@ref) function will do it automatically.
 After the inference is complete we can fetch the results from the `.posterior` field with the name of the latent state:
 
 ```@example coin 

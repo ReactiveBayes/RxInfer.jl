@@ -36,7 +36,7 @@ julia> @model function beta_bernoulli(y, a, b)
        end
 
 julia> conditioned_model = beta_bernoulli(a = 1.0, b = 2.0) | (y = [ 1.0, 0.0, 1.0 ], )
-beta_bernoulli(a = 1.0, b = 2.0) condition on: 
+beta_bernoulli(a = 1.0, b = 2.0) conditioned on: 
   y = [1.0, 0.0, 1.0]
 
 julia> RxInfer.create_model(conditioned_model) isa RxInfer.ProbabilisticModel
@@ -55,6 +55,22 @@ getconditioned_on(generator::ConditionedModelGenerator) = generator.conditioned_
     condition_on(generator::ModelGenerator; kwargs...)
 
 A function that creates a `ConditionedModelGenerator` object from `GraphPPL.ModelGenerator`.
+The `|` operator can be used as a shorthand for this function.
+
+```jldoctest
+julia> using RxInfer
+
+julia> @model function beta_bernoulli(y, a, b)
+           θ ~ Beta(a, b)
+           y .~ Bernoulli(θ)
+       end
+
+julia> conditioned_model = beta_bernoulli(a = 1.0, b = 2.0) | (y = [ 1.0, 0.0, 1.0 ], )
+beta_bernoulli(a = 1.0, b = 2.0) conditioned on: 
+  y = [1.0, 0.0, 1.0]
+
+julia> RxInfer.create_model(conditioned_model) isa RxInfer.ProbabilisticModel
+true
 """
 function condition_on(generator::ModelGenerator; kwargs...)
     return ConditionedModelGenerator(generator, NamedTuple(kwargs))

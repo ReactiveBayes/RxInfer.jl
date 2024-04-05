@@ -55,7 +55,7 @@ model = state_space_model(trend = 3.0, variance = 1.0)
 nothing #hide
 ```
 
-### [Conditioning on data](@id user-guide-model-specification-data-variables)
+### [Conditioning on data](@id user-guide-model-specification-conditioning)
 
 It is important to have a mechanism to pass data values to the model. You can create data inputs with `datavar()` function. As a first argument it accepts a type specification and optional dimensionality (as additional arguments or as a tuple). User can treat `datavar()`s in the model as both clamped values for priors and observations.
 
