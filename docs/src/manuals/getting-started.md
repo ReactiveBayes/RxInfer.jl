@@ -65,7 +65,7 @@ coin_bias      = 0.75
 # distributed as the `Bernoulli` distrinution
 distribution   = Bernoulli(coin_bias)
 # Simulated coin flips
-dataset        = float.(rand(rng, distribution, n))
+dataset        = float.(rand(rng, distribution, n_observations))
 ```
 
 ### [Model specification](@id getting-started-model-specification)
@@ -147,8 +147,9 @@ After the inference is complete we can fetch the results from the `.posterior` f
 We can also compute some statistical properties of the result:
 
 ```@example coin
-println("mean: ", mean(θestimated))
-println("std:  ", std(θestimated))
+println("Real bias is ", coin_bias)
+println("Estimated bias is: ", mean(θestimated))
+println("Standard deviation:  ", std(θestimated))
 nothing #hide
 ```
 
@@ -185,10 +186,9 @@ Let's investigate how the number of observation affects the estimated posterior:
 
 ```@example coin
 p3 = plot(title = "Posterior", legend = :topleft)
-
-p3 = plot!(p3, rθ, (x) -> pdf(θestimated_100, x), fillalpha = 0.3, fillrange = 0, label = "P(θ|y_100)", c = 4)
-p3 = plot!(p3, rθ, (x) -> pdf(θestimated_1000, x), fillalpha = 0.3, fillrange = 0, label = "P(θ|y_1000)", c = 5)
-p3 = plot!(p3, rθ, (x) -> pdf(θestimated_10000, x), fillalpha = 0.3, fillrange = 0, label = "P(θ|y_10000)", c = 6)
+p3 = plot!(p3, rθ, (x) -> pdf(θestimated_100.posteriors[:θ], x), fillalpha = 0.3, fillrange = 0, label = "P(θ|y_100)", c = 4)
+p3 = plot!(p3, rθ, (x) -> pdf(θestimated_1000.posteriors[:θ], x), fillalpha = 0.3, fillrange = 0, label = "P(θ|y_1000)", c = 5)
+p3 = plot!(p3, rθ, (x) -> pdf(θestimated_10000.posteriors[:θ], x), fillalpha = 0.3, fillrange = 0, label = "P(θ|y_10000)", c = 6)
 
 plot(p1, p3, layout = @layout([ a; b ]))
 ```
@@ -196,8 +196,9 @@ plot(p1, p3, layout = @layout([ a; b ]))
 We can see that with larger dataset our posterior marginal estimate becomes more and more accurate and represents real value of the bias of a coin.
 
 ```@example coin
-println("mean: ", mean(θestimated_10000))
-println("std:  ", std(θestimated_10000))
+println("Real bias is ", coin_bias)
+println("Estimated bias is: ", mean(θestimated_10000.posteriors[:θ]))
+println("Standard deviation:  ", std(θestimated_10000.posteriors[:θ]))
 nothing #hide
 ```
 
