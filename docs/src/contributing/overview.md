@@ -38,7 +38,7 @@ The `dev` command clones `RxInfer` to `~/.julia/dev/RxInfer`. All local changes 
 
 ### Core dependencies
 
-`RxInfer.jl` heavily depends on the `ReactiveMP.jl`, `GraphPPL.jl` and `Rocket.jl` packages. RxInfer.jl must be updated every time any of these packages has a major update and/or API changes. Developers are adviced to use the `dev` command for all of these packages while making changes to the `RxInfer.jl`. It is worth noting though that standard Julia testing utilities ignore the local development environment and always try to test the package with the latest released versions of the core dependencies. Read the section about the `Makefile` below to see how to test `RxInfer.jl` with the locally installed core dependencies.
+`RxInfer.jl` heavily depends on the `ReactiveMP.jl`, `GraphPPL.jl` and `Rocket.jl` packages. `RxInfer.jl` must be updated every time any of these packages has a major update and/or API changes. Developers are adviced to use the `dev` command for all of these packages while making changes to the `RxInfer.jl`. It is worth noting though that standard Julia testing utilities ignore the local development environment and always try to test the package with the latest released versions of the core dependencies. Read the section about the `Makefile` below to see how to test `RxInfer.jl` with the locally installed core dependencies.
 
 ### Committing code
 
