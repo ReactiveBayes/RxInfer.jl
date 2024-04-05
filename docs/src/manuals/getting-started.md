@@ -148,8 +148,8 @@ We can also compute some statistical properties of the result:
 
 ```@example coin
 println("Real bias is ", coin_bias)
-println("Estimated bias is: ", mean(θestimated))
-println("Standard deviation:  ", std(θestimated))
+println("Estimated bias is ", mean(θestimated))
+println("Standard deviation ", std(θestimated))
 nothing #hide
 ```
 
@@ -166,7 +166,9 @@ p2 = plot(rθ, (x) -> pdf(θestimated, x), title="Posterior", fillalpha=0.3, fil
 plot(p1, p2, layout = @layout([ a; b ]))
 ```
 
-In our dataset we used 10 coin flips to estimate the bias of a coin. It resulted in a vague posterior distribution, however `RxInfer` scales very well for large models and factor graphs. We may use more coin flips in our dataset for better posterior distribution estimates:
+In our dataset we used 10 coin flips and skewed prior to estimate the bias of a coin. 
+It resulted in a vague posterior distribution, however `RxInfer` scales very well for large models and factor graphs. 
+We may use more coin flips in our dataset for better posterior distribution estimates:
 
 ```@example coin
 dataset_100   = float.(rand(rng, Bernoulli(coin_bias), 100))
@@ -197,11 +199,11 @@ We can see that with larger dataset our posterior marginal estimate becomes more
 
 ```@example coin
 println("Real bias is ", coin_bias)
-println("Estimated bias is: ", mean(θestimated_10000.posteriors[:θ]))
-println("Standard deviation:  ", std(θestimated_10000.posteriors[:θ]))
+println("Estimated bias is ", mean(θestimated_10000.posteriors[:θ]))
+println("Standard deviation ", std(θestimated_10000.posteriors[:θ]))
 nothing #hide
 ```
 
 ## Where to go next?
 
-There are a set of [examples](@ref examples-overview) available in `RxInfer` repository that demonstrate the more advanced features of the package for various problems. Alternatively, you can head to the [Model specification](@ref user-guide-model-specification) which provides more detailed information of how to use `RxInfer` to specify probabilistic models. [Inference execution](@ref user-guide-inference-execution) section provides a documentation about `RxInfer` API for running reactive Bayesian inference.
+There are a set of [examples](@ref examples-overview) available in `RxInfer` repository that demonstrate the more advanced features of the package for various problems. Alternatively, you can head to the [Model specification](@ref user-guide-model-specification) which provides more detailed information of how to use `RxInfer` to specify probabilistic models. [Inference execution](@ref user-guide-inference-execution) section provides a documentation about `RxInfer` API for running reactive Bayesian inference. Also read the [Comparison](@ref comparison) to compare `RxInfer` with other probabilistic programming libraries.

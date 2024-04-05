@@ -2,9 +2,9 @@
 
 Nowadays there's plenty of probabilistic programming languages and packages available. While all of them are based on Bayesian Inference, their methodologies vary. This section compares `RxInfer.jl` against other renowned probabilistic programming languages and packages. The goal is to enlighten potential users about the nuances and guide them in choosing the package that best suits their requirements.
 
-**DISCLAIMER**: 
-1. This comparison isn't exhaustive and mirrors the author's hands-on experience with the packages. Some might have undergone more rigorous testing than others. If you're an author of one of these packages and believe the comparison doesn't do justice, please reach out, and we'll be more than willing to rectify.
-2. The comparison is more qualitative than quantitative, considering the intricacies of upkeeping benchmarking code for perpetually evolving packages.
+!!! warning
+    1. This comparison isn't exhaustive and mirrors the author's hands-on experience with the packages. Some might have undergone more rigorous testing than others. If you're an author of one of these packages and believe the comparison doesn't do justice, please [reach out](https://github.com/ReactiveBayes), and we'll be more than willing to rectify.
+    2. The comparison is more qualitative than quantitative, considering the intricacies of upkeeping benchmarking code for perpetually evolving packages.
 
 
 
@@ -46,14 +46,16 @@ Nowadays there's plenty of probabilistic programming languages and packages avai
 - **Modularity**: Broadly, the toolboxes in the table aren't modular in the truest sense. They don't offer the fusion of models by integrating smaller models. `RxInfer.jl` on the other hand provides a way to compose different models:
   
 ```@example comparison-hierarchical-models
-@model function inner_inner(τ, y)
-    y ~ Normal(τ[1], τ[2])
+using RxInfer #hide
+
+@model function inner_inner(τ, y, x)
+    y ~ Normal(τ[1], τ[2] + x)
 end
 
 @model function inner(θ, α)
     β ~ Normal(0, 1)
     α ~ Gamma(β, 1)
-    α ~ inner_inner(τ = θ)
+    α ~ inner_inner(τ = θ, x = 3)
 end
 
 @model function outer()
@@ -74,8 +76,8 @@ $$\begin{aligned}
 \end{aligned}$$
 
 The model then is expressed in `RxInfer.jl` as follows:
-```@example comparisondoc
-using RxInfer
+```@example comparison-expresiveness
+using RxInfer #hide
 
 @model function example_model()
     x ~ Normal(mean = 0.0, var = 1.0)
@@ -84,4 +86,4 @@ using RxInfer
 end
 ```
 
-- **Debugging & Visualization**: `RxInfer.jl` does provide a mechanism to debug the inference [procedure](@ref user-guide-debugging), even though not as seamlessly as some other packages.
+- **Debugging & Visualization**: `RxInfer.jl` does provide a mechanism to debug the inference [procedure](@ref user-guide-debugging) and [visualise](https://reactivebayes.github.io/GraphPPL.jl/stable/) the graph structure, even though not as seamlessly as some other packages.
