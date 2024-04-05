@@ -21,27 +21,11 @@ getconstantvars(model::ProbabilisticModel) = getconstantvars(getmodel(model))
 getfactornodes(model::ProbabilisticModel) = getfactornodes(getmodel(model))
 
 """
-    ConditionedModelGenerator(generator, data)
+    ConditionedModelGenerator(generator, conditioned_on)
 
 Accepts a model generator and data to condition on. 
 The `generator` must be `GraphPPL.ModelGenerator` object.
-The `data` must be named tuple or a dictionary with keys corresponding to the names of the input arguments in the model.
-
-```jldoctest
-julia> using RxInfer
-
-julia> @model function beta_bernoulli(y, a, b)
-           θ ~ Beta(a, b)
-           y .~ Bernoulli(θ)
-       end
-
-julia> conditioned_model = beta_bernoulli(a = 1.0, b = 2.0) | (y = [ 1.0, 0.0, 1.0 ], )
-beta_bernoulli(a = 1.0, b = 2.0) conditioned on: 
-  y = [1.0, 0.0, 1.0]
-
-julia> RxInfer.create_model(conditioned_model) isa RxInfer.ProbabilisticModel
-true
-```
+The `conditioned_on` must be named tuple or a dictionary with keys corresponding to the names of the input arguments in the model.
 """
 struct ConditionedModelGenerator{G, D}
     generator::G
@@ -118,17 +102,6 @@ function __infer_create_factor_graph_model(generator::ModelGenerator, conditione
     end
     return ProbabilisticModel(model)
 end
-
-# function __infer_create_factor_graph_model(generator::ModelGenerator, datanames, datastream::AbstractSubscribable, autoupdates::Tuple)
-#     ikeys = Tuple(Iterators.flatten((datanames, map(getlabels, autoupdates)...)))
-#     model = create_model(generator) do model, ctx
-#         interfaces = map(ikeys) do key
-#             return __infer_create_data_interface(model, ctx, key)
-#         end
-#         return NamedTuple{ikeys}(interfaces)
-#     end
-#     return ProbabilisticModel(model)
-# end
 
 """
 An object that is used to condition on unknown data. That may be necessary to create a model from a `ModelGenerator` object

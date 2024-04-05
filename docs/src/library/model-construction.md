@@ -7,6 +7,8 @@ Model creation in `RxInfer` largely depends on [`GraphPPL`](https://github.com/R
     The model creation and construction were largely refactored in `GraphPPL` v4. 
     Read [_Migration Guide_](https://reactivebayes.github.io/GraphPPL.jl/stable/migration_3_to_4/) for more details.
 
+Also read the [_Model Specification_](@ref user-guide-model-specification) guide.
+
 ```@docs
 RxInfer.ReactiveMPGraphPPLBackend
 RxInfer.@model
