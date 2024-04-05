@@ -113,24 +113,26 @@ P(y_{1:N}, \theta) = P(\theta) \prod_{i=1}^N P(y_i | \theta).
 ```
 
 Now let's see how to specify this model using GraphPPL's package syntax.
-
 ```julia
-
 # GraphPPL.jl export `@model` macro for model specification
 # It accepts a regular Julia function and builds an FFG under the hood
-@model function coin_model(y)
-    
+@model function coin_model(y, a, b) 
     # We endow θ parameter of our model with some prior
-    θ ~ Beta(2.0, 7.0)
-    
+    θ ~ Beta(a, b)
     # We assume that outcome of each coin flip 
     # is governed by the Bernoulli distribution
     for i in eachindex(y)
         y[i] ~ Bernoulli(θ)
-    end
-    
+    end  
 end
+```
 
+Alternatively, we could use a broadcasting syntax.
+```julia
+@model function coin_model(y, a, b) 
+    θ  ~ Beta(a, b)
+    y .~ Bernoulli(θ) 
+end
 ```
 
 As you can see, `RxInfer` offers a model specification syntax that resembles closely to the mathematical equations defined above. We use `datavar` function to create "clamped" variables that take specific values at a later date. $\theta \sim \mathrm{Beta}(2.0, 7.0)$ expression creates random variable $θ$ and assigns it as an output of $\mathrm{Beta}$ node in the corresponding FFG. 
@@ -144,7 +146,7 @@ Once we have defined our model, the next step is to use `RxInfer` API to infer q
 
 ```julia
 result = infer(
-    model = coin_model(),
+    model = coin_model(a = 2.0, b = 7.0),
     data  = (y = dataset, )
 )
 ```

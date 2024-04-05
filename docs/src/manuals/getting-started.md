@@ -2,9 +2,9 @@
 
 `RxInfer.jl` is a Julia package for Bayesian Inference on Factor Graphs by Message Passing. 
 It supports both exact and variational inference algorithms and forms an ecosystem around three main packages: 
-- `ReactiveMP.jl` exports a reactive message passing based Bayesian inference engine;
-- `Rocket.jl` is the core library that enables reactivity;
-- `GraphPPL.jl` library simplifies model and constraints specification. 
+- [`ReactiveMP.jl`](https://github.com/reactivebayes/ReactiveMP.jl) - the underlying message passing-based inference engine
+- [`GraphPPL.jl`](https://github.com/reactivebayes/GraphPPL.jl) - model and constraints specification package
+- [`Rocket.jl`](https://github.com/reactivebayes/Rocket.jl) - reactive extensions package for Julia 
 
 This page provides the necessary information you need to get started with `Rxinfer`. We will show the general approach to solving inference problems with `RxInfer` by means of a running example: inferring the bias of a coin using a simple Beta-Bernoulli model.
 
@@ -116,10 +116,17 @@ Now let's see how to specify this model using GraphPPL's package syntax.
         y[i] ~ Bernoulli(θ)
     end
 end
-
 ```
 
 As you can see, `RxInfer` offers a model specification syntax that resembles closely to the mathematical equations defined above.
+Alternatively, we could use a broadcasting syntax:
+
+```@example coin
+@model function coin_model(y, a, b) 
+    θ  ~ Beta(a, b)
+    y .~ Bernoulli(θ) 
+end
+```
 
 !!! note
     To quickly check the list of all available factor nodes that can be used in the model specification language call `?ReactiveMP.is_predefined_node` or `Base.doc(ReactiveMP.is_predefined_node)`.
