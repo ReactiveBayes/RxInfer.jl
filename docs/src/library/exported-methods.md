@@ -39,8 +39,6 @@ mean(Normal(0.0, 1.0)) # `Normal` is an object from `Distributions.jl`
 mean(NormalMeanVariance(0.0, 1.0)) # `NormalMeanVariance` is an object from `RxInfer.jl`
 ```
 
-
-
 ## [List of available methods](@id lib-list-methods)
 
 Below you can find a list of **exported** methods from RxInfer.jl. All methods (even private) can be always accessed with `RxInfer.` prefix, e.g `RxInfer.mean`.

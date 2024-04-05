@@ -107,9 +107,9 @@ makedocs(;
             "Delta node"                => "manuals/delta-node.md"
         ],
         "Library" => [
-            "Built-in functional form constraints" => "library/functional-forms.md",
-            "Model specification" => "library/model-specification.md",
+            "Model construction" => "library/model-construction.md",
             "Bethe Free Energy" => "library/bethe-free-energy.md",
+            "Built-in functional form constraints" => "library/functional-forms.md",
             "Exported methods" => "library/exported-methods.md"
         ],
         "Examples" => [
