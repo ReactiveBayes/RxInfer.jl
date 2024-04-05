@@ -55,6 +55,7 @@ beta_bernoulli(a = 1.0, b = 2.0) conditioned on:
 
 julia> RxInfer.create_model(conditioned_model) isa RxInfer.ProbabilisticModel
 true
+```
 """
 function condition_on(generator::ModelGenerator; kwargs...)
     return ConditionedModelGenerator(generator, NamedTuple(kwargs))

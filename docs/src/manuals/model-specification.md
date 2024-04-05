@@ -21,6 +21,7 @@ where `model_arguments...` may include both hypeparameters and data.
 The `@model` macro returns a regular Julia function (in this example `model_name()`) which can be executed as usual. It returns a so-called model generator object, e.g:
 
 ```@example model-specification-model-macro
+using RxInfer #hide
 @model function my_model(observation, hyperparameter)
     observations ~ Normal(0.0, hyperparameter)
 end
@@ -37,6 +38,8 @@ Here we give an example of a probabilistic model is given before presenting the 
 The model below is a simple state space model with latent random variables `x` and noisy observations `y`.
 
 ```@example model-specification-ssm
+using RxInfer #hide
+
 @model function state_space_model(y, trend, variance)
     x[1] ~ Normal(mean = 0.0, variance = 100.0)
     for i in 2:length(y)
@@ -192,7 +195,7 @@ Is is possible to pass any extra metadata to a factor node with the `meta` optio
 z ~ f(x, y) where { meta = ... }
 ```
 
-#### Depedencies option
+#### Dependencies option
 
 A user can modify default computational pipeline of a node with the `dependencies` options. 
 Read more about different options in the [`ReactiveMP.jl` documentation](https://reactivebayes.github.io/ReactiveMP.jl/stable/).
@@ -201,3 +204,16 @@ Read more about different options in the [`ReactiveMP.jl` documentation](https:/
 y[k - 1] ~ Probit(x[k]) where { dependencies = ... }
 ```
 
+## Model structure visualisation
+
+It is also possible to visualize the model structure after conditioning on data. For that we need two extra packages installed: `Cairo` and `GraphPlot`. Note, that those packages are not included in the `RxInfer` package and must be installed separately.
+
+```@example model-specification-ssm
+using Cairo, GraphPlot
+
+# `Create` the actual graph of the model conditioned on the data
+model = RxInfer.create_model(conditioned)
+
+# Call `gplot` function from `GraphPlot` to visualise the structure of the graph
+GraphPlot.gplot(RxInfer.getmodel(model))
+```
