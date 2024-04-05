@@ -35,7 +35,7 @@ nothing #hide
 
 The model generator is not a real model (yet). For example, in the code above, we haven't specified anything for the `observation`. 
 The generator object allows us to iteratively add extra properties to the model, condition on data, and/or assign extra metadata information 
-without actually materializing the entire graph structure. Read extra information about model construction [here](@ref lib-model-construction).
+without actually materializing the entire graph structure. Read extra information about model generator [here](@ref lib-model-construction).
 
 ## A state space model example
 
@@ -87,18 +87,16 @@ conditioned = model | (y = [ 0.0, 1.0, 2.0 ], )
 !!! note
     The conditioning on data is a feature of `RxInfer`, not `GraphPPL`.
 
-```@docs
-RxInfer.condition_on
-RxInfer.ConditionedModelGenerator
+In the example above we conditioned on data in a form of the `NamedTuple`, but it is also possible to 
+condition on a dictionary where keys represent names of the corresponding model arguments:
+```@example model-specification-ssm
+data        = Dict(:y => [ 0.0, 1.0, 2.0 ])
+conditioned = model | data
 ```
 
 Sometimes it might be useful to indicate that some arguments are data (thus condition on them) before the actual data becomes available.
 This situation may occur during [reactive inference](@ref user-guide-infer-reactive-inference), when data becomes available _after_ model creation.
 `RxInfer` provides a special structure called [`RxInfer.DefferedDataHandler`](@ref), which can be used instead of the real data.
-
-```@docs 
-RxInfer.DefferedDataHandler
-```
 
 For the example above, however, we cannot simply do the following:
 ```julia
@@ -119,8 +117,12 @@ end
 
 For such model, we can safely condition on `y` without providing actual data for it, but using the [`RxInfer.DefferedDataHandler`](@ref) instead:
 ```@example model-specification-ssm
-state_space_model_with_n(trend = 3.0, variance = 1.0, n = 10) | (y = RxInfer.DefferedDataHandler(), )
+state_space_model_with_n(trend = 3.0, variance = 1.0, n = 10) | (
+    y = RxInfer.DefferedDataHandler(), 
+)
 ```
+
+Read more information about condition on data in [this section](@ref lib-model-construction-conditioning) of the documentation.
 
 ### [Latent variables](@id user-guide-model-specification-random-variables)
 

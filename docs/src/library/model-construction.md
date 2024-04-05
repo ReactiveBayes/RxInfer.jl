@@ -14,6 +14,17 @@ RxInfer.ReactiveMPGraphPPLBackend
 RxInfer.@model
 ```
 
+## [Conditioning on data](@id lib-model-construction-conditioning)
+
+```@docs
+RxInfer.condition_on
+RxInfer.ConditionedModelGenerator
+```
+
+```@docs 
+RxInfer.DefferedDataHandler
+```
+
 ## Additional `GraphPPL` pipeline stages 
 
 `RxInfer` implements several additional pipeline stages for default parsing stages in `GraphPPL`.
