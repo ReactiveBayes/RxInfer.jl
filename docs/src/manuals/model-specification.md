@@ -1,108 +1,61 @@
 # [Model Specification](@id user-guide-model-specification)
 
-The `RxInfer.jl` package exports the `@model` macro for model specification. This `@model` macro accepts the model specification itself in a form of regular Julia function. For example: 
+`RxInfer` largely depends on `GraphPPL` for model specification. Read extensive documentation regarding the model specification in the corresponding section of [`GraphPPL` documentation](https://reactivebayes.github.io/GraphPPL.jl/stable/). Here we outline only a small portion of model specification capabilities for beginners.
 
+## `@model` macro
+
+The `RxInfer.jl` package exports the `@model` macro for model specification. This `@model` macro accepts the model specification itself in a form of regular Julia function. 
+
+For example: 
 ```julia
-@model function model_name(model_arguments...; model_keyword_arguments...)
+@model function model_name(model_arguments...)
     # model specification here
-    return ...
 end
 ```
+where `model_arguments...` may include both hypeparameters and data. 
 
-Model options, `model_arguments` and `model_keyword_arguments` are optional and may be omitted:
-
-```julia
-@model function model_name()
-    # model specification here
-    return ...
-end
-```
+!!! note
+    `model_arguments` are converted to keyword arguments. Positional arguments in the model specification are not supported. 
+    Thus it is not possible to use Julia's multiple dispatch for the model arguments.
 
 The `@model` macro returns a regular Julia function (in this example `model_name()`) which can be executed as usual. It returns a so-called model generator object, e.g:
 
-```julia
-@model function my_model(model_arguments...)
-    # model specification here
-    # ...
-    return x, y
+```@example model-specification-model-macro
+@model function my_model(observation, hyperparameter)
+    observations ~ Normal(0.0, hyperparameter)
 end
 ```
 
-```julia
-generator = my_model(model_arguments...)
+```@example model-specification-model-macro
+model = my_model(hyperparameter = 3)
+#nothing hide
 ```
 
-In order to create an instance of the model object we should use the `create_model` function:
-
-```julia
-model, (x, y) = create_model(generator)
-```
-
-It is not necessary to return anything from the model, in that case `RxInfer.jl` will automatically inject `return nothing` to the end of the model function.
-
-## A full example before diving in
+## A state space model example
 
 Before presenting the details of the model specification syntax, an example of a probabilistic model is given.
 Here is an example of a simple state space model with latent random variables `x` and noisy observations `y`:
 
-```julia
-@model function state_space_model(n_observations, noise_variance)
-
-    c = constvar(1.0)
-    x = randomvar(n_observations)
-    y = datavar(Float64, n_observations)
-
-    x[1] ~ NormalMeanVariance(0.0, 100.0)
-
-    for i in 2:n_observations
-       x[i] ~ x[i - 1] + c
-       y[i] ~ NormalMeanVariance(x[i], noise_var)
+```@example model-specification-ssm
+@model function state_space_model(y, trend, variance)
+    x[1] ~ Normal(mean = 0.0, variance = 100.0)
+    for i in 2:length(y)
+       x[i] ~ Normal(mean = x[i - 1] + trend, variance = 1.0)
+       y[i] ~ Normal(mean = x[i], variance = variance)
     end
-
-    return x, y
-end
-```
-    
-## Graph variables creation
-
-### [Constants](@id user-guide-model-specification-constant-variables)
-
-Even though any runtime constant passed to a model as a model argument will be automatically converted to a fixed constant, sometimes it might be useful to create constants by hand (e.g. to avoid copying large matrices across the model and to avoid extensive memory allocations).
-
-You can create a constant within a model specification macro with `constvar()` function. For example:
-
-```julia
-@model function model_name(...)
-    ...
-    c = constvar(1.0)
-
-    for i in 2:n
-        x[i] ~ x[i - 1] + c # Reuse the same reference to a constant 1.0
-    end
-    ...
 end
 ```
 
-!!! note 
-    `constvar()` function is supposed to be used only within the `@model` macro.
+### [Hyper-parameters](@id user-guide-model-specification-hyperparameters)
 
-Additionally you can specify an extra `::ConstVariable` type for some of the model arguments. In this case macro automatically converts them to a single constant using `constvar()` function. E.g.:
+Any constant passed to a model as a model argument will be automatically converted to a corresponding constant node in the model's graph.
 
-```julia
-@model function model_name(nsamples::Int, c::ConstVariable)
-    ...
-    # no need to call for a constvar() here
-    for i in 2:n
-        x[i] ~ x[i - 1] + c # Reuse the same reference to a constant `c`
-    end
-    ...
-end
+```@example model-specification-ssm
+model = state_space_model(trend = 3.0, variance = 1.0)
+nothing #hide
 ```
 
-!!! note
-    `::ConstVariable` annotation does not play role in Julia's multiple dispatch. `RxInfer.jl` removes this annotation and replaces it with `::Any`.
-
-### [Data variables](@id user-guide-model-specification-data-variables)
+### [Conditioning on data](@id user-guide-model-specification-data-variables)
 
 It is important to have a mechanism to pass data values to the model. You can create data inputs with `datavar()` function. As a first argument it accepts a type specification and optional dimensionality (as additional arguments or as a tuple). User can treat `datavar()`s in the model as both clamped values for priors and observations.
 

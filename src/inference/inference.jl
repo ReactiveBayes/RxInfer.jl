@@ -381,7 +381,7 @@ function __inference(;
     __infer_check_dicttype(:predictvars, predictvars)
 
     inference_invoke_callback(callbacks, :before_model_creation)
-    fmodel = __infer_create_factor_graph_model(_model, data)
+    fmodel = create_model(_model | data)
     inference_invoke_callback(callbacks, :after_model_creation, fmodel)
     vardict = getvardict(fmodel)
     vardict = GraphPPL.variables(vardict) # TODO bvdmitri, should work recursively as well
@@ -1062,8 +1062,12 @@ function __rxinference(;
     _model = GraphPPL.with_plugins(model, modelplugins)
     _autoupdates = something(autoupdates, ())
 
+    # For each data entry and autoupdate we create a `DefferedDataHandler` handler for the `condition_on` structure 
+    # We must do that because the data is not available at the moment of the model creation
+    _condition_on = append_deffered_data_handlers((;), Tuple(Iterators.flatten((datavarnames, map(getlabels, _autoupdates)...))))
+
     inference_invoke_callback(callbacks, :before_model_creation)
-    fmodel = __infer_create_factor_graph_model(_model, datavarnames, _datastream, _autoupdates)
+    fmodel = create_model(_model | _condition_on)
     inference_invoke_callback(callbacks, :after_model_creation, fmodel)
 
     vardict = getvardict(fmodel)
@@ -1268,41 +1272,6 @@ function __check_available_callbacks(warn, callbacks, available_callbacks)
             end
         end
     end
-end
-
-# This function works for static data, such as `NamedTuple` or a `Dict`
-function __infer_create_factor_graph_model(generator::ModelGenerator, data::Union{NamedTuple, Dict})
-    # If the data is already a `NamedTuple` this should not really matter 
-    # But it makes it easier to deal with the `Dict` type, which is unordered by default
-    ntdata = NamedTuple(data)::NamedTuple
-    model  = create_model(generator) do model, ctx
-        ikeys = keys(ntdata)
-        interfaces = map(ikeys) do key
-            return __infer_create_data_interface(model, ctx, key, ntdata[key])
-        end
-        return NamedTuple{ikeys}(interfaces)
-    end
-    return ProbabilisticModel(model)
-end
-
-function __infer_create_factor_graph_model(generator::ModelGenerator, datanames, datastream::AbstractSubscribable, autoupdates::Tuple)
-    # @show autoupdates[1] |> dump
-    ikeys = Tuple(Iterators.flatten((datanames, map(getlabels, autoupdates)...)))
-    model = create_model(generator) do model, ctx
-        interfaces = map(ikeys) do key
-            return __infer_create_data_interface(model, ctx, key)
-        end
-        return NamedTuple{ikeys}(interfaces)
-    end
-    return ProbabilisticModel(model)
-end
-
-function __infer_create_data_interface(model, context, key::Symbol)
-    return GraphPPL.getorcreate!(model, context, GraphPPL.NodeCreationOptions(kind = :data, factorized = true), key, GraphPPL.LazyIndex())
-end
-
-function __infer_create_data_interface(model, context, key::Symbol, data)
-    return GraphPPL.getorcreate!(model, context, GraphPPL.NodeCreationOptions(kind = :data, factorized = true), key, GraphPPL.LazyIndex(data))
 end
 
 """
