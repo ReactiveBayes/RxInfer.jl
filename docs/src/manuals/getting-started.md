@@ -42,7 +42,7 @@ The `RxInfer` approach to solving inference problems consists of three phases:
 2. [Inference specification](@ref getting-started-inference-specification): `RxInfer` inference API uses `ReactiveMP` inference engine under the hood and has been designed to be as flexible as possible. It is compatible both with asynchronous infinite data streams and with static datasets. For most of the use cases it consists of the same simple building blocks. In this example we will show one of the many possible ways to infer your quantities of interest.
 3. [Inference execution](@ref getting-started-inference-execution): Given model specification and inference procedure it is pretty straightforward to use reactive API from `Rocket` to pass data to the inference backend and to run actual inference.
 
-### Coin flip simulation
+### [Coin flip simulation](@id user-guide-getting-started-coin-flip-simulation)
 
 Let's start by creating some dataset. One approach could be flipping a coin N times and recording each outcome. For simplicity in this example we will use static pre-generated dataset. Each sample can be thought of as the outcome of single flip which is either heads or tails (1 or 0). We will assume that our virtual coin is biased, and lands heads up on 75% of the trials (on average).
 
