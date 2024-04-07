@@ -45,15 +45,15 @@ After the model has been conditioned it can be materialized with the [`RxInfer.c
 This function takes the [`RxInfer.ConditionedModelGenerator`](@ref) object and materializes it into a [`RxInfer.ProbabilisticModel`](@ref).
 
 ```@docs 
-RxInfer.create_model(generator::ConditionedModelGenerator)
+RxInfer.create_model(generator::RxInfer.ConditionedModelGenerator)
 RxInfer.ProbabilisticModel
-RxInfer.getmodel(model::ProbabilisticModel)
-RxInfer.getreturnval(model::ProbabilisticModel)
-RxInfer.getvardict(model::ProbabilisticModel)
-RxInfer.getrandomvars(model::ProbabilisticModel)
-RxInfer.getdatavars(model::ProbabilisticModel)
-RxInfer.getconstantvars(model::ProbabilisticModel)
-RxInfer.getfactornodes(model::ProbabilisticModel)
+RxInfer.getmodel(model::RxInfer.ProbabilisticModel)
+RxInfer.getreturnval(model::RxInfer.ProbabilisticModel)
+RxInfer.getvardict(model::RxInfer.ProbabilisticModel)
+RxInfer.getrandomvars(model::RxInfer.ProbabilisticModel)
+RxInfer.getdatavars(model::RxInfer.ProbabilisticModel)
+RxInfer.getconstantvars(model::RxInfer.ProbabilisticModel)
+RxInfer.getfactornodes(model::RxInfer.ProbabilisticModel)
 ```
 
 ## [Additional `GraphPPL` pipeline stages](@id lib-model-construction-pipelines)
