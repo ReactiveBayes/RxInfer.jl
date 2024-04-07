@@ -97,7 +97,7 @@ end
     end
 
     @testset "IID Gaussian model" begin
-        for seed in (123, 456), n in (50, 100)
+        for seed in (123, 456), n in (50, 100), constraints in (MeanField(), @constraints(begin q(μ, τ) = q(μ)q(τ) end))
             rng  = StableRNG(seed)
             data = float.(rand(rng, Normal(0.75, 10.0), n))
 
@@ -114,7 +114,7 @@ end
                     model = iid_gaussians_priors(prior_for_μ = ts[:prior_for_μ], prior_for_τ = ts[:prior_for_τ]),
                     returnvars = KeepLast(),
                     initmarginals = initmarginals,
-                    constraints = MeanField(),
+                    constraints = constraints,
                     data = (y = data,),
                     iterations = 10,
                     free_energy = true
@@ -123,7 +123,7 @@ end
                     model = iid_gaussians_params(mean = mean(ts[:prior_for_μ]), variance = var(ts[:prior_for_μ]), shape = shape(ts[:prior_for_τ]), scale = scale(ts[:prior_for_τ])),
                     returnvars = KeepLast(),
                     initmarginals = initmarginals,
-                    constraints = MeanField(),
+                    constraints = constraints,
                     data = (y = data,),
                     iterations = 10,
                     free_energy = true
