@@ -1,6 +1,6 @@
 # [Debugging](@id user-guide-debugging)
 
-Debugging RxInfer can be quite challenging, mostly due to custom typing, the use of observables and Julia's stack tracing in general. Below we discuss ways to help you find problems in your model that prevents you from getting the results you want. 
+Debugging inference in `RxInfer` can be quite challenging, mostly due to reactive nature of the inference, the use of observables and Julia's stack tracing in general. Below we discuss ways to help you find problems in your model that prevents you from getting the results you want. 
 
 ## Requesting a trace of messages
 
