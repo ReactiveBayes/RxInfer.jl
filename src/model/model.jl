@@ -78,6 +78,9 @@ function condition_on(generator::ModelGenerator, data)
     return ConditionedModelGenerator(generator, data)
 end
 
+"""
+An alias for [`RxInfer.condition_on`](@ref).
+"""
 function Base.:(|)(generator::ModelGenerator, data)
     return condition_on(generator, data)
 end

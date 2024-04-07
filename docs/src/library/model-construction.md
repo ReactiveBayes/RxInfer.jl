@@ -31,6 +31,7 @@ As an alias it is also possible to use the `|` operator for the same purpose, bu
 
 ```@docs
 RxInfer.condition_on
+Base.:(|)(generator::RxInfer.ModelGenerator, data)
 RxInfer.ConditionedModelGenerator
 ```
 

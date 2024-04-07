@@ -78,6 +78,8 @@ RxInfer.ReactiveMPFreeEnergyPlugin
 
 ### Extra diagnostic checks
 
+`RxInfer` verifies intermediate computations of BFE on each iteration. By default, `RxInfer` will throw an exception, if local factor node or variable node computations result in either `NaN` or `Inf`. Note, that the verification happens only if the computation of BFE has been requested explicitly.
+
 ```@docs
 RxInfer.apply_diagnostic_check
 RxInfer.ObjectiveDiagnosticCheckNaNs
