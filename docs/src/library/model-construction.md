@@ -9,7 +9,7 @@ Model creation in `RxInfer` largely depends on [`GraphPPL`](https://github.com/R
 
 Also read the [_Model Specification_](@ref user-guide-model-specification) guide.
 
-## [`@model` macro]
+## [`@model` macro](@id lib-model-construction-model-macro)
 
 `RxInfer` operates with so-called [graphical probabilistic models](https://en.wikipedia.org/wiki/Graphical_model), more specifically [factor graphs](https://en.wikipedia.org/wiki/Factor_graph). Working with graphs directly is, however, tedius and error-prone, especially for large models. To simplify the process, `RxInfer` exports the `@model` macro, which translates a textual description of a probabilistic model into a corresponding factor graph representation.
 
