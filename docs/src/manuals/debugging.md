@@ -108,7 +108,7 @@ plot(rθ, (rvar) -> pdf(result.posteriors[:θ], rvar), fillalpha = 0.4, fill = 0
 vline!([θ_real], label="Real θ", title = "Inference results")
 ```
 
-## Using `callbacks` in the `infer` function
+## [Using `callbacks` in the `infer` function](@id user-guide-debugging-callbacks)
 
 Another way to inspect the inference procedure is to use the `callbacks` or `events` from the [`infer`](@ref) function. Read more about callbacks in the documentation to the [`infer`](@ref) function. Here, we show a simple application of callbacks to a simple IID inference problem. We start with model specification:
 
@@ -132,23 +132,29 @@ nothing #hide
 Now, we can use the `callbacks` argument of the `infer` function to track the order of posteriors computation and their intermediate values for each variational iteration:
 
 ```@example debugging-with-callbacks
+# A callback that will be called every time before a variational iteration starts
 function before_iteration_callback(model, iteration)
     println("Starting iteration ", iteration)
 end
 
+# A callback that will be called every time after a variational iteration finishes
 function after_iteration_callback(model, iteration)
     println("Iteration ", iteration, " has been finished")
 end
 
+# A callback that will be called every time a posterior is updated
 function on_marginal_update_callback(model, variable_name, posterior)
     println("Latent variable ", variable_name, " has been updated. Estimated mean is ", mean(posterior), " with standard deviation ", std(posterior))
 end
+```
 
+After we have defined all callbacks of interest, we can call the [`infer`](@ref) function passing them in the `callback` argument as a named tuple:
+```@example debugging-with-callbacks
 result = infer(
     model = iid_normal(),
     data  = (y = dataset, ),
     constraints = MeanField(),
-    iterations = 10,
+    iterations = 5,
     initmarginals = (
         μ = vague(NormalMeanVariance),
     ),
@@ -170,3 +176,51 @@ println("Estimated precision: ", mean(result.posteriors[:γ]))
 nothing #hide
 ```
  
+## Using `LoggerPipelineStage`
+
+`ReactiveMP` inference engine allows attaching extra computations to the default computational pipeline of message passing. 
+Read more about pipelines in the corresponding section of `ReactiveMP`. Here we show how to use `LoggerPipelineStage` to trace the order of message passing updates for debugging purposes. We start with model specification:
+
+```@example debugging-with-callbacks
+using RxInfer
+
+@model function iid_normal_with_pipeline(y)
+    μ  ~ Normal(mean = 0.0, variance = 100.0)
+    γ  ~ Gamma(shape = 1.0, rate = 1.0)
+    y .~ Normal(mean = μ, precision = γ) where { pipeline = LoggerPipelineStage() }
+end
+```
+
+Next, let us define a syntehtic dataset:
+
+```@example debugging-with-callbacks
+# We use less data points in the dataset to reduce the amount of text printed
+# during the inference
+dataset = rand(NormalMeanPrecision(3.1415, 30.0), 5)
+nothing #hide
+```
+
+Now, we can call the [`infer`](@ref) function. We combine the pipeline logger stage with the callbacks, which were introduced in the [previous section](@ref user-guide-debugging-callbacks):
+
+```@example debugging-with-callbacks
+result = infer(
+    model = iid_normal_with_pipeline(),
+    data  = (y = dataset, ),
+    constraints = MeanField(),
+    iterations = 5,
+    initmarginals = (
+        μ = vague(NormalMeanVariance),
+    ),
+    returnvars = KeepLast(),
+    callbacks = (
+        on_marginal_update = on_marginal_update_callback,
+        before_iteration   = before_iteration_callback,
+        after_iteration    = after_iteration_callback
+    )
+)
+nothing #hide
+```
+
+We can see the order of message update events. Note that `ReactiveMP` may decide to compute messages lazily, in which case the actual computation of the value of a message will be deffered until later moment. In this case, `LoggerPipelineStage` will report _DefferedMessage_.
+
+
