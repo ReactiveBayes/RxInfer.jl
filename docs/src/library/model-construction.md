@@ -9,9 +9,18 @@ Model creation in `RxInfer` largely depends on [`GraphPPL`](https://github.com/R
 
 Also read the [_Model Specification_](@ref user-guide-model-specification) guide.
 
+## [`@model` macro]
+
+`RxInfer` operates with so-called [graphical probabilistic models](https://en.wikipedia.org/wiki/Graphical_model), more specifically [factor graphs](https://en.wikipedia.org/wiki/Factor_graph). Working with graphs directly is, however, tedius and error-prone, especially for large models. To simplify the process, `RxInfer` exports the `@model` macro, which translates a textual description of a probabilistic model into a corresponding factor graph representation.
+
+```@docs
+RxInfer.@model
+```
+
+Note, that `GraphPPL` also implements `@model` macro, but does **not** export it by default. This was a deliberate choice to allow inference backends (such as `RxInfer`) to implement [custom functionality](@ref lib-model-construction-pipelines) on top of the default `GraphPPL.@model` macro. This is done with a custom  _backend_ for `GraphPPL.@model` macro. Read more about backends in the corresponding section of `GraphPPL` [documentation](https://github.com/ReactiveBayes/GraphPPL.jl).
+
 ```@docs
 RxInfer.ReactiveMPGraphPPLBackend
-RxInfer.@model
 ```
 
 ## [Conditioning on data](@id lib-model-construction-conditioning)
@@ -25,7 +34,7 @@ RxInfer.ConditionedModelGenerator
 RxInfer.DefferedDataHandler
 ```
 
-## Additional `GraphPPL` pipeline stages 
+## [Additional `GraphPPL` pipeline stages](@id lib-model-construction-pipelines)
 
 `RxInfer` implements several additional pipeline stages for default parsing stages in `GraphPPL`.
 A notable distinction of the `RxInfer` model specification language is the fact that `RxInfer` "folds" 
