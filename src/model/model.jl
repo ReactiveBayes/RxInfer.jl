@@ -7,17 +7,30 @@ import ReactiveMP: getaddons, AbstractFactorNode
 import GraphPPL: ModelGenerator, getmodel, getkwargs, create_model
 import Rocket: getscheduler
 
+"A structure that holds the factor graph representation of a probabilistic model."
 struct ProbabilisticModel{M}
     model::M
 end
 
+"Returns the underlying factor graph model."
 getmodel(model::ProbabilisticModel) = model.model
 
+"Returns the value from the `return ...` operator inside the model specification."
 getreturnval(model::ProbabilisticModel) = getreturnval(getmodel(model))
+
+"Returns the (nested) dictionary of random variables from the model specification."
 getvardict(model::ProbabilisticModel) = getvardict(getmodel(model))
+
+"Returns the random variables from the model specification."
 getrandomvars(model::ProbabilisticModel) = getrandomvars(getmodel(model))
+
+"Returns the data variables from the model specification."
 getdatavars(model::ProbabilisticModel) = getdatavars(getmodel(model))
+
+"Returns the constant variables from the model specification."
 getconstantvars(model::ProbabilisticModel) = getconstantvars(getmodel(model))
+
+"Returns the factor nodes from the model specification."
 getfactornodes(model::ProbabilisticModel) = getfactornodes(getmodel(model))
 
 """
@@ -81,6 +94,12 @@ function Base.show(io::IO, generator::ConditionedModelGenerator)
     end
 end
 
+"""
+    create_model(generator::ConditionedModelGenerator)
+
+Materializes the model specification conditioned on some data into a corresponding factor graph representation.
+Returns [`ProbabilisticModel`](@ref).
+"""
 function create_model(generator::ConditionedModelGenerator)
     return __infer_create_factor_graph_model(getgenerator(generator), getconditioned_on(generator))
 end

@@ -25,13 +25,35 @@ RxInfer.ReactiveMPGraphPPLBackend
 
 ## [Conditioning on data](@id lib-model-construction-conditioning)
 
+After model creation `RxInfer` uses [`RxInfer.condition_on`](@ref) function to condition on data. 
+As an alias it is also possible to use the `|` operator for the same purpose, but with a nicer syntax.
+
+
 ```@docs
 RxInfer.condition_on
 RxInfer.ConditionedModelGenerator
 ```
 
+Sometimes it might be useful to condition on data, which is not available at model creation time. 
+This might be especially useful in [reactive inference](@ref user-guide-reactive-inference) setting, where data, e.g. might be available later on from some asynchronous sensor input. For this reason, `RxInfer` implements a special _deferred_ data handler, that does mark model argument as data, but does not specify any particular value for this data nor its shape.
+
 ```@docs 
 RxInfer.DefferedDataHandler
+```
+
+After the model has been conditioned it can be materialized with the [`RxInfer.create_model`](@ref) function.
+This function takes the [`RxInfer.ConditionedModelGenerator`](@ref) object and materializes it into a [`RxInfer.ProbabilisticModel`](@ref).
+
+```@docs 
+RxInfer.create_model(generator::ConditionedModelGenerator)
+RxInfer.ProbabilisticModel
+RxInfer.getmodel(model::ProbabilisticModel)
+RxInfer.getreturnval(model::ProbabilisticModel)
+RxInfer.getvardict(model::ProbabilisticModel)
+RxInfer.getrandomvars(model::ProbabilisticModel)
+RxInfer.getdatavars(model::ProbabilisticModel)
+RxInfer.getconstantvars(model::ProbabilisticModel)
+RxInfer.getfactornodes(model::ProbabilisticModel)
 ```
 
 ## [Additional `GraphPPL` pipeline stages](@id lib-model-construction-pipelines)
