@@ -130,7 +130,7 @@ end
 
 ```@example manual_constraints
 @constraints begin 
-    q(x) :: (SampleListFormConstraint(1000) + PointMassFormConstraint())
+    q(x) :: SampleListFormConstraint(1000) :: PointMassFormConstraint()
 end
 ```
 
@@ -166,3 +166,81 @@ These constraints specify a mean-field assumption between variables `x` and `y` 
     `@constraints` macro does not support matrix-based collections of variables. E.g. it is not possible to write `q(x[begin, begin])..q(x[end, end])`. Use `q(x[begin])..q(x[end])` instead.
 
 Read more about the `@constraints` macro in the [official documentation](https://reactivebayes.github.io/GraphPPL.jl/stable/) of GraphPPL
+
+
+## Constraints in submodels
+`RxInfer` allows you to define your generative model hierarchically, using previously defined `@model` modules as submodels in larger models. Because of this, users need to specify their constraints hierarchically as well to avoid ambiguities. Consider the following example:
+
+```@example manual_constraints
+@model function inner_inner(τ, y)
+    y ~ Normal(τ[1], τ[2])
+end
+
+@model function inner(θ, α)
+    β ~ Normal(0, 1)
+    α ~ Gamma(β, 1)
+    α ~ inner_inner(τ = θ)
+end
+
+@model function outer()
+    local w
+    for i = 1:5
+        w[i] ~ inner(θ = Gamma(1, 1))
+    end
+    y ~ inner(θ = w[2:3])
+end
+```
+
+To access the variables in the submodels, we use the `for q in __submodel__` syntax, which will allow us to specify constraints over variables in the context of an inner submodel:
+
+```@example manual_constraints
+@constraints begin
+    for q in inner
+        q(α) :: PointMassFormConstraint()
+        q(α, β) = q(a)q(b)
+    end
+end
+```
+
+Similarly, we can specify constraints over variables in the context of the innermost submodel by using the `for q in __submodel__` syntax twice:
+
+```@example manual_constraints
+@constraints begin
+    for q in inner
+        for q in inner_inner
+            q(y, τ) = q(y)q(τ[1])q(τ[2])
+        end
+        q(α) :: PointMassFormConstraint()
+        q(α, β) = q(a)q(b)
+    end
+end
+```
+
+The `for q in __submodel__` applies the constraints specified in this code block to all instances of `__submodel__` in the current context. If we want to apply constraints to a specific instance of a submodel, we can use the `for q in (__submodel__, __identifier__)` syntax, where `__identifier__` is a counter integer. For example, if we want to specify constraints on the first instance of `inner` in our `outer` model, we can do so with the following syntax:
+
+```@example manual_constraints
+@constraints begin
+    for q in (inner, 1)
+        q(α) :: PointMassFormConstraint()
+        q(α, β) = q(a)q(b)
+    end
+end
+```
+
+Factorization constraints specified in a context propagate to their child submodels. This means that we can specify factorization constraints over variables where the factor node that connects the two are in a submodel, without having to specify the factorization constraint in the submodel itself. For example, if we want to specify a factorization constraint between `w[2]` and `w[3]` in our `outer` model, we can specify it in the context of `outer`, and `RxInfer` will recognize that these variables are connected through the `Normal` node in the `inner_inner` submodel:
+
+```@example manual_constraints
+@constraints begin
+    q(w) = q(w[begin])..q(w[end])
+end
+```
+
+## Default constraints
+Sometimes, a submodel is used in multiple contexts, on multiple levels of hierarchy and in different submodels. In such cases, it becomes cumbersome to specify constraints for each instance of the submodel and track its usage throughout the model. To alleviate this, `RxInfer` allows users to specify default constraints for a submodel. These constraints will be applied to all instances of the submodel unless overridden by specific constraints. To specify default constraints for a submodel, override the `GraphPPL.default_constraints` function for the submodel:
+
+```@example manual_constraints
+RxInfer.GraphPPL.default_constraints(::typeof(inner)) = @constraints begin
+    q(α) :: PointMassFormConstraint()
+    q(α, β) = q(a)q(b)
+end
+```

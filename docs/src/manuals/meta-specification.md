@@ -27,7 +27,7 @@ end
 nothing #hide
 ```
 
-In the first case, it returns a function that produces meta when called. For instance, to specify meta for an `AR` node with an order of $5$, you can do the following:
+In the first case, it returns a function that produces an object containing metadata when called. For instance, to specify meta for an `AR` node with an order of $5$, you can do the following:
 
 ```@example manual_meta
 @meta function ARmodel_meta(num_order)
@@ -95,7 +95,7 @@ Users can also specify metadata for nodes directly inside `@model`, without the 
 end
 ```
 
-If you add node-specific meta to your model this way, then you do not need to use the `meta` keyword argument in the `infer` function.
+If you add node-specific meta to your model this way, you do not need to use the `meta` keyword argument in the `infer` function.
 
 ## Create your own meta
 
