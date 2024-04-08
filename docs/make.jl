@@ -128,7 +128,8 @@ makedocs(;
         ],
         "Examples" => [
             "Overview" => "examples/overview.md", # This must be auto-generated with `make examples`
-            ExamplesPages...
+            ExamplesPages...,
+            "External examples" => "contributing/external-examples.md"
         ],
         "Contributing" => [
             "Contribution guide" => "contributing/guide.md",
