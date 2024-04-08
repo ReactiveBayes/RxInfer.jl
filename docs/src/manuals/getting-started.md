@@ -172,7 +172,7 @@ RxInfer.getfactornodes(model)
 ### Conditioning on data that is not available at model creation time
 
 Sometimes the data is not known at model creation time, for example, during reactive inference.
-For that purpose `RxInfer` uses [`DefferedDataHandler`](@ref) structure.
+For that purpose `RxInfer` uses [`RxInfer.DefferedDataHandler`](@ref) structure.
 
 ```@example coin
 # The only difference here is that we do not specify `a` and `b` as hyper-parameters 

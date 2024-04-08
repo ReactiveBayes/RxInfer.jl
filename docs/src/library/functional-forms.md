@@ -12,7 +12,7 @@ Functional forms help to circumvent this. They implement a custom callback on th
 be computed analytically. Essentially, a functional form constraint defines a functional `F`, such that 
 $$q(x) = F[\mu_1, \mu_2] \approx \frac{\mu_1(x) \mu_2(x)}{\int \mu_1(x) \mu_2(x) \mathrm{d}x}.$$
 
-See also [Bethe Free Energy](@ref) section for more information on variational inference and posterior computation.
+See also [Bethe Free Energy](@ref lib-bethe-free-energy) section for more information on variational inference and posterior computation.
 
 ## [UnspecifiedFormConstraint](@id lib-forms-unspecified-constraint)
 
@@ -25,6 +25,10 @@ using RxInfer, Distributions #hide
     q(x) :: UnspecifiedFormConstraint() 
 end
 nothing #hide
+```
+
+```@docs 
+UnspecifiedFormConstraint
 ```
 
 ## [PointMassFormConstraint](@id lib-forms-point-mass-constraint)
