@@ -1,5 +1,4 @@
 export KeepEach, KeepLast
-export DefaultPostprocess, UnpackMarginalPostprocess, NoopPostprocess
 export infer, inference, rxinference
 export InferenceResult
 export RxInferenceEngine, RxInferenceEvent
@@ -148,35 +147,6 @@ __inference_check_dataismissing(d) = (ismissing(d) || any(ismissing, d))
 # Return NamedTuple for predictions
 __inference_fill_predictions(s::Symbol, d::AbstractArray) = NamedTuple{Tuple([s])}([repeat([missing], length(d))])
 __inference_fill_predictions(s::Symbol, d::DataVariable) = NamedTuple{Tuple([s])}([missing])
-
-## Inference results postprocessing
-
-# TODO: Make this function a part of the public API?
-# __inference_postprocess(strategy, result)
-# This function modifies the `result` of the inference procedure according to the strategy. The default `strategy` is `DefaultPostprocess`.
-function __inference_postprocess end
-
-"""`DefaultPostprocess` picks the most suitable postprocessing step automatically"""
-struct DefaultPostprocess end
-
-__inference_postprocess(::DefaultPostprocess, result::Marginal) = __inference_postprocess(DefaultPostprocess(), result, ReactiveMP.getaddons(result))
-__inference_postprocess(::DefaultPostprocess, result::AbstractArray) = map((element) -> __inference_postprocess(DefaultPostprocess(), element), result)
-
-# Default postprocessing step removes Marginal type wrapper if no addons are present, and keeps the Marginal type wrapper otherwise
-__inference_postprocess(::DefaultPostprocess, result, addons::Nothing) = __inference_postprocess(UnpackMarginalPostprocess(), result)
-__inference_postprocess(::DefaultPostprocess, result, addons::Any) = __inference_postprocess(NoopPostprocess(), result)
-
-"""This postprocessing step removes the `Marginal` wrapper type from the result"""
-struct UnpackMarginalPostprocess end
-
-__inference_postprocess(::UnpackMarginalPostprocess, result::Marginal) = getdata(result)
-__inference_postprocess(::UnpackMarginalPostprocess, result::AbstractArray) = map((element) -> __inference_postprocess(UnpackMarginalPostprocess(), element), result)
-
-"""This postprocessing step does nothing"""
-struct NoopPostprocess end
-
-__inference_postprocess(::NoopPostprocess, result) = result
-__inference_postprocess(::Nothing, result) = result
 
 """
     InferenceResult
@@ -536,8 +506,8 @@ function __inference(;
 
     unsubscribe!(fe_subscription)
 
-    posterior_values = Dict(variable => __inference_postprocess(postprocess, getvalues(actor)) for (variable, actor) in pairs(actors_rv))
-    predicted_values = Dict(variable => __inference_postprocess(postprocess, getvalues(actor)) for (variable, actor) in pairs(actors_pr))
+    posterior_values = Dict(variable => inference_postprocess(postprocess, getvalues(actor)) for (variable, actor) in pairs(actors_rv))
+    predicted_values = Dict(variable => inference_postprocess(postprocess, getvalues(actor)) for (variable, actor) in pairs(actors_pr))
     fe_values        = !isnothing(fe_actor) ? score_snapshot_iterations(fe_actor, executed_iterations) : nothing
 
     return InferenceResult(posterior_values, predicted_values, fe_values, fmodel, potential_error)
@@ -886,7 +856,7 @@ function Rocket.on_next!(executor::RxInferenceEventExecutor{T}, event::T) where 
         if !isnothing(_history) && !isnothing(_historyactors)
             inference_invoke_event(Val(:before_history_save), Val(_enabled_events), _events, _model)
             for (name, actor) in pairs(_historyactors)
-                push!(_history[name], __inference_postprocess(_postprocess, getvalues(actor)))
+                push!(_history[name], inference_postprocess(_postprocess, getvalues(actor)))
             end
             inference_invoke_event(Val(:after_history_save), Val(_enabled_events), _events, _model)
         end
@@ -1192,7 +1162,7 @@ function __rxinference(;
 
     # `posteriors` returns a `stream` for each entry in the `returnvars`
     posteriors = Dict(
-        variable => obtain_marginal(vardict[variable]) |> schedule_on(tickscheduler) |> map(Any, (data) -> __inference_postprocess(postprocess, data)) for variable in returnvars
+        variable => obtain_marginal(vardict[variable]) |> schedule_on(tickscheduler) |> map(Any, (data) -> inference_postprocess(postprocess, data)) for variable in returnvars
     )
 
     _events        = Subject(RxInferenceEvent)
