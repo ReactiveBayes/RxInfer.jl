@@ -154,10 +154,6 @@ GraphPlot.gplot(RxInfer.getmodel(model))
 In addition, we can also programatically query the structure of the graph:
 
 ```@example coin
-RxInfer.getvardict(model)
-```
-
-```@example coin
 RxInfer.getrandomvars(model)
 ```
 

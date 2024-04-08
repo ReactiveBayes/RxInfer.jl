@@ -105,7 +105,6 @@ makedocs(;
             "Inference specification"   => [
                 "Overview" => "manuals/inference/overview.md", 
                 "Static vs Streamline inference" => "manuals/inference/infer.md", 
-                "Manual inference specification" => "manuals/inference/manual.md",
             ],
             "Inference customization"   => [
                 "Defining a custom node and rules" => "manuals/custom-node.md",
