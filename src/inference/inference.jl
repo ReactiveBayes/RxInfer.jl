@@ -1540,7 +1540,8 @@ Specifies if the `infer` function should return Bethe Free Energy (BFE) values.
 
 - ### `free_energy_diagnostics`
 
-This settings specifies either a single or a tuple of diagnostic checks for Bethe Free Energy values stream. By default checks for `NaN`s and `Inf`s. See also [`BetheFreeEnergyCheckNaNs`](@ref) and [`BetheFreeEnergyCheckInfs`](@ref).
+This settings specifies either a single or a tuple of diagnostic checks for Bethe Free Energy values stream. By default checks for `NaN`s and `Inf`s. 
+See also [`RxInfer.ObjectiveDiagnosticCheckNaNs`](@ref) and [`RxInfer.ObjectiveDiagnosticCheckInfs`](@ref).
 Pass `nothing` to disable any checks.
 
 - ### `catch_exception`

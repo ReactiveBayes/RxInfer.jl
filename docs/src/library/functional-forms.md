@@ -71,7 +71,7 @@ RxInfer.RightProposal
 
 ## [FixedMarginalFormConstraint](@id lib-forms-fixed-marginal-constraint)
 
-Fixed marginal form constraint replaces the resulting posterior marginal obtained during the inference procedure with the prespecified one. Worth to note that the inference backend still tries to compute real posterior marginal and may fail during this process. Might be useful for debugging purposes. If `nothing` is passed then the computed posterior marginal is returned (see also [`UnspecifiedFormConstraints`](@ref)).
+Fixed marginal form constraint replaces the resulting posterior marginal obtained during the inference procedure with the prespecified one. Worth to note that the inference backend still tries to compute real posterior marginal and may fail during this process. Might be useful for debugging purposes. If `nothing` is passed then the computed posterior marginal is returned (see also [`UnspecifiedFormConstraint`](@ref)).
 
 ```@example constraints-functional-forms
 @constraints function block_updates(x_posterior = nothing) 
