@@ -1332,7 +1332,8 @@ The `data` keyword argument must be a `NamedTuple` (or `Dict`) where keys (of `S
 `data` field must have an `:x` key (of `Symbol` type) which holds a value of type `Float64`. The values in the `data` must have the exact same shape as the `datavar` container. In other words, if a model defines `x = datavar(Float64, n)` then 
 `data[:x]` must provide a container with length `n` and with elements of type `Float64`.
 
-- #### `streamline` setting
+#### `streamline` setting
+
 All entries in the `data` argument are zipped together with the `Base.zip` function to form one slice of the data chunck. This means all containers in the `data` argument must be of the same size (`zip` iterator finished as soon as one container has no remaining values).
 In order to use a fixed value for some specific `datavar` it is not necessary to create a container with that fixed value, but rather more efficient to use `Iterators.repeated` to create an infinite iterator.
 
