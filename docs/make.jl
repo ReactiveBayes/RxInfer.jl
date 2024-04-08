@@ -50,9 +50,7 @@ end
 
 # Create an array of pages for each category
 ExamplesCategoriesPages = map(collect(pairs(ExamplesCategories))) do (label, category)
-    return label => (title = category.title, pages = [
-        "Overview" => joinpath("examples", string(label), "overview.md")
-    ])
+    return label => (title = category.title, pages = ["Overview" => joinpath("examples", string(label), "overview.md")])
 end |> NamedTuple
 
 # The `pages` argument in the `makedocs` needs only a short path, so we ignore the full path
@@ -90,7 +88,10 @@ makedocs(;
         prettyurls = get(ENV, "CI", "false") == "true",
         canonical = "https://reactivebayes.github.io/RxInfer.jl",
         edit_link = "main",
-        assets = String["assets/theme.css", "assets/header.css", "assets/header.js"]
+        warn_outdated = true,
+        assets = String["assets/theme.css", "assets/header.css", "assets/header.js"],
+        description = "Julia package for automated Bayesian inference on a factor graph with reactive message passing",
+        footer = "Created in [BIASlab](https://biaslab.github.io/), maintained by [ReactiveBayes](https://github.com/ReactiveBayes), powered by [Documenter.jl](https://github.com/JuliaDocs/Documenter.jl) and the [Julia Programming Language](https://julialang.org/)."
     ),
     pages = [
         "Home" => "index.md",
@@ -117,10 +118,10 @@ makedocs(;
             ExamplesPages...
         ],
         "Contributing" => [
-            "Overview" => "contributing/overview.md", 
+            "Overview" => "contributing/overview.md",
             "Contributing to the documentation" => "contributing/new-documentation.md",
-            "Contributing to the dependencies" => "contributing/new-package.md", 
-            "Contributing to the examples" => "contributing/new-example.md", 
+            "Contributing to the dependencies" => "contributing/new-package.md",
+            "Contributing to the examples" => "contributing/new-example.md",
             "Publishing a new release" => "contributing/new-release.md"
         ]
     ]
