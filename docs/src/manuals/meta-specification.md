@@ -21,7 +21,7 @@ end
 end
 
 my_meta = @meta begin 
-    Normal(y, x) -> MetaObject(arg1, arg2)
+    Normal(y, x) -> MetaObject(1, 2)
 end
 
 nothing #hide
@@ -31,10 +31,11 @@ In the first case, it returns a function that produces meta when called. For ins
 
 ```@example manual_meta
 @meta function ARmodel_meta(num_order)
-    AR() -> ARMeta(Univariate, num_order, ARsafe())
+    AR() -> ARMeta(Multivariate, num_order, ARsafe())
 end
 
 my_meta = ARmodel_meta(5)
+nothing #hide
 ```
  
 In the second case, it directly provides the meta object. The same meta for the `AR` node can also be defined as follows:
@@ -45,6 +46,7 @@ num_order = 5
 my_meta = @meta begin 
     AR() -> ARMeta(Multivariate, num_order, ARsafe())
 end
+nothing #hide
 ```
 
 Both syntax variations provide the same meta specification and there is no preference given to one over the other. 
@@ -55,6 +57,7 @@ Another example:
 my_meta = @meta begin 
     GCV(x, k, w) -> GCVMetadata(GaussHermiteCubature(20))
 end
+nothing #hide
 ```
 
 This meta specification indicates that for every `GCV` node in the model with `x`, `k` and `w` as connected variables should use the `GCVMetadata(GaussHermiteCubature(20))` meta object.
@@ -66,6 +69,7 @@ my_meta = @meta begin
     GCV(x1, k1, w1) -> GCVMetadata(GaussHermiteCubature(20))
     AR() -> ARMeta(Multivariate, 5, ARsafe())
 end
+nothing #hide
 ```
 
 The meta-information object can be used in the [`infer`](@ref) function that accepts `meta` keyword argument:
@@ -92,7 +96,6 @@ end
 ```
 
 If you add node-specific meta to your model this way, then you do not need to use the `meta` keyword argument in the `infer` function.
-
 
 ## Create your own meta
 
