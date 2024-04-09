@@ -319,13 +319,121 @@ engine.free_energy_raw_history
 engine.free_energy_final_only_history
 ```
 
+```@example manual-online-inference
+unsubscribe!(free_energy_for_testing_subscription) #hide
+# Stop the engine when not needed as usual
+RxInfer.stop(engine)
+unsubscribe!(free_energy_subscription)
+```
+
 As has been mentioned, in this particular example we do not perform variational iterations, hence, there is little different between different representations of the BFE history buffers. However, when performing variational inference with the `iterations` argument, those buffers will be different. To demonstrate this difference let's build a slightly more complex model with variational constraints:
 
 ```@example manual-online-inference
-@model function iid_normal(y)
-    μ 
+@model function iid_normal(y, mean_μ, var_μ, shape_τ, rate_τ)
+    μ ~ Normal(mean = mean_μ, var = var_μ)
+    τ ~ Gamma(shape = shape_τ, rate = rate_τ)
+    y ~ Normal(mean = μ, precision = τ)
+end
+
+iid_normal_constraints = @constraints begin
+    q(μ, τ) = q(μ)q(τ)
+end
+
+iid_normal_autoupdates = @autoupdates begin 
+    mean_μ  = mean(q(μ))
+    var_μ   = var(q(μ))
+    shape_τ = shape(q(τ))
+    rate_τ  = rate(q(τ))
+end
+
+iid_normal_hidden_μ     = 3.1415
+iid_normal_hidden_τ     = 0.0271
+iid_normal_distribution = NormalMeanPrecision(iid_normal_hidden_μ, iid_normal_hidden_τ)
+iid_normal_rng          = StableRNG(123)
+iid_normal_datastream   = RecentSubject(Float64)
+iid_normal_observations = labeled(Val((:y, )), combineLatest(iid_normal_datastream))
+
+iid_normal_engine = infer(
+    model         = iid_normal(),
+    datastream    = iid_normal_observations,
+    autoupdates   = iid_normal_autoupdates,
+    constraints   = iid_normal_constraints,
+    initmarginals = (
+        μ = NormalMeanPrecision(0.0, 0.001),
+        τ = GammaShapeRate(10.0, 10.0)
+    ),
+    historyvars   = (
+        μ = KeepLast(),
+        τ = KeepLast(),
+    ),
+    keephistory   = 100,
+    iterations    = 10,
+    free_energy   = true,
+    autostart     = true
+)
+```
+
+The notable differences with the previous example is the use of the `constraints` and `iterations` arguments. Read more about constraints in the [Constraints Specification](@ref user-guide-constraints-specification) section of the documentation. We have also indicated in the `historyvars` that we want to keep track of posteriors only from the last variational iteration in the history buffer.
+
+Now we can feed some observations to the datastream:
+```@example manual-online-inference
+for i in 1:100
+    next!(iid_normal_datastream, rand(iid_normal_rng, iid_normal_distribution))
 end
 ```
+
+Let's inspect the differences in the `free_energy` buffers:
+
+```@example manual-online-inference
+@test length(iid_normal_engine.free_energy_history) === 10 #hide
+iid_normal_engine.free_energy_history
+```
+
+```@example manual-online-inference
+@test length(iid_normal_engine.free_energy_raw_history) === 1000 #hide
+iid_normal_engine.free_energy_raw_history
+```
+
+```@example manual-online-inference
+@test length(iid_normal_engine.free_energy_final_only_history) === 100 #hide
+iid_normal_engine.free_energy_final_only_history
+```
+
+We can also visualize different representations:
+```@example manual-online-inference
+plot(iid_normal_engine.free_energy_history, label = "Bethe Free Energy (averaged)")
+```
+
+```@example manual-online-inference
+plot(iid_normal_engine.free_energy_raw_history, label = "Bethe Free Energy (raw)")
+```
+
+```@example manual-online-inference
+plot(iid_normal_engine.free_energy_final_only_history, label = "Bethe Free Energy (last per observation)")
+```
+
+As we can see, in the case of the variational iterations those buffers are quite different and represent different representations
+of the same Bethe Free Energy stream. As a sanity check, we could also visualize the history of our posterior estimations in the same way 
+as we did for a simpler previous example:
+
+```@example manual-online-inference
+@test length(iid_normal_engine.history[:μ]) === 100 #hide
+@test length(iid_normal_engine.history[:τ]) === 100 #hide
+@gif for (μ_posterior, τ_posterior) in zip(iid_normal_engine.history[:μ], iid_normal_engine.history[:τ])
+    rμ = range(0, 10, length = 1000)
+    rτ = range(0, 1, length = 1000)
+
+    pμ = plot(rμ, (x) -> pdf(μ_posterior, x), fillalpha=0.3, fillrange = 0, label="P(μ|y)", c=3)
+    pμ = vline!(pμ, [ iid_normal_hidden_μ ], label = "Real value of μ")
+
+    pτ = plot(rτ, (x) -> pdf(τ_posterior, x), fillalpha=0.3, fillrange = 0, label="P(τ|y)", c=3)
+    pτ = vline!(pτ, [ iid_normal_hidden_τ ], label = "Real value of τ")
+
+    plot(pμ, pτ, layout = @layout([ a; b ]))
+end
+```
+
+Nice, the history of the estimated posteriors aligns well with the real (hidden) values of the underlying parameters.
 
 ## [Callbacks and the event loop](@id manual-online-inference-event-loop)
 
