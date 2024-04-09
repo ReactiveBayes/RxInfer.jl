@@ -1549,7 +1549,7 @@ The list of all possible callbacks for different inference setting (batch or str
 
 - `on_marginal_update`:    args: (model::FactorGraphModel, name::Symbol, update) (exlusive for batch inference)
 - `before_model_creation`: args: ()
-- `after_model_creation`:  args: (model::FactorGraphModel, returnval)
+- `after_model_creation`:  args: (model::FactorGraphModel)
 - `before_inference`:      args: (model::FactorGraphModel) (exlusive for batch inference)
 - `before_iteration`:      args: (model::FactorGraphModel, iteration::Int)::Bool (exlusive for batch inference)
 - `before_data_update`:    args: (model::FactorGraphModel, data) (exlusive for batch inference)

@@ -436,8 +436,50 @@ end
 
 Nice, the history of the estimated posteriors aligns well with the real (hidden) values of the underlying parameters.
 
-## [Callbacks and the event loop](@id manual-online-inference-event-loop)
+## [Callbacks](@id manual-online-inference-callbacks)
+
+The [`RxInferenceEngine`](@ref) has its own lifecycle. The callbacks differ a little bit from [Using callbacks with Static Inference](@ref manual-static-inference-callbacks). 
+Here are available callbacks that can be used together with the streamlined inference:
+```@eval
+using RxInfer, Test, Markdown
+# Update the documentation below if this test does not pass
+@test RxInfer.available_callbacks(RxInfer.__rxinference) === (:before_model_creation, :after_model_creation, :before_autostart, :after_autostart)
+nothing
+```
+
+```julia
+before_model_creation()
+```
+Calls before the model is going to be created, does not accept any arguments.
+
+```julia
+after_model_creation(model::ProbabilisticModel)
+```
+Calls right after the model has been created, accepts a single argument, the `model`.
+
+- `before_autostart(engine::RxInferenceEngine)`: Calls before the `RxInfer.start()` function, if `autostart` is set to `true`.
+- `after_autostart(engine::RxInferenceEngine)`: Calls after the `RxInfer.start()` function, if `autostart` is set to `true`.
+
 
 ```@example manual-online-inference
 @test false
 ```
+
+## [Event loop](@id manual-online-inference-event-loop)
+
+```@example manual-online-inference
+@test false
+```
+
+## [Using `data` keyword argument with the streamlind inference](@id manual-online-inference-data)
+
+```@example manual-online-inference
+# Write this section
+@test false
+```
+
+## [Where to go next?](@id manual-online-inference-event-loop)
+
+This guide covered some fundamental usages of the [`infer`](@ref) function in the context of streamline inference, 
+but did not cover all the available keyword arguments of the function.Read more explanation about the other keyword arguments 
+in the [Overview](@ref manual-inference-overview) section or check out the [`Static Inference`](@ref manual-static-inference) section.
