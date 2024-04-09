@@ -1,4 +1,4 @@
-# [Online inference](@id manual-online-inference)
+# [Streamlined (online) inference](@id manual-online-inference)
 
 This guide explains how to use the [`infer`](@ref) function for dynamic datasets. We'll show how `RxInfer` can continuously update beliefs asynchronously whenever a new observation arrives. We'll use a simple Beta-Bernoulli model as an example, which has been covered in the [Getting Started](@ref user-guide-getting-started) section, 
 but keep in mind that these techniques can apply to any model.
