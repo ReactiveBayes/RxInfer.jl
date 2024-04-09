@@ -27,10 +27,6 @@ end
 nothing #hide
 ```
 
-```@docs 
-UnspecifiedFormConstraint
-```
-
 ## [PointMassFormConstraint](@id lib-forms-point-mass-constraint)
 
 The most basic form of posterior marginal approximation is the `PointMass` function. In a few words `PointMass` represents the delta function. In the context of functional form constraints `PointMass` approximation corresponds to the MAP estimate. For a given distribution `d` - `PointMass` functional form simply finds the `argmax` of the `logpdf` of `q(x)`, thus $q(x) = F[\mu_1, \mu_2] = \delta(x - \arg\min_{x} \mu_1(x) \mu_2(x))$. This is especially useful when exact functional form of `q(x)` is not available or cannot be parametrized efficiently. 
@@ -75,7 +71,7 @@ RxInfer.RightProposal
 
 ## [FixedMarginalFormConstraint](@id lib-forms-fixed-marginal-constraint)
 
-Fixed marginal form constraint replaces the resulting posterior marginal obtained during the inference procedure with the prespecified one. Worth to note that the inference backend still tries to compute real posterior marginal and may fail during this process. Might be useful for debugging purposes. If `nothing` is passed then the computed posterior marginal is returned (see also [`UnspecifiedFormConstraint`](@ref)).
+Fixed marginal form constraint replaces the resulting posterior marginal obtained during the inference procedure with the prespecified one. Worth to note that the inference backend still tries to compute real posterior marginal and may fail during this process. Might be useful for debugging purposes. If `nothing` is passed then the computed posterior marginal is returned (see also [`UnspecifiedFormConstraint`](@ref lib-forms-unspecified-constraint)).
 
 ```@example constraints-functional-forms
 @constraints function block_updates(x_posterior = nothing) 
@@ -108,7 +104,7 @@ It is possible to create a composite functional form constraint with the `+` ope
 
 ```@example constraints-functional-forms
 @constraints begin 
-    q(x) :: (SampleListFormConstraint(1000) + PointMassFormConstraint())
+    q(x) :: SampleListFormConstraint(1000) :: PointMassFormConstraint()
 end
 ```
 

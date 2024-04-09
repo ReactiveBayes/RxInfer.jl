@@ -70,3 +70,33 @@ RxInfer.compose_simple_operators_with_brackets
 RxInfer.inject_tilderhs_aliases
 RxInfer.ReactiveMPNodeAliases
 ```
+
+## [Getting access to an internal variable data structures](@id lib-model-constriction-internal-variable)
+
+To get an access to an internal `ReactiveMP` data structure of a variable in `RxInfer` model, it is possible to return 
+a so called _label_ of the variable from the model macro, and access it later on as the following:
+
+```@example internal-access
+using RxInfer
+using Test #hide
+
+@model function beta_bernoulli(y)
+    θ ~ Beta(1, 1)
+    y ~ Bernoulli(θ)
+    return θ
+end
+
+result = infer(
+    model = beta_bernoulli(),
+    data  = (y = 0.0, )
+)
+```
+
+```@example internal-access
+graph     = RxInfer.getmodel(result.model)
+returnval = RxInfer.getreturnval(graph)
+θ         = returnval
+variable  = RxInfer.getvariable(RxInfer.getvarref(graph, θ))
+@test variable isa ReactiveMP.RandomVariable #hide
+ReactiveMP.israndom(variable)
+```
