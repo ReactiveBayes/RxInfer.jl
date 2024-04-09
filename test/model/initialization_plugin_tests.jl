@@ -589,3 +589,48 @@ end
     end
     @test_expression_generating init_macro_interior(input) output
 end
+
+@testitem "init_macro_full_pipeline" begin
+    using RxInfer
+    import GraphPPL: create_model, with_plugins
+    @model function gamma_aliases()
+        # shape-scale parametrization
+        γ[1] ~ Gamma(shape = 1.0, scale = 1.0)
+        γ[2] ~ Gamma(a = 1.0, θ = 1.0)
+        γ[3] ~ Gamma(α = 1.0, β⁻¹ = 1.0)
+
+        # shape-rate parametrization
+        γ[4] ~ Gamma(shape = 1.0, rate = 1.0)
+        γ[5] ~ Gamma(a = 1.0, θ⁻¹ = 1.0)
+        γ[6] ~ Gamma(α = 1.0, β = 1.0)
+
+        x[1] ~ Normal(μ = 1.0, σ⁻² = γ[1])
+        x[2] ~ Normal(μ = 1.0, σ⁻² = γ[2])
+        x[3] ~ Normal(μ = 1.0, σ⁻² = γ[3])
+        x[4] ~ Normal(μ = 1.0, σ⁻² = γ[4])
+        x[5] ~ Normal(μ = 1.0, σ⁻² = γ[5])
+        x[6] ~ Normal(μ = 1.0, σ⁻² = γ[6])
+
+        s ~ x[1] + x[2] + x[3] + x[4] + x[5] + x[6]
+        y ~ Normal(μ = s, σ² = 1.0)
+    end
+
+    constraints = @constraints begin
+        q(x, γ) = q(x)q(γ)
+    end
+
+    init = @initialization begin
+        q(x) = vague(NormalMeanVariance)
+        q(γ) = vague(GammaShapeRate)
+    end
+    model = create_model(with_plugins(gamma_aliases(), GraphPPL.PluginsCollection(RxInfer.InitializationPlugin(init))))
+
+    for node in filter(GraphPPL.as_variable(:x), model)
+        @test GraphPPL.hasextra(model[node], RxInfer.InitMarExtraKey)
+        @test GraphPPL.getextra(model[node], RxInfer.InitMarExtraKey) == vague(NormalMeanVariance)
+    end
+    for node in filter(GraphPPL.as_variable(:γ), model)
+        @test GraphPPL.hasextra(model[node], RxInfer.InitMarExtraKey)
+        @test GraphPPL.getextra(model[node], RxInfer.InitMarExtraKey) == vague(GammaShapeRate)
+    end
+end
