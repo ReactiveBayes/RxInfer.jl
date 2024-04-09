@@ -97,7 +97,11 @@ end
     end
 
     @testset "IID Gaussian model" begin
-        for seed in (123, 456), n in (50, 100), constraints in (MeanField(), @constraints(begin q(μ, τ) = q(μ)q(τ) end))
+        for seed in (123, 456), n in (50, 100), constraints in (MeanField(), @constraints(
+                begin
+                    q(μ, τ) = q(μ)q(τ)
+                end
+            ))
             rng  = StableRNG(seed)
             data = float.(rand(rng, Normal(0.75, 10.0), n))
 
