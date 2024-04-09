@@ -95,7 +95,7 @@ conditioned = model | data
 ```
 
 Sometimes it might be useful to indicate that some arguments are data (thus condition on them) before the actual data becomes available.
-This situation may occur during [reactive inference](@ref user-guide-infer-reactive-inference), when data becomes available _after_ model creation.
+This situation may occur during [reactive inference](@ref manual-online-inference), when data becomes available _after_ model creation.
 `RxInfer` provides a special structure called [`RxInfer.DefferedDataHandler`](@ref), which can be used instead of the real data.
 
 For the example above, however, we cannot simply do the following:

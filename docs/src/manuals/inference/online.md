@@ -385,6 +385,7 @@ end
 Let's inspect the differences in the `free_energy` buffers:
 
 ```@example manual-online-inference
+@test all(v -> v <= 0.0, diff(iid_normal_engine.free_energy_history)) #hide
 @test length(iid_normal_engine.free_energy_history) === 10 #hide
 iid_normal_engine.free_energy_history
 ```
@@ -413,7 +414,7 @@ plot(iid_normal_engine.free_energy_final_only_history, label = "Bethe Free Energ
 ```
 
 As we can see, in the case of the variational iterations those buffers are quite different and represent different representations
-of the same Bethe Free Energy stream. As a sanity check, we could also visualize the history of our posterior estimations in the same way 
+of the same Bethe Free Energy stream (which corresponds to the `.free_energy_raw_history`). As a sanity check, we could also visualize the history of our posterior estimations in the same way 
 as we did for a simpler previous example:
 
 ```@example manual-online-inference

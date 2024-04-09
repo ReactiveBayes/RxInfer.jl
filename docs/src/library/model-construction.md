@@ -36,7 +36,7 @@ RxInfer.ConditionedModelGenerator
 ```
 
 Sometimes it might be useful to condition on data, which is not available at model creation time. 
-This might be especially useful in [reactive inference](@ref user-guide-reactive-inference) setting, where data, e.g. might be available later on from some asynchronous sensor input. For this reason, `RxInfer` implements a special _deferred_ data handler, that does mark model argument as data, but does not specify any particular value for this data nor its shape.
+This might be especially useful in [reactive inference](@ref manual-online-inference) setting, where data, e.g. might be available later on from some asynchronous sensor input. For this reason, `RxInfer` implements a special _deferred_ data handler, that does mark model argument as data, but does not specify any particular value for this data nor its shape.
 
 ```@docs 
 RxInfer.DefferedDataHandler
