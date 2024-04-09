@@ -28,16 +28,20 @@
         q(γ, θ) = q(γ)q(θ)
     end
 
+    init = @initialization begin
+        q(γ) = GammaShapeRate(1.0, 1.0)
+    end
+
     function ar_inference(inputs, outputs, order, niter, constraints)
         return infer(
-            model         = ar_model(order = order),
-            data          = (x = inputs, y = outputs),
-            constraints   = constraints,
-            options       = (limit_stack_depth = 500,),
-            initmarginals = (γ = GammaShapeRate(1.0, 1.0),),
-            returnvars    = (γ = KeepEach(), θ = KeepEach()),
-            iterations    = niter,
-            free_energy   = Float64
+            model       = ar_model(order = order),
+            data        = (x = inputs, y = outputs),
+            constraints = constraints,
+            options     = (limit_stack_depth = 500,),
+            init        = init,
+            returnvars  = (γ = KeepEach(), θ = KeepEach()),
+            iterations  = niter,
+            free_energy = Float64
         )
     end
 

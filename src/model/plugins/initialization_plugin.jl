@@ -42,6 +42,14 @@ struct InitSpecification
 end
 
 InitSpecification() = InitSpecification([], [])
+function Base.show(io::IO, init::InitSpecification)
+    print(io, "Initial state: \n")
+    for init_o in getinitobjects(init)
+        print(io, "    ")
+        print(io, init_o)
+        print(io, "\n")
+    end
+end
 
 getinitobjects(m::InitSpecification) = m.init_objects
 getsubmodelinit(m::InitSpecification) = m.submodel_init
@@ -113,6 +121,12 @@ function apply_init!(model::Model, context::Context, init::InitObject{S, T} wher
     end
 end
 
+function apply_init!(model::Model, context::Context, init::InitObject{S, T} where {S <: InitDescriptor, T <: AbstractArray}, nodes::AbstractArray{NodeLabel})
+    for (i, node) in enumerate(nodes) #TODO (@wouterwln) This is a temporary solution, we should find a better way to handle this
+        save_init!(model, node, InitObject(init.var_descriptor, init.init_info[i]))
+    end
+end
+
 const InitMsgExtraKey = GraphPPL.NodeDataExtraKey{:init_msg, Any}()
 const InitMarExtraKey = GraphPPL.NodeDataExtraKey{:init_mar, Any}()
 
@@ -144,7 +158,7 @@ GraphPPL.preprocess_plugin(plugin::InitializationPlugin, model::Model, context::
     label, nodedata
 
 function GraphPPL.postprocess_plugin(plugin::InitializationPlugin, model::Model)
-    apply_init!(model, plugin.init)
+    apply_init!(model, plugin.initialization)
     return nothing
 end
 

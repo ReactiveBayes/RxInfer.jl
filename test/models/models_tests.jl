@@ -97,7 +97,11 @@ end
     end
 
     @testset "IID Gaussian model" begin
-        for seed in (123, 456), n in (50, 100), constraints in (MeanField(), @constraints(begin q(μ, τ) = q(μ)q(τ) end))
+        for seed in (123, 456), n in (50, 100), constraints in (MeanField(), @constraints(
+                begin
+                    q(μ, τ) = q(μ)q(τ)
+                end
+            ))
             rng  = StableRNG(seed)
             data = float.(rand(rng, Normal(0.75, 10.0), n))
 
@@ -107,13 +111,15 @@ end
                 (prior_for_μ = NormalMeanVariance(1.0, 12.0), prior_for_τ = Gamma(1.0, 12.0))
             ]
 
-            initmarginals = (μ = NormalMeanVariance(0.0, 1.0), τ = Gamma(1.0, 1.0))
-
+            initmarginals = @initialization begin
+                q(μ) = NormalMeanVariance(0.0, 1.0)
+                q(τ) = Gamma(1.0, 1.0)
+            end
             for ts in testsets
                 result_with_prior_as_input = infer(
                     model = iid_gaussians_priors(prior_for_μ = ts[:prior_for_μ], prior_for_τ = ts[:prior_for_τ]),
                     returnvars = KeepLast(),
-                    initmarginals = initmarginals,
+                    init = initmarginals,
                     constraints = constraints,
                     data = (y = data,),
                     iterations = 10,
@@ -122,7 +128,7 @@ end
                 result_with_params_as_input = infer(
                     model = iid_gaussians_params(mean = mean(ts[:prior_for_μ]), variance = var(ts[:prior_for_μ]), shape = shape(ts[:prior_for_τ]), scale = scale(ts[:prior_for_τ])),
                     returnvars = KeepLast(),
-                    initmarginals = initmarginals,
+                    init = initmarginals,
                     constraints = constraints,
                     data = (y = data,),
                     iterations = 10,

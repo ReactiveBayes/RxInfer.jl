@@ -53,6 +53,12 @@
             push!(winitmarginals, Wishart(3, [1e2 0.0; 0.0 1e2]))
         end
 
+        init = @initialization begin
+            q(s) = vague(Dirichlet, nmixtures)
+            q(w) = winitmarginals
+            q(m) = minitmarginals
+        end
+
         return infer(
             model = multivariate_gaussian_mixture_model(rng = rng, L = L, nmixtures = nmixtures),
             data = (y = data,),
@@ -60,7 +66,7 @@
             returnvars = KeepEach(),
             free_energy = Float64,
             iterations = viters,
-            initmarginals = (s = vague(Dirichlet, nmixtures), m = minitmarginals, w = winitmarginals)
+            init = init
         )
     end
 

@@ -59,8 +59,14 @@
     end
 
     # The initial marginals for the autoregressive coefficients/parameters depending on the type of the AR process
-    lar_init_marginals(::Type{Multivariate}, order) = (γ = GammaShapeRate(1.0, 1.0), θ = MvNormalMeanPrecision(zeros(order), diageye(order)))
-    lar_init_marginals(::Type{Univariate}, order) = (γ = GammaShapeRate(1.0, 1.0), θ = NormalMeanPrecision(0.0, 1.0))
+    lar_init_marginals(::Type{Multivariate}, order) = @initialization begin
+        q(γ) = GammaShapeRate(1.0, 1.0)
+        q(θ) = MvNormalMeanPrecision(zeros(order), diageye(order))
+    end
+    lar_init_marginals(::Type{Univariate}, order) = @initialization begin
+        q(γ) = GammaShapeRate(1.0, 1.0)
+        q(θ) = NormalMeanPrecision(0.0, 1.0)
+    end
 
     # The model constructor depending on the type of the AR process
     lar_make_model(::Type{Multivariate}, c, τ, stype, order) = lar_model(
@@ -75,7 +81,7 @@
         return infer(
             model = lar_make_model(artype, c, τ, stype, order),
             data = (y = data,),
-            initmarginals = lar_init_marginals(artype, order),
+            init = lar_init_marginals(artype, order),
             returnvars = (γ = KeepEach(), θ = KeepEach(), x = KeepLast()),
             constraints = lar_constraints(),
             iterations = iterations,

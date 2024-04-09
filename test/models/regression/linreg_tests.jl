@@ -23,16 +23,13 @@
         y .~ Normal(mean = x .* b .+ a, var = det((diageye(2) .+ diageye(2)) ./ 2))
     end
 
+    init = @initialization begin
+        μ(b) = NormalMeanVariance(0.0, 100.0)
+    end
+
     ## Inference definition
     function linreg_inference(modelfn, niters, xdata, ydata)
-        return infer(
-            model = modelfn(),
-            data = (x = xdata, y = ydata),
-            returnvars = (a = KeepLast(), b = KeepLast()),
-            initmessages = (b = NormalMeanVariance(0.0, 100.0),),
-            free_energy = true,
-            iterations = niters
-        )
+        return infer(model = modelfn(), data = (x = xdata, y = ydata), returnvars = (a = KeepLast(), b = KeepLast()), init = init, free_energy = true, iterations = niters)
     end
 
     ## Data creation

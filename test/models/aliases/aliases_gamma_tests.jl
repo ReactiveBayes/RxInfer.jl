@@ -25,7 +25,12 @@
         q(x, γ) = q(x)q(γ)
     end
 
-    results = infer(model = gamma_aliases(), data = (y = 10.0,), constraints = constraints, initmarginals = (x = vague(NormalMeanVariance), γ = vague(Gamma)), free_energy = true)
+    init = @initialization begin
+        q(x) = vague(NormalMeanVariance)
+        q(γ) = vague(GammaShapeRate)
+    end
+
+    results = infer(model = gamma_aliases(), data = (y = 10.0,), constraints = constraints, init = init, free_energy = true)
     # Here we simply test that it ran and gave some output 
     @test mean(results.posteriors[:s]) ≈ 9.20000000000032
     @test first(results.free_energy) ≈ 1.3847462395606698

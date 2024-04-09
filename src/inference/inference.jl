@@ -281,10 +281,7 @@ function __inference(;
     model::ModelGenerator,
     # NamedTuple or Dict with data, optional if predictvars are specified
     data = nothing,
-    # NamedTuple or Dict with initial marginals, optional, defaults to empty
-    initmarginals = nothing,
-    # NamedTuple or Dict with initial messages, optional, defaults to empty
-    initmessages = nothing,  # optional
+    init = nothing,
     # Constraints specification object
     constraints = nothing,
     # Meta specification object
@@ -331,7 +328,9 @@ function __inference(;
 
     # We create a model with the `GraphPPL` package and insert a certain RxInfer related 
     # plugins which include the VI plugin, meta plugin and the ReactiveMP integration plugin
-    modelplugins = GraphPPL.PluginsCollection(GraphPPL.VariationalConstraintsPlugin(constraints), GraphPPL.MetaPlugin(meta), RxInfer.ReactiveMPInferencePlugin(_options))
+    modelplugins = GraphPPL.PluginsCollection(
+        GraphPPL.VariationalConstraintsPlugin(constraints), GraphPPL.MetaPlugin(meta), RxInfer.InitializationPlugin(init), RxInfer.ReactiveMPInferencePlugin(_options)
+    )
 
     is_free_energy, S = unwrap_free_energy_option(free_energy)
 
@@ -449,26 +448,6 @@ function __inference(;
         if is_free_energy
             fe_actor        = ScoreActor(S, _iterations, 1)
             fe_subscription = subscribe!(score(fmodel, fe_objective, free_energy_diagnostics), fe_actor)
-        end
-
-        if !isnothing(initmarginals)
-            for (variable, initvalue) in pairs(initmarginals)
-                if haskey(vardict, variable)
-                    assign_marginal!(vardict[variable], initvalue)
-                elseif warn
-                    @warn "`initmarginals` object has `$(variable)` specification, but model has no variable named `$(variable)`. Use `warn = false` to suppress this warning."
-                end
-            end
-        end
-
-        if !isnothing(initmessages)
-            for (variable, initvalue) in pairs(initmessages)
-                if haskey(vardict, variable)
-                    assign_message!(vardict[variable], initvalue)
-                elseif warn
-                    @warn "`initmessages` object has `$(variable)` specification, but model has no variable named `$(variable)`. Use `warn = false` to suppress this warning."
-                end
-            end
         end
 
         if isnothing(data) || isempty(data)
@@ -994,8 +973,7 @@ function __rxinference(;
     model::ModelGenerator,
     data = nothing,
     datastream = nothing,
-    initmarginals = nothing,
-    initmessages = nothing,
+    init = nothing,
     autoupdates = nothing,
     constraints = nothing,
     meta = nothing,
@@ -1049,7 +1027,9 @@ function __rxinference(;
 
     # We create a model with the `GraphPPL` package and insert a certain RxInfer related 
     # plugins which include the VI plugin, meta plugin and the ReactiveMP integration plugin
-    modelplugins = GraphPPL.PluginsCollection(GraphPPL.VariationalConstraintsPlugin(constraints), GraphPPL.MetaPlugin(meta), RxInfer.ReactiveMPInferencePlugin(_options))
+    modelplugins = GraphPPL.PluginsCollection(
+        GraphPPL.VariationalConstraintsPlugin(constraints), GraphPPL.MetaPlugin(meta), RxInfer.InitializationPlugin(init), RxInfer.ReactiveMPInferencePlugin(_options)
+    )
 
     is_free_energy, S = unwrap_free_energy_option(free_energy)
 
@@ -1078,28 +1058,6 @@ function __rxinference(;
         (haskey(vardict, datavarname) && is_data(vardict[datavarname])) ||
             error("The `datastream` produces data for `$(datavarname)`, but the model does not have a datavar named `$(datavarname)`")
         return getvariable(vardict[datavarname])
-    end
-
-    # If everything is ok with `datavars` and `redirectvars` next step is to initialise marginals and messages in the model
-    # This happens only once at the creation, we do not reinitialise anything if the inference has been stopped and resumed with the `stop` and `start` functions
-    if !isnothing(initmarginals)
-        for (variable, initvalue) in pairs(initmarginals)
-            if haskey(vardict, variable)
-                assign_marginal!(vardict[variable], initvalue)
-            elseif warn
-                @warn "`initmarginals` object has `$(variable)` specification, but model has no variable named `$(variable)`. Use `warn = false` to suppress this warning."
-            end
-        end
-    end
-
-    if !isnothing(initmessages)
-        for (variable, initvalue) in pairs(initmessages)
-            if haskey(vardict, variable)
-                assign_message!(vardict[variable], initvalue)
-            elseif warn
-                @warn "`initmessages` object has `$(variable)` specification, but model has no variable named `$(variable)`. Use `warn = false` to suppress this warning."
-            end
-        end
     end
 
     # `iterations` might be set to `nothing` in which case we assume `1` iteration
@@ -1634,8 +1592,7 @@ function infer(;
     data = nothing,
     datastream = nothing, # streamline specific
     autoupdates = nothing, # streamline specific
-    initmarginals = nothing,
-    initmessages = nothing,
+    init = nothing,
     constraints = nothing,
     meta = nothing,
     options = nothing,
@@ -1664,8 +1621,6 @@ function infer(;
         error("""One of the keyword arguments `data` or `predictvars` or `datastream` must be specified""")
     end
 
-    __infer_check_dicttype(:initmarginals, initmarginals)
-    __infer_check_dicttype(:initmessages, initmessages)
     __infer_check_dicttype(:callbacks, callbacks)
 
     if isnothing(autoupdates)
@@ -1673,8 +1628,7 @@ function infer(;
         __inference(
             model = model,
             data = data,
-            initmarginals = initmarginals,
-            initmessages = initmessages,
+            init = init,
             constraints = constraints,
             meta = meta,
             options = options,
@@ -1697,8 +1651,7 @@ function infer(;
             data = data,
             datastream = datastream,
             autoupdates = autoupdates,
-            initmarginals = initmarginals,
-            initmessages = initmessages,
+            init = init,
             constraints = constraints,
             meta = meta,
             options = options,
