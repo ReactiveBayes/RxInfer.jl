@@ -218,12 +218,13 @@ end
 nothing #hide
 ```
 
+To visualize the history of posteriors we use the `@gif` macro from the `Plots` package:
 ```@example manual-online-inference
 using Plots
 
 @gif for posterior in engine.history[:θ]
     rθ = range(0, 1, length = 1000)
-    pθ = plot(rθ, (x) -> pdf(posterior, x), title="Posterior", fillalpha=0.3, fillrange = 0, label="P(θ|y)", c=3)
+    pθ = plot(rθ, (x) -> pdf(posterior, x), fillalpha=0.3, fillrange = 0, label="P(θ|y)", c=3)
     pθ = vline!(pθ, [ hidden_θ ], label = "Real value of θ")
 
     plot(pθ)
@@ -236,14 +237,11 @@ We can keep feeding data to our datastream, but only last `100` posteriors will 
 for i in 1:200
     next!(datastream, rand(rng, distribution))
 end
-@test length(engine.history[:θ]) === 100 #hide
-nothing #hide
-```
 
-```@example manual-online-inference
+@test length(engine.history[:θ]) === 100 #hide
 @gif for posterior in engine.history[:θ]
     rθ = range(0, 1, length = 1000)
-    pθ = plot(rθ, (x) -> pdf(posterior, x), title="Posterior", fillalpha=0.3, fillrange = 0, label="P(θ|y)", c=3)
+    pθ = plot(rθ, (x) -> pdf(posterior, x), fillalpha=0.3, fillrange = 0, label="P(θ|y)", c=3)
     pθ = vline!(pθ, [ hidden_θ ], label = "Real value of θ")
 
     plot(pθ)
@@ -253,3 +251,15 @@ end
 !!! note
     It is also possible to visualize the inference estimation continously with manual subscription to `engine.posteriors[:θ]`.
 
+
+## [Subscribing on the stream of free energy](@id manual-online-inference-free-energy)
+
+```@example manual-online-inference
+@test false
+```
+
+## [Callbacks and the event loop](@id manual-online-inference-event-loop)
+
+```@example manual-online-inference
+@test false
+```
