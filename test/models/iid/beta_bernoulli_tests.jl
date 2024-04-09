@@ -16,6 +16,10 @@
         return a + b
     end
 
+    init = @initialization begin
+        q(θ) = Beta(1.0, 1.0)
+    end
+
     # Check the streaming version of the same model
     @model function beta_bernoulli_streaming(y, a, b)
         θ ~ Beta(a, b)
@@ -70,7 +74,7 @@
             model = beta_bernoulli_streaming(),
             data = (y = data_for_specific_p,),
             autoupdates = autoupdates,
-            initmarginals = (θ = Beta(1.0, 1.0),),
+            init = init,
             keephistory = 1, # Only keep the last one
             autostart = false
         )
@@ -120,12 +124,15 @@
         @test result_for_specific_p.posteriors[:θ] == streaming_saved_result[]
     end
 
+    init = @initialization function beta_bernoulli_init(b)
+        q(θ) = b
+        μ(θ) = b
+    end
+
     # In this model the result should not depend on the initial marginals or messages
     # But it should run anyway
     for θinit in (Beta(1.0, 1.0), Beta(2.0, 2.0), Beta(2.0, 7.0), Beta(7.0, 2.0))
-        result_with_init = infer(
-            model = beta_bernoulli(a = 2.0, b = 7.0), data = (y = dataset,), iterations = 10, initmarginals = (θ = θinit,), initmessages = (θ = θinit,), free_energy = true
-        )
+        result_with_init = infer(model = beta_bernoulli(a = 2.0, b = 7.0), data = (y = dataset,), iterations = 10, init = beta_bernoulli_init(θinit), free_energy = true)
 
         @test all(t -> t[1] == t[2], Iterators.zip(result.posteriors[:θ], result_with_init.posteriors[:θ]))
         @test all(t -> t[1] == t[2], Iterators.zip(result.free_energy, result_with_init.free_energy))

@@ -23,6 +23,12 @@
         q(s, s_0, A, B) = q(s, s_0)q(A)q(B)
     end
 
+    init = @initialization begin
+        q(A) = vague(MatrixDirichlet, 3, 3)
+        q(B) = vague(MatrixDirichlet, 3, 3)
+        q(s) = vague(Categorical, 3)
+    end
+
     ## Inference definition
     function hidden_markov_model_inference(data, vmp_iters)
         return infer(
@@ -31,7 +37,7 @@
             data = (x = data,),
             options = (limit_stack_depth = 500,),
             free_energy = true,
-            initmarginals = (A = vague(MatrixDirichlet, 3, 3), B = vague(MatrixDirichlet, 3, 3), s = vague(Categorical, 3)),
+            init = init,
             iterations = vmp_iters,
             returnvars = (s = KeepEach(), A = KeepEach(), B = KeepEach())
         )

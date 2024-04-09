@@ -39,6 +39,13 @@
         f() -> CVI(rng, n_iterations, n_samples, Optimisers.Descent(learning_rate))
     end
 
+    initialization = @initialization begin
+        μ(z) = NormalMeanVariance(0, P)
+        q(z) = NormalMeanVariance(0, P)
+        q(τ) = GammaShapeRate(1.0, 1.0e-12)
+        q(θ) = GammaShapeRate(1.0, 1.0e-12)
+    end
+
     function inference_cvi(transformed, rng, iterations)
         return infer(
             model = non_linear_dynamics(),
@@ -48,8 +55,7 @@
             returnvars = (z = KeepLast(),),
             constraints = constraints,
             meta = model_meta(rng, 600, 600, 0.01),
-            initmessages = (z = NormalMeanVariance(0, P),),
-            initmarginals = (z = NormalMeanVariance(0, P), τ = GammaShapeRate(1.0, 1.0e-12), θ = GammaShapeRate(1.0, 1.0e-12))
+            init = initialization
         )
     end
 
