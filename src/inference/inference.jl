@@ -529,7 +529,7 @@ The return value of the `infer` function in case of streamlined inference.
 - `posteriors`: `Dict` or `NamedTuple` of 'random variable' - 'posterior stream' pairs. See the `returnvars` argument for the [`infer`](@ref).
 - `free_energy`: (optional) A stream of Bethe Free Energy values per VMP iteration. See the `free_energy` argument for the [`infer`](@ref).
 - `history`: (optional) Saves history of previous marginal updates. See the `historyvars` and `keephistory` arguments for the [`infer`](@ref).
-- `free_energy_history`: (optional) Free energy history, average over variational iterations 
+- `free_energy_history`: (optional) Free energy history, averaged across variational iterations value for all observations  
 - `free_energy_raw_history`: (optional) Free energy history, returns returns computed values of all variational iterations for each data event (if available)
 - `free_energy_final_only_history`: (optional) Free energy history, returns computed values of final variational iteration for each data event (if available)
 - `events`: (optional) A stream of events send by the inference engine. See the `events` argument for the [`infer`](@ref).

@@ -252,10 +252,79 @@ end
     It is also possible to visualize the inference estimation continously with manual subscription to `engine.posteriors[:θ]`.
 
 
+As previously it is important to shutdown the inference engine when it becomes unnecessary:
+```@example manual-online-inference
+RxInfer.stop(engine)
+```
+
 ## [Subscribing on the stream of free energy](@id manual-online-inference-free-energy)
 
+
+To obtain a continuous stream of updates for the [Bethe Free Energy](@ref lib-bethe-free-energy), we need to initialize the engine with the `free_energy` argument set to `true`:
+
 ```@example manual-online-inference
-@test false
+engine = infer(
+    model         = beta_bernoulli_online(),
+    datastream    = observations,
+    autoupdates   = beta_bernoulli_autoupdates,
+    initmarginals = (θ = Beta(1, 1), ),
+    keephistory   = 5,
+    autostart     = true,
+    free_energy   = true
+)
+```
+
+!!! note 
+    It's important to use the `keephistory` argument alongside the `free_energy` argument because setting `free_energy = true` also maintains an internal circular buffer to track its previous updates.
+
+```@example manual-online-inference
+free_energy_for_testing = [] #hide
+free_energy_for_testing_subscription = subscribe!(engine.free_energy, (v) -> push!(free_energy_for_testing, v)) #hide
+free_energy_subscription = subscribe!(engine.free_energy, 
+    (bfe_value) -> println("New value of Bethe Free Energy has been computed `", bfe_value, "` 👩‍🔬")
+)
+@test length(free_energy_for_testing) === 1 #hide
+nothing #hide
+```
+
+Let's emit more observations:
+
+```@example manual-online-inference
+for i in 1:5
+    next!(datastream, rand(rng, distribution))
+end
+@test length(free_energy_for_testing) === 6 #hide
+nothing #hide
+```
+
+In this particular example, we do not perform any variational iterations and do not use any variational constraints, hence, the inference is exact.
+In this case the BFE values are equal to the minus log-evidence of the model given new observation. 
+We can also track history of Bethe Free Energy values with the following fields of the `engine`:
+- `free_energy_history`: free energy history, averaged across variational iterations value for all observations  
+- `free_energy_raw_history`: free energy history, returns returns computed values of all variational iterations for each data event (if available)
+- `free_energy_final_only_history`: free energy history, returns computed values of final variational iteration for each data event (if available)
+
+```@example manual-online-inference
+@test length(engine.free_energy_history) === 1 #hide
+engine.free_energy_history
+```
+
+```@example manual-online-inference
+@test length(engine.free_energy_raw_history) === 5 #hide
+engine.free_energy_raw_history
+```
+
+```@example manual-online-inference
+@test length(engine.free_energy_final_only_history) === 5 #hide
+engine.free_energy_final_only_history
+```
+
+As has been mentioned, in this particular example we do not perform variational iterations, hence, there is little different between different representations of the BFE history buffers. However, when performing variational inference with the `iterations` argument, those buffers will be different. To demonstrate this difference let's build a slightly more complex model with variational constraints:
+
+```@example manual-online-inference
+@model function iid_normal(y)
+    μ 
+end
 ```
 
 ## [Callbacks and the event loop](@id manual-online-inference-event-loop)
