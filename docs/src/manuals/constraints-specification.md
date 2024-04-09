@@ -197,7 +197,7 @@ To access the variables in the submodels, we use the `for q in __submodel__` syn
 @constraints begin
     for q in inner
         q(α) :: PointMassFormConstraint()
-        q(α, β) = q(a)q(b)
+        q(α, β) = q(α)q(β)
     end
 end
 ```
@@ -211,7 +211,7 @@ Similarly, we can specify constraints over variables in the context of the inner
             q(y, τ) = q(y)q(τ[1])q(τ[2])
         end
         q(α) :: PointMassFormConstraint()
-        q(α, β) = q(a)q(b)
+        q(α, β) = q(α)q(β)
     end
 end
 ```
@@ -222,7 +222,7 @@ The `for q in __submodel__` applies the constraints specified in this code block
 @constraints begin
     for q in (inner, 1)
         q(α) :: PointMassFormConstraint()
-        q(α, β) = q(a)q(b)
+        q(α, β) = q(α)q(β)
     end
 end
 ```
@@ -241,6 +241,6 @@ Sometimes, a submodel is used in multiple contexts, on multiple levels of hierar
 ```@example manual_constraints
 RxInfer.GraphPPL.default_constraints(::typeof(inner)) = @constraints begin
     q(α) :: PointMassFormConstraint()
-    q(α, β) = q(a)q(b)
+    q(α, β) = q(α)q(β)
 end
 ```

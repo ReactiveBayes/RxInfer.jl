@@ -5,10 +5,6 @@
 ```@docs
 infer
 InferenceResult
-RxInfer.start
-RxInfer.stop
-@autoupdates
-RxInferenceEngine
 RxInferenceEvent
 RxInfer.ReactiveMPInferenceOptions
 ```

@@ -523,7 +523,7 @@ include("autoupdates.jl")
 """
     RxInferenceEngine
 
-The return value of the `rxinference` function. 
+The return value of the `infer` function in case of streamlined inference. 
 
 # Public fields
 - `posteriors`: `Dict` or `NamedTuple` of 'random variable' - 'posterior stream' pairs. See the `returnvars` argument for the [`infer`](@ref).
@@ -533,9 +533,10 @@ The return value of the `rxinference` function.
 - `free_energy_raw_history`: (optional) Free energy history, returns returns computed values of all variational iterations for each data event (if available)
 - `free_energy_final_only_history`: (optional) Free energy history, returns computed values of final variational iteration for each data event (if available)
 - `events`: (optional) A stream of events send by the inference engine. See the `events` argument for the [`infer`](@ref).
-- `model`: `FactorGraphModel` object reference.
+- `model`: `ProbabilisticModel` object reference.
 
-Use the `RxInfer.start(engine)` function to subscribe on the `data` source and start the inference procedure. Use `RxInfer.stop(engine)` to unsubscribe from the `data` source and stop the inference procedure. 
+Use the `RxInfer.start(engine)` function to subscribe on the `datastream` source and start the inference procedure. 
+Use `RxInfer.stop(engine)` to unsubscribe from the `datastream` source and stop the inference procedure. 
 Note, that it is not always possible to start/stop the inference procedure.
 
 See also: [`infer`](@ref), [`RxInferenceEvent`](@ref), [`RxInfer.start`](@ref), [`RxInfer.stop`](@ref)
@@ -642,9 +643,13 @@ function Base.show(io::IO, engine::RxInferenceEngine)
     end
 
     print(io, rpad("  Posteriors history", lcolumnlen), " | ")
-    print(io, "available for (")
-    join(io, keys(getfield(engine, :historyactors)), ", ")
-    print(io, ")\n")
+    if !isnothing(getfield(engine, :historyactors))
+        print(io, "available for (")
+        join(io, keys(getfield(engine, :historyactors)), ", ")
+        print(io, ")\n")
+    else 
+        print(io, "unavailable\n")
+    end 
 
     print(io, rpad("  Free Energy history", lcolumnlen), " | ")
     if !isnothing(getfield(engine, :fe_actor))
