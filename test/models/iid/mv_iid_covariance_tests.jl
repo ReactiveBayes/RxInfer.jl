@@ -16,12 +16,17 @@
         q(m, C) = q(m)q(C)
     end
 
+    init = @initialization function mv_iid_inverse_wishart_init(d)
+        q(m) = vague(MvNormalMeanCovariance, d)
+        q(C) = vague(InverseWishart, d)
+    end
+
     function inference_mv_inverse_wishart(data, d)
         return infer(
             model = mv_iid_inverse_wishart(d = d),
             data = (y = data,),
             constraints = constraints_mv_iid_inverse_wishart,
-            initmarginals = (m = vague(MvNormalMeanCovariance, d), C = vague(InverseWishart, d)),
+            init = mv_iid_inverse_wishart_init(d),
             returnvars = KeepLast(),
             iterations = 10,
             free_energy = Float64

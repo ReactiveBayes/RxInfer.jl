@@ -19,15 +19,21 @@
         end
     end
 
+    init = @initialization begin
+        q(s) = vague(Beta)
+        q(m) = [NormalMeanVariance(-2.0, 1e3), NormalMeanVariance(2.0, 1e3)]
+        q(p) = [vague(GammaShapeRate), vague(GammaShapeRate)]
+    end
+
     function inference_univariate(data, n_its, constraints)
         return infer(
-            model         = univariate_gaussian_mixture_model(),
-            data          = (y = data,),
-            constraints   = constraints,
-            returnvars    = KeepEach(),
-            free_energy   = Float64,
-            iterations    = n_its,
-            initmarginals = (s = vague(Beta), m = [NormalMeanVariance(-2.0, 1e3), NormalMeanVariance(2.0, 1e3)], p = [vague(GammaShapeRate), vague(GammaShapeRate)])
+            model       = univariate_gaussian_mixture_model(),
+            data        = (y = data,),
+            constraints = constraints,
+            returnvars  = KeepEach(),
+            free_energy = Float64,
+            iterations  = n_its,
+            init        = init
         )
     end
     ## -------------------------------------------- ##

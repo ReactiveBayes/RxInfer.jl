@@ -55,12 +55,16 @@
     priors_bs = [Gamma(10.0, 2.0), Gamma(1.0, 3.0)]
     prior_s = Dirichlet(1e3 * mixing)
 
-    gmodel         = gamma_mixture_model(nmixtures = nmixtures, priors_as = priors_as, priors_bs = priors_bs, prior_s = prior_s)
-    gdata          = (y = dataset,)
-    ginitmarginals = (s = prior_s, z = vague(Categorical, nmixtures), bs = GammaShapeRate(1.0, 1.0))
-    greturnvars    = (s = KeepLast(), z = KeepLast(), as = KeepEach(), bs = KeepEach())
+    gmodel      = gamma_mixture_model(nmixtures = nmixtures, priors_as = priors_as, priors_bs = priors_bs, prior_s = prior_s)
+    gdata       = (y = dataset,)
+    ginit       = @initialization begin
+        q(s) = prior_s
+        q(z) = vague(Categorical, nmixtures)
+        q(bs) = GammaShapeRate(1.0, 1.0)
+    end
+    greturnvars = (s = KeepLast(), z = KeepLast(), as = KeepEach(), bs = KeepEach())
 
-    gresult = infer(model = gmodel, data = gdata, constraints = constraints, initmarginals = ginitmarginals, returnvars = greturnvars, free_energy = true, iterations = 50)
+    gresult = infer(model = gmodel, data = gdata, constraints = constraints, init = ginit, returnvars = greturnvars, free_energy = true, iterations = 50)
 
     # extract inferred parameters
     _as, _bs = mean.(gresult.posteriors[:as][end]), mean.(gresult.posteriors[:bs][end])
@@ -70,8 +74,8 @@
     # create model from inferred parameters
     _mixture = MixtureModel(_dists, _mixing)
 
-    @test mean(_dists[1]) ≈ 0.3226156205871108
-    @test mean(_dists[2]) ≈ 0.3346637112443222
-    @test _mixing ≈ [0.7988158410647992, 0.20118415893520075]
+    @test mean(_dists[1]) ≈ 0.32261559907078213
+    @test mean(_dists[2]) ≈ 0.3346638123092099
+    @test _mixing ≈ [0.7988294835972645, 0.20117051640273556]
     @test last(gresult.free_energy) ≈ -138.7724253019069
 end

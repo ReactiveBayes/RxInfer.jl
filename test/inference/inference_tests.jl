@@ -179,9 +179,13 @@ end
         q(x, τ) = q(x)q(τ)
     end
 
+    init = @initialization begin
+        q(τ) = Gamma(1.0, 1.0)
+    end
+
     @testset "returnval should be set properly" begin
         for n in 2:5
-            result = infer(model = test_model1(), constraints = test_model1_constraints(), data = (y = rand(n),), initmarginals = (τ = Gamma(1.0, 1.0),))
+            result = infer(model = test_model1(), constraints = test_model1_constraints(), data = (y = rand(n),), init = init)
             @test getreturnval(result.model) === (n, 2, 3.0, "hello world")
         end
     end
@@ -191,13 +195,7 @@ end
 
         # Case #0: no errors at all
         result = infer(
-            model = test_model1(),
-            constraints = test_model1_constraints(),
-            data = (y = observations,),
-            initmarginals = (τ = Gamma(1.0, 1.0),),
-            iterations = 10,
-            returnvars = KeepEach(),
-            free_energy = true
+            model = test_model1(), constraints = test_model1_constraints(), data = (y = observations,), init = init, iterations = 10, returnvars = KeepEach(), free_energy = true
         )
 
         @test RxInfer.issuccess(result)
@@ -216,7 +214,7 @@ end
             model = test_model1(),
             constraints = test_model1_constraints(),
             data = (y = observations,),
-            initmarginals = (τ = Gamma(1.0, 1.0),),
+            init = init,
             iterations = 10,
             returnvars = KeepEach(),
             free_energy = true,
@@ -233,7 +231,7 @@ end
             model = test_model1(),
             constraints = test_model1_constraints(),
             data = (y = observations,),
-            initmarginals = (τ = Gamma(1.0, 1.0),),
+            init = init,
             iterations = 10,
             returnvars = KeepEach(),
             free_energy = true,
@@ -269,13 +267,7 @@ end
 
         # Case #1: no halting
         results1 = infer(
-            model = test_model1(),
-            constraints = test_model1_constraints(),
-            data = (y = observations,),
-            initmarginals = (τ = Gamma(1.0, 1.0),),
-            iterations = 10,
-            returnvars = KeepEach(),
-            free_energy = true
+            model = test_model1(), constraints = test_model1_constraints(), data = (y = observations,), init = init, iterations = 10, returnvars = KeepEach(), free_energy = true
         )
 
         @test length(results1.free_energy) === 10
@@ -287,7 +279,7 @@ end
             model = test_model1(),
             constraints = test_model1_constraints(),
             data = (y = observations,),
-            initmarginals = (τ = Gamma(1.0, 1.0),),
+            init = init,
             iterations = 10,
             returnvars = KeepEach(),
             free_energy = true,
@@ -307,7 +299,7 @@ end
             model = test_model1(),
             constraints = test_model1_constraints(),
             data = (y = observations,),
-            initmarginals = (τ = Gamma(1.0, 1.0),),
+            init = init,
             iterations = 10,
             returnvars = KeepEach(),
             free_energy = true,
@@ -366,14 +358,16 @@ end
         y[n - 1] ~ Normal(mean = x[n], precision = τ)
     end
 
+    init = @initialization begin
+        q(τ) = Gamma(1.0, 1.0)
+    end
+
     @testset "Warning for unused datavars" begin
         @constraints function test_model1_constraints()
             q(x, τ) = q(x)q(τ)
         end
 
-        @test_throws "size of datavar array and data must match" infer(
-            model = test_model1(), constraints = test_model1_constraints(), data = (y = rand(10),), initmarginals = (τ = Gamma(1.0, 1.0),)
-        )
+        @test_throws "size of datavar array and data must match" infer(model = test_model1(), constraints = test_model1_constraints(), data = (y = rand(10),), init = init)
     end
 end
 
@@ -389,6 +383,11 @@ end
         x_t ~ Normal(mean = x_t_min, precision = 1.0)
         y ~ Normal(mean = x_t, precision = τ)
         return 2, 3.0, "hello world" # test returnval
+    end
+
+    init = @initialization begin
+        q(x_t) = NormalMeanVariance(0.0, 1e3)
+        q(τ) = GammaShapeRate(1.0, 1.0)
     end
 
     autoupdates = @autoupdates begin
@@ -420,7 +419,7 @@ end
                 returnvars = returnvars,
                 historyvars = historyvars,
                 keephistory = keephistory,
-                initmarginals = (x_t = NormalMeanVariance(0.0, 1e3), τ = GammaShapeRate(1.0, 1.0)),
+                init = init,
                 iterations = iterations,
                 free_energy = free_energy,
                 autoupdates = autoupdates
@@ -483,7 +482,7 @@ end
             model = test_model1(),
             constraints = MeanField(),
             data = (y = observedy,),
-            initmarginals = (x_t = NormalMeanVariance(0.0, 1e3), τ = GammaShapeRate(1.0, 1.0)),
+            init = init,
             autoupdates = autoupdates,
             callbacks = (
                 before_model_creation = (args...) -> push!(callbacksdata, (:before_model_creation, args)),
@@ -510,7 +509,7 @@ end
             model = test_model1(),
             constraints = MeanField(),
             data = (y = observedy,),
-            initmarginals = (x_t = NormalMeanVariance(0.0, 1e3), τ = GammaShapeRate(1.0, 1.0)),
+            init = init,
             autoupdates = autoupdates,
             callbacks = (
                 before_model_creation = (args...) -> push!(callbacksdata, (:before_model_creation, args)),
@@ -540,7 +539,7 @@ end
             model = test_model1(),
             constraints = MeanField(),
             data = (y = observedy,),
-            initmarginals = (x_t = NormalMeanVariance(0.0, 1e3), τ = GammaShapeRate(1.0, 1.0)),
+            init = init,
             autoupdates = autoupdates,
             callbacks = (hello_world = (args...) -> push!(callbacksdata, args),),
             autostart = true
@@ -567,7 +566,7 @@ end
                 model = test_model1(),
                 constraints = MeanField(),
                 data = (y = observedy,),
-                initmarginals = (x_t = NormalMeanVariance(0.0, 1e3), τ = GammaShapeRate(1.0, 1.0)),
+                init = init,
                 autoupdates = autoupdates,
                 historyvars = KeepEach(),
                 keephistory = keephistory,
@@ -721,7 +720,7 @@ end
             model = test_model1(),
             constraints = MeanField(),
             data = (y = observedy,),
-            initmarginals = (x_t = NormalMeanVariance(0.0, 1e3), τ = GammaShapeRate(1.0, 1.0)),
+            init = init,
             autoupdates = autoupdates,
             postprocess = RxInfer.UnpackMarginalPostprocess(),
             historyvars = (τ = KeepLast(),),
@@ -740,7 +739,7 @@ end
                 model = test_model1(),
                 constraints = MeanField(),
                 data = (y = observedy,),
-                initmarginals = (x_t = NormalMeanVariance(0.0, 1e3), τ = GammaShapeRate(1.0, 1.0)),
+                init = init,
                 autoupdates = autoupdates,
                 postprocess = postprocess,
                 historyvars = (τ = KeepLast(),),

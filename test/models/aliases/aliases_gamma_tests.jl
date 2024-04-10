@@ -1,4 +1,5 @@
 @testitem "aliases for `Gamma` family of distributions" begin
+
     @model function gamma_aliases(y)
         # shape-scale parametrization
         γ[1] ~ Gamma(shape = 1.0, scale = 1.0)
@@ -25,8 +26,15 @@
         q(x, γ) = q(x)q(γ)
     end
 
-    results = infer(model = gamma_aliases(), data = (y = 10.0,), constraints = constraints, initmarginals = (x = vague(NormalMeanVariance), γ = vague(Gamma)), free_energy = true)
+    init = @initialization begin
+        q(x) = vague(NormalMeanVariance)
+        q(γ) = vague(GammaShapeRate)
+    end
+
+    results = infer(model = gamma_aliases(), data = (y = 10.0,), constraints = constraints, iterations = 100, init = init, free_energy = true)
+
     # Here we simply test that it ran and gave some output 
-    @test mean(results.posteriors[:s]) ≈ 9.20000000000032
-    @test first(results.free_energy) ≈ 1.3847462395606698
+    @test mean(results.posteriors[:s][end]) ≈ 9.468846338832027
+    @test first(results.free_energy[end]) ≈ 4.385584096993327
+    @test all(<=(1e-14), diff(results.free_energy)) # it oscilates a bit at the end, but all should be less or equal to zero
 end

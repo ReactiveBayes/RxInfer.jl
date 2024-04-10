@@ -19,6 +19,13 @@
         q(m, P) = q(m)q(P)
     end
 
+    ## Initialization definition
+
+    init = @initialization function mv_iid_wishart_init(d)
+        q(m) = vague(MvNormalMeanPrecision, d)
+        q(P) = vague(Wishart, d)
+    end
+
     ## Inference definition
 
     function inference_mv_wishart(data, d)
@@ -26,7 +33,7 @@
             model = mv_iid_wishart(d = d),
             data = (y = data,),
             constraints = constraints_mv_iid_wishart,
-            initmarginals = (m = vague(MvNormalMeanCovariance, d), P = vague(Wishart, d)),
+            init = mv_iid_wishart_init(d),
             returnvars = KeepLast(),
             iterations = 10,
             free_energy = Float64

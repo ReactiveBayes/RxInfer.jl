@@ -289,6 +289,10 @@ end
         o ~ NormalMeanPrecision(x[n + 1], 1.0)
     end
 
+    init = @initialization begin
+        q(γ) = GammaShapeRate(1.0, 1.0)
+    end
+
     @testset "test #5 vmp model" begin
         data = (y = [1.0, -10.0, 5.0],)
 
@@ -301,7 +305,7 @@ end
             data = data,
             constraints = constraints,
             free_energy = false,
-            initmarginals = (γ = GammaShapeRate(1.0, 1.0),),
+            init = init,
             iterations = 10,
             returnvars = (γ = KeepEach(),),
             predictvars = (o = KeepEach(),)

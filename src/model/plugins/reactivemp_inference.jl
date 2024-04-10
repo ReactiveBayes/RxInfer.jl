@@ -123,6 +123,12 @@ function GraphPPL.postprocess_plugin(plugin::ReactiveMPInferencePlugin, model::M
     # The variable nodes must be activated before the factor nodes
     variable_nodes(model) do _, variable
         activate_rmp_variable!(plugin, model, variable, getproperties(variable)::VariableNodeProperties)
+        if hasextra(variable, InitMarExtraKey)
+            setmarginal!(getextra(variable, ReactiveMPExtraVariableKey), getextra(variable, InitMarExtraKey))
+        end
+        if hasextra(variable, InitMsgExtraKey)
+            setmessage!(getextra(variable, ReactiveMPExtraVariableKey), getextra(variable, InitMsgExtraKey))
+        end
     end
 
     # The variable nodes must be activated after the variable nodes
