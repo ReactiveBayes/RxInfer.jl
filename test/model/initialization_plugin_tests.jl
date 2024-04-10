@@ -630,6 +630,41 @@ end
         @test GraphPPL.hasextra(model[node], RxInfer.InitMarExtraKey)
         @test GraphPPL.getextra(model[node], RxInfer.InitMarExtraKey) == vague(GammaShapeRate)
     end
+
+    @model function matrix_init()
+        local x
+        for i in 1:3
+            for j in 1:3
+                x[i, j] ~ Normal(0, 1)
+            end
+        end
+    end
+
+    init = @initialization begin
+        q(x) = [
+            vague(NormalMeanVariance) vague(NormalMeanVariance) vague(NormalMeanVariance)
+            vague(NormalMeanVariance) vague(NormalMeanVariance) vague(NormalMeanVariance)
+            vague(NormalMeanVariance) vague(NormalMeanVariance) vague(NormalMeanVariance)
+        ]
+    end
+
+    model = create_model(with_plugins(matrix_init(), GraphPPL.PluginsCollection(RxInfer.InitializationPlugin(init))))
+
+    for node in filter(GraphPPL.as_variable(:x), model)
+        @test GraphPPL.hasextra(model[node], RxInfer.InitMarExtraKey)
+        @test GraphPPL.getextra(model[node], RxInfer.InitMarExtraKey) == vague(NormalMeanVariance)
+    end
+
+    init = @initialization begin
+        q(x) = [vague(NormalMeanVariance) for _ in 1:9]
+    end
+
+    model = create_model(with_plugins(matrix_init(), GraphPPL.PluginsCollection(RxInfer.InitializationPlugin(init))))
+
+    for node in filter(GraphPPL.as_variable(:x), model)
+        @test GraphPPL.hasextra(model[node], RxInfer.InitMarExtraKey)
+        @test GraphPPL.getextra(model[node], RxInfer.InitMarExtraKey) == vague(NormalMeanVariance)
+    end
 end
 
 @testitem "default_init" begin

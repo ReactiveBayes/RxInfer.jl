@@ -23,7 +23,7 @@ struct InitObject{S <: InitDescriptor, T}
     init_info::T
 end
 
-getvardescriptor(m::InitObject) = m.var_descriptor.var_descriptor
+getvardescriptor(m::InitObject) = m.var_descriptor
 getinitinfo(m::InitObject) = m.init_info
 
 function Base.show(io::IO, m::InitObject{S, T}) where {S <: InitDescriptor{InitMarginal}, T}
@@ -113,7 +113,7 @@ function apply_init!(model::Model, context::Context, init::InitSpecification)
 end
 
 function apply_init!(model::Model, context::Context, init::InitObject{S, T} where {S <: InitDescriptor, T})
-    nodes = unroll(context[getvardescriptor(init)])
+    nodes = unroll(context[getvardescriptor(getvardescriptor(init))])
     apply_init!(model, context, init, nodes)
 end
 
@@ -125,9 +125,9 @@ function apply_init!(model::Model, context::Context, init::InitObject{S, T} wher
     end
 end
 
-function apply_init!(model::Model, context::Context, init::InitObject{S, T} where {S <: InitDescriptor, T <: AbstractArray}, nodes::AbstractArray{NodeLabel})
-    for (i, node) in enumerate(nodes) #TODO (@wouterwln) This is a temporary solution, we should find a better way to handle this
-        save_init!(model, node, InitObject(init.var_descriptor, init.init_info[i]))
+function apply_init!(model::Model, context::Context, init::InitObject{S, T}, nodes::AbstractArray{NodeLabel}) where {S <: InitDescriptor, T <: AbstractArray}
+    for (node, marginal) in zip(nodes, getinitinfo(init))
+        save_init!(model, node, InitObject(getvardescriptor(init), marginal))
     end
 end
 
