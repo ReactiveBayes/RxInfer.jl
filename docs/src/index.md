@@ -27,29 +27,22 @@ Given a probabilistic model, RxInfer allows for an efficient message-passing bas
 
 ## Why RxInfer
 
-Many important AI applications, including audio processing, self-driving vehicles, weather forecasting, and extended-reality video processing require continually solving an inference task in sophisticated probabilistic models with a large number of latent variables.
-Often, the inference task in these applications must be performed continually and in real-time in response to new observations.
-Popular MC-based inference methods, such as the No U-Turn Sampler (NUTS) or Hamiltonian Monte Carlo (HMC) sampling, rely on computationally heavy sampling procedures that do not scale well to probabilistic models with thousands of latent states.
-Therefore, while MC-based inference is an very versatile tool, it is practically not suitable for real-time applications.
-While the alternative variational inference method (VI) promises to scale better to large models than sampling-based inference, VI requires the derivation of gradients of a "variational Free Energy" cost function.
-For large models, manual derivation of these gradients might not be feasible, while automated "black-box" gradient methods do not scale either because they are not capable of taking advantage of sparsity or conjugate pairs in the model.
-Therefore, while Bayesian inference is known as the optimal data processing framework, in practice, real-time AI applications rely on much simpler, often ad hoc, data processing algorithms.
+Many important AI applications, including audio processing, self-driving vehicles, weather forecasting, and extended-reality video processing require continually solving an inference task in sophisticated probabilistic models with a large number of latent variables. Often, the inference task in these applications must be performed continually and in real-time in response to new observations.
 
-RxInfer aims to remedy these issues by running efficient Bayesian inference in sophisticated probabilistic models,
-taking advantage of local conjugate relationships in probabilistic models, and focusing on real-time Bayesian inference in large state-space models with thousands of latent variables. In addition, RxInfer provides a straightforward way to extend its functionality with custom factor nodes and message passing update rules. The engine is capable of running
-various Bayesian inference algorithms in different parts of the factor graph of a single probabilistic model. This makes it easier
-to explore different "what-if" scenarios and enables very efficient inference in specific cases.
+Popular MC-based inference methods, such as the No U-Turn Sampler (NUTS) or Hamiltonian Monte Carlo (HMC) sampling, rely on computationally heavy sampling procedures that do not scale well to probabilistic models with thousands of latent states. Therefore, while MC-based inference is an very versatile tool, it is practically not suitable for real-time applications. While the alternative variational inference method (VI) promises to scale better to large models than sampling-based inference, VI requires the derivation of gradients of a "Variational Free Energy" cost function. For large models, manual derivation of these gradients might not be feasible, while automated "black-box" gradient methods do not scale either because they are not capable of taking advantage of sparsity or conjugate pairs in the model. Therefore, while Bayesian inference is known as the optimal data processing framework, in practice, real-time AI applications rely on much simpler, often ad hoc, data processing algorithms.
+
+RxInfer aims to remedy these issues by running efficient Bayesian inference in sophisticated probabilistic models, taking advantage of local conjugate relationships in probabilistic models, and focusing on real-time Bayesian inference in large state-space models with thousands of latent variables. In addition, RxInfer provides a straightforward way to extend its functionality with custom factor nodes and message passing update rules. The engine is capable of running various Bayesian inference algorithms in different parts of the factor graph of a single probabilistic model. This makes it easier to explore different "what-if" scenarios and enables very efficient inference in specific cases.
 
 ## Package Features
 
 - User friendly syntax for specification of probabilistic models, achieved with [`GraphPPL`](https://github.com/ReactiveBayes/GraphPPL.jl).
   - Support for hybrid models combining discrete and continuous latent variables.
-  - Factorisation and functional form constraints specification.
+  - Factorization and functional form constraints specification.
   - Graph visualisation and extensions with different custom plugins.
   - Saving graph on a disk and re-loading it later on.
 - Automatic generation of message passing algorithms, achieved with [`ReactiveMP`](https://github.com/ReactiveBayes/ReactiveMP.jl).
   - Support for hybrid distinct message passing inference algorithm under a unified paradigm.
-  - Evaluation of Bethe free energy as a model performance measure.
+  - Evaluation of Bethe Free Energy as a model performance measure.
   - Schedule-free reactive message passing API.
   - Scalability for large models with millions of parameters and observations.
   - High performance.
