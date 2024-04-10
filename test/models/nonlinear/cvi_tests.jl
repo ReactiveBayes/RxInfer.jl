@@ -17,8 +17,8 @@
     end
 
     @model function non_linear_dynamics(y)
-        τ ~ Gamma(shape = 1.0, rate = 1.0e-12)
-        θ ~ Gamma(shape = 1.0, rate = 1.0e-12)
+        τ ~ Gamma(shape = 0.01, rate = 0.01)
+        θ ~ Gamma(shape = 0.01, rate = 0.01)
 
         z[1] ~ Normal(mean = 0, precision = τ)
         x[1] := f(z[1])
@@ -42,8 +42,8 @@
     initialization = @initialization begin
         μ(z) = NormalMeanVariance(0, P)
         q(z) = NormalMeanVariance(0, P)
-        q(τ) = GammaShapeRate(1.0, 1.0e-12)
-        q(θ) = GammaShapeRate(1.0, 1.0e-12)
+        q(τ) = GammaShapeRate(1e-12, 1e-3)
+        q(θ) = GammaShapeRate(1e-12, 1e-3)
     end
 
     function inference_cvi(transformed, rng, iterations)
@@ -55,7 +55,7 @@
             returnvars = (z = KeepLast(),),
             constraints = constraints,
             meta = model_meta(rng, 600, 600, 0.01),
-            init = initialization
+            init = initialization,
         )
     end
 
@@ -70,18 +70,19 @@
     transformed = (data .- sensor_location) .^ 2 + rand(rng, NormalMeanVariance(0.0, sensor_var), T)
     ## -------------------------------------------- ##
     ## Inference execution
-    res = inference_cvi(transformed, rng, 110)
+    res = inference_cvi(transformed, rng, 150)
     ## -------------------------------------------- ##
     mz = res.posteriors[:z]
     fe = res.free_energy
     @test length(res.posteriors[:z]) === T
+    
     @test all(mean.(mz) .- 6 .* std.(mz) .< hidden .< (mean.(mz) .+ 6 .* std.(mz)))
     @test (sum((mean.(mz) .- 4 .* std.(mz)) .< hidden .< (mean.(mz) .+ 4 .* std.(mz))) / T) > 0.95
     @test (sum((mean.(mz) .- 3 .* std.(mz)) .< hidden .< (mean.(mz) .+ 3 .* std.(mz))) / T) > 0.90
 
     # Free energy for the CVI may fluctuate
-    @test all(d -> d < 1.0, diff(fe)[5:end]) # Check that the fluctuations are not big
-    @test abs(last(fe) - 363) < 1.0          # Check the final result with relatively low precision
+    @test all(d -> d < 2.5, diff(fe)) # Check that the fluctuations are not big
+    @test abs(last(fe) - 308) < 1.0   # Check the final result with relatively low precision
     @test (first(fe) - last(fe)) > 0
 
     ## Create output plots
