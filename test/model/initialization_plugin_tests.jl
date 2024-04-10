@@ -615,14 +615,11 @@ end
         y ~ Normal(μ = s, σ² = 1.0)
     end
 
-    constraints = @constraints begin
-        q(x, γ) = q(x)q(γ)
-    end
-
     init = @initialization begin
         q(x) = vague(NormalMeanVariance)
         q(γ) = vague(GammaShapeRate)
     end
+
     model = create_model(with_plugins(gamma_aliases(), GraphPPL.PluginsCollection(RxInfer.InitializationPlugin(init))))
 
     for node in filter(GraphPPL.as_variable(:x), model)
@@ -633,4 +630,25 @@ end
         @test GraphPPL.hasextra(model[node], RxInfer.InitMarExtraKey)
         @test GraphPPL.getextra(model[node], RxInfer.InitMarExtraKey) == vague(GammaShapeRate)
     end
+end
+
+@testitem "default_init" begin
+    using RxInfer
+    using GraphPPL
+    import RxInfer: default_init
+
+    @model function some_model() end
+
+    @test default_init(some_model) === RxInfer.EmptyInit
+
+    @model function model_with_init()
+        x ~ Normal(0.0, 1.0)
+    end
+
+    default_init(::typeof(model_with_init)) = @initialization begin
+        q(x) = vague(NormalMeanVariance)
+    end
+
+    model = GraphPPL.create_model(GraphPPL.with_plugins(model_with_init(), GraphPPL.PluginsCollection(RxInfer.InitializationPlugin())))
+    @test GraphPPL.getextra(model[model[][:x]], RxInfer.InitMarExtraKey) == NormalMeanVariance(0, 1e12)
 end
