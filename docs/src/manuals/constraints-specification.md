@@ -8,7 +8,7 @@ Here we briefly cover the mathematical aspects of constraints specification. For
 
 $$q^* = \arg\min_{q(s) \in \mathcal{Q}}F[q](\hat{y}) = \mathbb{E}_{q(s)}\left[\log \frac{q(s)}{p(s, y=\hat{y})} \right]\,.$$
 
-The [`@model`](@ref) macro specifies generative model `p(s, y)` where `s` is a set of random variables and `y` is a set of observations. In a nutshell the goal of probabilistic programming is to find `p(s|y)`. `RxInfer` approximates `p(s|y)` with a proxy distribution `q(x)` using KL divergence and Bethe Free Energy optimisation procedure. By default there are no extra factorisation constraints on `q(s)` and the optimal solution is `q(s) = p(s|y)`.
+The [`@model`](@ref) macro specifies generative model `p(s, y)` where `s` is a set of random variables and `y` is a set of observations. In a nutshell the goal of probabilistic programming is to find `p(s|y)`. `RxInfer` approximates `p(s|y)` with a proxy distribution `q(x)` using KL divergence and Bethe Free Energy optimisation procedure. By default there are no extra factorization constraints on `q(s)` and the optimal solution is `q(s) = p(s|y)`.
 
 For certain problems, it may be necessary to adjust the set of constraints $\mathcal{Q}$ (also known as the variational family of distributions) to either improve accuracy at the expense of computational resources or reduce accuracy to conserve computational resources. Sometimes, we are compelled to impose certain constraints because otherwise, the problem becomes too challenging to solve within a reasonable timeframe.
 
@@ -141,9 +141,9 @@ indicates that the `q(x)` first must be approximated with a `SampleList` and in 
 
 You can find more information about built-in functional form constraint in the [Built-in Functional Forms](@ref lib-forms) section. In addition, the [ReactiveMP library documentation](https://reactivebayes.github.io/ReactiveMP.jl/stable/) explains the functional form interfaces and shows how to build a custom functional form constraint that is compatible with `RxInfer.jl` and `ReactiveMP.jl` inference engine.
 
-## Factorisation constraints on posterior distribution `q`
+## Factorization constraints on posterior distribution `q`
 
-As has been mentioned [above](@ref user-guide-constraints-specification-background), inference may be not tractable for every model without extra factorisation constraints. To circumvent this, `RxInfer.jl` allows for extra factorisation constraints, for example:
+As has been mentioned [above](@ref user-guide-constraints-specification-background), inference may be not tractable for every model without extra factorization constraints. To circumvent this, `RxInfer.jl` allows for extra factorization constraints, for example:
 
 ```@example manual_constraints
 @constraints begin 
