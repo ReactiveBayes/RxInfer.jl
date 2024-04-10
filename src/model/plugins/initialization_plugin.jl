@@ -91,6 +91,8 @@ const SubModelInit = Union{GeneralSubModelInit, SpecificSubModelInit}
 Base.push!(m::InitSpecification, o::InitObject) = push!(m.init_objects, o)
 Base.push!(m::InitSpecification, o::SubModelInit) = push!(m.submodel_init, o)
 
+default_init(any) = EmptyInit
+
 function apply_init!(model::Model, init::InitSpecification)
     apply_init!(model, GraphPPL.get_principal_submodel(model), init)
 end
@@ -104,6 +106,8 @@ function apply_init!(model::Model, context::Context, init::InitSpecification)
             apply_init!(model, child, getinitobjects(submodel))
         elseif (submodel = getgeneralsubmodelinit(init, fform(factor_id))) !== nothing
             apply_init!(model, child, getinitobjects(submodel))
+        else
+            apply_init!(model, child, default_init(fform(factor_id)))
         end
     end
 end
@@ -140,22 +144,29 @@ function save_init!(model::Model, node::NodeLabel, init::InitObject{S, T} where 
     end
 end
 
+struct NoInit end
+
 """
     MetaPlugin(init)
 
 A plugin that adds a init information to the factor nodes of the model.
 """
-struct InitializationPlugin{I <: InitSpecification}
+struct InitializationPlugin{I}
     initialization::I
 end
 
-InitializationPlugin() = InitializationPlugin(EmptyInit)
-InitializationPlugin(::Nothing) = InitializationPlugin(EmptyInit)
+InitializationPlugin() = InitializationPlugin(NoInit())
+InitializationPlugin(::Nothing) = InitializationPlugin(NoInit())
 
 GraphPPL.plugin_type(::InitializationPlugin) = GraphPPL.VariableNodePlugin()
 
 GraphPPL.preprocess_plugin(plugin::InitializationPlugin, model::Model, context::Context, label::NodeLabel, nodedata::GraphPPL.NodeData, options::GraphPPL.NodeCreationOptions) =
     label, nodedata
+
+function GraphPPL.postprocess_plugin(plugin::InitializationPlugin{NoInit}, model::Model)
+    apply_init!(model, default_init(GraphPPL.fform(GraphPPL.getcontext(model))))
+    return nothing
+end
 
 function GraphPPL.postprocess_plugin(plugin::InitializationPlugin, model::Model)
     apply_init!(model, plugin.initialization)
