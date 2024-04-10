@@ -50,9 +50,7 @@ end
 
 # Create an array of pages for each category
 ExamplesCategoriesPages = map(collect(pairs(ExamplesCategories))) do (label, category)
-    return label => (title = category.title, pages = [
-        "Overview" => joinpath("examples", string(label), "overview.md")
-    ])
+    return label => (title = category.title, pages = ["Overview" => joinpath("examples", string(label), "overview.md")])
 end |> NamedTuple
 
 # The `pages` argument in the `makedocs` needs only a short path, so we ignore the full path
@@ -80,23 +78,9 @@ ExamplesPages = map(collect(pairs(ExamplesCategoriesPages))) do (label, info)
     return info.title => info.pages
 end
 
-# WIP: Keep it as a nice starting approach for adding a header, currently we are using `assets/header.js`
-# struct DocumentationWriter <: Documenter.Writer
-#     base :: Documenter.HTML
-# end
-
-# abstract type ExtendedHTMLFormat <: Documenter.Writers.FormatSelector end
-
-# Documenter.Selectors.order(::Type{ExtendedHTMLFormat})            = 4.0
-# Documenter.Selectors.matcher(::Type{ExtendedHTMLFormat}, fmt, _)  = isa(fmt, DocumentationWriter)
-
-# function Documenter.Selectors.runner(::Type{ExtendedHTMLFormat}, fmt, doc) 
-#     return Documenter.Writers.HTMLWriter.render(doc, fmt.base)
-# end
-
 makedocs(;
     draft = false,
-    warnonly = Documenter.except(:doctest, :eval_block, :example_block, :meta_block, :parse_error, :setup_block),
+    warnonly = true,
     modules = [RxInfer],
     authors = "Bagaev Dmitry <d.v.bagaev@tue.nl> and contributors",
     sitename = "RxInfer.jl",
@@ -104,7 +88,10 @@ makedocs(;
         prettyurls = get(ENV, "CI", "false") == "true",
         canonical = "https://reactivebayes.github.io/RxInfer.jl",
         edit_link = "main",
-        assets = String["assets/theme.css", "assets/header.css", "assets/header.js"]
+        warn_outdated = true,
+        assets = String["assets/theme.css", "assets/header.css", "assets/header.js"],
+        description = "Julia package for automated Bayesian inference on a factor graph with reactive message passing",
+        footer = "Created in [BIASlab](https://biaslab.github.io/), maintained by [ReactiveBayes](https://github.com/ReactiveBayes), powered by [Documenter.jl](https://github.com/JuliaDocs/Documenter.jl) and the [Julia Programming Language](https://julialang.org/)."
     ),
     pages = [
         "Home" => "index.md",
@@ -115,15 +102,22 @@ makedocs(;
             "Model specification"       => "manuals/model-specification.md",
             "Constraints specification" => "manuals/constraints-specification.md",
             "Meta specification"        => "manuals/meta-specification.md",
-            "Inference specification"   => ["Overview" => "manuals/inference/overview.md", "Static vs Streamline inference" => "manuals/inference/infer.md", "Inference results postprocessing" => "manuals/inference/postprocess.md", "Manual inference specification" => "manuals/inference/manual.md"],
-            "Inference customization"   => ["Defining a custom node and rules" => "manuals/custom-node.md"],
+            "Inference specification"   => [
+                "Overview" => "manuals/inference/overview.md", 
+                "Static vs Streamline inference" => "manuals/inference/infer.md", 
+                "Streamline inference" => "manuals/inference/online.md"
+            ],
+            "Inference customization"   => [
+                "Defining a custom node and rules" => "manuals/custom-node.md",
+                "Inference results postprocessing" => "manuals/inference/postprocess.md", 
+            ],
             "Debugging"                 => "manuals/debugging.md",
             "Delta node"                => "manuals/delta-node.md"
         ],
         "Library" => [
-            "Built-in functional form constraints" => "library/functional-forms.md",
-            "Model specification" => "library/model-specification.md",
+            "Model construction" => "library/model-construction.md",
             "Bethe Free Energy" => "library/bethe-free-energy.md",
+            "Functional form constraints" => "library/functional-forms.md",
             "Exported methods" => "library/exported-methods.md"
         ],
         "Examples" => [
@@ -131,10 +125,10 @@ makedocs(;
             ExamplesPages...
         ],
         "Contributing" => [
-            "Overview" => "contributing/overview.md", 
+            "Overview" => "contributing/overview.md",
             "Contributing to the documentation" => "contributing/new-documentation.md",
-            "Contributing to the dependencies" => "contributing/new-package.md", 
-            "Contributing to the examples" => "contributing/new-example.md", 
+            "Contributing to the dependencies" => "contributing/new-package.md",
+            "Contributing to the examples" => "contributing/new-example.md",
             "Publishing a new release" => "contributing/new-release.md"
         ]
     ]

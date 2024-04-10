@@ -1,193 +1,243 @@
 # [Model Specification](@id user-guide-model-specification)
 
-The `RxInfer.jl` package exports the `@model` macro for model specification. This `@model` macro accepts the model specification itself in a form of regular Julia function. For example: 
+`RxInfer` largely depends on `GraphPPL` for model specification. Read extensive documentation regarding the model specification in the corresponding section of [`GraphPPL` documentation](https://reactivebayes.github.io/GraphPPL.jl/stable/). Here we outline only a small portion of model specification capabilities for beginners.
 
+## `@model` macro
+
+The `RxInfer.jl` package exports the `@model` macro for model specification. This `@model` macro accepts the model specification itself in a form of regular Julia function. 
+
+For example: 
 ```julia
-@model function model_name(model_arguments...; model_keyword_arguments...)
+@model function model_name(model_arguments...)
     # model specification here
-    return ...
+end
+```
+where `model_arguments...` may include both hypeparameters and data. 
+
+!!! note
+    `model_arguments` are converted to keyword arguments. Positional arguments in the model specification are not supported. 
+    Thus it is not possible to use Julia's multiple dispatch for the model arguments.
+
+The `@model` macro returns a regular Julia function (in this example `model_name()`) which can be executed as usual. The only difference here is that 
+all arguments of the model function are treated as keyword arguments. Upon calling, the model function returns a so-called model generator object, e.g:
+
+```@example model-specification-model-macro
+using RxInfer #hide
+@model function my_model(observation, hyperparameter)
+    observations ~ Normal(0.0, hyperparameter)
 end
 ```
 
-Model options, `model_arguments` and `model_keyword_arguments` are optional and may be omitted:
-
-```julia
-@model function model_name()
-    # model specification here
-    return ...
-end
+```@example model-specification-model-macro
+model = my_model(hyperparameter = 3)
+nothing #hide
 ```
 
-The `@model` macro returns a regular Julia function (in this example `model_name()`) which can be executed as usual. It returns a so-called model generator object, e.g:
+The model generator is not a real model (yet). For example, in the code above, we haven't specified anything for the `observation`. 
+The generator object allows us to iteratively add extra properties to the model, condition on data, and/or assign extra metadata information 
+without actually materializing the entire graph structure. Read extra information about model generator [here](@ref lib-model-construction).
 
-```julia
-@model function my_model(model_arguments...)
-    # model specification here
-    # ...
-    return x, y
-end
-```
+## A state space model example
 
-```julia
-generator = my_model(model_arguments...)
-```
+Here we give an example of a probabilistic model before presenting the details of the model specification syntax.
+The model below is a simple state space model with latent random variables `x` and noisy observations `y`.
 
-In order to create an instance of the model object we should use the `create_model` function:
+```@example model-specification-ssm
+using RxInfer #hide
 
-```julia
-model, (x, y) = create_model(generator)
-```
-
-It is not necessary to return anything from the model, in that case `RxInfer.jl` will automatically inject `return nothing` to the end of the model function.
-
-## A full example before diving in
-
-Before presenting the details of the model specification syntax, an example of a probabilistic model is given.
-Here is an example of a simple state space model with latent random variables `x` and noisy observations `y`:
-
-```julia
-@model function state_space_model(n_observations, noise_variance)
-
-    c = constvar(1.0)
-    x = randomvar(n_observations)
-    y = datavar(Float64, n_observations)
-
-    x[1] ~ NormalMeanVariance(0.0, 100.0)
-
-    for i in 2:n_observations
-       x[i] ~ x[i - 1] + c
-       y[i] ~ NormalMeanVariance(x[i], noise_var)
+@model function state_space_model(y, trend, variance)
+    x[1] ~ Normal(mean = 0.0, variance = 100.0)
+    y[1] ~ Normal(mean = x[1], variance = variance)
+    for i in 2:length(y)
+       x[i] ~ Normal(mean = x[i - 1] + trend, variance = 1.0)
+       y[i] ~ Normal(mean = x[i], variance = variance)
     end
-
-    return x, y
-end
-```
-    
-## Graph variables creation
-
-### [Constants](@id user-guide-model-specification-constant-variables)
-
-Even though any runtime constant passed to a model as a model argument will be automatically converted to a fixed constant, sometimes it might be useful to create constants by hand (e.g. to avoid copying large matrices across the model and to avoid extensive memory allocations).
-
-You can create a constant within a model specification macro with `constvar()` function. For example:
-
-```julia
-@model function model_name(...)
-    ...
-    c = constvar(1.0)
-
-    for i in 2:n
-        x[i] ~ x[i - 1] + c # Reuse the same reference to a constant 1.0
-    end
-    ...
 end
 ```
 
-!!! note 
-    `constvar()` function is supposed to be used only within the `@model` macro.
+In this model we assign a prior distribution over latent state `x[1]`. All subsequent states `x[i]` depend on `x[i - 1]` and `trend` and are modelled 
+as a simple [Gaussian random walk](https://en.wikipedia.org/wiki/Random_walk#:~:text=Gaussian%20random%20walk,-A%20random%20walk&text=If%20%CE%BC%20is%20nonzero%2C%20the,will%20be%20vs%20%2B%20n%CE%BC.). Observations `y` are modelled with the `Gaussian` distribution as well with a 
+prespecified `variance` hyperparameter.
 
-Additionally you can specify an extra `::ConstVariable` type for some of the model arguments. In this case macro automatically converts them to a single constant using `constvar()` function. E.g.:
+!!! note
+    `length(y)` can be called only if `y` has an associated data with it. This is not always the case, for example it is possible to instantiate the 
+    model lazily before the data becomes available. In such situations, `length(y)` will throw an error.
 
-```julia
-@model function model_name(nsamples::Int, c::ConstVariable)
-    ...
-    # no need to call for a constvar() here
-    for i in 2:n
-        x[i] ~ x[i - 1] + c # Reuse the same reference to a constant `c`
-    end
-    ...
-end
+### [Hyper-parameters](@id user-guide-model-specification-hyperparameters)
+
+Any constant passed to a model as a model argument will be automatically converted to a corresponding constant node in the model's graph.
+
+```@example model-specification-ssm
+model = state_space_model(trend = 3.0, variance = 1.0)
+nothing #hide
+```
+
+In this example we instantiate a model generator with `trend` and `variance` parameters _clamped_ to `3.0` and `1.0` respectively. That means 
+that no inference will be performed for those parameters and some of the expressions within the model structure might be simplified and compiled-out.
+
+### [Conditioning on data](@id user-guide-model-specification-conditioning)
+
+To fully complete model specification we need to specify `y`. In this example, `y` is playing a role of observations.
+`RxInfer` provides a convenient mechanism to pass data values to the model with the `|` operator.
+
+```@example model-specification-ssm
+conditioned = model | (y = [ 0.0, 1.0, 2.0 ], )
 ```
 
 !!! note
-    `::ConstVariable` annotation does not play role in Julia's multiple dispatch. `RxInfer.jl` removes this annotation and replaces it with `::Any`.
+    The conditioning on data is a feature of `RxInfer`, not `GraphPPL`.
 
-### [Data variables](@id user-guide-model-specification-data-variables)
+In the example above we conditioned on data in a form of the `NamedTuple`, but it is also possible to 
+condition on a dictionary where keys represent names of the corresponding model arguments:
+```@example model-specification-ssm
+data        = Dict(:y => [ 0.0, 1.0, 2.0 ])
+conditioned = model | data
+```
 
-It is important to have a mechanism to pass data values to the model. You can create data inputs with `datavar()` function. As a first argument it accepts a type specification and optional dimensionality (as additional arguments or as a tuple). User can treat `datavar()`s in the model as both clamped values for priors and observations.
+Sometimes it might be useful to indicate that some arguments are data (thus condition on them) before the actual data becomes available.
+This situation may occur during [reactive inference](@ref manual-online-inference), when data becomes available _after_ model creation.
+`RxInfer` provides a special structure called [`RxInfer.DefferedDataHandler`](@ref), which can be used instead of the real data.
 
-Examples: 
-
+For the example above, however, we cannot simply do the following:
 ```julia
-@model function model_name(...)
-    ...
-    y = datavar(Float64) # Creates a single data input with `y` as identificator
-    y = datavar(Float64, n) # Returns a vector of  `y_i` data input objects with length `n`
-    y = datavar(Float64, n, m) # Returns a matrix of `y_i_j` data input objects with size `(n, m)`
-    y = datavar(Float64, (n, m)) # It is also possible to use a tuple for dimensionality
-    ...
+model | (y = RxInfer.DefferedDataHandler(), )
+```
+because we use `length(y)` in the model and this is only possible if `y` has an associated data. 
+We could adjust the model specification a bit, by adding the extra `n` parameter to the list of arguments:
+```@example model-specification-ssm
+@model function state_space_model_with_n(y, n, trend, variance)
+    x[1] ~ Normal(mean = 0.0, variance = 100.0)
+    y[1] ~ Normal(mean = x[1], variance = variance)
+    for i in 2:n
+       x[i] ~ Normal(mean = x[i - 1] + trend, variance = 1.0)
+       y[i] ~ Normal(mean = x[i], variance = variance)
+    end
 end
 ```
 
-!!! note 
-    `datavar()` function is supposed to be used only within the `@model` macro.
-
-`datavar()` call within `@model` macro supports `where { options... }` block for extra options specification, e.g:
-
-```julia
-@model function model_name(...)
-    ...
-    y = datavar(Float64, n) where { allow_missing = true }
-    ...
-end
+For such model, we can safely condition on `y` without providing actual data for it, but using the [`RxInfer.DefferedDataHandler`](@ref) instead:
+```@example model-specification-ssm
+state_space_model_with_n(trend = 3.0, variance = 1.0, n = 10) | (
+    y = RxInfer.DefferedDataHandler(), 
+)
 ```
 
-#### Data variables available options
+Read more information about condition on data in [this section](@ref lib-model-construction-conditioning) of the documentation.
 
-- `allow_missing = true/false`: Specifies if it is possible to pass `missing` object as an observation. Note however that by default the `ReactiveMP` inference engine does not expose any message computation rules that involve `missing`s.
+### [Latent variables](@id user-guide-model-specification-random-variables)
 
-### [Random variables](@id user-guide-model-specification-random-variables)
-
-There are several ways to create random variables. The first one is an explicit call to `randomvar()` function. By default it doesn't accept any argument, creates a single random variable in the model and returns it. It is also possible to pass dimensionality arguments to `randomvar()` function in the same way as for the `datavar()` function.
-
-Examples: 
+Latent variables are being created with the `~` operator and can be read as _is distributed as_. 
+For example, to create a latent variable `y` which is modeled by a [Normal](https://en.wikipedia.org/wiki/Normal_distribution) distribution, 
+where its mean and variance are controlled by the random variables `m` and `v` respectively, we define
 
 ```julia
-@model function model_name(...)
-    ...
-    x = randomvar() # Returns a single random variable which can be used later in the model
-    x = randomvar(n) # Returns an vector of random variables with length `n`
-    x = randomvar(n, m) # Returns a matrix of random variables with size `(n, m)`
-    x = randomvar((n, m)) # It is also possible to use a tuple for dimensionality
-    ...
-end
+y ~ Normal(mean = m, variance = v)
 ```
 
-!!! note 
-    `randomvar()` function is supposed to be used only within the `@model` macro.
-
-`randomvar()` call within `@model` macro supports `where { options... }` block for extra options specification, e.g:
-
+In the example above
 ```julia
-@model function model_name(...)
-    ...
-    y = randomvar() where { prod_constraint = ProdGeneric() }
-    ...
-end
+x[1] ~ Normal(mean = 0.0, variance = 100.0)
 ```
-
-#### Random variables available options
-
-- `prod_constraint`
-- `prod_strategy`
-- `marginal_form_constraint`
-- `marginal_form_check_strategy`
-- `messages_form_constraint`
-- `messages_form_check_strategy`
-- `pipeline`
-
-The second way to create a random variable is to create a node with the `~` operator. If the random variable has not yet been created before this call, it will be created automatically during the creation of the node. Read more about the `~` operator below.
-
-## Node creation
-
-Factor nodes are used to define a relationship between random variables and/or constants and data inputs. A factor node defines a probability distribution over selected random variables. 
-
-### `Distributions.jl` compatibility
-
-For some factor nodes we rely on the syntax from `Distributions.jl` to make it easy to adopt `RxInfer.jl` for these users. These nodes include for example the Beta and Wishart distributions. These nodes can be created using the `~` syntax with the arguments as specified in `Distributions.jl`. Unfortunately, we `RxInfer.jl` is not yet compatible with all possible distributions to be used as factor nodes. If you feel that you would like to see another node implemented, please file an issue.
+indicates that `x₁` is distributed as [Normal](https://en.wikipedia.org/wiki/Normal_distribution) distribution. 
 
 !!! note
-    To quickly check the list of all available factor nodes that can be used in the model specification language call `?make_node` or `Base.doc(make_node)`.
+    The `RxInfer.jl` package uses the `~` operator for modelling both stochastic and deterministic relationships between random variables.
+    However, `GraphPPL.jl` also allows to use `:=` operator for deterministic relationships.
+
+## [Relationships between variables](@id user-guide-model-specification-node-creation)
+
+In probabilistic models based on graphs, factor nodes are used to define a relationship between random variables and/or constants and data variables.
+A factor node defines a probability distribution over selected latent or data variables. The `~` operator not only creates a latent variable but also 
+defines a functional relatinship of it with other variables and creates a factor node as a result.
+
+In the example above
+```julia
+x[1] ~ Normal(mean = 0.0, variance = 100.0)
+```
+not only creates a latent variable `x₁` but also a factor node `Normal`.
+
+!!! note
+    Generally it is not necessary to label all the arguments with their names, as `mean = ...` or `variance = ...` and many factor nodes 
+    do not require it explicitly. However, for nodes, which have many different useful parametrizations (e.g. `Normal`) labeling the arguments 
+    is a requirement that helps to avoid any possible confusion. Read more about `Distributions` compatibility [here](@ref user-guide-model-specification-distributions).
+
+### [Control flow statements](@id user-guide-model-specification-node-creation-control-flow)
+
+In general, it is possible to use any Julia code within model specification function, including control flow statements, such as `for`, `while` and `if` statements. However, it is not possible to use any latent states within such statements. This is due to the fact that it is necessary to know exactly the structure of the graph before the inference. Thus it is **not possible** to write statements like:
+```julia
+c ~ Categorical([ 1/2, 1/2 ])
+# This is NOT possible in `RxInfer`'s model specification language
+if c > 1
+# ...
+end
+```
+since `c` must be statically known upon graph creation.
+
+### [Anonymous factor nodes and latent variables](@id user-guide-model-specification-node-creation-anonymous)
+
+The `@model` macro automatically resolves any inner function calls into anonymous factor nodes and latent variables. 
+For example the following:
+```julia
+y ~ Normal(
+    mean = Normal(mean = 0.0, variance = 1.0), 
+    precision = Gamma(shape = 1.0, rate = 1.0)
+)
+```
+is equivalent to
+```julia
+tmp1 ~ Normal(mean = 0.0, variance = 1.0)
+tmp2 ~ Gamma(shape = 1.0, rate = 1.0)
+y    ~ Normal(mean = tmp1, precision = tmp2)
+```
+
+The inference backend still performs inference for anonymous latent variables, however, there it does not provide an easy way to obtain posteriors for them.
+Note that the inference backend will try to optimize deterministic function calls in the case where all arguments are known in advance.
+For example:
+```julia
+y ~ Normal(mean = 0.0, variance = inv(2.0))
+```
+should not create an extra factor node for the `inv`, since `inv` is a deterministic function and all arguments are known in advance. The same situation
+applies in case of complex initializations involving different types, as in:
+```julia
+y ~ MvNormal(mean = zeros(3), covariance = Matrix(Diagonal(ones(3))))
+```
+In this case, the expression `Matrix(Diagonal(ones(3)))` can (and will) be precomputed upon model creation and does not require to perform probabilistic inference.
+
+### [Indexing operations](@id user-guide-model-specification-node-creation-indexing)
+
+The `ref` expressions, such as `x[i]`, are handled in a special way.
+Technically, in Julia, the `x[i]` call is translated to a function call `getindex(x, i)`. Thus the `@model` macro should create a factor node for the `getindex` function, but this won't happen in practice because this case is treated separately. This means that the model parser will not create unnecessary nodes when only simple indexing is involved. That also means that all expressions inside `x[...]` list are left untouched during model parsing. 
+
+!!! warning
+    It is not allowed to use latent variables within square brackets in the model specification or for control flow statements such as `if`, `for` or `while`.
+
+### [Broadcasting syntax](@id user-guide-model-specification-node-creation-broadcasting)
+
+`GraphPPL` support broadcasting for `~` operator in the exact same way as Julia itself. 
+A user is free to write an expression of the following form:
+```julia
+m  ~ Normal(mean = 0.0, precision = 0.0001)
+t  ~ Gamma(shape = 1.0, rate = 1.0)
+y .~ Normal(mean = m, precision = t)
+```
+
+More complex expressions are also allowed:
+```julia
+w         ~ Wishart(3, diageye(2))
+x[1]      ~ MvNormal(mean = zeros(2), precision = diageye(2))
+x[2:end] .~ A .* x[1:end-1] # <- State-space model with transition matrix A
+y        .~ MvNormal(mean = x, precision = w) # <- Observations with unknown precision matrix
+```
+
+Note, however, that shapes of all variables that take part in the broadcasting operation must be defined in advance. That means that it is not possible to 
+use broadcasting with [deffered data](@ref user-guide-model-specification-conditioning). Read more about how broadcasting machinery works in Julia in [the official documentation](https://docs.julialang.org/en/v1/manual/arrays/#Broadcasting).
+
+### [`Distributions.jl` compatibility](@id user-guide-model-specification-distributions)
+
+For some factor nodes we rely on the syntax from `Distributions.jl` to make it easy to adopt `RxInfer.jl` for these users. These nodes include for example the [`Beta`](https://en.wikipedia.org/wiki/Beta_distribution) and [`Wishart`](https://en.wikipedia.org/wiki/Wishart_distribution) distributions. These nodes can be created using the `~` syntax with the arguments as specified in `Distributions.jl`. Unfortunately, we `RxInfer.jl` is not yet compatible with all possible distributions to be used as factor nodes. If you feel that you would like to see another node implemented, please file an issue.
+
+!!! note
+    To quickly check the list of all available factor nodes that can be used in the model specification language call `?ReactiveMP.is_predefined_node` or `Base.doc(ReactiveMP.is_predefined_node)`.
 
 
 Specifically for the Gaussian/Normal case we have custom implementations that yield a higher computational efficiency and improved stability in comparison to `Distributions.jl` as these are optimized for sampling operations. Our aliases for these distributions therefore do not correspond to the implementations from `Distributions.jl`. However, our model specification language is compatible with syntax from `Distributions.jl` for normal distributions, which will be automatically converted. `RxInfer` has its own implementation because of the following 3 reasons:
@@ -195,194 +245,56 @@ Specifically for the Gaussian/Normal case we have custom implementations that yi
 2. Depending on the update rules, we might favor different parameterizations of the normal distributions. `ReactiveMP.jl` has quite a variety in parameterizations that allow us to efficient computations where we convert between parameterizations as little as possible.
 3. In certain situations we value stability a lot, especially when inverting matrices. `PDMats.jl`, and hence `Distributions.jl`, is not capable to fulfill all needs that we have here. Therefore we use `PositiveFactorizations.jl` to cope with the corner-cases.
 
-### Tilde syntax
+## [Model structure visualisation](@id user-guide-model-specification-visualization)
 
-We model a random variable by a probability distribution using the `~` operator. For example, to create a random variable `y` which is modeled by a Normal distribution, where its mean and variance are controlled by the random variables `m` and `v` respectively, we define
+It is also possible to visualize the model structure after conditioning on data. For that we need two extra packages installed: `Cairo` and `GraphPlot`. Note, that those packages are not included in the `RxInfer` package and must be installed separately.
 
-```julia
-@model function model_name(...)
-    ...
-    m = randomvar()
-    v = randomvar()
-    y ~ NormalMeanVariance(m, v) # Creates a `y` random variable automatically
-    ...
-end
+```@example model-specification-ssm
+using Cairo, GraphPlot
+
+# `Create` the actual graph of the model conditioned on the data
+model = RxInfer.create_model(conditioned)
+
+# Call `gplot` function from `GraphPlot` to visualise the structure of the graph
+GraphPlot.gplot(RxInfer.getmodel(model))
 ```
 
-Another example, but using a deterministic relation between random variables:
+### [Node creation options](@id user-guide-model-specification-node-creation-options)
 
-```julia
-@model function model_name(...)
-    ...
-    a = randomvar()
-    b = randomvar()
-    c ~ a + b
-    ...
-end
-```
-
-!!! note
-    The `RxInfer.jl` package uses the `~` operator for modelling both stochastic and deterministic relationships between random variables.
-
-
-The `@model` macro automatically resolves any inner function calls into anonymous extra nodes in case this inner function call is a non-linear transformation. It will also create needed anonymous random variables. But it is important to note that the inference backend will try to optimize inner non-linear deterministic function calls in the case where all arguments are constants or data inputs. For example:
-
-```julia
-noise ~ NormalMeanVariance(mean, inv(precision)) # Will create a non-linear `inv` node in case if `precision` is a random variable. Won't create an additional non-linear node in case if `precision` is a constant or data input.
-```
-
-It is possible to use any functional expression within the `~` operator arguments list. The only one exception is the `ref` expression (e.g `x[i]`). All reference expressions within the `~` operator arguments list are left untouched during model parsing. This means that the model parser will not create unnecessary nodes when only simple indexing is involved.
-
-!!! note
-    It is forbidden to use random variable within square brackets in the model specification.
-
-```julia
-y ~ NormalMeanVariance(x[i - 1], variance) # While in principle `i - 1` is an inner function call (`-(i, 1)`) model parser will leave it untouched and won't create any anonymous nodes for `ref` expressions.
-
-y ~ NormalMeanVariance(A * x[i - 1], variance) # This example will create a `*` anonymous node (in case if x[i - 1] is a random variable) and leave `x[i - 1]` untouched.
-```
-
-It is also possible to return a node reference from the `~` operator. Use the following syntax:
-
-```julia
-node, y ~ NormalMeanVariance(mean, var)
-```
-
-Having a node reference can be useful in case the user wants to return it from a model and to use it later on to specify initial joint marginal distributions.
-
-### Broadcasting syntax 
-
-!!! note 
-    Broadcasting syntax requires at least v2.1.0 of `GraphPPL.jl` 
-
-GraphPPL support broadcasting for `~` operator in the exact same way as Julia itself. A user is free to write an expression of the following form:
-
-```julia
-y = datavar(Float64, n)
-y .~ NormalMeanVariance(0.0, 1.0) # <- i.i.d observations
-```
-
-More complex expression are also allowed:
-
-```julia
-m ~ NormalMeanPrecision(0.0, 0.0001)
-t ~ Gamma(1.0, 1.0)
-
-y = randomvar(Float64, n)
-y .~ NormalMeanPrecision(m, t)
-```
-
-```julia
-A = constvar(...)
-x = randomvar(n)
-y = datavar(Vector{Float64}, n)
-
-w         ~ Wishart(3, diageye(2))
-x[1]      ~ MvNormalMeanPrecision(zeros(2), diageye(2))
-x[2:end] .~ A .* x[1:end-1] # <- State-space model with transition matrix A
-y        .~ MvNormalMeanPrecision(x, w) # <- Observations with unknown precision matrix
-```
-
-Note, however, that all variables that take part in the broadcasting operation must be defined before either with `randomvar` or `datavar`. The exception here is constants that are automatically converted to their `constvar` equivalent. If you want to prevent broadcasting for some constant (e.g. if you want to add a vector to a multivariate Gaussian distribution) use explicit `constvar` call:
-
-```julia
-# Suppose `x` is a 2-dimensional Gaussian distribution
-z .~ x .+ constvar([ 1, 1 ])
-# Which is equivalent to 
-for i in 1:n
-   z[i] ~ x[i] + constvar([ 1, 1 ])
-end
-```
-
-Without explicit `constvar` Julia's broadcasting machinery would instead attempt to unroll for loop in the following way:
-
-```julia
-# Without explicit `constvar`
-z .~ x .+ [ 1, 1 ]
-# Which is equivalent to 
-array = [1, 1]
-for i in 1:n
-   z[i] ~ x[i] + array[i] # This is wrong if `x[i]` is supposed to be a multivariate Gaussian 
-end
-```
-
-Read more about how broadcasting machinery works in Julia in [the official documentation](https://docs.julialang.org/en/v1/manual/arrays/#Broadcasting).
-
-### Node creation options
-
-To pass optional arguments to the node creation constructor the user can use the `where { options...  }` options specification syntax.
+`GraphPPL` allows to pass optional arguments to the node creation constructor with the `where { options...  }` options specification syntax.
 
 Example:
-
 ```julia
-y ~ NormalMeanVariance(y_mean, y_var) where { q = q(y_mean)q(y_var)q(y) } # mean-field factorisation over q
+y ~ Normal(mean = y_mean, var = y_var) where { meta = ... }
 ```
 
 A list of the available options specific to the `ReactiveMP` inference engine is presented below.
 
-#### Factorisation constraint option
-
-See also [Constraints Specification](@ref user-guide-constraints-specification) section.
-
-Users can specify a factorisation constraint over the approximate posterior `q` for variational inference.
-The general syntax for factorisation constraints over `q` is the following:
-```julia
-variable ~ Node(node_arguments...) where { q = RecognitionFactorisationConstraint }
-```
-
-where `RecognitionFactorisationConstraint` can be the following
-
-1. `MeanField()`
-
-Automatically specifies a mean-field factorisation
-
-Example:
-
-```julia
-y ~ NormalMeanVariance(y_mean, y_var) where { q = MeanField() }
-```
-
-2. `FullFactorisation()`
-
-Automatically specifies a full factorisation
-
-Example:
-
-```julia
-y ~ NormalMeanVariance(y_mean, y_var) where { q = FullFactorisation() }
-```
-
-3. `q(μ)q(v)q(out)` or `q(μ) * q(v) * q(out)`
-
-A user can specify any factorisation he wants as the multiplication of `q(interface_names...)` factors. As interface names the user can use the interface names of an actual node (read node's documentation), its aliases (if available) or actual random variable names present in the `~` operator expression.
-
-Examples: 
-
-```julia
-# Using interface names of a `NormalMeanVariance` node for factorisation constraint. 
-# Call `?NormalMeanVariance` to know more about interface names for some node
-y ~ NormalMeanVariance(y_mean, y_var) where { q = q(μ)q(v)q(out) }
-y ~ NormalMeanVariance(y_mean, y_var) where { q = q(μ, v)q(out) }
-
-# Using interface names aliases of a `NormalMeanVariance` node for factorisation constraint. 
-# Call `?NormalMeanVariance` to know more about interface names aliases for some node
-# In general aliases correspond to the function names for distribution parameters
-y ~ NormalMeanVariance(y_mean, y_var) where { q = q(mean)q(var)q(out) }
-y ~ NormalMeanVariance(y_mean, y_var) where { q = q(mean, var)q(out) }
-
-# Using random variables names from `~` operator expression
-y ~ NormalMeanVariance(y_mean, y_var) where { q = q(y_mean)q(y_var)q(y) }
-y ~ NormalMeanVariance(y_mean, y_var) where { q = q(y_mean, y_var)q(y) }
-
-# All methods can be combined easily
-y ~ NormalMeanVariance(y_mean, y_var) where { q = q(μ)q(y_var)q(out) }
-y ~ NormalMeanVariance(y_mean, y_var) where { q = q(y_mean, v)q(y) }
-```
-
 #### Metadata option
 
-Is is possible to pass any extra metadata to a factor node with the `meta` option. Metadata can be later accessed in message computation rules. See also [Meta specification](@ref user-guide-meta-specification) section.
+Is is possible to pass any extra metadata to a factor node with the `meta` option. Metadata can be later accessed in message computation rules.
+```julia
+z ~ f(x, y) where { meta = Linearization() }
+d ~ g(a, b) where { meta = Unscented() }
+```
+This option might be useful to change message passing rules around a specific factor node. Read more about this feature in [Meta Specification](@ref user-guide-meta-specification) section.
+
+#### Dependencies option
+
+A user can modify default computational pipeline of a node with the `dependencies` options. 
+Read more about different options in the [`ReactiveMP.jl` documentation](https://reactivebayes.github.io/ReactiveMP.jl/stable/).
 
 ```julia
-z ~ f(x, y) where { meta = ... }
+y[k - 1] ~ Probit(x[k]) where {
+    # This specification indicates that in order to compute an outbound message from the `in` interface
+    # We need an inbound message from the same edge initialized to `NormalMeanPrecision(0.0, 1.0)`
+    dependencies = RequireMessageFunctionalDependencies(in = NormalMeanPrecision(0.0, 1.0))
+}
 ```
+
+## Read also
+
+- [Constraints specification](@ref user-guide-constraints-specification)
+- [Meta specification](@ref user-guide-meta-specification)
+- [Inference execution](@ref user-guide-inference-execution)
+- [Debugging inference](@ref user-guide-debugging)

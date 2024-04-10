@@ -19,6 +19,7 @@ end
 """
     warn_datavar_constvar_randomvar(expr::Expr)
 
+An additional pipeline stage for the `@model` macro from `GraphPPL`. 
 Notify the user that the `datavar`, `constvar` and `randomvar` syntax has been removed and is not be supported in the current version.
 """
 function error_datavar_constvar_randomvar(e::Expr)
@@ -33,8 +34,10 @@ end
 """
     compose_simple_operators_with_brackets(expr::Expr)
 
+An additional pipeline stage for the `@model` macro from `GraphPPL`. 
 This pipeline converts simple multi-argument operators to their corresponding bracketed expression. 
 E.g. the expression `x ~ x1 + x2 + x3 + x4` becomes `x ~ ((x1 + x2) + x3) + x4)`.
+The operators to compose are `+` and `*`.
 """
 function compose_simple_operators_with_brackets(e::Expr)
     operators_to_compose = (:+, :*)
@@ -78,6 +81,12 @@ function apply_alias_transformation(expression::Expr, alias)
     return (_expression, _expression !== expression)
 end
 
+"""
+    inject_tilderhs_aliases(e::Expr)
+
+A pipeline stage for the `@model` macro from `GraphPPL`.
+This pipeline applies the aliases defined in `ReactiveMPNodeAliases` to the expression.
+"""
 function inject_tilderhs_aliases(e::Expr)
     if @capture(e, lhs_ ~ rhs_)
         newrhs = MacroTools.postwalk(rhs) do expression
@@ -93,7 +102,11 @@ function inject_tilderhs_aliases(e::Expr)
     end
 end
 
-ReactiveMPNodeAliases = (
+"""
+Syntaxic sugar for `ReactiveMP` nodes.
+Replaces `a || b` with `ReactiveMP.OR(a, b)`, `a && b` with `ReactiveMP.AND(a, b)`, `a -> b` with `ReactiveMP.IMPLY(a, b)` and `¬a` with `ReactiveMP.NOT(a)`.
+"""
+const ReactiveMPNodeAliases = (
     (
         (expression) -> @capture(expression, a_ || b_) ? :(ReactiveMP.OR($a, $b)) : expression,
         "`a || b`: alias for `ReactiveMP.OR(a, b)` node (operator precedence between `||`, `&&`, `->` and `!` is the same as in Julia)."
@@ -124,7 +137,7 @@ end
 ```
 
 `@model` macro generates a function that returns an equivalent graph-representation of the given probabilistic model description.
-See the documentation to `GraphPPL.@model` for more information.
+See the documentation to [`GraphPPL.@model`](https://github.com/ReactiveBayes/GraphPPL.jl) for more information.
 
 ## Supported aliases in the model specification specifically for RxInfer.jl and ReactiveMP.jl
 $(begin io = IOBuffer(); RxInfer.show_tilderhs_alias(io); String(take!(io)) end)
@@ -224,9 +237,6 @@ GraphPPL.factor_alias(::ReactiveMPGraphPPLBackend, ::Type{Gamma}, ::GraphPPL.Sta
 GraphPPL.factor_alias(::ReactiveMPGraphPPLBackend, ::Type{Gamma}, ::GraphPPL.StaticInterfaces{(:α, :β)}) = ExponentialFamily.GammaShapeRate
 GraphPPL.default_parametrization(::ReactiveMPGraphPPLBackend, ::Type{Gamma}) =
     error("`Gamma` cannot be constructed without keyword arguments. Use `Gamma(shape = ..., rate = ...)` or `Gamma(shape = ..., scale = ...)`.")
-
-# GraphPPL.interfaces(::ReactiveMPGraphPPLBackend, ::Type{<:ExponentialFamily.GammaShapeScale}, _) = GraphPPL.StaticInterfaces((:out, :α, :θ))
-# GraphPPL.interfaces(::ReactiveMPGraphPPLBackend, ::Type{<:ExponentialFamily.GammaShapeRate}, _) = GraphPPL.StaticInterfaces((:out, :α, :β))
 
 GraphPPL.interface_aliases(::ReactiveMPGraphPPLBackend, ::Type{Gamma}) =
     GraphPPL.StaticInterfaceAliases(((:a, :α), (:shape, :α), (:β⁻¹, :θ), (:scale, :θ), (:θ⁻¹, :β), (:rate, :β)))

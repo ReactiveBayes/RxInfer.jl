@@ -81,11 +81,11 @@ import MacroTools: @capture
 """
     @autoupdates
 
-Creates the auto-updates specification for the `rxinference` function. In the online-streaming Bayesian inference procedure it is important to update your priors for the future 
+Creates the auto-updates specification for the `infer` function. In the online-streaming Bayesian inference procedure it is important to update your priors for the future 
 states based on the new updated posteriors. The `@autoupdates` structure simplify such a specification. It accepts a single block of code where each line defines how to update 
-the `datavar`'s in the probabilistic model specification. 
+arguments in the probabilistic model specification. 
 
-Each line of code in the auto-update specification defines `datavar`s, which need to be updated, on the left hand side of the equality expression and the update function on the right hand side of the expression.
+Each line of code in the auto-update specification refers to model's arguments, which need to be updated, on the left hand side of the equality expression and the update function on the right hand side of the expression.
 The update function operates on posterior marginals in the form of the `q(symbol)` expression.
 
 For example:
@@ -96,36 +96,31 @@ For example:
 end
 ```
 
-This structure specifies to automatically update `x = datavar(...)` as soon as the inference engine computes new posterior over `z` variable. It then applies the `f` function
-to the new posterior and calls `update!(x, ...)` automatically. 
+This structure specifies to automatically update argument `x` as soon as the inference engine computes new posterior over `z` variable.
+It then applies the `f` function to the new posterior and updates the value of `x` automatically. 
 
 As an example consider the following model and auto-update specification:
 
 ```julia
-@model function kalman_filter()
-    x_current_mean = datavar(Float64)
-    x_current_var  = datavar(Float64)
-
+@model function kalman_filter(y, x_current_mean, x_current_var)
     x_current ~ Normal(mean = x_current_mean, var = x_current_var)
-
-    x_next ~ Normal(mean = x_current, var = 1.0)
-
-    y = datavar(Float64)
-    y ~ Normal(mean = x_next, var = 1.0)
+    x_next    ~ Normal(mean = x_current, var = 1.0)
+    y         ~ Normal(mean = x_next, var = 1.0)
 end
 ```
 
-This model has two `datavar`s that represent our prior knowledge of the `x_current` state of the system. The `x_next` random variable represent the next state of the system that 
+This model has two arguments that represent our prior knowledge of the `x_current` state of the system. 
+The `x_next` random variable represent the next state of the system that 
 is connected to the observed variable `y`. The auto-update specification could look like:
 
 ```julia
 autoupdates = @autoupdates begin
-    x_current_mean, x_current_var = mean_cov(q(x_next))
+    x_current_mean, x_current_var = mean_var(q(x_next))
 end
 ```
 
-This structure specifies to update our prior as soon as we have a new posterior `q(x_next)`. It then applies the `mean_cov` function on the updated posteriors and updates 
-`datavar`s `x_current_mean` and `x_current_var` automatically.
+This structure specifies to update our prior as soon as we have a new posterior `q(x_next)`. It then applies the `mean_var` function on the 
+updated posteriors and updates `x_current_mean` and `x_current_var` automatically.
 
 See also: [`infer`](@ref)
 """

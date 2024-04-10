@@ -1,5 +1,4 @@
 export KeepEach, KeepLast
-export DefaultPostprocess, UnpackMarginalPostprocess, NoopPostprocess
 export infer, inference, rxinference
 export InferenceResult
 export RxInferenceEngine, RxInferenceEvent
@@ -148,35 +147,6 @@ __inference_check_dataismissing(d) = (ismissing(d) || any(ismissing, d))
 # Return NamedTuple for predictions
 __inference_fill_predictions(s::Symbol, d::AbstractArray) = NamedTuple{Tuple([s])}([repeat([missing], length(d))])
 __inference_fill_predictions(s::Symbol, d::DataVariable) = NamedTuple{Tuple([s])}([missing])
-
-## Inference results postprocessing
-
-# TODO: Make this function a part of the public API?
-# __inference_postprocess(strategy, result)
-# This function modifies the `result` of the inference procedure according to the strategy. The default `strategy` is `DefaultPostprocess`.
-function __inference_postprocess end
-
-"""`DefaultPostprocess` picks the most suitable postprocessing step automatically"""
-struct DefaultPostprocess end
-
-__inference_postprocess(::DefaultPostprocess, result::Marginal) = __inference_postprocess(DefaultPostprocess(), result, ReactiveMP.getaddons(result))
-__inference_postprocess(::DefaultPostprocess, result::AbstractArray) = map((element) -> __inference_postprocess(DefaultPostprocess(), element), result)
-
-# Default postprocessing step removes Marginal type wrapper if no addons are present, and keeps the Marginal type wrapper otherwise
-__inference_postprocess(::DefaultPostprocess, result, addons::Nothing) = __inference_postprocess(UnpackMarginalPostprocess(), result)
-__inference_postprocess(::DefaultPostprocess, result, addons::Any) = __inference_postprocess(NoopPostprocess(), result)
-
-"""This postprocessing step removes the `Marginal` wrapper type from the result"""
-struct UnpackMarginalPostprocess end
-
-__inference_postprocess(::UnpackMarginalPostprocess, result::Marginal) = getdata(result)
-__inference_postprocess(::UnpackMarginalPostprocess, result::AbstractArray) = map((element) -> __inference_postprocess(UnpackMarginalPostprocess(), element), result)
-
-"""This postprocessing step does nothing"""
-struct NoopPostprocess end
-
-__inference_postprocess(::NoopPostprocess, result) = result
-__inference_postprocess(::Nothing, result) = result
 
 """
     InferenceResult
@@ -380,7 +350,7 @@ function __inference(;
     __infer_check_dicttype(:predictvars, predictvars)
 
     inference_invoke_callback(callbacks, :before_model_creation)
-    fmodel = __infer_create_factor_graph_model(_model, data)
+    fmodel = create_model(_model | data)
     inference_invoke_callback(callbacks, :after_model_creation, fmodel)
     vardict = getvardict(fmodel)
     vardict = GraphPPL.variables(vardict) # TODO bvdmitri, should work recursively as well
@@ -515,8 +485,8 @@ function __inference(;
 
     unsubscribe!(fe_subscription)
 
-    posterior_values = Dict(variable => __inference_postprocess(postprocess, getvalues(actor)) for (variable, actor) in pairs(actors_rv))
-    predicted_values = Dict(variable => __inference_postprocess(postprocess, getvalues(actor)) for (variable, actor) in pairs(actors_pr))
+    posterior_values = Dict(variable => inference_postprocess(postprocess, getvalues(actor)) for (variable, actor) in pairs(actors_rv))
+    predicted_values = Dict(variable => inference_postprocess(postprocess, getvalues(actor)) for (variable, actor) in pairs(actors_pr))
     fe_values        = !isnothing(fe_actor) ? score_snapshot_iterations(fe_actor, executed_iterations) : nothing
 
     return InferenceResult(posterior_values, predicted_values, fe_values, fmodel, potential_error)
@@ -532,19 +502,20 @@ include("autoupdates.jl")
 """
     RxInferenceEngine
 
-The return value of the `rxinference` function. 
+The return value of the `infer` function in case of streamlined inference. 
 
 # Public fields
 - `posteriors`: `Dict` or `NamedTuple` of 'random variable' - 'posterior stream' pairs. See the `returnvars` argument for the [`infer`](@ref).
 - `free_energy`: (optional) A stream of Bethe Free Energy values per VMP iteration. See the `free_energy` argument for the [`infer`](@ref).
 - `history`: (optional) Saves history of previous marginal updates. See the `historyvars` and `keephistory` arguments for the [`infer`](@ref).
-- `free_energy_history`: (optional) Free energy history, average over variational iterations 
+- `free_energy_history`: (optional) Free energy history, averaged across variational iterations value for all observations  
 - `free_energy_raw_history`: (optional) Free energy history, returns returns computed values of all variational iterations for each data event (if available)
 - `free_energy_final_only_history`: (optional) Free energy history, returns computed values of final variational iteration for each data event (if available)
 - `events`: (optional) A stream of events send by the inference engine. See the `events` argument for the [`infer`](@ref).
-- `model`: `FactorGraphModel` object reference.
+- `model`: `ProbabilisticModel` object reference.
 
-Use the `RxInfer.start(engine)` function to subscribe on the `data` source and start the inference procedure. Use `RxInfer.stop(engine)` to unsubscribe from the `data` source and stop the inference procedure. 
+Use the `RxInfer.start(engine)` function to subscribe on the `datastream` source and start the inference procedure. 
+Use `RxInfer.stop(engine)` to unsubscribe from the `datastream` source and stop the inference procedure. 
 Note, that it is not always possible to start/stop the inference procedure.
 
 See also: [`infer`](@ref), [`RxInferenceEvent`](@ref), [`RxInfer.start`](@ref), [`RxInfer.stop`](@ref)
@@ -651,9 +622,13 @@ function Base.show(io::IO, engine::RxInferenceEngine)
     end
 
     print(io, rpad("  Posteriors history", lcolumnlen), " | ")
-    print(io, "available for (")
-    join(io, keys(getfield(engine, :historyactors)), ", ")
-    print(io, ")\n")
+    if !isnothing(getfield(engine, :historyactors))
+        print(io, "available for (")
+        join(io, keys(getfield(engine, :historyactors)), ", ")
+        print(io, ")\n")
+    else 
+        print(io, "unavailable\n")
+    end 
 
     print(io, rpad("  Free Energy history", lcolumnlen), " | ")
     if !isnothing(getfield(engine, :fe_actor))
@@ -865,7 +840,7 @@ function Rocket.on_next!(executor::RxInferenceEventExecutor{T}, event::T) where 
         if !isnothing(_history) && !isnothing(_historyactors)
             inference_invoke_event(Val(:before_history_save), Val(_enabled_events), _events, _model)
             for (name, actor) in pairs(_historyactors)
-                push!(_history[name], __inference_postprocess(_postprocess, getvalues(actor)))
+                push!(_history[name], inference_postprocess(_postprocess, getvalues(actor)))
             end
             inference_invoke_event(Val(:after_history_save), Val(_enabled_events), _events, _model)
         end
@@ -1042,8 +1017,12 @@ function __rxinference(;
     _model = GraphPPL.with_plugins(model, modelplugins)
     _autoupdates = something(autoupdates, ())
 
+    # For each data entry and autoupdate we create a `DefferedDataHandler` handler for the `condition_on` structure 
+    # We must do that because the data is not available at the moment of the model creation
+    _condition_on = append_deffered_data_handlers((;), Tuple(Iterators.flatten((datavarnames, map(getlabels, _autoupdates)...))))
+
     inference_invoke_callback(callbacks, :before_model_creation)
-    fmodel = __infer_create_factor_graph_model(_model, datavarnames, _datastream, _autoupdates)
+    fmodel = create_model(_model | _condition_on)
     inference_invoke_callback(callbacks, :after_model_creation, fmodel)
 
     vardict = getvardict(fmodel)
@@ -1146,7 +1125,7 @@ function __rxinference(;
 
     # `posteriors` returns a `stream` for each entry in the `returnvars`
     posteriors = Dict(
-        variable => obtain_marginal(vardict[variable]) |> schedule_on(tickscheduler) |> map(Any, (data) -> __inference_postprocess(postprocess, data)) for variable in returnvars
+        variable => obtain_marginal(vardict[variable]) |> schedule_on(tickscheduler) |> map(Any, (data) -> inference_postprocess(postprocess, data)) for variable in returnvars
     )
 
     _events        = Subject(RxInferenceEvent)
@@ -1226,41 +1205,6 @@ function __check_available_callbacks(warn, callbacks, available_callbacks)
             end
         end
     end
-end
-
-# This function works for static data, such as `NamedTuple` or a `Dict`
-function __infer_create_factor_graph_model(generator::ModelGenerator, data::Union{NamedTuple, Dict})
-    # If the data is already a `NamedTuple` this should not really matter 
-    # But it makes it easier to deal with the `Dict` type, which is unordered by default
-    ntdata = NamedTuple(data)::NamedTuple
-    model  = create_model(generator) do model, ctx
-        ikeys = keys(ntdata)
-        interfaces = map(ikeys) do key
-            return __infer_create_data_interface(model, ctx, key, ntdata[key])
-        end
-        return NamedTuple{ikeys}(interfaces)
-    end
-    return ProbabilisticModel(model)
-end
-
-function __infer_create_factor_graph_model(generator::ModelGenerator, datanames, datastream::AbstractSubscribable, autoupdates::Tuple)
-    # @show autoupdates[1] |> dump
-    ikeys = Tuple(Iterators.flatten((datanames, map(getlabels, autoupdates)...)))
-    model = create_model(generator) do model, ctx
-        interfaces = map(ikeys) do key
-            return __infer_create_data_interface(model, ctx, key)
-        end
-        return NamedTuple{ikeys}(interfaces)
-    end
-    return ProbabilisticModel(model)
-end
-
-function __infer_create_data_interface(model, context, key::Symbol)
-    return GraphPPL.getorcreate!(model, context, GraphPPL.NodeCreationOptions(kind = :data, factorized = true), key, GraphPPL.LazyIndex())
-end
-
-function __infer_create_data_interface(model, context, key::Symbol, data)
-    return GraphPPL.getorcreate!(model, context, GraphPPL.NodeCreationOptions(kind = :data, factorized = true), key, GraphPPL.LazyIndex(data))
 end
 
 """
@@ -1351,7 +1295,8 @@ The `data` keyword argument must be a `NamedTuple` (or `Dict`) where keys (of `S
 `data` field must have an `:x` key (of `Symbol` type) which holds a value of type `Float64`. The values in the `data` must have the exact same shape as the `datavar` container. In other words, if a model defines `x = datavar(Float64, n)` then 
 `data[:x]` must provide a container with length `n` and with elements of type `Float64`.
 
-- #### `streamline` setting
+#### `streamline` setting
+
 All entries in the `data` argument are zipped together with the `Base.zip` function to form one slice of the data chunck. This means all containers in the `data` argument must be of the same size (`zip` iterator finished as soon as one container has no remaining values).
 In order to use a fixed value for some specific `datavar` it is not necessary to create a container with that fixed value, but rather more efficient to use `Iterators.repeated` to create an infinite iterator.
 
@@ -1529,7 +1474,8 @@ Specifies if the `infer` function should return Bethe Free Energy (BFE) values.
 
 - ### `free_energy_diagnostics`
 
-This settings specifies either a single or a tuple of diagnostic checks for Bethe Free Energy values stream. By default checks for `NaN`s and `Inf`s. See also [`BetheFreeEnergyCheckNaNs`](@ref) and [`BetheFreeEnergyCheckInfs`](@ref).
+This settings specifies either a single or a tuple of diagnostic checks for Bethe Free Energy values stream. By default checks for `NaN`s and `Inf`s. 
+See also [`RxInfer.ObjectiveDiagnosticCheckNaNs`](@ref) and [`RxInfer.ObjectiveDiagnosticCheckInfs`](@ref).
 Pass `nothing` to disable any checks.
 
 - ### `catch_exception`
@@ -1561,7 +1507,7 @@ The list of all possible callbacks for different inference setting (batch or str
 
 - `on_marginal_update`:    args: (model::FactorGraphModel, name::Symbol, update) (exlusive for batch inference)
 - `before_model_creation`: args: ()
-- `after_model_creation`:  args: (model::FactorGraphModel, returnval)
+- `after_model_creation`:  args: (model::FactorGraphModel)
 - `before_inference`:      args: (model::FactorGraphModel) (exlusive for batch inference)
 - `before_iteration`:      args: (model::FactorGraphModel, iteration::Int)::Bool (exlusive for batch inference)
 - `before_data_update`:    args: (model::FactorGraphModel, data) (exlusive for batch inference)

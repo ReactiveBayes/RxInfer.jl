@@ -28,10 +28,9 @@ For clarity, consider the following example:
 ```@example delta_node_example
 using RxInfer
 
-@model function delta_node_example()
-    z = datavar(Float64)
+@model function delta_node_example(z)
     x ~ Normal(mean=0.0, var=1.0)
-    y ~ tanh(x)
+    y := tanh(x)
     z ~ Normal(mean=y, var=1.0)
 end
 ```
@@ -73,11 +72,10 @@ f(x, g) = x*tanh(g)
 ```
 
 ```@example delta_node_example
-@model function delta_node_example()
-    z = datavar(Float64)
+@model function delta_node_example(z)
     x ~ Normal(mean=1.0, var=1.0)
     g ~ Normal(mean=1.0, var=1.0)
-    y ~ f(x, g)
+    y := f(x, g)
     z ~ Normal(mean=y, var=0.1)
 end
 ```
@@ -98,7 +96,13 @@ end
 
 If specific functions outline the backward relation of variables within the `f` function, you can provide a tuple of inverse functions in the order of the variables:
 
-```julia
+```@example delta_node_example
+f_back_x(out, g) = out/tanh(g)
+f_back_g(out, x) = atanh(out/x)
+```
+
+
+```@example delta_node_example
 delta_meta = @meta begin 
     f() -> DeltaMeta(method = Linearization(), inverse=(f_back_x, f_back_g))
 end
@@ -111,10 +115,9 @@ When the delta node is associated with nodes from the exponential family (exclud
 ```@example delta_node_example_cvi
 using RxInfer
 
-@model function delta_node_example1()
-    z = datavar(Float64)
+@model function delta_node_example1(z)
     x ~ Gamma(shape=1.0, rate=1.0)
-    y ~ tanh(x)
+    y := tanh(x)
     z ~ Bernoulli(y)
 end
 ```
