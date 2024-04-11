@@ -174,6 +174,10 @@ Our high-level project roadmap outlines the key milestones and focus areas for t
 
 For a more granular view of our progress and ongoing tasks, check out our [project board](https://github.com/orgs/reactivebayes/projects/2/views/4).
 
+# Contributing
+
+We welcome contributions from the community. If you are interested in contributing to the development of `RxInfer.jl`, please check out our [contributing guide](https://reactivebayes.github.io/RxInfer.jl/stable/contributing/guide), the [contributing guidelines](https://reactivebayes.github.io/RxInfer.jl/stable/contributing/guidelines), or look at the [issues linked with the `good first issue` label](https://github.com/ReactiveBayes/RxInfer.jl/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22) to get started.
+
 # Ecosystem
 
 The `RxInfer` framework consists of three *core* packages developed by reactivebayes:

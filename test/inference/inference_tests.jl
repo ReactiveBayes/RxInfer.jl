@@ -768,3 +768,28 @@ end
         @test_throws ErrorException infer(model = test_model1(), data = (y = observedy,), datastream = labeled(Val((:y,)), combineLatest(from(observedy))))
     end
 end
+
+@testitem "Test misspecified types in infer function" begin
+    @model function rolling_die(y)
+        θ ~ Dirichlet(ones(6))
+        for i in eachindex(y)
+            y[i] ~ Categorical(θ)
+        end
+    end
+
+    observations = [[1.0; zeros(5)], [zeros(5); 1.0]]
+
+    @testset "Test misspecified data" begin
+        @test_throws "Keyword argument `data` expects either `Dict` or `NamedTuple` as an input" infer(model = rolling_die(), data = (y = observations))
+        result = infer(model = rolling_die(), data = (y = observations,))
+        @test isequal(first(mean(result.posteriors[:θ])), last(mean(result.posteriors[:θ])))
+    end
+
+    @testset "Test misspecified callbacks" begin
+        @test_throws "Keyword argument `callbacks` expects either `Dict` or `NamedTuple` as an input" infer(
+            model = rolling_die(), data = (y = observations,), callbacks = (before_model_creation = (args...) -> nothing)
+        )
+        result = infer(model = rolling_die(), data = (y = observations,), callbacks = (before_model_creation = (args...) -> nothing,))
+        @test isequal(first(mean(result.posteriors[:θ])), last(mean(result.posteriors[:θ])))
+    end
+end
