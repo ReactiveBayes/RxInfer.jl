@@ -115,7 +115,7 @@ end
                 q(μ) = NormalMeanVariance(0.0, 1.0)
                 q(τ) = Gamma(1.0, 1.0)
             end
-            
+
             for ts in testsets
                 result_with_prior_as_input = infer(
                     model = iid_gaussians_priors(prior_for_μ = ts[:prior_for_μ], prior_for_τ = ts[:prior_for_τ]),
