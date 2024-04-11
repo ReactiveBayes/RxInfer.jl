@@ -944,27 +944,6 @@ function inference_invoke_event(::Val{Event}, ::Val{EnabledEvents}, events, args
     return nothing
 end
 
-function available_events(::typeof(__rxinference))
-    return Val((
-        :before_start,
-        :after_start,
-        :before_stop,
-        :after_stop,
-        :on_new_data,
-        :before_iteration,
-        :before_auto_update,
-        :after_auto_update,
-        :before_data_update,
-        :after_data_update,
-        :after_iteration,
-        :before_history_save,
-        :after_history_save,
-        :on_tick,
-        :on_error,
-        :on_complete
-    ))
-end
-
 function __check_available_events(warn, events::Union{Val{Events}, Nothing}, available_callbacks::Val{AvailableEvents}) where {Events, AvailableEvents}
     if warn && !isnothing(events)
         for key in Events
@@ -1209,6 +1188,27 @@ function __rxinference(;
     end
 
     return engine
+end
+
+function available_events(::typeof(__rxinference))
+    return Val((
+        :before_start,
+        :after_start,
+        :before_stop,
+        :after_stop,
+        :on_new_data,
+        :before_iteration,
+        :before_auto_update,
+        :after_auto_update,
+        :before_data_update,
+        :after_data_update,
+        :after_iteration,
+        :before_history_save,
+        :after_history_save,
+        :on_tick,
+        :on_error,
+        :on_complete
+    ))
 end
 
 function rxinference(; kwargs...)
