@@ -74,8 +74,8 @@
     # create model from inferred parameters
     _mixture = MixtureModel(_dists, _mixing)
 
-    @test mean(_dists[1]) ≈ 0.3226156205871108
-    @test mean(_dists[2]) ≈ 0.3346637112443222
-    @test _mixing ≈ [0.7988158410647992, 0.20118415893520075]
+    @test mean(_dists[1]) ≈ 0.32261559907078213
+    @test mean(_dists[2]) ≈ 0.3346638123092099
+    @test _mixing ≈ [0.7988294835972645, 0.20117051640273556]
     @test last(gresult.free_energy) ≈ -138.7724253019069
 end
