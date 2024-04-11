@@ -3,6 +3,8 @@
 This guide explains how to use the [`infer`](@ref) function for dynamic datasets. We'll show how `RxInfer` can continuously update beliefs asynchronously whenever a new observation arrives. We'll use a simple Beta-Bernoulli model as an example, which has been covered in the [Getting Started](@ref user-guide-getting-started) section, 
 but keep in mind that these techniques can apply to any model.
 
+Also read about [Static Inference](@ref manual-static-inference) or checkout more complex [examples](https://reactivebayes.github.io/RxInfer.jl/stable/examples/overview/).
+
 ## [Model specification](@id manual-online-inference-model-spec)
 
 In online inference, we want to continuously update our prior beliefs about certain hidden states. 
