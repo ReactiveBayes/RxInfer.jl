@@ -28,7 +28,7 @@ Nowadays there's plenty of probabilistic programming languages and packages avai
 
 **Notes**:
 - **Universality**: Denotes the capability to depict a vast array of probabilistic models.
-- **Efficiency**: Highlights computational competence. A "–" in this context suggests perceived slowness.
+- **Efficiency**: Highlights computational competence. A "~" in this context suggests perceived slowness.
 - **Expressiveness**: Assesses the ability to concisely formulate intricate probabilistic models.
 - **Debugging & Visualization**: Evaluates the suite of tools for model debugging and visualization.
 - **Modularity**: Reflects the potential to create models by integrating smaller models.
