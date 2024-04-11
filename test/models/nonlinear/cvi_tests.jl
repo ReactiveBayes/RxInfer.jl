@@ -39,7 +39,7 @@
         f() -> CVI(rng, n_iterations, n_samples, Optimisers.Descent(learning_rate))
     end
 
-    initialization = @initialization begin
+    init = @initialization begin
         μ(z) = NormalMeanVariance(0, P)
         q(z) = NormalMeanVariance(0, P)
         q(τ) = GammaShapeRate(1e-12, 1e-3)
@@ -55,7 +55,7 @@
             returnvars = (z = KeepLast(),),
             constraints = constraints,
             meta = model_meta(rng, 600, 600, 0.01),
-            init = initialization,
+            initialization = init
         )
     end
 
@@ -75,7 +75,7 @@
     mz = res.posteriors[:z]
     fe = res.free_energy
     @test length(res.posteriors[:z]) === T
-    
+
     @test all(mean.(mz) .- 6 .* std.(mz) .< hidden .< (mean.(mz) .+ 6 .* std.(mz)))
     @test (sum((mean.(mz) .- 4 .* std.(mz)) .< hidden .< (mean.(mz) .+ 4 .* std.(mz))) / T) > 0.95
     @test (sum((mean.(mz) .- 3 .* std.(mz)) .< hidden .< (mean.(mz) .+ 3 .* std.(mz))) / T) > 0.90

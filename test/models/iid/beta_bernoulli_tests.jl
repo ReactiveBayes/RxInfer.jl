@@ -32,9 +32,9 @@
         a, b = params(q(θ))
     end
 
-    # The initial value for `θ` in the `@autoupdates` has not been specified, the `initmarginals` should be used
-    # The `beta_bernoulli_streaming` with `initmarginals` is being tested later 
-    @test_throws "The initial value for `θ` in the `@autoupdates` has not been specified" infer(
+    # The initial value for `θ` in the `@autoupdates` has not been specified, the `initialization` should be used
+    # The `beta_bernoulli_streaming` with `initialization` is being tested later 
+    @test_throws "The initial value for `θ` has not been specified, but is required in the `@autoupdates`." infer(
         model = beta_bernoulli_streaming(), data = (y = dataset,), autoupdates = autoupdates
     )
 
@@ -74,7 +74,7 @@
             model = beta_bernoulli_streaming(),
             data = (y = data_for_specific_p,),
             autoupdates = autoupdates,
-            init = init,
+            initialization = init,
             keephistory = 1, # Only keep the last one
             autostart = false
         )
@@ -132,7 +132,7 @@
     # In this model the result should not depend on the initial marginals or messages
     # But it should run anyway
     for θinit in (Beta(1.0, 1.0), Beta(2.0, 2.0), Beta(2.0, 7.0), Beta(7.0, 2.0))
-        result_with_init = infer(model = beta_bernoulli(a = 2.0, b = 7.0), data = (y = dataset,), iterations = 10, init = beta_bernoulli_init(θinit), free_energy = true)
+        result_with_init = infer(model = beta_bernoulli(a = 2.0, b = 7.0), data = (y = dataset,), iterations = 10, initialization = beta_bernoulli_init(θinit), free_energy = true)
 
         @test all(t -> t[1] == t[2], Iterators.zip(result.posteriors[:θ], result_with_init.posteriors[:θ]))
         @test all(t -> t[1] == t[2], Iterators.zip(result.free_energy, result_with_init.free_energy))

@@ -175,6 +175,13 @@ end
 
 check_for_returns_init = (x) -> GraphPPL.check_for_returns(x; tag = "init")
 
+function check_for_trailing_commas(e::Expr)
+    if @capture(e, (a_ = (b_, c_) = d_))
+        error("Trailing comma in init specification detected, please place every init statement on a new line without trailing commas.")
+    end
+    return e
+end
+
 function add_init_construction(e::Expr)
     if @capture(e, (function m_name_(m_args__; m_kwargs__)
         c_body_
@@ -279,6 +286,7 @@ function convert_init_object(e::Expr)
 end
 
 function init_macro_interior(init_body::Expr)
+    init_body = GraphPPL.apply_pipeline(init_body, check_for_trailing_commas)
     init_body = GraphPPL.apply_pipeline(init_body, (x) -> check_for_returns_init(x))
     init_body = add_init_construction(init_body)
     init_body = GraphPPL.apply_pipeline(init_body, create_submodel_init)

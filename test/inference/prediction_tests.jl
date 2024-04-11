@@ -305,7 +305,7 @@ end
             data = data,
             constraints = constraints,
             free_energy = false,
-            init = init,
+            initialization = init,
             iterations = 10,
             returnvars = (γ = KeepEach(),),
             predictvars = (o = KeepEach(),)

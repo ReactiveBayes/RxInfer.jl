@@ -150,14 +150,16 @@ end
 
 After we have defined all callbacks of interest, we can call the [`infer`](@ref) function passing them in the `callback` argument as a named tuple:
 ```@example debugging-with-callbacks
+init = @initialization begin 
+    q(μ) = vague(NormalMeanVariance)
+end
+
 result = infer(
     model = iid_normal(),
     data  = (y = dataset, ),
     constraints = MeanField(),
     iterations = 5,
-    initmarginals = (
-        μ = vague(NormalMeanVariance),
-    ),
+    initialization = init,
     returnvars = KeepLast(),
     callbacks = (
         on_marginal_update = on_marginal_update_callback,
@@ -208,9 +210,7 @@ result = infer(
     data  = (y = dataset, ),
     constraints = MeanField(),
     iterations = 5,
-    initmarginals = (
-        μ = vague(NormalMeanVariance),
-    ),
+    initialization = init,
     returnvars = KeepLast(),
     callbacks = (
         on_marginal_update = on_marginal_update_callback,

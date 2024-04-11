@@ -73,7 +73,7 @@ Base.fetch(autoupdate::RxInferenceAutoUpdate, something::Union{AbstractArray, Ba
 
 Base.fetch(autoupdate::RxInferenceAutoUpdate, _, data) = zip(as_tuple(autoupdate.datavars), as_tuple(autoupdate.callback(data)))
 Base.fetch(autoupdate::RxInferenceAutoUpdate, _, data::Nothing) =
-    error("The initial value for `$(autoupdate.varlabel)` in the `@autoupdates` has not been specified. Consider using `initmarginals` or `initmessages`.")
+    error("The initial value for `$(autoupdate.varlabel)` has not been specified, but is required in the `@autoupdates`.")
 
 import MacroTools
 import MacroTools: @capture

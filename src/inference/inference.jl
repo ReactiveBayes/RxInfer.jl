@@ -76,7 +76,7 @@ function __check_and_unset_updated!(updates)
         names = join(keys(not_updated), ", ")
         error("""
               Variables [ $(names) ] have not been updated after an update event. 
-              Therefore, make sure to initialize all required marginals and messages. See `initmarginals` and `initmessages` keyword arguments for the inference function. 
+              Therefore, make sure to initialize all required marginals and messages. See `initialization` keyword argument for the inference function. 
               See the function documentation for detailed information regarding the initialization.
               """)
     end
@@ -251,7 +251,7 @@ function __inference(;
     model::ModelGenerator,
     # NamedTuple or Dict with data, optional if predictvars are specified
     data = nothing,
-    init = nothing,
+    initialization = nothing,
     # Constraints specification object
     constraints = nothing,
     # Meta specification object
@@ -299,7 +299,7 @@ function __inference(;
     # We create a model with the `GraphPPL` package and insert a certain RxInfer related 
     # plugins which include the VI plugin, meta plugin and the ReactiveMP integration plugin
     modelplugins = GraphPPL.PluginsCollection(
-        GraphPPL.VariationalConstraintsPlugin(constraints), GraphPPL.MetaPlugin(meta), RxInfer.InitializationPlugin(init), RxInfer.ReactiveMPInferencePlugin(_options)
+        GraphPPL.VariationalConstraintsPlugin(constraints), GraphPPL.MetaPlugin(meta), RxInfer.InitializationPlugin(initialization), RxInfer.ReactiveMPInferencePlugin(_options)
     )
 
     is_free_energy, S = unwrap_free_energy_option(free_energy)
@@ -626,9 +626,9 @@ function Base.show(io::IO, engine::RxInferenceEngine)
         print(io, "available for (")
         join(io, keys(getfield(engine, :historyactors)), ", ")
         print(io, ")\n")
-    else 
+    else
         print(io, "unavailable\n")
-    end 
+    end
 
     print(io, rpad("  Free Energy history", lcolumnlen), " | ")
     if !isnothing(getfield(engine, :fe_actor))
@@ -944,11 +944,21 @@ function inference_invoke_event(::Val{Event}, ::Val{EnabledEvents}, events, args
     return nothing
 end
 
+function __check_available_events(warn, events::Union{Val{Events}, Nothing}, available_callbacks::Val{AvailableEvents}) where {Events, AvailableEvents}
+    if warn && !isnothing(events)
+        for key in Events
+            if key ∉ AvailableEvents
+                @warn "Unknown event type: $(key). Available events: $(AvailableEvents). Set `warn = false` to supress this warning."
+            end
+        end
+    end
+end
+
 function __rxinference(;
     model::ModelGenerator,
     data = nothing,
     datastream = nothing,
-    init = nothing,
+    initialization = nothing,
     autoupdates = nothing,
     constraints = nothing,
     meta = nothing,
@@ -967,6 +977,9 @@ function __rxinference(;
     uselock = false,
     warn = true
 )
+
+    # Check if the `events` argument is a tuple of supported symbols
+    __check_available_events(warn, events, available_events(__rxinference))
 
     # In case if `data` is used we cast to a synchronous `datastream` with zip operator
     _datastream, _T = if isnothing(datastream) && !isnothing(data)
@@ -1003,7 +1016,7 @@ function __rxinference(;
     # We create a model with the `GraphPPL` package and insert a certain RxInfer related 
     # plugins which include the VI plugin, meta plugin and the ReactiveMP integration plugin
     modelplugins = GraphPPL.PluginsCollection(
-        GraphPPL.VariationalConstraintsPlugin(constraints), GraphPPL.MetaPlugin(meta), RxInfer.InitializationPlugin(init), RxInfer.ReactiveMPInferencePlugin(_options)
+        GraphPPL.VariationalConstraintsPlugin(constraints), GraphPPL.MetaPlugin(meta), RxInfer.InitializationPlugin(initialization), RxInfer.ReactiveMPInferencePlugin(_options)
     )
 
     is_free_energy, S = unwrap_free_energy_option(free_energy)
@@ -1177,6 +1190,27 @@ function __rxinference(;
     return engine
 end
 
+function available_events(::typeof(__rxinference))
+    return Val((
+        :before_start,
+        :after_start,
+        :before_stop,
+        :after_stop,
+        :on_new_data,
+        :before_iteration,
+        :before_auto_update,
+        :after_auto_update,
+        :before_data_update,
+        :after_data_update,
+        :after_iteration,
+        :before_history_save,
+        :after_history_save,
+        :on_tick,
+        :on_error,
+        :on_complete
+    ))
+end
+
 function rxinference(; kwargs...)
     @warn "The `rxinference` function is deprecated and will be removed in the future.  Use `infer` with the `autoupdates` keyword argument instead."
 
@@ -1213,6 +1247,7 @@ end
         data = nothing,
         datastream = nothing,
         autoupdates = nothing,
+        initialization = nothing,
         initmarginals = nothing,
         initmessages = nothing,
         constraints = nothing,
@@ -1245,8 +1280,9 @@ For more information about some of the arguments, please check below.
 - `data`: `NamedTuple` or `Dict` with data, required (or `datastream` or `predictvars`)
 - `datastream`: A stream of `NamedTuple` with data, required (or `data`)
 - `autoupdates = nothing`: auto-updates specification, required for streamline inference, see `@autoupdates`
-- `initmarginals = nothing`: `NamedTuple` or `Dict` with initial marginals, optional
-- `initmessages = nothing`: `NamedTuple` or `Dict` with initial messages, optional
+- `initialization = nothing`: initialization specification object, optional, see `@initialization`
+- `initmarginals = nothing`: Depracated initialization for marginals, use `initialization` instead
+- `initmessages = nothing`: Depracated initialization for messages, use `initialization` instead
 - `constraints = nothing`: constraints specification object, optional, see `@constraints`
 - `meta  = nothing`: meta specification object, optional, may be required for some models, see `@meta`
 - `options = nothing`: model creation options, optional, see `ModelInferenceOptions`
@@ -1310,31 +1346,30 @@ For example, if a model defines `x = datavar(Float64)` (which is not part of the
 **Note**: The behavior of the individual named tuples from the `datastream` observable is similar to that which is used in the batch setting.
 In fact, you can see the streamline inference as an efficient version of the batch inference, which automatically updates some `datavar`s with the `autoupdates` specification and listens to the `datastream` to update the rest of the `datavar`s.
 
-For specific types of inference algorithms, such as variational message passing, it might be required to initialize (some of) the marginals before running the inference procedure in order to break the dependency loop. If this is not done, the inference algorithm will not be executed due to the lack of information and message and/or marginals will not be updated. In order to specify these initial marginals, you can use the `initmarginals` argument, such as
+- ### `initialization`
+
+For specific types of inference algorithms, such as variational message passing, it might be required to initialize (some of) the marginals before running the inference procedure in order to break the dependency loop. If this is not done, the inference algorithm will not be executed due to the lack of information and message and/or marginals will not be updated. In order to specify these initial marginals and messages, you can use the `initialization` argument in combination with the `@initialization` macro, such as
 ```julia
+init = @initialization begin
+    # initialize the marginal distribution of x as a vague Normal distribution
+    # if x is a vector, then it simply uses the same value for all elements
+    # However, it is also possible to provide a vector of distributions to set each element individually 
+    q(x) = vague(NormalMeanPrecision)
+end
+
 infer(...
-    initmarginals = (
-        # initialize the marginal distribution of x as a vague Normal distribution
-        # if x is a vector, then it simply uses the same value for all elements
-        # However, it is also possible to provide a vector of distributions to set each element individually 
-        x = vague(NormalMeanPrecision),  
-    ),
+    initialization = init,
 )
 
 This argument needs to be a named tuple, i.e. `initmarginals = (a = ..., )`, or dictionary.
 
 - ### `initmessages`
 
-For specific types of inference algorithms, such as loopy belief propagation or expectation propagation, it might be required to initialize (some of) the messages before running the inference procedure in order to break the dependency loop. If this is not done, the inference algorithm will not be executed due to the lack of information and message and/or marginals will not be updated. In order to specify these initial messages, you can use the `initmessages` argument, such as
-```julia
-infer(...
-    initmessages = (
-        # initialize the messages distribution of x as a vague Normal distribution
-        # if x is a vector, then it simply uses the same value for all elements
-        # However, it is also possible to provide a vector of distributions to set each element individually 
-        x = vague(NormalMeanPrecision),  
-    ),
-)
+Depracated initialization for messages, use `initialization` instead
+
+- ### `initmarginals`
+
+Depracated initialization for marginals, use `initialization` instead
 
 - ### `options`
 
@@ -1538,7 +1573,7 @@ function infer(;
     data = nothing,
     datastream = nothing, # streamline specific
     autoupdates = nothing, # streamline specific
-    init = nothing,
+    initialization = nothing,
     constraints = nothing,
     meta = nothing,
     options = nothing,
@@ -1575,7 +1610,7 @@ function infer(;
         __inference(
             model = model,
             data = data,
-            init = init,
+            initialization = initialization,
             constraints = constraints,
             meta = meta,
             options = options,
@@ -1598,7 +1633,7 @@ function infer(;
             data = data,
             datastream = datastream,
             autoupdates = autoupdates,
-            init = init,
+            initialization = initialization,
             constraints = constraints,
             meta = meta,
             options = options,

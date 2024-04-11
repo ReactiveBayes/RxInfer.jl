@@ -97,7 +97,6 @@ makedocs(;
     pages = [
         "Home" => "index.md",
         "User guide" => [
-            # "Background: variational inference" => "manuals/background.md",
             "Getting started"           => "manuals/getting-started.md",
             "RxInfer.jl vs. Others"     => "manuals/comparison.md",
             "Model specification"       => "manuals/model-specification.md",
@@ -105,16 +104,16 @@ makedocs(;
             "Meta specification"        => "manuals/meta-specification.md",
             "Inference specification"   => [
                 "Overview" => "manuals/inference/overview.md", 
-                "Static vs Streamline inference" => "manuals/inference/infer.md", 
-                "Streamline inference" => "manuals/inference/online.md",
-                "Messages initialization"   => "manuals/understanding-why-to-initialize-messages.md",
+                "Static inference" => "manuals/inference/static.md", 
+                "Streamline inference" => "manuals/inference/streamlined.md",
+                "Initialization"   => "manuals/inference/initialization.md",
+                "Deterministic nodes" => "manuals/inference/delta-node.md"
             ],
             "Inference customization"   => [
-                "Defining a custom node and rules" => "manuals/custom-node.md",
-                "Inference results postprocessing" => "manuals/inference/postprocess.md", 
+                "Defining a custom node and rules" => "manuals/customization/custom-node.md",
+                "Inference results postprocessing" => "manuals/customization/postprocess.md", 
             ],
-            "Debugging"                 => "manuals/debugging.md",
-            "Delta node"                => "manuals/delta-node.md"
+            "Debugging" => "manuals/debugging.md",
         ],
         "Library" => [
             "Model construction" => "library/model-construction.md",

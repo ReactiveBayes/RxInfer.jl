@@ -64,7 +64,7 @@
     end
     greturnvars = (s = KeepLast(), z = KeepLast(), as = KeepEach(), bs = KeepEach())
 
-    gresult = infer(model = gmodel, data = gdata, constraints = constraints, init = ginit, returnvars = greturnvars, free_energy = true, iterations = 50)
+    gresult = infer(model = gmodel, data = gdata, constraints = constraints, initialization = ginit, returnvars = greturnvars, free_energy = true, iterations = 50)
 
     # extract inferred parameters
     _as, _bs = mean.(gresult.posteriors[:as][end]), mean.(gresult.posteriors[:bs][end])

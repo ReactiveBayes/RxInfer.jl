@@ -26,7 +26,7 @@
             model = mv_iid_inverse_wishart(d = d),
             data = (y = data,),
             constraints = constraints_mv_iid_inverse_wishart,
-            init = mv_iid_inverse_wishart_init(d),
+            initialization = mv_iid_inverse_wishart_init(d),
             returnvars = KeepLast(),
             iterations = 10,
             free_energy = Float64
