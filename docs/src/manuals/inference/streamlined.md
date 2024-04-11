@@ -3,6 +3,8 @@
 This guide explains how to use the [`infer`](@ref) function for dynamic datasets. We'll show how `RxInfer` can continuously update beliefs asynchronously whenever a new observation arrives. We'll use a simple Beta-Bernoulli model as an example, which has been covered in the [Getting Started](@ref user-guide-getting-started) section, 
 but keep in mind that these techniques can apply to any model.
 
+Also read about [Static Inference](@ref manual-static-inference) or checkout more complex [examples](https://reactivebayes.github.io/RxInfer.jl/stable/examples/overview/).
+
 ## [Model specification](@id manual-online-inference-model-spec)
 
 In online inference, we want to continuously update our prior beliefs about certain hidden states. 
@@ -51,22 +53,21 @@ rng          = StableRNG(43)
 datastream   = RecentSubject(Bool)
 ```
 
-The [`infer`](@ref) function expects the `datastream` to emit values in the form of the `NamedTuple`s. To simply this process, `Rocket` exports `labeled` function:
+The [`infer`](@ref) function expects the `datastream` to emit values in the form of the `NamedTuple`s. To simply this process, `Rocket.jl` exports `labeled` function. We also use the `combineLatest` function to convert a stream of `Bool`s to a stream of `Tuple{Bool}`s. Read more about these function in the [documentation to `Rocket.jl`](https://reactivebayes.github.io/Rocket.jl/stable/).
 
 ```@example manual-online-inference
-# We convert the stream of `Bool` to the stream of `Float64`, because the `Bernoulli` node
-# from `ReactiveMP` expects `Float64` inputs
-observations = labeled(Val((:y, )), combineLatest(datastream |> map(Float64, float)))
+observations = labeled(Val((:y, )), combineLatest(datastream))
 ```
 
-Let's verify that our datastream, does indeed produce `NamedTuple`
+Let's verify that our datastream does indeed produce `NamedTuple`s
 
 ```@example manual-online-inference
 test_values = [] #hide
 test_subscription = subscribe!(observations, (new_observation) -> push!(test_values, new_observation)) #hide
 subscription = subscribe!(observations, 
-    (new_observation) -> println("Got new observation `", new_observation, "` 🎉")
+    (new_observation) -> println("Got new observation ", new_observation, " 🎉")
 )
+nothing #hide
 ```
 
 ```@example manual-online-inference
@@ -93,15 +94,15 @@ Now, we have everything ready to start running the inference with `RxInfer` on d
 
 ```@example manual-online-inference
 engine = infer(
-    model         = beta_bernoulli_online(),
-    datastream    = observations,
-    autoupdates   = beta_bernoulli_autoupdates,
-    initmarginals = (θ = Beta(1, 1), ),
-    autostart     = false
+    model          = beta_bernoulli_online(),
+    datastream     = observations,
+    autoupdates    = beta_bernoulli_autoupdates,
+    initialization = @initialization(q(θ) = Beta(1, 1)),
+    autostart      = false
 )
 ```
 
-In the code above, there are several notable differences compared to running inference for static datasets. Firstly, we utilized the `autoupdates` argument as discussed [previously](@ref manual-online-inference-autoupdates). Secondly, we employed the `initmarginals` function to initialize the posterior over `θ`. This is necessary for the `@autoupdates` macro, as it needs to initialize the `a` and `b` parameters before the data becomes available. Thirdly, we set `autostart = false` to indicate that we do not want to immediately subscribe to the datastream, but rather do so manually later using the [`RxInfer.start`](@ref) function.
+In the code above, there are several notable differences compared to running inference for static datasets. Firstly, we utilized the `autoupdates` argument as discussed [previously](@ref manual-online-inference-autoupdates). Secondly, we employed the [`@initialization`](@ref) macro to initialize the posterior over `θ`. This is necessary for the `@autoupdates` macro, as it needs to initialize the `a` and `b` parameters before the data becomes available. Thirdly, we set `autostart = false` to indicate that we do not want to immediately subscribe to the datastream, but rather do so manually later using the [`RxInfer.start`](@ref) function.
 
 ```@docs
 RxInferenceEngine
@@ -115,7 +116,7 @@ Given the `engine`, we now can subscribe on the posterior updates:
 θ_updates_for_testing_the_example  = [] #hide
 θ_updates_for_testing_subscription = subscribe!(engine.posteriors[:θ], (new_posterior_for_θ) -> push!(θ_updates_for_testing_the_example, new_posterior_for_θ)) #hide
 θ_updates_subscription = subscribe!(engine.posteriors[:θ], 
-    (new_posterior_for_θ) -> println("A new posterior for θ is `", new_posterior_for_θ, "` 🤩")
+    (new_posterior_for_θ) -> println("A new posterior for θ is ", new_posterior_for_θ, " 🤩")
 )
 nothing #hide
 ```
@@ -171,13 +172,13 @@ The `keephistory` parameter specifies the length of the circular buffer for stor
 
 ```@example manual-online-inference
 engine = infer(
-    model         = beta_bernoulli_online(),
-    datastream    = observations,
-    autoupdates   = beta_bernoulli_autoupdates,
-    initmarginals = (θ = Beta(1, 1), ),
-    keephistory   = 100,
-    historyvars   = (θ = KeepLast(), ),
-    autostart     = true
+    model          = beta_bernoulli_online(),
+    datastream     = observations,
+    autoupdates    = beta_bernoulli_autoupdates,
+    initialization = @initialization(q(θ) = Beta(1, 1)),
+    keephistory    = 100,
+    historyvars    = (θ = KeepLast(), ),
+    autostart      = true
 )
 ```
 
@@ -264,13 +265,13 @@ To obtain a continuous stream of updates for the [Bethe Free Energy](@ref lib-be
 
 ```@example manual-online-inference
 engine = infer(
-    model         = beta_bernoulli_online(),
-    datastream    = observations,
-    autoupdates   = beta_bernoulli_autoupdates,
-    initmarginals = (θ = Beta(1, 1), ),
-    keephistory   = 5,
-    autostart     = true,
-    free_energy   = true
+    model          = beta_bernoulli_online(),
+    datastream     = observations,
+    autoupdates    = beta_bernoulli_autoupdates,
+    initialization = @initialization(q(θ) = Beta(1, 1)),
+    keephistory    = 5,
+    autostart      = true,
+    free_energy    = true
 )
 ```
 
@@ -281,7 +282,7 @@ engine = infer(
 free_energy_for_testing = [] #hide
 free_energy_for_testing_subscription = subscribe!(engine.free_energy, (v) -> push!(free_energy_for_testing, v)) #hide
 free_energy_subscription = subscribe!(engine.free_energy, 
-    (bfe_value) -> println("New value of Bethe Free Energy has been computed `", bfe_value, "` 👩‍🔬")
+    (bfe_value) -> println("New value of Bethe Free Energy has been computed ", bfe_value, " 👩‍🔬")
 )
 @test length(free_energy_for_testing) === 1 #hide
 nothing #hide
@@ -346,30 +347,31 @@ iid_normal_autoupdates = @autoupdates begin
     rate_τ  = rate(q(τ))
 end
 
-iid_normal_hidden_μ     = 3.1415
-iid_normal_hidden_τ     = 0.0271
-iid_normal_distribution = NormalMeanPrecision(iid_normal_hidden_μ, iid_normal_hidden_τ)
-iid_normal_rng          = StableRNG(123)
-iid_normal_datastream   = RecentSubject(Float64)
-iid_normal_observations = labeled(Val((:y, )), combineLatest(iid_normal_datastream))
+iid_normal_hidden_μ       = 3.1415
+iid_normal_hidden_τ       = 0.0271
+iid_normal_distribution   = NormalMeanPrecision(iid_normal_hidden_μ, iid_normal_hidden_τ)
+iid_normal_rng            = StableRNG(123)
+iid_normal_datastream     = RecentSubject(Float64)
+iid_normal_observations   = labeled(Val((:y, )), combineLatest(iid_normal_datastream))
+iid_normal_initialization = @initialization begin 
+    q(μ) = NormalMeanPrecision(0.0, 0.001)
+    q(τ) = GammaShapeRate(10.0, 10.0)
+end
 
-iid_normal_engine = infer(
-    model         = iid_normal(),
-    datastream    = iid_normal_observations,
-    autoupdates   = iid_normal_autoupdates,
-    constraints   = iid_normal_constraints,
-    initmarginals = (
-        μ = NormalMeanPrecision(0.0, 0.001),
-        τ = GammaShapeRate(10.0, 10.0)
-    ),
-    historyvars   = (
+iid_normal_engine  = infer(
+    model          = iid_normal(),
+    datastream     = iid_normal_observations,
+    autoupdates    = iid_normal_autoupdates,
+    constraints    = iid_normal_constraints,
+    initialization = iid_normal_initialization,
+    historyvars    = (
         μ = KeepLast(),
         τ = KeepLast(),
     ),
-    keephistory   = 100,
-    iterations    = 10,
-    free_energy   = true,
-    autostart     = true
+    keephistory    = 100,
+    iterations     = 10,
+    free_energy    = true,
+    autostart      = true
 )
 ```
 
@@ -404,6 +406,9 @@ We can also visualize different representations:
 ```@example manual-online-inference
 plot(iid_normal_engine.free_energy_history, label = "Bethe Free Energy (averaged)")
 ```
+
+!!! note
+    In general, the _averaged_ Bethe Free Energy values must decrease and converge to a stable point.
 
 ```@example manual-online-inference
 plot(iid_normal_engine.free_energy_raw_history, label = "Bethe Free Energy (raw)")
@@ -447,6 +452,8 @@ using RxInfer, Test, Markdown
 nothing
 ```
 
+---
+
 ```julia
 before_model_creation()
 ```
@@ -457,29 +464,445 @@ after_model_creation(model::ProbabilisticModel)
 ```
 Calls right after the model has been created, accepts a single argument, the `model`.
 
-- `before_autostart(engine::RxInferenceEngine)`: Calls before the `RxInfer.start()` function, if `autostart` is set to `true`.
-- `after_autostart(engine::RxInferenceEngine)`: Calls after the `RxInfer.start()` function, if `autostart` is set to `true`.
+```julia
+before_autostart(engine::RxInferenceEngine)
+```
+Calls before the `RxInfer.start()` function, if `autostart` is set to `true`.
 
+```julia
+after_autostart(engine::RxInferenceEngine)
+```
+Calls after the `RxInfer.start()` function, if `autostart` is set to `true`.
+
+---
+
+Here is an example usage of the outlined callbacks:
 
 ```@example manual-online-inference
-@test false
+function before_model_creation()
+    println("The model is about to be created")
+end
+
+function after_model_creation(model::ProbabilisticModel)
+    println("The model has been created")
+    println("  The number of factor nodes is: ", length(RxInfer.getfactornodes(model)))
+    println("  The number of latent states is: ", length(RxInfer.getrandomvars(model)))
+    println("  The number of data points is: ", length(RxInfer.getdatavars(model)))
+    println("  The number of constants is: ", length(RxInfer.getconstantvars(model)))
+end
+
+function before_autostart(engine::RxInferenceEngine)
+    println("The reactive inference engine is about to start")
+end
+
+function after_autostart(engine::RxInferenceEngine)
+    println("The reactive inference engine has been started")
+end
+
+engine = infer(
+    model          = beta_bernoulli_online(),
+    datastream     = observations,
+    autoupdates    = beta_bernoulli_autoupdates,
+    initialization = @initialization(q(θ) = Beta(1, 1)),
+    keephistory    = 5,
+    autostart      = true,
+    free_energy    = true,
+    callbacks      = (
+        before_model_creation = before_model_creation,
+        after_model_creation  = after_model_creation,
+        before_autostart      = before_autostart,
+        after_autostart       = after_autostart
+    )
+)
+
+RxInfer.stop(engine) #hide
+nothing #hide
 ```
+
 
 ## [Event loop](@id manual-online-inference-event-loop)
 
-```@example manual-online-inference
-@test false
+In constrast to [`Static Inference`](@ref manual-static-inference), the streamlined version of the [`infer`](@ref) function 
+does not provide callbacks such as `on_marginal_update`, since it is possible to subscribe directly on those updates with the 
+`engine.posteriors` field. However, the reactive inference engine provides an ability to listen to its internal event loop, that also includes "pre" and "post" events for posterior updates.
+
+```@docs
+RxInferenceEvent
 ```
 
-## [Using `data` keyword argument with the streamlind inference](@id manual-online-inference-data)
+Let's build a simple example by implementing our own event listener that does not do anything complex but simply prints some debugging information.
+
+```@eval
+using RxInfer, Test, Markdown
+# Update the documentation below if this test does not pass
+@test RxInfer.available_events(RxInfer.__rxinference) === Val((
+    :before_start,
+    :after_start,
+    :before_stop,
+    :after_stop,
+    :on_new_data,
+    :before_iteration,
+    :before_auto_update,
+    :after_auto_update,
+    :before_data_update,
+    :after_data_update,
+    :after_iteration,
+    :before_history_save,
+    :after_history_save,
+    :on_tick,
+    :on_error,
+    :on_complete
+))
+nothing
+```
 
 ```@example manual-online-inference
-# Write this section
-@test false
+struct MyEventListener <: Rocket.Actor{RxInferenceEvent}
+    # ... extra fields
+end
 ```
+
+The available events are
+
+```julia
+:before_start
+```
+Emits right before starting the engine with the [`RxInfer.start`](@ref) function.
+The data is `(engine::RxInferenceEngine, )`
+
+```@example manual-online-inference
+function Rocket.on_next!(listener::MyEventListener, event::RxInferenceEvent{ :before_start })
+    (engine, ) = event
+    @test engine isa RxInferenceEngine #hide
+    println("The engine is about to start.")
+end
+```
+
+```julia
+:after_start
+```
+Emits right after starting the engine with the [`RxInfer.start`](@ref) function.
+The data is `(engine::RxInferenceEngine, )`
+
+```@example manual-online-inference
+function Rocket.on_next!(listener::MyEventListener, event::RxInferenceEvent{ :after_start })
+    (engine, ) = event
+    @test engine isa RxInferenceEngine #hide
+    println("The engine has been started.")
+end
+```
+
+```julia
+:before_stop
+```
+Emits right before stopping the engine with the [`RxInfer.stop`](@ref) function.
+The data is `(engine::RxInferenceEngine, )`
+
+```@example manual-online-inference
+function Rocket.on_next!(listener::MyEventListener, event::RxInferenceEvent{ :before_stop })
+    (engine, ) = event
+    @test engine isa RxInferenceEngine #hide
+    println("The engine is about to be stopped.")
+end
+```
+
+```julia
+:after_stop
+```
+Emits right after stopping the engine with the [`RxInfer.stop`](@ref) function.
+The data is `(engine::RxInferenceEngine, )`
+
+```@example manual-online-inference
+function Rocket.on_next!(listener::MyEventListener, event::RxInferenceEvent{ :after_stop })
+    (engine, ) = event
+    @test engine isa RxInferenceEngine #hide
+    println("The engine has been stopped.")
+end
+```
+
+```julia
+:on_new_data
+```
+Emits right before processing new data point.
+The data is `(model::ProbabilisticModel, data)`
+
+```@example manual-online-inference
+function Rocket.on_next!(listener::MyEventListener, event::RxInferenceEvent{ :on_new_data })
+    (model, data) = event
+    @test model isa ProbabilisticModel #hide
+    @test data isa NamedTuple #hide
+    @test haskey(data, :y) #hide
+    @test iszero(data[:y]) || isone(data[:y]) #hide
+    println("The new data point has been received: ", data)
+end
+```
+
+```julia
+:before_iteration
+```
+Emits right before starting new variational iteration.
+The data is `(model::ProbabilisticModel, iteration::Int)`
+
+```@example manual-online-inference
+function Rocket.on_next!(listener::MyEventListener, event::RxInferenceEvent{ :before_iteration })
+    (model, iteration) = event
+    @test model isa ProbabilisticModel #hide
+    @test iteration isa Int #hide
+    println("Starting new variational iteration #", iteration)
+end
+```
+
+```julia
+:before_auto_update
+```
+Emits right before executing the [`@autoupdates`](@ref).
+The data is `(model::ProbabilisticModel, iteration::Int, autoupdates)`
+
+```@example manual-online-inference
+function Rocket.on_next!(listener::MyEventListener, event::RxInferenceEvent{ :before_auto_update })
+    (model, iteration, autoupdates) = event
+    @test model isa ProbabilisticModel #hide
+    @test iteration isa Int #hide
+    @test autoupdates isa Tuple{RxInfer.RxInferenceAutoUpdate} #hide
+    println("Before processing autoupdates")
+end
+```
+
+```julia
+:after_auto_update
+```
+Emits right after executing the [`@autoupdates`](@ref).
+The data is `(model::ProbabilisticModel, iteration::Int, autoupdates)`
+
+```@example manual-online-inference
+function Rocket.on_next!(listener::MyEventListener, event::RxInferenceEvent{ :after_auto_update })
+    (model, iteration, autoupdates) = event
+    @test model isa ProbabilisticModel #hide
+    @test iteration isa Int #hide
+    @test autoupdates isa Tuple{RxInfer.RxInferenceAutoUpdate} #hide
+    println("After processing autoupdates")
+end
+```
+
+```julia
+:before_data_update
+```
+Emits right before feeding the model with the new data.
+The data is `(model::ProbabilisticModel, iteration::Int, data)`
+
+```@example manual-online-inference
+function Rocket.on_next!(listener::MyEventListener, event::RxInferenceEvent{ :before_data_update })
+    (model, iteration, data) = event
+    @test model isa ProbabilisticModel #hide
+    @test iteration isa Int #hide
+    println("Before processing new data ", data)
+end
+```
+
+```julia
+:after_data_update
+```
+Emits right after feeding the model with the new data.
+The data is `(model::ProbabilisticModel, iteration::Int, data)`
+
+```@example manual-online-inference
+function Rocket.on_next!(listener::MyEventListener, event::RxInferenceEvent{ :after_data_update })
+    (model, iteration, data) = event
+    @test model isa ProbabilisticModel #hide
+    @test iteration isa Int #hide
+    println("After processing new data ", data)
+end
+```
+
+```julia
+:after_iteration
+```
+Emits right after finishing a variational iteration.
+The data is `(model::ProbabilisticModel, iteration::Int)`
+
+```@example manual-online-inference
+function Rocket.on_next!(listener::MyEventListener, event::RxInferenceEvent{ :after_iteration })
+    (model, iteration) = event
+    @test model isa ProbabilisticModel #hide
+    @test iteration isa Int #hide
+    println("Finishing the variational iteration #", iteration)
+end
+```
+
+```julia
+:before_history_save
+```
+Emits right before saving the history (if requested).
+The data is `(model::ProbabilisticModel, )`
+
+```@example manual-online-inference
+function Rocket.on_next!(listener::MyEventListener, event::RxInferenceEvent{ :before_history_save })
+    (model, ) = event
+    @test model isa ProbabilisticModel #hide
+    println("Before saving the history")
+end
+```
+
+```julia
+:after_history_save
+```
+Emits right after saving the history (if requested).
+The data is `(model::ProbabilisticModel, )`
+
+```@example manual-online-inference
+function Rocket.on_next!(listener::MyEventListener, event::RxInferenceEvent{ :after_history_save })
+    (model, ) = event
+    @test model isa ProbabilisticModel #hide
+    println("After saving the history")
+end
+```
+
+```julia
+:on_tick
+```
+Emits right after finishing processing the new observations and completing the inference step.
+The data is `(model::ProbabilisticModel, )`
+
+```@example manual-online-inference
+function Rocket.on_next!(listener::MyEventListener, event::RxInferenceEvent{ :on_tick })
+    (model, ) = event
+    @test model isa ProbabilisticModel #hide
+    println("Finishing the inference for the new observations")
+end
+```
+
+
+```julia
+:on_error
+```
+Emits if an error occurs in the inference engine.
+The data is `(model::ProbabilisticModel, err::Any)`
+
+```@example manual-online-inference
+function Rocket.on_next!(listener::MyEventListener, event::RxInferenceEvent{ :on_error })
+    (model, err) = event
+    @test model isa ProbabilisticModel #hide
+    println("FAn error occured during the inference procedure: ", err)
+end
+```
+
+```julia
+:on_complete
+```
+Emits when the `datastream` completes.
+The data is `(model::ProbabilisticModel, )`
+
+```@example manual-online-inference
+function Rocket.on_next!(listener::MyEventListener, event::RxInferenceEvent{ :on_complete })
+    (model, ) = event
+    @test model isa ProbabilisticModel #hide
+    println("The data stream completed. The inference has been finished.")
+end
+```
+
+Let's use our event listener with the [`infer`](@ref) function:
+```@example manual-online-inference
+engine = infer(
+    model          = beta_bernoulli_online(),
+    datastream     = observations,
+    autoupdates    = beta_bernoulli_autoupdates,
+    initialization = @initialization(q(θ) = Beta(1, 1)),
+    keephistory    = 5,
+    iterations     = 2,
+    autostart      = false,
+    free_energy    = true,
+    events         = Val((
+        :before_start,
+        :after_start,
+        :before_stop,
+        :after_stop,
+        :on_new_data,
+        :before_iteration,
+        :before_auto_update,
+        :after_auto_update,
+        :before_data_update,
+        :after_data_update,
+        :after_iteration,
+        :before_history_save,
+        :after_history_save,
+        :on_tick,
+        :on_error,
+        :on_complete
+    ))
+)
+```
+
+After we have created the engine, we can subscribe on events and [`RxInfer.start`](@ref) the engine:
+```@example manual-online-inference
+events_subscription = subscribe!(engine.events, MyEventListener())
+
+RxInfer.start(engine)
+nothing #hide
+```
+
+The event loop stays idle without new observation and runs again when a new observation becomes available:
+```@example manual-online-inference
+next!(datastream, rand(rng, distribution))
+```
+
+Let's complete the `datastream` 
+
+```@example manual-online-inference
+complete!(datastream)
+```
+
+In this case, it is not necessary to [`RxInfer.stop`](@ref) the engine, because 
+it will be stopped automatically.
+```@example manual-online-inference
+@test_logs (:warn, r"The engine has been completed.*") RxInfer.stop(engine) #hide
+RxInfer.stop(engine)
+nothing #hide
+```
+
+!!! note
+    The `:before_stop` and `:after_stop` events are not emmited in case of the datastream completion. Use the `:on_complete` instead.
+
+
+## [Using `data` keyword argument with the streamlined inference](@id manual-online-inference-data)
+
+The streamlined version does support static datasets as well. 
+Internally, it converts it to a datastream, that emits all observations in a sequntial order without any delay. As an example:
+
+```@example manual-online-inference
+staticdata = rand(rng, distribution, 1_000)
+```
+
+Use the `data` keyword argument instead of the `datastream` to pass the static data.
+
+```@example manual-online-inference
+engine = infer(
+    model          = beta_bernoulli_online(),
+    data           = (y = staticdata, ),
+    autoupdates    = beta_bernoulli_autoupdates,
+    initialization = @initialization(q(θ) = Beta(1, 1)),
+    keephistory    = 1000,
+    autostart      = true,
+    free_energy    = true,
+)
+```
+
+```@example manual-online-inference
+engine.history[:θ]
+```
+
+```@example manual-online-inference
+@gif for posterior in engine.history[:θ]
+    rθ = range(0, 1, length = 1000)
+    pθ = plot(rθ, (x) -> pdf(posterior, x), fillalpha=0.3, fillrange = 0, label="P(θ|y)", c=3)
+    pθ = vline!(pθ, [ hidden_θ ], label = "Real value of θ")
+
+    plot(pθ)
+end
+```
+
 
 ## [Where to go next?](@id manual-online-inference-event-loop)
 
 This guide covered some fundamental usages of the [`infer`](@ref) function in the context of streamline inference, 
-but did not cover all the available keyword arguments of the function.Read more explanation about the other keyword arguments 
-in the [Overview](@ref manual-inference-overview) section or check out the [`Static Inference`](@ref manual-static-inference) section.
+but did not cover all the available keyword arguments of the function. Read more explanation about the other keyword arguments 
+in the [Overview](@ref manual-inference-overview) section or check out the [Static Inference](@ref manual-static-inference) section.

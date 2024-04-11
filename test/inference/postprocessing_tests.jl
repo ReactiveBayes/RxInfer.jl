@@ -1,10 +1,9 @@
 @testitem "Default postprocessing" begin
-    
+
     # Default postprocessing step removes Marginal type wrapper if no addons are present, 
     # and keeps the Marginal type wrapper otherwise
     @test inference_postprocess(DefaultPostprocess(), Marginal(1.0, false, false, nothing)) == 1.0
     @test inference_postprocess(DefaultPostprocess(), Marginal(1.0, false, false, 1)) == Marginal(1.0, false, false, 1)
-
 end
 
 @testitem "UnpackMarginal postprocessing" begin
@@ -27,11 +26,7 @@ end
         y ~ Bernoulli(θ)
     end
 
-    result = infer(
-        model = beta_bernoulli(),
-        data  = (y = 1.,),
-        postprocess = CustomPostprocess()
-    )
+    result = infer(model = beta_bernoulli(), data = (y = 1.0,), postprocess = CustomPostprocess())
 
     @test occursin("Beta{Float64}(α=2.0, β=1.0)", result.posteriors[:θ])
 end

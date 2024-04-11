@@ -111,15 +111,16 @@ end
                 (prior_for_μ = NormalMeanVariance(1.0, 12.0), prior_for_τ = Gamma(1.0, 12.0))
             ]
 
-            initmarginals = @initialization begin
+            init = @initialization begin
                 q(μ) = NormalMeanVariance(0.0, 1.0)
                 q(τ) = Gamma(1.0, 1.0)
             end
+
             for ts in testsets
                 result_with_prior_as_input = infer(
                     model = iid_gaussians_priors(prior_for_μ = ts[:prior_for_μ], prior_for_τ = ts[:prior_for_τ]),
                     returnvars = KeepLast(),
-                    initialization = initmarginals,
+                    initialization = init,
                     constraints = constraints,
                     data = (y = data,),
                     iterations = 10,
@@ -128,7 +129,7 @@ end
                 result_with_params_as_input = infer(
                     model = iid_gaussians_params(mean = mean(ts[:prior_for_μ]), variance = var(ts[:prior_for_μ]), shape = shape(ts[:prior_for_τ]), scale = scale(ts[:prior_for_τ])),
                     returnvars = KeepLast(),
-                    initialization = initmarginals,
+                    initialization = init,
                     constraints = constraints,
                     data = (y = data,),
                     iterations = 10,
