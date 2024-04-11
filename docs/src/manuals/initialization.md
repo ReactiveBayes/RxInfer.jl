@@ -1,7 +1,10 @@
-# Understating why we need to initialize messages in RxInfer
+# [Understating why we need to initialize posteriors or messages in RxInfer](@id initialization)
 
 In certain models, after completing the model specification step and moving on to execute the inference procedure, you may encounter an error prompting you to _initialize required marginals and messages_. Understanding why this step is necessary can be perplexing. This tutorial is designed to delve into the intuition behind model initialization using a practical example.
 
+```@docs
+@initialization
+```
 
 ## Part 1. Framing the problem 
 
@@ -49,13 +52,9 @@ In order to estimate the two parameters with the recorded data, he uses a `RxInf
 ```@example init-tutorial
 using RxInfer
 
-@model function linear_regression(nr_samples)
-    a ~ Normal(mean = 0.0, variance = 1.0)
-    b ~ Normal(mean = 0.0, variance = 100.0)
-    
-    x = datavar(Float64, nr_samples)
-    y = datavar(Float64, nr_samples)
-    
+@model function linear_regression(y, x)
+    a  ~ Normal(mean = 0.0, variance = 1.0)
+    b  ~ Normal(mean = 0.0, variance = 100.0)
     y .~ Normal(mean = a .* x .+ b, variance = 1.0)
 end
 ```
@@ -64,7 +63,7 @@ Delighted with the convenience offered by the package's inference function ([`in
 
 ```julia
 results = infer(
-    model        = linear_regression(length(x_data)), 
+    model        = linear_regression(), 
     data         = (y = y_data, x = x_data), 
     returnvars   = (a = KeepLast(), b = KeepLast()),
     iterations   = 20,
@@ -77,7 +76,7 @@ Oeps! Exception?
 ```
 exception =
 │    Variables [ a, b ] have not been updated after an update event. 
-│    Therefore, make sure to initialize all required marginals and messages. See `initmarginals` and `initmessages` keyword arguments for the inference function. 
+│    Therefore, make sure to initialize all required marginals and messages. See `initialization` keyword arguments for the inference function. 
 │    See the function documentation for detailed information regarding the initialization.
 ```
 
@@ -111,13 +110,17 @@ He does note that there is a loop in his model, namely all $a$ and $b$ variables
  
 
 ```@example init-tutorial
+init = @initialization begin 
+    μ(b) = NormalMeanVariance(0.0, 100.0)
+end
+
 results = infer(
-    model        = linear_regression(length(x_data)), 
-    data         = (y = y_data, x = x_data), 
-    initmessages = (b = NormalMeanVariance(0.0, 100.0), ), 
-    returnvars   = (a = KeepLast(), b = KeepLast()),
-    iterations   = 20,
-    free_energy  = true
+    model          = linear_regression(), 
+    data           = (y = y_data, x = x_data), 
+    initialization = init,
+    returnvars     = (a = KeepLast(), b = KeepLast()),
+    iterations     = 20,
+    free_energy    = true
 )
 
 # drop first iteration, which is influenced by the `initmessages`

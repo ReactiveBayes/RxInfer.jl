@@ -106,8 +106,8 @@ makedocs(;
             "Inference specification"   => [
                 "Overview" => "manuals/inference/overview.md", 
                 "Static vs Streamline inference" => "manuals/inference/infer.md", 
-                "Streamline inference" => "manuals/inference/online.md",
-                "Messages initialization"   => "manuals/understanding-why-to-initialize-messages.md",
+                "Streamline inference" => "manuals/inference/streamlined.md",
+                "Initialization"   => "manuals/initialization.md",
             ],
             "Inference customization"   => [
                 "Defining a custom node and rules" => "manuals/custom-node.md",

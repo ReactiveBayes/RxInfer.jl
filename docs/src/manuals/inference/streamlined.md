@@ -353,7 +353,7 @@ iid_normal_rng            = StableRNG(123)
 iid_normal_datastream     = RecentSubject(Float64)
 iid_normal_observations   = labeled(Val((:y, )), combineLatest(iid_normal_datastream))
 iid_normal_initialization = @initialization begin 
-    q(μ) = NormalMeanPrecision(0.0, 0.001),
+    q(μ) = NormalMeanPrecision(0.0, 0.001)
     q(τ) = GammaShapeRate(10.0, 10.0)
 end
 
