@@ -1,4 +1,4 @@
-# [Streamlined (online) inference](@id manual-online-inference)
+# [Streaming (online) inference](@id manual-online-inference)
 
 This guide explains how to use the [`infer`](@ref) function for dynamic datasets. We'll show how `RxInfer` can continuously update beliefs asynchronously whenever a new observation arrives. We'll use a simple Beta-Bernoulli model as an example, which has been covered in the [Getting Started](@ref user-guide-getting-started) section, 
 but keep in mind that these techniques can apply to any model.
@@ -444,7 +444,7 @@ Nice, the history of the estimated posteriors aligns well with the real (hidden)
 ## [Callbacks](@id manual-online-inference-callbacks)
 
 The [`RxInferenceEngine`](@ref) has its own lifecycle. The callbacks differ a little bit from [Using callbacks with Static Inference](@ref manual-static-inference-callbacks). 
-Here are available callbacks that can be used together with the streamlined inference:
+Here are available callbacks that can be used together with the streaming inference:
 ```@eval
 using RxInfer, Test, Markdown
 # Update the documentation below if this test does not pass
@@ -522,7 +522,7 @@ nothing #hide
 
 ## [Event loop](@id manual-online-inference-event-loop)
 
-In constrast to [`Static Inference`](@ref manual-static-inference), the streamlined version of the [`infer`](@ref) function 
+In constrast to [`Static Inference`](@ref manual-static-inference), the streaming version of the [`infer`](@ref) function 
 does not provide callbacks such as `on_marginal_update`, since it is possible to subscribe directly on those updates with the 
 `engine.posteriors` field. However, the reactive inference engine provides an ability to listen to its internal event loop, that also includes "pre" and "post" events for posterior updates.
 
@@ -863,9 +863,9 @@ nothing #hide
     The `:before_stop` and `:after_stop` events are not emmited in case of the datastream completion. Use the `:on_complete` instead.
 
 
-## [Using `data` keyword argument with the streamlined inference](@id manual-online-inference-data)
+## [Using `data` keyword argument with streaming inference](@id manual-online-inference-data)
 
-The streamlined version does support static datasets as well. 
+The streaming version does support static datasets as well. 
 Internally, it converts it to a datastream, that emits all observations in a sequntial order without any delay. As an example:
 
 ```@example manual-online-inference
