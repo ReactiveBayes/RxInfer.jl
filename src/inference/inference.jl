@@ -944,6 +944,37 @@ function inference_invoke_event(::Val{Event}, ::Val{EnabledEvents}, events, args
     return nothing
 end
 
+function available_events(::typeof(__rxinference))
+    return Val((
+        :before_start,
+        :after_start,
+        :before_stop,
+        :after_stop,
+        :on_new_data,
+        :before_iteration,
+        :before_auto_update,
+        :after_auto_update,
+        :before_data_update,
+        :after_data_update,
+        :after_iteration,
+        :before_history_save,
+        :after_history_save,
+        :on_tick,
+        :on_error,
+        :on_complete
+    ))
+end
+
+function __check_available_events(warn, events::Union{Val{Events}, Nothing}, available_callbacks::Val{AvailableEvents}) where {Events, AvailableEvents}
+    if warn && !isnothing(events)
+        for key in Events
+            if key ∉ AvailableEvents
+                @warn "Unknown event type: $(key). Available events: $(AvailableEvents). Set `warn = false` to supress this warning."
+            end
+        end
+    end
+end
+
 function __rxinference(;
     model::ModelGenerator,
     data = nothing,
@@ -967,6 +998,9 @@ function __rxinference(;
     uselock = false,
     warn = true
 )
+
+    # Check if the `events` argument is a tuple of supported symbols
+    __check_available_events(warn, events, available_events(__rxinference))
 
     # In case if `data` is used we cast to a synchronous `datastream` with zip operator
     _datastream, _T = if isnothing(datastream) && !isnothing(data)

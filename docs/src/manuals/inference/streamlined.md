@@ -448,6 +448,8 @@ using RxInfer, Test, Markdown
 nothing
 ```
 
+---
+
 ```julia
 before_model_creation()
 ```
@@ -458,26 +460,442 @@ after_model_creation(model::ProbabilisticModel)
 ```
 Calls right after the model has been created, accepts a single argument, the `model`.
 
-- `before_autostart(engine::RxInferenceEngine)`: Calls before the `RxInfer.start()` function, if `autostart` is set to `true`.
-- `after_autostart(engine::RxInferenceEngine)`: Calls after the `RxInfer.start()` function, if `autostart` is set to `true`.
+```julia
+before_autostart(engine::RxInferenceEngine)
+```
+Calls before the `RxInfer.start()` function, if `autostart` is set to `true`.
 
+```julia
+after_autostart(engine::RxInferenceEngine)
+```
+Calls after the `RxInfer.start()` function, if `autostart` is set to `true`.
+
+---
+
+Here is an example usage of the outlined callbacks:
 
 ```@example manual-online-inference
-@test false
+function before_model_creation()
+    println("The model is about to be created")
+end
+
+function after_model_creation(model::ProbabilisticModel)
+    println("The model has been created")
+    println("  The number of factor nodes is: ", length(RxInfer.getfactornodes(model)))
+    println("  The number of latent states is: ", length(RxInfer.getrandomvars(model)))
+    println("  The number of data points is: ", length(RxInfer.getdatavars(model)))
+    println("  The number of constants is: ", length(RxInfer.getconstantvars(model)))
+end
+
+function before_autostart(engine::RxInferenceEngine)
+    println("The reactive inference engine is about to start")
+end
+
+function after_autostart(engine::RxInferenceEngine)
+    println("The reactive inference engine has been started")
+end
+
+engine = infer(
+    model          = beta_bernoulli_online(),
+    datastream     = observations,
+    autoupdates    = beta_bernoulli_autoupdates,
+    initialization = @initialization(q(θ) = Beta(1, 1)),
+    keephistory    = 5,
+    autostart      = true,
+    free_energy    = true,
+    callbacks      = (
+        before_model_creation = before_model_creation,
+        after_model_creation  = after_model_creation,
+        before_autostart      = before_autostart,
+        after_autostart       = after_autostart
+    )
+)
+
+RxInfer.stop(engine) #hide
+nothing #hide
 ```
+
 
 ## [Event loop](@id manual-online-inference-event-loop)
 
-```@example manual-online-inference
-@test false
+In constrast to [`Static Inference`](@ref manual-static-inference), the streamlined version of the [`infer`](@ref) function 
+does not provide callbacks such as `on_marginal_update`, since it is possible to subscribe directly on those updates with the 
+`engine.posteriors` field. However, the reactive inference engine provides an ability to listen to its internal event loop, that also includes "pre" and "post" events for posterior updates.
+
+```@docs
+RxInferenceEvent
 ```
 
-## [Using `data` keyword argument with the streamlind inference](@id manual-online-inference-data)
+Let's build a simple example by implementing our own event listener that does not do anything complex but simply prints some debugging information.
+
+```@eval
+using RxInfer, Test, Markdown
+# Update the documentation below if this test does not pass
+@test RxInfer.available_events(RxInfer.__rxinference) === Val((
+    :before_start,
+    :after_start,
+    :before_stop,
+    :after_stop,
+    :on_new_data,
+    :before_iteration,
+    :before_auto_update,
+    :after_auto_update,
+    :before_data_update,
+    :after_data_update,
+    :after_iteration,
+    :before_history_save,
+    :after_history_save,
+    :on_tick,
+    :on_error,
+    :on_complete
+))
+nothing
+```
 
 ```@example manual-online-inference
-# Write this section
-@test false
+struct MyEventListener <: Rocket.Actor{RxInferenceEvent}
+    # ... extra fields
+end
 ```
+
+The available events are
+
+```julia
+:before_start
+```
+Emits right before starting the engine with the [`RxInfer.start`](@ref) function.
+The data is `(engine::RxInferenceEngine, )`
+
+```@example manual-online-inference
+function Rocket.on_next!(listener::MyEventListener, event::RxInferenceEvent{ :before_start })
+    (engine, ) = event
+    @test engine isa RxInferenceEngine #hide
+    println("The engine is about to start.")
+end
+```
+
+```julia
+:after_start
+```
+Emits right after starting the engine with the [`RxInfer.start`](@ref) function.
+The data is `(engine::RxInferenceEngine, )`
+
+```@example manual-online-inference
+function Rocket.on_next!(listener::MyEventListener, event::RxInferenceEvent{ :after_start })
+    (engine, ) = event
+    @test engine isa RxInferenceEngine #hide
+    println("The engine has been started.")
+end
+```
+
+```julia
+:before_stop
+```
+Emits right before stopping the engine with the [`RxInfer.stop`](@ref) function.
+The data is `(engine::RxInferenceEngine, )`
+
+```@example manual-online-inference
+function Rocket.on_next!(listener::MyEventListener, event::RxInferenceEvent{ :before_stop })
+    (engine, ) = event
+    @test engine isa RxInferenceEngine #hide
+    println("The engine is about to be stopped.")
+end
+```
+
+```julia
+:after_stop
+```
+Emits right after stopping the engine with the [`RxInfer.stop`](@ref) function.
+The data is `(engine::RxInferenceEngine, )`
+
+```@example manual-online-inference
+function Rocket.on_next!(listener::MyEventListener, event::RxInferenceEvent{ :after_stop })
+    (engine, ) = event
+    @test engine isa RxInferenceEngine #hide
+    println("The engine has been stopped.")
+end
+```
+
+```julia
+:on_new_data
+```
+Emits right before processing new data point.
+The data is `(model::ProbabilisticModel, data)`
+
+```@example manual-online-inference
+function Rocket.on_next!(listener::MyEventListener, event::RxInferenceEvent{ :on_new_data })
+    (model, data) = event
+    @test model isa ProbabilisticModel #hide
+    @test data isa NamedTuple #hide
+    @test haskey(data, :y) #hide
+    @test iszero(data[:y]) || isone(data[:y]) #hide
+    println("The new data point has been received: ", data)
+end
+```
+
+```julia
+:before_iteration
+```
+Emits right before starting new variational iteration.
+The data is `(model::ProbabilisticModel, iteration::Int)`
+
+```@example manual-online-inference
+function Rocket.on_next!(listener::MyEventListener, event::RxInferenceEvent{ :before_iteration })
+    (model, iteration) = event
+    @test model isa ProbabilisticModel #hide
+    @test iteration isa Int #hide
+    println("Starting new variational iteration #", iteration)
+end
+```
+
+```julia
+:before_auto_update
+```
+Emits right before executing the [`@autoupdates`](@ref).
+The data is `(model::ProbabilisticModel, iteration::Int, autoupdates)`
+
+```@example manual-online-inference
+function Rocket.on_next!(listener::MyEventListener, event::RxInferenceEvent{ :before_auto_update })
+    (model, iteration, autoupdates) = event
+    @test model isa ProbabilisticModel #hide
+    @test iteration isa Int #hide
+    @test autoupdates isa Tuple{RxInfer.RxInferenceAutoUpdate} #hide
+    println("Before processing autoupdates")
+end
+```
+
+```julia
+:after_auto_update
+```
+Emits right after executing the [`@autoupdates`](@ref).
+The data is `(model::ProbabilisticModel, iteration::Int, autoupdates)`
+
+```@example manual-online-inference
+function Rocket.on_next!(listener::MyEventListener, event::RxInferenceEvent{ :after_auto_update })
+    (model, iteration, autoupdates) = event
+    @test model isa ProbabilisticModel #hide
+    @test iteration isa Int #hide
+    @test autoupdates isa Tuple{RxInfer.RxInferenceAutoUpdate} #hide
+    println("After processing autoupdates")
+end
+```
+
+```julia
+:before_data_update
+```
+Emits right before feeding the model with the new data.
+The data is `(model::ProbabilisticModel, iteration::Int, data)`
+
+```@example manual-online-inference
+function Rocket.on_next!(listener::MyEventListener, event::RxInferenceEvent{ :before_data_update })
+    (model, iteration, data) = event
+    @test model isa ProbabilisticModel #hide
+    @test iteration isa Int #hide
+    println("Before processing new data ", data)
+end
+```
+
+```julia
+:after_data_update
+```
+Emits right after feeding the model with the new data.
+The data is `(model::ProbabilisticModel, iteration::Int, data)`
+
+```@example manual-online-inference
+function Rocket.on_next!(listener::MyEventListener, event::RxInferenceEvent{ :after_data_update })
+    (model, iteration, data) = event
+    @test model isa ProbabilisticModel #hide
+    @test iteration isa Int #hide
+    println("After processing new data ", data)
+end
+```
+
+```julia
+:after_iteration
+```
+Emits right after finishing a variational iteration.
+The data is `(model::ProbabilisticModel, iteration::Int)`
+
+```@example manual-online-inference
+function Rocket.on_next!(listener::MyEventListener, event::RxInferenceEvent{ :after_iteration })
+    (model, iteration) = event
+    @test model isa ProbabilisticModel #hide
+    @test iteration isa Int #hide
+    println("Finishing the variational iteration #", iteration)
+end
+```
+
+```julia
+:before_history_save
+```
+Emits right before saving the history (if requested).
+The data is `(model::ProbabilisticModel, )`
+
+```@example manual-online-inference
+function Rocket.on_next!(listener::MyEventListener, event::RxInferenceEvent{ :before_history_save })
+    (model, ) = event
+    @test model isa ProbabilisticModel #hide
+    println("Before saving the history")
+end
+```
+
+```julia
+:after_history_save
+```
+Emits right after saving the history (if requested).
+The data is `(model::ProbabilisticModel, )`
+
+```@example manual-online-inference
+function Rocket.on_next!(listener::MyEventListener, event::RxInferenceEvent{ :after_history_save })
+    (model, ) = event
+    @test model isa ProbabilisticModel #hide
+    println("After saving the history")
+end
+```
+
+```julia
+:on_tick
+```
+Emits right after finishing processing the new observations and completing the inference step.
+The data is `(model::ProbabilisticModel, )`
+
+```@example manual-online-inference
+function Rocket.on_next!(listener::MyEventListener, event::RxInferenceEvent{ :on_tick })
+    (model, ) = event
+    @test model isa ProbabilisticModel #hide
+    println("Finishing the inference for the new observations")
+end
+```
+
+
+```julia
+:on_error
+```
+Emits if an error occurs in the inference engine.
+The data is `(model::ProbabilisticModel, err::Any)`
+
+```@example manual-online-inference
+function Rocket.on_next!(listener::MyEventListener, event::RxInferenceEvent{ :on_error })
+    (model, err) = event
+    @test model isa ProbabilisticModel #hide
+    println("FAn error occured during the inference procedure: ", err)
+end
+```
+
+```julia
+:on_complete
+```
+Emits when the `datastream` completes.
+The data is `(model::ProbabilisticModel, )`
+
+```@example manual-online-inference
+function Rocket.on_next!(listener::MyEventListener, event::RxInferenceEvent{ :on_complete })
+    (model, ) = event
+    @test model isa ProbabilisticModel #hide
+    println("The data stream completed. The inference has been finished.")
+end
+```
+
+Let's use our event listener with the [`infer`](@ref) function:
+```@example manual-online-inference
+engine = infer(
+    model          = beta_bernoulli_online(),
+    datastream     = observations,
+    autoupdates    = beta_bernoulli_autoupdates,
+    initialization = @initialization(q(θ) = Beta(1, 1)),
+    keephistory    = 5,
+    iterations     = 2,
+    autostart      = false,
+    free_energy    = true,
+    events         = Val((
+        :before_start,
+        :after_start,
+        :before_stop,
+        :after_stop,
+        :on_new_data,
+        :before_iteration,
+        :before_auto_update,
+        :after_auto_update,
+        :before_data_update,
+        :after_data_update,
+        :after_iteration,
+        :before_history_save,
+        :after_history_save,
+        :on_tick,
+        :on_error,
+        :on_complete
+    ))
+)
+```
+
+After we have created the engine, we can subscribe on events and [`RxInfer.start`](@ref) the engine:
+```@example manual-online-inference
+events_subscription = subscribe!(engine.events, MyEventListener())
+
+RxInfer.start(engine)
+nothing #hide
+```
+
+The event loop stays idle without new observation and runs again when a new observation becomes available:
+```@example manual-online-inference
+next!(datastream, rand(rng, distribution))
+```
+
+Let's complete the `datastream` 
+
+```@example manual-online-inference
+complete!(datastream)
+```
+
+In this case, it is not necessary to [`RxInfer.stop`](@ref) the engine, because 
+it will be stopped automatically.
+```@example manual-online-inference
+@test_logs (:warn, r"The engine has been completed.*") RxInfer.stop(engine) #hide
+RxInfer.stop(engine)
+nothing #hide
+```
+
+!!! note
+    The `:before_stop` and `:after_stop` events are not emmited in case of the datastream completion. Use the `:on_complete` instead.
+
+
+## [Using `data` keyword argument with the streamlined inference](@id manual-online-inference-data)
+
+The streamlined version does support static datasets as well. 
+Internally, it converts it to a datastream, that emits all observations in a sequntial order without any delay. As an example:
+
+```@example manual-online-inference
+staticdata = rand(rng, distribution, 1_000)
+```
+
+Use the `data` keyword argument instead of the `datastream` to pass the static data.
+
+```@example manual-online-inference
+engine = infer(
+    model          = beta_bernoulli_online(),
+    data           = (y = staticdata, ),
+    autoupdates    = beta_bernoulli_autoupdates,
+    initialization = @initialization(q(θ) = Beta(1, 1)),
+    keephistory    = 1000,
+    autostart      = true,
+    free_energy    = true,
+)
+```
+
+```@example manual-online-inference
+engine.history[:θ]
+```
+
+```@example manual-online-inference
+@gif for posterior in engine.history[:θ]
+    rθ = range(0, 1, length = 1000)
+    pθ = plot(rθ, (x) -> pdf(posterior, x), fillalpha=0.3, fillrange = 0, label="P(θ|y)", c=3)
+    pθ = vline!(pθ, [ hidden_θ ], label = "Real value of θ")
+
+    plot(pθ)
+end
+```
+
 
 ## [Where to go next?](@id manual-online-inference-event-loop)
 

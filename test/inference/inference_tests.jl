@@ -791,6 +791,19 @@ end
         end
     end
 
+    @model function rolling_die_streamlined(y, p)
+        θ ~ Dirichlet(p)
+        y ~ Categorical(θ)
+    end
+
+    streamlined_autoupdates = @autoupdates begin 
+        (p,) = params(q(θ))
+    end
+
+    streamlined_init = @initialization begin
+        q(θ) = Dirichlet(ones(6))
+    end
+
     observations = [[1.0; zeros(5)], [zeros(5); 1.0]]
 
     @testset "Test misspecified data" begin
@@ -806,4 +819,29 @@ end
         result = infer(model = rolling_die(), data = (y = observations,), callbacks = (before_model_creation = (args...) -> nothing,))
         @test isequal(first(mean(result.posteriors[:θ])), last(mean(result.posteriors[:θ])))
     end
+
+    @testset "Test misspecified event type in the streamlined inference" begin
+        @test_logs (:warn, r"Unknown event type: blabla. Available events: .*") infer(
+            model = rolling_die_streamlined(), 
+            data = (y = observations, ), 
+            autoupdates = streamlined_autoupdates, 
+            initialization = streamlined_init,
+            autostart = true,
+            keephistory = 1,
+            warn = true,
+            events = Val((:blabla, ))
+        )
+        result = @test_logs infer(
+            model = rolling_die_streamlined(), 
+            data = (y = observations, ), 
+            autoupdates = streamlined_autoupdates, 
+            initialization = streamlined_init,
+            autostart = true,
+            keephistory = 1,
+            warn = false,
+            events = Val((:blabla, ))
+        )
+        @test isequal(first(mean(result.history[:θ][end])), last(mean(result.history[:θ][end])))
+    end
 end
+

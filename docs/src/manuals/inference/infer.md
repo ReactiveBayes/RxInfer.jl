@@ -5,6 +5,5 @@
 ```@docs
 infer
 InferenceResult
-RxInferenceEvent
 RxInfer.ReactiveMPInferenceOptions
 ```
