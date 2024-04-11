@@ -77,7 +77,7 @@ Oeps! Exception?
 ```
 exception =
 │    Variables [ a, b ] have not been updated after an update event. 
-│    Therefore, make sure to initialize all required marginals and messages. See `initmarginals` and `initmessages` keyword arguments for the inference function. 
+│    Therefore, make sure to initialize all required marginals and messages. See `initialization` keyword argument for the inference function. 
 │    See the function documentation for detailed information regarding the initialization.
 ```
 
@@ -107,17 +107,21 @@ John proceeds to derive the FFG for his problem where he identifies where the lo
 
 ![Addons_messages](../assets/img/linear_regresion_model.png)
 
-He does note that there is a loop in his model, namely all $a$ and $b$ variables are connected over all observations, therefore he needs to initialize one of the messages and run multiple iterations for the loopy belief propagation algorithm. It is worth noting that loopy belief propagation is not guaranteed to converge in general and might be highly influenced by the choice of the initial messages in the `initmessages` argument. He is going to evaluate the convergency performance of the algorithm with the `free_energy = true` option:
+He does note that there is a loop in his model, namely all $a$ and $b$ variables are connected over all observations, therefore he needs to initialize one of the messages and run multiple iterations for the loopy belief propagation algorithm. It is worth noting that loopy belief propagation is not guaranteed to converge in general and might be highly influenced by the choice of the initial messages in the `initialization` argument. He is going to evaluate the convergency performance of the algorithm with the `free_energy = true` option:
  
 
 ```@example init-tutorial
+init = @initialization begin
+    μ(b) = NormalMeanVariance(0.0, 100.0)
+end
+
 results = infer(
-    model        = linear_regression(length(x_data)), 
-    data         = (y = y_data, x = x_data), 
-    initmessages = (b = NormalMeanVariance(0.0, 100.0), ), 
-    returnvars   = (a = KeepLast(), b = KeepLast()),
-    iterations   = 20,
-    free_energy  = true
+    model           = linear_regression(length(x_data)), 
+    data            = (y = y_data, x = x_data), 
+    initialization  = init, 
+    returnvars      = (a = KeepLast(), b = KeepLast()),
+    iterations      = 20,
+    free_energy     = true
 )
 
 # drop first iteration, which is influenced by the `initmessages`
