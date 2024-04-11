@@ -119,7 +119,7 @@ end
                 result_with_prior_as_input = infer(
                     model = iid_gaussians_priors(prior_for_μ = ts[:prior_for_μ], prior_for_τ = ts[:prior_for_τ]),
                     returnvars = KeepLast(),
-                    init = initmarginals,
+                    initialization = initmarginals,
                     constraints = constraints,
                     data = (y = data,),
                     iterations = 10,
@@ -128,7 +128,7 @@ end
                 result_with_params_as_input = infer(
                     model = iid_gaussians_params(mean = mean(ts[:prior_for_μ]), variance = var(ts[:prior_for_μ]), shape = shape(ts[:prior_for_τ]), scale = scale(ts[:prior_for_τ])),
                     returnvars = KeepLast(),
-                    init = initmarginals,
+                    initialization = initmarginals,
                     constraints = constraints,
                     data = (y = data,),
                     iterations = 10,

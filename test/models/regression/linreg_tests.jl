@@ -29,7 +29,9 @@
 
     ## Inference definition
     function linreg_inference(modelfn, niters, xdata, ydata)
-        return infer(model = modelfn(), data = (x = xdata, y = ydata), returnvars = (a = KeepLast(), b = KeepLast()), init = init, free_energy = true, iterations = niters)
+        return infer(
+            model = modelfn(), data = (x = xdata, y = ydata), returnvars = (a = KeepLast(), b = KeepLast()), initialization = init, free_energy = true, iterations = niters
+        )
     end
 
     ## Data creation

@@ -27,13 +27,13 @@
 
     function inference_univariate(data, n_its, constraints)
         return infer(
-            model       = univariate_gaussian_mixture_model(),
-            data        = (y = data,),
-            constraints = constraints,
-            returnvars  = KeepEach(),
-            free_energy = Float64,
-            iterations  = n_its,
-            init        = init
+            model          = univariate_gaussian_mixture_model(),
+            data           = (y = data,),
+            constraints    = constraints,
+            returnvars     = KeepEach(),
+            free_energy    = Float64,
+            iterations     = n_its,
+            initialization = init
         )
     end
     ## -------------------------------------------- ##

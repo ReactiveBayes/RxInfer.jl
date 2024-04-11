@@ -41,17 +41,17 @@
         end
 
         return infer(
-            model       = hgf(real_k = real_k, real_w = real_w, z_variance = z_variance, y_variance = y_variance),
-            constraints = hgfconstraints(),
-            meta        = hgfmeta(),
-            data        = (y = data,),
-            autoupdates = autoupdates,
-            keephistory = length(data),
-            historyvars = (xt = KeepLast(), zt = KeepLast()),
-            init        = init,
-            iterations  = vmp_iters,
-            free_energy = true,
-            autostart   = true
+            model          = hgf(real_k = real_k, real_w = real_w, z_variance = z_variance, y_variance = y_variance),
+            constraints    = hgfconstraints(),
+            meta           = hgfmeta(),
+            data           = (y = data,),
+            autoupdates    = autoupdates,
+            keephistory    = length(data),
+            historyvars    = (xt = KeepLast(), zt = KeepLast()),
+            initialization = init,
+            iterations     = vmp_iters,
+            free_energy    = true,
+            autostart      = true
         )
     end
 

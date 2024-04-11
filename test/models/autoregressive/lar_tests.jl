@@ -79,13 +79,13 @@
     function lar_inference(data, order, artype, stype, τ, iterations)
         c = ReactiveMP.ar_unit(artype, order)
         return infer(
-            model = lar_make_model(artype, c, τ, stype, order),
-            data = (y = data,),
-            init = lar_init_marginals(artype, order),
-            returnvars = (γ = KeepEach(), θ = KeepEach(), x = KeepLast()),
-            constraints = lar_constraints(),
-            iterations = iterations,
-            free_energy = Float64
+            model          = lar_make_model(artype, c, τ, stype, order),
+            data           = (y = data,),
+            initialization = lar_init_marginals(artype, order),
+            returnvars     = (γ = KeepEach(), θ = KeepEach(), x = KeepLast()),
+            constraints    = lar_constraints(),
+            iterations     = iterations,
+            free_energy    = Float64
         )
     end
 

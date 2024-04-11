@@ -34,14 +34,14 @@
 
     function ar_inference(inputs, outputs, order, niter, constraints)
         return infer(
-            model       = ar_model(order = order),
-            data        = (x = inputs, y = outputs),
-            constraints = constraints,
-            options     = (limit_stack_depth = 500,),
-            init        = init,
-            returnvars  = (γ = KeepEach(), θ = KeepEach()),
-            iterations  = niter,
-            free_energy = Float64
+            model          = ar_model(order = order),
+            data           = (x = inputs, y = outputs),
+            constraints    = constraints,
+            options        = (limit_stack_depth = 500,),
+            initialization = init,
+            returnvars     = (γ = KeepEach(), θ = KeepEach()),
+            iterations     = niter,
+            free_energy    = Float64
         )
     end
 
