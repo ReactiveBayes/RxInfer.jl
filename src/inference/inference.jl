@@ -23,7 +23,14 @@ assign_marginal!(variables::AbstractArray, marginals) = setmarginals!(variables,
 assign_message!(variable::Any, message) = setmessage!(variable, message)
 assign_message!(variables::AbstractArray, messages) = setmessages!(variables, messages)
 
+"""
+Instructs the inference engine to keep each marginal update for all intermediate iterations. 
+"""
 struct KeepEach end
+
+"""
+Instructs the inference engine to keep only the last marginal update and disregard intermediate updates. 
+"""
 struct KeepLast end
 
 make_actor(::Any, ::KeepEach) = keep(Marginal)

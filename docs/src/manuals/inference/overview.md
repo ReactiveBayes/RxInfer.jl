@@ -11,10 +11,10 @@ The inference engine itself isn't aware of different algorithm types and simply 
 
 ## [Automatic inference specification](@id user-guide-inference-execution-automatic-specification)
 
-`RxInfer` exports the [`infer`](@ref) function to quickly run and test you model with both static and asynchronous (real-time) datasets. See more information about the `infer` function on the separate documentation section:
+`RxInfer` exports the [`infer`](@ref) function to quickly run and test you model with both static and asynchronous (real-time) datasets. See more information about the [`infer`](@ref) function on the separate documentation section:
 
-- [Static Inference](@ref manual-static-inference). 
-- [Streamlined Inference](@ref manual-online-inference). 
+- [Static Inference](@ref manual-static-inference)
+- [Streamlined Inference](@ref manual-online-inference)
 
 ```@docs
 infer
@@ -102,6 +102,7 @@ Also read the [Initialization](@ref manual-initialization) section.
 
 For specific types of inference algorithms, such as variational message passing, it might be required to initialize (some of) the marginals before running the inference procedure in order to break the dependency loop. If this is not done, the inference algorithm will not be executed due to the lack of information and message and/or marginals will not be updated. In order to specify these initial marginals and messages, you can use the `initialization` argument in combination with the [`@initialization`](@ref) macro, such as
 ```@example inference-overview-init-keyword
+using RxInfer #hide
 init = @initialization begin
     # initialize the marginal distribution of x as a vague Normal distribution
     # if x is a vector, then it simply uses the same value for all elements
@@ -152,6 +153,11 @@ engine = infer(
     returnvars = (:x, :τ),
     autostart  = false
 )
+```
+
+```@docs
+KeepLast()
+KeepEach()
 ```
 
 - ### `predictvars`
@@ -281,20 +287,27 @@ result = infer(
 The `callbacks` keyword argument accepts a named-tuple of 'name = callback' pairs. 
 The list of all possible callbacks for different inference setting (batch or streamline) and their arguments is present below:
 
-- `on_marginal_update(model::ProbabilisticModel, name::Symbol, update)` (exlusive for batch inference)
 - `before_model_creation()`
 - `after_model_creation(model::ProbabilisticModel)`
-- `before_inference(model::ProbabilisticModel)` (exlusive for batch inference)
-- `before_iteration(model::ProbabilisticModel, iteration::Int)::Bool` (exlusive for batch inference)
-- `before_data_update(model::ProbabilisticModel, data)` (exlusive for batch inference)
-- `after_data_update(model::ProbabilisticModel, data)` (exlusive for batch inference)
-- `after_iteration(model::ProbabilisticModel, iteration::Int)::Bool` (exlusive for batch inference)
-- `after_inference(model::ProbabilisticModel)` (exlusive for batch inference)
-- `before_autostart(engine::RxInferenceEngine)` (exlusive for streamline inference)
-- `after_autostart(engine::RxInferenceEngine)` (exlusive for streamline inference)
 
-`before_iteration` and `after_iteration` callbacks are allowed to return `true/false` value.
-`true` indicates that iterations must be halted and no further inference should be made.
+**Exlusive for batch inference**
+
+- `on_marginal_update(model::ProbabilisticModel, name::Symbol, update)`
+- `before_inference(model::ProbabilisticModel)`
+- `before_iteration(model::ProbabilisticModel, iteration::Int)::Bool`
+- `before_data_update(model::ProbabilisticModel, data)`
+- `after_data_update(model::ProbabilisticModel, data)`
+- `after_iteration(model::ProbabilisticModel, iteration::Int)::Bool`
+- `after_inference(model::ProbabilisticModel)`
+
+!!! note
+    `before_iteration` and `after_iteration` callbacks are allowed to return `true/false` value. `true` indicates that iterations must be halted and no further inference should be made.
+
+**Exlusive for streamline inference**
+
+- `before_autostart(engine::RxInferenceEngine)`
+- `after_autostart(engine::RxInferenceEngine)`
+
 
 - ### `addons`
 
@@ -312,4 +325,4 @@ If the `addons` argument has been used, automatically changes the default strate
 
 ## Where to go next?
 
-Read more explanation about the other keyword arguments in the [Streamlined (online) inference](@ref manual-online-inference)section or check out the [Static Inference](@ref manual-static-inference) section.
+Read more explanation about the other keyword arguments in the [Streamlined (online) inference](@ref manual-online-inference)section or check out the [Static Inference](@ref manual-static-inference) section or check some more advanced [examples](https://reactivebayes.github.io/RxInfer.jl/stable/examples/overview/).
