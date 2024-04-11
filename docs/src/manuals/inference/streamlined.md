@@ -904,5 +904,5 @@ end
 ## [Where to go next?](@id manual-online-inference-event-loop)
 
 This guide covered some fundamental usages of the [`infer`](@ref) function in the context of streamline inference, 
-but did not cover all the available keyword arguments of the function.Read more explanation about the other keyword arguments 
-in the [Overview](@ref manual-inference-overview) section or check out the [`Static Inference`](@ref manual-static-inference) section.
+but did not cover all the available keyword arguments of the function. Read more explanation about the other keyword arguments 
+in the [Overview](@ref manual-inference-overview) section or check out the [Static Inference](@ref manual-static-inference) section.

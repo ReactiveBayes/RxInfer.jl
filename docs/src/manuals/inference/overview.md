@@ -18,7 +18,6 @@ The inference engine itself isn't aware of different algorithm types and simply 
 
 ```@docs
 infer
-RxInfer.ReactiveMPInferenceOptions
 ```
 
 #### Note on NamedTuples
@@ -35,6 +34,8 @@ using RxInfer #hide
 ```
 
 - ### `model`
+
+Also read the [Model Specification](@ref user-guide-model-specification) section.
 
 The `model` argument accepts a model specification as its input. The easiest way to create the model is to use the [`@model`](@ref user-guide-model-specification) macro. 
 For example:
@@ -60,71 +61,65 @@ result.posteriors[:x]
 
 - ### `data`
 
-Either `data` or `datastream` or `predictvars` keyword argument is required. Specifying both `data` and `datastream` is not supported and will result in an error. Specifying both `datastream` and `predictvars` is not supported and will result in an error.
+Either `data` or `datastream` keyword argument are required. 
+Specifying both `data` and `datastream` is not supported and will result in an error. 
 
-**Note**: The behavior of the `data` keyword argument depends on the inference setting (batch or streamline).
+!!! note 
+    The behavior of the `data` keyword argument depends on the inference setting ([batch](@ref manual-static-inference) or [streamline](@ref manual-online-inference)).
 
-The `data` keyword argument must be a `NamedTuple` (or `Dict`) where keys (of `Symbol` type) correspond to all `datavar`s defined in the model specification. For example, if a model defines `x = datavar(Float64)` the 
-`data` field must have an `:x` key (of `Symbol` type) which holds a value of type `Float64`. The values in the `data` must have the exact same shape as the `datavar` container. In other words, if a model defines `x = datavar(Float64, n)` then 
-`data[:x]` must provide a container with length `n` and with elements of type `Float64`.
+The `data` keyword argument must be a `NamedTuple` (or `Dict`) where keys (of `Symbol` type) correspond to some arguments defined in the model specification. 
+For example, if a model defines `y` in its argument list 
+```@example inference-overview-data-keyword
+using RxInfer #hide
+@model function beta_bernoulli(y, a, b)
+    x  ~ Beta(a, b)
+    y .~ Bernoulli(x)
+end
+```
+and you want to condition on this argument, then the `data` field must have an `:y` key (of `Symbol` type) which holds the data. 
+The values in the `data` must have the exact same shape as its corresponding variable container. E.g. in the exampl above `y` is being used in the broadcasting 
+operation, thus it must be a collection of values. `a` and `b` arguments, however, could be just single numbers:
+```@example inference-overview-data-keyword
+result = infer(
+    model = beta_bernoulli(),
+    data  = (y = [ true, false, false ], a = 1, b = 1)
+)
 
-#### `streamline` setting
-
-All entries in the `data` argument are zipped together with the `Base.zip` function to form one slice of the data chunck. This means all containers in the `data` argument must be of the same size (`zip` iterator finished as soon as one container has no remaining values).
-In order to use a fixed value for some specific `datavar` it is not necessary to create a container with that fixed value, but rather more efficient to use `Iterators.repeated` to create an infinite iterator.
+result.posteriors[:x]
+```
 
 - ### `datastream`
 
-The `datastream` keyword argument must be an observable that supports `subscribe!` and `unsubscribe!` functions (streams from the `Rocket.jl` package are also supported).
-The elements of the observable must be of type `NamedTuple` where keys (of `Symbol` type) correspond to all `datavar`s defined in the model specification, except for those which are listed in the `autoupdates` specification. 
-For example, if a model defines `x = datavar(Float64)` (which is not part of the `autoupdates` specification) the named tuple from the observable must have an `:x` key (of `Symbol` type) which holds a value of type `Float64`. The values in the named tuple must have the exact same shape as the `datavar` container. In other words, if a model defines `x = datavar(Float64, n)` then 
-`namedtuple[:x]` must provide a container with length `n` and with elements of type `Float64`.
+Also read the [Streamlined Inference](@ref manual-online-inference) section.
 
-**Note**: The behavior of the individual named tuples from the `datastream` observable is similar to that which is used in the batch setting.
-In fact, you can see the streamline inference as an efficient version of the batch inference, which automatically updates some `datavar`s with the `autoupdates` specification and listens to the `datastream` to update the rest of the `datavar`s.
+The `datastream` keyword argument must be an observable that supports `subscribe!` and `unsubscribe!` functions (e.g., streams from the `Rocket.jl` package).
+The elements of the observable must be of type `NamedTuple` where keys (of `Symbol` type) correspond to input arguments defined in the model specification, except for those which are listed in the [`@autoupdates`](@ref) specification. 
+For example, if a model defines `y` as its argument (which is not part of the [`@autoupdates`](@ref) specification) the named tuple from the observable must have an `:y` key (of `Symbol` type). The values in the named tuple must have the exact same shape as the corresponding variable container.
 
 - ### `initialization`
 
-For specific types of inference algorithms, such as variational message passing, it might be required to initialize (some of) the marginals before running the inference procedure in order to break the dependency loop. If this is not done, the inference algorithm will not be executed due to the lack of information and message and/or marginals will not be updated. In order to specify these initial marginals and messages, you can use the `initialization` argument in combination with the `@initialization` macro, such as
-```julia
+Also read the [Initialization](@ref manual-initialization) section.
+
+For specific types of inference algorithms, such as variational message passing, it might be required to initialize (some of) the marginals before running the inference procedure in order to break the dependency loop. If this is not done, the inference algorithm will not be executed due to the lack of information and message and/or marginals will not be updated. In order to specify these initial marginals and messages, you can use the `initialization` argument in combination with the [`@initialization`](@ref) macro, such as
+```@example inference-overview-init-keyword
 init = @initialization begin
     # initialize the marginal distribution of x as a vague Normal distribution
     # if x is a vector, then it simply uses the same value for all elements
     # However, it is also possible to provide a vector of distributions to set each element individually 
     q(x) = vague(NormalMeanPrecision)
 end
-
-infer(...
-    initialization = init,
-)
-
-This argument needs to be a named tuple, i.e. `initmarginals = (a = ..., )`, or dictionary.
-
-- ### `initmessages`
-
-Depracated initialization for messages, use `initialization` instead
-
-- ### `initmarginals`
-
-Depracated initialization for marginals, use `initialization` instead
-
-- ### `options`
-
-- `limit_stack_depth`: limits the stack depth for computing messages, helps with `StackOverflowError` for some huge models, but reduces the performance of inference backend. Accepts integer as an argument that specifies the maximum number of recursive depth. Lower is better for stack overflow error, but worse for performance.
-- `pipeline`: changes the default pipeline for each factor node in the graph
-- `global_reactive_scheduler`: changes the scheduler of reactive streams, see Rocket.jl for more info, defaults to no scheduler
+```
 
 - ### `returnvars`
 
 `returnvars` specifies latent variables of interest and their posterior updates. Its behavior depends on the inference type: streamline or batch.
 
 **Batch inference:**
+
 - Accepts a `NamedTuple` or `Dict` of return variable specifications.
 - Two specifications available: `KeepLast` (saves the last update) and `KeepEach` (saves all updates).
 - When `iterations` is set, returns every update for each iteration (equivalent to `KeepEach()`); if `nothing`, saves the last update (equivalent to `KeepLast()`).
 - Use `iterations = 1` to force `KeepEach()` for a single iteration or set `returnvars = KeepEach()` manually.
-
-Example:
 
 ```julia
 result = infer(
@@ -146,10 +141,9 @@ result = infer(
 ```
 
 **Streamline inference:**
+
 - For each symbol in `returnvars`, `infer` creates an observable stream of posterior updates.
 - Agents can subscribe to these updates using the `Rocket.jl` package.
-
-Example:
 
 ```julia
 engine = infer(
@@ -162,14 +156,10 @@ engine = infer(
 
 - ### `predictvars`
 
-`predictvars` specifies the variables which should be predicted. In the model definition these variables are specified
-as datavars, although they should not be passed inside data argument.
-
+`predictvars` specifies the variables which should be predicted.
 Similar to `returnvars`, `predictvars` accepts a `NamedTuple` or `Dict`. There are two specifications:
 - `KeepLast`: saves the last update for a variable, ignoring any intermediate results during iterations
 - `KeepEach`: saves all updates for a variable for all iterations
-
-Example: 
 
 ```julia
 result = infer(
@@ -181,9 +171,12 @@ result = infer(
 )
 ```
 
-**Note**: The `predictvars` argument is exclusive for batch setting.
+!!! note
+    The `predictvars` argument is exclusive for batch setting.
 
 - ### `historyvars`
+
+Also read the [Keeping the history of posteriors](@ref manual-online-inference-history).
 
 `historyvars` specifies the variables of interests and the amount of information to keep in history about the posterior updates when performing streamline inference. The specification is similar to the `returnvars` when applied in batch setting.
 The `historyvars` requires `keephistory` to be greater than zero.
@@ -191,8 +184,6 @@ The `historyvars` requires `keephistory` to be greater than zero.
 `historyvars` accepts a `NamedTuple` or `Dict` or return var specification. There are two specifications:
 - `KeepLast`: saves the last update for a variable, ignoring any intermediate results during iterations
 - `KeepEach`: saves all updates for a variable for all iterations
-
-Example: 
 
 ```julia
 result = infer(
@@ -208,8 +199,6 @@ result = infer(
 
 It is also possible to set either `historyvars = KeepLast()` or `historyvars = KeepEach()` that acts as an alias and sets the given option for __all__ random variables in the model.
 
-# Example: 
-
 ```julia
 result = infer(
     ...,
@@ -223,11 +212,20 @@ result = infer(
 
 Specifies the buffer size for the updates history both for the `historyvars` and the `free_energy` buffers in streamline inference.
 
+!!! note
+    The `historyvars` and `keep_history` arguments are exclusive for streamlined setting.
+
 - ### `iterations`
 
-Specifies the number of variational (or loopy belief propagation) iterations. By default set to `nothing`, which is equivalent of doing 1 iteration. 
+Specifies the number of variational (or loopy belief propagation) iterations. By default set to `nothing`, which is equivalent of doing 1 iteration. However, if set explicitly to `1` the default setting for `returnvars` changes from `KeepLast` to `KeepEach`.
 
 - ### `free_energy`
+
+**Batch inference:**
+
+Specifies if the `infer` function should return Bethe Free Energy (BFE) values.
+
+- Optionally accepts a floating-point type (e.g., `Float64`) for improved BFE computation performance, but restricts the use of automatic differentiation packages.
 
 **Streamline inference:**
 
@@ -238,11 +236,6 @@ Specifies if the `infer` function should create an observable stream of Bethe Fr
   - `engine.free_energy_final_only_history`: BFE history of values computed in the last VMP iterations for each observation.
   - `engine.free_energy_raw_history`: Raw BFE history.
 
-**Batch inference:**
-
-Specifies if the `infer` function should return Bethe Free Energy (BFE) values.
-
-- Optionally accepts a floating-point type (e.g., `Float64`) for improved BFE computation performance, but restricts the use of automatic differentiation packages.
 
 - ### `free_energy_diagnostics`
 
@@ -250,14 +243,25 @@ This settings specifies either a single or a tuple of diagnostic checks for Beth
 See also [`RxInfer.ObjectiveDiagnosticCheckNaNs`](@ref) and [`RxInfer.ObjectiveDiagnosticCheckInfs`](@ref).
 Pass `nothing` to disable any checks.
 
+- ### `options`
+
+```@docs
+RxInfer.ReactiveMPInferenceOptions
+```
+
 - ### `catch_exception`
 
 The `catch_exception` keyword argument specifies whether exceptions during the batch inference procedure should be caught in the `error` field of the 
 result. By default, if exception occurs during the inference procedure the result will be lost. Set `catch_exception = true` to obtain partial result 
-for the inference in case if an exception occurs. Use `RxInfer.issuccess` and `RxInfer.iserror` function to check if the inference completed successfully or failed.
+for the inference in case if an exception occurs. Use [`RxInfer.issuccess`](@ref) and [`RxInfer.iserror`](@ref) function to check if the inference completed successfully or failed.
 If an error occurs, the `error` field will store a tuple, where first element is the exception itself and the second element is the caught `backtrace`. Use the `stacktrace` function 
 with the `backtrace` as an argument to recover the stacktrace of the error. Use `Base.showerror` function to display
 the error.
+
+```@docs
+RxInfer.issuccess
+RxInfer.iserror
+```
 
 - ### `callbacks`
 
@@ -277,29 +281,35 @@ result = infer(
 The `callbacks` keyword argument accepts a named-tuple of 'name = callback' pairs. 
 The list of all possible callbacks for different inference setting (batch or streamline) and their arguments is present below:
 
-- `on_marginal_update`:    args: (model::FactorGraphModel, name::Symbol, update) (exlusive for batch inference)
-- `before_model_creation`: args: ()
-- `after_model_creation`:  args: (model::FactorGraphModel)
-- `before_inference`:      args: (model::FactorGraphModel) (exlusive for batch inference)
-- `before_iteration`:      args: (model::FactorGraphModel, iteration::Int)::Bool (exlusive for batch inference)
-- `before_data_update`:    args: (model::FactorGraphModel, data) (exlusive for batch inference)
-- `after_data_update`:     args: (model::FactorGraphModel, data) (exlusive for batch inference)
-- `after_iteration`:       args: (model::FactorGraphModel, iteration::Int)::Bool (exlusive for batch inference)
-- `after_inference`:       args: (model::FactorGraphModel) (exlusive for batch inference)
-- `before_autostart`:      args: (engine::RxInferenceEngine) (exlusive for streamline inference)
-- `after_autostart`:       args: (engine::RxInferenceEngine) (exlusive for streamline inference)
+- `on_marginal_update(model::ProbabilisticModel, name::Symbol, update)` (exlusive for batch inference)
+- `before_model_creation()`
+- `after_model_creation(model::ProbabilisticModel)`
+- `before_inference(model::ProbabilisticModel)` (exlusive for batch inference)
+- `before_iteration(model::ProbabilisticModel, iteration::Int)::Bool` (exlusive for batch inference)
+- `before_data_update(model::ProbabilisticModel, data)` (exlusive for batch inference)
+- `after_data_update(model::ProbabilisticModel, data)` (exlusive for batch inference)
+- `after_iteration(model::ProbabilisticModel, iteration::Int)::Bool` (exlusive for batch inference)
+- `after_inference(model::ProbabilisticModel)` (exlusive for batch inference)
+- `before_autostart(engine::RxInferenceEngine)` (exlusive for streamline inference)
+- `after_autostart(engine::RxInferenceEngine)` (exlusive for streamline inference)
 
 `before_iteration` and `after_iteration` callbacks are allowed to return `true/false` value.
 `true` indicates that iterations must be halted and no further inference should be made.
 
 - ### `addons`
 
-The `addons` field extends the default message computation rules with some extra information, e.g. computing log-scaling factors of messages or saving debug-information.
-Accepts a single addon or a tuple of addons. If set, replaces the corresponding setting in the `options`. Automatically changes the default value of the `postprocess` argument to `NoopPostprocess`.
+The `addons` field extends the default message computation rules with some extra information, e.g. computing log-scaling factors of messages or saving debug-information. Accepts a single addon or a tuple of addons. 
+Automatically changes the default value of the `postprocess` argument to `NoopPostprocess`.
 
 - ### `postprocess`
+
+Also read the [Inference results postprocessing](@ref user-guide-inference-postprocess) section.
 
 The `postprocess` keyword argument controls whether the inference results must be modified in some way before exiting the `inference` function.
 By default, the inference function uses the `DefaultPostprocess` strategy, which by default removes the `Marginal` wrapper type from the results.
 Change this setting to `NoopPostprocess` if you would like to keep the `Marginal` wrapper type, which might be useful in the combination with the `addons` argument.
 If the `addons` argument has been used, automatically changes the default strategy value to `NoopPostprocess`.
+
+## Where to go next?
+
+Read more explanation about the other keyword arguments in the [Streamlined (online) inference](@ref manual-online-inference)section or check out the [Static Inference](@ref manual-static-inference) section.

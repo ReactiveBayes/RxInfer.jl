@@ -174,7 +174,14 @@ end
 Base.iterate(results::InferenceResult)      = iterate((getfield(results, :posteriors), getfield(results, :predictions), getfield(results, :free_energy), getfield(results, :model), getfield(results, :returnval), getfield(results, :error)))
 Base.iterate(results::InferenceResult, any) = iterate((getfield(results, :posteriors), getfield(results, :predictions), getfield(results, :free_energy), getfield(results, :model), getfield(results, :returnval), getfield(results, :error)), any)
 
+"""
+Checks if the `InferenceResult` object does not contain an error. 
+"""
 issuccess(result::InferenceResult) = !iserror(result)
+
+"""
+Checks if the `InferenceResult` object contains an error. 
+"""
 iserror(result::InferenceResult) = !isnothing(result.error)
 
 function Base.show(io::IO, result::InferenceResult)
