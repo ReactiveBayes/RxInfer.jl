@@ -588,6 +588,12 @@ end
         end
     end
     @test_expression_generating init_macro_interior(input) output
+
+    input = quote
+        q(μ) = NormalMeanPrecision(0.0, 0.001), q(τ) = GammaShapeRate(10.0, 10.0)
+    end
+
+    @test_throws ErrorException init_macro_interior(input)
 end
 
 @testitem "init_macro_full_pipeline" begin
