@@ -1,4 +1,5 @@
 name: TagBot
+permissions: write-all
 on:
   issue_comment:
     types:

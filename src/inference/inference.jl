@@ -1569,6 +1569,7 @@ function infer(;
     end
 
     __infer_check_dicttype(:callbacks, callbacks)
+    __infer_check_dicttype(:data, data)
 
     if isnothing(autoupdates)
         __check_available_callbacks(warn, callbacks, available_callbacks(__inference))

@@ -67,6 +67,7 @@ end
 foreach(vcat(ExamplesOverviewPath, ExamplesCategoriesOverviewPaths)) do path
     if !isfile(path)
         @warn "`$(path)` does not exist. Generating an empty overview. Use the `make examples` command to generate the overview and all examples."
+        mkpath(dirname(path))
         open(path, "w") do f
             write(f, "The overview is missing. Use the `make examples` command to generate the overview and all examples.")
         end
@@ -105,7 +106,8 @@ makedocs(;
             "Inference specification"   => [
                 "Overview" => "manuals/inference/overview.md", 
                 "Static vs Streamline inference" => "manuals/inference/infer.md", 
-                "Streamline inference" => "manuals/inference/online.md"
+                "Streamline inference" => "manuals/inference/online.md",
+                "Messages initialization"   => "manuals/understanding-why-to-initialize-messages.md",
             ],
             "Inference customization"   => [
                 "Defining a custom node and rules" => "manuals/custom-node.md",
@@ -122,12 +124,13 @@ makedocs(;
         ],
         "Examples" => [
             "Overview" => "examples/overview.md", # This must be auto-generated with `make examples`
-            ExamplesPages...
+            ExamplesPages...,
+            "External examples" => "contributing/external-examples.md"
         ],
         "Contributing" => [
-            "Overview" => "contributing/overview.md",
+            "Contribution guide" => "contributing/guide.md",
+            "Contribution guidelines"=> "contributing/guidelines.md",
             "Contributing to the documentation" => "contributing/new-documentation.md",
-            "Contributing to the dependencies" => "contributing/new-package.md",
             "Contributing to the examples" => "contributing/new-example.md",
             "Publishing a new release" => "contributing/new-release.md"
         ]
