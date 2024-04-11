@@ -51,13 +51,13 @@ rng          = StableRNG(43)
 datastream   = RecentSubject(Bool)
 ```
 
-The [`infer`](@ref) function expects the `datastream` to emit values in the form of the `NamedTuple`s. To simply this process, `Rocket` exports `labeled` function:
+The [`infer`](@ref) function expects the `datastream` to emit values in the form of the `NamedTuple`s. To simply this process, `Rocket.jl` exports `labeled` function. We also use the `combineLatest` function to convert a stream of `Bool`s to a stream of `Tuple{Bool}`s. Read more about these function in the [documentation to `Rocket.jl`](https://reactivebayes.github.io/Rocket.jl/stable/).
 
 ```@example manual-online-inference
 observations = labeled(Val((:y, )), combineLatest(datastream))
 ```
 
-Let's verify that our datastream, does indeed produce `NamedTuple`
+Let's verify that our datastream does indeed produce `NamedTuple`s
 
 ```@example manual-online-inference
 test_values = [] #hide
@@ -65,6 +65,7 @@ test_subscription = subscribe!(observations, (new_observation) -> push!(test_val
 subscription = subscribe!(observations, 
     (new_observation) -> println("Got new observation ", new_observation, " 🎉")
 )
+nothing #hide
 ```
 
 ```@example manual-online-inference
@@ -403,6 +404,9 @@ We can also visualize different representations:
 ```@example manual-online-inference
 plot(iid_normal_engine.free_energy_history, label = "Bethe Free Energy (averaged)")
 ```
+
+!!! note
+    In general, the _averaged_ Bethe Free Energy values must decrease and converge to a stable point.
 
 ```@example manual-online-inference
 plot(iid_normal_engine.free_energy_raw_history, label = "Bethe Free Energy (raw)")
