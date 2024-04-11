@@ -34,7 +34,7 @@
 
     # The initial value for `θ` in the `@autoupdates` has not been specified, the `initialization` should be used
     # The `beta_bernoulli_streaming` with `initialization` is being tested later 
-    @test_throws "The initial value for `θ` in the `@autoupdates` has not been specified" infer(
+    @test_throws "The initial value for `θ` has not been specified, but is required in the `@autoupdates`." infer(
         model = beta_bernoulli_streaming(), data = (y = dataset,), autoupdates = autoupdates
     )
 
