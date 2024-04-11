@@ -18,8 +18,7 @@ where `model_arguments...` may include both hypeparameters and data.
     `model_arguments` are converted to keyword arguments. Positional arguments in the model specification are not supported. 
     Thus it is not possible to use Julia's multiple dispatch for the model arguments.
 
-The `@model` macro returns a regular Julia function (in this example `model_name()`) which can be executed as usual. The only difference here is that 
-all arguments of the model function are treated as keyword arguments. Upon calling, the model function returns a so-called model generator object, e.g:
+The `@model` macro returns a regular Julia function (in this example `model_name()`) which can be executed as usual. The only difference here is that all arguments of the model function are treated as keyword arguments. Upon calling, the model function returns a so-called model generator object, e.g:
 
 ```@example model-specification-model-macro
 using RxInfer #hide
