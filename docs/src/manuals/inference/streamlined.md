@@ -54,9 +54,7 @@ datastream   = RecentSubject(Bool)
 The [`infer`](@ref) function expects the `datastream` to emit values in the form of the `NamedTuple`s. To simply this process, `Rocket` exports `labeled` function:
 
 ```@example manual-online-inference
-# We convert the stream of `Bool` to the stream of `Float64`, because the `Bernoulli` node
-# from `ReactiveMP` expects `Float64` inputs
-observations = labeled(Val((:y, )), combineLatest(datastream |> map(Float64, float)))
+observations = labeled(Val((:y, )), combineLatest(datastream))
 ```
 
 Let's verify that our datastream, does indeed produce `NamedTuple`
@@ -65,7 +63,7 @@ Let's verify that our datastream, does indeed produce `NamedTuple`
 test_values = [] #hide
 test_subscription = subscribe!(observations, (new_observation) -> push!(test_values, new_observation)) #hide
 subscription = subscribe!(observations, 
-    (new_observation) -> println("Got new observation `", new_observation, "` 🎉")
+    (new_observation) -> println("Got new observation ", new_observation, " 🎉")
 )
 ```
 
@@ -115,7 +113,7 @@ Given the `engine`, we now can subscribe on the posterior updates:
 θ_updates_for_testing_the_example  = [] #hide
 θ_updates_for_testing_subscription = subscribe!(engine.posteriors[:θ], (new_posterior_for_θ) -> push!(θ_updates_for_testing_the_example, new_posterior_for_θ)) #hide
 θ_updates_subscription = subscribe!(engine.posteriors[:θ], 
-    (new_posterior_for_θ) -> println("A new posterior for θ is `", new_posterior_for_θ, "` 🤩")
+    (new_posterior_for_θ) -> println("A new posterior for θ is ", new_posterior_for_θ, " 🤩")
 )
 nothing #hide
 ```
@@ -281,7 +279,7 @@ engine = infer(
 free_energy_for_testing = [] #hide
 free_energy_for_testing_subscription = subscribe!(engine.free_energy, (v) -> push!(free_energy_for_testing, v)) #hide
 free_energy_subscription = subscribe!(engine.free_energy, 
-    (bfe_value) -> println("New value of Bethe Free Energy has been computed `", bfe_value, "` 👩‍🔬")
+    (bfe_value) -> println("New value of Bethe Free Energy has been computed ", bfe_value, " 👩‍🔬")
 )
 @test length(free_energy_for_testing) === 1 #hide
 nothing #hide
