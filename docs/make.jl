@@ -114,6 +114,7 @@ makedocs(;
                 "Inference results postprocessing" => "manuals/customization/postprocess.md", 
             ],
             "Debugging" => "manuals/debugging.md",
+            "Migration from v2 to v3" => "manuals/migration-guide-v2-v3.md"
         ],
         "Library" => [
             "Model construction" => "library/model-construction.md",
