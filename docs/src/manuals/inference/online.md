@@ -93,15 +93,15 @@ Now, we have everything ready to start running the inference with `RxInfer` on d
 
 ```@example manual-online-inference
 engine = infer(
-    model         = beta_bernoulli_online(),
-    datastream    = observations,
-    autoupdates   = beta_bernoulli_autoupdates,
-    initmarginals = (θ = Beta(1, 1), ),
-    autostart     = false
+    model          = beta_bernoulli_online(),
+    datastream     = observations,
+    autoupdates    = beta_bernoulli_autoupdates,
+    initialization = @initialization(q(θ) = Beta(1, 1)),
+    autostart      = false
 )
 ```
 
-In the code above, there are several notable differences compared to running inference for static datasets. Firstly, we utilized the `autoupdates` argument as discussed [previously](@ref manual-online-inference-autoupdates). Secondly, we employed the `initmarginals` function to initialize the posterior over `θ`. This is necessary for the `@autoupdates` macro, as it needs to initialize the `a` and `b` parameters before the data becomes available. Thirdly, we set `autostart = false` to indicate that we do not want to immediately subscribe to the datastream, but rather do so manually later using the [`RxInfer.start`](@ref) function.
+In the code above, there are several notable differences compared to running inference for static datasets. Firstly, we utilized the `autoupdates` argument as discussed [previously](@ref manual-online-inference-autoupdates). Secondly, we employed the [`@initialization`](@ref) macro to initialize the posterior over `θ`. This is necessary for the `@autoupdates` macro, as it needs to initialize the `a` and `b` parameters before the data becomes available. Thirdly, we set `autostart = false` to indicate that we do not want to immediately subscribe to the datastream, but rather do so manually later using the [`RxInfer.start`](@ref) function.
 
 ```@docs
 RxInferenceEngine
@@ -171,13 +171,13 @@ The `keephistory` parameter specifies the length of the circular buffer for stor
 
 ```@example manual-online-inference
 engine = infer(
-    model         = beta_bernoulli_online(),
-    datastream    = observations,
-    autoupdates   = beta_bernoulli_autoupdates,
-    initmarginals = (θ = Beta(1, 1), ),
-    keephistory   = 100,
-    historyvars   = (θ = KeepLast(), ),
-    autostart     = true
+    model          = beta_bernoulli_online(),
+    datastream     = observations,
+    autoupdates    = beta_bernoulli_autoupdates,
+    initialization = @initialization(q(θ) = Beta(1, 1)),
+    keephistory    = 100,
+    historyvars    = (θ = KeepLast(), ),
+    autostart      = true
 )
 ```
 
@@ -264,13 +264,13 @@ To obtain a continuous stream of updates for the [Bethe Free Energy](@ref lib-be
 
 ```@example manual-online-inference
 engine = infer(
-    model         = beta_bernoulli_online(),
-    datastream    = observations,
-    autoupdates   = beta_bernoulli_autoupdates,
-    initmarginals = (θ = Beta(1, 1), ),
-    keephistory   = 5,
-    autostart     = true,
-    free_energy   = true
+    model          = beta_bernoulli_online(),
+    datastream     = observations,
+    autoupdates    = beta_bernoulli_autoupdates,
+    initialization = @initialization(q(θ) = Beta(1, 1)),
+    keephistory    = 5,
+    autostart      = true,
+    free_energy    = true
 )
 ```
 
@@ -346,30 +346,31 @@ iid_normal_autoupdates = @autoupdates begin
     rate_τ  = rate(q(τ))
 end
 
-iid_normal_hidden_μ     = 3.1415
-iid_normal_hidden_τ     = 0.0271
-iid_normal_distribution = NormalMeanPrecision(iid_normal_hidden_μ, iid_normal_hidden_τ)
-iid_normal_rng          = StableRNG(123)
-iid_normal_datastream   = RecentSubject(Float64)
-iid_normal_observations = labeled(Val((:y, )), combineLatest(iid_normal_datastream))
+iid_normal_hidden_μ       = 3.1415
+iid_normal_hidden_τ       = 0.0271
+iid_normal_distribution   = NormalMeanPrecision(iid_normal_hidden_μ, iid_normal_hidden_τ)
+iid_normal_rng            = StableRNG(123)
+iid_normal_datastream     = RecentSubject(Float64)
+iid_normal_observations   = labeled(Val((:y, )), combineLatest(iid_normal_datastream))
+iid_normal_initialization = @initialization begin 
+    q(μ) = NormalMeanPrecision(0.0, 0.001),
+    q(τ) = GammaShapeRate(10.0, 10.0)
+end
 
-iid_normal_engine = infer(
-    model         = iid_normal(),
-    datastream    = iid_normal_observations,
-    autoupdates   = iid_normal_autoupdates,
-    constraints   = iid_normal_constraints,
-    initmarginals = (
-        μ = NormalMeanPrecision(0.0, 0.001),
-        τ = GammaShapeRate(10.0, 10.0)
-    ),
-    historyvars   = (
+iid_normal_engine  = infer(
+    model          = iid_normal(),
+    datastream     = iid_normal_observations,
+    autoupdates    = iid_normal_autoupdates,
+    constraints    = iid_normal_constraints,
+    initialization = iid_normal_initialization,
+    historyvars    = (
         μ = KeepLast(),
         τ = KeepLast(),
     ),
-    keephistory   = 100,
-    iterations    = 10,
-    free_energy   = true,
-    autostart     = true
+    keephistory    = 100,
+    iterations     = 10,
+    free_energy    = true,
+    autostart      = true
 )
 ```
 

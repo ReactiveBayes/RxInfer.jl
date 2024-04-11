@@ -43,15 +43,19 @@ end
 and use the created `constraints` object to the [`infer`](@ref) function:
 
 ```@example constraints-specification
+# We need to specify initial marginals, since with the constraints 
+# the problem becomes inherently iterative (we could also specify initial for the `μ` instead)
+init = @initialization begin 
+    q(τ) = vague(Gamma)
+end
+
 result = infer(
     model       = iid_normal(),
     # Sample data from mean `3.1415` and precision `2.7182`
     data        = (y = rand(NormalMeanPrecision(3.1415, 2.7182), 1000), ),
     constraints = constraints,
-    # We need to specify initial marginals, since with the constraints 
-    # the problem becomes inherently iterative (we could also specify initial for the mean instead)
-    initmarginals = (τ = vague(Gamma), ),
-    iterations    = 25
+    initialization = init,
+    iterations     = 25
 )
 ```
 
