@@ -33,8 +33,7 @@ nothing #hide
 ```
 
 The model generator is not a real model (yet). For example, in the code above, we haven't specified anything for the `observation`. 
-The generator object allows us to iteratively add extra properties to the model, condition on data, and/or assign extra metadata information 
-without actually materializing the entire graph structure. Read extra information about model generator [here](@ref lib-model-construction).
+The generator object allows us to iteratively add extra properties to the model, condition on data, and/or assign extra metadata information without actually materializing the entire graph structure. Read extra information about model generator [here](@ref lib-model-construction).
 
 ## A state space model example
 
