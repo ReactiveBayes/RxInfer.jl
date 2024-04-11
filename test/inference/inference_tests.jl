@@ -820,6 +820,7 @@ end
         @test isequal(first(mean(result.posteriors[:θ])), last(mean(result.posteriors[:θ])))
     end
 
+
     @testset "Test misspecified event type in the streamlined inference" begin
         @test_logs (:warn, r"Unknown event type: blabla. Available events: .*") infer(
             model = rolling_die_streamlined(), 
