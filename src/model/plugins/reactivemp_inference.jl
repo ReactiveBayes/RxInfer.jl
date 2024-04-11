@@ -15,7 +15,7 @@ Creates model inference options object. The list of available options is present
 
 ### Advanced options
 
-- `scheduler`: changes the scheduler of reactive streams, see Rocket.jl for more info, defaults to no scheduler
+- `scheduler`: changes the scheduler of reactive streams, see Rocket.jl for more info, defaults to `AsapScheduler`.
 
 See also: [`infer`](@ref)
 """
