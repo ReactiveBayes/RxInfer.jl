@@ -33,7 +33,7 @@
             model = mv_iid_wishart(d = d),
             data = (y = data,),
             constraints = constraints_mv_iid_wishart,
-            init = mv_iid_wishart_init(d),
+            initialization = mv_iid_wishart_init(d),
             returnvars = KeepLast(),
             iterations = 10,
             free_energy = Float64

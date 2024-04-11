@@ -185,7 +185,7 @@ end
 
     @testset "returnval should be set properly" begin
         for n in 2:5
-            result = infer(model = test_model1(), constraints = test_model1_constraints(), data = (y = rand(n),), init = init)
+            result = infer(model = test_model1(), constraints = test_model1_constraints(), data = (y = rand(n),), initialization = init)
             @test getreturnval(result.model) === (n, 2, 3.0, "hello world")
         end
     end
@@ -195,7 +195,13 @@ end
 
         # Case #0: no errors at all
         result = infer(
-            model = test_model1(), constraints = test_model1_constraints(), data = (y = observations,), init = init, iterations = 10, returnvars = KeepEach(), free_energy = true
+            model = test_model1(),
+            constraints = test_model1_constraints(),
+            data = (y = observations,),
+            initialization = init,
+            iterations = 10,
+            returnvars = KeepEach(),
+            free_energy = true
         )
 
         @test RxInfer.issuccess(result)
@@ -214,7 +220,7 @@ end
             model = test_model1(),
             constraints = test_model1_constraints(),
             data = (y = observations,),
-            init = init,
+            initialization = init,
             iterations = 10,
             returnvars = KeepEach(),
             free_energy = true,
@@ -231,7 +237,7 @@ end
             model = test_model1(),
             constraints = test_model1_constraints(),
             data = (y = observations,),
-            init = init,
+            initialization = init,
             iterations = 10,
             returnvars = KeepEach(),
             free_energy = true,
@@ -267,7 +273,13 @@ end
 
         # Case #1: no halting
         results1 = infer(
-            model = test_model1(), constraints = test_model1_constraints(), data = (y = observations,), init = init, iterations = 10, returnvars = KeepEach(), free_energy = true
+            model = test_model1(),
+            constraints = test_model1_constraints(),
+            data = (y = observations,),
+            initialization = init,
+            iterations = 10,
+            returnvars = KeepEach(),
+            free_energy = true
         )
 
         @test length(results1.free_energy) === 10
@@ -279,7 +291,7 @@ end
             model = test_model1(),
             constraints = test_model1_constraints(),
             data = (y = observations,),
-            init = init,
+            initialization = init,
             iterations = 10,
             returnvars = KeepEach(),
             free_energy = true,
@@ -299,7 +311,7 @@ end
             model = test_model1(),
             constraints = test_model1_constraints(),
             data = (y = observations,),
-            init = init,
+            initialization = init,
             iterations = 10,
             returnvars = KeepEach(),
             free_energy = true,
@@ -367,7 +379,9 @@ end
             q(x, τ) = q(x)q(τ)
         end
 
-        @test_throws "size of datavar array and data must match" infer(model = test_model1(), constraints = test_model1_constraints(), data = (y = rand(10),), init = init)
+        @test_throws "size of datavar array and data must match" infer(
+            model = test_model1(), constraints = test_model1_constraints(), data = (y = rand(10),), initialization = init
+        )
     end
 end
 
@@ -419,7 +433,7 @@ end
                 returnvars = returnvars,
                 historyvars = historyvars,
                 keephistory = keephistory,
-                init = init,
+                initialization = init,
                 iterations = iterations,
                 free_energy = free_energy,
                 autoupdates = autoupdates
@@ -482,7 +496,7 @@ end
             model = test_model1(),
             constraints = MeanField(),
             data = (y = observedy,),
-            init = init,
+            initialization = init,
             autoupdates = autoupdates,
             callbacks = (
                 before_model_creation = (args...) -> push!(callbacksdata, (:before_model_creation, args)),
@@ -509,7 +523,7 @@ end
             model = test_model1(),
             constraints = MeanField(),
             data = (y = observedy,),
-            init = init,
+            initialization = init,
             autoupdates = autoupdates,
             callbacks = (
                 before_model_creation = (args...) -> push!(callbacksdata, (:before_model_creation, args)),
@@ -539,7 +553,7 @@ end
             model = test_model1(),
             constraints = MeanField(),
             data = (y = observedy,),
-            init = init,
+            initialization = init,
             autoupdates = autoupdates,
             callbacks = (hello_world = (args...) -> push!(callbacksdata, args),),
             autostart = true
@@ -566,7 +580,7 @@ end
                 model = test_model1(),
                 constraints = MeanField(),
                 data = (y = observedy,),
-                init = init,
+                initialization = init,
                 autoupdates = autoupdates,
                 historyvars = KeepEach(),
                 keephistory = keephistory,
@@ -720,7 +734,7 @@ end
             model = test_model1(),
             constraints = MeanField(),
             data = (y = observedy,),
-            init = init,
+            initialization = init,
             autoupdates = autoupdates,
             postprocess = RxInfer.UnpackMarginalPostprocess(),
             historyvars = (τ = KeepLast(),),
@@ -739,7 +753,7 @@ end
                 model = test_model1(),
                 constraints = MeanField(),
                 data = (y = observedy,),
-                init = init,
+                initialization = init,
                 autoupdates = autoupdates,
                 postprocess = postprocess,
                 historyvars = (τ = KeepLast(),),

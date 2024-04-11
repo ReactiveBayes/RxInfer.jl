@@ -37,7 +37,7 @@
             data = (x = data,),
             options = (limit_stack_depth = 500,),
             free_energy = true,
-            init = init,
+            initialization = init,
             iterations = vmp_iters,
             returnvars = (s = KeepEach(), A = KeepEach(), B = KeepEach())
         )
