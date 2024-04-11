@@ -115,7 +115,7 @@ init = @initialization begin
 end
 
 results = infer(
-    model           = linear_regression(length(x_data)), 
+    model           = linear_regression(), 
     data            = (y = y_data, x = x_data), 
     initialization  = init, 
     returnvars      = (a = KeepLast(), b = KeepLast()),
