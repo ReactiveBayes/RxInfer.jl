@@ -175,7 +175,7 @@ Sometimes the data is not known at model creation time, for example, during reac
 For that purpose `RxInfer` uses [`RxInfer.DefferedDataHandler`](@ref) structure.
 
 ```@example coin
-# The only difference here is that we do not specify `a` and `b` as hyper-parameters 
+# The only difference here is that we do not specify `a` and `b` as hyperparameters 
 # But rather indicate that the data for them will be available later during the inference
 conditioned_with_deffered_data = coin_model() | (
     y = [ 1.0, 0.0, 1.0 ], 

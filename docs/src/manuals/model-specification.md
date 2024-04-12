@@ -61,7 +61,7 @@ prespecified `variance` hyperparameter.
     `length(y)` can be called only if `y` has an associated data with it. This is not always the case, for example it is possible to instantiate the 
     model lazily before the data becomes available. In such situations, `length(y)` will throw an error.
 
-### [Hyper-parameters](@id user-guide-model-specification-hyperparameters)
+### [hyperparameters](@id user-guide-model-specification-hyperparameters)
 
 Any constant passed to a model as a model argument will be automatically converted to a corresponding constant node in the model's graph.
 
