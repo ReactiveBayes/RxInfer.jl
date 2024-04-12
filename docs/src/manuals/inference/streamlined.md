@@ -22,7 +22,7 @@ using Test #hide
 end
 ```
 
-In this model, we assume we only have one observation y at a time, and the a and b parameters are not fixed to specific values but rather are arguments of the model itself.
+In this model, we assume we only have one observation y at a time, and the `a` and `b` parameters are not fixed to specific values but rather are arguments of the model itself.
 
 ## [Automatic prior update](@id manual-online-inference-autoupdates)
 

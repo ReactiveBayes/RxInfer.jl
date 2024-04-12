@@ -1,14 +1,14 @@
 """
     InferenceResult
 
-This structure is used as a return value from the [`infer`](@ref) function. 
+This structure is used as a return value from the [`infer`](@ref) function for static datasets. 
 
 # Public Fields
 
 - `posteriors`: `Dict` or `NamedTuple` of 'random variable' - 'posterior' pairs. See the `returnvars` argument for [`infer`](@ref).
+- `predictions`: (optional) `Dict` or `NamedTuple` of 'data variable' - 'prediction' pairs. See the `predictvars` argument for [`infer`](@ref).
 - `free_energy`: (optional) An array of Bethe Free Energy values per VMP iteration. See the `free_energy` argument for [`infer`](@ref).
 - `model`: `FactorGraphModel` object reference.
-- `returnval`: Return value from executed `@model`.
 - `error`: (optional) A reference to an exception, that might have occurred during the inference. See the `catch_exception` argument for [`infer`](@ref).
 
 See also: [`infer`](@ref)
