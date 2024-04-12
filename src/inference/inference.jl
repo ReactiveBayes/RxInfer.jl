@@ -1,5 +1,5 @@
 export KeepEach, KeepLast
-export infer, inference, rxinference
+export infer
 export InferenceResult
 export RxInferenceEngine, RxInferenceEvent
 
@@ -175,7 +175,12 @@ function check_available_callbacks(warn, callbacks, ::Val{AvailableCallbacks}) w
     end
 end
 
-function check_available_events(warn, events::Union{Val{Events}, Nothing}, ::Val{AvailableEvents}) where {Events, AvailableEvents}
+function check_available_events(warn, events::Nothing, ::Val{AvailableEvents}) where {AvailableEvents}
+    # If `events` is nothing, we don't need to check anything
+    return nothing
+end
+
+function check_available_events(warn, events::Val{Events}, ::Val{AvailableEvents}) where {Events, AvailableEvents}
     if warn && !isnothing(events)
         for key in Events
             if key ∉ AvailableEvents
