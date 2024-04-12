@@ -1,10 +1,10 @@
 # [Deterministic nodes](@id delta-node-manual)
 
-RxInfer.jl offers a comprehensive set of stochastic nodes, with a primary emphasis on distributions from the exponential family and its associated compositions, such as Gaussian with controlled variance (GCV) or autoregressive (AR) nodes. The `DeltaNode` stands out in this package, representing a deterministic transformation of either a single random variable or a group of them. This guide provides insights into the `DeltaNode` and its functionalities.
+RxInfer.jl offers a comprehensive set of stochastic nodes, primarily emphasizing distributions from the exponential family and related compositions, such as Gaussian with controlled variance (GCV) or autoregressive (AR) nodes. The `DeltaNode` stands out in this package, representing a deterministic transformation of either a single random variable or a group of them. This guide provides insights into the `DeltaNode` and its functionalities.
 
 ## Features and Supported Inference Scenarios
 
-The delta node has several approximation methods for performing probabilistic inference. The desired approximation method depends on the nodes connected to the delta node. We differentiate the following deterministic transformation scenarios:
+The delta node supports several approximation methods for probabilistic inference. The desired approximation method depends on the nodes connected to the delta node. We differentiate the following deterministic transformation scenarios:
 
 1. **Gaussian Nodes**: For delta nodes linked to strictly multivariate or univariate Gaussian distributions, the recommended methods are Linearization or Unscented transforms.
 2. **Exponential Family Nodes**: For the delta node connected to nodes from the exponential family, the CVI (Conjugate Variational Inference) is the method of choice.
@@ -20,7 +20,7 @@ The table below summarizes the features of the delta node in RxInfer.jl, categor
 
 ## Gaussian Case
 
-In the context of Gaussian distributions, we recommend either the `Linearization` or `Unscented` method for delta node approximation. The `Linearization` method provides a first-order approximation, while the `Unscented` method delivers a more precise second-order approximation. It's worth noting that while the `Unscented` method is more accurate, it may require hyper-parameters tuning.
+In the context of Gaussian distributions, we recommend either the `Linearization` or `Unscented` method for delta node approximation. The `Linearization` method provides a first-order approximation, while the `Unscented` method delivers a more precise second-order approximation. It's worth noting that while the `Unscented` method is more accurate, it may require hyperparameters tuning.
 
 
 For clarity, consider the following example:

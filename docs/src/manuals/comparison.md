@@ -1,9 +1,9 @@
 # [Comparison to other packages](@id comparison)
 
-Nowadays there's plenty of probabilistic programming languages and packages available. While all of them are based on Bayesian Inference, their methodologies vary. This section compares `RxInfer.jl` against other renowned probabilistic programming languages and packages. The goal is to enlighten potential users about the nuances and guide them in choosing the package that best suits their requirements.
+Nowadays there's plenty of probabilistic programming languages and packages available. Although all are based on Bayesian inference, their methodologies vary. This section compares `RxInfer.jl` against other renowned probabilistic programming languages and packages. The goal is to enlighten potential users about the nuances and guide them in choosing the package that best suits their requirements.
 
 !!! warning
-    1. This comparison isn't exhaustive and mirrors the author's hands-on experience with the packages. Some might have undergone more rigorous testing than others. If you're an author of one of these packages and believe the comparison doesn't do justice, please [reach out](https://github.com/ReactiveBayes), and we'll be more than willing to rectify.
+    1. This comparison is not exhaustive and mirrors the author's hands-on experience with the packages. Others may have undergone more rigorous testing. If you're an author of one of these packages and believe this comparison does not do justice, please [reach out](https://github.com/ReactiveBayes), and we will be more than willing to make corrections.
     2. The comparison is more qualitative than quantitative, considering the intricacies of upkeeping benchmarking code for perpetually evolving packages.
 
 

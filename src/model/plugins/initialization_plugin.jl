@@ -42,11 +42,23 @@ struct InitSpecification
 end
 
 InitSpecification() = InitSpecification([], [])
-function Base.show(io::IO, init::InitSpecification)
-    print(io, "Initial state: \n")
-    for init_o in getinitobjects(init)
-        print(io, "    ")
-        print(io, init_o)
+
+function Base.show(io::IO, c::InitSpecification)
+    indent = get(io, :indent, 1)
+    head = get(io, :head, true)
+    if head
+        print(io, "Initial state: \n")
+    else
+        print(io, "\n")
+    end
+    for init in getinitobjects(c)
+        print(io, "  "^indent)
+        print(io, init)
+        print(io, "\n")
+    end
+    for submodel in getsubmodelinit(c)
+        print(io, "  "^indent)
+        print(io, submodel)
         print(io, "\n")
     end
 end
@@ -87,6 +99,10 @@ is_generalsubmodelinit(m) = false
 getkey(m::GeneralSubModelInit) = getsubmodel(m)
 
 const SubModelInit = Union{GeneralSubModelInit, SpecificSubModelInit}
+
+function Base.show(io::IO, init::SubModelInit)
+    print(IOContext(io, (:indent => get(io, :indent, 0) + 2), (:head => false)), "Init for submodel ", getsubmodel(init), " = ", getinitobjects(init))
+end
 
 Base.push!(m::InitSpecification, o::InitObject) = push!(m.init_objects, o)
 Base.push!(m::InitSpecification, o::SubModelInit) = push!(m.submodel_init, o)

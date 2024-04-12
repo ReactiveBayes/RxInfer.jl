@@ -1,6 +1,6 @@
 # [Constraints Specification](@id user-guide-constraints-specification)
 
-`RxInfer.jl` uses a macro called `@constraints` from `GraphPPL` to add extra constraints during the inference process. For details on how to use the `@constraints` macro, you can check out the [official documentation](https://reactivebayes.github.io/GraphPPL.jl/stable/) of GraphPPL.
+`RxInfer.jl` uses a macro called `@constraints` from `GraphPPL` to add extra constraints during the inference process. For details on using the `@constraints` macro, you can check out the [official documentation](https://reactivebayes.github.io/GraphPPL.jl/stable/) of GraphPPL.
 
 ## [Background and example](@id user-guide-constraints-specification-background)
 
