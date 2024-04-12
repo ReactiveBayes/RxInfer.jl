@@ -296,7 +296,7 @@ Here are available callbacks that can be used together with the static datasets:
 ```@eval
 using RxInfer, Test, Markdown
 # Update the documentation below if this test does not pass
-@test RxInfer.available_callbacks(RxInfer.streaming_inference) === Val((
+@test RxInfer.available_callbacks(RxInfer.batch_inference) === Val((
     :on_marginal_update,
     :before_model_creation,
     :after_model_creation,
@@ -309,3 +309,73 @@ using RxInfer, Test, Markdown
 )) 
 nothing
 ```
+
+---
+
+```julia
+before_model_creation()
+```
+Calls before the model is going to be created, does not accept any arguments.
+
+```julia
+after_model_creation(model::ProbabilisticModel)
+```
+Calls right after the model has been created, accepts a single argument, the `model`.
+
+---
+
+Here is an example usage of the outlined callbacks:
+
+```@example manual-static-inference
+before_model_creation_called = Ref(false) #hide
+after_model_creation_called = Ref(false) #hide
+on_marginal_update_called = Ref(false) #hide
+
+function before_model_creation()
+    before_model_creation_called[] = true #hide
+    println("The model is about to be created")
+end
+
+function after_model_creation(model::ProbabilisticModel)
+    after_model_creation_called[] = true #hide
+    println("The model has been created")
+    println("  The number of factor nodes is: ", length(RxInfer.getfactornodes(model)))
+    println("  The number of latent states is: ", length(RxInfer.getrandomvars(model)))
+    println("  The number of data points is: ", length(RxInfer.getdatavars(model)))
+    println("  The number of constants is: ", length(RxInfer.getconstantvars(model)))
+end
+
+function on_marginal_update(model::ProbabilisticModel, name, update)
+    on_marginal_update_called[] = true #hide
+    println("New marginal update for ", name, " ", update)
+end
+```
+
+```@example manual-static-inference
+results = infer(
+    model          = iid_estimation(),
+    data           = (y = dataset, ),
+    constraints    = constraints,
+    iterations     = 5,
+    initialization = initialization,
+    free_energy    = true,
+    callbacks      = (
+        before_model_creation = before_model_creation,
+        after_model_creation = after_model_creation,
+        on_marginal_update = on_marginal_update
+    )
+)
+
+@test before_model_creation_called[] #hide
+@test after_model_creation_called[] #hide
+@test on_marginal_update_called[] #hide
+
+results #hide
+```
+
+## [Where to go next?](@id manual-static-inference-where-to-go)
+
+This guide covered some fundamental usages of the [`infer`](@ref) function in the context of inference with static datasets, 
+but did not cover all the available keyword arguments of the function. Read more explanation about the other keyword arguments 
+in the [Overview](@ref manual-inference-overview) section or check out the [Streaming Inference](@ref manual-online-inference) section.
+Also check out more complex [examples](https://reactivebayes.github.io/RxInfer.jl/stable/examples/overview/).

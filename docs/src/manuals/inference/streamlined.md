@@ -482,11 +482,18 @@ Calls after the `RxInfer.start()` function, if `autostart` is set to `true`.
 Here is an example usage of the outlined callbacks:
 
 ```@example manual-online-inference
+before_model_creation_called = Ref(false) #hide
+after_model_creation_called = Ref(false) #hide
+before_autostart_called = Ref(false) #hide
+after_autostart_called = Ref(false) #hide
+
 function before_model_creation()
+    before_model_creation_called[] = true #hide
     println("The model is about to be created")
 end
 
 function after_model_creation(model::ProbabilisticModel)
+    after_model_creation_called[] = true #hide
     println("The model has been created")
     println("  The number of factor nodes is: ", length(RxInfer.getfactornodes(model)))
     println("  The number of latent states is: ", length(RxInfer.getrandomvars(model)))
@@ -495,10 +502,12 @@ function after_model_creation(model::ProbabilisticModel)
 end
 
 function before_autostart(engine::RxInferenceEngine)
+    before_autostart_called[] = true #hide
     println("The reactive inference engine is about to start")
 end
 
 function after_autostart(engine::RxInferenceEngine)
+    after_autostart_called[] = true #hide
     println("The reactive inference engine has been started")
 end
 
@@ -517,6 +526,11 @@ engine = infer(
         after_autostart       = after_autostart
     )
 )
+
+@test before_model_creation_called[] #hide
+@test after_model_creation_called[] #hide
+@test before_autostart_called[] #hide
+@test after_autostart_called[] #hide
 
 RxInfer.stop(engine) #hide
 nothing #hide
@@ -904,8 +918,9 @@ end
 ```
 
 
-## [Where to go next?](@id manual-online-inference-event-loop)
+## [Where to go next?](@id manual-online-inference-where-to-go)
 
 This guide covered some fundamental usages of the [`infer`](@ref) function in the context of streamline inference, 
 but did not cover all the available keyword arguments of the function. Read more explanation about the other keyword arguments 
 in the [Overview](@ref manual-inference-overview) section or check out the [Static Inference](@ref manual-static-inference) section.
+Also check out more complex [examples](https://reactivebayes.github.io/RxInfer.jl/stable/examples/overview/).
