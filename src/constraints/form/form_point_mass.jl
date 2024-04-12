@@ -1,5 +1,6 @@
+export PointMassFormConstraint
 
-import ReactiveMP: is_point_mass_form_constraint, default_form_check_strategy, default_prod_constraint, make_form_constraint, constrain_form
+import ReactiveMP: default_form_check_strategy, default_prod_constraint, constrain_form
 import DomainSets: Domain, infimum, supremum
 import Optim
 
@@ -9,14 +10,14 @@ using BayesBase, Distributions, ExponentialFamily
     PointMassFormConstraint
 
 One of the form constraint objects. Constraint a message to be in a form of dirac's delta point mass. 
-By default uses `Optim.jl` package to find argmin of -logpdf(x). 
+By default uses `Optim.jl` package to find argmin of `-logpdf(x)`. 
 Accepts custom `optimizer` callback which might be used to customise optimisation procedure with different packages 
 or different arguments for `Optim.jl` package.
 
 # Keyword arguments
-- `optimizer`: specifies a callback function for logpdf optimisation. See also: `ReactiveMP.default_point_mass_form_constraint_optimizer`
-- `starting_point`: specifies a callback function for initial optimisation point: See also: `ReactiveMP.default_point_mass_form_constraint_starting_point`
-- `boundaries`: specifies a callback function for determining optimisation boundaries: See also: `ReactiveMP.default_point_mass_form_constraint_boundaries`
+- `optimizer`: specifies a callback function for logpdf optimisation. See also: `RxInfer.default_point_mass_form_constraint_optimizer`
+- `starting_point`: specifies a callback function for initial optimisation point: See also: `RxInfer.default_point_mass_form_constraint_starting_point`
+- `boundaries`: specifies a callback function for determining optimisation boundaries: See also: `RxInfer.default_point_mass_form_constraint_boundaries`
 
 ## Custom optimizer callback interface
 
@@ -46,12 +47,6 @@ function custom_boundaries(::Type{ Univariate }, ::Type{ Continuous }, constrain
     return (-Inf, Inf)
 end
 ```
-
-# Traits 
-- `is_point_mass_form_constraint` = `true`
-- `default_form_check_strategy`   = `FormConstraintCheckLast()`
-- `default_prod_constraint`       = `GenericProd()`
-- `make_form_constraint`          = `PointMass` (for use in `@constraints` macro)
 """
 struct PointMassFormConstraint{F, P, B} <: AbstractFormConstraint
     optimizer      :: F
@@ -67,13 +62,9 @@ PointMassFormConstraint(;
     boundaries     = default_point_mass_form_constraint_boundaries
 ) = PointMassFormConstraint(optimizer, starting_point, boundaries)
 
-ReactiveMP.is_point_mass_form_constraint(::PointMassFormConstraint) = true
-
 ReactiveMP.default_form_check_strategy(::PointMassFormConstraint) = FormConstraintCheckLast()
 
 ReactiveMP.default_prod_constraint(::PointMassFormConstraint) = GenericProd()
-
-ReactiveMP.make_form_constraint(::Type{<:PointMass}, args...; kwargs...) = PointMassFormConstraint(args...; kwargs...)
 
 call_optimizer(pmconstraint::PointMassFormConstraint, distribution::D) where {D}      = pmconstraint.optimizer(variate_form(D), value_support(D), pmconstraint, distribution)
 call_boundaries(pmconstraint::PointMassFormConstraint, distribution::D) where {D}     = pmconstraint.boundaries(variate_form(D), value_support(D), pmconstraint, distribution)
@@ -83,6 +74,14 @@ ReactiveMP.constrain_form(pmconstraint::PointMassFormConstraint, distribution) =
 
 # There is no need to call the optimizer on a `Distribution` object since they should have a well defined `mode`
 ReactiveMP.constrain_form(::PointMassFormConstraint, distribution::Distribution) = PointMass(mode(distribution))
+
+"""
+    default_point_mass_form_constraint_optimizer(::Type{<:VariateType}, ::Type{<:ValueSupport}, constraint::PointMassFormConstraint, distribution)
+
+Defines a default optimisation procedure for the `PointMassFormConstraint`. By default uses `Optim.jl` package to find argmin of `-logpdf(x)`.
+Uses the `starting_point` and `boundaries` callbacks to determine the starting point and boundaries for the optimisation procedure.
+"""
+function default_point_mass_form_constraint_optimizer end
 
 function default_point_mass_form_constraint_optimizer(::Type{Univariate}, ::Type{Continuous}, constraint::PointMassFormConstraint, distribution)
     target = let distribution = distribution
@@ -116,6 +115,13 @@ function default_point_mass_form_constraint_optimizer(::Type{Univariate}, ::Type
     return PointMass(p_new)
 end
 
+"""
+    default_point_mass_form_constraint_boundaries(::Type{<:VariateType}, ::Type{<:ValueSupport}, constraint::PointMassFormConstraint, distribution)
+
+Defines a default boundaries for the `PointMassFormConstraint`. By default simply uses the support of the distribution.
+"""
+function default_point_mass_form_constraint_boundaries end
+
 function default_point_mass_form_constraint_boundaries(::Type{Univariate}, ::Type{Continuous}, constraint::PointMassFormConstraint, distribution)
     return __default_univariate_boundaries(support(distribution))
 end
@@ -123,6 +129,14 @@ end
 __default_univariate_boundaries(interval::AbstractRange) = (minimum(interval), maximum(interval))
 __default_univariate_boundaries(interval::Distributions.RealInterval) = (minimum(interval), maximum(interval))
 __default_univariate_boundaries(domain::Domain) = (infimum(domain), supremum(domain))
+
+"""
+    default_point_mass_form_constraint_starting_point(::Type{<:VariateType}, ::Type{<:ValueSupport}, constraint::PointMassFormConstraint, distribution)
+
+Defines a default starting point for the `PointMassFormConstraint`. By default uses the support of the distribution.
+If support is unbounded returns a zero point. Otherwise throws an error.
+"""
+function default_point_mass_form_constraint_starting_point end
 
 function default_point_mass_form_constraint_starting_point(::Type{Univariate}, ::Type{Continuous}, constraint::PointMassFormConstraint, distribution)
     lower, upper = call_boundaries(constraint, distribution)

@@ -222,6 +222,8 @@ function Base.run(examplesrunner::ExamplesRunner)
             end
         end
 
+        write(io_main_overview, "- [External examples](@ref external-examples): Featured examples from the community.\n")
+
         foreach(examples) do example
             mdname = replace(example[:filename], ".ipynb" => ".md")
             mdpath = joinpath(@__DIR__, "..", "docs", "src", "examples", string(example[:category]), mdname)

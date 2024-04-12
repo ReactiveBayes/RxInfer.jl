@@ -1,1 +1,0 @@
-# [Background: variational inference](@id intro-background-variational-inference)

@@ -1,4 +1,5 @@
 import Dates: format, now
+using MacroTools
 
 # Some tests use plotting, this part contains helper functions to simplify executing plots
 
@@ -52,4 +53,21 @@ macro test_benchmark(group, id, code)
         end
     end
     return esc(ret)
+end
+
+export @test_expression_generating
+
+macro test_expression_generating(lhs, rhs)
+    test_expr_gen = gensym(:text_expr_gen)
+    return esc(
+        quote
+            $test_expr_gen = (prettify($lhs) == prettify($rhs))
+            if !$test_expr_gen
+                println("Expressions do not match: ")
+                println("lhs: ", prettify($lhs))
+                println("rhs: ", prettify($rhs))
+            end
+            @test (prettify($lhs) == prettify($rhs))
+        end
+    )
 end

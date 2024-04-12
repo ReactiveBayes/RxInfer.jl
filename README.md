@@ -36,12 +36,13 @@ Inference with RxInfer             |  Inference with HMC
 ![](benchmarks/plots/inference_rxinfer.svg?raw=true&sanitize=true)  |  ![](benchmarks/plots/inference_turing.svg?raw=true&sanitize=true)
 
 The benchmark and accuracy experiment, which generated these plots, is available in the `benchmarks/` folder. Note, that the execution speed and accuracy 
-of the HMC estimator heavily depends on the choice of hyper-parameters. 
-In this example, RxInfer executes exact inference consistently and does not depend on any hyper-parameters.
+of the HMC estimator heavily depends on the choice of hyperparameters. 
+In this example, RxInfer executes exact inference consistently and does not depend on any hyperparameters.
 
 ### References
 
 - [RxInfer: A Julia package for reactive real-time Bayesian inference](https://doi.org/10.21105/joss.05161) - a reference paper for the `RxInfer.jl` framwork.
+- [Reactive Probabilistic Programming for Scalable Bayesian Inference](https://pure.tue.nl/ws/portalfiles/portal/313860204/20231219_Bagaev_hf.pdf) - a PhD dissertation outlining core ideas and principles behind `RxInfer` ([link2](https://research.tue.nl/nl/publications/reactive-probabilistic-programming-for-scalable-bayesian-inferenc), [link3](https://github.com/bvdmitri/phdthesis)).
 - [Variational Message Passing and Local Constraint Manipulation in Factor Graphs](https://doi.org/10.3390/e23070807) - describes theoretical aspects of the underlying Bayesian inference method.
 - [Reactive Message Passing for Scalable Bayesian Inference](https://doi.org/10.48550/arXiv.2112.13251) - describes implementation aspects of the Bayesian inference engine and performs benchmarks and accuracy comparison on various models.
 - [A Julia package for reactive variational Bayesian inference](https://doi.org/10.1016/j.simpa.2022.100299) - a reference paper for the `ReactiveMP.jl` package, the underlying inference engine.
@@ -55,6 +56,13 @@ Install RxInfer through the Julia package manager:
 ```
 
 Optionally, use `] test RxInfer` to validate the installation by running the test suite.
+
+# Documentation
+
+For more information about `RxInfer.jl` please refer to the [documentation](https://reactivebayes.github.io/RxInfer.jl/stable/).
+
+> [!NOTE]
+> `RxInfer.jl` API has been changed in version `3.0.0`. See [Migration Guide](https://reactivebayes.github.io/RxInfer.jl/stable/manuals/migration-guide-v2-v3) for more details.
 
 # Getting Started
 
@@ -79,7 +87,7 @@ n = 500  # Number of coin flips
 p = 0.75 # Bias of a coin
 
 distribution = Bernoulli(p) 
-dataset      = float.(rand(Bernoulli(p), n))
+dataset      = float.(rand(distribution, n))
 ```
 
 ### Model specification
@@ -112,32 +120,32 @@ P(y_{1:N}, \theta) = P(\theta) \prod_{i=1}^N P(y_i | \theta).
 ```
 
 Now let's see how to specify this model using GraphPPL's package syntax.
-
 ```julia
-
 # GraphPPL.jl export `@model` macro for model specification
 # It accepts a regular Julia function and builds an FFG under the hood
-@model function coin_model(n)
-
-    # `datavar` creates data 'inputs' in our model
-    # We will pass data later on to these inputs
-    # In this example we create a sequence of inputs that accepts Float64
-    y = datavar(Float64, n)
-    
+@model function coin_model(y, a, b) 
     # We endow θ parameter of our model with some prior
-    θ ~ Beta(2.0, 7.0)
-    
+    θ ~ Beta(a, b)
     # We assume that outcome of each coin flip 
     # is governed by the Bernoulli distribution
-    for i in 1:n
+    for i in eachindex(y)
         y[i] ~ Bernoulli(θ)
-    end
-    
+    end  
 end
-
 ```
 
-As you can see, `RxInfer` offers a model specification syntax that resembles closely to the mathematical equations defined above. We use `datavar` function to create "clamped" variables that take specific values at a later date. $\theta \sim \mathrm{Beta}(2.0, 7.0)$ expression creates random variable $θ$ and assigns it as an output of $\mathrm{Beta}$ node in the corresponding FFG. 
+Alternatively, we could use a broadcasting syntax.
+```julia
+@model function coin_model(y, a, b) 
+    θ  ~ Beta(a, b)
+    y .~ Bernoulli(θ) 
+end
+```
+
+As you can see, `RxInfer` offers a model specification syntax that resembles closely to the mathematical equations defined above. The $\theta \sim \mathrm{Beta}(2.0, 7.0)$ expression creates random variable $θ$ and assigns it as an output of $\mathrm{Beta}$ node in the corresponding FFG. 
+
+> [!NOTE]
+> `RxInfer.jl` uses `GraphPPL.jl` for model and constraints specification. `GraphPPL.jl` API has been changed in version `4.0.0`. See [Migration Guide](https://reactivebayes.github.io/GraphPPL.jl/stable/) for more details.
 
 ### Inference specification
 
@@ -145,7 +153,7 @@ Once we have defined our model, the next step is to use `RxInfer` API to infer q
 
 ```julia
 result = infer(
-    model = coin_model(length(dataset)),
+    model = coin_model(a = 2.0, b = 7.0),
     data  = (y = dataset, )
 )
 ```

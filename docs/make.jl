@@ -79,23 +79,9 @@ ExamplesPages = map(collect(pairs(ExamplesCategoriesPages))) do (label, info)
     return info.title => info.pages
 end
 
-# WIP: Keep it as a nice starting approach for adding a header, currently we are using `assets/header.js`
-# struct DocumentationWriter <: Documenter.Writer
-#     base :: Documenter.HTML
-# end
-
-# abstract type ExtendedHTMLFormat <: Documenter.Writers.FormatSelector end
-
-# Documenter.Selectors.order(::Type{ExtendedHTMLFormat})            = 4.0
-# Documenter.Selectors.matcher(::Type{ExtendedHTMLFormat}, fmt, _)  = isa(fmt, DocumentationWriter)
-
-# function Documenter.Selectors.runner(::Type{ExtendedHTMLFormat}, fmt, doc) 
-#     return Documenter.Writers.HTMLWriter.render(doc, fmt.base)
-# end
-
 makedocs(;
     draft = false,
-    warnonly = Documenter.except(:doctest, :eval_block, :example_block, :meta_block, :parse_error, :setup_block),
+    warnonly = false,
     modules = [RxInfer],
     authors = "Bagaev Dmitry <d.v.bagaev@tue.nl> and contributors",
     sitename = "RxInfer.jl",
@@ -103,27 +89,37 @@ makedocs(;
         prettyurls = get(ENV, "CI", "false") == "true",
         canonical = "https://reactivebayes.github.io/RxInfer.jl",
         edit_link = "main",
-        assets = String["assets/theme.css", "assets/header.css", "assets/header.js"]
+        warn_outdated = true,
+        assets = String["assets/theme.css", "assets/header.css", "assets/header.js"],
+        description = "Julia package for automated Bayesian inference on a factor graph with reactive message passing",
+        footer = "Created in [BIASlab](https://biaslab.github.io/), maintained by [ReactiveBayes](https://github.com/ReactiveBayes), powered by [Documenter.jl](https://github.com/JuliaDocs/Documenter.jl) and the [Julia Programming Language](https://julialang.org/)."
     ),
     pages = [
         "Home" => "index.md",
         "User guide" => [
-            # "Background: variational inference" => "manuals/background.md",
             "Getting started"           => "manuals/getting-started.md",
             "RxInfer.jl vs. Others"     => "manuals/comparison.md",
             "Model specification"       => "manuals/model-specification.md",
             "Constraints specification" => "manuals/constraints-specification.md",
             "Meta specification"        => "manuals/meta-specification.md",
-            "Inference specification"   => ["Overview" => "manuals/inference/overview.md", "Static vs Streamline inference" => "manuals/inference/infer.md", "Inference results postprocessing" => "manuals/inference/postprocess.md", "Manual inference specification" => "manuals/inference/manual.md"],
-            "Inference customization"   => ["Defining a custom node and rules" => "manuals/custom-node.md"],
-            "Messages initialization"   => "manuals/understanding-why-to-initialize-messages.md",
-            "Debugging"                 => "manuals/debugging.md",
-            "Delta node"                => "manuals/delta-node.md"
+            "Inference specification"   => [
+                "Overview" => "manuals/inference/overview.md", 
+                "Static inference" => "manuals/inference/static.md", 
+                "Streamline inference" => "manuals/inference/streamlined.md",
+                "Initialization"   => "manuals/inference/initialization.md",
+                "Deterministic nodes" => "manuals/inference/delta-node.md"
+            ],
+            "Inference customization"   => [
+                "Defining a custom node and rules" => "manuals/customization/custom-node.md",
+                "Inference results postprocessing" => "manuals/customization/postprocess.md", 
+            ],
+            "Debugging" => "manuals/debugging.md",
+            "Migration from v2 to v3" => "manuals/migration-guide-v2-v3.md"
         ],
         "Library" => [
-            "Built-in functional form constraints" => "library/functional-forms.md",
-            "Model specification" => "library/model-specification.md",
+            "Model construction" => "library/model-construction.md",
             "Bethe Free Energy" => "library/bethe-free-energy.md",
+            "Functional form constraints" => "library/functional-forms.md",
             "Exported methods" => "library/exported-methods.md"
         ],
         "Examples" => [

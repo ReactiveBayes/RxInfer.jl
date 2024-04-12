@@ -7,38 +7,30 @@
     include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
     ## Model definition
-    @model function linear_regression(n)
+    @model function linear_regression(x, y)
         a ~ Normal(mean = 0.0, var = 1.0)
         b ~ Normal(mean = 0.0, var = 1.0)
-
-        x = datavar(Float64, n)
-        y = datavar(Float64, n)
-
-        for i in 1:n
-            y[i] ~ Normal(mean = x[i] * b + a, var = 1.0)
+        for (i, k) in zip(eachindex(x), eachindex(y))
+            y[k] ~ Normal(mean = x[i] * b + a, var = 1.0)
         end
     end
 
-    @model function linear_regression_broadcasted(n)
+    @model function linear_regression_broadcasted(x, y)
         a ~ Normal(mean = 0.0, var = 1.0)
         b ~ Normal(mean = 0.0, var = 1.0)
-
-        x = datavar(Float64, n)
-        y = datavar(Float64, n)
-
-        # Variance over-complicated for a purpose of checking that this expressions are allowed, it should be equal to `1.0`
+        # Variance over-complicated for a purpose of checking that this expressions is allowed, 
+        # it should be equal to `1.0`, but it shouldn't create any extra factor nodes
         y .~ Normal(mean = x .* b .+ a, var = det((diageye(2) .+ diageye(2)) ./ 2))
+    end
+
+    init = @initialization begin
+        μ(b) = NormalMeanVariance(0.0, 100.0)
     end
 
     ## Inference definition
     function linreg_inference(modelfn, niters, xdata, ydata)
-        return inference(
-            model = modelfn(length(xdata)),
-            data = (x = xdata, y = ydata),
-            returnvars = (a = KeepLast(), b = KeepLast()),
-            initmessages = (b = NormalMeanVariance(0.0, 100.0),),
-            free_energy = true,
-            iterations = niters
+        return infer(
+            model = modelfn(), data = (x = xdata, y = ydata), returnvars = (a = KeepLast(), b = KeepLast()), initialization = init, free_energy = true, iterations = niters
         )
     end
 

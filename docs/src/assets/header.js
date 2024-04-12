@@ -31,11 +31,12 @@ window.onload = function() {
 
                 const items = [
                     { title: "Home", link: "http://www.rxinfer.ml", icon: [ "fas", "fa-diagram-project" ] },
-                    { title: "Get Started", link: "https://reactivebayes.github.io/RxInfer.jl/stable/manuals/getting-started/" },
-                    { title: "Documentation", link: "https://reactivebayes.github.io/RxInfer.jl/stable/" },
-                    { title: "Examples", link: "https://reactivebayes.github.io/RxInfer.jl/stable/examples/overview/" },
-                    { title: "Papers", link: "https://reactivebayes.github.io/publication/" },
-                    { title: "Team", link: "https://reactivebayes.github.io/team/" },
+                    { title: "Get Started", link: "https://reactivebayes.github.io/RxInfer.jl/stable/manuals/getting-started/", icon: [ "fas", "fa-person-chalkboard" ] },
+                    { title: "Documentation", link: "https://reactivebayes.github.io/RxInfer.jl/stable/", icon: [ "fas", "fa-book" ] },
+                    { title: "Examples", link: "https://reactivebayes.github.io/RxInfer.jl/stable/examples/overview/", icon: [ "fas", "fa-laptop-code" ] },
+                    { title: "Papers", link: "https://biaslab.github.io/publication/", icon: [ "far", "fa-book-open" ] },
+                    { title: "Team", link: "https://github.com/orgs/ReactiveBayes/people", icon: [ "fas", "fa-people-group" ] },
+                    { title: "Discussions", link: "https://github.com/orgs/ReactiveBayes/discussions", icon: [ "far", "fa-comment" ] },
                     // { title: "Contact", link: "http://www.rxinfer.ml/contact/" }, the redirect is broken for now
                     { title: "GitHub", link: "https://github.com/reactivebayes/RxInfer.jl", icon: [ "fab", "fa-github" ] },
                 ]

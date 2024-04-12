@@ -1,87 +1,91 @@
 @testitem "Latent autoregressive model" begin
     using StableRNGs, Plots, BenchmarkTools
-    # `include(test/utiltests.jl)`
+
     include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
-    @model function lar_model(::Type{Multivariate}, n, order, c, stype, τ)
+    # The latent autoregressive model may run in different regimes, e.g. 
+    # - it can be a Univariate autoregressive process where we only need to infer a single AR coefficient
+    # - it can be a Multivariate autoregressive process where we need to infer a vector of AR coefficients
+    #   - but the vector can be of length 1, which is essentially a Univariate AR process
+    # The test below defines different combinations of the model and checks that the inference works correctly.
 
-        # Parameter priors
-        γ ~ Gamma(shape = 1.0, rate = 1.0)
+    # The prior on `θ` in case if the Autoregressive process is Multivariate
+    @model function lar_multivariate_θ_prior(θ, order)
         θ ~ MvNormal(mean = zeros(order), precision = diageye(order))
-
-        # We create a sequence of random variables for hidden states
-        x = randomvar(n)
-        # As well a sequence of observartions
-        y = datavar(Float64, n)
-
-        ct = constvar(c)
-        # We assume observation noise to be known
-        cτ = constvar(τ)
-
-        # Prior for first state
-        x0 ~ MvNormal(mean = zeros(order), precision = diageye(order))
-
-        x_prev = x0
-
-        # AR process requires extra meta information
-        meta = ARMeta(Multivariate, order, stype)
-
-        for i in 1:n
-            # Autoregressive node uses structured factorisation assumption between states
-            x[i] ~ AR(x_prev, θ, γ) where {q = q(y, x)q(γ)q(θ), meta = meta}
-            y[i] ~ Normal(mean = dot(ct, x[i]), precision = cτ)
-            x_prev = x[i]
-        end
     end
 
-    @model function lar_model(::Type{Univariate}, n, order, c, stype, τ)
-
-        # Parameter priors
-        γ ~ Gamma(shape = 1.0, rate = 1.0)
+    # The prior on `θ` in case if the Autoregressive process is Univariate
+    @model function lar_univariate_θ_prior(θ, order)
         θ ~ Normal(mean = 0.0, precision = 1.0)
+    end
 
-        # We create a sequence of random variables for hidden states
-        x = randomvar(n)
-        # As well a sequence of observartions
-        y = datavar(Float64, n)
+    # The prior on `x0` in case if the Autoregressive process is Multivariate
+    @model function lar_multivariate_x0_prior(x0, order)
+        x0 ~ MvNormal(mean = zeros(order), precision = diageye(order))
+    end
 
-        ct = constvar(c)
-        # We assume observation noise to be known
-        cτ = constvar(τ)
-
-        # Prior for first state
+    # The prior on `x0` in case if the Autoregressive process is Univariate
+    @model function lar_univariate_x0_prior(x0, order)
         x0 ~ Normal(mean = 0.0, precision = 1.0)
+    end
 
+    # The state transition with the `AR` node for the Multivariate case
+    @model function lar_multivariate_state_transition(order, stype, observation, x_next, x_prev, θ, γ, c, τ)
+        x_next ~ AR(x_prev, θ, γ) where {meta = ARMeta(Multivariate, order, stype)}
+        observation ~ Normal(mean = dot(c, x_next), precision = τ)
+    end
+
+    # The state transition with the `AR` node for the Univariate case
+    @model function lar_univariate_state_transition(order, stype, observation, x_next, x_prev, θ, γ, c, τ)
+        x_next ~ AR(x_prev, θ, γ) where {meta = ARMeta(Univariate, order, stype)}
+        observation ~ Normal(mean = c * x_next, precision = τ)
+    end
+
+    # Generic LAR model implementation, which depends on `θprior`, `x0prior`, `state_transition` submodels
+    @model function lar_model(θprior, x0prior, state_transition, y, c, τ, order, stype)
+        γ ~ Gamma(shape = 1.0, rate = 1.0)
+        θ ~ θprior(order = order)
+        x0 ~ x0prior(order = order)
         x_prev = x0
-
-        # AR process requires extra meta information
-        meta = ARMeta(Univariate, order, stype)
-
-        for i in 1:n
-            x[i] ~ AR(x_prev, θ, γ) where {q = q(y, x)q(γ)q(θ), meta = meta}
-            y[i] ~ Normal(mean = ct * x[i], precision = cτ)
+        for i in eachindex(y)
+            x[i] ~ state_transition(observation = y[i], x_prev = x_prev, θ = θ, γ = γ, c = c, τ = τ, order = order, stype = stype)
             x_prev = x[i]
         end
     end
 
-    function lar_init_marginals(::Type{Multivariate}, order)
-        return (γ = GammaShapeRate(1.0, 1.0), θ = MvNormalMeanPrecision(zeros(order), diageye(order)))
+    # We specify structured constraints over the states and mean-field over the autoregressive coefficients/parameters
+    @constraints function lar_constraints()
+        q(x, x0, γ, θ) = q(x, x0)q(γ)q(θ)
     end
 
-    function lar_init_marginals(::Type{Univariate}, order)
-        return (γ = GammaShapeRate(1.0, 1.0), θ = NormalMeanPrecision(0.0, 1.0))
+    # The initial marginals for the autoregressive coefficients/parameters depending on the type of the AR process
+    lar_init_marginals(::Type{Multivariate}, order) = @initialization begin
+        q(γ) = GammaShapeRate(1.0, 1.0)
+        q(θ) = MvNormalMeanPrecision(zeros(order), diageye(order))
+    end
+    lar_init_marginals(::Type{Univariate}, order) = @initialization begin
+        q(γ) = GammaShapeRate(1.0, 1.0)
+        q(θ) = NormalMeanPrecision(0.0, 1.0)
     end
 
-    function lar_inference(data, order, artype, stype, niter, τ)
-        n = length(data)
+    # The model constructor depending on the type of the AR process
+    lar_make_model(::Type{Multivariate}, c, τ, stype, order) = lar_model(
+        θprior = lar_multivariate_θ_prior, x0prior = lar_multivariate_x0_prior, state_transition = lar_multivariate_state_transition, order = order, c = c, stype = stype, τ = τ
+    )
+    lar_make_model(::Type{Univariate}, c, τ, stype, order) = lar_model(
+        θprior = lar_univariate_θ_prior, x0prior = lar_univariate_x0_prior, state_transition = lar_univariate_state_transition, order = order, c = c, stype = stype, τ = τ
+    )
+
+    function lar_inference(data, order, artype, stype, τ, iterations)
         c = ReactiveMP.ar_unit(artype, order)
-        return inference(
-            model = lar_model(artype, n, order, c, stype, τ),
-            data = (y = data,),
-            initmarginals = lar_init_marginals(artype, order),
-            returnvars = (γ = KeepEach(), θ = KeepEach(), x = KeepLast()),
-            iterations = niter,
-            free_energy = Float64
+        return infer(
+            model          = lar_make_model(artype, c, τ, stype, order),
+            data           = (y = data,),
+            initialization = lar_init_marginals(artype, order),
+            returnvars     = (γ = KeepEach(), θ = KeepEach(), x = KeepLast()),
+            constraints    = lar_constraints(),
+            iterations     = iterations,
+            free_energy    = Float64
         )
     end
 
@@ -119,7 +123,7 @@
     states, observations = generate_lar_data(rng, n, real_θ, real_γ, real_τ)
 
     # Test AR(1) + Univariate
-    result = lar_inference(observations, 1, Univariate, ARsafe(), 15, real_τ)
+    result = lar_inference(observations, 1, Univariate, ARsafe(), real_τ, 15)
     qs     = result.posteriors
     fe     = result.free_energy
 
@@ -135,11 +139,10 @@
 
     # Test AR(k) + Multivariate
     for k in 1:4
-        result = lar_inference(observations, k, Multivariate, ARsafe(), 15, real_τ)
-        qs     = result.posteriors
-        fe     = result.free_energy
-
-        (γ, θ, xs) = (qs[:γ], qs[:θ], qs[:x])
+        local result = lar_inference(observations, k, Multivariate, ARsafe(), real_τ, 15)
+        local qs = result.posteriors
+        local fe = result.free_energy
+        local (γ, θ, xs) = (qs[:γ], qs[:θ], qs[:x])
 
         @test length(xs) === n
         @test length(γ) === 15
@@ -149,7 +152,7 @@
     end
 
     # AR(5) + Multivariate
-    result = lar_inference(observations, length(real_θ), Multivariate, ARsafe(), 15, real_τ)
+    result = lar_inference(observations, length(real_θ), Multivariate, ARsafe(), real_τ, 15)
     qs     = result.posteriors
     fe     = result.free_energy
 
