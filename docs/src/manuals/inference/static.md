@@ -290,9 +290,7 @@ plot(results.free_energy, label = "Bethe Free Energy")
 
 ## [Callbacks](@id manual-static-inference-callbacks)
 
-The [`infer`](@ref) function has its own lifecycle.
-A user is free to inject some extra logic during the inference procedure, e.g. for [debugging purposes](@ref user-guide-debugging-callbacks).
-Here are available callbacks that can be used together with the static datasets:
+The [`infer`](@ref) function has its own lifecycle, consisting of multiple steps. A user is free to inject some extra logic during the inference procedure, e.g. for [debugging purposes](@ref user-guide-debugging-callbacks). By supplying callbacks, users can inject custom logic on specific moments during the inference procedure. Here are available callbacks that can be used together with the static datasets:
 ```@eval
 using RxInfer, Test, Markdown
 # Update the documentation below if this test does not pass
@@ -322,6 +320,41 @@ after_model_creation(model::ProbabilisticModel)
 ```
 Calls right after the model has been created, accepts a single argument, the `model`.
 
+```julia
+before_inference(model::ProbabilisticModel)
+```
+Calls before the inference procedure starts, accepts a single argument, the `model`.
+
+```julia
+after_inference(model::ProbabilisticModel)
+```
+Calls after the inference procedure ends, accepts a single argument, the `model`.
+
+```julia
+before_iteration(model::ProbabilisticModel, iteration::Int)
+```
+Calls before each iteration, accepts two arguments: the `model` and the current iteration number.
+
+```julia
+after_iteration(model::ProbabilisticModel, iteration::Int)
+```
+Calls after each iteration, accepts two arguments: the `model` and the current iteration number.
+
+```julia
+before_data_update(model::ProbabilisticModel, data)
+```
+Calls before each data update, accepts two arguments: the `model` and the updated data.
+
+```julia
+after_data_update(model::ProbabilisticModel, data)
+```
+Calls after each data update, accepts two arguments: the `model` and the updated data.
+
+```julia
+on_marginal_update(model::ProbabilisticModel, name, update)
+```
+Calls after each marginal update, accepts three arguments: the `model`, the name of the updated marginal, and the updated marginal itself.
+
 ---
 
 Here is an example usage of the outlined callbacks:
@@ -329,6 +362,12 @@ Here is an example usage of the outlined callbacks:
 ```@example manual-static-inference
 before_model_creation_called = Ref(false) #hide
 after_model_creation_called = Ref(false) #hide
+before_inference_called = Ref(false) #hide
+after_inference_called = Ref(false) #hide
+before_iteration_called = Ref(false) #hide
+after_iteration_called = Ref(false) #hide
+before_data_update_called = Ref(false) #hide
+after_data_update_called = Ref(false) #hide
 on_marginal_update_called = Ref(false) #hide
 
 function before_model_creation()
@@ -343,6 +382,36 @@ function after_model_creation(model::ProbabilisticModel)
     println("  The number of latent states is: ", length(RxInfer.getrandomvars(model)))
     println("  The number of data points is: ", length(RxInfer.getdatavars(model)))
     println("  The number of constants is: ", length(RxInfer.getconstantvars(model)))
+end
+
+function before_inference(model::ProbabilisticModel)
+    before_inference_called[] = true #hide
+    println("The inference procedure is about to start")
+end
+
+function after_inference(model::ProbabilisticModel)
+    after_inference_called[] = true #hide
+    println("The inference procedure has ended")
+end
+
+function before_iteration(model::ProbabilisticModel, iteration::Int)
+    before_iteration_called[] = true #hide
+    println("The iteration ", iteration, " is about to start")
+end
+
+function after_iteration(model::ProbabilisticModel, iteration::Int)
+    after_iteration_called[] = true #hide
+    println("The iteration ", iteration, " has ended")
+end
+
+function before_data_update(model::ProbabilisticModel, data)
+    before_data_update_called[] = true #hide
+    println("The data is about to be updated")
+end
+
+function after_data_update(model::ProbabilisticModel, data)
+    after_data_update_called[] = true #hide
+    println("The data has been updated")
 end
 
 function on_marginal_update(model::ProbabilisticModel, name, update)
@@ -362,12 +431,24 @@ results = infer(
     callbacks      = (
         before_model_creation = before_model_creation,
         after_model_creation = after_model_creation,
+        before_inference = before_inference,
+        after_inference = after_inference,
+        before_iteration = before_iteration,
+        after_iteration = after_iteration,
+        before_data_update = before_data_update,
+        after_data_update = after_data_update,
         on_marginal_update = on_marginal_update
     )
 )
 
 @test before_model_creation_called[] #hide
 @test after_model_creation_called[] #hide
+@test before_inference_called[] #hide
+@test after_inference_called[] #hide
+@test before_iteration_called[] #hide
+@test after_iteration_called[] #hide
+@test before_data_update_called[] #hide
+@test after_data_update_called[] #hide
 @test on_marginal_update_called[] #hide
 
 nothing #hide
