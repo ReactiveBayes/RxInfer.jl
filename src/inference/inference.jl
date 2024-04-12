@@ -287,7 +287,9 @@ function infer(;
     elseif isnothing(data) && isnothing(predictvars) && isnothing(datastream)
         error("""One of the keyword arguments `data` or `predictvars` or `datastream` must be specified""")
     elseif !isnothing(initmessages) && !isnothing(initmarginals)
-        error("""`initmessages` and `initmarginals` keyword arguments have been deprecated and removed. Use the `@initialization` macro and the `initialization` keyword instead.""")
+        error(
+            """`initmessages` and `initmarginals` keyword arguments have been deprecated and removed. Use the `@initialization` macro and the `initialization` keyword instead."""
+        )
     end
 
     infer_check_dicttype(:callbacks, callbacks)

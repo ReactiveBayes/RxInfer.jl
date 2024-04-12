@@ -349,7 +349,7 @@ function available_callbacks(::typeof(batch_inference))
         :after_data_update,
         :after_iteration,
         :after_inference
-    )) 
+    ))
 end
 
 function available_events(::typeof(batch_inference))

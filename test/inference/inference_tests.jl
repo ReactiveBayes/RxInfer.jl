@@ -796,7 +796,7 @@ end
         y ~ Categorical(θ)
     end
 
-    streamlined_autoupdates = @autoupdates begin 
+    streamlined_autoupdates = @autoupdates begin
         (p,) = params(q(θ))
     end
 
@@ -820,29 +820,27 @@ end
         @test isequal(first(mean(result.posteriors[:θ])), last(mean(result.posteriors[:θ])))
     end
 
-
     @testset "Test misspecified event type in the streamlined inference" begin
         @test_logs (:warn, r"Unknown event type: blabla. Available events: .*") infer(
-            model = rolling_die_streamlined(), 
-            data = (y = observations, ), 
-            autoupdates = streamlined_autoupdates, 
+            model = rolling_die_streamlined(),
+            data = (y = observations,),
+            autoupdates = streamlined_autoupdates,
             initialization = streamlined_init,
             autostart = true,
             keephistory = 1,
             warn = true,
-            events = Val((:blabla, ))
+            events = Val((:blabla,))
         )
         result = @test_logs infer(
-            model = rolling_die_streamlined(), 
-            data = (y = observations, ), 
-            autoupdates = streamlined_autoupdates, 
+            model = rolling_die_streamlined(),
+            data = (y = observations,),
+            autoupdates = streamlined_autoupdates,
             initialization = streamlined_init,
             autostart = true,
             keephistory = 1,
             warn = false,
-            events = Val((:blabla, ))
+            events = Val((:blabla,))
         )
         @test isequal(first(mean(result.history[:θ][end])), last(mean(result.history[:θ][end])))
     end
 end
-
