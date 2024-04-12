@@ -156,8 +156,8 @@ engine = infer(
 ```
 
 ```@docs
-KeepLast()
-KeepEach()
+KeepLast
+KeepEach
 ```
 
 - ### `predictvars`
