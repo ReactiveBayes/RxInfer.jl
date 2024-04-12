@@ -25,6 +25,8 @@ infer(model = coin_toss(prior=Beta(1, 1)),
 Initialization of messages and marginals to kickstart the inference procedure was previously done with the `initmessages` and `initmarginals` keyword. With the introduction of a nested model specificiation in the `@model` macro, we now need a more specific way to initialize messages and marginals. This is done with the new `@initialization` macro. The syntax for the `@initialization` macro is similar to the `@constraints` and `@meta` macro. An example is shown below:
 
 ```@example migration-guide
+@model function submodel() end #hide
+
 @initialization begin
     # Initialize the marginal for the variable x
     q(x) = vague(NormalMeanVariance)

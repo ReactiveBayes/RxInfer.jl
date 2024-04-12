@@ -171,3 +171,15 @@ println("Estimated mean for latent state `x` is ", mean(inference_result.posteri
     The above example is not mathematically correct. It is only used to show how we can work with `@meta` as well as how to create a meta structure for a node in `RxInfer.jl`.
 
 Read more about the `@meta` macro in the [official documentation](https://reactivebayes.github.io/GraphPPL.jl/stable/) of GraphPPL
+
+## Adding metadata to nodes in submodels
+
+Similarly to the `@constraints` macro, the `@meta` macro exposes syntax to push metadata to nodes in submodels. With the `for meta in submodel` syntax we can apply metadata to nodes in submodels. For example, if we use the `gaussian_model_with_meta` mnodel in a larger model, we can write:
+
+```@example custom-meta
+custom_meta = @meta begin
+    for meta in gaussian_model_with_meta
+        NormalMeanVariance(y) -> MetaConstrainedMeanNormal(-2, 2)
+    end
+end
+```

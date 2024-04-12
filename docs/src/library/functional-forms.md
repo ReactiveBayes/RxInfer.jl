@@ -100,7 +100,7 @@ form_constraint.fixed_value = Gamma(1.0, 1.0)
 
 ## [CompositeFormConstraint](@id lib-forms-composite-constraint)
 
-It is possible to create a composite functional form constraint with the `+` operator, e.g:
+It is possible to create a composite functional form by stacking operators, e.g:
 
 ```@example constraints-functional-forms
 @constraints begin 

@@ -10,7 +10,7 @@ Nowadays there's plenty of probabilistic programming languages and packages avai
 
 | Toolbox                                                              | Universality | Efficiency | Expressiveness | Debugging & Visualization | Modularity | Inference Engine | Language | Community & Ecosystem |
 | -------------------------------------------------------------------- | ------------ | ---------- | -------------- | ------------------------- | ---------- | ---------------- | -------- | --------------------- |
-| [**RxInfer.jl**](https://rxinfer.ml/)                                | ~            | ✓          | ✓              | ~                         | ✗          | Message-passing  | Julia    | ✗                     |
+| [**RxInfer.jl**](https://rxinfer.ml/)                                | ~            | ✓          | ✓              | ~                         | ✓          | Message-passing  | Julia    | ✗                     |
 | [**ForneyLab.jl**](https://github.com/biaslab/ForneyLab.jl)          | ✗            | ~          | ✗              | ~                         | ✗          | Message-passing  | Julia    | ✗                     |
 | [**Infer.net**](https://dotnet.github.io/infer/)                     | ~            | ✓          | ✗              | ✓                         | ✗          | Message-passing  | C#       | ✗                     |
 | [**PGMax**](https://github.com/google-deepmind/PGMax)                | ✗            | ✓          | ✗              | ✓                         | ✗          | Message-passing  | Python   | ✗                     |
@@ -28,7 +28,7 @@ Nowadays there's plenty of probabilistic programming languages and packages avai
 
 **Notes**:
 - **Universality**: Denotes the capability to depict a vast array of probabilistic models.
-- **Efficiency**: Highlights computational competence. A "–" in this context suggests perceived slowness.
+- **Efficiency**: Highlights computational competence. A "~" in this context suggests perceived slowness.
 - **Expressiveness**: Assesses the ability to concisely formulate intricate probabilistic models.
 - **Debugging & Visualization**: Evaluates the suite of tools for model debugging and visualization.
 - **Modularity**: Reflects the potential to create models by integrating smaller models.

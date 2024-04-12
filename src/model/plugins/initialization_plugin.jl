@@ -295,6 +295,12 @@ function init_macro_interior(init_body::Expr)
     return init_body
 end
 
+"""
+    @initialization
+
+Macro for specifying the initialization state of a model. Accepts either a function or a block of code.
+Allows the specification of initial messages and marginals that can be applied to a model in the `infer` function.
+"""
 macro initialization(init_body)
     return esc(RxInfer.init_macro_interior(init_body))
 end
