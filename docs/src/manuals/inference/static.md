@@ -370,7 +370,7 @@ results = infer(
 @test after_model_creation_called[] #hide
 @test on_marginal_update_called[] #hide
 
-results #hide
+nothing #hide
 ```
 
 ## [Where to go next?](@id manual-static-inference-where-to-go)
