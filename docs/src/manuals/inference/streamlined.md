@@ -799,7 +799,7 @@ The data is `(model::ProbabilisticModel, err::Any)`
 function Rocket.on_next!(listener::MyEventListener, event::RxInferenceEvent{ :on_error })
     (model, err) = event
     @test model isa ProbabilisticModel #hide
-    println("FAn error occured during the inference procedure: ", err)
+    println("An error occured during the inference procedure: ", err)
 end
 ```
 

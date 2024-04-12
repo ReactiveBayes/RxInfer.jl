@@ -406,12 +406,12 @@ end
 
 function before_data_update(model::ProbabilisticModel, data)
     before_data_update_called[] = true #hide
-    println("The data is about to be updated")
+    println("The data is about to be processed")
 end
 
 function after_data_update(model::ProbabilisticModel, data)
     after_data_update_called[] = true #hide
-    println("The data has been updated")
+    println("The data has been processed")
 end
 
 function on_marginal_update(model::ProbabilisticModel, name, update)
