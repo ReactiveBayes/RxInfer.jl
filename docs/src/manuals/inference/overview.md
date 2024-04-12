@@ -98,7 +98,7 @@ For example, if a model defines `y` as its argument (which is not part of the [`
 
 - ### `initialization`
 
-Also read the [Initialization](@ref manual-initialization) section.
+Also read the [Initialization](@ref initialization) section.
 
 For specific types of inference algorithms, such as variational message passing, it might be required to initialize (some of) the marginals before running the inference procedure in order to break the dependency loop. If this is not done, the inference algorithm will not be executed due to the lack of information and message and/or marginals will not be updated. In order to specify these initial marginals and messages, you can use the `initialization` argument in combination with the [`@initialization`](@ref) macro, such as
 ```@example inference-overview-init-keyword
@@ -316,7 +316,7 @@ Automatically changes the default value of the `postprocess` argument to `NoopPo
 
 - ### `postprocess`
 
-Also read the [Inference results postprocessing](@ref user-guide-inference-postprocess) section.
+Also read the [Inference results postprocessing](@ref user-guide-inference-postprocess-keyword) section.
 
 The `postprocess` keyword argument controls whether the inference results must be modified in some way before exiting the `inference` function.
 By default, the inference function uses the `DefaultPostprocess` strategy, which by default removes the `Marginal` wrapper type from the results.

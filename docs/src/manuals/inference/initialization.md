@@ -104,7 +104,7 @@ However, once you receive the message `Variables [x, y, z] have not been updated
 
 John proceeds to derive the FFG for his problem where he identifies where the loops are:
 
-![Addons_messages](../assets/img/linear_regresion_model.png)
+![Addons_messages](../../assets/img/linear_regresion_model.png)
 
 He does note that there is a loop in his model, namely all $a$ and $b$ variables are connected over all observations, therefore he needs to initialize one of the messages and run multiple iterations for the loopy belief propagation algorithm. It is worth noting that loopy belief propagation is not guaranteed to converge in general and might be highly influenced by the choice of the initial messages in the `initialization` argument. He is going to evaluate the convergency performance of the algorithm with the `free_energy = true` option:
  
@@ -139,4 +139,11 @@ for (a, b) in zip(as, bs)
     global p = plot!(p, x_data, a .* x_data .+ b, alpha = 0.05, color = :red)
 end
 plot(p, size = (900, 400))
+```
+
+## Implementation details 
+
+```@docs
+RxInfer.InitializationPlugin
+RxInfer.convert_init_object
 ```

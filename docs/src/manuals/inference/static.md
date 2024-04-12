@@ -158,7 +158,7 @@ nothing
 
 Huh? We get an error saying that the inference could not update the latent variables. This is happened because our model contain loops in its structure, therefore it requires the initialization. Read more about the initialization in the [corresponding section](@ref initialization) in the documentation.
 
-We have two options here, either we initialize the messages and perform [Loopy Belief Propagation](https://en.wikipedia.org/wiki/Belief_propagation) in this model or we break the loops with [variational constraints](@ref user-guide-constraints-specification) and perform variational inference. In this tutorial, we will choose the second option. For this we need to specify factorization constraints with the [`@constraints`](@ref) macro.
+We have two options here, either we initialize the messages and perform [Loopy Belief Propagation](https://en.wikipedia.org/wiki/Belief_propagation) in this model or we break the loops with [variational constraints](@ref user-guide-constraints-specification) and perform variational inference. In this tutorial, we will choose the second option. For this we need to specify factorization constraints with the `@constraints` macro.
 
 ```@example manual-static-inference
 # Specify mean-field constraint over the joint variational posterior
@@ -458,5 +458,5 @@ nothing #hide
 
 This guide covered some fundamental usages of the [`infer`](@ref) function in the context of inference with static datasets, 
 but did not cover all the available keyword arguments of the function. Read more explanation about the other keyword arguments 
-in the [Overview](@ref manual-inference-overview) section or check out the [Streaming Inference](@ref manual-online-inference) section.
+in the [Overview](@ref user-guide-inference-execution) section or check out the [Streaming Inference](@ref manual-online-inference) section.
 Also check out more complex [examples](https://reactivebayes.github.io/RxInfer.jl/stable/examples/overview/).

@@ -104,7 +104,7 @@ engine = infer(
 )
 ```
 
-In the code above, there are several notable differences compared to running inference for static datasets. Firstly, we utilized the `autoupdates` argument as discussed [previously](@ref manual-online-inference-autoupdates). Secondly, we employed the [`@initialization`](@ref) macro to initialize the posterior over `θ`. This is necessary for the `@autoupdates` macro, as it needs to initialize the `a` and `b` parameters before the data becomes available. Thirdly, we set `autostart = false` to indicate that we do not want to immediately subscribe to the datastream, but rather do so manually later using the [`RxInfer.start`](@ref) function. The `returnvars` specification differs a little from [Static Inference](manual-static-inference). In reactive inference, the `returnvars = (:θ, )` must be a tuple of `Symbol`s and specifies that we would be interested to get a stream of posteriors update for `θ`. The `returnvars` specification is optional and the inference engine will create reactive streams for all latent states if ommited.
+In the code above, there are several notable differences compared to running inference for static datasets. Firstly, we utilized the `autoupdates` argument as discussed [previously](@ref manual-online-inference-autoupdates). Secondly, we employed the [`@initialization`](@ref) macro to initialize the posterior over `θ`. This is necessary for the `@autoupdates` macro, as it needs to initialize the `a` and `b` parameters before the data becomes available. Thirdly, we set `autostart = false` to indicate that we do not want to immediately subscribe to the datastream, but rather do so manually later using the [`RxInfer.start`](@ref) function. The `returnvars` specification differs a little from [Static Inference](@ref manual-static-inference). In reactive inference, the `returnvars = (:θ, )` must be a tuple of `Symbol`s and specifies that we would be interested to get a stream of posteriors update for `θ`. The `returnvars` specification is optional and the inference engine will create reactive streams for all latent states if ommited.
 
 ```@docs
 RxInferenceEngine
@@ -538,7 +538,7 @@ nothing #hide
 
 ## [Event loop](@id manual-online-inference-event-loop)
 
-In constrast to [`Static Inference`](@ref manual-static-inference), the streaming version of the [`infer`](@ref) function 
+In constrast to [Static Inference](@ref manual-static-inference), the streaming version of the [`infer`](@ref) function 
 does not provide callbacks such as `on_marginal_update`, since it is possible to subscribe directly on those updates with the 
 `engine.posteriors` field. However, the reactive inference engine provides an ability to listen to its internal event loop, that also includes "pre" and "post" events for posterior updates.
 
@@ -921,5 +921,5 @@ end
 
 This guide covered some fundamental usages of the [`infer`](@ref) function in the context of streamline inference, 
 but did not cover all the available keyword arguments of the function. Read more explanation about the other keyword arguments 
-in the [Overview](@ref manual-inference-overview) section or check out the [Static Inference](@ref manual-static-inference) section.
+in the [Overview](@ref user-guide-inference-execution) section or check out the [Static Inference](@ref manual-static-inference) section.
 Also check out more complex [examples](https://reactivebayes.github.io/RxInfer.jl/stable/examples/overview/).

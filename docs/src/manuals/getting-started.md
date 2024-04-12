@@ -40,7 +40,7 @@ The `RxInfer` approach to solving inference problems consists of three phases:
 
 1. [Model specification](@ref getting-started-model-specification): `RxInfer` uses `GraphPPL` package for model specification part. It offers a domain-specific language to specify your probabilistic model.
 2. [Inference specification](@ref getting-started-inference-specification): `RxInfer` inference API uses `ReactiveMP` inference engine under the hood and has been designed to be as flexible as possible. It is compatible both with asynchronous infinite data streams and with static datasets. For most of the use cases it consists of the same simple building blocks. In this example we will show one of the many possible ways to infer your quantities of interest.
-3. [Inference execution](@ref getting-started-inference-execution): Given model specification and inference procedure it is pretty straightforward to use reactive API from `Rocket` to pass data to the inference backend and to run actual inference.
+3. [Inference execution](@ref user-guide-inference-execution): Given model specification and inference procedure it is pretty straightforward to use package's API to pass data to the inference backend and to run actual inference.
 
 ### [Coin flip simulation](@id user-guide-getting-started-coin-flip-simulation)
 

@@ -57,6 +57,13 @@ Install RxInfer through the Julia package manager:
 
 Optionally, use `] test RxInfer` to validate the installation by running the test suite.
 
+# Documentation
+
+For more information about `RxInfer.jl` please refer to the [documentation](https://reactivebayes.github.io/RxInfer.jl/stable/).
+
+> [!NOTE]
+> `RxInfer.jl` API has been changed in version `3.0.0`. See [Migration Guide](https://reactivebayes.github.io/RxInfer.jl/stable/manuals/migration-guide-v2-v3) for more details.
+
 # Getting Started
 
 There are examples available to get you started in the `examples/` folder. Alternatively, preview the same examples in the [documentation](https://reactivebayes.github.io/RxInfer.jl/stable/examples/overview/).

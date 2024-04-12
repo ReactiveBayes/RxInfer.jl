@@ -1,4 +1,4 @@
-# [Contribution Guidelines](@id contributing-overview)
+# [Contribution Guidelines](@id contributing-guidelines)
 
 Welcome to the contribution guidelines for `RxInfer.jl`. Here you'll find detailed instructions on how to contribute effectively to the project.
 
