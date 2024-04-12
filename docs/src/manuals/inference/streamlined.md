@@ -7,6 +7,8 @@ Also read about [Static Inference](@ref manual-static-inference) or checkout mor
 
 ## [Model specification](@id manual-online-inference-model-spec)
 
+Also read the [Model Specification](@ref user-guide-model-specification) section.
+
 In online inference, we want to continuously update our prior beliefs about certain hidden states. 
 To achieve this, we include extra arguments in our model specification to allow for dynamic prior changes:
 
@@ -97,7 +99,7 @@ engine = infer(
     model          = beta_bernoulli_online(),
     datastream     = observations,
     autoupdates    = beta_bernoulli_autoupdates,
-    returnvars     = (:θ, )
+    returnvars     = (:θ, ),
     initialization = @initialization(q(θ) = Beta(1, 1)),
     autostart      = false
 )
@@ -449,7 +451,7 @@ Here are available callbacks that can be used together with the streaming infere
 ```@eval
 using RxInfer, Test, Markdown
 # Update the documentation below if this test does not pass
-@test RxInfer.available_callbacks(RxInfer.__rxinference) === (:before_model_creation, :after_model_creation, :before_autostart, :after_autostart)
+@test RxInfer.available_callbacks(RxInfer.streaming_inference) === Val((:before_model_creation, :after_model_creation, :before_autostart, :after_autostart))
 nothing
 ```
 
@@ -536,7 +538,7 @@ Let's build a simple example by implementing our own event listener that does no
 ```@eval
 using RxInfer, Test, Markdown
 # Update the documentation below if this test does not pass
-@test RxInfer.available_events(RxInfer.__rxinference) === Val((
+@test RxInfer.available_events(RxInfer.streaming_inference) === Val((
     :before_start,
     :after_start,
     :before_stop,
