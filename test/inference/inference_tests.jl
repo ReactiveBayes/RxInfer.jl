@@ -1,30 +1,30 @@
 @testitem "__inference_check_itertype" begin
-    import RxInfer: __inference_check_itertype
+    import RxInfer: inference_check_itertype
 
-    @test __inference_check_itertype(:something, nothing) === nothing
-    @test __inference_check_itertype(:something, (1,)) === nothing
-    @test __inference_check_itertype(:something, (1, 2)) === nothing
-    @test __inference_check_itertype(:something, []) === nothing
-    @test __inference_check_itertype(:something, [1, 2]) === nothing
+    @test inference_check_itertype(:something, nothing) === nothing
+    @test inference_check_itertype(:something, (1,)) === nothing
+    @test inference_check_itertype(:something, (1, 2)) === nothing
+    @test inference_check_itertype(:something, []) === nothing
+    @test inference_check_itertype(:something, [1, 2]) === nothing
 
-    @test_throws ErrorException __inference_check_itertype(:something, 1)
-    @test_throws ErrorException __inference_check_itertype(:something, (1))
-    @test_throws ErrorException __inference_check_itertype(:something, missing)
+    @test_throws ErrorException inference_check_itertype(:something, 1)
+    @test_throws ErrorException inference_check_itertype(:something, (1))
+    @test_throws ErrorException inference_check_itertype(:something, missing)
 end
 
-@testitem "__infer_check_dicttype" begin
-    import RxInfer: __infer_check_dicttype
+@testitem "infer_check_dicttype" begin
+    import RxInfer: infer_check_dicttype
 
-    @test __infer_check_dicttype(:something, nothing) === nothing
-    @test __infer_check_dicttype(:something, (x = 1,)) === nothing
-    @test __infer_check_dicttype(:something, (x = 1, y = 2)) === nothing
-    @test __infer_check_dicttype(:something, Dict(:x => 1)) === nothing
-    @test __infer_check_dicttype(:something, Dict(:x => 1, :y => 2)) === nothing
+    @test infer_check_dicttype(:something, nothing) === nothing
+    @test infer_check_dicttype(:something, (x = 1,)) === nothing
+    @test infer_check_dicttype(:something, (x = 1, y = 2)) === nothing
+    @test infer_check_dicttype(:something, Dict(:x => 1)) === nothing
+    @test infer_check_dicttype(:something, Dict(:x => 1, :y => 2)) === nothing
 
-    @test_throws ErrorException __infer_check_dicttype(:something, 1)
-    @test_throws ErrorException __infer_check_dicttype(:something, (1))
-    @test_throws ErrorException __infer_check_dicttype(:something, missing)
-    @test_throws ErrorException __infer_check_dicttype(:something, (missing))
+    @test_throws ErrorException infer_check_dicttype(:something, 1)
+    @test_throws ErrorException infer_check_dicttype(:something, (1))
+    @test_throws ErrorException infer_check_dicttype(:something, missing)
+    @test_throws ErrorException infer_check_dicttype(:something, (missing))
 end
 
 @testitem "__infer_create_factor_graph_model" begin

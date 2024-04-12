@@ -255,11 +255,13 @@ Check the official documentation for more information about some of the argument
 
 """
 function infer(;
-    model::GraphPPL.ModelGenerator = nothing,
+    model = nothing,
     data = nothing,
     datastream = nothing, # streamline specific
     autoupdates = nothing, # streamline specific
     initialization = nothing,
+    initmessages = nothing, # removed, the error is thrown below for easier migration
+    initmarginals = nothing, # removed, the error is thrown below for easier migration
     constraints = nothing,
     meta = nothing,
     options = nothing,
@@ -274,7 +276,7 @@ function infer(;
     catch_exception = false, # batch specific
     callbacks = nothing,
     addons = nothing,
-    postprocess = DefaultPostprocess(), # streamline specific
+    postprocess = DefaultPostprocess(),
     events = nothing, # streamline specific
     uselock = false, # streamline  specific
     autostart = true, # streamline specific
@@ -282,19 +284,23 @@ function infer(;
 )
     if isnothing(model)
         error("The `model` keyword argument is required for the `infer` function.")
+    elseif !isa(model, GraphPPL.ModelGenerator)
+        error("The `model` keyword argument must be of type `GraphPPL.ModelGenerator`.")
     elseif !isnothing(data) && !isnothing(datastream)
         error("""`data` and `datastream` keyword arguments cannot be used together. """)
     elseif isnothing(data) && isnothing(predictvars) && isnothing(datastream)
         error("""One of the keyword arguments `data` or `predictvars` or `datastream` must be specified""")
+    elseif !isnothing(initmessages) && !isnothing(initmarginals)
+        error("""`initmessages` and `initmarginals` keyword arguments have been deprecated and removed. Use the `@initialization` macro and the `initialization` keyword instead.""")
     end
 
     infer_check_dicttype(:callbacks, callbacks)
     infer_check_dicttype(:data, data)
 
     if isnothing(autoupdates)
-        check_available_callbacks(warn, callbacks, available_callbacks(__inference))
-        check_available_events(warn, events, available_events(__inference))
-        __inference(
+        check_available_callbacks(warn, callbacks, available_callbacks(batch_inference))
+        check_available_events(warn, events, available_events(batch_inference))
+        batch_inference(
             model = model,
             data = data,
             initialization = initialization,
@@ -314,9 +320,9 @@ function infer(;
             catch_exception = catch_exception
         )
     else
-        check_available_callbacks(warn, callbacks, available_callbacks(__rxinference))
-        check_available_events(warn, events, available_events(__rxinference))
-        __rxinference(
+        check_available_callbacks(warn, callbacks, available_callbacks(streaming_inference))
+        check_available_events(warn, events, available_events(streaming_inference))
+        streaming_inference(
             model = model,
             data = data,
             datastream = datastream,

@@ -441,7 +441,7 @@ function inference_invoke_event(::Val{Event}, ::Val{EnabledEvents}, events, args
     return nothing
 end
 
-function __rxinference(;
+function streaming_inference(;
     model::ModelGenerator,
     data = nothing,
     datastream = nothing,
@@ -674,7 +674,7 @@ function __rxinference(;
     return engine
 end
 
-function available_events(::typeof(__rxinference))
+function available_events(::typeof(streaming_inference))
     return Val((
         :before_start,
         :after_start,
@@ -695,6 +695,6 @@ function available_events(::typeof(__rxinference))
     ))
 end
 
-function available_callbacks(::typeof(__rxinference))
+function available_callbacks(::typeof(streaming_inference))
     return Val((:before_model_creation, :after_model_creation, :before_autostart, :after_autostart))
 end

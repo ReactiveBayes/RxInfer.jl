@@ -91,11 +91,12 @@ function Base.getproperty(result::InferenceResult, property::Symbol)
     return getfield(result, property)
 end
 
-function __inference(;
+function batch_inference(;
     # `model` must be a materialized graph object from GraphPPL 
     model::ModelGenerator,
     # NamedTuple or Dict with data, optional if predictvars are specified
     data = nothing,
+    # Initialization specification object
     initialization = nothing,
     # Constraints specification object
     constraints = nothing,
@@ -337,7 +338,7 @@ function __inference(;
     return InferenceResult(posterior_values, predicted_values, fe_values, fmodel, potential_error)
 end
 
-function available_callbacks(::typeof(__inference))
+function available_callbacks(::typeof(batch_inference))
     return Val((
         :on_marginal_update,
         :before_model_creation,
@@ -351,6 +352,6 @@ function available_callbacks(::typeof(__inference))
     )) 
 end
 
-function available_events(::typeof(__inference))
+function available_events(::typeof(batch_inference))
     return Val(())
 end

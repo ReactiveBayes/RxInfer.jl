@@ -97,12 +97,13 @@ engine = infer(
     model          = beta_bernoulli_online(),
     datastream     = observations,
     autoupdates    = beta_bernoulli_autoupdates,
+    returnvars     = (:θ, )
     initialization = @initialization(q(θ) = Beta(1, 1)),
     autostart      = false
 )
 ```
 
-In the code above, there are several notable differences compared to running inference for static datasets. Firstly, we utilized the `autoupdates` argument as discussed [previously](@ref manual-online-inference-autoupdates). Secondly, we employed the [`@initialization`](@ref) macro to initialize the posterior over `θ`. This is necessary for the `@autoupdates` macro, as it needs to initialize the `a` and `b` parameters before the data becomes available. Thirdly, we set `autostart = false` to indicate that we do not want to immediately subscribe to the datastream, but rather do so manually later using the [`RxInfer.start`](@ref) function.
+In the code above, there are several notable differences compared to running inference for static datasets. Firstly, we utilized the `autoupdates` argument as discussed [previously](@ref manual-online-inference-autoupdates). Secondly, we employed the [`@initialization`](@ref) macro to initialize the posterior over `θ`. This is necessary for the `@autoupdates` macro, as it needs to initialize the `a` and `b` parameters before the data becomes available. Thirdly, we set `autostart = false` to indicate that we do not want to immediately subscribe to the datastream, but rather do so manually later using the [`RxInfer.start`](@ref) function. The `returnvars` specification differs a little from [Static Inference](manual-static-inference). In reactive inference, the `returnvars = (:θ, )` must be a tuple of `Symbol`s and specifies that we would be interested to get a stream of posteriors update for `θ`. The `returnvars` specification is optional and the inference engine will create reactive streams for all latent states if ommited.
 
 ```@docs
 RxInferenceEngine
