@@ -1,4 +1,4 @@
-# External Examples
+# [External Examples](@id external-examples)
 
 RxInfer.jl welcomes contributions of external examples that demonstrate the use of the package across a variety of probabilistic models.
 

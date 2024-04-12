@@ -81,7 +81,7 @@ end
 
 makedocs(;
     draft = false,
-    warnonly = true,
+    warnonly = false,
     modules = [RxInfer],
     authors = "Bagaev Dmitry <d.v.bagaev@tue.nl> and contributors",
     sitename = "RxInfer.jl",
