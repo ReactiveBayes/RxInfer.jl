@@ -10,7 +10,7 @@ UnpackMarginalPostprocess
 NoopPostprocess
 ```
 
-## [Custom postprocessing step](@id user-guide-inference-postprocess)
+## [Custom postprocessing step](@id user-guide-inference-postprocess-custom)
 
 In order to implement a custom postprocessing strategy simply implement the [`inference_postprocess`](@ref) method:
 

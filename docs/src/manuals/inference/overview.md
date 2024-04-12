@@ -316,7 +316,7 @@ Automatically changes the default value of the `postprocess` argument to `NoopPo
 
 - ### `postprocess`
 
-Also read the [Inference results postprocessing](@ref user-guide-inference-postprocess-keyword) section.
+Also read the [Inference results postprocessing](@ref user-guide-inference-postprocess) section.
 
 The `postprocess` keyword argument controls whether the inference results must be modified in some way before exiting the `inference` function.
 By default, the inference function uses the `DefaultPostprocess` strategy, which by default removes the `Marginal` wrapper type from the results.
