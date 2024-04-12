@@ -1,7 +1,7 @@
 # [Streaming (online) inference](@id manual-online-inference)
 
-This guide explains how to use the [`infer`](@ref) function for dynamic datasets. We'll show how `RxInfer` can continuously update beliefs asynchronously whenever a new observation arrives. We'll use a simple Beta-Bernoulli model as an example, which has been covered in the [Getting Started](@ref user-guide-getting-started) section, 
-but keep in mind that these techniques can apply to any model.
+This guide explains how to use the [`infer`](@ref) function for dynamic datasets. We show how `RxInfer` can continuously update beliefs asynchronously whenever a new observation arrives. We use a simple Beta-Bernoulli model as an example, which has been covered in the [Getting Started](@ref user-guide-getting-started) section, 
+however, these techniques can be applied to any model
 
 Also read about [Static Inference](@ref manual-static-inference) or checkout more complex [examples](https://reactivebayes.github.io/RxInfer.jl/stable/examples/overview/).
 
@@ -36,7 +36,7 @@ beta_bernoulli_autoupdates = @autoupdates begin
 end
 ```
 
-This specification instructs `RxInfer` to update `a` and `b` parameters automatically as as soon as new posterior for `θ` is available.
+This specification instructs `RxInfer` to update `a` and `b` parameters automatically as as soon as a new posterior for `θ` is available.
 
 ```@docs
 @autoupdates
@@ -44,8 +44,7 @@ This specification instructs `RxInfer` to update `a` and `b` parameters automati
 
 ## [Asynchronous data stream of observations](@id manual-online-inference-async-datastream)
 
-For demonstration purposes, we will use hand crafted stream of observations using the `Rocket.jl` library:
-
+For demonstration purposes, we use a handcrafted stream of observations with the `Rocket.jl` library
 ```@example manual-online-inference
 using Rocket, Distributions, StableRNGs
 
@@ -55,7 +54,7 @@ rng          = StableRNG(43)
 datastream   = RecentSubject(Bool)
 ```
 
-The [`infer`](@ref) function expects the `datastream` to emit values in the form of the `NamedTuple`s. To simply this process, `Rocket.jl` exports `labeled` function. We also use the `combineLatest` function to convert a stream of `Bool`s to a stream of `Tuple{Bool}`s. Read more about these function in the [documentation to `Rocket.jl`](https://reactivebayes.github.io/Rocket.jl/stable/).
+The [`infer`](@ref) function expects the `datastream` to emit values in the form of the `NamedTuple`s. To simplify this process, `Rocket.jl` exports `labeled` function. We also use the `combineLatest` function to convert a stream of `Bool`s to a stream of `Tuple{Bool}`s. Read more about these function in the [documentation to `Rocket.jl`](https://reactivebayes.github.io/Rocket.jl/stable/).
 
 ```@example manual-online-inference
 observations = labeled(Val((:y, )), combineLatest(datastream))

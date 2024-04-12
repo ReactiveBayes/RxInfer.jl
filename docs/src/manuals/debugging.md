@@ -1,6 +1,6 @@
 # [Debugging](@id user-guide-debugging)
 
-Debugging inference in `RxInfer` can be quite challenging, mostly due to reactive nature of the inference, undefiend order of computations, the use of observables and Julia's hard-to-read stack traces in general. Below we discuss ways to help you find problems in your model that prevents you from getting the results you want. 
+Debugging inference in `RxInfer` can be quite challenging, mostly due to the reactive nature of the inference, undefined order of computations, the use of observables, and generally hard-to-read stack traces in Julia. Below we discuss ways to help you find problems in your model that prevents you from getting the results you want. 
 
 ## Requesting a trace of messages
 

@@ -1,6 +1,6 @@
 # [Understating why we need to initialize posteriors or messages in RxInfer](@id initialization)
 
-In certain models, after completing the model specification step and moving on to execute the inference procedure, you may encounter an error prompting you to _initialize required marginals and messages_. Understanding why this step is necessary can be perplexing. This tutorial is designed to delve into the intuition behind model initialization using a practical example.
+In certain models, after completing the model specification step and moving on to execute the inference procedure, you may encounter an error prompting you to _initialize required marginals and messages_. Understanding why this step is necessary can be perplexing. This tutorial is designed to explore the intuition behind model initialization using a practical example
 
 ```@docs
 @initialization
@@ -30,7 +30,7 @@ ylabel!("Fuel consumption")
 
 ### Univariate regression with known noise
 
-First, he drives the car on a urban road. John enjoys driving on the well-built, wide, and flat urban roads. Urban roads also offer the advantage of precise fuel consumption measurement with minimal noise. Therefore John models the fuel consumption $y_n\in\mathbb{R}$ as a normal distribution and treats $x_n$ as a fixed hyper-parameter:
+First, he drives the car on a urban road. John enjoys driving on the well-built, wide, and flat urban roads. Urban roads also offer the advantage of precise fuel consumption measurement with minimal noise. Therefore John models the fuel consumption $y_n\in\mathbb{R}$ as a normal distribution and treats $x_n$ as a fixed hyperparameter:
 
 $$\begin{aligned}
 p(y_n \mid a, b) = \mathcal{N}(y_n \mid a x_n + b , 1)

@@ -36,8 +36,8 @@ Inference with RxInfer             |  Inference with HMC
 ![](benchmarks/plots/inference_rxinfer.svg?raw=true&sanitize=true)  |  ![](benchmarks/plots/inference_turing.svg?raw=true&sanitize=true)
 
 The benchmark and accuracy experiment, which generated these plots, is available in the `benchmarks/` folder. Note, that the execution speed and accuracy 
-of the HMC estimator heavily depends on the choice of hyper-parameters. 
-In this example, RxInfer executes exact inference consistently and does not depend on any hyper-parameters.
+of the HMC estimator heavily depends on the choice of hyperparameters. 
+In this example, RxInfer executes exact inference consistently and does not depend on any hyperparameters.
 
 ### References
 
