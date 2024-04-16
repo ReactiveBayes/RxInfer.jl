@@ -505,3 +505,4 @@ function ReactiveMP.make_node(model::FactorGraphModel, ::AutoNode, var::RandomVa
     node = ReactiveMP.make_node(model, FactorNodeCreationOptions(), typeof(distribution), var, args...)
     return node, var
 end
+

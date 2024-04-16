@@ -4,25 +4,19 @@
     # `include(test/utiltests.jl)`
     include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
-    @model function univariate_lgssm_model(n, x0, c_, P_)
-        x_prior ~ Normal(mean = mean(x0), var = var(x0))
-
-        x = randomvar(n)
-        c = constvar(c_)
-        P = constvar(P_)
-        y = datavar(Float64, n)
-
+    @model function univariate_lgssm_model(y, x0, c, P)
+        x_prior ~ Normal(μ = mean(x0), v = var(x0))
         x_prev = x_prior
 
-        for i in 1:n
+        for i in eachindex(y)
             x[i] ~ x_prev + c
-            y[i] ~ Normal(mean = x[i], var = P)
+            y[i] ~ Normal(μ = x[i], v = P)
             x_prev = x[i]
         end
     end
 
     function univariate_lgssm_inference(data, x0, c, P)
-        return inference(model = univariate_lgssm_model(length(data), x0, c, P), data = (y = data,), free_energy = true)
+        return infer(model = univariate_lgssm_model(x0 = x0, c = c, P = P), data = (y = data,), free_energy = true)
     end
 
     ## Data creation

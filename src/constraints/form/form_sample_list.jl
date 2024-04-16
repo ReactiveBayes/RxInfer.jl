@@ -1,6 +1,6 @@
-export LeftProposal, RightProposal, AutoProposal
+export SampleListFormConstraint, LeftProposal, RightProposal, AutoProposal
 
-import ReactiveMP: is_point_mass_form_constraint, default_form_check_strategy, default_prod_constraint, make_form_constraint, constrain_form
+import ReactiveMP: default_form_check_strategy, default_prod_constraint, constrain_form
 import BayesBase: AbstractContinuousGenericLogPdf, BootstrapImportanceSampling
 
 using Random
@@ -24,12 +24,6 @@ struct AutoProposal end
     SampleListFormConstraint(rng, strategy, method)
 
 One of the form constraint objects. Approximates `DistProduct` with a SampleList object. 
-
-# Traits 
-- `is_point_mass_form_constraint` = `false`
-- `default_form_check_strategy`   = `FormConstraintCheckLast()`
-- `default_prod_constraint`       = `GenericProd()`
-- `make_form_constraint`          = `SampleList` (for use in `@constraints` macro)
 """
 struct SampleListFormConstraint{N, R, S, M} <: AbstractFormConstraint
     rng      :: R
@@ -42,13 +36,9 @@ Base.show(io::IO, constraint::SampleListFormConstraint) = print(io, "SampleListF
 SampleListFormConstraint(nsamples::Int, strategy::S = AutoProposal(), method::M = BootstrapImportanceSampling()) where {S, M}                           = SampleListFormConstraint(Random.GLOBAL_RNG, nsamples, strategy, method)
 SampleListFormConstraint(rng::R, nsamples::Int, strategy::S = AutoProposal(), method::M = BootstrapImportanceSampling()) where {R <: AbstractRNG, S, M} = SampleListFormConstraint{nsamples, R, S, M}(rng, strategy, method)
 
-ReactiveMP.is_point_mass_form_constraint(::SampleListFormConstraint) = false
-
 ReactiveMP.default_form_check_strategy(::SampleListFormConstraint) = FormConstraintCheckLast()
 
 ReactiveMP.default_prod_constraint(::SampleListFormConstraint) = GenericProd()
-
-ReactiveMP.make_form_constraint(::Type{SampleList}, args...; kwargs...) = SampleListFormConstraint(args...; kwargs...)
 
 __approximate(constraint::SampleListFormConstraint{N, R, S, M}, left, right) where {N, R, S <: LeftProposal, M}  = BayesBase.approximate_prod_with_sample_list(constraint.rng, constraint.method, left, right, N)
 __approximate(constraint::SampleListFormConstraint{N, R, S, M}, left, right) where {N, R, S <: RightProposal, M} = BayesBase.approximate_prod_with_sample_list(constraint.rng, constraint.method, right, left, N)

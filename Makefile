@@ -37,7 +37,7 @@ format: scripts_init ## Code formating run
 
 examples_init:
 	$(RM) $(EXAMPLES_MANIFEST_FILE)
-	julia --startup-file=no --project=examples/ -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate(); Pkg.precompile();'
+	julia --startup-file=no --project=examples/ -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate(); Pkg.build(); Pkg.precompile();'
 
 dev_examples_init:
 	$(RM) $(EXAMPLES_MANIFEST_FILE)

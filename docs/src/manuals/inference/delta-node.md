@@ -1,10 +1,10 @@
-# [Delta node manual](@id delta-node-manual)
+# [Deterministic nodes](@id delta-node-manual)
 
-RxInfer.jl offers a comprehensive set of stochastic nodes, with a primary emphasis on distributions from the exponential family and its associated compositions, such as Gaussian with controlled variance (GCV) or autoregressive (AR) nodes. The `DeltaNode` stands out in this package, representing a deterministic transformation of either a single random variable or a group of them. This guide provides insights into the `DeltaNode` and its functionalities.
+RxInfer.jl offers a comprehensive set of stochastic nodes, primarily emphasizing distributions from the exponential family and related compositions, such as Gaussian with controlled variance (GCV) or autoregressive (AR) nodes. The `DeltaNode` stands out in this package, representing a deterministic transformation of either a single random variable or a group of them. This guide provides insights into the `DeltaNode` and its functionalities.
 
 ## Features and Supported Inference Scenarios
 
-The delta node has several approximation methods for performing probabilistic inference. The desired approximation method depends on the nodes connected to the delta node. We differentiate the following deterministic transformation scenarios:
+The delta node supports several approximation methods for probabilistic inference. The desired approximation method depends on the nodes connected to the delta node. We differentiate the following deterministic transformation scenarios:
 
 1. **Gaussian Nodes**: For delta nodes linked to strictly multivariate or univariate Gaussian distributions, the recommended methods are Linearization or Unscented transforms.
 2. **Exponential Family Nodes**: For the delta node connected to nodes from the exponential family, the CVI (Conjugate Variational Inference) is the method of choice.
@@ -20,7 +20,7 @@ The table below summarizes the features of the delta node in RxInfer.jl, categor
 
 ## Gaussian Case
 
-In the context of Gaussian distributions, we recommend either the `Linearization` or `Unscented` method for delta node approximation. The `Linearization` method provides a first-order approximation, while the `Unscented` method delivers a more precise second-order approximation. It's worth noting that while the `Unscented` method is more accurate, it may require hyper-parameters tuning.
+In the context of Gaussian distributions, we recommend either the `Linearization` or `Unscented` method for delta node approximation. The `Linearization` method provides a first-order approximation, while the `Unscented` method delivers a more precise second-order approximation. It's worth noting that while the `Unscented` method is more accurate, it may require hyperparameters tuning.
 
 
 For clarity, consider the following example:
@@ -28,10 +28,9 @@ For clarity, consider the following example:
 ```@example delta_node_example
 using RxInfer
 
-@model function delta_node_example()
-    z = datavar(Float64)
+@model function delta_node_example(z)
     x ~ Normal(mean=0.0, var=1.0)
-    y ~ tanh(x)
+    y := tanh(x)
     z ~ Normal(mean=y, var=1.0)
 end
 ```
@@ -63,7 +62,7 @@ end
 To execute the inference procedure:
 
 ```@example delta_node_example
-inference(model = delta_node_example(), meta=delta_meta, data = (z = 1.0,))
+infer(model = delta_node_example(), meta=delta_meta, data = (z = 1.0,))
 ```
 
 This methodology is consistent even when the delta node is associated with multiple nodes. For instance:
@@ -73,11 +72,10 @@ f(x, g) = x*tanh(g)
 ```
 
 ```@example delta_node_example
-@model function delta_node_example()
-    z = datavar(Float64)
+@model function delta_node_example(z)
     x ~ Normal(mean=1.0, var=1.0)
     g ~ Normal(mean=1.0, var=1.0)
-    y ~ f(x, g)
+    y := f(x, g)
     z ~ Normal(mean=y, var=0.1)
 end
 ```
@@ -98,7 +96,13 @@ end
 
 If specific functions outline the backward relation of variables within the `f` function, you can provide a tuple of inverse functions in the order of the variables:
 
-```julia
+```@example delta_node_example
+f_back_x(out, g) = out/tanh(g)
+f_back_g(out, x) = atanh(out/x)
+```
+
+
+```@example delta_node_example
 delta_meta = @meta begin 
     f() -> DeltaMeta(method = Linearization(), inverse=(f_back_x, f_back_g))
 end
@@ -111,10 +115,9 @@ When the delta node is associated with nodes from the exponential family (exclud
 ```@example delta_node_example_cvi
 using RxInfer
 
-@model function delta_node_example1()
-    z = datavar(Float64)
+@model function delta_node_example1(z)
     x ~ Gamma(shape=1.0, rate=1.0)
-    y ~ tanh(x)
+    y := tanh(x)
     z ~ Bernoulli(y)
 end
 ```

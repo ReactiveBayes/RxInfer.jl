@@ -7,29 +7,33 @@
 
     ## Model and constraints definition
 
-    @model function mv_iid_wishart(n, d)
-        m ~ MvNormal(mean = zeros(d), precision = 100 * diageye(d))
+    @model function mv_iid_wishart(y, d)
+        m ~ MvNormal(μ = zeros(d), Λ = 100 * diageye(d))
         P ~ Wishart(d + 1, diageye(d))
-
-        y = datavar(Vector{Float64}, n)
-
-        for i in 1:n
-            y[i] ~ MvNormal(mean = m, precision = P)
+        for i in eachindex(y)
+            y[i] ~ MvNormal(μ = m, Λ = P)
         end
     end
 
-    @constraints function constraints_mv_iid_wishart()
+    constraints_mv_iid_wishart = @constraints begin
         q(m, P) = q(m)q(P)
+    end
+
+    ## Initialization definition
+
+    init = @initialization function mv_iid_wishart_init(d)
+        q(m) = vague(MvNormalMeanPrecision, d)
+        q(P) = vague(Wishart, d)
     end
 
     ## Inference definition
 
-    function inference_mv_wishart(data, n, d)
-        return inference(
-            model = mv_iid_wishart(n, d),
+    function inference_mv_wishart(data, d)
+        return infer(
+            model = mv_iid_wishart(d = d),
             data = (y = data,),
-            constraints = constraints_mv_iid_wishart(),
-            initmarginals = (m = vague(MvNormalMeanCovariance, d), P = vague(Wishart, d)),
+            constraints = constraints_mv_iid_wishart,
+            initialization = mv_iid_wishart_init(d),
             returnvars = KeepLast(),
             iterations = 10,
             free_energy = Float64
@@ -50,7 +54,7 @@
     data = rand(rng, MvNormalMeanPrecision(m, P), n) |> eachcol |> collect .|> collect
 
     ## Inference execution
-    result = inference_mv_wishart(data, n, d)
+    result = inference_mv_wishart(data, d)
 
     ## Test inference results
     @test isapprox(mean(result.posteriors[:m]), m, atol = 0.05)
@@ -66,5 +70,5 @@
         p = contour!(p, X, Y, (x, y) -> pdf(MvNormalMeanPrecision(m, P), [x, y]), label = "Real")
     end
 
-    @test_benchmark "models" "iid_mv_wishart" inference_mv_wishart($data, $n, $d)
+    @test_benchmark "models" "iid_mv_wishart" inference_mv_wishart($data, $d)
 end

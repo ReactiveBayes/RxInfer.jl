@@ -1,112 +1,90 @@
 # [Meta Specification](@id user-guide-meta-specification)
 
-Some nodes in the `RxInfer.jl` inference engine require a meta structure that may be used to either provide additional information to the nodes or customise the inference procedure or the way the nodes compute outbound messages. For instance, the `AR` node, modeling the Auto-Regressive process, necessitates knowledge of the order of the AR process, or the `GCV` node ([Gaussian Controlled Variance](https://ieeexplore.ieee.org/document/9173980)) needs an approximation method to handle non-conjugate relationships between variables in this node. To facilitate these requirements, `RxInfer.jl` exports `@meta` macro to specify node-specific meta and contextual information.
+`RxInfer.jl` utilizes the `GraphPPL.jl` package to construct a factor graph representing a probabilistic model, and then employs the `ReactiveMP.jl` package to conduct variational inference through message passing on this factor graph. Some factor nodes within the `ReactiveMP.jl` inference engine require an additional structure, known as meta-information. This meta-information can serve various purposes such as providing extra details to nodes, customizing the inference process, or adjusting how nodes compute outgoing messages. For example, the `AR` node, which models _Auto-Regressive_ processes, needs to know the order of the `AR` process. Similarly, the `GCV` node ([Gaussian Controlled Variance](https://ieeexplore.ieee.org/document/9173980)) requires an approximation method to handle non-conjugate relationships between its variables. To address these needs, `RxInfer.jl` utilizes the `@meta` macro from the `GraphPPL.jl` package to specify node-specific meta-information and contextual details.
+
+Here, we only touch upon the basics of the `@meta` macro. For further details, please consult the [official documentation](https://reactivebayes.github.io/GraphPPL.jl/stable/) of the GraphPPL.jl package.
 
 ## General syntax 
 
-`@meta` macro accepts either regular Julia `function` or a single `begin ... end` block:
+The `@meta` macro accepts either a regular Julia function or a single `begin ... end` block:
 
-```julia
-@meta function MyModelMeta(arg1, arg2)
-    Node(y,x) -> MetaObject(arg1, arg2)
+```@example manual_meta
+using RxInfer
+
+struct MetaObject
+    arg1
+    arg2
+end
+
+@meta function create_meta(arg1, arg2)
+    Normal(y, x) -> MetaObject(arg1, arg2)
 end
 
 my_meta = @meta begin 
-    Node(y,x) -> MetaObject(arg1, arg2)
+    Normal(y, x) -> MetaObject(1, 2)
 end
+
+nothing #hide
 ```
 
-In the first case it returns a function that returns meta upon calling. For example, the meta for the `AR` node of order $5$ can be specified as follows:
+In the first case, it returns a function that produces an object containing metadata when called. For instance, to specify meta for an `AR` node with an order of $5$, you can do the following:
 
-```julia
+```@example manual_meta
 @meta function ARmodel_meta(num_order)
-    AR() -> ARMeta(Univariate, num_order, ARsafe())
+    AR() -> ARMeta(Multivariate, num_order, ARsafe())
 end
 
 my_meta = ARmodel_meta(5)
+nothing #hide
 ```
  
-In the second case it returns the meta object directly. For example, the same meta for the `AR` node can also be defined as follows:
+In the second case, it directly provides the meta object. The same meta for the `AR` node can also be defined as follows:
 
-```julia
+```@example manual_meta
 num_order = 5
 
 my_meta = @meta begin 
     AR() -> ARMeta(Multivariate, num_order, ARsafe())
 end
+nothing #hide
 ```
+
 Both syntax variations provide the same meta specification and there is no preference given to one over the other. 
 
-## Options specification 
+Another example:
 
-`@meta` macro accepts optional list of options as a first argument and specified as an array of `key = value` pairs, e.g. 
-
-```julia
-my_meta = @meta [ warn = false ] begin 
-   ...
-end
-
-@meta [ warn = false ] function MyModelMeta()
-    ...
-end
-```
-
-List of available options:
-- `warn::Bool` - enables/disables various warnings with an incompatible model/meta specification
-
-## Meta specification
-
-First, let's start with an example:
-
-```julia
+```@example manual_meta
 my_meta = @meta begin 
     GCV(x, k, w) -> GCVMetadata(GaussHermiteCubature(20))
 end
+nothing #hide
 ```
 
 This meta specification indicates that for every `GCV` node in the model with `x`, `k` and `w` as connected variables should use the `GCVMetadata(GaussHermiteCubature(20))` meta object.
 
 You can have a list of as many meta specification entries as possible for different nodes:
 
-```julia
+```@example manual_meta
 my_meta = @meta begin 
     GCV(x1, k1, w1) -> GCVMetadata(GaussHermiteCubature(20))
     AR() -> ARMeta(Multivariate, 5, ARsafe())
-    MyCustomNode() -> MyCustomMetaObject(arg1, arg2)
 end
+nothing #hide
 ```
 
-To create a model with meta structures the user may pass an optional `meta` keyword argument for the `create_model` function:
+The meta-information object can be used in the [`infer`](@ref) function that accepts `meta` keyword argument:
 
 ```julia
-@model function my_model(arguments...)
-   ...
-end
-
-my_meta = @meta begin 
-    ...
-end
-
-model, returnval = create_model(my_model(arguments...); meta = my_meta)
-```
-
-Alternatively, it is possible to use meta directly in the automatic [`inference`](@ref) and [`rxinference`](@ref) functions that accepts `meta` keyword argument:
-
-```julia
-inferred_result = inference(
+inferred_result = infer(
     model = my_model(arguments...),
-    meta = my_meta,
-    ...
-)
-
-inferred_result = rxinference(
-    model = my_model(arguments...),
-    meta = my_meta,
+    data  = ...,
+    meta  = my_meta,
     ...
 )
 ```
 
-**Note**: You can also specify metadata for your nodes directly inside `@model`, without the need to use `@meta`. For example:
+Users can also specify metadata for nodes directly inside `@model`, without the need to use `@meta`. For example:
+
 ```julia
 @model function my_model()
     ...
@@ -116,46 +94,12 @@ inferred_result = rxinference(
     ...
 end
 ```
-If you add node-specific meta to your model this way, then you do not need to use the `meta` keyword argument in the `inference` and `rxinference` functions.
 
+If you add node-specific meta to your model this way, you do not need to use the `meta` keyword argument in the `infer` function.
 
 ## Create your own meta
-Although some nodes in `RxInfer.jl` already come with their own meta structure, you have the flexibility to define different meta structures for those nodes and also for your custorm ones. A meta structure is created by using the `struct` statement in `Julia`. For example, the following snippet of code illustrates how you can create your own meta structures for your custom node:
 
-```julia
-# create your own meta structure for your custom node
-struct MyCustomMeta
-    arg1 
-    arg2 
-end
-
-# apply the new meta structure to your node
-@meta function model_meta(arg1, arg2)
-    MyCustomNode() -> MyCustomMeta(arg1,arg2)
-end
-
-my_meta = model_meta(value_arg1, value_arg2)
-```
-or create different meta structures for a node, e.g. `AR` node:
-```julia
-# create your own meta structure for the AR node
-struct MyARMeta
-    arg1
-    arg2
-end
-
-# apply the new meta structure to the AR node
-@meta function model_meta(arg1, arg2)
-    AR() -> MyARMeta(arg1, arg2)
-end
-
-my_meta = model_meta(value_arg1, value_arg2)
-```
-**Note**: When you define a meta structure for a node, keep in mind that you must define message update rules with the meta for that node. See [node manual](@ref create-node) for more details of how to define rules for a node.
-
-## Example
-
-This section provides a concrete example of how to create and use meta in `RxInfer.jl`. Suppose that we have the following Gaussian model:
+Although some nodes in `RxInfer.jl` already come with their own meta structure, users have the flexibility to define different meta structures for those nodes and also for custom ones. A meta structure is created by using the `struct` statement in `Julia`. For example, the following snippet of code illustrates how you can create your own meta structures for your custom node. This section provides a concrete example of how to create and use meta in `RxInfer.jl`. Suppose that we have the following Gaussian model:
 
 $$\begin{aligned}
  x & \sim \mathrm{Normal}(2.5, 0.5)\\
@@ -171,21 +115,19 @@ using RxInfer
 y_data = 4.0 
 
 #make model
-@model function gaussian_model()
-    y = datavar(Float64)
-
+@model function gaussian_model(y)
     x ~ NormalMeanVariance(2.5, 0.5)
     y ~ NormalMeanVariance(2*x, 2.)
 end
 
 #do inference
-inference_result = inference(
+inference_result = infer(
     model = gaussian_model(),
     data = (y = y_data,)
 )
 ```
 
-However, let's say we would like to experiment with message update rules and define a new inference procedure by introducing a meta structure to the `Normal` node that always yields a Normal distribution with mean $m$ clamped between `lower_limit` and `upper_limit` for the outbound messages of the node. This is done as follows:
+However, let's say we would like to experiment with message update rules and define a new inference procedure by introducing a meta structure to the `Normal` node that always yields a message equal to `Normal` distribution with mean $m$ clamped between `lower_limit` and `upper_limit` for the outbound messages of the node. This is done as follows:
 
 ```@example custom-meta
 #create your new meta structure for Normal node
@@ -206,23 +148,38 @@ end
 
 ```@example custom-meta
 #make model
-@model function gaussian_model_with_meta()
-    y = datavar(Float64)
-
+@model function gaussian_model_with_meta(y)
     x ~ NormalMeanVariance(2.5, 0.5)
     y ~ NormalMeanVariance(2*x, 2.)
 end
 
 custom_meta = @meta begin
-    NormalMeanVariance(y,x) -> MetaConstrainedMeanNormal(-1, 1)
+    NormalMeanVariance(y) -> MetaConstrainedMeanNormal(-2, 2)
 end
 
 #do inference
-inference_result = inference(
+inference_result = infer(
     model = gaussian_model(),
     data = (y = y_data,),
     meta = custom_meta
 )
+
+println("Estimated mean for latent state `x` is ", mean(inference_result.posteriors[:x]), " with standard deviation ", std(inference_result.posteriors[:x]))
 ```
 
-**Disclaimer**: The above example is not mathematically correct. It is only used to show how we can work with `@meta` as well as how to create a meta structure for a node in `RxInfer.jl`.
+!!! warning 
+    The above example is not mathematically correct. It is only used to show how we can work with `@meta` as well as how to create a meta structure for a node in `RxInfer.jl`.
+
+Read more about the `@meta` macro in the [official documentation](https://reactivebayes.github.io/GraphPPL.jl/stable/) of GraphPPL
+
+## Adding metadata to nodes in submodels
+
+Similarly to the `@constraints` macro, the `@meta` macro exposes syntax to push metadata to nodes in submodels. With the `for meta in submodel` syntax we can apply metadata to nodes in submodels. For example, if we use the `gaussian_model_with_meta` mnodel in a larger model, we can write:
+
+```@example custom-meta
+custom_meta = @meta begin
+    for meta in gaussian_model_with_meta
+        NormalMeanVariance(y) -> MetaConstrainedMeanNormal(-2, 2)
+    end
+end
+```

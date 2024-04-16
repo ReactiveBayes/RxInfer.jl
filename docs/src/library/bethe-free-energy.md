@@ -22,7 +22,6 @@ A functional defines a function of a function that returns a scalar. Here, the V
 
 The VFE is also a function of the observed data, as indicated by round brackets, where the data are substituted in the factorized model.
 
-
 ## [Variational inference](@id lib-bethe-variational-inference)
 
 The goal of variational inference is to find a variational distibution that minimizes the VFE,
@@ -53,7 +52,7 @@ which internalizes the factors of the  model. The last two terms specify entropi
 
 Crucially, the BFE can be iteratively optimized for each individual variational distribution in turn. Optimization of the BFE is thus more manageable than direct optimization of the VFE.
 
-For iterative optimization of the BFE, the variational distributions must first be initialized. The `initmarginals` keyword argument to the [`inference`](@ref) and [`rxinference`](@ref) functions initializes the variational distributions of the BFE.
+For iterative optimization of the BFE, the variational distributions must first be initialized. The [`infer`](@ref) function uses the `initialization` keyword argument to initialize the variational distributions of the BFE.
 
 For disambiguation, note that the initialization of the variational distribution is a different design consideration than the choice of priors. A prior specifies a factor in the model definition, while initialization concerns factors in the variational distribution.
 
@@ -65,11 +64,25 @@ For disambiguation, note that the initialization of the variational distribution
 - [Dauwels (2007)](https://ieeexplore.ieee.org/iel5/4497218/4557062/04557602.pdf) on variational message passing on Forney-style factor graphs (FFGs);
 - [Senoz et al. (2021)](https://www.mdpi.com/1099-4300/23/7/807/htm) on constraint manipulation and message passing on FFGs.
 
+## Implementation details 
+
+`RxInfer` implements Bethe Free Energy optimization in an implicit way via the mesasge passing technique. That means that the inference engine does not compute BFE values explicitly, 
+unless specified explicitly. The [`infer`](@ref) function has `free_energy` flag, which indicates whether BFE values must be computed explicitly or not. Note, however, that due to the reactive nature of the message passing implementation in `RxInfer` the computed BFE value may not represent its actual state. This may happen when updates for certain posteriors arriving more often than updates for other posteriors and usually tend to happen in models with loops in its structure. To circumvent this, instead of checking if BFE value is being minimized it is advised to check if it __converges__.
 
 ```@docs
-RxInfer.AbstractScoreObjective
 RxInfer.BetheFreeEnergy
+RxInfer.BetheFreeEnergyDefaultMarginalSkipStrategy
+RxInfer.BetheFreeEnergyDefaultScheduler
+RxInfer.ReactiveMPFreeEnergyPlugin
+```
+
+### Extra diagnostic checks
+
+`RxInfer` verifies intermediate computations of BFE on each iteration. By default, `RxInfer` will throw an exception, if local factor node or variable node computations result in either `NaN` or `Inf`. Note, that the verification happens only if the computation of BFE has been requested explicitly.
+
+```@docs
 RxInfer.apply_diagnostic_check
-RxInfer.BetheFreeEnergyCheckNaNs
-RxInfer.BetheFreeEnergyCheckInfs
+RxInfer.ObjectiveDiagnosticCheckNaNs
+RxInfer.ObjectiveDiagnosticCheckInfs
+RxInfer.DefaultObjectiveDiagnosticChecks
 ```

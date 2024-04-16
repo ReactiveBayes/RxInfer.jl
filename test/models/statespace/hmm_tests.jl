@@ -5,37 +5,39 @@
     include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
     ## Model definition
-    @model function hidden_markov_model(n)
+    @model function hidden_markov_model(x)
         A ~ MatrixDirichlet(ones(3, 3))
         B ~ MatrixDirichlet([10.0 1.0 1.0; 1.0 10.0 1.0; 1.0 1.0 10.0])
 
         s_0 ~ Categorical(fill(1.0 / 3.0, 3))
-
-        s = randomvar(n)
-        x = datavar(Vector{Float64}, n)
-
         s_prev = s_0
 
-        for t in 1:n
+        for t in eachindex(x)
             s[t] ~ Transition(s_prev, A)
             x[t] ~ Transition(s[t], B)
             s_prev = s[t]
         end
     end
 
-    @constraints function hidden_markov_constraints()
+    hidden_markov_constraints = @constraints begin
         q(s, s_0, A, B) = q(s, s_0)q(A)q(B)
+    end
+
+    init = @initialization begin
+        q(A) = vague(MatrixDirichlet, 3, 3)
+        q(B) = vague(MatrixDirichlet, 3, 3)
+        q(s) = vague(Categorical, 3)
     end
 
     ## Inference definition
     function hidden_markov_model_inference(data, vmp_iters)
-        return inference(
-            model = hidden_markov_model(length(data)),
-            constraints = hidden_markov_constraints(),
+        return infer(
+            model = hidden_markov_model(),
+            constraints = hidden_markov_constraints,
             data = (x = data,),
             options = (limit_stack_depth = 500,),
             free_energy = true,
-            initmarginals = (A = vague(MatrixDirichlet, 3, 3), B = vague(MatrixDirichlet, 3, 3), s = vague(Categorical, 3)),
+            initialization = init,
             iterations = vmp_iters,
             returnvars = (s = KeepEach(), A = KeepEach(), B = KeepEach())
         )

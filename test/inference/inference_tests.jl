@@ -1,30 +1,50 @@
 @testitem "__inference_check_itertype" begin
-    import RxInfer: __inference_check_itertype
+    import RxInfer: inference_check_itertype
 
-    @test __inference_check_itertype(:something, nothing) === nothing
-    @test __inference_check_itertype(:something, (1,)) === nothing
-    @test __inference_check_itertype(:something, (1, 2)) === nothing
-    @test __inference_check_itertype(:something, []) === nothing
-    @test __inference_check_itertype(:something, [1, 2]) === nothing
+    @test inference_check_itertype(:something, nothing) === nothing
+    @test inference_check_itertype(:something, (1,)) === nothing
+    @test inference_check_itertype(:something, (1, 2)) === nothing
+    @test inference_check_itertype(:something, []) === nothing
+    @test inference_check_itertype(:something, [1, 2]) === nothing
 
-    @test_throws ErrorException __inference_check_itertype(:something, 1)
-    @test_throws ErrorException __inference_check_itertype(:something, (1))
-    @test_throws ErrorException __inference_check_itertype(:something, missing)
+    @test_throws ErrorException inference_check_itertype(:something, 1)
+    @test_throws ErrorException inference_check_itertype(:something, (1))
+    @test_throws ErrorException inference_check_itertype(:something, missing)
 end
 
-@testitem "__inference_check_dicttype" begin
-    import RxInfer: __inference_check_dicttype
+@testitem "infer_check_dicttype" begin
+    import RxInfer: infer_check_dicttype
 
-    @test __inference_check_dicttype(:something, nothing) === nothing
-    @test __inference_check_dicttype(:something, (x = 1,)) === nothing
-    @test __inference_check_dicttype(:something, (x = 1, y = 2)) === nothing
-    @test __inference_check_dicttype(:something, Dict(:x => 1)) === nothing
-    @test __inference_check_dicttype(:something, Dict(:x => 1, :y => 2)) === nothing
+    @test infer_check_dicttype(:something, nothing) === nothing
+    @test infer_check_dicttype(:something, (x = 1,)) === nothing
+    @test infer_check_dicttype(:something, (x = 1, y = 2)) === nothing
+    @test infer_check_dicttype(:something, Dict(:x => 1)) === nothing
+    @test infer_check_dicttype(:something, Dict(:x => 1, :y => 2)) === nothing
 
-    @test_throws ErrorException __inference_check_dicttype(:something, 1)
-    @test_throws ErrorException __inference_check_dicttype(:something, (1))
-    @test_throws ErrorException __inference_check_dicttype(:something, missing)
-    @test_throws ErrorException __inference_check_dicttype(:something, (missing))
+    @test_throws ErrorException infer_check_dicttype(:something, 1)
+    @test_throws ErrorException infer_check_dicttype(:something, (1))
+    @test_throws ErrorException infer_check_dicttype(:something, missing)
+    @test_throws ErrorException infer_check_dicttype(:something, (missing))
+end
+
+@testitem "__infer_create_factor_graph_model" begin
+    @model function simple_model_for_infer_create_model(y, a, b)
+        x ~ Beta(a, b)
+        y ~ Normal(x, 1.0)
+    end
+
+    import RxInfer: __infer_create_factor_graph_model, ProbabilisticModel, getmodel
+    import GraphPPL: is_data, is_random, is_constant, is_variable, is_factor, getproperties, getcontext
+
+    @testset let model = __infer_create_factor_graph_model(simple_model_for_infer_create_model(a = 1, b = 2), (y = 3,))
+        @test model isa ProbabilisticModel
+        graphicalmodel = getmodel(model)
+        ctx = getcontext(getmodel(model))
+        @test is_variable(graphicalmodel[ctx[:y]])
+        @test is_variable(graphicalmodel[ctx[:x]])
+        @test is_data(getproperties(graphicalmodel[ctx[:y]]))
+        @test is_random(getproperties(graphicalmodel[ctx[:x]]))
+    end
 end
 
 @testitem "`@autoupdates` macro" begin
@@ -141,36 +161,44 @@ end
 
     # A simple model for testing that resembles a simple kalman filter with
     # random walk state transition and unknown observational noise
-    @model function test_model1(n)
-        x = randomvar(n)
-        y = datavar(Float64, n)
-
+    @model function test_model1(y)
         τ ~ Gamma(1.0, 1.0)
 
         x[1] ~ Normal(mean = 0.0, variance = 1.0)
         y[1] ~ Normal(mean = x[1], precision = τ)
 
-        for i in 2:n
+        for i in 2:length(y)
             x[i] ~ Normal(mean = x[i - 1], variance = 1.0)
             y[i] ~ Normal(mean = x[i], precision = τ)
         end
 
-        return 2, 3.0, "hello world" # test returnval
+        return length(y), 2, 3.0, "hello world" # test returnval
     end
 
     @constraints function test_model1_constraints()
         q(x, τ) = q(x)q(τ)
     end
 
+    init = @initialization begin
+        q(τ) = Gamma(1.0, 1.0)
+    end
+
+    @testset "returnval should be set properly" begin
+        for n in 2:5
+            result = infer(model = test_model1(), constraints = test_model1_constraints(), data = (y = rand(n),), initialization = init)
+            @test getreturnval(result.model) === (n, 2, 3.0, "hello world")
+        end
+    end
+
     @testset "Test `catch_exception` functionality" begin
         observations = rand(10)
 
         # Case #0: no errors at all
-        result = inference(
-            model = test_model1(10),
+        result = infer(
+            model = test_model1(),
             constraints = test_model1_constraints(),
             data = (y = observations,),
-            initmarginals = (τ = Gamma(1.0, 1.0),),
+            initialization = init,
             iterations = 10,
             returnvars = KeepEach(),
             free_energy = true
@@ -188,11 +216,11 @@ end
         @test contains(error_str, "The inference has completed successfully.")
 
         # Case #1: no error handling
-        @test_throws ErrorException inference(
-            model = test_model1(10),
+        @test_throws "bang!" infer(
+            model = test_model1(),
             constraints = test_model1_constraints(),
             data = (y = observations,),
-            initmarginals = (τ = Gamma(1.0, 1.0),),
+            initialization = init,
             iterations = 10,
             returnvars = KeepEach(),
             free_energy = true,
@@ -205,11 +233,11 @@ end
             end,)
         )
 
-        result_with_error = inference(
-            model = test_model1(10),
+        result_with_error = infer(
+            model = test_model1(),
             constraints = test_model1_constraints(),
             data = (y = observations,),
-            initmarginals = (τ = Gamma(1.0, 1.0),),
+            initialization = init,
             iterations = 10,
             returnvars = KeepEach(),
             free_energy = true,
@@ -244,11 +272,11 @@ end
         observations = rand(10)
 
         # Case #1: no halting
-        results1 = inference(
-            model = test_model1(10),
+        results1 = infer(
+            model = test_model1(),
             constraints = test_model1_constraints(),
             data = (y = observations,),
-            initmarginals = (τ = Gamma(1.0, 1.0),),
+            initialization = init,
             iterations = 10,
             returnvars = KeepEach(),
             free_energy = true
@@ -259,11 +287,11 @@ end
         @test length(results1.posteriors[:τ]) === 10
 
         # Case #2: halt before iteration starts
-        results2 = inference(
-            model = test_model1(10),
+        results2 = infer(
+            model = test_model1(),
             constraints = test_model1_constraints(),
             data = (y = observations,),
-            initmarginals = (τ = Gamma(1.0, 1.0),),
+            initialization = init,
             iterations = 10,
             returnvars = KeepEach(),
             free_energy = true,
@@ -279,11 +307,11 @@ end
         @test length(results2.posteriors[:τ]) === 4
 
         # Case #3: halt after iteration ends
-        results3 = inference(
-            model = test_model1(10),
+        results3 = infer(
+            model = test_model1(),
             constraints = test_model1_constraints(),
             data = (y = observations,),
-            initmarginals = (τ = Gamma(1.0, 1.0),),
+            initialization = init,
             iterations = 10,
             returnvars = KeepEach(),
             free_energy = true,
@@ -305,127 +333,75 @@ end
     end
 end
 
-@testitem "Test warn argument in `inference()`" begin
-    @testset "Test warning for addons" begin
-
-        #Add a new case for testing warning of addons
-        @model function beta_model2(n)
-            y = datavar(Float64, n)
-
-            θ ~ Beta(4.0, 8.0)
-
-            for i in 1:n
-                y[i] ~ Bernoulli(θ)
-            end
-
-            return y, θ
+@testitem "Test warn argument in `infer()`" begin
+    @model function beta_bernoulli(y)
+        θ ~ Beta(4.0, 8.0)
+        for i in eachindex(y)
+            y[i] ~ Bernoulli(θ)
         end
+    end
 
-        #Add a new dataset for addons
-        n = 20
-        θ_real = 0.75
-        distribution = Bernoulli(θ_real)
-        dataset2 = float.(rand(Bernoulli(θ_real), n))
+    observations = float.(rand(Bernoulli(0.75), 10))
 
-        #with warn
-        @test_logs (:warn, r"Both .* specify a value for the `addons`.*") result_2 = inference(
-            model = beta_model2(length(dataset2)),
-            data = (y = dataset2,),
-            returnvars = (θ = KeepLast(),),
-            free_energy = true,
-            addons = AddonLogScale(),
-            options = (addons = AddonLogScale(),),
-            warn = true
+    @testset "Test warning for addons" begin
+        # Should display a warning if `warn` is set to `true`
+        @test_logs (:warn, r"Both .* specify a value for the `addons`.*") infer(
+            model = beta_bernoulli(), data = (y = observations,), addons = AddonLogScale(), options = (addons = AddonLogScale(),), warn = true
         )
-        #without warn
-        @test_logs result_2 = inference(
-            model = beta_model2(length(dataset2)),
-            data = (y = dataset2,),
-            returnvars = (θ = KeepLast(),),
-            free_energy = true,
-            addons = AddonLogScale(),
-            options = (addons = AddonLogScale(),),
-            warn = false
-        )
+        # Should not display a warning if `warn` is set to `true`
+        @test_logs infer(model = beta_bernoulli(), data = (y = observations,), addons = AddonLogScale(), options = (addons = AddonLogScale(),), warn = false)
+    end
+end
+
+@testitem "Invalid data size error" begin
+    @model function test_model1(y)
+        n = length(y)
+        τ ~ Gamma(1.0, 1.0)
+
+        x[1] ~ Normal(mean = 0.0, variance = 1.0)
+        y[1] ~ Normal(mean = x[1], precision = τ)
+
+        for i in 2:(n - 1)
+            x[i] ~ Normal(mean = x[i - 1], variance = 1.0)
+            y[i] ~ Normal(mean = x[i], precision = τ)
+        end
+        # y_n is unused intentionally
+        x[n] ~ Normal(mean = x[n - 1], variance = 1.0)
+        y[n - 1] ~ Normal(mean = x[n], precision = τ)
+    end
+
+    init = @initialization begin
+        q(τ) = Gamma(1.0, 1.0)
     end
 
     @testset "Warning for unused datavars" begin
-        @model function test_model1(n)
-            x = randomvar(n)
-            y = datavar(Float64, n)
-
-            τ ~ Gamma(1.0, 1.0)
-
-            x[1] ~ Normal(mean = 0.0, variance = 1.0)
-            y[1] ~ Normal(mean = x[1], precision = τ)
-
-            for i in 2:(n - 1)
-                x[i] ~ Normal(mean = x[i - 1], variance = 1.0)
-                y[i] ~ Normal(mean = x[i], precision = τ)
-            end
-            # y_n is unused
-            x[n] ~ Normal(mean = x[n - 1], variance = 1.0)
-            y[n - 1] ~ Normal(mean = x[n], precision = τ)
-        end
-
         @constraints function test_model1_constraints()
             q(x, τ) = q(x)q(τ)
         end
 
-        @constraints function test_model1_constraints()
-            q(x, τ) = q(x)q(τ)
-        end
-        observations = rand(10)
-
-        @test_logs (:warn, r"Unused data variable .*") result = inference(
-            model = test_model1(10),
-            constraints = test_model1_constraints(),
-            data = (y = observations,),
-            initmarginals = (τ = Gamma(1.0, 1.0),),
-            iterations = 10,
-            returnvars = KeepEach(),
-            free_energy = true,
-            warn = true
-        )
-        @test_logs result = inference(
-            model = test_model1(10),
-            constraints = test_model1_constraints(),
-            data = (y = observations,),
-            initmarginals = (τ = Gamma(1.0, 1.0),),
-            iterations = 10,
-            returnvars = KeepEach(),
-            free_energy = true,
-            warn = false
+        @test_throws "size of datavar array and data must match" infer(
+            model = test_model1(), constraints = test_model1_constraints(), data = (y = rand(10),), initialization = init
         )
     end
 end
 
-@testitem "Reactive inference with `rxinference` for test model #1" begin
+@testitem "Streamline inference with `autoupdates` for test model #1" begin
+    import RxInfer: event_name
 
     # A simple model for testing that resembles a simple kalman filter with
     # random walk state transition and unknown observational noise
-    @model function test_model1()
-
-        # Reactive prior inputs for `x_t_min`
-        x_t_min_mean = datavar(Float64)
-        x_t_min_var  = datavar(Float64)
-
+    @model function test_model1(x_t_min_mean, x_t_min_var, τ_shape, τ_rate, y)
         x_t_min ~ Normal(mean = x_t_min_mean, variance = x_t_min_var)
-
-        # Reactive prior inputs for `τ`
-        τ_shape = datavar(Float64)
-        τ_rate  = datavar(Float64)
-
         τ ~ Gamma(shape = τ_shape, rate = τ_rate)
-
         # State transition
         x_t ~ Normal(mean = x_t_min, precision = 1.0)
-
-        # Observations
-        y = datavar(Float64)
         y ~ Normal(mean = x_t, precision = τ)
-
         return 2, 3.0, "hello world" # test returnval
+    end
+
+    init = @initialization begin
+        q(x_t) = NormalMeanVariance(0.0, 1e3)
+        q(τ) = GammaShapeRate(1.0, 1.0)
     end
 
     autoupdates = @autoupdates begin
@@ -443,34 +419,34 @@ end
         nexty = rand(NormalMeanPrecision(nextx, 10.0))
         push!(hiddenx, nextx)
         push!(observedy, nexty)
-        prevx = nextx
+        global prevx = nextx
     end
 
     @testset "Check basic usage" begin
         for keephistory in (0, 1, 2), iterations in (3, 4), free_energy in (true, Float64, false), returnvars in ((:x_t,), (:x_t, :τ)), historyvars in ((:x_t,), (:x_t, :τ))
             historyvars = keephistory > 0 ? NamedTuple{historyvars}(map(_ -> KeepEach(), historyvars)) : nothing
 
-            engine = rxinference(
+            engine = infer(
                 model = test_model1(),
                 constraints = MeanField(),
                 data = (y = observedy,),
                 returnvars = returnvars,
                 historyvars = historyvars,
                 keephistory = keephistory,
-                initmarginals = (x_t = NormalMeanVariance(0.0, 1e3), τ = GammaShapeRate(1.0, 1.0)),
+                initialization = init,
                 iterations = iterations,
                 free_energy = free_energy,
                 autoupdates = autoupdates
             )
 
             # Test that the `.model` reference is correct
-            @test length(getnodes(engine.model)) === 4
-            @test length(getrandom(engine.model)) === 3
-            @test length(getdata(engine.model)) === 5
-            @test length(getconstant(engine.model)) === 1
+            @test length(getfactornodes(engine.model)) === 4
+            @test length(getrandomvars(engine.model)) === 3
+            @test length(getdatavars(engine.model)) === 5
+            @test length(getconstantvars(engine.model)) === 1
 
-            # Test that the `.returnval` reference is correct
-            @test engine.returnval === (2, 3.0, "hello world")
+            # Test that the `returnval` reference is correct
+            @test getreturnval(engine.model) === (2, 3.0, "hello world")
 
             # Test that the `.posteriors` field is constructed correctly
             @test sort(collect(keys(engine.posteriors))) == sort(collect(returnvars))
@@ -516,11 +492,11 @@ end
     @testset "Check callbacks usage: autostart enabled" begin
         callbacksdata = []
 
-        engine = rxinference(
+        engine = infer(
             model = test_model1(),
             constraints = MeanField(),
             data = (y = observedy,),
-            initmarginals = (x_t = NormalMeanVariance(0.0, 1e3), τ = GammaShapeRate(1.0, 1.0)),
+            initialization = init,
             autoupdates = autoupdates,
             callbacks = (
                 before_model_creation = (args...) -> push!(callbacksdata, (:before_model_creation, args)),
@@ -534,20 +510,20 @@ end
         # First check the order
         @test first.(callbacksdata) == [:before_model_creation, :after_model_creation, :before_autostart, :after_autostart]
 
-        @test typeof(callbacksdata[1][2]) <: Tuple{}                                              # before_model_creation
-        @test typeof(callbacksdata[2][2]) <: Tuple{FactorGraphModel, Tuple{Int, Float64, String}} # after_model_creation 
-        @test typeof(callbacksdata[3][2]) <: Tuple{RxInferenceEngine}                             # before_autostart 
-        @test typeof(callbacksdata[4][2]) <: Tuple{RxInferenceEngine}                             # after_autostart
+        @test typeof(callbacksdata[1][2]) <: Tuple{}                   # before_model_creation
+        @test typeof(callbacksdata[2][2]) <: Tuple{ProbabilisticModel} # after_model_creation 
+        @test typeof(callbacksdata[3][2]) <: Tuple{RxInferenceEngine}  # before_autostart 
+        @test typeof(callbacksdata[4][2]) <: Tuple{RxInferenceEngine}  # after_autostart
     end
 
     @testset "Check callbacks usage: autostart disabled" begin
         callbacksdata = []
 
-        engine = rxinference(
+        engine = infer(
             model = test_model1(),
             constraints = MeanField(),
             data = (y = observedy,),
-            initmarginals = (x_t = NormalMeanVariance(0.0, 1e3), τ = GammaShapeRate(1.0, 1.0)),
+            initialization = init,
             autoupdates = autoupdates,
             callbacks = (
                 before_model_creation = (args...) -> push!(callbacksdata, (:before_model_creation, args)),
@@ -561,8 +537,8 @@ end
         # First check the order
         @test first.(callbacksdata) == [:before_model_creation, :after_model_creation]
 
-        @test typeof(callbacksdata[1][2]) <: Tuple{}                                              # before_model_creation
-        @test typeof(callbacksdata[2][2]) <: Tuple{FactorGraphModel, Tuple{Int, Float64, String}} # after_model_creation 
+        @test typeof(callbacksdata[1][2]) <: Tuple{}                   # before_model_creation
+        @test typeof(callbacksdata[2][2]) <: Tuple{ProbabilisticModel} # after_model_creation 
 
         RxInfer.start(engine)
 
@@ -573,11 +549,11 @@ end
     @testset "Check callbacks usage: unknown callback warning" begin
         callbacksdata = []
 
-        @test_logs (:warn, r"Unknown callback specification.*hello_world.*Available callbacks.*") result = rxinference(
+        @test_logs (:warn, r"Unknown callback specification.*hello_world.*Available callbacks.*") result = infer(
             model = test_model1(),
             constraints = MeanField(),
             data = (y = observedy,),
-            initmarginals = (x_t = NormalMeanVariance(0.0, 1e3), τ = GammaShapeRate(1.0, 1.0)),
+            initialization = init,
             autoupdates = autoupdates,
             callbacks = (hello_world = (args...) -> push!(callbacksdata, args),),
             autostart = true
@@ -600,11 +576,11 @@ end
         end
 
         for iterations in (2, 3), keephistory in (0, 1)
-            engine = rxinference(
+            engine = infer(
                 model = test_model1(),
                 constraints = MeanField(),
                 data = (y = observedy,),
-                initmarginals = (x_t = NormalMeanVariance(0.0, 1e3), τ = GammaShapeRate(1.0, 1.0)),
+                initialization = init,
                 autoupdates = autoupdates,
                 historyvars = KeepEach(),
                 keephistory = keephistory,
@@ -668,7 +644,7 @@ end
                 end
 
                 # Check the correct ordering of the `:before_iteration` and `:after_iteration` events
-                @test map(name, filter(event -> event isa RxInferenceEvent{:before_iteration} || event isa RxInferenceEvent{:after_iteration}, events)) ==
+                @test map(event_name, filter(event -> event isa RxInferenceEvent{:before_iteration} || event isa RxInferenceEvent{:after_iteration}, events)) ==
                     repeat([:before_iteration, :after_iteration], iterations)
 
                 # Check that the number of `:before_auto_update` and `:after_auto_update` events depends on the number of iterations
@@ -681,8 +657,7 @@ end
                     @test model === engine.model
                     @test iteration === ii
                     @test length(fupdate) === 3
-                    @test name.(getindex.(Iterators.flatten(collect.(fupdate)), 1)) == [:x_t_min_mean, :x_t_min_var, :τ_shape, :τ_rate]
-                    @test eltype(getindex.(Iterators.flatten(collect.(fupdate)), 2)) === Float64
+                    @test RxInfer.getvarlabel.(fupdate) == (:x_t, :τ, :τ)
                 end
 
                 # Check the associated data with the `:after_auto_update` events
@@ -691,12 +666,11 @@ end
                     @test model === engine.model
                     @test iteration === ii
                     @test length(fupdate) === 3
-                    @test name.(getindex.(Iterators.flatten(collect.(fupdate)), 1)) == [:x_t_min_mean, :x_t_min_var, :τ_shape, :τ_rate]
-                    @test eltype(getindex.(Iterators.flatten(collect.(fupdate)), 2)) === Float64
+                    @test RxInfer.getvarlabel.(fupdate) == (:x_t, :τ, :τ)
                 end
 
                 # Check the correct ordering of the `:before_auto_update` and `:after_auto_update` events
-                @test map(name, filter(event -> event isa RxInferenceEvent{:before_auto_update} || event isa RxInferenceEvent{:after_auto_update}, events)) ==
+                @test map(event_name, filter(event -> event isa RxInferenceEvent{:before_auto_update} || event isa RxInferenceEvent{:after_auto_update}, events)) ==
                     repeat([:before_auto_update, :after_auto_update], iterations)
 
                 # Check that the number of `:before_data_update` and `:after_data_update` events depends on the number of iterations
@@ -720,12 +694,12 @@ end
                 end
 
                 # Check the correct ordering of the `:before_auto_update` and `:after_auto_update` events
-                @test map(name, filter(event -> event isa RxInferenceEvent{:before_data_update} || event isa RxInferenceEvent{:after_data_update}, events)) ==
+                @test map(event_name, filter(event -> event isa RxInferenceEvent{:before_data_update} || event isa RxInferenceEvent{:after_data_update}, events)) ==
                     repeat([:before_data_update, :after_data_update], iterations)
 
                 # Check the correct ordering of the iteration related events
                 @test map(
-                    name,
+                    event_name,
                     filter(events) do event
                         return event isa RxInferenceEvent{:before_iteration} ||
                                event isa RxInferenceEvent{:before_auto_update} ||
@@ -756,11 +730,11 @@ end
     end
 
     @testset "Check postprocess usage: UnpackMarginalPostprocess" begin
-        engine = rxinference(
+        engine = infer(
             model = test_model1(),
             constraints = MeanField(),
             data = (y = observedy,),
-            initmarginals = (x_t = NormalMeanVariance(0.0, 1e3), τ = GammaShapeRate(1.0, 1.0)),
+            initialization = init,
             autoupdates = autoupdates,
             postprocess = RxInfer.UnpackMarginalPostprocess(),
             historyvars = (τ = KeepLast(),),
@@ -775,11 +749,11 @@ end
 
     @testset "Check postprocess usage: NoopPostprocess & nothing" begin
         for postprocess in (RxInfer.NoopPostprocess(), nothing)
-            engine = rxinference(
+            engine = infer(
                 model = test_model1(),
                 constraints = MeanField(),
                 data = (y = observedy,),
-                initmarginals = (x_t = NormalMeanVariance(0.0, 1e3), τ = GammaShapeRate(1.0, 1.0)),
+                initialization = init,
                 autoupdates = autoupdates,
                 postprocess = postprocess,
                 historyvars = (τ = KeepLast(),),
@@ -801,228 +775,72 @@ end
     end
 
     @testset "Either `data` or `datastream` is required" begin
-        @test_throws ErrorException rxinference(model = test_model1())
+        @test_throws ErrorException infer(model = test_model1())
     end
 
     @testset "`data` and `datastream` cannot be used together" begin
-        @test_throws ErrorException rxinference(model = test_model1(), data = (y = observedy,), datastream = labeled(Val((:y,)), combineLatest(from(observedy))))
+        @test_throws ErrorException infer(model = test_model1(), data = (y = observedy,), datastream = labeled(Val((:y,)), combineLatest(from(observedy))))
     end
 end
 
-@testitem "Predictions functionality" begin
-
-    # test #1 (array with missing + predictvars)
-    data = (y = [1.0, -500.0, missing, 100.0],)
-
-    # A simple model for testing that resembles a simple kalman smoother with
-    # random walk state transition
-    @model function model_1(n)
-        x = randomvar(n + 2)
-        o = datavar(Float64, 2) where {allow_missing = true}
-        y = datavar(Float64, n) where {allow_missing = true}
-
-        x_0 ~ NormalMeanPrecision(0.0, 1.0)
-
-        z = x_0
-        for i in 1:n
-            x[i] ~ NormalMeanPrecision(z, 1.0)
-            y[i] ~ NormalMeanPrecision(x[i], 1.0)
-            z = x[i]
-        end
-        x[n + 1] ~ NormalMeanPrecision(z, 1.0)
-        o[1] ~ NormalMeanPrecision(x[n + 1], 1.0)
-        z = x[n + 1]
-        x[n + 2] ~ NormalMeanPrecision(x[n + 1], 1.0)
-        o[2] ~ NormalMeanPrecision(x[n + 2], 1.0)
-    end
-
-    result = inference(model = model_1(length(data[:y])), iterations = 10, data = data, predictvars = (o = KeepLast(),))
-
-    @test all(typeof.(result.predictions[:o]) .<: NormalDistributionsFamily)
-    @test length(result.predictions[:o]) === 2
-    @test typeof(result.predictions[:y][3]) <: NormalDistributionsFamily
-
-    # test #2 (array with missing + single entry for predictvars)
-    data = (y = [1.0, -10.0, 0.9, missing, missing],)
-
-    @model function model_2(n)
-        x = randomvar(n + 1)
-        o = datavar(Float64) where {allow_missing = true}
-        y = datavar(Float64, n) where {allow_missing = true}
-
-        z ~ NormalMeanPrecision(0.0, 100.0)
-
-        for i in 1:n
-            x[i] ~ NormalMeanPrecision(z, 1.0)
-            y[i] ~ NormalMeanPrecision(x[i], 1.0)
-        end
-        x[n + 1] ~ NormalMeanPrecision(x[n], 1.0)
-        o ~ NormalMeanPrecision(x[n + 1], 1.0)
-    end
-
-    result = inference(model = model_2(length(data[:y])), iterations = 10, data = data, predictvars = (o = KeepEach(),))
-
-    # note we used KeepEach for variable o with BP algorithm (10 iterations), we expect all predicted variables to be equal (because of the beleif propagation)
-    @test all(y -> y == result.predictions[:o][1], result.predictions[:o])
-    @test length(result.predictions[:o]) === 10
-    @test all(typeof.(result.predictions[:y]) .<: NormalDistributionsFamily)
-
-    # test #3 (array + single entry for predictvars)
-    data = (y = [1.0, -10.0, 0.9],)
-    @model function model_3(n)
-        x = randomvar(n + 1)
-        o = datavar(Float64) where {allow_missing = true}
-        y = datavar(Float64, n) where {allow_missing = true}
-
-        z ~ NormalMeanPrecision(0.0, 100.0)
-
-        for i in 1:n
-            x[i] ~ NormalMeanPrecision(z, 1.0)
-            y[i] ~ NormalMeanPrecision(x[i], 1.0)
-        end
-        x[n + 1] ~ NormalMeanPrecision(x[n], 1.0)
-        o ~ NormalMeanPrecision(x[n + 1], 1.0)
-    end
-
-    result = inference(model = model_3(length(data[:y])), iterations = 10, data = data, predictvars = (o = KeepLast(),))
-
-    @test !haskey(result.predictions, :y)
-    @test haskey(result.predictions, :o)
-    @test typeof(result.predictions[:o]) <: NormalDistributionsFamily
-
-    # test #4 (array with a missing + no predictvars)
-    data = (y = [1.0, 2.0, missing],)
-    @model function model_4(n)
-        x = randomvar(n)
-        y = datavar(Float64, n) where {allow_missing = true}
-
-        z ~ NormalMeanPrecision(3, 100.0)
-
-        for i in 1:n
-            x[i] ~ NormalMeanPrecision(z, 1.0)
-            y[i] ~ NormalMeanPrecision(x[i], 1.0)
+@testitem "Test misspecified types in infer function" begin
+    @model function rolling_die(y)
+        θ ~ Dirichlet(ones(6))
+        for i in eachindex(y)
+            y[i] ~ Categorical(θ)
         end
     end
 
-    result = inference(model = model_4(length(data[:y])), iterations = 10, data = data)
-
-    @test all(typeof.(result.predictions[:y]) .<: NormalDistributionsFamily)
-
-    # test #5 (single prediction, no data provided)
-    @model function model_5()
-        o = datavar(Float64) where {allow_missing = true}
-
-        z ~ NormalMeanPrecision(0, 1.0)
-        x ~ NormalMeanPrecision(z, 1.0)
-        o ~ NormalMeanPrecision(x, 10.0)
+    @model function rolling_die_streamlined(y, p)
+        θ ~ Dirichlet(p)
+        y ~ Categorical(θ)
     end
 
-    result = inference(model = model_5(), iterations = 1, predictvars = (o = KeepLast(),))
-
-    @test haskey(result.predictions, :o)
-    @test typeof(result.predictions[:o]) <: NormalDistributionsFamily
-
-    # test #6 (single datavar missing)
-    @model function model_6()
-        y   = datavar(Float64) where {allow_missing = true}
-        x_0 = datavar(Float64)
-
-        x ~ Normal(mean = x_0, var = 1.0)
-        a ~ Normal(mean = x, var = 1.0)
-        b ~ Normal(mean = a, var = 1.0)
-        c ~ Normal(mean = a, var = 1.0)
-        d ~ Normal(mean = c + b, var = 1.0)
-
-        y ~ Normal(mean = d, var = 1.0)
+    streamlined_autoupdates = @autoupdates begin
+        (p,) = params(q(θ))
     end
 
-    result = inference(model = model_6(), data = (y = missing, x_0 = 1.0), initmessages = (a = vague(NormalMeanPrecision),), iterations = 10, free_energy = false)
-
-    @test haskey(result.predictions, :y)
-    @test typeof(result.predictions[:y]) <: NormalDistributionsFamily
-
-    # test #7 vmp model
-    data = (y = [1.0, -10.0, 5.0],)
-    @model function vmp_model(n)
-        x = randomvar(n + 1)
-        o = datavar(Float64) where {allow_missing = true}
-        y = datavar(Float64, n)
-
-        x_0 ~ NormalMeanPrecision(0.0, 100.0)
-        γ ~ GammaShapeRate(1.0, 1.0)
-
-        x_prev = x_0
-        for i in 1:n
-            x[i] ~ NormalMeanPrecision(x_prev, γ)
-            y[i] ~ NormalMeanPrecision(x[i], 1.0)
-            x_prev = x[i]
-        end
-        x[n + 1] ~ NormalMeanPrecision(x[n], 1.0)
-        o ~ NormalMeanPrecision(x[n + 1], 1.0)
+    streamlined_init = @initialization begin
+        q(θ) = Dirichlet(ones(6))
     end
 
-    constraints = @constraints begin
-        q(x_0, x, γ) = q(x_0, x)q(γ)
+    observations = [[1.0; zeros(5)], [zeros(5); 1.0]]
+
+    @testset "Test misspecified data" begin
+        @test_throws "Keyword argument `data` expects either `Dict` or `NamedTuple` as an input" infer(model = rolling_die(), data = (y = observations))
+        result = infer(model = rolling_die(), data = (y = observations,))
+        @test isequal(first(mean(result.posteriors[:θ])), last(mean(result.posteriors[:θ])))
     end
 
-    result = inference(
-        model = vmp_model(length(data[:y])),
-        data = data,
-        constraints = constraints,
-        free_energy = false,
-        initmarginals = (γ = GammaShapeRate(1.0, 1.0),),
-        iterations = 10,
-        returnvars = (γ = KeepEach(),),
-        predictvars = (o = KeepEach(),)
-    )
-
-    @test first(result.posteriors[:γ]) != last(result.posteriors[:γ])
-    @test first(result.predictions[:o]) != last(result.predictions[:o])
-
-    # test #8 non gaussian likelihood (single datavar missing)
-    dataset = [1.0, 1.0, 1.0, missing]
-    @model function coin_model1(n)
-        y = datavar(Float64, n) where {allow_missing = true}
-
-        θ ~ Beta(1.0, 1.0)
-        for i in 1:n
-            y[i] ~ Bernoulli(θ)
-        end
+    @testset "Test misspecified callbacks" begin
+        @test_throws "Keyword argument `callbacks` expects either `Dict` or `NamedTuple` as an input" infer(
+            model = rolling_die(), data = (y = observations,), callbacks = (before_model_creation = (args...) -> nothing)
+        )
+        result = infer(model = rolling_die(), data = (y = observations,), callbacks = (before_model_creation = (args...) -> nothing,))
+        @test isequal(first(mean(result.posteriors[:θ])), last(mean(result.posteriors[:θ])))
     end
 
-    result = inference(model = coin_model1(length(dataset)), data = (y = dataset,))
-
-    @test typeof(last(result.predictions[:y])) <: Bernoulli
-
-    # for θ ~ Beta(1.0, 1.0)
-    @test Bernoulli(mean(Beta(sum(dataset .!== missing) + 1.0, 1.0))) ≈ last(result.predictions[:y])
-
-    # test #9 allow_missing error handling
-    dataset = [1.0, 1.0, 1.0, missing]
-    @model function coin_model2(n)
-        y = datavar(Float64, n)
-
-        θ ~ Beta(1.0, 1.0)
-        for i in 1:n
-            y[i] ~ Bernoulli(θ)
-        end
+    @testset "Test misspecified event type in the streamlined inference" begin
+        @test_logs (:warn, r"Unknown event type: blabla. Available events: .*") infer(
+            model = rolling_die_streamlined(),
+            data = (y = observations,),
+            autoupdates = streamlined_autoupdates,
+            initialization = streamlined_init,
+            autostart = true,
+            keephistory = 1,
+            warn = true,
+            events = Val((:blabla,))
+        )
+        result = @test_logs infer(
+            model = rolling_die_streamlined(),
+            data = (y = observations,),
+            autoupdates = streamlined_autoupdates,
+            initialization = streamlined_init,
+            autostart = true,
+            keephistory = 1,
+            warn = false,
+            events = Val((:blabla,))
+        )
+        @test isequal(first(mean(result.history[:θ][end])), last(mean(result.history[:θ][end])))
     end
-
-    @test_throws ErrorException inference(model = coin_model2(length(dataset)), data = (y = dataset,))
-
-    @test_throws ErrorException inference(model = coin_model2(length(dataset)), data = (y = dataset,), free_energy = true)
-
-    # test #10 predictvars, no dataset
-    @model function coin_model3(n)
-        y = datavar(Float64, n) where {allow_missing = true}
-
-        θ ~ Beta(1.0, 1.0)
-        for i in 1:n
-            y[i] ~ Bernoulli(θ)
-        end
-    end
-
-    result = inference(model = coin_model3(length(dataset)), predictvars = (y = KeepLast(),))
-
-    @test all(result.predictions[:y] .== Bernoulli(mean(Beta(1.0, 1.0))))
 end
