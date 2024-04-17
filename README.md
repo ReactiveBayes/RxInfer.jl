@@ -72,22 +72,19 @@ There are examples available to get you started in the `examples/` folder. Alter
 
 Here we show a simple example of how to use RxInfer.jl for Bayesian inference problems. In this example we want to estimate a bias of a coin in a form of a probability distribution in a coin flip simulation.
 
-Let's start by creating some dataset. For simplicity in this example we will use static pre-generated dataset. Each sample can be thought of as the outcome of single flip which is either heads or tails (1 or 0). We will assume that our virtual coin is biased, and lands heads up on 75% of the trials (on average).
-
 First let's setup our environment by importing all needed packages:
-
 ```julia
 using RxInfer, Random
 ```
 
-Next, let's define our dataset:
+We start by creating some dataset. For simplicity in this example we will use static pre-generated dataset. Each sample can be thought of as the outcome of single flip which is either heads or tails (1 or 0). We will assume that our virtual coin is biased, and lands heads up on 75% of the trials (on average).
 
 ```julia
 n = 500  # Number of coin flips
 p = 0.75 # Bias of a coin
 
 distribution = Bernoulli(p) 
-dataset      = float.(rand(distribution, n))
+dataset      = rand(distribution, n)
 ```
 
 ### Model specification
@@ -119,10 +116,10 @@ The joint probability is given by the multiplication of the likelihood and the p
 P(y_{1:N}, \theta) = P(\theta) \prod_{i=1}^N P(y_i | \theta).
 ```
 
-Now let's see how to specify this model using GraphPPL's package syntax.
+Now let's see how to specify this model using [GraphPPL's package](https://github.com/ReactiveBayes/GraphPPL.jl) syntax:
 ```julia
 # GraphPPL.jl export `@model` macro for model specification
-# It accepts a regular Julia function and builds an FFG under the hood
+# It accepts a regular Julia function and builds a factor graph under the hood
 @model function coin_model(y, a, b) 
     # We endow θ parameter of our model with some prior
     θ ~ Beta(a, b)
@@ -134,7 +131,10 @@ Now let's see how to specify this model using GraphPPL's package syntax.
 end
 ```
 
-Alternatively, we could use a broadcasting syntax.
+In short, the `@model` macro converts a textual description of a probabilistic model into a corresponding [Factor Graph](https://en.wikipedia.org/wiki/Factor_graph) (FG). In the example above, the $\theta \sim \mathrm{Beta}(a, b)$ expression creates latent variable $θ$ and assigns it as an output of $\mathrm{Beta}$ node in the corresponding FFG. The `~` operation can be understood as _"is modelled by"_. Next, we model each data point `y[i]` as $\mathrm{Bernoulli}$ distribution with $\theta$ as its parameter.
+
+> [!TIP]
+> Alternatively, we could use the broadcasting operation:
 ```julia
 @model function coin_model(y, a, b) 
     θ  ~ Beta(a, b)
@@ -142,10 +142,10 @@ Alternatively, we could use a broadcasting syntax.
 end
 ```
 
-As you can see, `RxInfer` offers a model specification syntax that resembles closely to the mathematical equations defined above. The $\theta \sim \mathrm{Beta}(2.0, 7.0)$ expression creates random variable $θ$ and assigns it as an output of $\mathrm{Beta}$ node in the corresponding FFG. 
+As you can see, `RxInfer` in combination with `GraphPPL` offers a model specification syntax that resembles closely to the mathematical equations defined above. 
 
 > [!NOTE]
-> `RxInfer.jl` uses `GraphPPL.jl` for model and constraints specification. `GraphPPL.jl` API has been changed in version `4.0.0`. See [Migration Guide](https://reactivebayes.github.io/GraphPPL.jl/stable/) for more details.
+> `GraphPPL.jl` API has been changed in version `4.0.0`. See [Migration Guide](https://reactivebayes.github.io/GraphPPL.jl/stable/) for more details.
 
 ### Inference specification
 
