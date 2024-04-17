@@ -135,12 +135,12 @@ In short, the `@model` macro converts a textual description of a probabilistic m
 
 > [!TIP]
 > Alternatively, we could use the broadcasting operation:
-> ```julia
-> @model function coin_model(y, a, b) 
->     θ  ~ Beta(a, b)
->     y .~ Bernoulli(θ) 
-> end
-> ```
+```julia
+@model function coin_model(y, a, b) 
+    θ  ~ Beta(a, b)
+    y .~ Bernoulli(θ) 
+end
+```
 
 As you can see, `RxInfer` in combination with `GraphPPL` offers a model specification syntax that resembles closely to the mathematical equations defined above. 
 
