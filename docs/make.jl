@@ -92,7 +92,9 @@ makedocs(;
         warn_outdated = true,
         assets = String["assets/theme.css", "assets/header.css", "assets/header.js"],
         description = "Julia package for automated Bayesian inference on a factor graph with reactive message passing",
-        footer = "Created in [BIASlab](https://biaslab.github.io/), maintained by [ReactiveBayes](https://github.com/ReactiveBayes), powered by [Documenter.jl](https://github.com/JuliaDocs/Documenter.jl) and the [Julia Programming Language](https://julialang.org/)."
+        footer = "Created in [BIASlab](https://biaslab.github.io/), maintained by [ReactiveBayes](https://github.com/ReactiveBayes), powered by [Documenter.jl](https://github.com/JuliaDocs/Documenter.jl) and the [Julia Programming Language](https://julialang.org/).",
+        example_size_threshold = 1000 * 1024,
+        size_threshold_warn = 500 * 1024,
     ),
     pages = [
         "Home" => "index.md",
