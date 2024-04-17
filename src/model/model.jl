@@ -33,6 +33,9 @@ getconstantvars(model::ProbabilisticModel) = getconstantvars(getmodel(model))
 "Returns the factor nodes from the model specification."
 getfactornodes(model::ProbabilisticModel) = getfactornodes(getmodel(model))
 
+# Redirect the `getvarref` call to the underlying model
+getvarref(model::ProbabilisticModel, label) = getvarref(getmodel(model), label)
+
 """
     ConditionedModelGenerator(generator, conditioned_on)
 
