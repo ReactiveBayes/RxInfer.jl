@@ -175,7 +175,6 @@ function activate_rmp_variable!(plugin::ReactiveMPInferencePlugin, model::Model,
         options = ReactiveMP.RandomVariableActivationOptions(Rocket.getscheduler(getoptions(plugin)), messages_prod_fn, marginal_prod_fn)
         return ReactiveMP.activate!(getextra(nodedata, ReactiveMPExtraVariableKey)::RandomVariable, options)
     elseif is_data(nodeproperties)
-        # TODO: bvdmitri use allow_missings
         properties = getproperties(nodedata)::GraphPPL.VariableNodeProperties
         # The datavar can be linked to another variable via a `transform` function, which should be stored in the `value` 
         # field of the properties. In this case the `datavar` gets its values from the linked variable and does not create an explicit factor node
@@ -187,7 +186,7 @@ function activate_rmp_variable!(plugin::ReactiveMPInferencePlugin, model::Model,
             transform = _transform
             args = map(arg -> GraphPPL.is_nodelabel(arg) ? getvariable(getvarref(model, arg)) : arg, _args)
         end
-        options = ReactiveMP.DataVariableActivationOptions(false, !isnothing(value), transform, args)
+        options = ReactiveMP.DataVariableActivationOptions(true, !isnothing(value), transform, args)
         return ReactiveMP.activate!(getextra(nodedata, ReactiveMPExtraVariableKey)::DataVariable, options)
     elseif is_constant(nodeproperties)
         # The constant does not require extra activation
