@@ -47,8 +47,8 @@
 
     μ1 = -10.0
     μ2 = 10.0
-    w1  = 3.777
-    w2  = 0.333
+    w1 = 3.777
+    w2 = 0.333
 
     z = rand(rng, Categorical(switch), n)
     y = Vector{Float64}(undef, n)
@@ -83,7 +83,7 @@
     mw1 = getindex.(fresult.posteriors[:p], 1)
     mw2 = getindex.(fresult.posteriors[:p], 2)
     fe = fresult.free_energy
-    
+
     # Test inference results
     @test length(mswitch) === 10
     @test length(mm1) === 10
@@ -91,7 +91,7 @@
     @test length(mw1) === 10
     @test length(mw2) === 10
     @test length(fe) === 10 && all(e -> e <= 1e-10, diff(fe))
-    @test last(fe) ≈ 284.76 atol=1e-1
+    @test last(fe) ≈ 284.76 atol = 1e-1
 
     ms = mean(last(mswitch))
 

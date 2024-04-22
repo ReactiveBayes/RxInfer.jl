@@ -119,7 +119,7 @@
     m = fresult.posteriors[:m]
     w = fresult.posteriors[:w]
     fe = fresult.free_energy
-    
+
     ## -------------------------------------------- ##
     # Test inference results
     @test length(s) === 25
@@ -127,7 +127,7 @@
     @test length(w) === 25
     @test length(fe) === 25
     @test all(filter(e -> abs(e) > 1e-3, diff(fe)) .< 0)
-    @test last(fe) ≈ 3436.7 atol=1e-1
+    @test last(fe) ≈ 3436.7 atol = 1e-1
 
     ems = sort(mean.(last(m)), by = x -> atan(x[2] / x[1]))
     rms = sort(mean.(gaussians), by = x -> atan(x[2] / x[1]))
