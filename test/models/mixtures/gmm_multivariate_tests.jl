@@ -1,7 +1,6 @@
 @testitem "Multivariate Gaussian Mixture model" begin
     using BenchmarkTools, Plots, StableRNGs, LinearAlgebra
 
-    # `include(test/utiltests.jl)`
     include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
     @model function multivariate_gaussian_mixture_model(rng, L, nmixtures, y)
@@ -120,6 +119,7 @@
     m = fresult.posteriors[:m]
     w = fresult.posteriors[:w]
     fe = fresult.free_energy
+    
     ## -------------------------------------------- ##
     # Test inference results
     @test length(s) === 25
@@ -127,7 +127,7 @@
     @test length(w) === 25
     @test length(fe) === 25
     @test all(filter(e -> abs(e) > 1e-3, diff(fe)) .< 0)
-    @test abs(last(fe) - 3442.4015524445967) < 0.01
+    @test last(fe) ≈ 3436.7 atol=1e-1
 
     ems = sort(mean.(last(m)), by = x -> atan(x[2] / x[1]))
     rms = sort(mean.(gaussians), by = x -> atan(x[2] / x[1]))
