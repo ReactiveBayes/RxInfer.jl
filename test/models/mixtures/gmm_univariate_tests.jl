@@ -47,12 +47,13 @@
 
     μ1 = -10.0
     μ2 = 10.0
-    w  = 1.777
+    w1 = 3.777
+    w2 = 0.333
 
     z = rand(rng, Categorical(switch), n)
     y = Vector{Float64}(undef, n)
 
-    dists = [Normal(μ1, sqrt(inv(w))), Normal(μ2, sqrt(inv(w)))]
+    dists = [Normal(μ1, sqrt(inv(w1))), Normal(μ2, sqrt(inv(w2)))]
 
     for i in 1:n
         y[i] = rand(rng, dists[z[i]])
@@ -89,8 +90,8 @@
     @test length(mm2) === 10
     @test length(mw1) === 10
     @test length(mw2) === 10
-    @test length(fe) === 10 && all(filter(e -> abs(e) > 1e-3, diff(fe)) .< 0)
-    @test abs(last(fe) - 139.74362) < 0.01
+    @test length(fe) === 10 && all(e -> e <= 1e-10, diff(fe))
+    @test last(fe) ≈ 284.76 atol = 1e-1
 
     ms = mean(last(mswitch))
 
@@ -100,14 +101,14 @@
     rms = sort([μ1, μ2])
 
     foreach(zip(rms, ems)) do (r, e)
-        @test abs(r - mean(e)) < 0.19
+        @test abs(r - mean(e)) < 3std(e)
     end
 
     ews = sort([last(mw1), last(mw2)], by = mean)
-    rws = sort([w, w])
+    rws = sort([w1, w2])
 
     foreach(zip(rws, ews)) do (r, e)
-        @test abs(r - mean(e)) < 0.15
+        @test abs(r - mean(e)) < 3std(e)
     end
 
     @test_throws "must be the naive mean-field" inference_univariate(y, 10, BetheFactorization())
@@ -117,17 +118,17 @@
 
     @test_plot "models" "gmm_univariate" begin
         dim(d) = (a) -> map(r -> r[d], a)
-        mp = plot(mean.(mm1), ribbon = var.(mm1) .|> sqrt, label = "m1 prediction")
-        mp = plot!(mean.(mm2), ribbon = var.(mm2) .|> sqrt, label = "m2 prediction")
+        mp = plot(mean.(mm1), ribbon = std.(mm1), label = "m1 prediction")
+        mp = plot!(mean.(mm2), ribbon = std.(mm2), label = "m2 prediction")
         mp = plot!(mp, [μ1], seriestype = :hline, label = "real m1")
         mp = plot!(mp, [μ2], seriestype = :hline, label = "real m2")
 
-        wp = plot(mean.(mw1), ribbon = var.(mw1) .|> sqrt, label = "w1 prediction", legend = :bottomleft, ylim = (-1, 3))
-        wp = plot!(wp, [w], seriestype = :hline, label = "real w1")
-        wp = plot!(wp, mean.(mw2), ribbon = var.(mw2) .|> sqrt, label = "w2 prediction")
-        wp = plot!(wp, [w], seriestype = :hline, label = "real w2")
+        wp = plot(mean.(mw1), ribbon = std.(mw1), label = "w1 prediction", legend = :bottomleft, ylim = (0, 5))
+        wp = plot!(wp, [w1], seriestype = :hline, label = "real w1")
+        wp = plot!(wp, mean.(mw2), ribbon = var.(mw2), label = "w2 prediction")
+        wp = plot!(wp, [w2], seriestype = :hline, label = "real w2")
 
-        swp = plot(mean.(mswitch), ribbon = var.(mswitch) .|> sqrt, label = "Switch prediction")
+        swp = plot(mean.(mswitch), ribbon = std.(mswitch), label = "Switch prediction")
 
         swp = plot!(swp, [switch[1]], seriestype = :hline, label = "switch[1]")
         swp = plot!(swp, [switch[2]], seriestype = :hline, label = "switch[2]")

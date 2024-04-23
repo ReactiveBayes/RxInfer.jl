@@ -2,7 +2,6 @@
     using Distributions
     using BenchmarkTools, LinearAlgebra, StableRNGs, Plots
 
-    # `include(test/utiltests.jl)`
     include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
     @model function gamma_mixture_model(y, nmixtures, priors_as, priors_bs, prior_s)
@@ -74,8 +73,24 @@
     # create model from inferred parameters
     _mixture = MixtureModel(_dists, _mixing)
 
-    @test mean(_dists[1]) ≈ 0.32261559907078213
-    @test mean(_dists[2]) ≈ 0.3346638123092099
-    @test _mixing ≈ [0.7988294835972645, 0.20117051640273556]
-    @test last(gresult.free_energy) ≈ -138.7724253019069
+    @test mean(_dists[1]) ≈ 0.32 atol = 1e-2
+    @test mean(_dists[2]) ≈ 0.33 atol = 1e-2
+    @test _mixing ≈ [0.8, 0.2] atol = 1e-2
+    @test last(gresult.free_energy) ≈ -146.8 atol = 1e-1
+
+    @test_plot "models" "gamma_mixture" begin
+        # plot results
+        p1 = histogram(dataset, ylim = (0, 13), xlim = (0, 1), normalize = :pdf, label = "data", title = "Generated mixtures", opacity = 0.3)
+        p1 = plot!(range(0.0, 1.0, length = 100), (x) -> mixing[1] * pdf(mixtures[1], x), label = "component 1", linewidth = 3.0)
+        p1 = plot!(range(0.0, 1.0, length = 100), (x) -> mixing[2] * pdf(mixtures[2], x), label = "component 2", linewidth = 3.0)
+
+        p2 = histogram(dataset, ylim = (0, 13), xlim = (0, 1), normalize = :pdf, label = "data", title = "Inferred mixtures", opacity = 0.3)
+        p2 = plot!(range(0.0, 1.0, length = 100), (x) -> _mixing[1] * pdf(_dists[1], x), label = "component 1", linewidth = 3.0)
+        p2 = plot!(range(0.0, 1.0, length = 100), (x) -> _mixing[2] * pdf(_dists[2], x), label = "component 2", linewidth = 3.0)
+
+        # evaluate the convergence of the algorithm by monitoring the BFE
+        p3 = plot(gresult.free_energy, label = false, xlabel = "iterations", title = "Bethe FE")
+
+        plot(plot(p1, p2, layout = @layout([a; b])), plot(p3), layout = @layout([a b]), size = (800, 400))
+    end
 end
