@@ -63,7 +63,7 @@ infer(
 )
 ```
 
-### Multiple dispatch is no long supported
+### Multiple dispatch is no longer supported
 
 Due to the previous change, it is not possible to use multiple dispatch for model function definitions. In other words, type constraints for model arguments are ignored because Julia does not support multiple dispatch for keyword arguments.
 
@@ -138,61 +138,5 @@ nothing #hide
 
 ## Initialization
 
-Also read the [Initialization](@ref initialization) guide.
-
-Initialization of messages and marginals to kickstart the inference procedure was previously done with the `initmessages` and `initmarginals` keyword. With the introduction of a nested model specificiation in the `@model` macro, we now need a more specific way to initialize messages and marginals. This is done with the new [`@initialization`](@ref) macro. The syntax for the `@initialization` macro is similar to the `@constraints` and `@meta` macro. An example is shown below:
-
-```@example migration-guide
-@model function submodel(z, x) 
-    t := x + 1
-    z ~ Normal(mean = t, var = 1.0)
-end 
-
-@model function mymodel(y)
-    x ~ Normal(mean = 0.0, var = 1.0)
-    z ~ submodel(x = x)
-    y ~ Normal(mean = z, var = 1.0)
-end
-
-@initialization begin
-    # Initialize the marginal for the variable x
-    q(x) = vague(NormalMeanVariance)
-
-    # Initialize the message for the variable z
-    μ(z) = vague(NormalMeanVariance)
-
-    # Specify the initialization for a submodel of type `submodel`
-    for init in submodel
-        q(t) = vague(NormalMeanVariance)
-    end
-
-    # Specify the initialization for a submodel of type `submodel` with a specific index
-    for init in (submodel, 1)
-        q(t) = vague(NormalMeanVariance)
-    end
-end
-```
-
-Similar to the `@constraints` macro, the `@initialization` macro also supports function definitions:
-
-```@example migration-guide
-@initialization function my_init()
-    # Initialize the marginal for the variable x
-    q(x) = vague(NormalMeanVariance)
-
-    # Initialize the message for the variable z
-    μ(z) = vague(NormalMeanVariance)
-
-    # Specify the initialization for a submodel of type `submodel`
-    for init in submodel
-        q(t) = vague(NormalMeanVariance)
-    end
-
-    # Specify the initialization for a submodel of type `submodel` with a specific index
-    for init in (submodel, 1)
-        q(t) = vague(NormalMeanVariance)
-    end
-end
-```
-
-The result of the initialization macro can be passed to the inference function with keyword argument `initialization`.
+Initialization of messages and marginals to kickstart the inference procedure was previously done with the `initmessages` and `initmarginals` keyword. With the introduction of a nested model specificiation in the `@model` macro, we now need a more specific way to initialize messages and marginals. This is done with the new [`@initialization`](@ref) macro. 
+Read more about the new syntax in the [Initialization](@ref initialization) guide.

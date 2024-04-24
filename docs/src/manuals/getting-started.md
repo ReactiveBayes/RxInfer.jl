@@ -49,6 +49,7 @@ Let's start by creating some dataset. One approach could be flipping a coin N ti
 First let's setup our environment by importing all needed packages:
 
 ```@example coin
+using Test #hide
 using RxInfer, Distributions, Random
 ```
 
@@ -65,7 +66,7 @@ coin_bias      = 0.75
 # distributed as the `Bernoulli` distrinution
 distribution   = Bernoulli(coin_bias)
 # Simulated coin flips
-dataset        = float.(rand(rng, distribution, n_observations))
+dataset        = rand(rng, distribution, n_observations)
 ```
 
 ### [Model specification](@id getting-started-model-specification)
@@ -136,7 +137,7 @@ end
 Given the model specification we can construct an actual model graph and visualize it. In order to do that we can use the `|` operator to condition on data and the `RxInfer.create_model` function to create the graph. Read more about condition in the [corresponding section](@ref user-guide-model-specification-conditioning) of the documentation.
 
 ```@example coin
-conditioned = coin_model(a = 2.0, b = 7.0) | (y = [ 1.0, 0.0, 1.0 ], )
+conditioned = coin_model(a = 2.0, b = 7.0) | (y = [ true, false, true ], )
 ```
 
 We can use `GraphPPL.jl` visualisation capabilities to show the structure of the resulting graph. For that we need two extra packages installed: `Cairo` and `GraphPlot`. Note, that those packages are not included in the `RxInfer` package and must be installed separately.
@@ -178,7 +179,7 @@ For that purpose `RxInfer` uses [`RxInfer.DefferedDataHandler`](@ref) structure.
 # The only difference here is that we do not specify `a` and `b` as hyperparameters 
 # But rather indicate that the data for them will be available later during the inference
 conditioned_with_deffered_data = coin_model() | (
-    y = [ 1.0, 0.0, 1.0 ], 
+    y = [ true, false, true ], 
     a = RxInfer.DefferedDataHandler(), 
     b = RxInfer.DefferedDataHandler()
 )
@@ -241,9 +242,9 @@ It resulted in a vague posterior distribution, however `RxInfer` scales very wel
 We may use more coin flips in our dataset for better posterior distribution estimates:
 
 ```@example coin
-dataset_100   = float.(rand(rng, Bernoulli(coin_bias), 100))
-dataset_1000  = float.(rand(rng, Bernoulli(coin_bias), 1000))
-dataset_10000 = float.(rand(rng, Bernoulli(coin_bias), 10000))
+dataset_100   = rand(rng, Bernoulli(coin_bias), 100)
+dataset_1000  = rand(rng, Bernoulli(coin_bias), 1000)
+dataset_10000 = rand(rng, Bernoulli(coin_bias), 10000)
 nothing # hide
 ```
 
@@ -272,6 +273,34 @@ println("Real bias is ", coin_bias)
 println("Estimated bias is ", mean(θestimated_10000.posteriors[:θ]))
 println("Standard deviation ", std(θestimated_10000.posteriors[:θ]))
 nothing #hide
+```
+
+#### Missing data points
+
+RxInfer inference engine understands `missing` data points in the dataset, for example:
+
+```@example coin 
+result = infer(
+    model = coin_model(a = 2.0, b = 7.0),
+    data  = (y = [ true, false, missing, true, false ], )
+)
+result.posteriors[:θ]
+```
+
+In principle, the entire dataset may consist of `missing` entries:
+
+```@example coin 
+result = infer(
+    model = coin_model(a = 2.0, b = 7.0),
+    data  = (y = [ missing, missing, missing, missing, missing ], )
+)
+```
+
+In this case, the resulting posterior is simply equal to the prior (as expected, since no extra information can be extracted from the observations):
+
+```@example coin 
+@test result.posteriors[:θ] == Beta(2.0, 7.0) #hide
+result.posteriors[:θ]
 ```
 
 ## Where to go next?
