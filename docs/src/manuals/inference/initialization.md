@@ -6,6 +6,65 @@ In certain models, after completing the model specification step and moving on t
 @initialization
 ```
 
+The syntax for the `@initialization` macro is similar to the `@constraints` and `@meta` macro. An example is shown below:
+
+```@example init-example
+using RxInfer
+
+@model function submodel(z, x) 
+    t := x + 1
+    z ~ Normal(mean = t, var = 1.0)
+end 
+
+@model function mymodel(y)
+    x ~ Normal(mean = 0.0, var = 1.0)
+    z ~ submodel(x = x)
+    y ~ Normal(mean = z, var = 1.0)
+end
+
+@initialization begin
+    # Initialize the marginal for the variable x
+    q(x) = vague(NormalMeanVariance)
+
+    # Initialize the message for the variable z
+    μ(z) = vague(NormalMeanVariance)
+
+    # Specify the initialization for a submodel of type `submodel`
+    for init in submodel
+        q(t) = vague(NormalMeanVariance)
+    end
+
+    # Specify the initialization for a submodel of type `submodel` with a specific index
+    for init in (submodel, 1)
+        q(t) = vague(NormalMeanVariance)
+    end
+end
+```
+
+Similar to the `@constraints` macro, the `@initialization` macro also supports function definitions:
+
+```@example init-example
+@initialization function my_init()
+    # Initialize the marginal for the variable x
+    q(x) = vague(NormalMeanVariance)
+
+    # Initialize the message for the variable z
+    μ(z) = vague(NormalMeanVariance)
+
+    # Specify the initialization for a submodel of type `submodel`
+    for init in submodel
+        q(t) = vague(NormalMeanVariance)
+    end
+
+    # Specify the initialization for a submodel of type `submodel` with a specific index
+    for init in (submodel, 1)
+        q(t) = vague(NormalMeanVariance)
+    end
+end
+```
+
+The result of the initialization macro can be passed to the [`infer`](@ref) function with a keyword argument called [`initialization`](@ref user-guide-inference-execution).
+
 ## Part 1. Framing the problem 
 
 John has recently acquired a new car and is keenly interested in its `fuel consumption` rate. He holds the belief that this rate follows a linear relationship with the variable `speed`. To validate this hypothesis, he plans to conduct tests by driving his car on the urban roads close to his home, recording both the `fuel consumption` and `speed` data. To ascertain the fuel consumption rate, John has opted for Bayesian linear regression as his analytical method.

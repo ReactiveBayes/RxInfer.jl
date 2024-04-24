@@ -92,6 +92,43 @@ rθ = range(0, 1, length = 1000)
 p = plot()
 p = plot!(p, rθ, (x) -> pdf(Beta(1.0, 1.0), x), title="Prior", fillalpha=0.3, fillrange = 0, label="P(θ)", c=1,)
 p = plot!(p, rθ, (x) -> pdf(results.posteriors[:θ], x), title="Posterior", fillalpha=0.3, fillrange = 0, label="P(θ|y)", c=3)
+p = vline!(p, [ hidden_θ ], label = "Real (hidden) θ")
+```
+
+### Missing data points and predictions
+
+```@example manual-static-inference
+result = infer(
+    model = beta_bernoulli(a = 1.0, b = 1.0),
+    data  = (y = [ true, false, missing, true, false ], )
+)
+```
+
+In principle, the entire dataset may consist of `missing` entries:
+
+```@example manual-static-inference
+result = infer(
+    model = beta_bernoulli(a = 1.0, b = 1.0),
+    data  = (y = [ missing, missing, missing, missing, missing ], )
+)
+```
+
+In this case, the resulting posterior is simply equal to the prior (as expected, since no extra information can be extracted from the observations):
+
+```@example manual-static-inference 
+@test result.posteriors[:θ] == Beta(1.0, 1.0) #hide
+result.posteriors[:θ]
+```
+
+In addition, in the presence of `missing` data points `RxInfer` will also attempt to compute predictive distributions:
+```@example manual-static-inference
+@test all(v -> v == Bernoulli(0.5), result.predictions[:y]) #hide
+result.predictions[:y]
+```
+
+```@example manual-static-inference
+# Sample y₃
+rand(result.predictions[:y][3])
 ```
 
 ## [Variational Inference with static datasets](@id manual-static-inference-variational-inference)
@@ -196,7 +233,7 @@ In constrast to the previous example, now we have an array of posteriors for `μ
 @gif for (i, intermediate_posterior) in enumerate(results.posteriors[:μ])
     rμ = range(0, 5, length = 1000)
     plot(rμ, (x) -> pdf(intermediate_posterior, x), title="Posterior on iteration $(i)", fillalpha=0.3, fillrange = 0, label="P(μ|y)", c=3)
-    vline!([hidden_μ], label = "Real μ")
+    vline!([hidden_μ], label = "Real (hidden) μ")
 end
 ```
 
@@ -224,10 +261,10 @@ results_keep_last.posteriors[:μ] == last(results.posteriors[:μ])
 Let's also verify that the posteriors are consistent with the real hidden values used in the dataset generation:
 
 ```@example manual-static-inference
-println("Real μ was ", hidden_μ)
+println("Real (hidden) μ was ", hidden_μ)
 println("Inferred mean for μ is ", mean(last(results.posteriors[:μ])), " with standard deviation ", std(last(results.posteriors[:μ])))
 
-println("Real τ was ", hidden_τ)
+println("Real (hidden) τ was ", hidden_τ)
 println("Inferred mean for τ is ", mean(last(results.posteriors[:τ])), " with standard deviation ", std(last(results.posteriors[:τ])))
 
 @test abs(mean(last(results.posteriors[:μ])) - hidden_μ) < 3std(last(results.posteriors[:μ])) #hide
@@ -238,11 +275,11 @@ nothing #hide
 ```@example manual-static-inference
 rμ = range(2, 4, length = 1000)
 pμ = plot(rμ, (x) -> pdf(last(results.posteriors[:μ]), x), title="Posterior for μ", fillalpha=0.3, fillrange = 0, label="P(μ|y)", c=3)
-pμ = vline!(pμ, [ hidden_μ ], label = "Real μ")
+pμ = vline!(pμ, [ hidden_μ ], label = "Real (hidden) μ")
 
 rτ = range(2, 4, length = 1000)
 pτ = plot(rτ, (x) -> pdf(last(results.posteriors[:τ]), x), title="Posterior for τ", fillalpha=0.3, fillrange = 0, label="P(τ|y)", c=3)
-pτ = vline!(pτ, [ hidden_τ ], label = "Real τ")
+pτ = vline!(pτ, [ hidden_τ ], label = "Real (hidden) τ")
 
 plot(pμ, pτ)
 ```
