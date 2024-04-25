@@ -2,6 +2,7 @@ export @autoupdates
 
 import Base: isempty, show
 import MacroTools
+import MacroTools: @capture
 
 """
     @autoupdates
@@ -194,6 +195,13 @@ function addspecification(::AutoUpdateSpecification, specifications::Tuple, labe
     return AutoUpdateSpecification((specifications..., IndividualAutoUpdateSpecification(labels, mapping)))
 end
 
+function getvarlabels(specification::AutoUpdateSpecification)
+    return mapreduce(getvarlabels, __reducevarlabels, specification.specifications; init = ())
+end
+# These functions are used to reduce the individual auto-update specifications to the list of variable labels
+__reducevarlabels(collected, upcoming::NTuple{N}) where {N} = (collected..., map(getlabel, upcoming)...)
+__reducevarlabels(collected, upcoming) = (collected..., getlabel(upcoming))
+
 function Base.show(io::IO, specification::AutoUpdateSpecification)
     println(io, "@autoupdates begin")
     foreach(specification.specifications) do spec
@@ -232,6 +240,9 @@ struct AutoUpdateVariableLabel{I}
     index::I
 end
 
+getlabel(label::AutoUpdateVariableLabel) = label.label
+getindex(label::AutoUpdateVariableLabel) = label.index
+
 AutoUpdateVariableLabel(label::Symbol) = AutoUpdateVariableLabel(label, nothing)
 
 Base.show(io::IO, specification::AutoUpdateVariableLabel) = isnothing(specification.index) ? print(io, specification.label) : print(io, specification.label, "[", join(specification.index, ", "), "]")
@@ -265,14 +276,6 @@ end
 AutoUpdateFetchMessageArgument(label::Symbol) = AutoUpdateFetchMessageArgument(label, nothing)
 
 Base.show(io::IO, argument::AutoUpdateFetchMessageArgument) = isnothing(argument.index) ? print(io, "μ(", argument.label, ")") : print(io, "μ(", argument.label, "[", join(argument.index, ", "), "])")
-
-# struct FromMarginalAutoUpdate end
-# struct FromMessageAutoUpdate end
-
-# import Base: string
-
-# Base.string(::FromMarginalAutoUpdate) = "q"
-# Base.string(::FromMessageAutoUpdate) = "μ"
 
 # import Base: fetch
 
@@ -340,59 +343,3 @@ Base.show(io::IO, argument::AutoUpdateFetchMessageArgument) = isnothing(argument
 # Base.fetch(autoupdate::RxInferenceAutoUpdate, _, data) = zip(as_tuple(autoupdate.datavars), as_tuple(autoupdate.callback(data)))
 # Base.fetch(autoupdate::RxInferenceAutoUpdate, _, data::Nothing) =
 #     error("The initial value for `$(autoupdate.varlabel)` has not been specified, but is required in the `@autoupdates`.")
-
-# import MacroTools
-# import MacroTools: @capture
-
-
-# macro autoupdates(code)
-#     ((code isa Expr) && (code.head === :block)) || error("Autoupdate requires a block of code `begin ... end` as an input")
-
-#     specifications = []
-
-#     code = MacroTools.postwalk(code) do expression
-#         # We modify all expression of the form `... = callback(q(...))` or `... = callback(μ(...))`
-#         if @capture(expression, (lhs_ = callback_(rhs_)) | (lhs_ = callback_(rhs__)))
-#             if @capture(rhs, (q(variable_)) | (μ(variable_)))
-#                 # First we check that `variable` is a plain Symbol or an index operation
-#                 if (variable isa Symbol)
-#                     variable = QuoteNode(variable)
-#                 elseif (variable isa Expr) && (variable.head === :ref)
-#                     variable = :(RxInfer.RxInferenceAutoUpdateIndexedVariable($(QuoteNode(variable.args[1])), ($(variable.args[2:end])...,)))
-#                 else
-#                     error("Variable in the expression `$(expression)` must be a plain name or and indexing operation, but a complex expression `$(variable)` found.")
-#                 end
-#                 # Next we extract `datavars` specification from the `lhs`                    
-#                 datavars = if lhs isa Symbol
-#                     (lhs,)
-#                 elseif lhs isa Expr && lhs.head === :tuple && all(arg -> arg isa Symbol, lhs.args)
-#                     Tuple(lhs.args)
-#                 else
-#                     error("Left hand side of the expression `$(expression)` must be a single symbol or a tuple of symbols")
-#                 end
-#                 # Only two options are possible within this `if` block
-#                 from = @capture(rhs, q(smth_)) ? :(RxInfer.FromMarginalAutoUpdate()) : :(RxInfer.FromMessageAutoUpdate())
-
-#                 push!(specifications, :(RxInfer.RxInferenceAutoUpdateSpecification($(datavars...,), $from, $callback, $variable)))
-
-#                 return :(nothing)
-#             else
-#                 error("Complex call expression `$(expression)` in the `@autoupdates` macro")
-#             end
-#         else
-#             return expression
-#         end
-#     end
-
-#     isempty(specifications) && error("`@autoupdates` did not find any auto-updates specifications. Check the documentation for more information.")
-
-#     output = quote
-#         begin
-#             $code
-
-#             ($(specifications...),)
-#         end
-#     end
-
-#     return esc(output)
-# end

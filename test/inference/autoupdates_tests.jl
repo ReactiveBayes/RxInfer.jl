@@ -3,7 +3,6 @@
         numautoupdates,
         getautoupdate,
         getvarlabels,
-        getarguments,
         AutoUpdateVariableLabel,
         AutoUpdateMapping,
         IndividualAutoUpdateSpecification,
@@ -117,7 +116,7 @@
 end
 
 @testitem "Check that the `autoupdates` object is properly inferrable" begin
-    import RxInfer: AutoUpdateSpecification
+    import RxInfer: AutoUpdateSpecification, getvarlabels
 
     f1() = @autoupdates begin
         a = params(q(θ))
@@ -125,6 +124,7 @@ end
     end
 
     @test @inferred(f1()) isa AutoUpdateSpecification
+    @test @inferred(getvarlabels(f1())) === (:a, :b)
 
     f2() = @autoupdates begin
         x = mean(q(θ)) - var(q(x))
@@ -132,6 +132,24 @@ end
     end
 
     @test @inferred(f2()) isa AutoUpdateSpecification
+    @test @inferred(getvarlabels(f2())) === (:x, :y)
+
+    f3() = @autoupdates begin
+        a, b = mean_var(q(c))
+        x = mean(q(z))
+        y = var(q(z))
+    end
+
+    @test @inferred(f3()) isa AutoUpdateSpecification
+    @test @inferred(getvarlabels(f3())) === (:a, :b, :x, :y)
+
+    f4() = @autoupdates begin
+        f(a) = 1, 2, 3, 4, 5, 6
+        a, b, c, d, e, f = f(q(g))
+    end
+
+    @test @inferred(f4()) isa AutoUpdateSpecification
+    @test @inferred(getvarlabels(f4())) === (:a, :b, :c, :d, :e, :f)
 end
 
 @testitem "Empty autoupdates are not allowed" begin
