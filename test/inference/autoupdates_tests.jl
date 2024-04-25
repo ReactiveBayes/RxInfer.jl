@@ -1,10 +1,33 @@
-@testitem "Autoupdates on a simple beta-bernoulli model" begin
+@testitem "Autoupdates specs" begin
     import RxInfer:
-        numautoupdates, getautoupdate, getvarlabels, getarguments, AutoUpdateVariableLabel, AutoUpdateMapping, IndividualAutoUpdateSpecification, AutoUpdateFetchMarginalArgument
+        numautoupdates,
+        getautoupdate,
+        getvarlabels,
+        getarguments,
+        AutoUpdateVariableLabel,
+        AutoUpdateMapping,
+        IndividualAutoUpdateSpecification,
+        AutoUpdateFetchMarginalArgument,
+        AutoUpdateFetchMessageArgument
 
-    @model function beta_bernoulli(y, a, b)
-        θ ~ Beta(a, b)
-        y ~ Bernoulli(θ)
+    @testset "Single variables on LHS, single variable on RHS" begin
+        f(qθ) = params(qθ)[1]
+        g(qθ) = params(qθ)[2]
+
+        autoupdates = @autoupdates begin
+            a = f(q(θ))
+            b = g(μ(θ))
+        end
+
+        @test numautoupdates(autoupdates) == 2
+
+        autoupdate1 = getautoupdate(autoupdates, 1)
+        @test getvarlabels(autoupdate1) === AutoUpdateVariableLabel(:a)
+        @test getmapping(autoupdate1) === AutoUpdateMapping(f, (AutoUpdateFetchMarginalArgument(:θ),))
+
+        autoupdate2 = getautoupdate(autoupdates, 2)
+        @test getvarlabels(autoupdate2) === AutoUpdateVariableLabel(:b)
+        @test getmapping(autoupdate2) === AutoUpdateMapping(g, (AutoUpdateFetchMessageArgument(:θ),))
     end
 
     @testset "Multiple variables on LHS, single variable on RHS" begin
@@ -19,9 +42,72 @@
         @test getmapping(autoupdate1) === AutoUpdateMapping(params, (AutoUpdateFetchMarginalArgument(:θ),))
     end
 
-    @testset "`@autoupdates` should error if labels do not exist in the model specification" begin
-        @test_broken false
+    @testset "Single variables on LHS, complex expression on RHS" begin
+        autoupdates = @autoupdates begin
+            a = getindex(params(q(θ)), 1)
+            b = getindex(params(q(θ)), 2)
+        end
+
+        @test numautoupdates(autoupdates) == 2
+
+        autoupdate1 = getautoupdate(autoupdates, 1)
+        @test getvarlabels(autoupdate1) === AutoUpdateVariableLabel(:a)
+        @test getmapping(autoupdate1) === AutoUpdateMapping(getindex, (AutoUpdateMapping(params, (AutoUpdateFetchMarginalArgument(:θ),)), 1))
+
+        autoupdate2 = getautoupdate(autoupdates, 2)
+        @test getvarlabels(autoupdate2) === AutoUpdateVariableLabel(:b)
+        @test getmapping(autoupdate2) === AutoUpdateMapping(getindex, (AutoUpdateMapping(params, (AutoUpdateFetchMarginalArgument(:θ),)), 2))
     end
+
+    @testset "Complex expression inside `@autoupdates` function" begin
+        for i in 1:3, j in 1:3
+            # This is essentially equivalent to the following code:
+            # autoupdates = @autoupdates begin
+            #     x = mean(q(θ)) + (i * 2 + 3 * j)
+            # end
+            autoupdates = @autoupdates begin
+                if false
+                    error(1)
+                end
+                r = 0 # r = 2
+                for k in 1:2
+                    r = r + 1
+                end
+                d = 0 # d = 3
+                while d < 3 
+                    d = d + 1
+                end
+                l(x, θ) = x * r + d * θ
+                function returnzero()
+                    return 0
+                end
+                c = l(i, j) - length("")
+                x = mean(q(θ)) + (c + l(i, j) - l(i, j) + returnzero())
+            end
+            @test numautoupdates(autoupdates) == 1
+            autoupdate1 = getautoupdate(autoupdates, 1)
+            @test getvarlabels(autoupdate1) === AutoUpdateVariableLabel(:x)
+            @test getmapping(autoupdate1) === AutoUpdateMapping(+, (AutoUpdateMapping(mean, (AutoUpdateFetchMarginalArgument(:θ),)), i * 2 + 3 * j))
+        end
+    end
+end
+
+@testitem "Check that the `autoupdates` object is properly inferrable" begin 
+    import RxInfer: AutoUpdateSpecification
+
+    f1() = @autoupdates begin
+        a = params(q(θ))
+        b = params(μ(θ))
+    end
+
+    @test @inferred(f1()) isa AutoUpdateSpecification
+
+    f2() = @autoupdates begin
+        x = mean(q(θ)) - var(q(x))
+        y = var(q(θ)) - mean(q(y))
+    end
+
+    @test @inferred(f2()) isa AutoUpdateSpecification
 end
 
 @testitem "q(x) and μ(x) are reserved functions" begin
