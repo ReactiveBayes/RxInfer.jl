@@ -255,16 +255,11 @@ More information can be found in the [GraphPPL documentation](https://reactiveba
 
 
 ```@example constraints-specification
-init = @initialization begin
-    q(μ) = vague(NormalMeanPrecision)
-    q(τ) = vague(Gamma)
-end
-
 result = infer(
     model       = iid_normal(),
     data        = (y = rand(NormalMeanPrecision(3.1415, 2.7182), 1000), ),
-    constraints = MeanField(),
-    iterations  = 25,
-    initialization = init
+    constraints = MeanField(), # instead of using `@constraints` macro
+    initialization = init,
+    iterations  = 25
 )
 ```
