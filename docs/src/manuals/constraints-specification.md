@@ -248,3 +248,18 @@ RxInfer.GraphPPL.default_constraints(::typeof(inner)) = @constraints begin
     q(α, β) = q(α)q(β)
 end
 ```
+More information can be found in the [GraphPPL documentation](https://reactivebayes.github.io/GraphPPL.jl/stable/plugins/constraint_specification/#Default-constraints).
+
+## Prespecified constraints
+`GraphPPL` exports some [prespecified constraints](https://reactivebayes.github.io/GraphPPL.jl/stable/plugins/constraint_specification/#Prespecified-constraints) that can be used in the `@constraints` macro, but these constraints can also be passed as top-level constraints in the `infer` function. For example, to specify a mean-field assumption on all variables in the model, we can use the `MeanField` constraint:
+
+
+```@example constraints-specification
+result = infer(
+    model       = iid_normal(),
+    data        = (y = rand(NormalMeanPrecision(3.1415, 2.7182), 1000), ),
+    constraints = MeanField(), # instead of using `@constraints` macro
+    initialization = init,
+    iterations  = 25
+)
+```
