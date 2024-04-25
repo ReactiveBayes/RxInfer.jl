@@ -59,7 +59,7 @@
         @test getmapping(autoupdate2) === AutoUpdateMapping(getindex, (AutoUpdateMapping(params, (AutoUpdateFetchMarginalArgument(:θ),)), 2))
     end
 
-    @testset "Complex expression inside `@autoupdates` function" begin
+    @testset "Complex expression inside `@autoupdates` function #1" begin
         for i in 1:3, j in 1:3
             # This is essentially equivalent to the following code:
             # autoupdates = @autoupdates begin
@@ -74,7 +74,7 @@
                     r = r + 1
                 end
                 d = 0 # d = 3
-                while d < 3 
+                while d < 3
                     d = d + 1
                 end
                 l(x, θ) = x * r + d * θ
@@ -90,9 +90,33 @@
             @test getmapping(autoupdate1) === AutoUpdateMapping(+, (AutoUpdateMapping(mean, (AutoUpdateFetchMarginalArgument(:θ),)), i * 2 + 3 * j))
         end
     end
+
+    @testset "Complex expressions inside `@autoupdates` function #2" begin
+        autoupdates = @autoupdates begin
+            x = clamp(mean(q(z)), 0, 1)
+        end
+        @test numautoupdates(autoupdates) == 1
+        autoupdate1 = getautoupdate(autoupdates, 1)
+        @test getvarlabels(autoupdate1) === AutoUpdateVariableLabel(:x)
+        @test getmapping(autoupdate1) === AutoUpdateMapping(clamp, (AutoUpdateMapping(mean, (AutoUpdateFetchMarginalArgument(:z),)), 0, 1))
+    end
+
+    @testset "Representation of `@autoupdates` should be easily readable" begin
+        f(a, b) = mean(a) + mean(b)
+        autoupdates = @autoupdates begin
+            x = clamp(mean(q(z)), 0, 1 + 1)
+            y[3] = f(q(g[1, 2]), μ(r[2])) + 3
+        end
+        @test repr(autoupdates) == """
+        @autoupdates begin
+            x = clamp(mean(q(z)), 0, 2)
+            y[3] = +(f(q(g[1, 2]), μ(r[2])), 3)
+        end
+        """
+    end
 end
 
-@testitem "Check that the `autoupdates` object is properly inferrable" begin 
+@testitem "Check that the `autoupdates` object is properly inferrable" begin
     import RxInfer: AutoUpdateSpecification
 
     f1() = @autoupdates begin
@@ -108,6 +132,17 @@ end
     end
 
     @test @inferred(f2()) isa AutoUpdateSpecification
+end
+
+@testitem "Empty autoupdates are not allowed" begin
+    @test_throws "`@autoupdates` did not find any auto-updates specifications. Check the documentation for more information." eval(:(@autoupdates begin end))
+end
+
+@testitem "`@autoupdates` requires a block of code" begin
+    @test_throws "Autoupdates requires a block of code `begin ... end` as an input" eval(:(@autoupdates 1 + 1))
+    @test_throws "Autoupdates requires a block of code `begin ... end` as an input" eval(:(@autoupdates a = q(θ)))
+    @test_throws "Autoupdates requires a block of code `begin ... end` as an input" eval(:(@autoupdates q(θ)))
+    @test_throws "Autoupdates requires a block of code `begin ... end` as an input" eval(:(@autoupdates θ))
 end
 
 @testitem "q(x) and μ(x) are reserved functions" begin

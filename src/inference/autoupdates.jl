@@ -1,7 +1,66 @@
 export @autoupdates
 
+import Base: isempty, show
 import MacroTools
 
+"""
+    @autoupdates
+
+Creates the auto-updates specification for the `infer` function. In the online-streaming Bayesian inference procedure it is important to update your priors for the 
+states based on the new updated posteriors. The `@autoupdates` structure simplify such a specification. The `@autoupdates` macro detects lines of code of the following structure
+```
+(labels...) = f(arguments...)
+```
+Checks if `arguments...` has either `q(_)` in its sub-expressions and adds such expressions to the specification list. 
+All other expressions are left untouched. The result of the macro execution is the `RxInfer.AutoUpdateSpecification` structure that holds the collection 
+of individual auto-update specifications.
+
+Each individualauto-update specification refers to model's arguments, which need to be updated, on the left hand side of the equality expression and 
+the update function on the right hand side of the expression.
+The update function operates on posterior marginals in the form of the `q(symbol)` expression.
+
+For example:
+
+```julia
+@autoupdates begin 
+    x = mean(q(z))
+end
+```
+
+This structure specifies to automatically update argument `x` as soon as the inference engine computes new posterior over `z` variable.
+It then applies the `mean` function to the new posterior and updates the value of `x` automatically. 
+
+As another example consider the following model and auto-update specification:
+
+```julia
+@model function kalman_filter(y, x_current_mean, x_current_var)
+    x_current ~ Normal(mean = x_current_mean, var = x_current_var)
+    x_next    ~ Normal(mean = x_current, var = 1.0)
+    y         ~ Normal(mean = x_next, var = 1.0)
+end
+```
+
+This model has two arguments that represent our prior knowledge of the `x_current` state of the system. 
+The `x_next` random variable represent the next state of the system that 
+is connected to the observed variable `y`. The auto-update specification could look like:
+
+```julia
+autoupdates = @autoupdates begin
+    x_current_mean, x_current_var = mean_var(q(x_next))
+end
+```
+This structure specifies to update our prior as soon as we have a new posterior `q(x_next)`. It then applies the `mean_var` function on the 
+updated posteriors and updates `x_current_mean` and `x_current_var` automatically.
+
+More complex `@autoupdates` are also allowed. For example, the following code is a valid `@autoupdates` specification:
+```julia
+@autoupdates begin 
+    x = clamp(mean(q(z)), 0, 1)
+end
+```
+
+See also: [`infer`](@ref)
+"""
 macro autoupdates(block)
     return esc(parse_autoupdates(block))
 end
@@ -16,6 +75,7 @@ function parse_autoupdates(block)
     return quote 
         let $specification = RxInfer.AutoUpdateSpecification(())
             $code
+            isempty($specification) && error("`@autoupdates` did not find any auto-updates specifications. Check the documentation for more information.")
             $specification
         end
     end
@@ -116,6 +176,11 @@ function numautoupdates(specification::AutoUpdateSpecification)
     return length(specification.specifications)
 end
 
+"Returns `true` if the auto-update specification is empty"
+function Base.isempty(specification::AutoUpdateSpecification)
+    return iszero(numautoupdates(specification))
+end
+
 "Returns the individual auto-update specification at the given index"
 function getautoupdate(specification::AutoUpdateSpecification, index)
     return specification.specifications[index]
@@ -127,6 +192,14 @@ end
 
 function addspecification(::AutoUpdateSpecification, specifications::Tuple, labels, mapping)
     return AutoUpdateSpecification((specifications..., IndividualAutoUpdateSpecification(labels, mapping)))
+end
+
+function Base.show(io::IO, specification::AutoUpdateSpecification)
+    println(io, "@autoupdates begin")
+    foreach(specification.specifications) do spec
+        println(io, "    ", spec)
+    end
+    println(io, "end")
 end
 
 """
@@ -146,6 +219,8 @@ getvarlabels(specification::IndividualAutoUpdateSpecification) = specification.v
 "Returns the mapping function of the auto-update specification, which defines how to update the variable"
 getmapping(specification::IndividualAutoUpdateSpecification) = specification.mapping
 
+Base.show(io::IO, specification::IndividualAutoUpdateSpecification) = print(io, getvarlabels(specification), " = ", getmapping(specification))
+
 """
     AutoUpdateVariableLabel{I}(label, [ index = nothing ])
 
@@ -159,6 +234,8 @@ end
 
 AutoUpdateVariableLabel(label::Symbol) = AutoUpdateVariableLabel(label, nothing)
 
+Base.show(io::IO, specification::AutoUpdateVariableLabel) = isnothing(specification.index) ? print(io, specification.label) : print(io, specification.label, "[", join(specification.index, ", "), "]")
+
 """
     AutoUpdateMapping(arguments, mappingFn)
 
@@ -169,6 +246,8 @@ struct AutoUpdateMapping{F, A}
     arguments::A
 end
 
+Base.show(io::IO, mapping::AutoUpdateMapping) = print(io, mapping.mappingFn, "(", join(mapping.arguments, ", "), ")")
+
 struct AutoUpdateFetchMarginalArgument{I}
     label::Symbol
     index::I
@@ -176,12 +255,16 @@ end
 
 AutoUpdateFetchMarginalArgument(label::Symbol) = AutoUpdateFetchMarginalArgument(label, nothing)
 
+Base.show(io::IO, argument::AutoUpdateFetchMarginalArgument) = isnothing(argument.index) ? print(io, "q(", argument.label, ")") : print(io, "q(", argument.label, "[", join(argument.index, ", "), "])")
+
 struct AutoUpdateFetchMessageArgument{I}
     label::Symbol
     index::I
 end
 
 AutoUpdateFetchMessageArgument(label::Symbol) = AutoUpdateFetchMessageArgument(label, nothing)
+
+Base.show(io::IO, argument::AutoUpdateFetchMessageArgument) = isnothing(argument.index) ? print(io, "μ(", argument.label, ")") : print(io, "μ(", argument.label, "[", join(argument.index, ", "), "])")
 
 # struct FromMarginalAutoUpdate end
 # struct FromMessageAutoUpdate end
@@ -261,52 +344,7 @@ AutoUpdateFetchMessageArgument(label::Symbol) = AutoUpdateFetchMessageArgument(l
 # import MacroTools
 # import MacroTools: @capture
 
-# """
-#     @autoupdates
 
-# Creates the auto-updates specification for the `infer` function. In the online-streaming Bayesian inference procedure it is important to update your priors for the future 
-# states based on the new updated posteriors. The `@autoupdates` structure simplify such a specification. It accepts a single block of code where each line defines how to update 
-# arguments in the probabilistic model specification. 
-
-# Each line of code in the auto-update specification refers to model's arguments, which need to be updated, on the left hand side of the equality expression and the update function on the right hand side of the expression.
-# The update function operates on posterior marginals in the form of the `q(symbol)` expression.
-
-# For example:
-
-# ```julia
-# @autoupdates begin 
-#     x = f(q(z))
-# end
-# ```
-
-# This structure specifies to automatically update argument `x` as soon as the inference engine computes new posterior over `z` variable.
-# It then applies the `f` function to the new posterior and updates the value of `x` automatically. 
-
-# As an example consider the following model and auto-update specification:
-
-# ```julia
-# @model function kalman_filter(y, x_current_mean, x_current_var)
-#     x_current ~ Normal(mean = x_current_mean, var = x_current_var)
-#     x_next    ~ Normal(mean = x_current, var = 1.0)
-#     y         ~ Normal(mean = x_next, var = 1.0)
-# end
-# ```
-
-# This model has two arguments that represent our prior knowledge of the `x_current` state of the system. 
-# The `x_next` random variable represent the next state of the system that 
-# is connected to the observed variable `y`. The auto-update specification could look like:
-
-# ```julia
-# autoupdates = @autoupdates begin
-#     x_current_mean, x_current_var = mean_var(q(x_next))
-# end
-# ```
-
-# This structure specifies to update our prior as soon as we have a new posterior `q(x_next)`. It then applies the `mean_var` function on the 
-# updated posteriors and updates `x_current_mean` and `x_current_var` automatically.
-
-# See also: [`infer`](@ref)
-# """
 # macro autoupdates(code)
 #     ((code isa Expr) && (code.head === :block)) || error("Autoupdate requires a block of code `begin ... end` as an input")
 
