@@ -5,7 +5,9 @@ import MacroTools
 import MacroTools: @capture
 
 """
-    @autoupdates
+    @autoupdates [ options... ] begin 
+        ...
+    end
 
 Creates the auto-updates specification for the `infer` function. In the online-streaming Bayesian inference procedure it is important to update your priors for the 
 states based on the new updated posteriors. The `@autoupdates` structure simplify such a specification. The `@autoupdates` macro detects lines of code of the following structure
@@ -60,21 +62,50 @@ More complex `@autoupdates` are also allowed. For example, the following code is
 end
 ```
 
+The `@autoupdates` macro accepts an optional set of `[ options... ]` before the `begin ... end` block. The available options are:
+- `warn = true/false`: Enables or disables warnings when with incomaptible model. Set to `true` by default.
+- `strict = true/false`: Turns warnings into errors. Set to `false` by default.
+
 See also: [`infer`](@ref)
 """
+macro autoupdates end
+
 macro autoupdates(block)
-    return esc(parse_autoupdates(block))
+    return esc(parse_autoupdates(:([]), block))
 end
 
-function parse_autoupdates(block)
+macro autoupdates(options, block)
+    return esc(parse_autoupdates(options, block))
+end
+
+function parse_autoupdates(options, block)
+    if !@capture(options, [optionargs__])
+        error("Invalid options for `@autoupdates`. Expected `[ options... ]`")
+    end
+
+    warn::Bool = true
+    strict::Bool = false
+
+    for optionarg in optionargs
+        if @capture(optionarg, warn = val_)
+            val isa Bool || error("Invalid value for `warn` option. Expected `true` or `false`.")
+            warn = val::Bool
+        elseif @capture(optionarg, strict = val_)
+            val isa Bool || error("Invalid value for `strict` option. Expected `true` or `false`.")
+            strict = val::Bool
+        else
+            error("Unknown option for `@autoupdates`: $optionarg. Supported options are [ `warn`, `strict` ].")
+        end
+    end
+
     if !(block isa Expr) || block.head !== :block
         error("Autoupdates requires a block of code `begin ... end` as an input")
     end
     autoupdate_check_reserved_expressions(block)
     specification = gensym(:autoupdate_specification)
     code = autoupdate_parse_autoupdate_specification_expr(specification, block)
-    return quote 
-        let $specification = RxInfer.AutoUpdateSpecification(())
+    return quote
+        let $specification = RxInfer.AutoUpdateSpecification($warn, $strict, ())
             $code
             isempty($specification) && error("`@autoupdates` did not find any auto-updates specifications. Check the documentation for more information.")
             $specification
@@ -169,8 +200,13 @@ Each specification defines how to update the model's arguments
 based on the new posterior/messages updates. 
 """
 struct AutoUpdateSpecification{S}
+    warn::Bool
+    strict::Bool
     specifications::S
 end
+
+is_autoupdates_warn(specification::AutoUpdateSpecification) = specification.warn
+is_autoupdates_strict(specification::AutoUpdateSpecification) = specification.strict
 
 "Returns the number of auto-updates in the specification"
 function numautoupdates(specification::AutoUpdateSpecification)
@@ -191,8 +227,10 @@ function addspecification(specification::AutoUpdateSpecification, labels, mappin
     return addspecification(specification, specification.specifications, labels, mapping)
 end
 
-function addspecification(::AutoUpdateSpecification, specifications::Tuple, labels, mapping)
-    return AutoUpdateSpecification((specifications..., IndividualAutoUpdateSpecification(labels, mapping)))
+function addspecification(specification::AutoUpdateSpecification, specifications::Tuple, labels, mapping)
+    return AutoUpdateSpecification(
+        is_autoupdates_warn(specification), is_autoupdates_strict(specification), (specifications..., IndividualAutoUpdateSpecification(labels, mapping))
+    )
 end
 
 function getvarlabels(specification::AutoUpdateSpecification)
@@ -245,7 +283,8 @@ getindex(label::AutoUpdateVariableLabel) = label.index
 
 AutoUpdateVariableLabel(label::Symbol) = AutoUpdateVariableLabel(label, nothing)
 
-Base.show(io::IO, specification::AutoUpdateVariableLabel) = isnothing(specification.index) ? print(io, specification.label) : print(io, specification.label, "[", join(specification.index, ", "), "]")
+Base.show(io::IO, specification::AutoUpdateVariableLabel) =
+    isnothing(specification.index) ? print(io, specification.label) : print(io, specification.label, "[", join(specification.index, ", "), "]")
 
 """
     AutoUpdateMapping(arguments, mappingFn)
@@ -266,7 +305,8 @@ end
 
 AutoUpdateFetchMarginalArgument(label::Symbol) = AutoUpdateFetchMarginalArgument(label, nothing)
 
-Base.show(io::IO, argument::AutoUpdateFetchMarginalArgument) = isnothing(argument.index) ? print(io, "q(", argument.label, ")") : print(io, "q(", argument.label, "[", join(argument.index, ", "), "])")
+Base.show(io::IO, argument::AutoUpdateFetchMarginalArgument) =
+    isnothing(argument.index) ? print(io, "q(", argument.label, ")") : print(io, "q(", argument.label, "[", join(argument.index, ", "), "])")
 
 struct AutoUpdateFetchMessageArgument{I}
     label::Symbol
@@ -275,7 +315,8 @@ end
 
 AutoUpdateFetchMessageArgument(label::Symbol) = AutoUpdateFetchMessageArgument(label, nothing)
 
-Base.show(io::IO, argument::AutoUpdateFetchMessageArgument) = isnothing(argument.index) ? print(io, "μ(", argument.label, ")") : print(io, "μ(", argument.label, "[", join(argument.index, ", "), "])")
+Base.show(io::IO, argument::AutoUpdateFetchMessageArgument) =
+    isnothing(argument.index) ? print(io, "μ(", argument.label, ")") : print(io, "μ(", argument.label, "[", join(argument.index, ", "), "])")
 
 # import Base: fetch
 

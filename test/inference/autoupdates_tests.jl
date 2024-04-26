@@ -173,6 +173,97 @@ end
     end))
 end
 
+@testitem "The `autoupdates` macro should support different options" begin 
+    import RxInfer: is_autoupdates_warn, is_autoupdates_strict
+
+    autoupdates = @autoupdates begin
+        a, b = params(q(θ))
+    end
+
+    @test is_autoupdates_warn(autoupdates)
+    @test !is_autoupdates_strict(autoupdates)
+
+    autoupdates_nowarn = @autoupdates [ warn = false ] begin
+        a, b = params(q(θ))
+    end
+
+    @test !is_autoupdates_warn(autoupdates_nowarn)
+    @test !is_autoupdates_strict(autoupdates_nowarn)
+
+    autoupdates_strict = @autoupdates [ strict = true ] begin
+        a, b = params(q(θ))
+    end
+
+    @test is_autoupdates_warn(autoupdates_strict)
+    @test is_autoupdates_strict(autoupdates_strict)
+
+    autoupdates_strict_nowarn = @autoupdates [ strict = true, warn = false ] begin
+        a, b = params(q(θ))
+    end
+
+    @test !is_autoupdates_warn(autoupdates_strict_nowarn)
+    @test is_autoupdates_strict(autoupdates_strict_nowarn)
+
+    @test_throws "Unknown option for `@autoupdates`: hello = false. Supported options are [ `warn`, `strict` ]" eval(:(
+        @autoupdates [ hello = false ] begin
+            a, b = params(q(θ))
+        end
+    ))
+
+    @test_throws "Invalid value for `warn` option. Expected `true` or `false`." eval(:(
+        @autoupdates [ warn = "hello" ] begin
+            a, b = params(q(θ))
+        end
+    ))
+
+    @test_throws "Invalid value for `strict` option. Expected `true` or `false`." eval(:(
+        @autoupdates [ strict = "hello" ] begin
+            a, b = params(q(θ))
+        end
+    ))
+end
+
+@testitem "The `autoupdates` structure can be prepared for a specific model #1 - Beta Bernoulli" begin
+    import RxInfer: prepare_for_model
+
+    @model function beta_bernoulli(a, b, y)
+        θ ~ Beta(a, b)
+        y ~ Bernoulli(θ)
+    end
+
+    autoupdates = @autoupdates begin
+        a, b = params(q(θ))
+    end
+
+    autoupdates_nowarn = @autoupdates [ warn = false ] begin
+        a, b = params(q(θ))
+    end
+
+    autoupdates_strict = @autoupdates [ strict = true ] begin
+        a, b = params(q(θ))
+    end
+
+    autoupdates_strict_nowarn = @autoupdates [ strict = true, warn = false ] begin
+        a, b = params(q(θ))
+    end
+
+    @testset "Error if the varlabel in `autoupdates` have been reserved with constants" begin
+        model = beta_bernoulli(a = 1, b = 1) | (y = 1, )
+        @test_logs (:warn, r"Autoupdates defines an update for `a`, but `a` has been reserved in the model as a constant. Use `warn = false` option to supress the warning. Use `strict = true` option to turn the warning into an error.") prepare_for_model(autoupdates, model)
+        @test_logs () prepare_for_model(autoupdates_nowarn, model)
+        @test_throws "Autoupdates defines an update for `a`, but `a` has been reserved in the model as a constant." prepare_for_model(autoupdates_strict, model)
+        @test_throws "Autoupdates defines an update for `a`, but `a` has been reserved in the model as a constant." prepare_for_model(autoupdates_strict_nowarn, model)
+    end
+
+    @testset "Error if the varlabel in `autoupdates` have been reserved with actual data" begin
+        model = beta_bernoulli() | (a = 1, b = 1, y = 1, )
+        @test_logs (:warn, r"Autoupdates defines an update for `a`, but `a` has been reserved in the model as a data. Use `warn = false` option to supress the warning. Use `strict = true` option to turn the warning into an error.") prepare_for_model(autoupdates, model)
+        @test_logs () prepare_for_model(autoupdates_nowarn, model)
+        @test_throws "Variable label `a` in autoupdates has been reserved in the model as a data." prepare_for_model(autoupdates_strict, model)
+        @test_throws "Variable label `a` in autoupdates has been reserved in the model as a data." prepare_for_model(autoupdates_strict_nowarn, model)
+    end
+end
+
 @testitem "autoupdate_argument_inexpr" begin
     import RxInfer: autoupdate_argument_inexpr
 
