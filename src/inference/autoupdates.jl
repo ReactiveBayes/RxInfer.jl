@@ -101,6 +101,7 @@ function parse_autoupdates(options, block)
     if !(block isa Expr) || block.head !== :block
         error("Autoupdates requires a block of code `begin ... end` as an input")
     end
+
     autoupdate_check_reserved_expressions(block)
     specification = gensym(:autoupdate_specification)
     code = autoupdate_parse_autoupdate_specification_expr(specification, block)
@@ -317,6 +318,26 @@ AutoUpdateFetchMessageArgument(label::Symbol) = AutoUpdateFetchMessageArgument(l
 
 Base.show(io::IO, argument::AutoUpdateFetchMessageArgument) =
     isnothing(argument.index) ? print(io, "μ(", argument.label, ")") : print(io, "μ(", argument.label, "[", join(argument.index, ", "), "])")
+
+# Model interactions with GraphPPL generator
+
+import GraphPPL
+
+function prepare_for_model(specification::AutoUpdateSpecification, model::GraphPPL.ModelGenerator)
+    kwargskeys = keys(GraphPPL.getkwargs(model))
+    varlabels = getvarlabels(specification)
+    for label in varlabels
+        if label ∈ kwargskeys
+            warnmsg = lazy"Autoupdates defines an update for `$label`, but `$label` has been reserved in the model as a constant. Use `warn = false` option to supress the warning. Use `strict = true` option to turn the warning into an error."
+            if is_autoupdates_strict(specification)
+                error(warnmsg)
+            elseif is_autoupdates_warn(specification)
+                @warn(warnmsg)
+            end
+        end
+    end
+    return nothing
+end
 
 # import Base: fetch
 
