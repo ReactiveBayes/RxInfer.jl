@@ -115,8 +115,8 @@
         """
     end
 
-    @testset "`@autoupdates` can accept a function" begin 
-        @autoupdates function myautoupdates(argument::Bool) 
+    @testset "`@autoupdates` can accept a function" begin
+        @autoupdates function myautoupdates(argument::Bool)
             if argument
                 x = mean(q(x))
             else
@@ -124,7 +124,7 @@
             end
         end
         # To check the dispatch and complex function definition
-        @autoupdates function myautoupdates(unused, input::S; keyword = input) where { S <: String }
+        @autoupdates function myautoupdates(unused, input::S; keyword = input) where {S <: String}
             z = mean(q(z)) + keyword
         end
 
@@ -146,10 +146,9 @@
         autoupdate1_string = getautoupdate(autoupdates_string, 1)
         @test getvarlabels(autoupdate1_string) === AutoUpdateVariableLabel(:z)
         @test getmapping(autoupdate1_string) === AutoUpdateMapping(+, (AutoUpdateMapping(mean, (AutoUpdateFetchMarginalArgument(:z),)), "hello"))
-        
     end
 
-    @testset "Check that the `@autoupdates` is type stable in simple cases" begin 
+    @testset "Check that the `@autoupdates` is type stable in simple cases" begin
         function foo()
             @autoupdates begin
                 x = clamp(mean(q(z)), 0, 1)
@@ -237,32 +236,59 @@ end
         a, b = params(q(θ))
     end
 
+    @autoupdates [warn = false] function autoupdates_nowarn_function()
+        a, b = params(q(θ))
+    end
+
     @test !is_autoupdates_warn(autoupdates_nowarn)
     @test !is_autoupdates_strict(autoupdates_nowarn)
+    @test !is_autoupdates_warn(autoupdates_nowarn_function())
+    @test !is_autoupdates_strict(autoupdates_nowarn_function())
 
     autoupdates_strict = @autoupdates [strict = true] begin
         a, b = params(q(θ))
     end
 
+    @autoupdates [strict = true] function autoupdates_strict_function()
+        a, b = params(q(θ))
+    end
+
     @test is_autoupdates_warn(autoupdates_strict)
     @test is_autoupdates_strict(autoupdates_strict)
+    @test is_autoupdates_warn(autoupdates_strict_function())
+    @test is_autoupdates_strict(autoupdates_strict_function())
 
     autoupdates_strict_nowarn = @autoupdates [strict = true, warn = false] begin
         a, b = params(q(θ))
     end
 
+    @autoupdates [strict = true, warn = false] function autoupdates_strict_nowarn_function()
+        a, b = params(q(θ))
+    end
+
     @test !is_autoupdates_warn(autoupdates_strict_nowarn)
     @test is_autoupdates_strict(autoupdates_strict_nowarn)
+    @test !is_autoupdates_warn(autoupdates_strict_nowarn_function())
+    @test is_autoupdates_strict(autoupdates_strict_nowarn_function())
 
     @test_throws "Unknown option for `@autoupdates`: hello = false. Supported options are [ `warn`, `strict` ]" eval(:(@autoupdates [hello = false] begin
+        a, b = params(q(θ))
+    end))
+    @test_throws "Unknown option for `@autoupdates`: hello = false. Supported options are [ `warn`, `strict` ]" eval(:(@autoupdates [hello = false] function hello_function()
         a, b = params(q(θ))
     end))
 
     @test_throws "Invalid value for `warn` option. Expected `true` or `false`." eval(:(@autoupdates [warn = "hello"] begin
         a, b = params(q(θ))
     end))
+    @test_throws "Invalid value for `warn` option. Expected `true` or `false`." eval(:(@autoupdates [warn = "hello"] function hello_function()
+        a, b = params(q(θ))
+    end))
 
     @test_throws "Invalid value for `strict` option. Expected `true` or `false`." eval(:(@autoupdates [strict = "hello"] begin
+        a, b = params(q(θ))
+    end))
+    @test_throws "Invalid value for `strict` option. Expected `true` or `false`." eval(:(@autoupdates [strict = "hello"] function hello_function()
         a, b = params(q(θ))
     end))
 end
@@ -294,8 +320,14 @@ end
     @testset "Warning/error if the varlabel in `autoupdates` have been reserved with constants" begin
         model = beta_bernoulli(a = 1, b = 1)
         @test_logs(
-            (:warn, r".*Autoupdates defines an update for `a`\, but `a` has been reserved in the model as a constant.*Use `warn = false` option to supress the warning.*Use `strict = true` option to turn the warning into an error.*"),
-            (:warn, r".*Autoupdates defines an update for `b`\, but `b` has been reserved in the model as a constant.*Use `warn = false` option to supress the warning.*Use `strict = true` option to turn the warning into an error.*"),
+            (
+                :warn,
+                r".*Autoupdates defines an update for `a`\, but `a` has been reserved in the model as a constant.*Use `warn = false` option to supress the warning.*Use `strict = true` option to turn the warning into an error.*"
+            ),
+            (
+                :warn,
+                r".*Autoupdates defines an update for `b`\, but `b` has been reserved in the model as a constant.*Use `warn = false` option to supress the warning.*Use `strict = true` option to turn the warning into an error.*"
+            ),
             prepare_for_model(autoupdates, model)
         )
         @test_logs prepare_for_model(autoupdates_nowarn, model)
