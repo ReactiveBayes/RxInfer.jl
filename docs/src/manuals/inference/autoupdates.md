@@ -7,6 +7,7 @@
 `RxInfer` supports [streaming inference](@ref manual-online-inference) on infinite datastreams, wherein posterior beliefs over latent states update automatically as soon as new observations are available. However, we also aim to update our priors given updated beliefs. Let's begin with a simple example:
 ```@example autoupdates-examples
 using RxInfer
+using Test #hide
 
 @model function streaming_beta_bernoulli(a, b, y)
     θ ~ Beta(a, b)
@@ -43,6 +44,7 @@ result = infer(
     keephistory    = 3,
     initialization = @initialization(q(θ) = Beta(1, 1))
 )
+@test result.history[:θ] == [ Beta(2.0, 1.0), Beta(2.0, 2.0), Beta(3.0, 2.0) ] #hide
 
 result.history[:θ]
 ```
@@ -75,8 +77,8 @@ end
     `q(θ)[i]` syntax is not supported, use `getindex(q(θ), i)` instead.
 
 
-```
-
+```@eval
+error("Old docs below")
 ```
 
 
