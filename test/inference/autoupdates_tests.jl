@@ -477,10 +477,11 @@ end
     @test @inferred(fetch(AutoUpdateMapping(+, (stream_of_1, AutoUpdateMapping(+, (1, stream_of_1)))))) === 3
     @test @inferred(fetch(AutoUpdateMapping(+, (stream_of_1, AutoUpdateMapping(+, (stream_of_1, 1)))))) === 3
 
-    empty_stream = FetchRecentArgument(:x, RecentSubject(Int))
+    empty_stream_for_x = FetchRecentArgument(:x, RecentSubject(Int))
+    empty_stream_for_y = FetchRecentArgument(:y, RecentSubject(Int))
 
-    @test_throws "The initial value for `x` has not been specified, but is required in the `@autoupdates`." fetch(AutoUpdateMapping(+, (empty_stream, 1)))
-    @test_throws "The initial value for `x` has not been specified, but is required in the `@autoupdates`." fetch(AutoUpdateMapping(+, (1, empty_stream)))
+    @test_throws "The initial value for `x` has not been specified, but is required in the `@autoupdates`." fetch(AutoUpdateMapping(+, (empty_stream_for_x, 1)))
+    @test_throws "The initial value for `y` has not been specified, but is required in the `@autoupdates`." fetch(AutoUpdateMapping(+, (1, empty_stream_for_y)))
 end
 
 @testitem "autoupdate_argument_inexpr" begin
