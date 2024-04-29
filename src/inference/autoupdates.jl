@@ -375,7 +375,7 @@ function autoupdates_data_handlers(specification::AutoUpdateSpecification)
     # Below is similar to the commented version, but supports duplicate entries, e.g if a user
     # writes `ins[1], ins[2] = ...` in the `@autoupdates` block
     return reduce(varlabels; init = (;)) do ntuple, label
-        append = NamedTuple{(label, )}((DeferredDataHandler(), ))
+        append = NamedTuple{(label,)}((DeferredDataHandler(),))
         return (; ntuple..., append...)
     end
 end
@@ -476,78 +476,20 @@ autoupdate_mapping_fetch(argument::FetchRecentArgument, something) = something
 autoupdate_mapping_fetch(argument::FetchRecentArgument, ::Nothing) =
     error("The initial value for `$(getlabel(argument))` has not been specified, but is required in the `@autoupdates`.")
 
-
 function run_autoupdate!(autoupdates::AutoUpdateSpecification)
-    foreach(getspecifications(autoupdates)) do autoupdate 
+    foreach(getspecifications(autoupdates)) do autoupdate
         varlabels = getvarlabels(autoupdate)
         update = fetch(autoupdate)
-        foreach(zip(as_tuple(varlabels), as_tuple(update))) do (var, val)
+
+        varlabels_tupled = as_tuple(varlabels)
+        update_tupled = as_tuple(update)
+
+        if !isequal(length(varlabels_tupled), length(update_tupled))
+            error("Cannot run autoupdate for `$(varlabels_tupled)`. The update provides `$(length(update_tuple))` values, but `$(length(varlabels_tupled))` is needed.")
+        end
+
+        foreach(zip(varlabels_tupled, update_tupled)) do (var, val)
             update!(var, val)
         end
     end
 end
-
-# Base.fetch(strategy::Union{FromMarginalAutoUpdate, FromMessageAutoUpdate}, variables::AbstractArray) = (Base.fetch(strategy, variable) for variable in variables)
-# Base.fetch(::FromMarginalAutoUpdate, variable::Union{DataVariable, RandomVariable}) = ReactiveMP.getmarginal(variable, IncludeAll())
-# Base.fetch(::FromMessageAutoUpdate, variable::RandomVariable) = ReactiveMP.messagein(variable, 1) # Here we assume that predictive message has index `1`
-# Base.fetch(::FromMessageAutoUpdate, variable::DataVariable) = error("`FromMessageAutoUpdate` fetch strategy is not implemented for `DataVariable`")
-
-# struct RxInferenceAutoUpdateIndexedVariable{V, I}
-#     variable :: V
-#     index    :: I
-# end
-
-# Base.string(indexed::RxInferenceAutoUpdateIndexedVariable) = string(indexed.variable, "[", join(indexed.index, ", "), "]")
-
-# hasdatavar(model, variable::RxInferenceAutoUpdateIndexedVariable)   = hasdatavar(model, variable.variable)
-# hasrandomvar(model, variable::RxInferenceAutoUpdateIndexedVariable) = hasrandomvar(model, variable.variable)
-
-# function Base.getindex(model::ProbabilisticModel, indexed::RxInferenceAutoUpdateIndexedVariable)
-#     return model[indexed.variable][indexed.index...]
-# end
-
-# struct RxInferenceAutoUpdateSpecification{N, F, C, V}
-#     labels   :: NTuple{N, Symbol}
-#     from     :: F
-#     callback :: C
-#     variable :: V
-# end
-
-# getlabels(specification::RxInferenceAutoUpdateSpecification) = specification.labels
-
-# function Base.show(io::IO, specification::RxInferenceAutoUpdateSpecification)
-#     print(io, join(specification.labels, ","), " = ", string(specification.callback), "(", string(specification.from), "(", string(specification.variable), "))")
-# end
-
-# function (specification::RxInferenceAutoUpdateSpecification)(vardict)
-#     datavars = map(specification.labels) do label
-#         haskey(vardict, label) || error("Autoupdate specification defines an update for `$(label)`, but the model has no variable named `$(label)`")
-#         return getvariable(vardict[label])
-#     end
-
-#     (haskey(vardict, specification.variable)) ||
-#         error("Autoupdate specification defines an update from `$(specification.variable)`, but the model has no variable named `$(specification.variable)`")
-
-#     variable = getvariable(vardict[specification.variable])
-
-#     return RxInferenceAutoUpdate(specification.variable, datavars, specification.callback, fetch(specification.from, variable))
-# end
-
-# struct RxInferenceAutoUpdate{L, N, C, R}
-#     varlabel :: L
-#     datavars :: N
-#     callback :: C
-#     recent   :: R
-# end
-
-# getvarlabel(autoupdate::RxInferenceAutoUpdate) = autoupdate.varlabel
-
-# import Base: fetch
-
-# Base.fetch(autoupdate::RxInferenceAutoUpdate) = fetch(autoupdate, autoupdate.recent)
-# Base.fetch(autoupdate::RxInferenceAutoUpdate, something) = fetch(autoupdate, something, ReactiveMP.getdata(ReactiveMP.getrecent(something)))
-# Base.fetch(autoupdate::RxInferenceAutoUpdate, something::Union{AbstractArray, Base.Generator}) = fetch(autoupdate, something, ReactiveMP.getdata.(ReactiveMP.getrecent.(something)))
-
-# Base.fetch(autoupdate::RxInferenceAutoUpdate, _, data) = zip(as_tuple(autoupdate.datavars), as_tuple(autoupdate.callback(data)))
-# Base.fetch(autoupdate::RxInferenceAutoUpdate, _, data::Nothing) =
-#     error("The initial value for `$(autoupdate.varlabel)` has not been specified, but is required in the `@autoupdates`.")
