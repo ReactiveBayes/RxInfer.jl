@@ -5,6 +5,7 @@
         getvarlabels,
         AutoUpdateVariableLabel,
         AutoUpdateMapping,
+        AutoUpdateSpecification,
         IndividualAutoUpdateSpecification,
         AutoUpdateFetchMarginalArgument,
         AutoUpdateFetchMessageArgument
@@ -113,6 +114,55 @@
         end
         """
     end
+
+    @testset "`@autoupdates` can accept a function" begin 
+        @autoupdates function myautoupdates(argument::Bool) 
+            if argument
+                x = mean(q(x))
+            else
+                y = mean(q(y))
+            end
+        end
+        # To check the dispatch and complex function definition
+        @autoupdates function myautoupdates(unused, input::S; keyword = input) where { S <: String }
+            z = mean(q(z)) + keyword
+        end
+
+        autoupdates1_true = myautoupdates(true)
+
+        @test numautoupdates(autoupdates1_true) == 1
+        autoupdate1_true = getautoupdate(autoupdates1_true, 1)
+        @test getvarlabels(autoupdate1_true) === AutoUpdateVariableLabel(:x)
+        @test getmapping(autoupdate1_true) === AutoUpdateMapping(mean, (AutoUpdateFetchMarginalArgument(:x),))
+
+        autoupdates1_false = myautoupdates(false)
+        @test numautoupdates(autoupdates1_false) == 1
+        autoupdate1_false = getautoupdate(autoupdates1_false, 1)
+        @test getvarlabels(autoupdate1_false) === AutoUpdateVariableLabel(:y)
+        @test getmapping(autoupdate1_false) === AutoUpdateMapping(mean, (AutoUpdateFetchMarginalArgument(:y),))
+
+        autoupdates_string = myautoupdates(1, "hello")
+        @test numautoupdates(autoupdates_string) == 1
+        autoupdate1_string = getautoupdate(autoupdates_string, 1)
+        @test getvarlabels(autoupdate1_string) === AutoUpdateVariableLabel(:z)
+        @test getmapping(autoupdate1_string) === AutoUpdateMapping(+, (AutoUpdateMapping(mean, (AutoUpdateFetchMarginalArgument(:z),)), "hello"))
+        
+    end
+
+    @testset "Check that the `@autoupdates` is type stable in simple cases" begin 
+        function foo()
+            @autoupdates begin
+                x = clamp(mean(q(z)), 0, 1)
+                y = clamp(mean(q(z)), 0, 1)
+            end
+        end
+        @autoupdates function bar(input)
+            x = clamp(mean(q(z)), 0, 1) + input
+            y = clamp(mean(q(z)), 0, 1) - input
+        end
+        @test (@inferred(foo())) isa AutoUpdateSpecification
+        @test (@inferred(bar(1))) isa AutoUpdateSpecification
+    end
 end
 
 @testitem "Check that the `autoupdates` object is properly inferrable" begin
@@ -157,10 +207,10 @@ end
 end
 
 @testitem "`@autoupdates` requires a block of code" begin
-    @test_throws "Autoupdates requires a block of code `begin ... end` as an input" eval(:(@autoupdates 1 + 1))
-    @test_throws "Autoupdates requires a block of code `begin ... end` as an input" eval(:(@autoupdates a = q(θ)))
-    @test_throws "Autoupdates requires a block of code `begin ... end` as an input" eval(:(@autoupdates q(θ)))
-    @test_throws "Autoupdates requires a block of code `begin ... end` as an input" eval(:(@autoupdates θ))
+    @test_throws "Autoupdates requires a block of code `begin ... end` or a full function definition as an input" eval(:(@autoupdates 1 + 1))
+    @test_throws "Autoupdates requires a block of code `begin ... end` or a full function definition as an input" eval(:(@autoupdates a = q(θ)))
+    @test_throws "Autoupdates requires a block of code `begin ... end` or a full function definition as an input" eval(:(@autoupdates q(θ)))
+    @test_throws "Autoupdates requires a block of code `begin ... end` or a full function definition as an input" eval(:(@autoupdates θ))
 end
 
 @testitem "q(x) and μ(x) are reserved functions" begin
@@ -244,10 +294,8 @@ end
     @testset "Warning/error if the varlabel in `autoupdates` have been reserved with constants" begin
         model = beta_bernoulli(a = 1, b = 1)
         @test_logs(
-            (:warn, r".*Autoupdates defines an update for `a`\, but `a` has been reserved in the model as a constant.*"),
-            (:warn, r".*Autoupdates defines an update for `b`\, but `b` has been reserved in the model as a constant.*"),
-            (:warn, r".*Use `warn = false` option to supress the warning.*"),
-            (:warn, r".*Use `strict = true` option to turn the warning into an error.*"),
+            (:warn, r".*Autoupdates defines an update for `a`\, but `a` has been reserved in the model as a constant.*Use `warn = false` option to supress the warning.*Use `strict = true` option to turn the warning into an error.*"),
+            (:warn, r".*Autoupdates defines an update for `b`\, but `b` has been reserved in the model as a constant.*Use `warn = false` option to supress the warning.*Use `strict = true` option to turn the warning into an error.*"),
             prepare_for_model(autoupdates, model)
         )
         @test_logs prepare_for_model(autoupdates_nowarn, model)

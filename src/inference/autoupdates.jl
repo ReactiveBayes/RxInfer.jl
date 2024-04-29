@@ -70,15 +70,15 @@ See also: [`infer`](@ref)
 """
 macro autoupdates end
 
-macro autoupdates(block)
-    return esc(parse_autoupdates(:([]), block))
+macro autoupdates(expression)
+    return esc(parse_autoupdates(:([]), expression))
 end
 
-macro autoupdates(options, block)
-    return esc(parse_autoupdates(options, block))
+macro autoupdates(options, expression)
+    return esc(parse_autoupdates(options, expression))
 end
 
-function parse_autoupdates(options, block)
+function parse_autoupdates(options, expression)
     if !@capture(options, [optionargs__])
         error("Invalid options for `@autoupdates`. Expected `[ options... ]`")
     end
@@ -98,19 +98,34 @@ function parse_autoupdates(options, block)
         end
     end
 
+    # If expression is not a function definition, then `funcdef` is `nothing`
+    block, funcdef = if @capture(expression, function (fcall_ | fcall_) body_ end)
+        funcdef = MacroTools.splitdef(expression)
+        funcdef[:body], funcdef
+    else
+        expression, nothing
+    end
+
     if !(block isa Expr) || block.head !== :block
-        error("Autoupdates requires a block of code `begin ... end` as an input")
+        error("Autoupdates requires a block of code `begin ... end` or a full function definition as an input")
     end
 
     autoupdate_check_reserved_expressions(block)
     specification = gensym(:autoupdate_specification)
     code = autoupdate_parse_autoupdate_specification_expr(specification, block)
-    return quote
+    body = quote
         let $specification = RxInfer.AutoUpdateSpecification($warn, $strict, ())
             $code
             isempty($specification) && error("`@autoupdates` did not find any auto-updates specifications. Check the documentation for more information.")
             $specification
         end
+    end
+
+    if !isnothing(funcdef)
+        funcdef[:body] = body
+        MacroTools.combinedef(funcdef)
+    else
+        body
     end
 end
 
