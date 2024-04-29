@@ -173,15 +173,15 @@ RxInfer.getfactornodes(model)
 ### Conditioning on data that is not available at model creation time
 
 Sometimes the data is not known at model creation time, for example, during reactive inference.
-For that purpose `RxInfer` uses [`RxInfer.DefferedDataHandler`](@ref) structure.
+For that purpose `RxInfer` uses [`RxInfer.DeferredDataHandler`](@ref) structure.
 
 ```@example coin
 # The only difference here is that we do not specify `a` and `b` as hyperparameters 
 # But rather indicate that the data for them will be available later during the inference
 conditioned_with_deffered_data = coin_model() | (
     y = [ true, false, true ], 
-    a = RxInfer.DefferedDataHandler(), 
-    b = RxInfer.DefferedDataHandler()
+    a = RxInfer.DeferredDataHandler(), 
+    b = RxInfer.DeferredDataHandler()
 )
 
 # The graph creation API does not change

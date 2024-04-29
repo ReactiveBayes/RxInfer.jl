@@ -514,7 +514,7 @@ function streaming_inference(;
     _model = GraphPPL.with_plugins(model, modelplugins)
     _autoupdates = something(autoupdates, ())
 
-    # For each data entry and autoupdate we create a `DefferedDataHandler` handler for the `condition_on` structure 
+    # For each data entry and autoupdate we create a `DeferredDataHandler` handler for the `condition_on` structure 
     # We must do that because the data is not available at the moment of the model creation
     _condition_on = append_deffered_data_handlers((;), Tuple(Iterators.flatten((datavarnames, map(getlabels, _autoupdates)...))))
 

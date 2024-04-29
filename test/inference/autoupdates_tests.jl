@@ -294,7 +294,6 @@ end
 end
 
 @testitem "The `autoupdates` structure can be prepared for a specific model #1 - Beta Bernoulli" begin
-    import RxInfer: prepare_for_model
 
     @model function beta_bernoulli(a, b, y)
         θ ~ Beta(a, b)
@@ -318,6 +317,8 @@ end
     end
 
     @testset "Warning/error if the varlabel in `autoupdates` have been reserved with constants" begin
+        import RxInfer: check_model_generator_compatibility
+
         model = beta_bernoulli(a = 1, b = 1)
         @test_logs(
             (
@@ -328,11 +329,36 @@ end
                 :warn,
                 r".*Autoupdates defines an update for `b`\, but `b` has been reserved in the model as a constant.*Use `warn = false` option to supress the warning.*Use `strict = true` option to turn the warning into an error.*"
             ),
-            prepare_for_model(autoupdates, model)
+            check_model_generator_compatibility(autoupdates, model)
         )
-        @test_logs prepare_for_model(autoupdates_nowarn, model)
-        @test_throws "Autoupdates defines an update for `a`, but `a` has been reserved in the model as a constant." prepare_for_model(autoupdates_strict, model)
-        @test_throws "Autoupdates defines an update for `a`, but `a` has been reserved in the model as a constant." prepare_for_model(autoupdates_strict_nowarn, model)
+        @test_logs check_model_generator_compatibility(autoupdates_nowarn, model)
+        @test_throws "Autoupdates defines an update for `a`, but `a` has been reserved in the model as a constant." check_model_generator_compatibility(autoupdates_strict, model)
+        @test_throws "Autoupdates defines an update for `a`, but `a` has been reserved in the model as a constant." check_model_generator_compatibility(autoupdates_strict_nowarn, model)
+    end
+
+    @testset "Create deferred data handlers from the `@autoupdates` specification" begin 
+        import RxInfer: DeferredDataHandler, autoupdates_data_handlers
+
+        for autoupdate in (autoupdates, autoupdates_nowarn, autoupdates_strict, autoupdates_strict_nowarn)
+            @test @inferred(autoupdates_data_handlers(autoupdate)) === (a = DeferredDataHandler(), b = DeferredDataHandler())
+        end
+    end
+
+    @testset "Check that variables have been fetched correctly" begin
+        import RxInfer: DeferredDataHandler, create_model
+
+        for autoupdate in (autoupdates, autoupdates_nowarn, autoupdates_strict, autoupdates_strict_nowarn)
+            extra_data_handlers = autoupdates_data_handlers(autoupdate)
+            data_handlers = (y = DeferredDataHandler(), extra_data_handlers...)
+            model = create_model(beta_bernoulli() | data_handlers)
+            
+        end
+
+        model = beta_bernoulli() | (
+            a = DeferredDataHandler(),
+            b = DeferredDataHandler(),
+            y = DeferredDataHandler(),
+        )
     end
 end
 

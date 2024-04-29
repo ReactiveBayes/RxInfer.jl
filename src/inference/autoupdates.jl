@@ -253,7 +253,7 @@ function getvarlabels(specification::AutoUpdateSpecification)
     return mapreduce(getvarlabels, __reducevarlabels, specification.specifications; init = ())
 end
 # These functions are used to reduce the individual auto-update specifications to the list of variable labels
-__reducevarlabels(collected, upcoming::NTuple{N}) where {N} = (collected..., map(getlabel, upcoming)...)
+__reducevarlabels(collected, upcoming::Tuple) = (collected..., map(getlabel, upcoming)...)
 __reducevarlabels(collected, upcoming) = (collected..., getlabel(upcoming))
 
 function Base.show(io::IO, specification::AutoUpdateSpecification)
@@ -284,23 +284,21 @@ getmapping(specification::IndividualAutoUpdateSpecification) = specification.map
 Base.show(io::IO, specification::IndividualAutoUpdateSpecification) = print(io, getvarlabels(specification), " = ", getmapping(specification))
 
 """
-    AutoUpdateVariableLabel{I}(label, [ index = nothing ])
+    AutoUpdateVariableLabel{L, I}(label, [ index = nothing ])
 
 A structure that holds the label of the variable to update and its index.
 By default, the index is set to `nothing`.
 """
-struct AutoUpdateVariableLabel{I}
-    label::Symbol
-    index::I
-end
+struct AutoUpdateVariableLabel{L, I} end
 
-getlabel(label::AutoUpdateVariableLabel) = label.label
-getindex(label::AutoUpdateVariableLabel) = label.index
+getlabel(::AutoUpdateVariableLabel{L, I}) where {L, I} = L
+getindex(::AutoUpdateVariableLabel{L, I}) where {L, I} = I
 
-AutoUpdateVariableLabel(label::Symbol) = AutoUpdateVariableLabel(label, nothing)
+AutoUpdateVariableLabel(label::Symbol) = AutoUpdateVariableLabel{label, ()}()
+AutoUpdateVariableLabel(label::Symbol, index::Tuple) = AutoUpdateVariableLabel{label, index}()
 
 Base.show(io::IO, specification::AutoUpdateVariableLabel) =
-    isnothing(specification.index) ? print(io, specification.label) : print(io, specification.label, "[", join(specification.index, ", "), "]")
+    isempty(getindex(specification)) ? print(io, getlabel(specification)) : print(io, getlabel(specification), "[", join(getindex(specification), ", "), "]")
 
 """
     AutoUpdateMapping(arguments, mappingFn)
@@ -314,15 +312,16 @@ end
 
 Base.show(io::IO, mapping::AutoUpdateMapping) = print(io, mapping.mappingFn, "(", join(mapping.arguments, ", "), ")")
 
-struct AutoUpdateFetchMarginalArgument{I}
-    label::Symbol
-    index::I
-end
+struct AutoUpdateFetchMarginalArgument{L, I} end
 
-AutoUpdateFetchMarginalArgument(label::Symbol) = AutoUpdateFetchMarginalArgument(label, nothing)
+getlabel(::AutoUpdateFetchMarginalArgument{L, I}) where {L, I} = L
+getindex(::AutoUpdateFetchMarginalArgument{L, I}) where {L, I} = I
+
+AutoUpdateFetchMarginalArgument(label::Symbol) = AutoUpdateFetchMarginalArgument{label, ()}()
+AutoUpdateFetchMarginalArgument(label::Symbol, index::Tuple) = AutoUpdateFetchMarginalArgument{label, index}()
 
 Base.show(io::IO, argument::AutoUpdateFetchMarginalArgument) =
-    isnothing(argument.index) ? print(io, "q(", argument.label, ")") : print(io, "q(", argument.label, "[", join(argument.index, ", "), "])")
+    isempty(getindex(argument)) ? print(io, "q(", getlabel(argument), ")") : print(io, "q(", getlabel(argument), "[", join(getindex(argument), ", "), "])")
 
 struct AutoUpdateFetchMessageArgument{I}
     label::Symbol
@@ -338,7 +337,7 @@ Base.show(io::IO, argument::AutoUpdateFetchMessageArgument) =
 
 import GraphPPL
 
-function prepare_for_model(specification::AutoUpdateSpecification, model::GraphPPL.ModelGenerator)
+function check_model_generator_compatibility(specification::AutoUpdateSpecification, model::GraphPPL.ModelGenerator)
     kwargskeys = keys(GraphPPL.getkwargs(model))
     varlabels = getvarlabels(specification)
     for label in varlabels
@@ -352,6 +351,11 @@ function prepare_for_model(specification::AutoUpdateSpecification, model::GraphP
         end
     end
     return nothing
+end
+
+function autoupdates_data_handlers(specification::AutoUpdateSpecification)
+    varlabels = getvarlabels(specification)
+    return NamedTuple{varlabels}(ntuple(_ -> DeferredDataHandler(), length(varlabels)))
 end
 
 # import Base: fetch

@@ -39,7 +39,7 @@ Sometimes it might be useful to condition on data, which is not available at mod
 This might be especially useful in [reactive inference](@ref manual-online-inference) setting, where data, e.g. might be available later on from some asynchronous sensor input. For this reason, `RxInfer` implements a special _deferred_ data handler, that does mark model argument as data, but does not specify any particular value for this data nor its shape.
 
 ```@docs 
-RxInfer.DefferedDataHandler
+RxInfer.DeferredDataHandler
 ```
 
 After the model has been conditioned it can be materialized with the [`RxInfer.create_model`](@ref) function.
