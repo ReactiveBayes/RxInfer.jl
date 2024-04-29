@@ -453,7 +453,6 @@ end
     end
 
     @testset "Check events usage" begin
-
         struct CustomEventListener <: Rocket.NextActor{RxInferenceEvent}
             eventsdata
         end
@@ -732,4 +731,24 @@ end
         )
         @test isequal(first(mean(result.history[:θ][end])), last(mean(result.history[:θ][end])))
     end
+end
+
+@testitem "Streaming inference with clashing names in data and autoupdates should throw an error" begin
+    @model function beta_bernoulli(y, a, b)
+        θ ~ Beta(a, b)
+        y ~ Bernoulli(θ)
+    end
+
+    @autoupdates function beta_bernoulli_autoupdates()
+        a, b = params(q(θ))
+        y = mean(q(θ))
+    end
+
+    @test_throws "Cannot use `y` in the `autoupdates`, since data also uses `y`" infer(model = beta_bernoulli(), data = (y = [1, 1],), autoupdates = beta_bernoulli_autoupdates())
+    @test_throws "Cannot use `a` in the `autoupdates`, since data also uses `a`" infer(
+        model = beta_bernoulli(), data = (a = [1, 1], y = [1, 1]), autoupdates = beta_bernoulli_autoupdates()
+    )
+    @test_throws "Cannot use `b` in the `autoupdates`, since data also uses `b`" infer(
+        model = beta_bernoulli(), data = (b = [1, 1], y = [1, 1]), autoupdates = beta_bernoulli_autoupdates()
+    )
 end

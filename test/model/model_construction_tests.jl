@@ -69,28 +69,3 @@ end
         @test create_deffered_data_handlers([:x, :y]) == Dict(:x => DeferredDataHandler(), :y => DeferredDataHandler())
     end
 end
-
-@testitem "append_deffered_data_handlers" begin
-    import RxInfer: append_deffered_data_handlers, DeferredDataHandler
-
-    @testset "Append deffered data handlers to a named tuple from a tuple of symbols" begin
-        @test append_deffered_data_handlers((z = 1,), (:x, :y)) == (z = 1, x = DeferredDataHandler(), y = DeferredDataHandler())
-    end
-
-    @testset "Append deffered data handlers to a Dict from a tuple of symbols" begin
-        @test append_deffered_data_handlers(Dict(:z => 1), (:x, :y)) == Dict(:z => 1, :x => DeferredDataHandler(), :y => DeferredDataHandler())
-    end
-
-    @testset "Append deffered data handlers to a named tuple from a vector of symbols" begin
-        @test append_deffered_data_handlers((z = 1,), [:x, :y]) == Dict(:z => 1, :x => DeferredDataHandler(), :y => DeferredDataHandler())
-    end
-
-    @testset "Append deffered data handlers to a Dict from a vector of symbols" begin
-        @test append_deffered_data_handlers(Dict(:z => 1), [:x, :y]) == Dict(:z => 1, :x => DeferredDataHandler(), :y => DeferredDataHandler())
-    end
-
-    @testset "Conflicting names should throw a user-friendly errors" begin
-        @test_throws "Cannot add `DeferredDataHandler` for the key `z`. Data has already been defined for the key `z`" append_deffered_data_handlers(Dict(:z => 1), [:z, :y])
-        @test_throws "Cannot add `DeferredDataHandler` for the key `y`. Data has already been defined for the key `y`" append_deffered_data_handlers((y = 1,), (:y,))
-    end
-end

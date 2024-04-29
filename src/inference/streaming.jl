@@ -517,6 +517,12 @@ function streaming_inference(;
 
     # For each data entry and autoupdate we create a `DeferredDataHandler` handler for the `condition_on` structure 
     # We must do that because the data is not available at the moment of the model creation
+    _autoupdates_data_handlers = autoupdates_data_handlers(autoupdates)
+    foreach(keys(_autoupdates_data_handlers)) do _autoupdate_data_handler_key 
+        if _autoupdate_data_handler_key ∈ datavarnames
+            error(lazy"Cannot use `$(_autoupdate_data_handler_key)` in the `autoupdates`, since data also uses `$(_autoupdate_data_handler_key)`")
+        end
+    end
     _condition_on = merge_data_handlers(create_deffered_data_handlers(datavarnames), autoupdates_data_handlers(autoupdates))
 
     inference_invoke_callback(callbacks, :before_model_creation)
