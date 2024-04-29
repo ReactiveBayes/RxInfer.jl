@@ -1,6 +1,6 @@
 export @autoupdates
 
-import Base: isempty, show
+import Base: isempty, show, map
 import MacroTools
 import MacroTools: @capture
 
@@ -99,7 +99,9 @@ function parse_autoupdates(options, expression)
     end
 
     # If expression is not a function definition, then `funcdef` is `nothing`
-    block, funcdef = if @capture(expression, function (fcall_ | fcall_) body_ end)
+    block, funcdef = if @capture(expression, function (fcall_ | fcall_)
+        body_
+    end)
         funcdef = MacroTools.splitdef(expression)
         funcdef[:body], funcdef
     else
@@ -226,7 +228,7 @@ is_autoupdates_strict(specification::AutoUpdateSpecification) = specification.st
 
 "Returns the number of auto-updates in the specification"
 function numautoupdates(specification::AutoUpdateSpecification)
-    return length(specification.specifications)
+    return length(getspecifications(specification))
 end
 
 "Returns `true` if the auto-update specification is empty"
@@ -236,11 +238,11 @@ end
 
 "Returns the individual auto-update specification at the given index"
 function getautoupdate(specification::AutoUpdateSpecification, index)
-    return specification.specifications[index]
+    return getindex(getspecifications(specification), index)
 end
 
 function addspecification(specification::AutoUpdateSpecification, labels, mapping)
-    return addspecification(specification, specification.specifications, labels, mapping)
+    return addspecification(specification, getspecifications(specification), labels, mapping)
 end
 
 function addspecification(specification::AutoUpdateSpecification, specifications::Tuple, labels, mapping)
@@ -249,16 +251,26 @@ function addspecification(specification::AutoUpdateSpecification, specifications
     )
 end
 
+function getspecifications(specification::AutoUpdateSpecification)
+    return specification.specifications
+end
+
 function getvarlabels(specification::AutoUpdateSpecification)
-    return mapreduce(getvarlabels, __reducevarlabels, specification.specifications; init = ())
+    return mapreduce(getvarlabels, __reducevarlabels, getspecifications(specification); init = ())
 end
 # These functions are used to reduce the individual auto-update specifications to the list of variable labels
 __reducevarlabels(collected, upcoming::Tuple) = (collected..., map(getlabel, upcoming)...)
 __reducevarlabels(collected, upcoming) = (collected..., getlabel(upcoming))
 
+function Base.map(f::F, specification::AutoUpdateSpecification) where {F}
+    is_warn = is_autoupdates_warn(specification)
+    is_strict = is_autoupdates_strict(specification)
+    return AutoUpdateSpecification(is_warn, is_strict, map(f, getspecifications(specification)))
+end
+
 function Base.show(io::IO, specification::AutoUpdateSpecification)
     println(io, "@autoupdates begin")
-    foreach(specification.specifications) do spec
+    foreach(getspecifications(specification)) do spec
         println(io, "    ", spec)
     end
     println(io, "end")
@@ -310,7 +322,10 @@ struct AutoUpdateMapping{F, A}
     arguments::A
 end
 
-Base.show(io::IO, mapping::AutoUpdateMapping) = print(io, mapping.mappingFn, "(", join(mapping.arguments, ", "), ")")
+getmappingfn(mapping::AutoUpdateMapping) = mapping.mappingFn
+getarguments(mapping::AutoUpdateMapping) = mapping.arguments
+
+Base.show(io::IO, mapping::AutoUpdateMapping) = print(io, getmappingfn(mapping), "(", join(getarguments(mapping), ", "), ")")
 
 struct AutoUpdateFetchMarginalArgument{L, I} end
 
@@ -323,15 +338,16 @@ AutoUpdateFetchMarginalArgument(label::Symbol, index::Tuple) = AutoUpdateFetchMa
 Base.show(io::IO, argument::AutoUpdateFetchMarginalArgument) =
     isempty(getindex(argument)) ? print(io, "q(", getlabel(argument), ")") : print(io, "q(", getlabel(argument), "[", join(getindex(argument), ", "), "])")
 
-struct AutoUpdateFetchMessageArgument{I}
-    label::Symbol
-    index::I
-end
+struct AutoUpdateFetchMessageArgument{L, I} end
 
-AutoUpdateFetchMessageArgument(label::Symbol) = AutoUpdateFetchMessageArgument(label, nothing)
+getlabel(::AutoUpdateFetchMessageArgument{L, I}) where {L, I} = L
+getindex(::AutoUpdateFetchMessageArgument{L, I}) where {L, I} = I
+
+AutoUpdateFetchMessageArgument(label::Symbol) = AutoUpdateFetchMessageArgument{label, ()}()
+AutoUpdateFetchMessageArgument(label::Symbol, index::Tuple) = AutoUpdateFetchMessageArgument{label, index}()
 
 Base.show(io::IO, argument::AutoUpdateFetchMessageArgument) =
-    isnothing(argument.index) ? print(io, "μ(", argument.label, ")") : print(io, "μ(", argument.label, "[", join(argument.index, ", "), "])")
+    isempty(getindex(argument)) ? print(io, "μ(", getlabel(argument), ")") : print(io, "μ(", getlabel(argument), "[", join(getindex(argument), ", "), "])")
 
 # Model interactions with GraphPPL generator
 
@@ -356,6 +372,75 @@ end
 function autoupdates_data_handlers(specification::AutoUpdateSpecification)
     varlabels = getvarlabels(specification)
     return NamedTuple{varlabels}(ntuple(_ -> DeferredDataHandler(), length(varlabels)))
+end
+
+"""
+    prepare_autoupdates_for_model(autoupdates, model)
+
+This function extracts the variables saved in the `autoupdates` from the model.
+Replaces `AutoUpdateFetchMarginalArgument` and `AutoUpdateFetchMessageArgument` with actual streams.
+"""
+function prepare_autoupdates_for_model(autoupdates, model)
+    vardict = getvardict(model)
+    return map((autoupdate) -> prepare_individual_autoupdate_for_model(autoupdate, model, vardict), autoupdates)
+end
+function prepare_individual_autoupdate_for_model(autoupdate::IndividualAutoUpdateSpecification, model, vardict)
+    return prepare_individual_autoupdate_for_model(getvarlabels(autoupdate), getmapping(autoupdate), model, vardict)
+end
+function prepare_individual_autoupdate_for_model(varlabels, mapping, model, vardict)
+    prepared_varlabels = prepare_varlabels_autoupdate_for_model(varlabels, model, vardict)
+    prepared_mapping = prepare_mapping_autoupdate_for_model(mapping, model, vardict)
+    return IndividualAutoUpdateSpecification(prepared_varlabels, prepared_mapping)
+end
+
+function prepare_varlabels_autoupdate_for_model(varlabel::AutoUpdateVariableLabel, model, vardict)
+    return prepare_varlabels_autoupdate_for_model(getlabel(varlabel), getindex(varlabel), model, vardict)
+end
+function prepare_varlabels_autoupdate_for_model(varlabels::Tuple, model, vardict)
+    return map((l) -> prepare_varlabels_autoupdate_for_model(l, model, vardict), varlabels)
+end
+function prepare_varlabels_autoupdate_for_model(label::Symbol, index::Tuple{}, model, vardict) 
+    haskey(vardict, label) || error(lazy"The `autoupdate` specification defines an update for `$(label)`, but the model has no variable named `$(label)`")
+    return getvariable(vardict[label])
+end
+function prepare_varlabels_autoupdate_for_model(label::Symbol, index::Tuple, model, vardict) 
+    haskey(vardict, label) || error(lazy"The `autoupdate` specification defines an update for `$(label)`, but the model has no variable named `$(label)`")
+    return getvariable(vardict[label][index...])
+end
+
+function prepare_mapping_autoupdate_for_model(mapping::AutoUpdateMapping, model, vardict)
+    prepared_arguments = map((a) -> prepare_mapping_argument_for_model(a, model, vardict), getarguments(mapping))
+    return AutoUpdateMapping(getmappingfn(mapping), prepared_arguments)
+end
+prepare_mapping_argument_for_model(mapping::AutoUpdateMapping, model, vardict) = prepare_mapping_autoupdate_for_model(mapping, model, vardict)
+prepare_mapping_argument_for_model(any::Any, model, vardict) = any
+
+# Prepare expression of `q(_)`
+function prepare_mapping_argument_for_model(marginal::AutoUpdateFetchMarginalArgument, model, vardict)
+    label = getlabel(marginal)
+    if !haskey(vardict, label)
+        error(lazy"The `autoupdate` specification defines an update from `q($(label))`, but the model has no variable named `$(label)`")
+    end
+    return prepare_mapping_argument_for_model(marginal, label, getindex(marginal), model, vardict)
+end
+prepare_mapping_argument_for_model(::AutoUpdateFetchMarginalArgument, label::Symbol, index::Tuple{}, model, vardict) = getmarginal(vardict[label], IncludeAll())
+prepare_mapping_argument_for_model(::AutoUpdateFetchMarginalArgument, label::Symbol, index::Tuple, model, vardict) = getmarginal(vardict[label][index...], IncludeAll())
+
+# Prepare expression of `μ(_)`
+function prepare_mapping_argument_for_model(message::AutoUpdateFetchMessageArgument, model, vardict)
+    label = getlabel(message)
+    if !haskey(vardict, label)
+        error(lazy"The `autoupdate` specification defines an update from `μ($(label))`, but the model has no variable named `$(label)`")
+    end
+    return prepare_mapping_argument_for_model(message, label, getindex(message), model, vardict)
+end
+function prepare_mapping_argument_for_model(::AutoUpdateFetchMessageArgument, label::Symbol, index::Tuple{}, model, vardict)
+    variable = vardict[label]
+    return messageout(variable, degree(variable))
+end
+function prepare_mapping_argument_for_model(::AutoUpdateFetchMessageArgument, label::Symbol, index::Tuple, model, vardict)
+    variable = vardict[label][index...]
+    return messageout(variable, degree(variable))
 end
 
 # import Base: fetch

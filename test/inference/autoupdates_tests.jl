@@ -294,7 +294,6 @@ end
 end
 
 @testitem "The `autoupdates` structure can be prepared for a specific model #1 - Beta Bernoulli" begin
-
     @model function beta_bernoulli(a, b, y)
         θ ~ Beta(a, b)
         y ~ Bernoulli(θ)
@@ -333,10 +332,12 @@ end
         )
         @test_logs check_model_generator_compatibility(autoupdates_nowarn, model)
         @test_throws "Autoupdates defines an update for `a`, but `a` has been reserved in the model as a constant." check_model_generator_compatibility(autoupdates_strict, model)
-        @test_throws "Autoupdates defines an update for `a`, but `a` has been reserved in the model as a constant." check_model_generator_compatibility(autoupdates_strict_nowarn, model)
+        @test_throws "Autoupdates defines an update for `a`, but `a` has been reserved in the model as a constant." check_model_generator_compatibility(
+            autoupdates_strict_nowarn, model
+        )
     end
 
-    @testset "Create deferred data handlers from the `@autoupdates` specification" begin 
+    @testset "Create deferred data handlers from the `@autoupdates` specification" begin
         import RxInfer: DeferredDataHandler, autoupdates_data_handlers
 
         for autoupdate in (autoupdates, autoupdates_nowarn, autoupdates_strict, autoupdates_strict_nowarn)
@@ -345,20 +346,43 @@ end
     end
 
     @testset "Check that variables have been fetched correctly" begin
-        import RxInfer: DeferredDataHandler, create_model
+        import RxInfer:
+            DeferredDataHandler,
+            create_model,
+            ReactiveMPInferencePlugin,
+            ReactiveMPInferenceOptions,
+            numautoupdates,
+            getvarlabels,
+            getmapping,
+            getmappingfn,
+            getarguments,
+            getautoupdate,
+            AutoUpdateMapping,
+            prepare_autoupdates_for_model,
+            getvariable
+        import GraphPPL: VariationalConstraintsPlugin, PluginsCollection, with_plugins, getextra
 
         for autoupdate in (autoupdates, autoupdates_nowarn, autoupdates_strict, autoupdates_strict_nowarn)
             extra_data_handlers = autoupdates_data_handlers(autoupdate)
             data_handlers = (y = DeferredDataHandler(), extra_data_handlers...)
-            model = create_model(beta_bernoulli() | data_handlers)
-            
-        end
+            options = convert(ReactiveMPInferenceOptions, (;))
+            plugins = PluginsCollection(VariationalConstraintsPlugin(), ReactiveMPInferencePlugin(options))
+            model = create_model(with_plugins(beta_bernoulli(), plugins) | data_handlers)
+            variable_a = getvariable(getindex(getvardict(model), :a))
+            variable_b = getvariable(getindex(getvardict(model), :b))
+            variable_θ = getvariable(getindex(getvardict(model), :θ))
 
-        model = beta_bernoulli() | (
-            a = DeferredDataHandler(),
-            b = DeferredDataHandler(),
-            y = DeferredDataHandler(),
-        )
+            @test variable_a != variable_b
+
+            autoupdates_for_model = prepare_autoupdates_for_model(autoupdate, model)
+
+            @test numautoupdates(autoupdates_for_model) == 1
+
+            autoupdate1 = getautoupdate(autoupdates_for_model, 1)
+            @test getvarlabels(autoupdate1) === (variable_a, variable_b)
+            @test getmappingfn(getmapping(autoupdate1)) === params
+            @test getarguments(getmapping(autoupdate1)) === (getmarginal(variable_θ, IncludeAll()),)
+        end
     end
 end
 
