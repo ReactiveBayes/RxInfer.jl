@@ -47,116 +47,6 @@ end
     end
 end
 
-@testitem "`@autoupdates` macro" begin
-    function somefunction(something)
-        return nothing
-    end
-
-    @testset "Use case #1" begin
-        autoupdate = @autoupdates begin
-            x_t_prev_mean = somefunction(q(x_t_current))
-        end
-
-        @test autoupdate isa Tuple && length(autoupdate) === 1
-        @test autoupdate[1] isa RxInfer.RxInferenceAutoUpdateSpecification
-        @test autoupdate[1].labels === (:x_t_prev_mean,)
-        @test autoupdate[1].callback === somefunction
-        @test autoupdate[1].from === RxInfer.FromMarginalAutoUpdate()
-        @test autoupdate[1].variable === :x_t_current
-    end
-
-    @testset "Use case #2" begin
-        autoupdate = @autoupdates begin
-            x_t_prev_mean = somefunction(μ(x_t_current))
-        end
-
-        @test autoupdate isa Tuple && length(autoupdate) === 1
-        @test autoupdate[1] isa RxInfer.RxInferenceAutoUpdateSpecification
-        @test autoupdate[1].labels === (:x_t_prev_mean,)
-        @test autoupdate[1].callback === somefunction
-        @test autoupdate[1].from === RxInfer.FromMessageAutoUpdate()
-        @test autoupdate[1].variable === :x_t_current
-    end
-
-    @testset "Use case #3" begin
-        autoupdate = @autoupdates begin
-            x_t_prev_mean, x_t_prev_var = somefunction(q(x_t_current))
-            and_another_one = somefunction(μ(τ_current))
-        end
-
-        @test autoupdate isa Tuple && length(autoupdate) === 2
-        @test autoupdate[1] isa RxInfer.RxInferenceAutoUpdateSpecification
-        @test autoupdate[1].labels === (:x_t_prev_mean, :x_t_prev_var)
-        @test autoupdate[1].callback === somefunction
-        @test autoupdate[1].from === RxInfer.FromMarginalAutoUpdate()
-        @test autoupdate[1].variable === :x_t_current
-
-        @test autoupdate[2] isa RxInfer.RxInferenceAutoUpdateSpecification
-        @test autoupdate[2].labels === (:and_another_one,)
-        @test autoupdate[2].callback === somefunction
-        @test autoupdate[2].from === RxInfer.FromMessageAutoUpdate()
-        @test autoupdate[2].variable === :τ_current
-    end
-
-    @testset "Use case #4.1: simple indexing" begin
-        autoupdate = @autoupdates begin
-            x_t_prev_mean = somefunction(q(x[1]))
-        end
-
-        @test autoupdate isa Tuple && length(autoupdate) === 1
-        @test autoupdate[1] isa RxInfer.RxInferenceAutoUpdateSpecification
-        @test autoupdate[1].labels === (:x_t_prev_mean,)
-        @test autoupdate[1].callback === somefunction
-        @test autoupdate[1].from === RxInfer.FromMarginalAutoUpdate()
-        @test autoupdate[1].variable === RxInfer.RxInferenceAutoUpdateIndexedVariable(:x, (1,))
-    end
-
-    @testset "Use case #4.2: complex indexing" begin
-        autoupdate = @autoupdates begin
-            x_t_prev_mean = somefunction(q(x[1, 2, 3]))
-        end
-
-        @test autoupdate isa Tuple && length(autoupdate) === 1
-        @test autoupdate[1] isa RxInfer.RxInferenceAutoUpdateSpecification
-        @test autoupdate[1].labels === (:x_t_prev_mean,)
-        @test autoupdate[1].callback === somefunction
-        @test autoupdate[1].from === RxInfer.FromMarginalAutoUpdate()
-        @test autoupdate[1].variable === RxInfer.RxInferenceAutoUpdateIndexedVariable(:x, (1, 2, 3))
-    end
-
-    @testset "Error cases" begin
-        # No specs
-        @test_throws LoadError eval(:(@autoupdates begin end))
-
-        # No specs
-        @test_throws LoadError eval(:(@autoupdates begin
-            x = 1
-        end))
-
-        # Complex lhs
-        @test_throws LoadError eval(:(@autoupdates begin
-            x[1] = somefunction(q(x_t_current))
-        end))
-
-        @test_throws LoadError eval(:(@autoupdates begin
-            x[1] = somefunction(μ(x_t_current))
-        end))
-
-        # Complex call expression
-        @test_throws LoadError eval(:(@autoupdates begin
-            x = somefunction(q(x_t_current, 3))
-        end))
-
-        @test_throws LoadError eval(:(@autoupdates begin
-            x = somefunction(q(x_t_current), 3)
-        end))
-
-        @test_throws LoadError eval(:(@autoupdates begin
-            x = somefunction(μ(x_t_current), 3)
-        end))
-    end
-end
-
 @testitem "Static inference with `inference`" begin
 
     # A simple model for testing that resembles a simple kalman filter with
@@ -563,6 +453,7 @@ end
     end
 
     @testset "Check events usage" begin
+
         struct CustomEventListener <: Rocket.NextActor{RxInferenceEvent}
             eventsdata
         end
@@ -656,8 +547,7 @@ end
                     model, iteration, fupdate = event
                     @test model === engine.model
                     @test iteration === ii
-                    @test length(fupdate) === 3
-                    @test RxInfer.getvarlabel.(fupdate) == (:x_t, :τ, :τ)
+                    @test RxInfer.numautoupdates(fupdate) === 3
                 end
 
                 # Check the associated data with the `:after_auto_update` events
@@ -665,8 +555,7 @@ end
                     model, iteration, fupdate = event
                     @test model === engine.model
                     @test iteration === ii
-                    @test length(fupdate) === 3
-                    @test RxInfer.getvarlabel.(fupdate) == (:x_t, :τ, :τ)
+                    @test RxInfer.numautoupdates(fupdate) === 3
                 end
 
                 # Check the correct ordering of the `:before_auto_update` and `:after_auto_update` events

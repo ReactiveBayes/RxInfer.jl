@@ -150,21 +150,10 @@ function __infer_create_data_interface(model, context, key::Symbol, data)
     return GraphPPL.getorcreate!(model, context, GraphPPL.NodeCreationOptions(kind = :data, factorized = true), key, GraphPPL.LazyIndex(data))
 end
 
-# This function appends `DeferredDataHandler` objects to the existing data
-function append_deffered_data_handlers(data, symbols)
-    # Check if the data already has the data associated with a key provided in the `symbols`
-    foreach(symbols) do symbol
-        if haskey(data, symbol)
-            error("Cannot add `DeferredDataHandler` for the key `$(symbol)`. Data has already been defined for the key `$(symbol)`")
-        end
-    end
-    return __merge_data_handlers(data, create_deffered_data_handlers(symbols))
-end
-
-__merge_data_handlers(data::Dict, newdata::Dict) = merge(data, newdata)
-__merge_data_handlers(data::Dict, newdata::NamedTuple) = merge(data, convert(Dict, newdata))
-__merge_data_handlers(data::NamedTuple, newdata::Dict) = merge(convert(Dict, data), newdata)
-__merge_data_handlers(data::NamedTuple, newdata::NamedTuple) = merge(data, newdata)
+merge_data_handlers(data::Dict, newdata::Dict) = merge(data, newdata)
+merge_data_handlers(data::Dict, newdata::NamedTuple) = merge(data, convert(Dict, newdata))
+merge_data_handlers(data::NamedTuple, newdata::Dict) = merge(convert(Dict, data), newdata)
+merge_data_handlers(data::NamedTuple, newdata::NamedTuple) = merge(data, newdata)
 
 # This function creates a named tuple of `DeferredDataHandler` objects from a tuple of symbols
 function create_deffered_data_handlers(symbols::NTuple{N, Symbol}) where {N}

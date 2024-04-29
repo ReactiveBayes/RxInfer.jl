@@ -226,6 +226,8 @@ end
 is_autoupdates_warn(specification::AutoUpdateSpecification) = specification.warn
 is_autoupdates_strict(specification::AutoUpdateSpecification) = specification.strict
 
+const EmptyAutoUpdateSpecification = AutoUpdateSpecification(true, true, ())
+
 "Returns the number of auto-updates in the specification"
 function numautoupdates(specification::AutoUpdateSpecification)
     return length(getspecifications(specification))
@@ -477,10 +479,13 @@ autoupdate_mapping_fetch(argument::FetchRecentArgument, ::Nothing) =
     error("The initial value for `$(getlabel(argument))` has not been specified, but is required in the `@autoupdates`.")
 
 function run_autoupdate!(autoupdates::AutoUpdateSpecification)
-    foreach(getspecifications(autoupdates)) do autoupdate
-        varlabels = getvarlabels(autoupdate)
-        update = fetch(autoupdate)
+    return run_autoupdate!(getspecifications(autoupdates), map(fetch, getspecifications(autoupdates)))
+end
 
+function run_autoupdate!(specifications::Tuple, prefetched::Tuple)
+    length(specifications) === length(prefetched) || error("Cannot execute autoupdate. The number of specifications and prefetched values must be equal.")
+    foreach(zip(specifications, prefetched)) do (specification, update)
+        varlabels = getvarlabels(specification)
         varlabels_tupled = as_tuple(varlabels)
         update_tupled = as_tuple(update)
 

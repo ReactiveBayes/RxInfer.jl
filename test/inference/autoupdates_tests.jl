@@ -554,21 +554,21 @@ end
     import GraphPPL: VariationalConstraintsPlugin, PluginsCollection, with_plugins, getextra
 
     @model function beta_bernoulli_vector_based_args(ins, y)
-        θ ~ Beta(ins[1], ins[2])
-        y ~ Bernoulli(θ)
+        θ[1, 1] ~ Beta(ins[1], ins[2])
+        y ~ Bernoulli(θ[1, 1])
     end
 
     autoupdates_1 = @autoupdates begin
-        ins = collect(params(q(θ)))
+        ins = collect(params(q(θ[1, 1])))
     end
 
     autoupdates_2 = @autoupdates begin
-        ins[1] = getindex(params(q(θ)), 1)
-        ins[2] = getindex(params(q(θ)), 2)
+        ins[1] = getindex(params(q(θ[1, 1])), 1)
+        ins[2] = getindex(params(q(θ[1, 1])), 2)
     end
 
     autoupdates_3 = @autoupdates begin
-        ins[1], ins[2] = params(q(θ))
+        ins[1], ins[2] = params(q(θ[1, 1]))
     end
 
     for autoupdate in (autoupdates_1, autoupdates_2, autoupdates_3)
@@ -586,7 +586,7 @@ end
         marginals_θ = []
         updates_for_ins = []
         updates_for_y = []
-        subscription_marginal_θ = subscribe!(getmarginal(variable_θ, IncludeAll()), (qθ) -> push!(marginals_θ, qθ))
+        subscription_marginal_θ = subscribe!(getmarginal(variable_θ[1, 1], IncludeAll()), (qθ) -> push!(marginals_θ, qθ))
         subscription_updates_ins = subscribe!(getmarginals(variable_ins, IncludeAll()), (ins) -> push!(updates_for_ins, ins))
         subscription_updates_y = subscribe!(getmarginal(variable_y, IncludeAll()), (y) -> push!(updates_for_y, y))
 
