@@ -6,67 +6,12 @@ import MacroTools: @capture
 
 """
     @autoupdates [ options... ] begin 
-        ...
+        argument_to_update = some_function(q(some_variable_from_the_model))
     end
 
-Creates the auto-updates specification for the `infer` function. In the online-streaming Bayesian inference procedure it is important to update your priors for the 
-states based on the new updated posteriors. The `@autoupdates` structure simplify such a specification. The `@autoupdates` macro detects lines of code of the following structure
-```
-(labels...) = f(arguments...)
-```
-Checks if `arguments...` has either `q(_)` in its sub-expressions and adds such expressions to the specification list. 
-All other expressions are left untouched. The result of the macro execution is the `RxInfer.AutoUpdateSpecification` structure that holds the collection 
-of individual auto-update specifications.
-
-Each individualauto-update specification refers to model's arguments, which need to be updated, on the left hand side of the equality expression and 
-the update function on the right hand side of the expression.
-The update function operates on posterior marginals in the form of the `q(symbol)` expression.
-
-For example:
-
-```julia
-@autoupdates begin 
-    x = mean(q(z))
-end
-```
-
-This structure specifies to automatically update argument `x` as soon as the inference engine computes new posterior over `z` variable.
-It then applies the `mean` function to the new posterior and updates the value of `x` automatically. 
-
-As another example consider the following model and auto-update specification:
-
-```julia
-@model function kalman_filter(y, x_current_mean, x_current_var)
-    x_current ~ Normal(mean = x_current_mean, var = x_current_var)
-    x_next    ~ Normal(mean = x_current, var = 1.0)
-    y         ~ Normal(mean = x_next, var = 1.0)
-end
-```
-
-This model has two arguments that represent our prior knowledge of the `x_current` state of the system. 
-The `x_next` random variable represent the next state of the system that 
-is connected to the observed variable `y`. The auto-update specification could look like:
-
-```julia
-autoupdates = @autoupdates begin
-    x_current_mean, x_current_var = mean_var(q(x_next))
-end
-```
-This structure specifies to update our prior as soon as we have a new posterior `q(x_next)`. It then applies the `mean_var` function on the 
-updated posteriors and updates `x_current_mean` and `x_current_var` automatically.
-
-More complex `@autoupdates` are also allowed. For example, the following code is a valid `@autoupdates` specification:
-```julia
-@autoupdates begin 
-    x = clamp(mean(q(z)), 0, 1)
-end
-```
-
-The `@autoupdates` macro accepts an optional set of `[ options... ]` before the `begin ... end` block. The available options are:
-- `warn = true/false`: Enables or disables warnings when with incomaptible model. Set to `true` by default.
-- `strict = true/false`: Turns warnings into errors. Set to `false` by default.
-
-See also: [`infer`](@ref)
+Creates the auto-updates specification for the `infer` function for the online-streaming Bayesian inference procedure, where 
+it is important to update prior states based on the new updated posteriors. Read more information about the 
+`@autoupdates` syntax in the official documentation.
 """
 macro autoupdates end
 
@@ -78,6 +23,11 @@ macro autoupdates(options, expression)
     return esc(parse_autoupdates(options, expression))
 end
 
+"""
+    parse_autoupdates(options, expression)
+
+Parses the internals of the expression passed to the `@autoupdates` macro and returns the `RxInfer.AutoUpdateSpecification` structure.
+"""
 function parse_autoupdates(options, expression)
     if !@capture(options, [optionargs__])
         error("Invalid options for `@autoupdates`. Expected `[ options... ]`")
@@ -131,8 +81,12 @@ function parse_autoupdates(options, expression)
     end
 end
 
-# This function checks if the expression is a valid autoupdate specification
-# some expressions are forbidden within the autoupdate specification
+"""
+    autoupdate_check_reserved_expressions(block)
+
+This function checks if the expression is a valid autoupdate specification
+some expressions are forbidden within the autoupdate specification.
+"""
 function autoupdate_check_reserved_expressions(block)
     return MacroTools.postwalk(block) do subexpr
         if @capture(subexpr, (q(_) = _) | (μ(_) = _))
@@ -243,6 +197,7 @@ function getautoupdate(specification::AutoUpdateSpecification, index)
     return getindex(getspecifications(specification), index)
 end
 
+"Appends the individual auto-update specification to the existing specification"
 function addspecification(specification::AutoUpdateSpecification, labels, mapping)
     return addspecification(specification, getspecifications(specification), labels, mapping)
 end
@@ -257,6 +212,7 @@ function getspecifications(specification::AutoUpdateSpecification)
     return specification.specifications
 end
 
+"Returns the labels of the auto-update specification, which are the names of the variables to update"
 function getvarlabels(specification::AutoUpdateSpecification)
     return mapreduce(getvarlabels, __reducevarlabels, getspecifications(specification); init = ())
 end
@@ -329,6 +285,7 @@ getarguments(mapping::AutoUpdateMapping) = mapping.arguments
 
 Base.show(io::IO, mapping::AutoUpdateMapping) = print(io, getmappingfn(mapping), "(", join(getarguments(mapping), ", "), ")")
 
+"This autoupdate would fetch updates from the marginal of a variable"
 struct AutoUpdateFetchMarginalArgument{L, I} end
 
 getlabel(::AutoUpdateFetchMarginalArgument{L, I}) where {L, I} = L
@@ -340,6 +297,7 @@ AutoUpdateFetchMarginalArgument(label::Symbol, index::Tuple) = AutoUpdateFetchMa
 Base.show(io::IO, argument::AutoUpdateFetchMarginalArgument) =
     isempty(getindex(argument)) ? print(io, "q(", getlabel(argument), ")") : print(io, "q(", getlabel(argument), "[", join(getindex(argument), ", "), "])")
 
+"This autoupdate would fetch updates from the last message (in the array of messages) of a variable"
 struct AutoUpdateFetchMessageArgument{L, I} end
 
 getlabel(::AutoUpdateFetchMessageArgument{L, I}) where {L, I} = L

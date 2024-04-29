@@ -37,10 +37,7 @@ end
 ```
 
 This specification instructs `RxInfer` to update `a` and `b` parameters automatically as as soon as a new posterior for `θ` is available.
-
-```@docs
-@autoupdates
-```
+Read more about `@autoupdates` in the [Autoupdates guide](@ref autoupdates-guide)
 
 ## [Asynchronous data stream of observations](@id manual-online-inference-async-datastream)
 
@@ -679,7 +676,7 @@ function Rocket.on_next!(listener::MyEventListener, event::RxInferenceEvent{ :be
     (model, iteration, autoupdates) = event
     @test model isa ProbabilisticModel #hide
     @test iteration isa Int #hide
-    @test autoupdates isa Tuple{RxInfer.RxInferenceAutoUpdate} #hide
+    @test RxInfer.numautoupdates(autoupdates) === 1 #hide
     println("Before processing autoupdates")
 end
 ```
@@ -695,7 +692,7 @@ function Rocket.on_next!(listener::MyEventListener, event::RxInferenceEvent{ :af
     (model, iteration, autoupdates) = event
     @test model isa ProbabilisticModel #hide
     @test iteration isa Int #hide
-    @test autoupdates isa Tuple{RxInfer.RxInferenceAutoUpdate} #hide
+    @test RxInfer.numautoupdates(autoupdates) === 1 #hide
     println("After processing autoupdates")
 end
 ```
