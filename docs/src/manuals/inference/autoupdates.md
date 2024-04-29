@@ -24,9 +24,31 @@ This specification directs the `RxInfer` inference engine to update `a` and `b` 
 ```@eval
 # Change the text above if this test is failing
 using RxInfer, Test, Distributions
+autoupdates = @autoupdates begin 
+    a, b = params(q(θ))
+end
 @test RxInfer.getmappingfn(RxInfer.getmapping(RxInfer.getautoupdate(autoupdates, 1))) === Distributions.params
 nothing
 ```
+
+Now, we can use the `autoupdates` structure in the [`infer`](@ref) function as following:
+```@example autoupdates-examples
+# The streaming inference supports static datasets as well
+data = (y = [ 1, 0, 1 ], )
+
+result = infer(
+    model          = streaming_beta_bernoulli(),
+    autoupdates    = autoupdates,
+    data           = data,
+    keephistory    = 3,
+    initialization = @initialization(q(θ) = Beta(1, 1))
+)
+
+result.history[:θ]
+```
+In this example, we also used the [initialization](@ref initialization) keyword argument. 
+This is required for latent states, which are used in the `@autoupdates` specification together with streaming inference.
+Read more about streaming inference in the [Streaming (online) inference](@ref manual-online-inference) section.
 
 ## General syntax
 
@@ -37,12 +59,9 @@ The `@autoupdates` accepts a block of code or a function definition, where it de
 to which we refer as the _individual autoupdate specification_. Other expressions are left untouched.
 
 The `model_variables` can be the following
-- `q(θ)` - listens to updates from marginal posteriors of the variable `θ` or from entire collection `θ`
-- `q(θ[i])` - listens to updates from marginal posteriors of the collection of variables `θ` at index `i`
-- Any constant will work just fine, e.g. `a, b = some_function(q(θ), a_constant)`. Note, however, that an individual autoupdate specification should depend on at least on `q(_)`.
-
-!!! warn 
-    `q(θ)[i]` syntax is not supported, use `getindex(q(θ), i)` instead.
+- `q(s)` - listens to updates from marginal posteriors of an individual variable `s` or from a collection collection of variables `s`
+- `q(s[i])` - listens to updates from marginal posteriors of the collection of variables `s` at index `i`
+- Any constant will work just fine, e.g. `a, b = some_function(q(s), a_constant)`. Note, however, that an individual autoupdate specification should depend on at least on `q(_)`.
 
 Individual autoupdate specifications can involve somewhat complex expressions, as demonstrated below:
 ```@example autoupdates-examples
@@ -52,8 +71,13 @@ Individual autoupdate specifications can involve somewhat complex expressions, a
 end
 ```
 
+!!! warn 
+    `q(θ)[i]` syntax is not supported, use `getindex(q(θ), i)` instead.
 
 
+```
+
+```
 
 
 The `@autoupdates`  macro accepts a block of code or a function, detects lines of code of the following structure
