@@ -399,11 +399,11 @@ end
 function prepare_varlabels_autoupdate_for_model(varlabels::Tuple, model, vardict)
     return map((l) -> prepare_varlabels_autoupdate_for_model(l, model, vardict), varlabels)
 end
-function prepare_varlabels_autoupdate_for_model(label::Symbol, index::Tuple{}, model, vardict) 
+function prepare_varlabels_autoupdate_for_model(label::Symbol, index::Tuple{}, model, vardict)
     haskey(vardict, label) || error(lazy"The `autoupdate` specification defines an update for `$(label)`, but the model has no variable named `$(label)`")
     return getvariable(vardict[label])
 end
-function prepare_varlabels_autoupdate_for_model(label::Symbol, index::Tuple, model, vardict) 
+function prepare_varlabels_autoupdate_for_model(label::Symbol, index::Tuple, model, vardict)
     haskey(vardict, label) || error(lazy"The `autoupdate` specification defines an update for `$(label)`, but the model has no variable named `$(label)`")
     return getvariable(vardict[label][index...])
 end
@@ -415,16 +415,31 @@ end
 prepare_mapping_argument_for_model(mapping::AutoUpdateMapping, model, vardict) = prepare_mapping_autoupdate_for_model(mapping, model, vardict)
 prepare_mapping_argument_for_model(any::Any, model, vardict) = any
 
+import Rocket: getrecent
+
+struct FetchRecentArgument{L, S}
+    stream::S
+end
+
+FetchRecentArgument(label::Symbol, stream::S) where {S} = FetchRecentArgument{label, S}(stream)
+
+getlabel(::FetchRecentArgument{L}) where {L} = L
+Rocket.getrecent(argument::FetchRecentArgument) = getrecent(argument, argument.stream)
+Rocket.getrecent(argument::FetchRecentArgument, stream) = getrecent(stream)
+Rocket.getrecent(argument::FetchRecentArgument, streams::AbstractArray) = map(stream -> getrecent(argument, stream), streams)
+
 # Prepare expression of `q(_)`
 function prepare_mapping_argument_for_model(marginal::AutoUpdateFetchMarginalArgument, model, vardict)
     label = getlabel(marginal)
     if !haskey(vardict, label)
         error(lazy"The `autoupdate` specification defines an update from `q($(label))`, but the model has no variable named `$(label)`")
     end
-    return prepare_mapping_argument_for_model(marginal, label, getindex(marginal), model, vardict)
+    index = getindex(marginal)
+    var   = isempty(index) ? vardict[label] : vardict[label][index...]
+    return FetchRecentArgument(label, _marginal_argument(var))
 end
-prepare_mapping_argument_for_model(::AutoUpdateFetchMarginalArgument, label::Symbol, index::Tuple{}, model, vardict) = getmarginal(vardict[label], IncludeAll())
-prepare_mapping_argument_for_model(::AutoUpdateFetchMarginalArgument, label::Symbol, index::Tuple, model, vardict) = getmarginal(vardict[label][index...], IncludeAll())
+_marginal_argument(variable) = getmarginal(variable, IncludeAll())
+_marginal_argument(variables::AbstractArray) = map(_marginal_argument, variables)
 
 # Prepare expression of `μ(_)`
 function prepare_mapping_argument_for_model(message::AutoUpdateFetchMessageArgument, model, vardict)
@@ -432,18 +447,28 @@ function prepare_mapping_argument_for_model(message::AutoUpdateFetchMessageArgum
     if !haskey(vardict, label)
         error(lazy"The `autoupdate` specification defines an update from `μ($(label))`, but the model has no variable named `$(label)`")
     end
-    return prepare_mapping_argument_for_model(message, label, getindex(message), model, vardict)
+    index = getindex(marginal)
+    var   = isempty(index) ? vardict[label] : vardict[label][index...]
+    return FetchRecentArgument(label, _message_argument(var))
 end
-function prepare_mapping_argument_for_model(::AutoUpdateFetchMessageArgument, label::Symbol, index::Tuple{}, model, vardict)
-    variable = vardict[label]
-    return messageout(variable, degree(variable))
-end
-function prepare_mapping_argument_for_model(::AutoUpdateFetchMessageArgument, label::Symbol, index::Tuple, model, vardict)
-    variable = vardict[label][index...]
-    return messageout(variable, degree(variable))
+_message_argument(variable) = messageout(variable, degree(variable))
+_message_argument(variables::AbstractArray) = map(_message_argument, variables)
+
+import Base: fetch
+
+function Base.fetch(autoupdate::IndividualAutoUpdateSpecification)
+    return autoupdate_mapping_fetch(getmapping(autoupdate))
 end
 
-# import Base: fetch
+function Base.fetch(mapping::AutoUpdateMapping)
+    return autoupdate_mapping_fetch(mapping)
+end
+autoupdate_mapping_fetch(mapping::AutoUpdateMapping) = getmappingfn(mapping)(map(autoupdate_mapping_fetch, getarguments(mapping))...)
+autoupdate_mapping_fetch(any) = any
+autoupdate_mapping_fetch(argument::FetchRecentArgument) = autoupdate_mapping_fetch(argument, Rocket.getrecent(argument))
+autoupdate_mapping_fetch(argument::FetchRecentArgument, something) = something
+autoupdate_mapping_fetch(argument::FetchRecentArgument, ::Nothing) =
+    error("The initial value for `$(getlabel(argument))` has not been specified, but is required in the `@autoupdates`.")
 
 # Base.fetch(strategy::Union{FromMarginalAutoUpdate, FromMessageAutoUpdate}, variables::AbstractArray) = (Base.fetch(strategy, variable) for variable in variables)
 # Base.fetch(::FromMarginalAutoUpdate, variable::Union{DataVariable, RandomVariable}) = ReactiveMP.getmarginal(variable, IncludeAll())

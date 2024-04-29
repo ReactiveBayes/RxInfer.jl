@@ -357,6 +357,7 @@ end
             getmappingfn,
             getarguments,
             getautoupdate,
+            FetchRecentArgument,
             AutoUpdateMapping,
             prepare_autoupdates_for_model,
             getvariable
@@ -370,6 +371,7 @@ end
             model = create_model(with_plugins(beta_bernoulli(), plugins) | data_handlers)
             variable_a = getvariable(getindex(getvardict(model), :a))
             variable_b = getvariable(getindex(getvardict(model), :b))
+            variable_y = getvariable(getindex(getvardict(model), :y))
             variable_θ = getvariable(getindex(getvardict(model), :θ))
 
             @test variable_a != variable_b
@@ -381,9 +383,104 @@ end
             autoupdate1 = getautoupdate(autoupdates_for_model, 1)
             @test getvarlabels(autoupdate1) === (variable_a, variable_b)
             @test getmappingfn(getmapping(autoupdate1)) === params
-            @test getarguments(getmapping(autoupdate1)) === (getmarginal(variable_θ, IncludeAll()),)
+            @test getarguments(getmapping(autoupdate1)) === (FetchRecentArgument(:θ, getmarginal(variable_θ, IncludeAll())),)
+
+            marginals_θ = []
+            subscription_marginal_θ = subscribe!(getmarginal(variable_θ, IncludeAll()), (qθ) -> push!(marginals_θ, qθ))
+
+            update!(variable_a, 1)
+            update!(variable_b, 1)
+            update!(variable_y, 1)
+
+            @test length(marginals_θ) === 1
+            @test ReactiveMP.getdata(marginals_θ[1]) == Beta(2.0, 1.0)
+            @test fetch(autoupdate1) == (2.0, 1.0)
         end
     end
+end
+
+@testitem "The `autoupdates` structure can be prepared for a specific model #2 - Beta Bernoulli" begin
+    import RxInfer:
+        DeferredDataHandler,
+        create_model,
+        ReactiveMPInferencePlugin,
+        ReactiveMPInferenceOptions,
+        numautoupdates,
+        getvarlabels,
+        getmapping,
+        getmappingfn,
+        getarguments,
+        getautoupdate,
+        FetchRecentArgument,
+        AutoUpdateMapping,
+        prepare_autoupdates_for_model,
+        getvariable,
+        autoupdates_data_handlers
+    import GraphPPL: VariationalConstraintsPlugin, PluginsCollection, with_plugins, getextra
+
+    @model function beta_bernoulli_vector_based(a, b, y)
+        θ[1] ~ Beta(a, b)
+        y ~ Bernoulli(θ[1])
+    end
+
+    autoupdates_1 = @autoupdates begin
+        a, b = params(getindex(q(θ), 1))
+    end
+
+    autoupdates_2 = @autoupdates begin
+        a, b = params(q(θ[1]))
+    end
+
+    autoupdates_3 = @autoupdates begin
+        foo(qθ) = params(qθ[1])
+        a, b = foo(q(θ))
+    end
+
+    for autoupdate in (autoupdates_1, autoupdates_2, autoupdates_3)
+        extra_data_handlers = autoupdates_data_handlers(autoupdate)
+        data_handlers = (y = DeferredDataHandler(), extra_data_handlers...)
+        options = convert(ReactiveMPInferenceOptions, (;))
+        plugins = PluginsCollection(VariationalConstraintsPlugin(), ReactiveMPInferencePlugin(options))
+        model = create_model(with_plugins(beta_bernoulli_vector_based(), plugins) | data_handlers)
+        variable_a = getvariable(getindex(getvardict(model), :a))
+        variable_b = getvariable(getindex(getvardict(model), :b))
+        variable_y = getvariable(getindex(getvardict(model), :y))
+        variable_θ = getvariable(getindex(getvardict(model), :θ))
+
+        autoupdates_for_model = prepare_autoupdates_for_model(autoupdate, model)
+        @test numautoupdates(autoupdates_for_model) == 1
+        autoupdate1 = getautoupdate(autoupdates_for_model, 1)
+
+        marginals_θ = []
+        subscription_marginal_θ = subscribe!(getmarginal(variable_θ[1], IncludeAll()), (qθ) -> push!(marginals_θ, qθ))
+
+        update!(variable_a, 1)
+        update!(variable_b, 1)
+        update!(variable_y, 1)
+
+        @test length(marginals_θ) === 1
+        @test ReactiveMP.getdata(marginals_θ[1]) == Beta(2.0, 1.0)
+        @test fetch(autoupdate1) == (2.0, 1.0)
+    end
+end
+
+@testitem "`fetch` for `AutoUpdateMapping`" begin
+    import RxInfer: AutoUpdateMapping, FetchRecentArgument
+
+    @test @inferred(fetch(AutoUpdateMapping(+, (1, 2)))) === 3
+    @test @inferred(fetch(AutoUpdateMapping(+, (1, AutoUpdateMapping(+, (1, 1)))))) === 3
+
+    stream_of_1 = FetchRecentArgument(:a, of(1))
+    stream_of_2 = FetchRecentArgument(:b, of(2))
+
+    @test @inferred(fetch(AutoUpdateMapping(+, (stream_of_1, stream_of_2)))) === 3
+    @test @inferred(fetch(AutoUpdateMapping(+, (stream_of_1, AutoUpdateMapping(+, (1, stream_of_1)))))) === 3
+    @test @inferred(fetch(AutoUpdateMapping(+, (stream_of_1, AutoUpdateMapping(+, (stream_of_1, 1)))))) === 3
+
+    empty_stream = FetchRecentArgument(:x, RecentSubject(Int))
+
+    @test_throws "The initial value for `x` has not been specified, but is required in the `@autoupdates`." fetch(AutoUpdateMapping(+, (empty_stream, 1)))
+    @test_throws "The initial value for `x` has not been specified, but is required in the `@autoupdates`." fetch(AutoUpdateMapping(+, (1, empty_stream)))
 end
 
 @testitem "autoupdate_argument_inexpr" begin
