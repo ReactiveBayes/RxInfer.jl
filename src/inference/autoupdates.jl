@@ -371,7 +371,13 @@ end
 
 function autoupdates_data_handlers(specification::AutoUpdateSpecification)
     varlabels = getvarlabels(specification)
-    return NamedTuple{varlabels}(ntuple(_ -> DeferredDataHandler(), length(varlabels)))
+    # return NamedTuple{varlabels}(ntuple(_ -> DeferredDataHandler(), length(varlabels)))
+    # Below is similar to the commented version, but supports duplicate entries, e.g if a user
+    # writes `ins[1], ins[2] = ...` in the `@autoupdates` block
+    return reduce(varlabels; init = (;)) do ntuple, label
+        append = NamedTuple{(label, )}((DeferredDataHandler(), ))
+        return (; ntuple..., append...)
+    end
 end
 
 """
@@ -469,6 +475,17 @@ autoupdate_mapping_fetch(argument::FetchRecentArgument) = autoupdate_mapping_fet
 autoupdate_mapping_fetch(argument::FetchRecentArgument, something) = something
 autoupdate_mapping_fetch(argument::FetchRecentArgument, ::Nothing) =
     error("The initial value for `$(getlabel(argument))` has not been specified, but is required in the `@autoupdates`.")
+
+
+function run_autoupdate!(autoupdates::AutoUpdateSpecification)
+    foreach(getspecifications(autoupdates)) do autoupdate 
+        varlabels = getvarlabels(autoupdate)
+        update = fetch(autoupdate)
+        foreach(zip(as_tuple(varlabels), as_tuple(update))) do (var, val)
+            update!(var, val)
+        end
+    end
+end
 
 # Base.fetch(strategy::Union{FromMarginalAutoUpdate, FromMessageAutoUpdate}, variables::AbstractArray) = (Base.fetch(strategy, variable) for variable in variables)
 # Base.fetch(::FromMarginalAutoUpdate, variable::Union{DataVariable, RandomVariable}) = ReactiveMP.getmarginal(variable, IncludeAll())

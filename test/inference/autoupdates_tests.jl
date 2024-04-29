@@ -343,6 +343,17 @@ end
         for autoupdate in (autoupdates, autoupdates_nowarn, autoupdates_strict, autoupdates_strict_nowarn)
             @test @inferred(autoupdates_data_handlers(autoupdate)) === (a = DeferredDataHandler(), b = DeferredDataHandler())
         end
+
+        autoupdates_with_indices_1 = @autoupdates begin
+            ins[1], ins[2] = collect(params(q(θ)))
+        end
+
+        autoupdates_with_indices_2 = @autoupdates begin
+            ins[1], a, b, ins[2] = collect(params(q(θ)))
+        end
+
+        @test @inferred(autoupdates_data_handlers(autoupdates_with_indices_1)) === (ins = DeferredDataHandler(),)
+        @test @inferred(autoupdates_data_handlers(autoupdates_with_indices_2)) === (ins = DeferredDataHandler(), a = DeferredDataHandler(), b = DeferredDataHandler())
     end
 
     @testset "Check that variables have been fetched correctly" begin
@@ -360,7 +371,8 @@ end
             FetchRecentArgument,
             AutoUpdateMapping,
             prepare_autoupdates_for_model,
-            getvariable
+            getvariable,
+            run_autoupdate!
         import GraphPPL: VariationalConstraintsPlugin, PluginsCollection, with_plugins, getextra
 
         for autoupdate in (autoupdates, autoupdates_nowarn, autoupdates_strict, autoupdates_strict_nowarn)
@@ -386,15 +398,43 @@ end
             @test getarguments(getmapping(autoupdate1)) === (FetchRecentArgument(:θ, getmarginal(variable_θ, IncludeAll())),)
 
             marginals_θ = []
+            updates_for_a = []
+            updates_for_b = []
+            updates_for_y = []
             subscription_marginal_θ = subscribe!(getmarginal(variable_θ, IncludeAll()), (qθ) -> push!(marginals_θ, qθ))
+            subscription_updates_a = subscribe!(getmarginal(variable_a, IncludeAll()), (a) -> push!(updates_for_a, a))
+            subscription_updates_b = subscribe!(getmarginal(variable_b, IncludeAll()), (b) -> push!(updates_for_b, b))
+            subscription_updates_y = subscribe!(getmarginal(variable_y, IncludeAll()), (y) -> push!(updates_for_y, y))
 
             update!(variable_a, 1)
-            update!(variable_b, 1)
+            update!(variable_b, 2)
             update!(variable_y, 1)
 
             @test length(marginals_θ) === 1
-            @test ReactiveMP.getdata(marginals_θ[1]) == Beta(2.0, 1.0)
-            @test fetch(autoupdate1) == (2.0, 1.0)
+            @test length(updates_for_a) === 1
+            @test length(updates_for_b) === 1
+            @test length(updates_for_y) === 1
+            @test ReactiveMP.getdata.(marginals_θ) == [Beta(2.0, 2.0)]
+            @test ReactiveMP.getdata.(updates_for_a) == [PointMass(1)]
+            @test ReactiveMP.getdata.(updates_for_b) == [PointMass(2)]
+            @test ReactiveMP.getdata.(updates_for_y) == [PointMass(1)]
+            @test fetch(autoupdate1) == (2.0, 2.0)
+
+            run_autoupdate!(autoupdates_for_model)
+
+            @test ReactiveMP.getdata.(marginals_θ) == [Beta(2.0, 2.0)] # The marginal should not update at this point, because `y` has not been updated
+            @test ReactiveMP.getdata.(updates_for_a) == [PointMass(1), PointMass(2.0)]
+            @test ReactiveMP.getdata.(updates_for_b) == [PointMass(2), PointMass(2.0)]
+            @test ReactiveMP.getdata.(updates_for_y) == [PointMass(1)]
+
+            update!(variable_y, 0)
+
+            @test ReactiveMP.getdata.(marginals_θ) == [Beta(2.0, 2.0), Beta(2.0, 3.0)]
+            @test ReactiveMP.getdata.(updates_for_a) == [PointMass(1), PointMass(2.0)]
+            @test ReactiveMP.getdata.(updates_for_b) == [PointMass(2), PointMass(2.0)]
+            @test ReactiveMP.getdata.(updates_for_y) == [PointMass(1), PointMass(0)]
+
+            unsubscribe!([subscription_marginal_θ, subscription_updates_a, subscription_updates_b, subscription_updates_y])
         end
     end
 end
@@ -415,7 +455,8 @@ end
         AutoUpdateMapping,
         prepare_autoupdates_for_model,
         getvariable,
-        autoupdates_data_handlers
+        autoupdates_data_handlers,
+        run_autoupdate!
     import GraphPPL: VariationalConstraintsPlugin, PluginsCollection, with_plugins, getextra
 
     @model function beta_bernoulli_vector_based(a, b, y)
@@ -452,15 +493,126 @@ end
         autoupdate1 = getautoupdate(autoupdates_for_model, 1)
 
         marginals_θ = []
+        updates_for_a = []
+        updates_for_b = []
+        updates_for_y = []
         subscription_marginal_θ = subscribe!(getmarginal(variable_θ[1], IncludeAll()), (qθ) -> push!(marginals_θ, qθ))
+        subscription_updates_a = subscribe!(getmarginal(variable_a, IncludeAll()), (a) -> push!(updates_for_a, a))
+        subscription_updates_b = subscribe!(getmarginal(variable_b, IncludeAll()), (b) -> push!(updates_for_b, b))
+        subscription_updates_y = subscribe!(getmarginal(variable_y, IncludeAll()), (y) -> push!(updates_for_y, y))
 
         update!(variable_a, 1)
-        update!(variable_b, 1)
+        update!(variable_b, 2)
         update!(variable_y, 1)
 
         @test length(marginals_θ) === 1
-        @test ReactiveMP.getdata(marginals_θ[1]) == Beta(2.0, 1.0)
-        @test fetch(autoupdate1) == (2.0, 1.0)
+        @test length(updates_for_a) === 1
+        @test length(updates_for_b) === 1
+        @test length(updates_for_y) === 1
+        @test ReactiveMP.getdata.(marginals_θ) == [Beta(2.0, 2.0)]
+        @test ReactiveMP.getdata.(updates_for_a) == [PointMass(1)]
+        @test ReactiveMP.getdata.(updates_for_b) == [PointMass(2)]
+        @test ReactiveMP.getdata.(updates_for_y) == [PointMass(1)]
+        @test fetch(autoupdate1) == (2.0, 2.0)
+
+        run_autoupdate!(autoupdates_for_model)
+
+        @test ReactiveMP.getdata.(marginals_θ) == [Beta(2.0, 2.0)] # The marginal should not update at this point, because `y` has not been updated
+        @test ReactiveMP.getdata.(updates_for_a) == [PointMass(1), PointMass(2.0)]
+        @test ReactiveMP.getdata.(updates_for_b) == [PointMass(2), PointMass(2.0)]
+        @test ReactiveMP.getdata.(updates_for_y) == [PointMass(1)]
+
+        update!(variable_y, 0)
+
+        @test ReactiveMP.getdata.(marginals_θ) == [Beta(2.0, 2.0), Beta(2.0, 3.0)]
+        @test ReactiveMP.getdata.(updates_for_a) == [PointMass(1), PointMass(2.0)]
+        @test ReactiveMP.getdata.(updates_for_b) == [PointMass(2), PointMass(2.0)]
+        @test ReactiveMP.getdata.(updates_for_y) == [PointMass(1), PointMass(0)]
+
+        unsubscribe!([subscription_marginal_θ, subscription_updates_a, subscription_updates_b, subscription_updates_y])
+    end
+end
+
+@testitem "The `autoupdates` structure can be prepared for a specific model #3 - Beta Bernoulli" begin
+    import RxInfer:
+        DeferredDataHandler,
+        create_model,
+        ReactiveMPInferencePlugin,
+        ReactiveMPInferenceOptions,
+        numautoupdates,
+        getvarlabels,
+        getmapping,
+        getmappingfn,
+        getarguments,
+        getautoupdate,
+        FetchRecentArgument,
+        AutoUpdateMapping,
+        prepare_autoupdates_for_model,
+        getvariable,
+        autoupdates_data_handlers,
+        run_autoupdate!
+    import GraphPPL: VariationalConstraintsPlugin, PluginsCollection, with_plugins, getextra
+
+    @model function beta_bernoulli_vector_based_args(ins, y)
+        θ ~ Beta(ins[1], ins[2])
+        y ~ Bernoulli(θ)
+    end
+
+    autoupdates_1 = @autoupdates begin
+        ins = collect(params(q(θ)))
+    end
+
+    autoupdates_2 = @autoupdates begin
+        ins[1] = getindex(params(q(θ)), 1)
+        ins[2] = getindex(params(q(θ)), 2)
+    end
+
+    autoupdates_3 = @autoupdates begin
+        ins[1], ins[2] = params(q(θ))
+    end
+
+    for autoupdate in (autoupdates_1, autoupdates_2, autoupdates_3)
+        extra_data_handlers = autoupdates_data_handlers(autoupdate)
+        data_handlers = (y = DeferredDataHandler(), extra_data_handlers...)
+        options = convert(ReactiveMPInferenceOptions, (;))
+        plugins = PluginsCollection(VariationalConstraintsPlugin(), ReactiveMPInferencePlugin(options))
+        model = create_model(with_plugins(beta_bernoulli_vector_based_args(), plugins) | data_handlers)
+        variable_ins = getvariable(getindex(getvardict(model), :ins))
+        variable_y = getvariable(getindex(getvardict(model), :y))
+        variable_θ = getvariable(getindex(getvardict(model), :θ))
+
+        autoupdates_for_model = prepare_autoupdates_for_model(autoupdate, model)
+
+        marginals_θ = []
+        updates_for_ins = []
+        updates_for_y = []
+        subscription_marginal_θ = subscribe!(getmarginal(variable_θ, IncludeAll()), (qθ) -> push!(marginals_θ, qθ))
+        subscription_updates_ins = subscribe!(getmarginals(variable_ins, IncludeAll()), (ins) -> push!(updates_for_ins, ins))
+        subscription_updates_y = subscribe!(getmarginal(variable_y, IncludeAll()), (y) -> push!(updates_for_y, y))
+
+        update!(variable_ins, [1, 2])
+        update!(variable_y, 1)
+
+        @test length(marginals_θ) === 1
+        @test length(updates_for_ins) === 1
+        @test length(updates_for_y) === 1
+        @test ReactiveMP.getdata.(marginals_θ) == [Beta(2.0, 2.0)]
+        @test ReactiveMP.getdata.(updates_for_ins) == [[PointMass(1), PointMass(2)]]
+        @test ReactiveMP.getdata.(updates_for_y) == [PointMass(1)]
+
+        run_autoupdate!(autoupdates_for_model)
+
+        @test ReactiveMP.getdata.(marginals_θ) == [Beta(2.0, 2.0)] # The marginal should not update at this point, because `y` has not been updated
+        @test ReactiveMP.getdata.(updates_for_ins) == [[PointMass(1), PointMass(2)], [PointMass(2.0), PointMass(2.0)]]
+        @test ReactiveMP.getdata.(updates_for_y) == [PointMass(1)]
+
+        update!(variable_y, 0)
+
+        @test ReactiveMP.getdata.(marginals_θ) == [Beta(2.0, 2.0), Beta(2.0, 3.0)]
+        @test ReactiveMP.getdata.(updates_for_ins) == [[PointMass(1), PointMass(2)], [PointMass(2.0), PointMass(2.0)]]
+        @test ReactiveMP.getdata.(updates_for_y) == [PointMass(1), PointMass(0)]
+
+        unsubscribe!([subscription_marginal_θ, subscription_updates_ins, subscription_updates_y])
     end
 end
 
