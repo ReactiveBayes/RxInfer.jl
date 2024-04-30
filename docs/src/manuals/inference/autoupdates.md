@@ -101,6 +101,8 @@ The `@autoupdates` macro identifies an individual autoupdate specification if th
 
 Expressions not meeting the above criteria remain unmodified. For instance, an expression like `a = f(arg)` is not considered an individual autoupdate. Therefore, the `@autoupdates` macro can contain arbitrary expressions and allows for the definition of temporary variables or even functions. Additionally, within an individual autoupdate specification, it is possible to use any intermediate constants, such as `a, b = some_function(q(s), a_constant)`.
 
+The `model_arguments...` can either be a single model argument or a tuple of model arguments, as defined within the `@model` macro. However, it's important to note that if `model_arguments...` is a tuple, for example in `a, b = some_function(q(s))`, `some_function` must also return a tuple of the same length (of length 2 in this example).
+
 Individual autoupdate specifications can involve somewhat complex expressions, as demonstrated below:
 ```@example autoupdates-examples
 @autoupdates begin 
@@ -120,6 +122,8 @@ end
 
 An individual autoupdate can also simultaneously depend on multiple latent states, e.g:
 ```@example autoupdates-examples
+f(args...) = nothing #hide
+g(args...) = nothing #hide
 @autoupdates begin 
     a = f(q(μ), q(s), q(τ))
     b = g(q(θ))
@@ -141,7 +145,7 @@ autoupdates = generate_autoupdates(mean, true)
 
 ## The options block
 
-Optionally, the `@autoupdates` macro accepts a set of `[ options... ]` before the main block. The available options are:
+Optionally, the `@autoupdates` macro accepts a set of `[ options... ]` before the main block or the full function definition. The available options are:
 - `warn = true/false`: Enables or disables warnings when with incomaptible model. Set to `true` by default.
 - `strict = true/false`: Turns warnings into errors. Set to `false` by default.
 
