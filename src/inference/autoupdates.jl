@@ -460,7 +460,7 @@ function run_autoupdate!(specifications::Tuple, prefetched::Tuple)
         update_tupled = as_tuple(update)
 
         if !isequal(length(varlabels_tupled), length(update_tupled))
-            error("Cannot run autoupdate for `$(varlabels_tupled)`. The update provides `$(length(update_tuple))` values, but `$(length(varlabels_tupled))` is needed.")
+            error("Couldn't run autoupdate. The update provides `$(length(update_tupled))` values, but `$(length(varlabels_tupled))` are needed.")
         end
 
         foreach(zip(varlabels_tupled, update_tupled)) do (var, val)
