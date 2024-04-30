@@ -101,7 +101,7 @@ The `@autoupdates` macro identifies an individual autoupdate specification if th
 
 Expressions not meeting the above criteria remain unmodified. For instance, an expression like `a = f(1)` is not considered an individual autoupdate. Therefore, the `@autoupdates` macro can contain arbitrary expressions and allows for the definition of temporary variables or even functions. Additionally, within an individual autoupdate specification, it is possible to use any intermediate constants, such as `a, b = some_function(q(s), a_constant)`.
 
-The `model_arguments...` can either be a single model argument or a tuple of model arguments, as defined within the `@model` macro. However, it's important to note that if `model_arguments...` is a tuple, for example in `a, b = some_function(q(s))`, `some_function` must also return a tuple of the same length (of length 2 in this example).
+The `model_arguments...` can either be a single model argument or a tuple of model arguments, as defined within the `@model` macro. However, it's important to note that if `model_arguments...` is a tuple, for example in `a, b = some_function(q(s))`, then `some_function` must also return a tuple of the same length (of length 2 in this example).
 
 Individual autoupdate specifications can involve somewhat complex expressions, as demonstrated below:
 ```@example autoupdates-examples
@@ -117,7 +117,7 @@ or
 end
 ```
 
-!!! warn 
+!!! warning
     `q(θ)[i]` or `f(q(θ))[i]` syntax is not supported, use `getindex(q(θ), i)` or `getindex(f(q(θ)), i)` instead.
 
 An individual autoupdate can also simultaneously depend on multiple latent states, e.g:
