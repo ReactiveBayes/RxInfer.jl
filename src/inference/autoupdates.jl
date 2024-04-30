@@ -113,15 +113,25 @@ end
 
 # This function checks if the expression is a valid autoupdate mapping
 function is_autoupdate_mapping_expr(expr)
-    return @capture(expr, f_(args__)) && any(autoupdate_argument_inexpr, args)
+    return @capture(expr, (f_(args__)) | (f_.(args__))) && any(autoupdate_argument_inexpr, args)
 end
 
 # This function converts an expression of the form `f(args...)` to the `AutoUpdateMapping` structure
 function autoupdate_convert_mapping_expr(expr)
     return MacroTools.prewalk(expr) do subexpr
         if is_autoupdate_mapping_expr(subexpr)
-            @capture(subexpr, f_(args__)) || error("Invalid autoupdate mapping expression: $subexpr")
-            return :(RxInfer.AutoUpdateMapping($f, ($(map(autoupdate_convert_mapping_arg_expr, args)...),)))
+            if @capture(subexpr, f_(args__))
+                if (f isa Symbol && isequal(first(string(f)), '.'))
+                    f = Symbol(string(f)[2:end]) # Strip of the `.` from broadcasted functions like `.+`
+                    return :(RxInfer.AutoUpdateMapping(Base.Broadcast.BroadcastFunction($f), ($(map(autoupdate_convert_mapping_arg_expr, args)...),)))
+                else
+                    return :(RxInfer.AutoUpdateMapping($f, ($(map(autoupdate_convert_mapping_arg_expr, args)...),)))
+                end
+            elseif @capture(subexpr, f_.(args__))
+                return :(RxInfer.AutoUpdateMapping(Base.Broadcast.BroadcastFunction($f), ($(map(autoupdate_convert_mapping_arg_expr, args)...),)))
+            else
+                error("Invalid autoupdate mapping expression: $subexpr")
+            end
         end
         return subexpr
     end
@@ -283,7 +293,9 @@ end
 getmappingfn(mapping::AutoUpdateMapping) = mapping.mappingFn
 getarguments(mapping::AutoUpdateMapping) = mapping.arguments
 
-Base.show(io::IO, mapping::AutoUpdateMapping) = print(io, getmappingfn(mapping), "(", join(getarguments(mapping), ", "), ")")
+Base.show(io::IO, mapping::AutoUpdateMapping) = _autoupdate_mapping_show(io, mapping, getmappingfn(mapping))
+_autoupdate_mapping_show(io::IO, mapping::AutoUpdateMapping, mappingfn::Base.Broadcast.BroadcastFunction) = print(io, mappingfn.f, ".", "(", join(getarguments(mapping), ", "), ")")
+_autoupdate_mapping_show(io::IO, mapping::AutoUpdateMapping, mappingfn::Any) = print(io, mappingfn, "(", join(getarguments(mapping), ", "), ")")
 
 "This autoupdate would fetch updates from the marginal of a variable"
 struct AutoUpdateFetchMarginalArgument{L, I} end

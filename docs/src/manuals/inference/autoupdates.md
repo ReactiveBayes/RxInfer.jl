@@ -120,6 +120,14 @@ end
 !!! warning
     `q(θ)[i]` or `f(q(θ))[i]` syntax is not supported, use `getindex(q(θ), i)` or `getindex(f(q(θ)), i)` instead.
 
+The `@autoupdates` macro does also support the broadcasting:
+```@example autoupdates-examples
+@autoupdates begin 
+    x = clamp.(mean.(q(z)), 0, 1)
+end
+```
+Read more about broadcasting in the official Julia documentation.
+
 An individual autoupdate can also simultaneously depend on multiple latent states, e.g:
 ```@example autoupdates-examples
 f(args...) = nothing #hide

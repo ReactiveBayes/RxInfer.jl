@@ -104,12 +104,12 @@
     @testset "Representation of `@autoupdates` should be easily readable" begin
         f(a, b) = mean(a) + mean(b)
         autoupdates = @autoupdates begin
-            x = clamp(mean(q(z)), 0, 1 + 1)
+            x = clamp.(mean.(q(z)), 0, 1 + 1)
             y[3] = f(q(g[1, 2]), μ(r[2])) + 3
         end
         @test repr(autoupdates) == """
         @autoupdates begin
-            x = clamp(mean(q(z)), 0, 2)
+            x = clamp.(mean.(q(z)), 0, 2)
             y[3] = +(f(q(g[1, 2]), μ(r[2])), 3)
         end
         """
@@ -516,7 +516,11 @@ end
         a, b = foo(q(θ))
     end
 
-    for autoupdate in (autoupdates_1, autoupdates_2, autoupdates_3)
+    autoupdates_4 = @autoupdates begin
+        a, b = getindex(params.(q(θ)), 1)
+    end
+
+    for autoupdate in (autoupdates_1, autoupdates_2, autoupdates_3, autoupdates_4)
         extra_data_handlers = autoupdates_data_handlers(autoupdate)
         data_handlers = (y = DeferredDataHandler(), extra_data_handlers...)
         options = convert(ReactiveMPInferenceOptions, (;))
@@ -610,7 +614,20 @@ end
         ins[1], ins[2] = params(q(θ[1, 1]))
     end
 
-    for autoupdate in (autoupdates_1, autoupdates_2, autoupdates_3)
+    autoupdates_4 = @autoupdates begin
+        ins[1], ins[2] = getindex(params.(q(θ)), 1, 1)
+    end
+
+    autoupdates_5 = @autoupdates begin
+        ins = collect(getindex(params.(q(θ)), 1, 1))
+    end
+
+    autoupdates_6 = @autoupdates begin
+        ins[1] = getindex(getindex(params.(q(θ)), 1, 1), 1)
+        ins[2] = getindex(getindex(params.(q(θ)), 1, 1), 2)
+    end
+
+    for autoupdate in (autoupdates_1, autoupdates_2, autoupdates_3, autoupdates_4, autoupdates_5, autoupdates_6)
         extra_data_handlers = autoupdates_data_handlers(autoupdate)
         data_handlers = (y = DeferredDataHandler(), extra_data_handlers...)
         options = convert(ReactiveMPInferenceOptions, (;))
@@ -660,6 +677,7 @@ end
 
     @test @inferred(fetch(AutoUpdateMapping(+, (1, 2)))) === 3
     @test @inferred(fetch(AutoUpdateMapping(+, (1, AutoUpdateMapping(+, (1, 1)))))) === 3
+    @test @inferred(fetch(AutoUpdateMapping(Base.Broadcast.BroadcastFunction(+), ([1], [2])))) == [3]
 
     stream_of_1 = FetchRecentArgument(:a, of(1))
     stream_of_2 = FetchRecentArgument(:b, of(2))
@@ -673,6 +691,16 @@ end
 
     @test_throws "The initial value for `x` has not been specified, but is required in the `@autoupdates`." fetch(AutoUpdateMapping(+, (empty_stream_for_x, 1)))
     @test_throws "The initial value for `y` has not been specified, but is required in the `@autoupdates`." fetch(AutoUpdateMapping(+, (1, empty_stream_for_y)))
+
+    stream_of_1_array = FetchRecentArgument(:a, of([1]))
+    stream_of_2_array = FetchRecentArgument(:b, of([2]))
+
+    @test @inferred(fetch(AutoUpdateMapping(Base.Broadcast.BroadcastFunction(+), (stream_of_1_array, stream_of_2_array)))) == [3]
+    @test @inferred(fetch(AutoUpdateMapping(Base.Broadcast.BroadcastFunction(+), (stream_of_1_array, AutoUpdateMapping(Base.Broadcast.BroadcastFunction(+), (1, stream_of_1_array)))))) == [3]
+    @test @inferred(fetch(AutoUpdateMapping(Base.Broadcast.BroadcastFunction(+), (stream_of_1_array, AutoUpdateMapping(Base.Broadcast.BroadcastFunction(+), (stream_of_1_array, 1)))))) == [3]
+
+    @test @inferred(fetch(AutoUpdateMapping(Base.Broadcast.BroadcastFunction(+), (stream_of_1, stream_of_2_array)))) == [3]
+    @test @inferred(fetch(AutoUpdateMapping(Base.Broadcast.BroadcastFunction(+), (stream_of_1_array, stream_of_2)))) == [3]
 end
 
 @testitem "autoupdate_argument_inexpr" begin
@@ -686,6 +714,7 @@ end
     @test autoupdate_argument_inexpr(:(1 + params(μ(x))))
     @test autoupdate_argument_inexpr(:(1 + params(q([1]))))
     @test autoupdate_argument_inexpr(:(1 + params(μ(x[1]))))
+    @test autoupdate_argument_inexpr(:(1 .+ params.(q(x))))
     @test autoupdate_argument_inexpr(:(f(q(x))))
     @test autoupdate_argument_inexpr(:(f(μ(x))))
     @test autoupdate_argument_inexpr(:(f(q(x[1]))))
@@ -701,6 +730,8 @@ end
 
     @test is_autoupdate_mapping_expr(:(params(q(x))))
     @test is_autoupdate_mapping_expr(:(params(μ(x))))
+    @test is_autoupdate_mapping_expr(:(params.(q(x))))
+    @test is_autoupdate_mapping_expr(:(q(x) .+ 1))
     @test is_autoupdate_mapping_expr(:(f(q(x), q(x))))
     @test is_autoupdate_mapping_expr(:(f(q(x), μ(x))))
     @test is_autoupdate_mapping_expr(:(f(μ(x), q(x))))
@@ -711,6 +742,9 @@ end
     import RxInfer: autoupdate_convert_mapping_expr, AutoUpdateMapping, AutoUpdateFetchMarginalArgument, AutoUpdateFetchMessageArgument
 
     @test autoupdate_convert_mapping_expr(:(f(q(x)))) == :(RxInfer.AutoUpdateMapping(f, (RxInfer.AutoUpdateFetchMarginalArgument(:x),)))
+    @test autoupdate_convert_mapping_expr(:(f.(q(x)))) == :(RxInfer.AutoUpdateMapping(Base.Broadcast.BroadcastFunction(f), (RxInfer.AutoUpdateFetchMarginalArgument(:x),)))
+    @test autoupdate_convert_mapping_expr(:(q(x) .+ 1)) == :(RxInfer.AutoUpdateMapping(Base.Broadcast.BroadcastFunction(+), (RxInfer.AutoUpdateFetchMarginalArgument(:x), 1)))
+
     @test autoupdate_convert_mapping_expr(:(f(q(x[1])))) == :(RxInfer.AutoUpdateMapping(f, (RxInfer.AutoUpdateFetchMarginalArgument(:x, (1,)),)))
     @test autoupdate_convert_mapping_expr(:(f(q(x[1, 1])))) == :(RxInfer.AutoUpdateMapping(f, (RxInfer.AutoUpdateFetchMarginalArgument(:x, (1, 1)),)))
     @test autoupdate_convert_mapping_expr(:(g(μ(x)))) == :(RxInfer.AutoUpdateMapping(g, (RxInfer.AutoUpdateFetchMessageArgument(:x),)))
