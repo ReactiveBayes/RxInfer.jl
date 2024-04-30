@@ -520,7 +520,7 @@ function streaming_inference(;
     _autoupdates_data_handlers = autoupdates_data_handlers(autoupdates)
     foreach(keys(_autoupdates_data_handlers)) do _autoupdate_data_handler_key
         if _autoupdate_data_handler_key ∈ datavarnames
-            error(lazy"Cannot use `$(_autoupdate_data_handler_key)` in the `autoupdates`, since data also uses `$(_autoupdate_data_handler_key)`")
+            error(lazy"`$(_autoupdate_data_handler_key)` is present both in the `data` and in the `autoupdates`.")
         end
     end
     _condition_on = merge_data_handlers(create_deffered_data_handlers(datavarnames), autoupdates_data_handlers(autoupdates))
