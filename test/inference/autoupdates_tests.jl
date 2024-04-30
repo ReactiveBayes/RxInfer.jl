@@ -672,31 +672,19 @@ end
     end
 end
 
-@testitem "Autoupdates should throw an error if the data is present for the autoupdated arguments" begin 
+@testitem "Autoupdates should throw an error if the data is present for the autoupdated arguments" begin
     @model function beta_bernoulli(a, b, y)
         t ~ Beta(a, b)
         y ~ Bernoulli(t)
     end
 
-    autoupdates = @autoupdates [ warn = false ] begin 
+    autoupdates = @autoupdates [warn = false] begin
         a, b = params(q(t))
     end
 
-    @test_throws "`a` is present both in the `data` and in the `autoupdates`." infer(
-        model = beta_bernoulli(b = 1),
-        data = (y = [1], a = [2]),
-        autoupdates = autoupdates
-    )
-    @test_throws "`a` is present both in the `data` and in the `autoupdates`." infer(
-        model = beta_bernoulli(),
-        data = (y = [1], a = [2], b = [2]),
-        autoupdates = autoupdates
-    )
-    @test_throws "`b` is present both in the `data` and in the `autoupdates`." infer(
-        model = beta_bernoulli(a = 1),
-        data = (y = [1], b = [2]),
-        autoupdates = autoupdates
-    )
+    @test_throws "`a` is present both in the `data` and in the `autoupdates`." infer(model = beta_bernoulli(b = 1), data = (y = [1], a = [2]), autoupdates = autoupdates)
+    @test_throws "`a` is present both in the `data` and in the `autoupdates`." infer(model = beta_bernoulli(), data = (y = [1], a = [2], b = [2]), autoupdates = autoupdates)
+    @test_throws "`b` is present both in the `data` and in the `autoupdates`." infer(model = beta_bernoulli(a = 1), data = (y = [1], b = [2]), autoupdates = autoupdates)
 end
 
 @testitem "`fetch` for `AutoUpdateMapping`" begin
