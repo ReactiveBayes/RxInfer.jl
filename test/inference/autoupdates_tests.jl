@@ -696,8 +696,12 @@ end
     stream_of_2_array = FetchRecentArgument(:b, of([2]))
 
     @test @inferred(fetch(AutoUpdateMapping(Base.Broadcast.BroadcastFunction(+), (stream_of_1_array, stream_of_2_array)))) == [3]
-    @test @inferred(fetch(AutoUpdateMapping(Base.Broadcast.BroadcastFunction(+), (stream_of_1_array, AutoUpdateMapping(Base.Broadcast.BroadcastFunction(+), (1, stream_of_1_array)))))) == [3]
-    @test @inferred(fetch(AutoUpdateMapping(Base.Broadcast.BroadcastFunction(+), (stream_of_1_array, AutoUpdateMapping(Base.Broadcast.BroadcastFunction(+), (stream_of_1_array, 1)))))) == [3]
+    @test @inferred(
+        fetch(AutoUpdateMapping(Base.Broadcast.BroadcastFunction(+), (stream_of_1_array, AutoUpdateMapping(Base.Broadcast.BroadcastFunction(+), (1, stream_of_1_array)))))
+    ) == [3]
+    @test @inferred(
+        fetch(AutoUpdateMapping(Base.Broadcast.BroadcastFunction(+), (stream_of_1_array, AutoUpdateMapping(Base.Broadcast.BroadcastFunction(+), (stream_of_1_array, 1)))))
+    ) == [3]
 
     @test @inferred(fetch(AutoUpdateMapping(Base.Broadcast.BroadcastFunction(+), (stream_of_1, stream_of_2_array)))) == [3]
     @test @inferred(fetch(AutoUpdateMapping(Base.Broadcast.BroadcastFunction(+), (stream_of_1_array, stream_of_2)))) == [3]
