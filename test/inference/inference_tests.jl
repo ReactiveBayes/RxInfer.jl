@@ -733,22 +733,33 @@ end
     end
 end
 
-@testitem "Streaming inference with clashing names in data and autoupdates should throw an error" begin
-    @model function beta_bernoulli(y, a, b)
-        θ ~ Beta(a, b)
-        y ~ Bernoulli(θ)
+@testitem "Autoupdates should throw an error if the data is present for the autoupdated arguments" begin
+    @model function beta_bernoulli(a, b, y)
+        t ~ Beta(a, b)
+        y ~ Bernoulli(t)
     end
 
-    @autoupdates function beta_bernoulli_autoupdates()
-        a, b = params(q(θ))
-        y = mean(q(θ))
+    autoupdates = @autoupdates begin
+        a, b = params(q(t))
     end
 
-    @test_throws "Cannot use `y` in the `autoupdates`, since data also uses `y`" infer(model = beta_bernoulli(), data = (y = [1, 1],), autoupdates = beta_bernoulli_autoupdates())
-    @test_throws "Cannot use `a` in the `autoupdates`, since data also uses `a`" infer(
-        model = beta_bernoulli(), data = (a = [1, 1], y = [1, 1]), autoupdates = beta_bernoulli_autoupdates()
-    )
-    @test_throws "Cannot use `b` in the `autoupdates`, since data also uses `b`" infer(
-        model = beta_bernoulli(), data = (b = [1, 1], y = [1, 1]), autoupdates = beta_bernoulli_autoupdates()
+    @test_throws "`a` is present both in the `data` and in the `autoupdates`." infer(model = beta_bernoulli(), data = (y = [1], a = [2]), autoupdates = autoupdates)
+    @test_throws "`a` is present both in the `data` and in the `autoupdates`." infer(model = beta_bernoulli(), data = (y = [1], a = [2], b = [2]), autoupdates = autoupdates)
+    @test_throws "`b` is present both in the `data` and in the `autoupdates`." infer(model = beta_bernoulli(), data = (y = [1], b = [2]), autoupdates = autoupdates)
+end
+
+@testitem "Autoupdates should throw an error if the return value does not match the left hand side in size" begin
+    @model function beta_bernoulli(a, b, y)
+        t ~ Beta(a, b)
+        y ~ Bernoulli(t)
+    end
+
+    autoupdates = @autoupdates begin
+        foo(q) = (1, 2, 3)
+        a, b = foo(q(t))
+    end
+
+    @test_throws "Couldn't run autoupdate. The update provides `3` values, but `2` are needed." infer(
+        model = beta_bernoulli(), data = (y = [1],), autoupdates = autoupdates, initialization = @initialization(q(t) = Beta(1, 1))
     )
 end
