@@ -375,7 +375,54 @@ end
             run_autoupdate!
         import GraphPPL: VariationalConstraintsPlugin, PluginsCollection, with_plugins, getextra
 
-        for autoupdate in (autoupdates, autoupdates_nowarn, autoupdates_strict, autoupdates_strict_nowarn)
+        # Here we simply want to add some complex `autoupdates`, which are all essentially equivalent
+        # The purpose is just to verify certain possibilities, even though they don't have a lot of sense in real scenarious
+        autoupdates_extra_1 = @autoupdates begin
+            function f(qθ1, qθ2)
+                @test params(qθ1) === params(qθ2)
+                return params(qθ1)
+            end
+            a, b = f(q(θ), q(θ))
+        end
+
+        autoupdates_extra_2 = @autoupdates begin
+            function f(qθ, arg)
+                return params(qθ) .+ arg .- arg
+            end
+            a, b = f(q(θ), 1)
+        end
+
+        autoupdates_extra_3 = @autoupdates begin
+            a = getindex(params(q(θ)), 1)
+            b = getindex(params(q(θ)), 2)
+        end
+
+        @autoupdates function autoupdates_extra_4_fn(i, j)
+            a = getindex(params(q(θ)), i)
+            b = getindex(params(q(θ)), j)
+        end
+
+        autoupdates_extra_4 = autoupdates_extra_4_fn(1, 2)
+
+        @autoupdates function autoupdates_extra_5_fn(f)
+            a, b = f(q(θ))
+        end
+
+        autoupdates_extra_5 = autoupdates_extra_5_fn((q) -> params(q))
+
+        autoupdates_to_test = (
+            autoupdates,
+            autoupdates_nowarn,
+            autoupdates_strict,
+            autoupdates_strict_nowarn,
+            autoupdates_extra_1,
+            autoupdates_extra_2,
+            autoupdates_extra_3,
+            autoupdates_extra_4,
+            autoupdates_extra_5
+        )
+
+        for autoupdate in autoupdates_to_test
             extra_data_handlers = autoupdates_data_handlers(autoupdate)
             data_handlers = (y = DeferredDataHandler(), extra_data_handlers...)
             options = convert(ReactiveMPInferenceOptions, (;))
@@ -389,13 +436,6 @@ end
             @test variable_a != variable_b
 
             autoupdates_for_model = prepare_autoupdates_for_model(autoupdate, model)
-
-            @test numautoupdates(autoupdates_for_model) == 1
-
-            autoupdate1 = getautoupdate(autoupdates_for_model, 1)
-            @test getvarlabels(autoupdate1) === (variable_a, variable_b)
-            @test getmappingfn(getmapping(autoupdate1)) === params
-            @test getarguments(getmapping(autoupdate1)) === (FetchRecentArgument(:θ, getmarginal(variable_θ, IncludeAll())),)
 
             marginals_θ = []
             updates_for_a = []
@@ -418,7 +458,6 @@ end
             @test ReactiveMP.getdata.(updates_for_a) == [PointMass(1)]
             @test ReactiveMP.getdata.(updates_for_b) == [PointMass(2)]
             @test ReactiveMP.getdata.(updates_for_y) == [PointMass(1)]
-            @test fetch(autoupdate1) == (2.0, 2.0)
 
             run_autoupdate!(autoupdates_for_model)
 

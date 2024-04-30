@@ -402,7 +402,7 @@ function prepare_mapping_argument_for_model(marginal::AutoUpdateFetchMarginalArg
     end
     index = getindex(marginal)
     var   = isempty(index) ? vardict[label] : vardict[label][index...]
-    return FetchRecentArgument(label, _marginal_argument(var))
+    return FetchRecentArgument(label, _marginal_argument(getvariable(var)))
 end
 _marginal_argument(variable) = getmarginal(variable, IncludeAll())
 _marginal_argument(variables::AbstractArray) = map(_marginal_argument, variables)
@@ -413,11 +413,11 @@ function prepare_mapping_argument_for_model(message::AutoUpdateFetchMessageArgum
     if !haskey(vardict, label)
         error(lazy"The `autoupdate` specification defines an update from `μ($(label))`, but the model has no variable named `$(label)`")
     end
-    index = getindex(marginal)
+    index = getindex(message)
     var   = isempty(index) ? vardict[label] : vardict[label][index...]
-    return FetchRecentArgument(label, _message_argument(var))
+    return FetchRecentArgument(label, _message_argument(getvariable(var)))
 end
-_message_argument(variable) = messageout(variable, degree(variable))
+_message_argument(variable) = ReactiveMP.messageout(variable, ReactiveMP.degree(variable))
 _message_argument(variables::AbstractArray) = map(_message_argument, variables)
 
 import Base: fetch

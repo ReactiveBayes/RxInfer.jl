@@ -14,8 +14,7 @@ using Test #hide
     y ~ Bernoulli(θ)
 end
 ```
-For this model, the `RxInfer` engine will update the posterior belief over the variable `θ` every time we receive a new observation `y`. However, we also wish to update our prior belief by adjusting the arguments `a` and `b` as soon as we have a new belief for the variable `θ`. The `@autoupdates` macro automates this process, simplifying the task of writing automatic updates for certain model arguments based on new beliefs within the model.
-Here's how it could look:
+For this model, the `RxInfer` engine will update the posterior belief over the variable `θ` every time we receive a new observation `y`. However, we also wish to update our prior belief by adjusting the arguments `a` and `b` as soon as we have a new belief for the variable `θ`. The `@autoupdates` macro automates this process, simplifying the task of writing automatic updates for certain model arguments based on new beliefs within the model. Here's how it could look:
 ```@example autoupdates-examples
 autoupdates = @autoupdates begin 
     a, b = params(q(θ))
