@@ -49,20 +49,57 @@ result.history[:θ]
 ```
 In this example, we also used the [initialization](@ref initialization) keyword argument. 
 This is required for latent states, which are used in the `@autoupdates` specification together with streaming inference.
+
+Consider another example with the following model and auto-update specification:
+
+```@example autoupdates-examples
+@model function kalman_filter(y, x_current_mean, x_current_var)
+    x_current ~ Normal(mean = x_current_mean, var = x_current_var)
+    x_next    ~ Normal(mean = x_current, var = 1.0)
+    y         ~ Normal(mean = x_next, var = 1.0)
+end
+```
+
+This model comprises two arguments representing our prior knowledge of the `x_current` state of the system. 
+The latent state `x_next` represents the subsequent state of the system, linked to the observed variable `y`. 
+An auto-update specification could resemble the following:
+```@example autoupdates-examples
+autoupdates = @autoupdates begin
+    x_current_mean = mean(q(x_next))
+    x_current_var  = var(q(x_next))
+end
+```
+This structure dictates updating our prior immediately upon obtaining a new posterior `q(x_next)`. 
+It then applies the `mean` and `var` functions to the updated posteriors, thereby automatically updating `x_current_mean` and `x_current_var`.
+
+```@example autoupdates-examples
+result = infer(
+    model = kalman_filter(),
+    data  = (y = rand(3), ),
+    autoupdates = autoupdates,
+    initialization = @initialization(q(x_next) = NormalMeanVariance(0, 1)),
+    keephistory = 3,
+)
+result.history[:x_next]
+```
+
 Read more about streaming inference in the [Streaming (online) inference](@ref manual-online-inference) section.
 
 ## General syntax
 
-The `@autoupdates` accepts a block of code or a function definition, where it detects and transforms lines of the following structure
+The `@autoupdates` macro accepts either a block of code or a full function definition. It detects and transforms lines structured as follows:
 ```julia
 (model_arguments...) = some_function(model_variables...)
 ```
-to which we refer as the _individual autoupdate specification_. Other expressions are left untouched.
+These lines are referred to as _individual autoupdate specifications_. Other expressions remain unchanged. 
+The result of the macro execution is the [`RxInfer.AutoUpdateSpecification`](@ref) structure that holds the collection 
+of [`RxInfer.IndividualAutoUpdateSpecification`](@ref).
 
-The `model_variables` can be the following
-- `q(s)` - listens to updates from marginal posteriors of an individual variable `s` or from a collection collection of variables `s`
-- `q(s[i])` - listens to updates from marginal posteriors of the collection of variables `s` at index `i`
-- Any constant will work just fine, e.g. `a, b = some_function(q(s), a_constant)`. Note, however, that an individual autoupdate specification should depend on at least on `q(_)`.
+The `@autoupdates` macro identifies an individual autoupdate specification if the `model_variables...` contains:
+- `q(s)`, which monitors updates from marginal posteriors of an individual variable `s` or a collection of variables `s`.
+- `q(s[i])`, which monitors updates from marginal posteriors of the collection of variables `s` at index `i`.
+
+Expressions not meeting the above criteria remain unmodified. For instance, an expression like `a = f(arg)` is not considered an individual autoupdate. Therefore, the `@autoupdates` macro can contain arbitrary expressions and allows for the definition of temporary variables or even functions. Additionally, within an individual autoupdate specification, it is possible to use any intermediate constants, such as `a, b = some_function(q(s), a_constant)`.
 
 Individual autoupdate specifications can involve somewhat complex expressions, as demonstrated below:
 ```@example autoupdates-examples
@@ -71,69 +108,35 @@ Individual autoupdate specifications can involve somewhat complex expressions, a
     b = 2 * (mean(q(θ)) + 1)
 end
 ```
-
-!!! warn 
-    `q(θ)[i]` syntax is not supported, use `getindex(q(θ), i)` instead.
-
-
-```@eval
-error("Old docs below")
-```
-
-
-The `@autoupdates`  macro accepts a block of code or a function, detects lines of code of the following structure
-```julia
-(model_arguments...) = f(model_variables...)
-```
-and converts them to the corresponding auto-update specification. 
-
-Checks if `arguments...` has either `q(_)` in its sub-expressions and adds such expressions to the specification list. 
-All other expressions are left untouched. The result of the macro execution is the [`RxInfer.AutoUpdateSpecification`](@ref) structure that holds the collection 
-of individual auto-update specifications.
-
-Each individual auto-update specification refers to model's arguments (which need to be updated) on the left hand side of the equality expression and 
-the update function on the right hand side of the expression. The update function operates on posterior marginals in the form of the `q(symbol)` expression.
-
-For example:
-
-```@example autoupdates-guide
-using RxInfer
-
-@autoupdates begin 
-    x = mean(q(z))
-end
-```
-
-This structure specifies to automatically update argument `x` as soon as the inference engine computes new posterior over `z` variable.
-It then applies the `mean` function to the new posterior and updates the value of `x` automatically. 
-
-As another example consider the following model and auto-update specification:
-
-```julia
-@model function kalman_filter(y, x_current_mean, x_current_var)
-    x_current ~ Normal(mean = x_current_mean, var = x_current_var)
-    x_next    ~ Normal(mean = x_current, var = 1.0)
-    y         ~ Normal(mean = x_next, var = 1.0)
-end
-```
-
-This model has two arguments that represent our prior knowledge of the `x_current` state of the system. 
-The `x_next` random variable represent the next state of the system that 
-is connected to the observed variable `y`. The auto-update specification could look like:
-
-```julia
-autoupdates = @autoupdates begin
-    x_current_mean, x_current_var = mean_var(q(x_next))
-end
-```
-This structure specifies to update our prior as soon as we have a new posterior `q(x_next)`. It then applies the `mean_var` function on the 
-updated posteriors and updates `x_current_mean` and `x_current_var` automatically.
-
-More complex `@autoupdates` are also allowed. For example, the following code is a valid `@autoupdates` specification:
-```julia
+or
+```@example autoupdates-examples
 @autoupdates begin 
     x = clamp(mean(q(z)), 0, 1)
 end
+```
+
+!!! warn 
+    `q(θ)[i]` or `f(q(θ))[i]` syntax is not supported, use `getindex(q(θ), i)` or `getindex(f(q(θ)), i)` instead.
+
+An individual autoupdate can also simultaneously depend on multiple latent states, e.g:
+```@example autoupdates-examples
+@autoupdates begin 
+    a = f(q(μ), q(s), q(τ))
+    b = g(q(θ))
+end
+```
+
+As mentioned before, the `@autoupdates` accepts a full function definition, which can also accepts arbitrary arguments:
+```@example autoupdates-examples
+@autoupdates function generate_autoupdates(f, condition)
+    if condition 
+        a = f(q(θ))
+    else
+        a = f(q(s))
+    end
+end
+
+autoupdates = generate_autoupdates(mean, true)
 ```
 
 ## The options block
@@ -141,6 +144,20 @@ end
 Optionally, the `@autoupdates` macro accepts a set of `[ options... ]` before the main block. The available options are:
 - `warn = true/false`: Enables or disables warnings when with incomaptible model. Set to `true` by default.
 - `strict = true/false`: Turns warnings into errors. Set to `false` by default.
+
+```@example autoupdates-examples
+autoupdates = @autoupdates [ strict = true ] begin 
+    a, b = params(q(θ))
+end
+```
+or 
+```@example autoupdates-examples
+@autoupdates [ strict = true ] function generate_autoupdates()
+    a, b = params(q(θ))
+end
+autoupdates = generate_autoupdates()
+```
+
 
 ## Internal data structures
 
