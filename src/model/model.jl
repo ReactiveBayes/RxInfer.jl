@@ -133,15 +133,15 @@ end
 An object that is used to condition on unknown data. That may be necessary to create a model from a `ModelGenerator` object
 for which data is not known at the time of the model creation. 
 """
-struct DefferedDataHandler end
+struct DeferredDataHandler end
 
-function Base.show(io::IO, ::DefferedDataHandler)
+function Base.show(io::IO, ::DeferredDataHandler)
     print(io, "[ deffered data ]")
 end
 
-# We use the `LazyIndex` to instantiate the data interface for the model, in case of `DefferedDataHandler`
+# We use the `LazyIndex` to instantiate the data interface for the model, in case of `DeferredDataHandler`
 # the data is not known at the time of the model creation
-function __infer_create_data_interface(model, context, key::Symbol, ::DefferedDataHandler)
+function __infer_create_data_interface(model, context, key::Symbol, ::DeferredDataHandler)
     return GraphPPL.getorcreate!(model, context, GraphPPL.NodeCreationOptions(kind = :data, factorized = true), key, GraphPPL.LazyIndex())
 end
 
@@ -150,28 +150,17 @@ function __infer_create_data_interface(model, context, key::Symbol, data)
     return GraphPPL.getorcreate!(model, context, GraphPPL.NodeCreationOptions(kind = :data, factorized = true), key, GraphPPL.LazyIndex(data))
 end
 
-# This function appends `DefferedDataHandler` objects to the existing data
-function append_deffered_data_handlers(data, symbols)
-    # Check if the data already has the data associated with a key provided in the `symbols`
-    foreach(symbols) do symbol
-        if haskey(data, symbol)
-            error("Cannot add `DefferedDataHandler` for the key `$(symbol)`. Data has already been defined for the key `$(symbol)`")
-        end
-    end
-    return __merge_data_handlers(data, create_deffered_data_handlers(symbols))
-end
+merge_data_handlers(data::Dict, newdata::Dict) = merge(data, newdata)
+merge_data_handlers(data::Dict, newdata::NamedTuple) = merge(data, convert(Dict, newdata))
+merge_data_handlers(data::NamedTuple, newdata::Dict) = merge(convert(Dict, data), newdata)
+merge_data_handlers(data::NamedTuple, newdata::NamedTuple) = merge(data, newdata)
 
-__merge_data_handlers(data::Dict, newdata::Dict) = merge(data, newdata)
-__merge_data_handlers(data::Dict, newdata::NamedTuple) = merge(data, convert(Dict, newdata))
-__merge_data_handlers(data::NamedTuple, newdata::Dict) = merge(convert(Dict, data), newdata)
-__merge_data_handlers(data::NamedTuple, newdata::NamedTuple) = merge(data, newdata)
-
-# This function creates a named tuple of `DefferedDataHandler` objects from a tuple of symbols
+# This function creates a named tuple of `DeferredDataHandler` objects from a tuple of symbols
 function create_deffered_data_handlers(symbols::NTuple{N, Symbol}) where {N}
-    return NamedTuple{symbols}(map(_ -> DefferedDataHandler(), symbols))
+    return NamedTuple{symbols}(map(_ -> DeferredDataHandler(), symbols))
 end
 
-# This function creates a dictionary of `DefferedDataHandler` objects from an array of symbols
+# This function creates a dictionary of `DeferredDataHandler` objects from an array of symbols
 function create_deffered_data_handlers(symbols::AbstractVector{Symbol})
-    return Dict{Symbol, DefferedDataHandler}(map(s -> s => DefferedDataHandler(), symbols))
+    return Dict{Symbol, DeferredDataHandler}(map(s -> s => DeferredDataHandler(), symbols))
 end

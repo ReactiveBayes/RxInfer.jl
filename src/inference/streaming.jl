@@ -303,7 +303,10 @@ function Rocket.on_next!(executor::RxInferenceEventExecutor{T}, event::T) where 
         inference_invoke_event(Val(:on_new_data), Val(_enabled_events), _events, _model, event)
 
         # Before we start our iterations we 'prefetch' recent values for autoupdates
-        fupdates = map(fetch, _autoupdates)
+        # This is important, because the values linked to the `autoupdate` may (and most likely will) 
+        # change during the iterationd
+        autoupdate_specs = getspecifications(_autoupdates)
+        autoupdate_fetched = map(fetch, autoupdate_specs)
 
         # This loop correspond to the different VMP iterations
         # Here `_iterations` can be `Ref` too, so we use `[]`. Should not affect integers
@@ -312,11 +315,7 @@ function Rocket.on_next!(executor::RxInferenceEventExecutor{T}, event::T) where 
 
             # At first we update all our priors (auto updates) with the fixed values from the `redirectupdate` field
             inference_invoke_event(Val(:before_auto_update), Val(_enabled_events), _events, _model, iteration, _autoupdates)
-            foreach(fupdates) do fupdate
-                for (datavar, value) in fupdate
-                    update!(datavar, value)
-                end
-            end
+            run_autoupdate!(autoupdate_specs, autoupdate_fetched)
             inference_invoke_event(Val(:after_auto_update), Val(_enabled_events), _events, _model, iteration, _autoupdates)
 
             # At second we pass our observations
@@ -512,11 +511,19 @@ function streaming_inference(;
 
     # The `_model` here still must be a `ModelGenerator`
     _model = GraphPPL.with_plugins(model, modelplugins)
-    _autoupdates = something(autoupdates, ())
+    _autoupdates = something(autoupdates, EmptyAutoUpdateSpecification)
 
-    # For each data entry and autoupdate we create a `DefferedDataHandler` handler for the `condition_on` structure 
+    check_model_generator_compatibility(_autoupdates, _model)
+
+    # For each data entry and autoupdate we create a `DeferredDataHandler` handler for the `condition_on` structure 
     # We must do that because the data is not available at the moment of the model creation
-    _condition_on = append_deffered_data_handlers((;), Tuple(Iterators.flatten((datavarnames, map(getlabels, _autoupdates)...))))
+    _autoupdates_data_handlers = autoupdates_data_handlers(autoupdates)
+    foreach(keys(_autoupdates_data_handlers)) do _autoupdate_data_handler_key
+        if _autoupdate_data_handler_key ∈ datavarnames
+            error(lazy"`$(_autoupdate_data_handler_key)` is present both in the `data` and in the `autoupdates`.")
+        end
+    end
+    _condition_on = merge_data_handlers(create_deffered_data_handlers(datavarnames), autoupdates_data_handlers(autoupdates))
 
     inference_invoke_callback(callbacks, :before_model_creation)
     fmodel = create_model(_model | _condition_on)
@@ -525,7 +532,7 @@ function streaming_inference(;
     vardict = getvardict(fmodel)
     vardict = GraphPPL.variables(vardict) # TODO: Should work recursively as well
 
-    _autoupdates = map((autoupdate) -> autoupdate(vardict), _autoupdates)
+    _autoupdates = prepare_autoupdates_for_model(_autoupdates, fmodel)
 
     # At the very beginning we try to preallocate handles for the `datavar` labels that are present in the `T` (from `datastream`)
     # This is not very type-stable-friendly but we do it once and it should pay-off in the inference procedure

@@ -94,11 +94,11 @@ conditioned = model | data
 
 Sometimes it might be useful to indicate that some arguments are data (thus condition on them) before the actual data becomes available.
 This situation may occur during [reactive inference](@ref manual-online-inference), when data becomes available _after_ model creation.
-`RxInfer` provides a special structure called [`RxInfer.DefferedDataHandler`](@ref), which can be used instead of the real data.
+`RxInfer` provides a special structure called [`RxInfer.DeferredDataHandler`](@ref), which can be used instead of the real data.
 
 For the example above, however, we cannot simply do the following:
 ```julia
-model | (y = RxInfer.DefferedDataHandler(), )
+model | (y = RxInfer.DeferredDataHandler(), )
 ```
 because we use `length(y)` in the model and this is only possible if `y` has an associated data. 
 We could adjust the model specification a bit, by adding the extra `n` parameter to the list of arguments:
@@ -113,10 +113,10 @@ We could adjust the model specification a bit, by adding the extra `n` parameter
 end
 ```
 
-For such model, we can safely condition on `y` without providing actual data for it, but using the [`RxInfer.DefferedDataHandler`](@ref) instead:
+For such model, we can safely condition on `y` without providing actual data for it, but using the [`RxInfer.DeferredDataHandler`](@ref) instead:
 ```@example model-specification-ssm
 state_space_model_with_n(trend = 3.0, variance = 1.0, n = 10) | (
-    y = RxInfer.DefferedDataHandler(), 
+    y = RxInfer.DeferredDataHandler(), 
 )
 ```
 

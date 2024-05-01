@@ -47,116 +47,6 @@ end
     end
 end
 
-@testitem "`@autoupdates` macro" begin
-    function somefunction(something)
-        return nothing
-    end
-
-    @testset "Use case #1" begin
-        autoupdate = @autoupdates begin
-            x_t_prev_mean = somefunction(q(x_t_current))
-        end
-
-        @test autoupdate isa Tuple && length(autoupdate) === 1
-        @test autoupdate[1] isa RxInfer.RxInferenceAutoUpdateSpecification
-        @test autoupdate[1].labels === (:x_t_prev_mean,)
-        @test autoupdate[1].callback === somefunction
-        @test autoupdate[1].from === RxInfer.FromMarginalAutoUpdate()
-        @test autoupdate[1].variable === :x_t_current
-    end
-
-    @testset "Use case #2" begin
-        autoupdate = @autoupdates begin
-            x_t_prev_mean = somefunction(μ(x_t_current))
-        end
-
-        @test autoupdate isa Tuple && length(autoupdate) === 1
-        @test autoupdate[1] isa RxInfer.RxInferenceAutoUpdateSpecification
-        @test autoupdate[1].labels === (:x_t_prev_mean,)
-        @test autoupdate[1].callback === somefunction
-        @test autoupdate[1].from === RxInfer.FromMessageAutoUpdate()
-        @test autoupdate[1].variable === :x_t_current
-    end
-
-    @testset "Use case #3" begin
-        autoupdate = @autoupdates begin
-            x_t_prev_mean, x_t_prev_var = somefunction(q(x_t_current))
-            and_another_one = somefunction(μ(τ_current))
-        end
-
-        @test autoupdate isa Tuple && length(autoupdate) === 2
-        @test autoupdate[1] isa RxInfer.RxInferenceAutoUpdateSpecification
-        @test autoupdate[1].labels === (:x_t_prev_mean, :x_t_prev_var)
-        @test autoupdate[1].callback === somefunction
-        @test autoupdate[1].from === RxInfer.FromMarginalAutoUpdate()
-        @test autoupdate[1].variable === :x_t_current
-
-        @test autoupdate[2] isa RxInfer.RxInferenceAutoUpdateSpecification
-        @test autoupdate[2].labels === (:and_another_one,)
-        @test autoupdate[2].callback === somefunction
-        @test autoupdate[2].from === RxInfer.FromMessageAutoUpdate()
-        @test autoupdate[2].variable === :τ_current
-    end
-
-    @testset "Use case #4.1: simple indexing" begin
-        autoupdate = @autoupdates begin
-            x_t_prev_mean = somefunction(q(x[1]))
-        end
-
-        @test autoupdate isa Tuple && length(autoupdate) === 1
-        @test autoupdate[1] isa RxInfer.RxInferenceAutoUpdateSpecification
-        @test autoupdate[1].labels === (:x_t_prev_mean,)
-        @test autoupdate[1].callback === somefunction
-        @test autoupdate[1].from === RxInfer.FromMarginalAutoUpdate()
-        @test autoupdate[1].variable === RxInfer.RxInferenceAutoUpdateIndexedVariable(:x, (1,))
-    end
-
-    @testset "Use case #4.2: complex indexing" begin
-        autoupdate = @autoupdates begin
-            x_t_prev_mean = somefunction(q(x[1, 2, 3]))
-        end
-
-        @test autoupdate isa Tuple && length(autoupdate) === 1
-        @test autoupdate[1] isa RxInfer.RxInferenceAutoUpdateSpecification
-        @test autoupdate[1].labels === (:x_t_prev_mean,)
-        @test autoupdate[1].callback === somefunction
-        @test autoupdate[1].from === RxInfer.FromMarginalAutoUpdate()
-        @test autoupdate[1].variable === RxInfer.RxInferenceAutoUpdateIndexedVariable(:x, (1, 2, 3))
-    end
-
-    @testset "Error cases" begin
-        # No specs
-        @test_throws LoadError eval(:(@autoupdates begin end))
-
-        # No specs
-        @test_throws LoadError eval(:(@autoupdates begin
-            x = 1
-        end))
-
-        # Complex lhs
-        @test_throws LoadError eval(:(@autoupdates begin
-            x[1] = somefunction(q(x_t_current))
-        end))
-
-        @test_throws LoadError eval(:(@autoupdates begin
-            x[1] = somefunction(μ(x_t_current))
-        end))
-
-        # Complex call expression
-        @test_throws LoadError eval(:(@autoupdates begin
-            x = somefunction(q(x_t_current, 3))
-        end))
-
-        @test_throws LoadError eval(:(@autoupdates begin
-            x = somefunction(q(x_t_current), 3)
-        end))
-
-        @test_throws LoadError eval(:(@autoupdates begin
-            x = somefunction(μ(x_t_current), 3)
-        end))
-    end
-end
-
 @testitem "Static inference with `inference`" begin
 
     # A simple model for testing that resembles a simple kalman filter with
@@ -656,8 +546,7 @@ end
                     model, iteration, fupdate = event
                     @test model === engine.model
                     @test iteration === ii
-                    @test length(fupdate) === 3
-                    @test RxInfer.getvarlabel.(fupdate) == (:x_t, :τ, :τ)
+                    @test RxInfer.numautoupdates(fupdate) === 3
                 end
 
                 # Check the associated data with the `:after_auto_update` events
@@ -665,8 +554,7 @@ end
                     model, iteration, fupdate = event
                     @test model === engine.model
                     @test iteration === ii
-                    @test length(fupdate) === 3
-                    @test RxInfer.getvarlabel.(fupdate) == (:x_t, :τ, :τ)
+                    @test RxInfer.numautoupdates(fupdate) === 3
                 end
 
                 # Check the correct ordering of the `:before_auto_update` and `:after_auto_update` events
@@ -843,4 +731,35 @@ end
         )
         @test isequal(first(mean(result.history[:θ][end])), last(mean(result.history[:θ][end])))
     end
+end
+
+@testitem "Autoupdates should throw an error if the data is present for the autoupdated arguments" begin
+    @model function beta_bernoulli(a, b, y)
+        t ~ Beta(a, b)
+        y ~ Bernoulli(t)
+    end
+
+    autoupdates = @autoupdates begin
+        a, b = params(q(t))
+    end
+
+    @test_throws "`a` is present both in the `data` and in the `autoupdates`." infer(model = beta_bernoulli(), data = (y = [1], a = [2]), autoupdates = autoupdates)
+    @test_throws "`a` is present both in the `data` and in the `autoupdates`." infer(model = beta_bernoulli(), data = (y = [1], a = [2], b = [2]), autoupdates = autoupdates)
+    @test_throws "`b` is present both in the `data` and in the `autoupdates`." infer(model = beta_bernoulli(), data = (y = [1], b = [2]), autoupdates = autoupdates)
+end
+
+@testitem "Autoupdates should throw an error if the return value does not match the left hand side in size" begin
+    @model function beta_bernoulli(a, b, y)
+        t ~ Beta(a, b)
+        y ~ Bernoulli(t)
+    end
+
+    autoupdates = @autoupdates begin
+        foo(q) = (1, 2, 3)
+        a, b = foo(q(t))
+    end
+
+    @test_throws "Couldn't run autoupdate. The update provides `3` values, but `2` are needed." infer(
+        model = beta_bernoulli(), data = (y = [1],), autoupdates = autoupdates, initialization = @initialization(q(t) = Beta(1, 1))
+    )
 end

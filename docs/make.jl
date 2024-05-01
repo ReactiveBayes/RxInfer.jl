@@ -107,6 +107,7 @@ makedocs(;
                 "Static inference" => "manuals/inference/static.md", 
                 "Streamline inference" => "manuals/inference/streamlined.md",
                 "Initialization"   => "manuals/inference/initialization.md",
+                "Auto-updates"   => "manuals/inference/autoupdates.md",
                 "Deterministic nodes" => "manuals/inference/delta-node.md"
             ],
             "Inference customization"   => [

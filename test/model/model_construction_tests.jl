@@ -1,5 +1,5 @@
 @testitem "Model can be conditioned on fixed data and materialized" begin
-    import RxInfer: condition_on, create_model, getconditioned_on, DefferedDataHandler
+    import RxInfer: condition_on, create_model, getconditioned_on, DeferredDataHandler
 
     @model function beta_bernoulli(y, a, b)
         θ ~ Beta(a, b)
@@ -34,9 +34,9 @@
 
     @testset "Conditioning on `y = ???`" begin
         model_generator           = beta_bernoulli_single(a = 1.0, b = 1.0)
-        model_generator_with_data = condition_on(model_generator, y = DefferedDataHandler())
+        model_generator_with_data = condition_on(model_generator, y = DeferredDataHandler())
 
-        @test getconditioned_on(model_generator_with_data) == (y = DefferedDataHandler(),)
+        @test getconditioned_on(model_generator_with_data) == (y = DeferredDataHandler(),)
         @test occursin("beta_bernoulli_single(a = 1.0, b = 1.0) conditioned on: ", repr(model_generator_with_data))
         @test occursin("y = [ deffered data ]", repr(model_generator_with_data))
         @test create_model(model_generator_with_data) isa ProbabilisticModel
@@ -59,38 +59,13 @@ end
 end
 
 @testitem "create_deffered_data_handlers" begin
-    import RxInfer: create_deffered_data_handlers, DefferedDataHandler
+    import RxInfer: create_deffered_data_handlers, DeferredDataHandler
 
     @testset "Creating deffered labels from tuple of symbols" begin
-        @test create_deffered_data_handlers((:x, :y)) === (x = DefferedDataHandler(), y = DefferedDataHandler())
+        @test create_deffered_data_handlers((:x, :y)) === (x = DeferredDataHandler(), y = DeferredDataHandler())
     end
 
     @testset "Creating deffered labels from array of symbols" begin
-        @test create_deffered_data_handlers([:x, :y]) == Dict(:x => DefferedDataHandler(), :y => DefferedDataHandler())
-    end
-end
-
-@testitem "append_deffered_data_handlers" begin
-    import RxInfer: append_deffered_data_handlers, DefferedDataHandler
-
-    @testset "Append deffered data handlers to a named tuple from a tuple of symbols" begin
-        @test append_deffered_data_handlers((z = 1,), (:x, :y)) == (z = 1, x = DefferedDataHandler(), y = DefferedDataHandler())
-    end
-
-    @testset "Append deffered data handlers to a Dict from a tuple of symbols" begin
-        @test append_deffered_data_handlers(Dict(:z => 1), (:x, :y)) == Dict(:z => 1, :x => DefferedDataHandler(), :y => DefferedDataHandler())
-    end
-
-    @testset "Append deffered data handlers to a named tuple from a vector of symbols" begin
-        @test append_deffered_data_handlers((z = 1,), [:x, :y]) == Dict(:z => 1, :x => DefferedDataHandler(), :y => DefferedDataHandler())
-    end
-
-    @testset "Append deffered data handlers to a Dict from a vector of symbols" begin
-        @test append_deffered_data_handlers(Dict(:z => 1), [:x, :y]) == Dict(:z => 1, :x => DefferedDataHandler(), :y => DefferedDataHandler())
-    end
-
-    @testset "Conflicting names should throw a user-friendly errors" begin
-        @test_throws "Cannot add `DefferedDataHandler` for the key `z`. Data has already been defined for the key `z`" append_deffered_data_handlers(Dict(:z => 1), [:z, :y])
-        @test_throws "Cannot add `DefferedDataHandler` for the key `y`. Data has already been defined for the key `y`" append_deffered_data_handlers((y = 1,), (:y,))
+        @test create_deffered_data_handlers([:x, :y]) == Dict(:x => DeferredDataHandler(), :y => DeferredDataHandler())
     end
 end
