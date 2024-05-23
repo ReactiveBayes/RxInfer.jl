@@ -139,15 +139,15 @@ function Base.show(io::IO, ::DeferredDataHandler)
     print(io, "[ deffered data ]")
 end
 
-# We use the `LazyIndex` to instantiate the data interface for the model, in case of `DeferredDataHandler`
+# We use the `datalabel` to instantiate the data interface for the model, in case of `DeferredDataHandler`
 # the data is not known at the time of the model creation
 function __infer_create_data_interface(model, context, key::Symbol, ::DeferredDataHandler)
-    return GraphPPL.getorcreate!(model, context, GraphPPL.NodeCreationOptions(kind = :data, factorized = true), key, GraphPPL.LazyIndex())
+    return GraphPPL.datalabel(model, context, GraphPPL.NodeCreationOptions(kind = :data, factorized = true), key, GraphPPL.MissingCollection())
 end
 
-# In all other cases we use the `LazyIndex` to instantiate the data interface for the model and the data is known at the time of the model creation
+# In all other cases we use the `datalabel` to instantiate the data interface for the model and the data is known at the time of the model creation
 function __infer_create_data_interface(model, context, key::Symbol, data)
-    return GraphPPL.getorcreate!(model, context, GraphPPL.NodeCreationOptions(kind = :data, factorized = true), key, GraphPPL.LazyIndex(data))
+    return GraphPPL.datalabel(model, context, GraphPPL.NodeCreationOptions(kind = :data, factorized = true), key, data)
 end
 
 merge_data_handlers(data::Dict, newdata::Dict) = merge(data, newdata)
