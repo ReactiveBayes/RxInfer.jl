@@ -693,3 +693,17 @@ end
     model = GraphPPL.create_model(GraphPPL.with_plugins(model_with_init(), GraphPPL.PluginsCollection(RxInfer.InitializationPlugin())))
     @test GraphPPL.getextra(model[model[][:x]], RxInfer.InitMarExtraKey) == NormalMeanVariance(0, 1e12)
 end
+
+@testitem "throw warning if double init" begin
+    using RxInfer
+
+    @test_logs (:warn, "Variable u is initialized multiple times. The last initialization will be used.") @initialization begin
+        q(u) = NormalMeanVariance(0, 1)
+        q(u) = NormalMeanVariance(0, 1)
+    end
+
+    @test_nowarn @initialization begin
+        q(u) = NormalMeanVariance(0, 1)
+        μ(u) = NormalMeanVariance(0, 1)
+    end
+end
