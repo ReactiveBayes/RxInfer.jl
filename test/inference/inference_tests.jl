@@ -763,3 +763,22 @@ end
         model = beta_bernoulli(), data = (y = [1],), autoupdates = autoupdates, initialization = @initialization(q(t) = Beta(1, 1))
     )
 end
+
+@testitem "`infer` should throw an error if `initmessages` or `initmarginals` keywords are used" begin
+    @model function beta_bernoulli(a, b, y)
+        t ~ Beta(a, b)
+        y ~ Bernoulli(t)
+    end
+
+    @test_throws "`initmessages` and `initmarginals` keyword arguments have been deprecated and removed. Use the `@initialization` macro and the `initialization` keyword instead." infer(
+        model = beta_bernoulli(), data = (y = 1,), initmessages = (t = Normal(0.0, 1.0)), initmarginals = (t = Normal(0.0, 1.0))
+    )
+
+    @test_throws "`initmessages` and `initmarginals` keyword arguments have been deprecated and removed. Use the `@initialization` macro and the `initialization` keyword instead." infer(
+        model = beta_bernoulli(), data = (y = 1,), initmarginals = (t = Normal(0.0, 1.0))
+    )
+
+    @test_throws "`initmessages` and `initmarginals` keyword arguments have been deprecated and removed. Use the `@initialization` macro and the `initialization` keyword instead." infer(
+        model = beta_bernoulli(), data = (y = 1,), initmessages = (t = Normal(0.0, 1.0))
+    )
+end
