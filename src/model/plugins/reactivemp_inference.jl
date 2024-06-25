@@ -166,8 +166,12 @@ function activate_rmp_variable!(plugin::ReactiveMPInferencePlugin, model::Model,
         # By default it is `UnspecifiedFormConstraint` which means that the form of the resulting distribution is not specified in advance
         # and follows from the computation, but users may override it with other form constraints, e.g. `PointMassFormConstraint`, which
         # constraints the resulting distribution to be of a point mass form
-        messages_form_constraint = getextra(nodedata, GraphPPL.VariationalConstraintsMessagesFormConstraintKey, ReactiveMP.UnspecifiedFormConstraint())
-        marginal_form_constraint = getextra(nodedata, GraphPPL.VariationalConstraintsMarginalFormConstraintKey, ReactiveMP.UnspecifiedFormConstraint())
+        messages_form_constraint = ReactiveMP.preprocess_form_constraints(
+            plugin, model, getextra(nodedata, GraphPPL.VariationalConstraintsMessagesFormConstraintKey, ReactiveMP.UnspecifiedFormConstraint())
+        )
+        marginal_form_constraint = ReactiveMP.preprocess_form_constraints(
+            plugin, model, getextra(nodedata, GraphPPL.VariationalConstraintsMarginalFormConstraintKey, ReactiveMP.UnspecifiedFormConstraint())
+        )
         # Fetch "prod-constraint" for messages and marginals. The prod-constraint usually defines the constraints for a single product of messages
         # It can for example preserve a specific parametrization of distribution 
         messages_prod_constraint = getextra(nodedata, :messages_prod_constraint, ReactiveMP.default_prod_constraint(messages_form_constraint))
@@ -310,3 +314,11 @@ ReactiveMP.setmarginals!(collection::AbstractArray{GraphVariableRef}, marginal) 
 
 ReactiveMP.setmessage!(ref::GraphVariableRef, marginal) = setmessage!(ref.variable, marginal)
 ReactiveMP.setmessages!(collection::AbstractArray{GraphVariableRef}, marginal) = ReactiveMP.setmessages!(map(ref -> ref.variable, collection), marginal)
+
+# Form constraint preprocessing 
+
+function ReactiveMP.preprocess_form_constraints(backend::ReactiveMPInferencePlugin, model::Model, constraints)
+    # It is a simple pass-through for now, but can be extended in the future to preprocess constraints that 
+    # are defined in other packages, e.g. in `Distributions` and to support constraints, such as `q(x) :: Normal`
+    return ReactiveMP.preprocess_form_constraints(constraints)
+end
