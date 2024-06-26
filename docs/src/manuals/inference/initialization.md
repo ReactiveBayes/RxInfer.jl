@@ -143,7 +143,7 @@ After running the inference procedure an error appears, which prompts him to _in
 
 ## Part 2. Why and What to initialize
 
-Before delving too deeply into the details, it's important to understand that RxInfer constructs a factorized representation of your model using a Forney Style Factor Graph (FFG). In this structure, inference is executed through message passing.
+Before delving too deeply into the details, it's important to understand that RxInfer constructs a factorized representation of your model using a factor graph. In this structure, inference is executed through message passing.
 
 A challenge arises when RxInfer generates the FFG representation with structural loops in certain parts of the graph. These loops indicate that a message or marginal within the loop depends not only on its prior but also on itself. Consequently, proper initialization is crucial for initiating the inference process. Two general rules of thumb guide this initialization, although the intricate details are beyond the scope of this tutorial:
 
@@ -159,9 +159,9 @@ Identifying loops is currently a manual process, as the current version of RxInf
 
 However, once you receive the message `Variables [x, y, z] have not been updated after an update event`, it is a good indication that there is a loop in your model. If you see this message, you should check your model for loops and try to initialize the messages and/or marginals that are part of the loop.
 
-### Deriving FFG and identifying the loops
+### Deriving factor graph and identifying the loops
 
-John proceeds to derive the FFG for his problem where he identifies where the loops are:
+John proceeds to derive the factor graph for his problem where he identifies where the loops are:
 
 ![Addons_messages](../../assets/img/linear_regresion_model.png)
 
