@@ -23,7 +23,7 @@ RxInfer
 
 *Julia package for automatic Bayesian inference on a factor graph with reactive message passing.*
 
-Given a probabilistic model, RxInfer allows for an efficient message-passing based Bayesian inference. It uses the model structure to generate an algorithm that consists of a sequence of local computations on a Forney-style factor graph (FFG) representation of the model. RxInfer.jl has been designed with a focus on efficiency, scalability and maximum performance for running inference with [reactive message passing](https://github.com/ReactiveBayes/ReactiveMP.jl).
+Given a probabilistic model, RxInfer allows for an efficient message-passing based Bayesian inference. It uses the model structure to generate an algorithm that consists of a sequence of local computations on a factor graph representation of the model. RxInfer.jl has been designed with a focus on efficiency, scalability and maximum performance for running inference with [reactive message passing](https://github.com/ReactiveBayes/ReactiveMP.jl).
 
 ## Why RxInfer
 
