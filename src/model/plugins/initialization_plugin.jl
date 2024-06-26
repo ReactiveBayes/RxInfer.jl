@@ -104,7 +104,13 @@ function Base.show(io::IO, init::SubModelInit)
     print(IOContext(io, (:indent => get(io, :indent, 0) + 2), (:head => false)), "Init for submodel ", getsubmodel(init), " = ", getinitobjects(init))
 end
 
-Base.push!(m::InitSpecification, o::InitObject) = push!(m.init_objects, o)
+function Base.push!(m::InitSpecification, o::InitObject)
+    if getvardescriptor(o) ∈ getvardescriptor.(getinitobjects(m))
+        @warn "Variable $(getvardescriptor(getvardescriptor(o))) is initialized multiple times. The last initialization will be used."
+        filter!(x -> getvardescriptor(getvardescriptor(x)) ≠ getvardescriptor(getvardescriptor(o)), m.init_objects)
+    end
+    push!(m.init_objects, o)
+end
 Base.push!(m::InitSpecification, o::SubModelInit) = push!(m.submodel_init, o)
 
 default_init(any) = EmptyInit

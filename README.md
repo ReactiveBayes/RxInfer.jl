@@ -17,7 +17,7 @@
 
 `RxInfer.jl` is a Julia package for automatic Bayesian inference on a factor graph with reactive message passing.
 
-Given a probabilistic model, RxInfer allows for an efficient message-passing based Bayesian inference. It uses the model structure to generate an algorithm that consists of a sequence of local computations on a Forney-style factor graph (FFG) representation of the model.
+Given a probabilistic model, RxInfer allows for an efficient message-passing based Bayesian inference. It uses the model structure to generate an algorithm that consists of a sequence of local computations on a factor graph representation of the model.
 
 ### Performance and scalability
 
@@ -131,7 +131,7 @@ Now let's see how to specify this model using [GraphPPL's package](https://githu
 end
 ```
 
-In short, the `@model` macro converts a textual description of a probabilistic model into a corresponding [Factor Graph](https://en.wikipedia.org/wiki/Factor_graph) (FG). In the example above, the $\theta \sim \mathrm{Beta}(a, b)$ expression creates latent variable $θ$ and assigns it as an output of $\mathrm{Beta}$ node in the corresponding FFG. The `~` operation can be understood as _"is modelled by"_. Next, we model each data point `y[i]` as $\mathrm{Bernoulli}$ distribution with $\theta$ as its parameter.
+In short, the `@model` macro converts a textual description of a probabilistic model into a corresponding [Factor Graph](https://en.wikipedia.org/wiki/Factor_graph) (FG). In the example above, the $\theta \sim \mathrm{Beta}(a, b)$ expression creates latent variable $θ$ and assigns it as an output of $\mathrm{Beta}$ node in the corresponding factor graph. The `~` operation can be understood as _"is modelled by"_. Next, we model each data point `y[i]` as $\mathrm{Bernoulli}$ distribution with $\theta$ as its parameter.
 
 > [!TIP]
 > Alternatively, we could use the broadcasting operation:

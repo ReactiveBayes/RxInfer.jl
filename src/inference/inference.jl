@@ -291,7 +291,7 @@ function infer(;
         error("""`data` and `datastream` keyword arguments cannot be used together. """)
     elseif isnothing(data) && isnothing(predictvars) && isnothing(datastream)
         error("""One of the keyword arguments `data` or `predictvars` or `datastream` must be specified""")
-    elseif !isnothing(initmessages) && !isnothing(initmarginals)
+    elseif !isnothing(initmessages) || !isnothing(initmarginals)
         error(
             """`initmessages` and `initmarginals` keyword arguments have been deprecated and removed. Use the `@initialization` macro and the `initialization` keyword instead."""
         )
