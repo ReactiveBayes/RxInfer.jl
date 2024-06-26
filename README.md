@@ -160,39 +160,40 @@ result = infer(
 
 ![Coin Flip](docs/src/assets/img/coin-flip.svg?raw=true&sanitize=true "Coin-Flip readme results")
 
+# Roadmap
+
+Our high-level project roadmap outlines the key milestones and focus areas for the upcoming years:
+
+| Q1/Q2 2024          | Q3/Q4 2024                | 2025                | 
+|---------------------|---------------------------|--------------------|
+| 🧩 **Nested models with [GraphPPL.jl](https://github.com/reactivebayes/GraphPPL.jl)** ✅    | 🌐 **Graph structure visualization** | 🔀 **Stochastic Processes** |
+| 🔄 **Development of [ExponentialFamilyProjection.jl]()**                 | 🧠 **Automated inference with [ExponentialFamilyProjection.jl](https://github.com/reactivebayes/ExponentialFamilyProjection.jl)** | 🚀 **Robustness & Memory-efficiency** |
+
+For a more granular view of our progress and ongoing tasks, check out our [project board](https://github.com/orgs/reactivebayes/projects/2/views/4) or join our 4-weekly [public meetings](https://dynalist.io/d/F4aA-Z2c8X-M1iWTn9hY_ndN).
+
+# Contributing
+
+We welcome contributions from the community. If you are interested in contributing to the development of `RxInfer.jl`, please check out our [contributing guide](https://reactivebayes.github.io/RxInfer.jl/stable/contributing/guide), the [contributing guidelines](https://reactivebayes.github.io/RxInfer.jl/stable/contributing/guidelines), or look at the [issues linked with the `good first issue` label](https://github.com/ReactiveBayes/RxInfer.jl/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22) to get started.
+
 # Where to go next?
 
 There are a set of [examples](https://reactivebayes.github.io/RxInfer.jl/stable/examples/overview/) available in `RxInfer` repository that demonstrate the more advanced features of the package. Alternatively, you can head to the [documentation](https://reactivebayes.github.io/RxInfer.jl/stable/) that provides more detailed information of how to use `RxInfer` to specify more complex probabilistic models.
+
+## Ecosystem
+
+The `RxInfer` framework consists of three *core* packages developed by [ReactiveBayes](https://github.com/reactivebayes/):
+
+- [`ReactiveMP.jl`](https://github.com/reactivebayes/ReactiveMP.jl) - the underlying message passing-based inference engine
+- [`GraphPPL.jl`](https://github.com/reactivebayes/GraphPPL.jl) - model and constraints specification package
+- [`Rocket.jl`](https://github.com/reactivebayes/Rocket.jl) - reactive extensions package for Julia 
+
+## JuliaCon 2023 presentation
 
 Additionally, checkout our [video from JuliaCon 2023](https://www.youtube.com/watch?v=qXrvDVm_fnE) for a high-level overview of the package
 
 <p align="center">
     <a href="https://www.youtube.com/watch?v=qXrvDVm_fnE"><img width="460" src="https://img.youtube.com/vi/qXrvDVm_fnE/0.jpg"></a>
 </p>
-
-# Roadmap
-
-Our high-level project roadmap outlines the key milestones and focus areas for the upcoming years:
-
-| Q1/Q2 2024          | Q3/Q4 2024                | 2025                | 2026                                      |
-|---------------------|---------------------------|--------------------|-------------------------------------------|
-| 🧩 **Nested models with [GraphPPL.jl](https://github.com/reactivebayes/GraphPPL.jl)** ✅    | 🛡️ **Robustness (NaN, Inf free)** | 🌐 **Stochastic Processes** | 🔄 **Automated inference with non-exponential family** 
-| 🔄 **Automated inference with [ExponentialFamily.jl](https://github.com/reactivebayes/ExponentialFamily.jl)**                 | 🧠 **Memory-efficiency** | 🚀 **Resource-adaptive inference** | 📊 **Inference over graph structure**
-
-For a more granular view of our progress and ongoing tasks, check out our [project board](https://github.com/orgs/reactivebayes/projects/2/views/4) or join our 
-4-weekly [public meetings](https://dynalist.io/d/F4aA-Z2c8X-M1iWTn9hY_ndN).
-
-# Contributing
-
-We welcome contributions from the community. If you are interested in contributing to the development of `RxInfer.jl`, please check out our [contributing guide](https://reactivebayes.github.io/RxInfer.jl/stable/contributing/guide), the [contributing guidelines](https://reactivebayes.github.io/RxInfer.jl/stable/contributing/guidelines), or look at the [issues linked with the `good first issue` label](https://github.com/ReactiveBayes/RxInfer.jl/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22) to get started.
-
-# Ecosystem
-
-The `RxInfer` framework consists of three *core* packages developed by reactivebayes:
-
-- [`ReactiveMP.jl`](https://github.com/reactivebayes/ReactiveMP.jl) - the underlying message passing-based inference engine
-- [`GraphPPL.jl`](https://github.com/reactivebayes/GraphPPL.jl) - model and constraints specification package
-- [`Rocket.jl`](https://github.com/reactivebayes/Rocket.jl) - reactive extensions package for Julia 
 
 # License
 
