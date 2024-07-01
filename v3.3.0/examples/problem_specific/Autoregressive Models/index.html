@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Autoregressive Models · RxInfer.jl</title><meta name="title" content="Autoregressive Models · RxInfer.jl"/><meta property="og:title" content="Autoregressive Models · RxInfer.jl"/><meta property="twitter:title" content="Autoregressive Models · RxInfer.jl"/><meta name="description" content="Julia package for automated Bayesian inference on a factor graph with reactive message passing"/><meta property="og:description" content="Julia package for automated Bayesian inference on a factor graph with reactive message passing"/><meta property="twitter:description" content="Julia package for automated Bayesian inference on a factor graph with reactive message passing"/><meta property="og:url" content="https://reactivebayes.github.io/RxInfer.jl/examples/problem_specific/Autoregressive Models/"/><meta property="twitter:url" content="https://reactivebayes.github.io/RxInfer.jl/examples/problem_specific/Autoregressive Models/"/><link rel="canonical" href="https://reactivebayes.github.io/RxInfer.jl/examples/problem_specific/Autoregressive Models/"/><script data-outdated-warner src="../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../search_index.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><link href="../../../assets/theme.css" rel="stylesheet" type="text/css"/><link href="../../../assets/header.css" rel="stylesheet" type="text/css"/><script src="../../../assets/header.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img class="docs-light-only" src="../../../assets/logo.svg" alt="RxInfer.jl logo"/><img class="docs-dark-only" src="../../../assets/logo-dark.svg" alt="RxInfer.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../../../">RxInfer.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../../">Home</a></li><li><span class="tocitem">User guide</span><ul><li><a class="tocitem" href="../../../manuals/getting-started/">Getting started</a></li><li><a class="tocitem" href="../../../manuals/comparison/">RxInfer.jl vs. Others</a></li><li><a class="tocitem" href="../../../manuals/model-specification/">Model specification</a></li><li><a class="tocitem" href="../../../manuals/constraints-specification/">Constraints specification</a></li><li><a class="tocitem" href="../../../manuals/meta-specification/">Meta specification</a></li><li><input class="collapse-toggle" id="menuitem-2-6" type="checkbox"/><label class="tocitem" for="menuitem-2-6"><span class="docs-label">Inference specification</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../manuals/inference/overview/">Overview</a></li><li><a class="tocitem" href="../../../manuals/inference/static/">Static inference</a></li><li><a class="tocitem" href="../../../manuals/inference/streamlined/">Streamline inference</a></li><li><a class="tocitem" href="../../../manuals/inference/initialization/">Initialization</a></li><li><a class="tocitem" href="../../../manuals/inference/autoupdates/">Auto-updates</a></li><li><a class="tocitem" href="../../../manuals/inference/delta-node/">Deterministic nodes</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-7" type="checkbox"/><label class="tocitem" for="menuitem-2-7"><span class="docs-label">Inference customization</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../manuals/customization/custom-node/">Defining a custom node and rules</a></li><li><a class="tocitem" href="../../../manuals/customization/postprocess/">Inference results postprocessing</a></li></ul></li><li><a class="tocitem" href="../../../manuals/debugging/">Debugging</a></li><li><a class="tocitem" href="../../../manuals/migration-guide-v2-v3/">Migration from v2 to v3</a></li></ul></li><li><span class="tocitem">Library</span><ul><li><a class="tocitem" href="../../../library/model-construction/">Model construction</a></li><li><a class="tocitem" href="../../../library/bethe-free-energy/">Bethe Free Energy</a></li><li><a class="tocitem" href="../../../library/functional-forms/">Functional form constraints</a></li><li><a class="tocitem" href="../../../library/exported-methods/">Exported methods</a></li></ul></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../../overview/">Overview</a></li><li><input class="collapse-toggle" id="menuitem-4-2" type="checkbox"/><label class="tocitem" for="menuitem-4-2"><span class="docs-label">Basic examples</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../basic_examples/overview/">Overview</a></li><li><a class="tocitem" href="../../basic_examples/Coin Toss Model/">Coin toss model (Beta-Bernoulli)</a></li><li><a class="tocitem" href="../../basic_examples/Bayesian Linear Regression Tutorial/">Bayesian Linear Regression Tutorial</a></li><li><a class="tocitem" href="../../basic_examples/Kalman filtering and smoothing/">Kalman filtering and smoothing</a></li><li><a class="tocitem" href="../../basic_examples/Predicting Bike Rental Demand/">Predicting Bike Rental Demand</a></li><li><a class="tocitem" href="../../basic_examples/Hidden Markov Model/">How to train your Hidden Markov Model</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-4-3" type="checkbox"/><label class="tocitem" for="menuitem-4-3"><span class="docs-label">Advanced examples</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../advanced_examples/overview/">Overview</a></li><li><a class="tocitem" href="../../advanced_examples/Active Inference Mountain car/">Active Inference Mountain car</a></li><li><a class="tocitem" href="../../advanced_examples/Advanced Tutorial/">Advanced Tutorial</a></li><li><a class="tocitem" href="../../advanced_examples/Assessing People Skills/">Assessing People’s Skills</a></li><li><a class="tocitem" href="../../advanced_examples/Chance Constraints/">Chance-Constrained Active Inference</a></li><li><a class="tocitem" href="../../advanced_examples/Conjugate-Computational Variational Message Passing/">Conjugate-Computational Variational Message Passing (CVI)</a></li><li><a class="tocitem" href="../../advanced_examples/Global Parameter Optimisation/">Global Parameter Optimisation</a></li><li><a class="tocitem" href="../../advanced_examples/GP Regression by SSM/">Solve GP regression by SDE</a></li><li><a class="tocitem" href="../../advanced_examples/Infinite Data Stream/">Infinite Data Stream</a></li><li><a class="tocitem" href="../../advanced_examples/Nonlinear Sensor Fusion/">Nonlinear Sensor Fusion</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-4-4" type="checkbox" checked/><label class="tocitem" for="menuitem-4-4"><span class="docs-label">Problem specific</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../overview/">Overview</a></li><li class="is-active"><a class="tocitem" href>Autoregressive Models</a><ul class="internal"><li class="toplevel"><a class="tocitem" href="#Autoregressive-Moving-Average-Model"><span>Autoregressive Moving Average Model</span></a></li><li><a class="tocitem" href="#Prediction"><span>Prediction</span></a></li></ul></li><li><a class="tocitem" href="../Gamma Mixture/">Gamma Mixture Model</a></li><li><a class="tocitem" href="../Gaussian Mixture/">Gaussian Mixture</a></li><li><a class="tocitem" href="../Hierarchical Gaussian Filter/">Hierarchical Gaussian Filter</a></li><li><a class="tocitem" href="../Invertible Neural Network Tutorial/">Invertible neural networks: a tutorial</a></li><li><a class="tocitem" href="../Probit Model (EP)/">Probit Model (EP)</a></li><li><a class="tocitem" href="../RTS vs BIFM Smoothing/">RTS vs BIFM Smoothing</a></li><li><a class="tocitem" href="../Simple Nonlinear Node/">Simple Nonlinear Node</a></li><li><a class="tocitem" href="../Universal Mixtures/">Universal Mixtures</a></li></ul></li><li><a class="tocitem" href="../../../contributing/external-examples/">External examples</a></li></ul></li><li><span class="tocitem">Contributing</span><ul><li><a class="tocitem" href="../../../contributing/guide/">Contribution guide</a></li><li><a class="tocitem" href="../../../contributing/guidelines/">Contribution guidelines</a></li><li><a class="tocitem" href="../../../contributing/new-documentation/">Contributing to the documentation</a></li><li><a class="tocitem" href="../../../contributing/new-example/">Contributing to the examples</a></li><li><a class="tocitem" href="../../../contributing/new-release/">Publishing a new release</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li><a class="is-disabled">Problem specific</a></li><li class="is-active"><a href>Autoregressive Models</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Autoregressive Models</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/ReactiveBayes/RxInfer.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/ReactiveBayes/RxInfer.jl/blob/main/docs/src/examples/problem_specific/Autoregressive Models.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><p>This example has been auto-generated from the <a href="https://github.com/reactivebayes/RxInfer.jl/tree/main/examples"><code>examples/</code></a> folder at GitHub repository.</p><h1 id="examples-autoregressive-models"><a class="docs-heading-anchor" href="#examples-autoregressive-models">Autoregressive Models</a><a id="examples-autoregressive-models-1"></a><a class="docs-heading-anchor-permalink" href="#examples-autoregressive-models" title="Permalink"></a></h1><pre><code class="language-julia hljs"># Activate local environment, see `Project.toml`
+import Pkg; Pkg.activate(&quot;..&quot;); Pkg.instantiate();</code></pre><p>In this example we are going to perform an automated Variational Bayesian Inference for a latent autoregressive model that can be represented as following:</p><p class="math-container">\[\begin{aligned}
+p(\gamma) &amp;= \mathrm{Gamma}(\gamma|a, b),\\
+p(\mathbf{\theta}) &amp;= \mathcal{N}(\mathbf{\theta}|\mathbf{\mu}, \Sigma),\\
+p(x_t|\mathbf{x}_{t-1:t-k}) &amp;= \mathcal{N}(x_t|\mathbf{\theta}^{T}\mathbf{x}_{t-1:t-k}, \gamma^{-1}),\\
+p(y_t|x_t) &amp;= \mathcal{N}(y_t|x_t, \tau^{-1}),
+\end{aligned}\]</p><p>where <span>$x_t$</span> is a current state of our system, <span>$\mathbf{x}_{t-1:t-k}$</span> is a sequence of <span>$k$</span> previous states, <span>$k$</span> is an order of autoregression process, <span>$\mathbf{\theta}$</span> is a vector of transition coefficients, <span>$\gamma$</span> is a precision of state transition process, <span>$y_k$</span> is a noisy observation of <span>$x_k$</span> with precision <span>$\tau$</span>.</p><p>For a more rigorous introduction to Bayesian inference in Autoregressive models we refer to <a href="https://www.mdpi.com/1099-4300/23/6/683">Albert Podusenko, Message Passing-Based Inference for Time-Varying Autoregressive Models</a>.</p><p>We start with importing all needed packages:</p><pre><code class="language-julia hljs">using RxInfer, Distributions, LinearAlgebra, Random, Plots, BenchmarkTools, Parameters</code></pre><p>Let&#39;s generate some synthetic dataset, we use a predefined sets of coeffcients for <span>$k$</span> = 1, 3 and 5 respectively:</p><pre><code class="language-julia hljs"># The following coefficients correspond to stable poles
+coefs_ar_1 = [-0.27002517200218096]
+coefs_ar_2 = [0.4511170798064709, -0.05740081602446657]
+coefs_ar_5 = [0.10699399235785655, -0.5237303489793305, 0.3068897071844715, -0.17232255282458891, 0.13323964347539288];</code></pre><pre><code class="language-julia hljs">function generate_ar_data(rng, n, θ, γ, τ)
+    order        = length(θ)
+    states       = Vector{Vector{Float64}}(undef, n + 3order)
+    observations = Vector{Float64}(undef, n + 3order)
+    
+    γ_std = sqrt(inv(γ))
+    τ_std = sqrt(inv(τ))
+    
+    states[1] = randn(rng, order)
+    
+    for i in 2:(n + 3order)
+        states[i]       = vcat(rand(rng, Normal(dot(θ, states[i - 1]), γ_std)), states[i-1][1:end-1])
+        observations[i] = rand(rng, Normal(states[i][1], τ_std))
+    end
+    
+    return states[1+3order:end], observations[1+3order:end]
+end</code></pre><pre><code class="nohighlight hljs">generate_ar_data (generic function with 1 method)</code></pre><pre><code class="language-julia hljs"># Seed for reproducibility
+seed = 123
+rng  = MersenneTwister(seed)
+
+# Number of observations in synthetic dataset
+n = 500
+
+# AR process parameters
+real_γ = 1.0
+real_τ = 0.5
+real_θ = coefs_ar_5
+
+states, observations = generate_ar_data(rng, n, real_θ, real_γ, real_τ);</code></pre><p>Let&#39;s plot our synthetic dataset:</p><pre><code class="language-julia hljs">plot(first.(states), label = &quot;Hidden states&quot;)
+scatter!(observations, label = &quot;Observations&quot;)</code></pre><p><img src="../../../assets/examples/Autoregressive Models_6_1.png" alt/></p><p>Next step is to specify probabilistic model, inference constraints and run inference procedure with <code>RxInfer</code>. We will specify two different models for Multivariate AR with order <span>$k$</span> &gt; 1 and for Univariate AR (reduces to simple State-Space-Model) with order <span>$k$</span> = 1.</p><pre><code class="language-julia hljs">@model function lar_model(T, y, order, c, τ)
+    
+    
+    # Prior for first state
+    if T === Multivariate
+        γ  ~ Gamma(α = 1.0, β = 1.0)
+        θ  ~ MvNormal(μ = zeros(order), Λ = diageye(order))
+        x0 ~ MvNormal(μ = zeros(order), Λ = diageye(order))
+    else
+        γ  ~ Gamma(α = 1.0, β = 1.0)
+        θ  ~ Normal(μ = 0.0, γ = 1.0)
+        x0 ~ Normal(μ = 0.0, γ = 1.0)
+    end
+    
+    x_prev = x0
+    
+    for i in eachindex(y)
+        
+        x[i] ~ AR(x_prev, θ, γ) 
+        
+        if T === Multivariate
+            y[i] ~ Normal(μ = dot(c, x[i]), γ = τ)
+        else
+            y[i] ~ Normal(μ = c * x[i], γ = τ)
+        end
+        
+        x_prev = x[i]
+    end
+
+end</code></pre><pre><code class="language-julia hljs">@constraints function ar_constraints() 
+    q(x0, x, θ, γ) = q(x0, x)q(θ)q(γ)
+end</code></pre><pre><code class="nohighlight hljs">ar_constraints (generic function with 1 method)</code></pre><pre><code class="language-julia hljs">@meta function ar_meta(artype, order, stype)
+    AR() -&gt; ARMeta(artype, order, stype)
+end</code></pre><pre><code class="nohighlight hljs">ar_meta (generic function with 1 method)</code></pre><pre><code class="language-julia hljs">@initialization function ar_init(morder)
+    q(γ) = GammaShapeRate(1.0, 1.0)
+    q(θ) = MvNormalMeanPrecision(zeros(morder), diageye(morder))
+end</code></pre><pre><code class="nohighlight hljs">ar_init (generic function with 1 method)</code></pre><pre><code class="language-julia hljs">morder  = 5
+martype = Multivariate
+mc      = ReactiveMP.ar_unit(martype, morder)
+mconstraints = ar_constraints()
+mmeta        = ar_meta(martype, morder, ARsafe())
+
+moptions = (limit_stack_depth = 100, )
+
+mmodel          = lar_model(T=martype, order=morder, c=mc, τ=real_τ)
+mdata           = (y = observations, )
+minitialization = ar_init(morder)
+mreturnvars     = (x = KeepLast(), γ = KeepEach(), θ = KeepEach())
+
+# First execution is slow due to Julia&#39;s initial compilation 
+# Subsequent runs will be faster (benchmarks are below)
+mresult = infer(
+    model = mmodel, 
+    data  = mdata,
+    constraints   = mconstraints,
+    meta          = mmeta,
+    options       = moptions,
+    initialization = minitialization,
+    returnvars    = mreturnvars,
+    free_energy   = true,
+    iterations    = 50, 
+    showprogress  = false
+);</code></pre><pre><code class="language-julia hljs">@unpack x, γ, θ = mresult.posteriors</code></pre><pre><code class="nohighlight hljs">Dict{Symbol, Vector} with 3 entries:
+  :γ =&gt; GammaShapeRate{Float64}[GammaShapeRate{Float64}(a=251.0, b=47.5918)
+, Ga…
+  :θ =&gt; MvNormalWeightedMeanPrecision{Float64, Vector{Float64}, Matrix{Floa
+t64}…
+  :x =&gt; MvNormalWeightedMeanPrecision{Float64, Vector{Float64}, Matrix{Floa
+t64}…</code></pre><p>We will use different initial marginals depending on type of our AR process</p><pre><code class="language-julia hljs">p1 = plot(first.(states), label=&quot;Hidden state&quot;)
+p1 = scatter!(p1, observations, label=&quot;Observations&quot;)
+p1 = plot!(p1, first.(mean.(x)), ribbon = first.(std.(x)), label=&quot;Inferred states&quot;, legend = :bottomright)
+
+p2 = plot(mean.(γ), ribbon = std.(γ), label = &quot;Inferred transition precision&quot;, legend = :topright)
+p2 = plot!([ real_γ ], seriestype = :hline, label = &quot;Real transition precision&quot;)
+
+p3 = plot(mresult.free_energy, label = &quot;Bethe Free Energy&quot;)
+
+plot(p1, p2, p3, layout = @layout([ a; b c ]))</code></pre><p><img src="../../../assets/examples/Autoregressive Models_13_1.png" alt/></p><p>Let&#39;s also plot a subrange of our results:</p><pre><code class="language-julia hljs">subrange = div(n,5):(div(n, 5) + div(n, 5))
+
+plot(subrange, first.(states)[subrange], label=&quot;Hidden state&quot;)
+scatter!(subrange, observations[subrange], label=&quot;Observations&quot;)
+plot!(subrange, first.(mean.(x))[subrange], ribbon = sqrt.(first.(var.(x)))[subrange], label=&quot;Inferred states&quot;, legend = :bottomright)</code></pre><p><img src="../../../assets/examples/Autoregressive Models_14_1.png" alt/></p><p>It is also interesting to see where our AR coefficients converge to:</p><pre><code class="language-julia hljs">let
+    pθ = plot()
+
+    θms = mean.(θ)
+    θvs = var.(θ)
+    
+    l = length(θms)
+
+    edim(e) = (a) -&gt; map(r -&gt; r[e], a)
+
+    for i in 1:length(first(θms))
+        pθ = plot!(pθ, θms |&gt; edim(i), ribbon = θvs |&gt; edim(i) .|&gt; sqrt, label = &quot;Estimated θ[$i]&quot;)
+    end
+    
+    for i in 1:length(real_θ)
+        pθ = plot!(pθ, [ real_θ[i] ], seriestype = :hline, label = &quot;Real θ[$i]&quot;)
+    end
+    
+    plot(pθ, legend = :outertopright, size = (800, 300))
+end</code></pre><p><img src="../../../assets/examples/Autoregressive Models_15_1.png" alt/></p><pre><code class="language-julia hljs">println(&quot;$(length(real_θ))-order AR inference Bethe Free Energy: &quot;, last(mresult.free_energy))</code></pre><pre><code class="nohighlight hljs">5-order AR inference Bethe Free Energy: 1024.077566129808</code></pre><p>We can also run a 1-order AR inference on 5-order AR data:</p><pre><code class="language-julia hljs">uorder  = 1
+uartype = Univariate
+uc      = ReactiveMP.ar_unit(uartype, uorder)
+uconstraints = ar_constraints()
+umeta        = ar_meta(uartype, uorder, ARsafe())
+
+uoptions = (limit_stack_depth = 100, )
+umodel         = lar_model(T=uartype, order=uorder, c=uc, τ=real_τ)
+udata          = (y = observations, )
+initialization = @initialization begin
+    q(γ) = GammaShapeRate(1.0, 1.0)
+    q(θ) = NormalMeanPrecision(0.0, 1.0)
+end
+ureturnvars    = (x = KeepLast(), γ = KeepEach(), θ = KeepEach())
+
+uresult = infer(
+    model = umodel, 
+    data  = udata,
+    meta  = umeta,
+    constraints    = uconstraints,
+    initialization = initialization,
+    returnvars     = ureturnvars,
+    free_energy    = true,
+    iterations     = 50, 
+    showprogress   = false
+);</code></pre><pre><code class="language-julia hljs">println(&quot;1-order AR inference Bethe Free Energy: &quot;, last(uresult.free_energy))</code></pre><pre><code class="nohighlight hljs">1-order AR inference Bethe Free Energy: 1025.8792949319945</code></pre><pre><code class="language-julia hljs">if uresult.free_energy[end] &gt; mresult.free_energy[end]
+    println(&quot;We can see that, according to final Bethe Free Energy value, in this example 5-order AR process can describe data better than 1-order AR.&quot;)
+else
+    error(&quot;AR-1 performs better than AR-5...&quot;) 
+end</code></pre><pre><code class="nohighlight hljs">We can see that, according to final Bethe Free Energy value, in this exampl
+e 5-order AR process can describe data better than 1-order AR.</code></pre><h1 id="Autoregressive-Moving-Average-Model"><a class="docs-heading-anchor" href="#Autoregressive-Moving-Average-Model">Autoregressive Moving Average Model</a><a id="Autoregressive-Moving-Average-Model-1"></a><a class="docs-heading-anchor-permalink" href="#Autoregressive-Moving-Average-Model" title="Permalink"></a></h1><p>Bayesian <a href="https://en.wikipedia.org/wiki/Autoregressive%E2%80%93moving-average_model#Applications">ARMA model</a> can be effectively implemeted in <strong>RxInfer.jl</strong>. For theoretical details on Varitional Inference for ARMA model, we refer the reader to the following <a href="https://ieeexplore.ieee.org/document/7798432">paper</a>.  The Bayesian ARMA model can be written as follows:</p><p class="math-container">\[\begin{aligned}
+e_t \sim \mathcal{N}(0, \gamma^{-1}) \quad
+\theta &amp;\sim \mathcal{MN}(\mathbf{0}, \mathbf{I}) \quad
+\eta \sim \mathcal{MN}(\mathbf{0}, \mathbf{I}) \\
+\mathbf{h}_0 &amp;\sim \mathcal{MN}\left(\begin{bmatrix}
+e_{-1} \\
+e_{-2}
+\end{bmatrix}, \mathbf{I}\right) \\
+\mathbf{h}_t &amp;= \mathbf{S}\mathbf{h}_{t-1} + \mathbf{c} e_{t-1} \\
+\mathbf{x}_t &amp;= \boldsymbol{\theta}^\top\mathbf{x}_{t-1} + \boldsymbol{\eta}^\top\mathbf{h}_{t} + e_t 
+\end{aligned}\]</p><p>where shift matrix <span>$\mathbf{S}$</span> is</p><p class="math-container">\[\begin{aligned}
+\mathbf{S} = \begin{pmatrix}
+0 &amp; 0 \\
+1 &amp; 0 
+\end{pmatrix}
+\end{aligned}\]</p><p>and unit vector <span>$\mathbf{c}$</span>: </p><p class="math-container">\[\begin{aligned}
+\mathbf{c}=[1, 0]
+\end{aligned}\]</p><p>when MA order is <span>$2$</span></p><p>In this way, <span>$\mathbf{h}_t$</span> containing errors <span>$e_t$</span> can be viewed as hidden state.</p><p>In short, the Bayesian ARMA model has two intractabilities: (1) induced by the multiplication of two Gaussian RVs, i.e., <span>$\boldsymbol{\eta}^\top\mathbf{h}_{t}$</span>, (2) induced by errors <span>$e_t$</span> that prevents analytical update of precision parameter <span>$\gamma$</span> (this can be easily seen when constructing the Factor Graph, i.e. there is a loop). Both problems can be easily resolved in <strong>RxInfer.jl</strong>, by creating a hybrid inference algorithm based on Loopy Variational Message Passing.</p><pre><code class="language-julia hljs"># Load packages
+using RxInfer, LinearAlgebra, CSV, DataFrames, Plots</code></pre><pre><code class="language-julia hljs"># Define shift function
+function shift(dim)
+    S = Matrix{Float64}(I, dim, dim)
+    for i in dim:-1:2
+           S[i,:] = S[i-1, :]
+    end
+    S[1, :] = zeros(dim)
+    return S
+end</code></pre><pre><code class="nohighlight hljs">shift (generic function with 1 method)</code></pre><pre><code class="language-julia hljs">@model function ARMA(x, x_prev, h_prior, γ_prior, τ_prior, η_prior, θ_prior, c, b, S)
+    
+    # priors
+    γ  ~ γ_prior
+    η  ~ η_prior
+    θ  ~ θ_prior
+    τ  ~ τ_prior
+    
+    # initial
+    h_0 ~ h_prior
+    z[1] ~ AR(h_0, η, τ)
+    e[1] ~ Normal(mean = 0.0, precision = γ)
+
+    x[1] ~ dot(b, z[1]) + dot(θ, x_prev[1]) + e[1]
+    
+    h_prev = h_0
+    for t in 1:length(x)-1
+        
+        e[t+1] ~ Normal(mean = 0.0, precision = γ)
+        h[t]   ~ S*h_prev + b*e[t]
+        z[t+1] ~ AR(h[t], η, τ)
+        x[t+1] ~ dot(z[t+1], b) + dot(θ, x_prev[t]) + e[t+1]
+        h_prev = h[t]
+    end
+end</code></pre><p>To validate our model and inference, we will use American Airlines stock data downloaded from <a href="https://www.kaggle.com/code/purvasingh/time-series-analysis-with-arma-and-arima/data?select=all_stocks_5yr.csv">Kaggle</a></p><pre><code class="language-julia hljs">x_df = CSV.read(&quot;../data/arma/aal_stock.csv&quot;, DataFrame)</code></pre><pre><code class="nohighlight hljs">1259×7 DataFrame
+  Row │ date        open     high     low      close    volume    Name
+      │ Date        Float64  Float64  Float64  Float64  Int64     String3
+──────┼───────────────────────────────────────────────────────────────────
+    1 │ 2013-02-08    15.07    15.12   14.63     14.75   8407500  AAL
+    2 │ 2013-02-11    14.89    15.01   14.26     14.46   8882000  AAL
+    3 │ 2013-02-12    14.45    14.51   14.1      14.27   8126000  AAL
+    4 │ 2013-02-13    14.3     14.94   14.25     14.66  10259500  AAL
+    5 │ 2013-02-14    14.94    14.96   13.16     13.99  31879900  AAL
+    6 │ 2013-02-15    13.93    14.61   13.93     14.5   15628000  AAL
+    7 │ 2013-02-19    14.33    14.56   14.08     14.26  11354400  AAL
+    8 │ 2013-02-20    14.17    14.26   13.15     13.33  14725200  AAL
+  ⋮   │     ⋮          ⋮        ⋮        ⋮        ⋮        ⋮         ⋮
+ 1253 │ 2018-01-30    52.45    53.05   52.36     52.59   4741808  AAL
+ 1254 │ 2018-01-31    53.08    54.71   53.0      54.32   5962937  AAL
+ 1255 │ 2018-02-01    54.0     54.64   53.59     53.88   3623078  AAL
+ 1256 │ 2018-02-02    53.49    53.99   52.03     52.1    5109361  AAL
+ 1257 │ 2018-02-05    51.99    52.39   49.75     49.76   6878284  AAL
+ 1258 │ 2018-02-06    49.32    51.5    48.79     51.18   6782480  AAL
+ 1259 │ 2018-02-07    50.91    51.98   50.89     51.4    4845831  AAL
+                                                         1244 rows omitted</code></pre><pre><code class="language-julia hljs"># we will use &quot;close&quot; column
+x_data = filter(!ismissing, x_df[:, 5]);</code></pre><pre><code class="language-julia hljs"># Plot data
+plot(x_data, xlabel=&quot;day&quot;, ylabel=&quot;price&quot;, label=false)</code></pre><p><img src="../../../assets/examples/Autoregressive Models_25_1.png" alt/></p><pre><code class="language-julia hljs">p_order = 10 # AR
+q_order = 4 # MA</code></pre><pre><code class="nohighlight hljs">4</code></pre><pre><code class="language-julia hljs"># Training set
+train_size = 1000
+x_prev_train = [Float64.(x_data[i+p_order-1:-1:i]) for i in 1:length(x_data)-p_order][1:train_size]
+x_train = Float64.(x_data[p_order+1:end])[1:train_size];</code></pre><pre><code class="language-julia hljs"># Test set
+x_prev_test = [Float64.(x_data[i+p_order-1:-1:i]) for i in 1:length(x_data)-p_order][train_size+1:end]
+x_test = Float64.(x_data[p_order+1:end])[train_size+1:end];</code></pre><h3 id="Inference"><a class="docs-heading-anchor" href="#Inference">Inference</a><a id="Inference-1"></a><a class="docs-heading-anchor-permalink" href="#Inference" title="Permalink"></a></h3><pre><code class="language-julia hljs"># Constraints are needed for performing VMP
+arma_constraints = @constraints begin
+    q(z, h_0, h, η, τ, γ,e) = q(h_0)q(z, h)q(η)q(τ)q(γ)q(e)
+end;</code></pre><pre><code class="language-julia hljs"># This cell defines prior knowledge for model parameters
+h_prior = MvNormalMeanPrecision(zeros(q_order), diageye(q_order))
+γ_prior = GammaShapeRate(1e4, 1.0)
+τ_prior = GammaShapeRate(1e2, 1.0)
+η_prior = MvNormalMeanPrecision(zeros(q_order), diageye(q_order))
+θ_prior = MvNormalMeanPrecision(zeros(p_order), diageye(p_order));</code></pre><pre><code class="language-julia hljs"># Model&#39;s graph has structural loops, hence, it requires pre-initialisation
+arma_initialization = @initialization begin
+    q(h_0) = h_prior
+    μ(h_0) = h_prior
+    q(h) = h_prior
+    μ(h) = h_prior
+    q(γ) = γ_prior
+    q(τ) = τ_prior
+    q(η) = η_prior
+    q(θ) = θ_prior
+
+end
+arma_meta       = ar_meta(Multivariate, q_order, ARsafe());</code></pre><pre><code class="language-julia hljs">c = zeros(p_order); c[1] = 1.0; # AR
+b = zeros(q_order); b[1] = 1.0; # MA
+S = shift(q_order); # MA
+
+
+result = infer(
+    model = ARMA(x_prev=x_prev_train, h_prior=h_prior, γ_prior=γ_prior, τ_prior=τ_prior, η_prior=η_prior, θ_prior=θ_prior, c=c, b=b, S=S), 
+    data  = (x = x_train, ),
+    initialization = arma_initialization,
+    constraints   = arma_constraints,
+    meta          = arma_meta,
+    iterations    = 10,
+    options       = (limit_stack_depth = 400, ),
+);</code></pre><pre><code class="language-julia hljs">plot(mean.(result.posteriors[:e][end]), ribbon = var.(result.posteriors[:e][end]), label = &quot;eₜ&quot;)</code></pre><p><img src="../../../assets/examples/Autoregressive Models_33_1.png" alt/></p><pre><code class="language-julia hljs"># extract posteriors
+h_posterior = result.posteriors[:h][end][end]
+γ_posterior = result.posteriors[:γ][end]
+τ_posterior = result.posteriors[:τ][end]
+η_posterior = result.posteriors[:η][end]
+θ_posterior = result.posteriors[:θ][end];</code></pre><h2 id="Prediction"><a class="docs-heading-anchor" href="#Prediction">Prediction</a><a id="Prediction-1"></a><a class="docs-heading-anchor-permalink" href="#Prediction" title="Permalink"></a></h2><p>Here we are going to use our inference results in order to predict the dataset itself</p><pre><code class="language-julia hljs"># The prediction function is aimed at approximating the predictive posterior distribution
+# It triggers the rules in the generative order (in future, RxInfer.jl will provide this function out of the box)
+function prediction(x_prev, h_posterior, γ_posterior, τ_posterior, η_posterior, θ_posterior, p, q)
+    h_out = MvNormalMeanPrecision(mean(h_posterior), precision(h_posterior))
+    ar_out = @call_rule AR(:y, Marginalisation) (m_x=h_out, q_θ=η_posterior, q_γ=τ_posterior, meta=ARMeta(Multivariate, p, ARsafe()))
+    c = zeros(p); c[1] = 1.0
+    b = zeros(q); b[1] = 1.0
+    ar_dot_out = @call_rule typeof(dot)(:out, Marginalisation) (m_in1=PointMass(b), m_in2=ar_out)
+    θ_out = MvNormalMeanPrecision(mean(θ_posterior), precision(θ_posterior))
+    ma_dot_out = @call_rule typeof(dot)(:out, Marginalisation) (m_in1=PointMass(x_prev), m_in2=θ_out)
+    e_out = @call_rule NormalMeanPrecision(:out, Marginalisation) (q_μ=PointMass(0.0), q_τ=mean(γ_posterior))
+    ar_ma = @call_rule typeof(+)(:out, Marginalisation) (m_in1=ar_dot_out, m_in2=ma_dot_out)  
+    @call_rule typeof(+)(:out, Marginalisation) (m_in1=ar_ma, m_in2=e_out)  
+end</code></pre><pre><code class="nohighlight hljs">prediction (generic function with 1 method)</code></pre><pre><code class="language-julia hljs">predictions = []
+for x_prev in x_prev_test
+    push!(predictions, prediction(x_prev, h_posterior, γ_posterior, τ_posterior, η_posterior, θ_posterior, p_order, q_order))
+    # after every new prediction we can actually &quot;retrain&quot; the model to use the power of Bayesian approach
+    # we will skip this part at this notebook
+end</code></pre><pre><code class="language-julia hljs">plot(x_test, label=&quot;test data&quot;, legend=:topleft)
+plot!(mean.(predictions)[1:end], ribbon=std.(predictions)[1:end], label=&quot;predicted&quot;, xlabel=&quot;day&quot;, ylabel=&quot;price&quot;)</code></pre><p><img src="../../../assets/examples/Autoregressive Models_37_1.png" alt/></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../overview/">« Overview</a><a class="docs-footer-nextpage" href="../Gamma Mixture/">Gamma Mixture Model »</a><div class="flexbox-break"></div><p class="footer-message">Created in <a href="https://biaslab.github.io/">BIASlab</a>, maintained by <a href="https://github.com/ReactiveBayes">ReactiveBayes</a>, powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.4.1 on <span class="colophon-date" title="Thursday 23 May 2024 17:01">Thursday 23 May 2024</span>. Using Julia version 1.10.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
