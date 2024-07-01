@@ -1,6 +1,6 @@
 module ProjectionExt
 
-using RxInfer, ExponentialFamily, ExponentialFamilyProjection, ReactiveMP, BayesBase
+using RxInfer, ExponentialFamily, ExponentialFamilyProjection, ReactiveMP, BayesBase, Random, LinearAlgebra
 
 ReactiveMP.default_form_check_strategy(::ProjectedTo) = FormConstraintCheckLast()
 ReactiveMP.default_prod_constraint(::ProjectedTo) = GenericProd()
@@ -18,8 +18,12 @@ function ReactiveMP.constrain_form(constraint::ProjectedTo, context::ProjectionC
 end
 
 function ReactiveMP.constrain_form(constraint::ProjectedTo, context::ProjectionContext, something::ProductOf)
-    (left, right) = BayesBase.getleft(something), BayesBase.getright(something)
-    return ReactiveMP.constrain_form(constraint::ProjectedTo, context, (x) -> logpdf(left, x) + logpdf(right, x))
+    (prodleft, prodright) = BayesBase.getleft(something), BayesBase.getright(something)
+    return ReactiveMP.constrain_form(constraint::ProjectedTo, context, something, prodleft, prodright)
+end
+
+function ReactiveMP.constrain_form(constraint::ProjectedTo, context::ProjectionContext, something::ProductOf, prodleft, prodright)
+    return ReactiveMP.constrain_form(constraint::ProjectedTo, context, (x) -> logpdf(prodleft, x) + logpdf(prodright, x))
 end
 
 function ReactiveMP.constrain_form(constraint::ProjectedTo, context::ProjectionContext, ::Type{T}, something::T) where {T}
@@ -40,6 +44,34 @@ function ReactiveMP.constrain_form(constraint::ProjectedTo, context::ProjectionC
     approximation = project_to(constraint, fn; initialpoint = initialpoint)
     context.previous = approximation
     return approximation
+end
+
+function ReactiveMP.constrain_form(constraint::ProjectedTo, context::ProjectionContext, something::TerminalProdArgument{S}) where { S <: SampleList }
+    arg = something.argument
+
+    f = (M, p) -> begin
+        ef = convert(ExponentialFamilyDistribution, M, p)
+        return -sum((d) -> logpdf(ef, d), BayesBase.get_samples(arg))
+    end
+    
+    g = (M, p) -> begin
+        ef = convert(ExponentialFamilyDistribution, M, p)
+        X = ReactiveMP.ForwardDiff.gradient((p) -> f(M, p), p)
+        inv_fisher = cholinv(ExponentialFamily.fisherinformation(ef))
+        X = inv_fisher * X
+        X = ExponentialFamilyProjection.ExponentialFamilyManifolds.partition_point(M, X)
+        X = X ./ norm(M, p, X)
+        return X
+    end
+
+    M = ExponentialFamilyProjection.get_projected_to_manifold(constraint)
+    p = rand(MersenneTwister(42), M)
+    q = ExponentialFamilyProjection.Manopt.gradient_descent(M, f, g, p)
+
+    return convert(Distribution, convert(ExponentialFamilyDistribution, M, q))
+
+    # (prodleft, prodright) = BayesBase.getleft(something), BayesBase.getright(something)
+    # return ReactiveMP.constrain_form(constraint::ProjectedTo, context, something, prodleft, prodright)
 end
 
 end
