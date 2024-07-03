@@ -5,55 +5,51 @@ using RxInfer, ExponentialFamily, ExponentialFamilyProjection, ReactiveMP, Bayes
 ReactiveMP.default_form_check_strategy(::ProjectedTo) = FormConstraintCheckLast()
 ReactiveMP.default_prod_constraint(::ProjectedTo) = GenericProd()
 
-mutable struct ProjectionContext
-    previous
+mutable struct ProjectionContext{T}
+    previous::Union{Nothing, T}
 end
 
-function ReactiveMP.prepare_context(::ProjectedTo)
-    return ProjectionContext(nothing)
+function ReactiveMP.prepare_context(constraint::ProjectedTo)
+    T = ExponentialFamilyProjection.get_projected_to_type(constraint)
+    return ProjectionContext{T}(nothing)
 end
 
 function ReactiveMP.constrain_form(constraint::ProjectedTo, context::ProjectionContext, something::Distribution)
-    return ReactiveMP.constrain_form(constraint, context, ExponentialFamilyProjection.get_projected_to_type(constraint), something)
+    T = ExponentialFamilyProjection.get_projected_to_type(constraint)
+    D = ExponentialFamily.exponential_family_typetag(something)
+    if T === D
+        result = convert(D, something)
+        context.previous = result
+        return result
+    else
+        return ReactiveMP.constrain_form(constraint, context, (x) -> logpdf(something, x))
+    end
 end
 
 function ReactiveMP.constrain_form(constraint::ProjectedTo, context::ProjectionContext, something::ProductOf)
-    (prodleft, prodright) = BayesBase.getleft(something), BayesBase.getright(something)
-    return ReactiveMP.constrain_form(constraint::ProjectedTo, context, something, prodleft, prodright)
-end
-
-function ReactiveMP.constrain_form(constraint::ProjectedTo, context::ProjectionContext, something::ProductOf, prodleft, prodright)
-    return ReactiveMP.constrain_form(constraint::ProjectedTo, context, (x) -> logpdf(prodleft, x) + logpdf(prodright, x))
-end
-
-function ReactiveMP.constrain_form(constraint::ProjectedTo, context::ProjectionContext, ::Type{T}, something::T) where {T}
-    return something
-end
-
-function ReactiveMP.constrain_form(constraint::ProjectedTo, context::ProjectionContext, ::Type{R}, something::T) where {R, T}
-    return ReactiveMP.constrain_form(constraint, context, (x) -> logpdf(something, x))
+    return ReactiveMP.constrain_form(constraint::ProjectedTo, context, (x) -> logpdf(something, x))
 end
 
 function ReactiveMP.constrain_form(constraint::ProjectedTo, context::ProjectionContext, fn::F) where {F <: Function}
     initialpoint = nothing
-    if context.previous !== nothing
+    if !isnothing(context.previous)
         initialη = getnaturalparameters(convert(ExponentialFamilyDistribution, context.previous))
         manifold = ExponentialFamilyProjection.get_projected_to_manifold(constraint)
         initialpoint = ExponentialFamilyProjection.ExponentialFamilyManifolds.partition_point(manifold, initialη)
     end
-    approximation = project_to(constraint, fn; initialpoint = initialpoint)
-    context.previous = approximation
-    return approximation
+    result = project_to(constraint, fn; initialpoint = initialpoint)
+    context.previous = result
+    return result
 end
 
-function ReactiveMP.constrain_form(constraint::ProjectedTo, context::ProjectionContext, something::TerminalProdArgument{S}) where { S <: SampleList }
+function ReactiveMP.constrain_form(constraint::ProjectedTo, context::ProjectionContext, something::TerminalProdArgument{S}) where {S <: SampleList}
     arg = something.argument
 
     f = (M, p) -> begin
         ef = convert(ExponentialFamilyDistribution, M, p)
         return -sum((d) -> logpdf(ef, d), BayesBase.get_samples(arg))
     end
-    
+
     g = (M, p) -> begin
         ef = convert(ExponentialFamilyDistribution, M, p)
         X = ReactiveMP.ForwardDiff.gradient((p) -> f(M, p), p)
