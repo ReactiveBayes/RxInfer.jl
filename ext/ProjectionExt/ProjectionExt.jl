@@ -30,7 +30,7 @@ function ReactiveMP.constrain_form(constraint::ProjectedTo, context::ProjectionC
     return ReactiveMP.constrain_form(constraint::ProjectedTo, context, (x) -> logpdf(something, x))
 end
 
-function ReactiveMP.constrain_form(constraint::ProjectedTo, context::ProjectionContext, fn::F) where {F <: Function}
+function ReactiveMP.constrain_form(constraint::ProjectedTo, context::ProjectionContext, fn)
     initialpoint = nothing
     if !isnothing(context.previous)
         initialη = getnaturalparameters(convert(ExponentialFamilyDistribution, context.previous))
@@ -40,34 +40,6 @@ function ReactiveMP.constrain_form(constraint::ProjectedTo, context::ProjectionC
     result = project_to(constraint, fn; initialpoint = initialpoint)
     context.previous = result
     return result
-end
-
-function ReactiveMP.constrain_form(constraint::ProjectedTo, context::ProjectionContext, something::TerminalProdArgument{S}) where {S <: SampleList}
-    arg = something.argument
-
-    f = (M, p) -> begin
-        ef = convert(ExponentialFamilyDistribution, M, p)
-        return -sum((d) -> logpdf(ef, d), BayesBase.get_samples(arg))
-    end
-
-    g = (M, p) -> begin
-        ef = convert(ExponentialFamilyDistribution, M, p)
-        X = ReactiveMP.ForwardDiff.gradient((p) -> f(M, p), p)
-        inv_fisher = cholinv(ExponentialFamily.fisherinformation(ef))
-        X = inv_fisher * X
-        X = ExponentialFamilyProjection.ExponentialFamilyManifolds.partition_point(M, X)
-        X = X ./ norm(M, p, X)
-        return X
-    end
-
-    M = ExponentialFamilyProjection.get_projected_to_manifold(constraint)
-    p = rand(MersenneTwister(42), M)
-    q = ExponentialFamilyProjection.Manopt.gradient_descent(M, f, g, p)
-
-    return convert(Distribution, convert(ExponentialFamilyDistribution, M, q))
-
-    # (prodleft, prodright) = BayesBase.getleft(something), BayesBase.getright(something)
-    # return ReactiveMP.constrain_form(constraint::ProjectedTo, context, something, prodleft, prodright)
 end
 
 end
