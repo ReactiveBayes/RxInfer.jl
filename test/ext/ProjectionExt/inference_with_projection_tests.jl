@@ -38,7 +38,7 @@
             model = simple_model_1(prior = MyBeta(1, 1), likelihood = MyBernoulli),
             data = (y = y,),
             constraints = projection_constraints(),
-            options = (rulefallback = ReactiveMP.rulefallback_nodefunction,)
+            options = (rulefallback = NodeFunctionRuleFallback(),)
         )
         return analytical, projected
     end
@@ -237,7 +237,7 @@ end
         initialization = init,
         data = (y = dataset,),
         free_energy = true,
-        options = (rulefallback = ReactiveMP.rulefallback_nodefunction, limit_stack_depth = 500)
+        options = (rulefallback = NodeFunctionRuleFallback(), limit_stack_depth = 500)
     )
 
     @test all(<(0), diff(result.free_energy))
