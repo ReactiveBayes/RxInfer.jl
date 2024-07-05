@@ -268,3 +268,98 @@ end
         return plot(p1, p2, p3, p4)
     end
 end
+
+@testitem "Inference with delta node and CVI projection" begin
+    using StableRNGs, ExponentialFamilyProjection, ReactiveMP, Distributions, Plots
+
+    include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
+
+    ext = Base.get_extension(ReactiveMP, :ReactiveMPProjectionExt)
+
+    @test !isnothing(ext)
+
+    using .ext
+
+    foo(x) = cos(x)
+    bar(x) = exp(x) + x
+
+    @model function iid_with_delta_transforms(y)
+        a ~ Beta(1, 1)
+        b ~ Beta(2, 2)
+
+        mean := foo(a)
+        precision := bar(b)
+
+        y .~ Normal(mean = mean, precision = precision)
+    end
+
+    @constraints function iid_with_delta_transforms_constraints()
+        q(a, b, mean, precision) = q(a)q(b)q(mean)q(precision)
+        q(a)::ProjectedTo(Beta)
+        q(b)::ProjectedTo(Beta)
+        q(mean)::ProjectedTo(NormalMeanVariance)
+        q(precision)::ProjectedTo(Gamma)
+    end
+
+    @meta function iid_with_delta_transforms_meta()
+        foo() -> CVIProjection()
+        bar() -> CVIProjection()
+    end
+
+    @initialization function iid_with_delta_transforms_initialization()
+        q(a) = Beta(1, 1)
+        q(b) = Beta(1, 1)
+        q(mean) = NormalMeanVariance(0.5, 1)
+        q(precision) = Gamma(1, 1)
+    end
+
+    function run_experiment(ra, rb)
+        rmean = foo(ra)
+        rprecision = bar(rb)
+
+        rng = StableRNG(42)
+        n = 1000
+        y = rand(rng, NormalMeanPrecision(rmean, rprecision), n)
+
+        result = infer(
+            model = iid_with_delta_transforms(),
+            data = (y = y,),
+            constraints = iid_with_delta_transforms_constraints(),
+            meta = iid_with_delta_transforms_meta(),
+            initialization = iid_with_delta_transforms_initialization(),
+            iterations = 2,
+            returnvars = KeepLast(),
+            free_energy = true
+        )
+
+        return ra, rb, rmean, rprecision, y, result
+    end
+
+    for ra in (0.23, 0.64), rb in (0.73, 0.13)
+        ra, rb, rmean, rprecision, y, result = run_experiment(ra, rb)
+
+        @test all(<(0), diff(result.free_energy))
+        @test mean(result.posteriors[:a]) ≈ ra atol = 1e-1
+        @test mean(result.posteriors[:b]) ≈ rb atol = 1e-1
+        @test mean(result.posteriors[:mean]) ≈ rmean atol = 1e-1
+        @test mean(result.posteriors[:precision]) ≈ rprecision atol = 2e-1
+    end
+
+    @test_plot "projection" "iid_delta" begin
+        ra, rb, rmean, rprecision, y, result = run_experiment(0.22, 0.88)
+
+        p1 = plot(0.0:0.01:1.0, (x) -> pdf(result.posteriors[:a], x), label = "inferred a", fill = 0, fillalpha = 0.2)
+        p1 = vline!([ ra ], label = "real a")
+
+        p2 = plot(0.0:0.01:1.0, (x) -> pdf(result.posteriors[:b], x), label = "inferred b", fill = 0, fillalpha = 0.2)
+        p2 = vline!([ rb ], label = "real b")
+
+        p3 = plot(0.0:0.01:5.0, (x) -> pdf(result.posteriors[:mean], x), label = "inferred mean", fill = 0, fillalpha = 0.2)
+        p3 = vline!([ rmean ], label = "real mean")
+
+        p4 = plot(0.0:0.01:5.0, (x) -> pdf(result.posteriors[:precision], x), label = "inferred precision", fill = 0, fillalpha = 0.2)
+        p4 = vline!([ rprecision ], label = "real precision")
+
+        plot(p1, p2, p3, p4)
+    end
+end
