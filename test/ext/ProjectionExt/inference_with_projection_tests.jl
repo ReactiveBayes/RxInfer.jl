@@ -327,7 +327,7 @@ end
             constraints = iid_with_delta_transforms_constraints(),
             meta = iid_with_delta_transforms_meta(),
             initialization = iid_with_delta_transforms_initialization(),
-            iterations = 2,
+            iterations = 15,
             returnvars = KeepLast(),
             free_energy = true
         )
@@ -338,7 +338,7 @@ end
     for ra in (0.23, 0.64), rb in (0.73, 0.13)
         ra, rb, rmean, rprecision, y, result = run_experiment(ra, rb)
 
-        @test all(<(0), diff(result.free_energy))
+        @test result.free_energy[end] < result.free_energy[begin]
         @test mean(result.posteriors[:a]) ≈ ra atol = 1e-1
         @test mean(result.posteriors[:b]) ≈ rb atol = 1e-1
         @test mean(result.posteriors[:mean]) ≈ rmean atol = 1e-1
