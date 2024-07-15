@@ -192,7 +192,15 @@ The `RxInfer` framework consists of three *core* packages developed by [Reactive
 Additionally, checkout our [video from JuliaCon 2023](https://www.youtube.com/watch?v=qXrvDVm_fnE) for a high-level overview of the package
 
 <p align="center">
-    <a href="https://www.youtube.com/watch?v=qXrvDVm_fnE"><img width="460" src="https://img.youtube.com/vi/qXrvDVm_fnE/0.jpg"></a>
+    <a href="https://www.youtube.com/watch?v=qXrvDVm_fnE"><img style="width: 100%" src="https://img.youtube.com/vi/qXrvDVm_fnE/0.jpg"></a>
+</p>
+
+## JuliaUserGroupMunich presentation
+
+Also check out the recorded presentation at JuliaUserGroupMunich for a more detailed overview
+
+<p align="center">
+    <a href="https://www.youtube.com/watch?v=KuluqEzFtm8"><img style="width: 100%" src="https://img.youtube.com/vi/KuluqEzFtm8/0.jpg"></a>
 </p>
 
 # License
