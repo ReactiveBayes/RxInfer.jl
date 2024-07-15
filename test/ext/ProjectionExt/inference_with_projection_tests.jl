@@ -349,16 +349,94 @@ end
         ra, rb, rmean, rprecision, y, result = run_experiment(0.22, 0.88)
 
         p1 = plot(0.0:0.01:1.0, (x) -> pdf(result.posteriors[:a], x), label = "inferred a", fill = 0, fillalpha = 0.2)
-        p1 = vline!([ ra ], label = "real a")
+        p1 = vline!([ra], label = "real a")
 
         p2 = plot(0.0:0.01:1.0, (x) -> pdf(result.posteriors[:b], x), label = "inferred b", fill = 0, fillalpha = 0.2)
-        p2 = vline!([ rb ], label = "real b")
+        p2 = vline!([rb], label = "real b")
 
         p3 = plot(0.0:0.01:5.0, (x) -> pdf(result.posteriors[:mean], x), label = "inferred mean", fill = 0, fillalpha = 0.2)
-        p3 = vline!([ rmean ], label = "real mean")
+        p3 = vline!([rmean], label = "real mean")
 
         p4 = plot(0.0:0.01:5.0, (x) -> pdf(result.posteriors[:precision], x), label = "inferred precision", fill = 0, fillalpha = 0.2)
-        p4 = vline!([ rprecision ], label = "real precision")
+        p4 = vline!([rprecision], label = "real precision")
+
+        plot(p1, p2, p3, p4)
+    end
+end
+
+@testitem "Inference with CVI projection, multiple inputs" begin
+    using StableRNGs, Plots, ExponentialFamilyProjection
+
+    include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
+
+    ext = Base.get_extension(ReactiveMP, :ReactiveMPProjectionExt)
+
+    @test !isnothing(ext)
+
+    using .ext
+
+    a = 0.22
+    b = 1.86
+    c = -3.89
+
+    function foo(a, b, c)
+        return [a, b, c]
+    end
+
+    μ = foo(a, b, c)
+    C = [0.001 0.0 0.0; 0.0 0.001 0.0; 0.0 0.0 0.001]
+
+    n = 200
+    rng = StableRNG(42)
+    y = [rand(rng, MvNormalMeanCovariance(μ, C)) for _ in 1:n]
+
+    @model function mymodel(y, C)
+        a ~ Beta(1, 1)
+        b ~ Gamma(1, 1)
+        c ~ Normal(mean = -5.0, variance = 1.0)
+        μ := foo(a, b, c)
+        for i in eachindex(y)
+            y[i] ~ MvNormal(mean = μ, covariance = C)
+        end
+    end
+
+    @constraints function myconstraints()
+        q(a)::ProjectedTo(Beta)
+        q(b)::ProjectedTo(Gamma)
+        q(c)::ProjectedTo(NormalMeanVariance)
+        q(μ)::ProjectedTo(MvNormalMeanCovariance, 3)
+    end
+
+    @initialization function myinitialization()
+        q(μ) = MvNormalMeanCovariance([0.5, 1.0, -5.0], [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0])
+    end
+
+    @meta function mymeta()
+        foo() -> CVIProjection(rng = StableRNG(42), nsamples = 5, prjparams = ProjectionParameters(
+            strategy = ExponentialFamilyProjection.ControlVariateStrategy(
+                nsamples = 450
+            )
+        ))
+    end
+
+    result = infer(model = mymodel(C = C), data = (y = y,), meta = mymeta(), constraints = myconstraints(), initialization = myinitialization(), free_energy = true, iterations = 15)
+
+    @test mean(result.posteriors[:a][end]) ≈ a atol=0.05
+    @test mean(result.posteriors[:b][end]) ≈ b atol=0.05
+    @test mean(result.posteriors[:c][end]) ≈ c atol=1.00
+    @test first(result.free_energy) > last(result.free_energy)
+
+    @test_plot "projection" "iid_delta_multiple_input" begin
+        p1 = plot(0.0:0.01:1.0, (x) -> pdf(result.posteriors[:a][end], x), label = "inferred a", fill = 0, fillalpha = 0.2)
+        p1 = vline!([a], label = "real a")
+
+        p2 = plot(0.0:0.01:5.0, (x) -> pdf(result.posteriors[:b][end], x), label = "inferred b", fill = 0, fillalpha = 0.2)
+        p2 = vline!([b], label = "real b")
+
+        p3 = plot(-10.0:0.01:10.0, (x) -> pdf(result.posteriors[:c][end], x), label = "inferred c", fill = 0, fillalpha = 0.2)
+        p3 = vline!([c], label = "real c")
+
+        p4 = plot(result.free_energy, label = "free energy")
 
         plot(p1, p2, p3, p4)
     end
