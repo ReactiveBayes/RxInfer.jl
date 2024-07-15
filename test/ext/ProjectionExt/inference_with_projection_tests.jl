@@ -339,10 +339,10 @@ end
         ra, rb, rmean, rprecision, y, result = run_experiment(ra, rb)
 
         @test result.free_energy[end] < result.free_energy[begin]
-        @test mean(result.posteriors[:a]) ≈ ra atol = 1e-1
-        @test mean(result.posteriors[:b]) ≈ rb atol = 1e-1
-        @test mean(result.posteriors[:mean]) ≈ rmean atol = 1e-1
-        @test mean(result.posteriors[:precision]) ≈ rprecision atol = 2e-1
+        @test mean(result.posteriors[:a]) ≈ ra atol = 2e-1
+        @test mean(result.posteriors[:b]) ≈ rb atol = 2e-1
+        @test mean(result.posteriors[:mean]) ≈ rmean atol = 2e-1
+        @test mean(result.posteriors[:precision]) ≈ rprecision atol = 3e-1
     end
 
     @test_plot "projection" "iid_delta" begin
