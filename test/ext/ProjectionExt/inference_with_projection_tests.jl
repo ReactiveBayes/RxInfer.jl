@@ -294,7 +294,7 @@ end
     end
 
     @constraints function iid_with_delta_transforms_constraints()
-        q(a, b, mean, precision) = q(a)q(b)q(mean)q(precision)
+        q(mean, precision) = q(mean)q(precision)
         q(a)::ProjectedTo(Beta)
         q(b)::ProjectedTo(Beta)
         q(mean)::ProjectedTo(NormalMeanVariance)
@@ -311,6 +311,10 @@ end
         q(b) = Beta(1, 1)
         q(mean) = NormalMeanVariance(0.5, 1)
         q(precision) = Gamma(1, 1)
+        μ(a) = Beta(1, 1)
+        μ(b) = Beta(1, 1)
+        μ(mean) = NormalMeanVariance(0.5, 1)
+        μ(precision) = Gamma(1, 1)
     end
 
     function run_experiment(ra, rb)
@@ -362,4 +366,151 @@ end
 
         plot(p1, p2, p3, p4)
     end
+end
+
+
+@testitem "Inference with vector output delta node and CVI projection with independent joint factorized constraints" begin
+    using StableRNGs, ExponentialFamilyProjection, ReactiveMP, Distributions, Plots
+
+    include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
+
+    ext = Base.get_extension(ReactiveMP, :ReactiveMPProjectionExt)
+
+    @test !isnothing(ext)
+
+    using .ext
+    Distributions.logpdf(::Uninformative, x) = 1.0
+    transform_i = (i, a, b) -> [1000(1-i), 1000i, a, b]
+
+    @model function trial1(a,b)
+        i ~ Beta(a, b)
+        u0 := transform_i(i, a, b)
+        u0 ~ Uninformative()
+    end
+    
+    metatransform = @meta  begin
+        transform_i() -> DeltaMeta(method = CVIProjection(  out_samples_no = 1000), inverse = nothing)
+    end
+
+    projection_array = [ProjectedTo(Gamma), ProjectedTo(Gamma), ProjectedTo(NormalMeanVariance), ProjectedTo(NormalMeanVariance)]
+    constraints = @constraints begin 
+        q(i) :: ProjectedTo(Beta)
+        q(u0):: projection_array
+    end
+
+    u_initialization = FactorizedJoint(( Gamma(5,5),  Gamma(5, 5), NormalMeanVariance(0,1), NormalMeanVariance(0,1)))
+    @initialization function initialize(a,b)
+        q(u0) = u_initialization
+        q(i) = Beta(a,b)
+    end
+    function run_experiment(a, b)
+        result = infer(
+        model = trial1(),
+        meta = metatransform,
+        data  = (a = a, b = b),
+        constraints = constraints,
+        initialization = initialize(5,5),
+        iterations = 100,
+        free_energy = true)  
+        
+        return result
+    end
+
+    for a in (1.0, 6.0), b in (2.0, 4.0)
+        result = run_experiment(a, b)
+        means_u0 = mean.(components(result.posteriors[:u0][end]))
+        @test result.free_energy[end] < result.free_energy[begin]
+        @test getindex(means_u0, 3) ≈ a atol = 0.2
+        @test getindex(means_u0, 4) ≈ b atol = 0.2
+    end
+
+
+end
+
+
+
+
+@testitem "Inference with delta node and CVI projection with Poisson observations" begin
+    using StableRNGs, ExponentialFamilyProjection, ReactiveMP, Distributions, Plots
+
+    include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
+
+    ext = Base.get_extension(ReactiveMP, :ReactiveMPProjectionExt)
+
+    @test !isnothing(ext)
+
+    using .ext
+   
+    transform_i2(i,x) = i^2 + x
+
+    function generate_poisson_variates(a, b, α, β; n = 200)
+        i = rand(Beta(a,b))
+        x = rand(Gamma(α, β))
+
+        u0 = transform_i2(i, x)
+        u = Vector{Int64}(undef, n)
+        for i = 1:n
+            u[i] = rand(Poisson(u0))
+        end
+        return i, x, u0, u
+    end
+
+   
+    @model function trial2(a, b, α, β, u)
+        i ~ Beta(a, b)
+        x ~ Gamma(α,β)
+        u0 := transform_i2(i,x)
+        for i in eachindex(u)
+            u[i] ~ Poisson(u0)
+        end
+    end
+
+    metatransform2 = @meta  begin
+        transform_i2() -> DeltaMeta(method = CVIProjection(marginal_samples_no = 100, out_samples_no = 10000), inverse = nothing)
+    end
+
+
+    constraints2 = @constraints begin 
+        q(x) :: ProjectedTo(Gamma)
+        q(i) :: ProjectedTo(Beta)
+        q(u0):: ProjectedTo(Gamma)
+    end
+
+    @initialization function initialize2(a,b, α, β)
+        q(u0) = Gamma(10,10)
+        q(x)  = Gamma(α,β)
+        q(i)  = Beta(a,b)
+    end
+
+
+    function run_experiment(a, b, α, β)
+        i, x, u0, u = generate_poisson_variates(a, b, α, β)
+
+        result = infer(
+            model = trial2(a = a, b = b, α = α, β = β ),
+            meta = metatransform2,
+            data  = (u = u, ),
+            constraints = constraints2,
+            initialization = initialize2(a, b, α, β),
+            showprogress = true,
+            free_energy = true,
+        )
+
+        return i, x, u0, result
+    end
+
+
+    for a in (4.0, 6.0), b in (2.0, 4.0), α in (5.0, 8.0), β in (5.0, 8.0)
+        i, x, u0, result = run_experiment(a, b, α, β)
+
+
+        u0_posterior = result.posteriors[:u0]
+        i_posterior = result.posteriors[:i]
+        x_posterior = result.posteriors[:x]
+
+        @test mean(u0_posterior) ≈ u0 atol = 1.0
+        @test mean(i_posterior) ≈ i atol = 0.5
+        @test mean(x_posterior) ≈ x atol = 1.0
+     end
+
 end

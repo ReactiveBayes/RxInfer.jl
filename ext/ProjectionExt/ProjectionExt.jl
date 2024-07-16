@@ -47,14 +47,8 @@ function ReactiveMP.constrain_form(constraint::ProjectedTo, context::ProjectionC
 end
 
 function ReactiveMP.constrain_form(constraint::ProjectedTo, context::ProjectionContext, something::ProductOf)
-    left  = BayesBase.getleft(something)
-    right = BayesBase.getright(something)
-
-    left_logpdf  = typeof(left) <: Distribution ? x -> logpdf(left, x) : left
-    right_logpdf = typeof(right) <: Distribution ? x-> logpdf(right, x) : right
-    return ReactiveMP.constrain_form(constraint::ProjectedTo, context, (x) -> left_logpdf(x) + right_logpdf(x) )
+    return ReactiveMP.constrain_form(constraint::ProjectedTo, context, (x) -> logpdf(something, x) )
 end
-
 
 function ReactiveMP.constrain_form(constraint::ProjectedTo, context::ProjectionContext, fn)
     initialpoint = initial_point_from_context_constraint(context.previous, constraint)
@@ -65,7 +59,7 @@ end
 
 function ReactiveMP.constrain_form(constraints::Vector{<:ProjectedTo}, contexts::Vector{<:ProjectionContext}, fn::Base.Generator) 
     length_constraints = length(constraints)
-    result = map((f, constraint, context) -> project_to(constraint, f; initialpoint =initial_point_from_context_constraint(context.previous, constraint) ) , fn, constraints, contexts)
+    result = map((f, constraint, context) -> project_to(constraint, x -> logpdf(f, x); initialpoint =initial_point_from_context_constraint(context.previous, constraint) ) , fn, constraints, contexts)
     map((r,c) -> c.previous = r , result, contexts)
     return FactorizedJoint(ntuple(i -> result[i] , length_constraints))
 end
