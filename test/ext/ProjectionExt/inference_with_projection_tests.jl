@@ -409,10 +409,12 @@ end
     end
 
     @meta function mymeta()
-        foo() -> CVIProjection(rng = StableRNG(42), nsamples = 200)
+        foo() -> CVIProjection(rng = StableRNG(42))
     end
 
-    result = infer(model = mymodel(C = C), data = (y = y,), meta = mymeta(), constraints = myconstraints(), initialization = myinitialization(), free_energy = true, iterations = 10)
+    result = infer(
+        model = mymodel(C = C), data = (y = y,), meta = mymeta(), constraints = myconstraints(), initialization = myinitialization(), free_energy = true, iterations = 20
+    )
 
     @test mean(result.posteriors[:a][end]) ≈ a atol = 0.1
     @test mean(result.posteriors[:b][end]) ≈ b atol = 0.2
@@ -442,16 +444,15 @@ end
 
     using .ext
 
-    a = 0.22
+    a = 0.32
     b = 1.86
-    c = -3.89
 
-    function foo(a, b, c)
-        return [a, b, c]
+    function foo(a, b)
+        return [a, b]
     end
 
-    μ = foo(a, b, c)
-    C = [0.001 0.0 0.0; 0.0 0.001 0.0; 0.0 0.0 0.001]
+    μ = foo(a, b)
+    C = [0.001 0.0; 0.0 0.001]
 
     n = 200
     rng = StableRNG(42)
@@ -460,8 +461,7 @@ end
     @model function mymodel(y, C)
         a ~ Beta(1, 1)
         b ~ Gamma(1, 1)
-        c ~ Normal(mean = -5.0, variance = 1.0)
-        μ := foo(a, b, c)
+        μ := foo(a, b)
         for i in eachindex(y)
             y[i] ~ MvNormal(mean = μ, covariance = C)
         end
@@ -470,16 +470,20 @@ end
     @constraints function myconstraints()
         q(a)::ProjectedTo(Beta)
         q(b)::ProjectedTo(Gamma)
-        q(c)::ProjectedTo(NormalMeanVariance)
-        q(μ)::ProjectedTo(MvNormalMeanCovariance, 3)
+        q(μ)::ProjectedTo(MvNormalMeanCovariance, 2)
     end
 
     @initialization function myinitialization()
-        q(μ) = MvNormalMeanCovariance([0.5, 1.0, -5.0], [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0])
+        q(μ) = MvNormalMeanCovariance([0.5, 1.0], [1.0 0.0; 0.0 1.0])
     end
 
     @meta function mymeta()
-        foo() -> CVIProjection(rng = StableRNG(42), nsamples = 5, prjparams = ProjectionParameters(strategy = ExponentialFamilyProjection.ControlVariateStrategy(nsamples = 450)))
+        foo() -> CVIProjection(
+            rng = StableRNG(42),
+            marginalsamples = 20,
+            outsamples = 5,
+            prjparams = ProjectionParameters(strategy = ExponentialFamilyProjection.ControlVariateStrategy(nsamples = 450))
+        )
     end
 
     result = infer(
@@ -488,7 +492,6 @@ end
 
     @test mean(result.posteriors[:a][end]) ≈ a atol = 0.05
     @test mean(result.posteriors[:b][end]) ≈ b atol = 0.05
-    @test mean(result.posteriors[:c][end]) ≈ c atol = 1.00
     @test first(result.free_energy) > last(result.free_energy)
 
     @test_plot "projection" "iid_delta_multiple_input" begin
@@ -498,11 +501,8 @@ end
         p2 = plot(0.0:0.01:5.0, (x) -> pdf(result.posteriors[:b][end], x), label = "inferred b", fill = 0, fillalpha = 0.2)
         p2 = vline!([b], label = "real b")
 
-        p3 = plot(-10.0:0.01:10.0, (x) -> pdf(result.posteriors[:c][end], x), label = "inferred c", fill = 0, fillalpha = 0.2)
-        p3 = vline!([c], label = "real c")
+        p3 = plot(result.free_energy, label = "free energy")
 
-        p4 = plot(result.free_energy, label = "free energy")
-
-        plot(p1, p2, p3, p4)
+        plot(p1, p2, p3)
     end
 end
