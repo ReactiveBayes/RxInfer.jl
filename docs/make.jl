@@ -108,7 +108,8 @@ makedocs(;
                 "Streamline inference" => "manuals/inference/streamlined.md",
                 "Initialization"   => "manuals/inference/initialization.md",
                 "Auto-updates"   => "manuals/inference/autoupdates.md",
-                "Deterministic nodes" => "manuals/inference/delta-node.md"
+                "Deterministic nodes" => "manuals/inference/delta-node.md",
+                "Non-conjugate inference" => "manuals/inference/nonconjugate.md"
             ],
             "Inference customization"   => [
                 "Defining a custom node and rules" => "manuals/customization/custom-node.md",
