@@ -44,6 +44,9 @@ If we attempt inference with this model, `RxInfer` will throw an error because t
 
 To overcome this limitation, `RxInfer` integrates with the `ExponentialFamilyProjection` package. This package re-projects non-conjugate relationships back into a member of the exponential family at the cost of some accuracy.
 
+!!! note
+    `RxInfer` supports non-conjugate inference for completeness, but be aware that inference execution times may increase significantly. This is because non-conjugate models require more complex computations, often involving sampling-based approximations.
+
 ### Specifying Constraints
 
 The projection constraint must be specified using the `@constraints` macro. For example:
@@ -52,7 +55,9 @@ The projection constraint must be specified using the `@constraints` macro. For 
 using ExponentialFamilyProjection
 
 @constraints function non_conjugate_model_constraints()
+  # project variational posterior over `m` to `Beta`
   q(m) :: ProjectedTo(Beta)
+  # project variational posterior over `p` to `Beta`
   q(p) :: ProjectedTo(Beta)
   # `m` and `p` are jointly independent
   q(m, p) = q(m)q(p)
