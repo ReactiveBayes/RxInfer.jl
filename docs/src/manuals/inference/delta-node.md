@@ -149,3 +149,7 @@ Consult the `CVIProjection` docstrings for a detailed explanation of these param
 
 !!! note
     The `CVIProjection` method is an improved version of the now-deprecated `CVI` method. This new implementation features different hyperparameters, better accuracy, and improved stability.
+
+## Fuse deterministic nodes with stochastic nodes
+
+Read how to circumvent the need to define the meta structure and, instead, fuse the deterministic relation with a neighboring stochastic factor node in [this section](@ref inference-undefinedrules-fusedelta).
