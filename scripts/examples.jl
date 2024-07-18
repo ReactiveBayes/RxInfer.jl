@@ -202,8 +202,9 @@ function Base.run(examplesrunner::ExamplesRunner)
         write(io_main_overview, "!!! note\n")
         write(
             io_main_overview,
-            "\tAll examples have been pre-generated automatically from the [`examples/`](https://github.com/reactivebayes/RxInfer.jl/tree/main/examples) folder at GitHub repository.\n\n"
+            "\tAll examples have been pre-generated automatically from the [`examples/`](https://github.com/reactivebayes/RxInfer.jl/tree/main/examples) folder at GitHub repository."
         )
+        write(io_main_overview, "\tIn addition, the documentation, particularly the sections covering the inference procedure, contains additional examples.\n\n")
 
         foreach(pairs(io_category_overviews)) do (label, overview)
             if !isequal(label, :hidden_examples)
