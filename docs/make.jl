@@ -69,7 +69,10 @@ foreach(vcat(ExamplesOverviewPath, ExamplesCategoriesOverviewPaths)) do path
         @warn "`$(path)` does not exist. Generating an empty overview. Use the `make examples` command to generate the overview and all examples."
         mkpath(dirname(path))
         open(path, "w") do f
-            write(f, "The overview is missing. Use the `make examples` command to generate the overview and all examples.")
+            write(f, """
+            $(isequal(path, ExamplesOverviewPath) ? "# [Examples overview](@id examples-overview)" : "")
+            The overview is missing. Use the `make examples` command to generate the overview and all examples.
+            """)
         end
     end
 end
