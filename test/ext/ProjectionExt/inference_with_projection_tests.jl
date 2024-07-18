@@ -274,12 +274,6 @@ end
 
     include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
-    ext = Base.get_extension(ReactiveMP, :ReactiveMPProjectionExt)
-
-    @test !isnothing(ext)
-
-    using .ext
-
     foo(x) = cos(x)
     bar(x) = exp(x) + x
 
@@ -373,12 +367,6 @@ end
 
     include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
-    ext = Base.get_extension(ReactiveMP, :ReactiveMPProjectionExt)
-
-    @test !isnothing(ext)
-
-    using .ext
-
     a = 0.60
     b = 1.20
 
@@ -443,12 +431,6 @@ end
     using StableRNGs, Plots, ExponentialFamilyProjection
 
     include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
-
-    ext = Base.get_extension(ReactiveMP, :ReactiveMPProjectionExt)
-
-    @test !isnothing(ext)
-
-    using .ext
 
     a = 0.32
     b = 1.86
