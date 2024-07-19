@@ -73,7 +73,8 @@ We also assume that `m` and `p` are jointly independent with the `q(m, p) = q(m)
 Dropping the assumption of joint independence would require initializing messages for `m` and `p` without guarantees of convergence.
 Read more about factorization constraints in the [Constraints Specification](@ref user-guide-constraints-specification) guide.
 
-The `ProjectedTo` structure is defined in the `ExponentialFamilyProjection` package. To fully explore its capabilities and hyper-parameters, we invite you to read the detailed [documentation](https://github.com/ReactiveBayes/ExponentialFamilyProjection.jl).
+!!! note
+    The `ProjectedTo` structure is defined in the `ExponentialFamilyProjection` package. To fully explore its capabilities and hyper-parameters, we invite you to read the detailed [documentation](https://github.com/ReactiveBayes/ExponentialFamilyProjection.jl).
 
 ### Initialization
 
@@ -96,33 +97,37 @@ result = infer(
   data  = (y = data,),
   constraints = non_conjugate_model_constraints(),
   initialization = initialization,
-  returnvars = KeepLast(),
-  iterations = 5,
+  iterations = 25,
   free_energy = true
 )
 ```
 
 ### Analyzing the Results
 
-Let's analyze the results using the `StatsPlots` package to visualize the resulting posteriors:
+Let's analyze the results using the `StatsPlots` package to visualize the resulting posteriors over individual VMP iterations:
 
 ```@example non-conjugacy-prior-likelihood
 using StatsPlots
 using Test #hide
 
-p1 = plot(result.posteriors[:m], label = "Inferred `m`", fill = 0, fillalpha = 0.2)
-p1 = vline!(p1, [hidden_mean], label = "Hidden `m`")
+@test isapprox(mean(result.posteriors[:m][end]), hidden_mean, atol = 1e-1) #hide
+@test isapprox(mean(result.posteriors[:p][end]), hidden_precision, atol = 1e-1) #hide
 
-p2 = plot(result.posteriors[:p], label = "Inferred `p`", fill = 0, fillalpha = 0.2)
-p2 = vline!(p2, [hidden_precision], label = "Hidden `p`")
+@gif for (i, q) in enumerate(zip(result.posteriors[:m], result.posteriors[:p]))
+  q_m = q[1]
+  q_p = q[2]
 
-@test isapprox(mean(result.posteriors[:m]), hidden_mean, atol = 1e-1) #hide
-@test isapprox(mean(result.posteriors[:p]), hidden_precision, atol = 1e-1) #hide
+  p1 = plot(q_m, label = "Inferred `m`", fill = 0, fillalpha = 0.2)
+  p1 = vline!(p1, [hidden_mean], label = "Hidden `m`")
 
-plot(p1, p2)
+  p2 = plot(q_p, label = "Inferred `p`", fill = 0, fillalpha = 0.2)
+  p2 = vline!(p2, [hidden_precision], label = "Hidden `p`")
+
+  plot(p1, p2; title = "Iteration $i")
+end fps = 15
 ```
 
-As we can see, the inference runs without any problems, and the estimated posteriors are quite close to the actual hidden parameters used to generate our dataset. We can also verify the [Bethe Free Energy](@ref lib-bethe-free-energy) values to ensure our result has converged:
+As we can see, the estimated posteriors are quite close to the actual hidden parameters used to generate our dataset. We can also verify the [Bethe Free Energy](@ref lib-bethe-free-energy) values to ensure our result has converged:
 
 ```@example non-conjugacy-prior-likelihood
 @test first(result.free_energy) > last(result.free_energy) #hide
