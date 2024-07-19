@@ -167,7 +167,7 @@ Our high-level project roadmap outlines the key milestones and focus areas for t
 | Q1/Q2 2024          | Q3/Q4 2024                | 2025                | 
 |---------------------|---------------------------|--------------------|
 | 🧩 **Nested models with [GraphPPL.jl](https://github.com/reactivebayes/GraphPPL.jl)** ✅    | 🌐 **Graph structure visualization** | 🔀 **Stochastic Processes** |
-| 🔄 **Development of [ExponentialFamilyProjection.jl]()**                 | 🧠 **Automated inference with [ExponentialFamilyProjection.jl](https://github.com/reactivebayes/ExponentialFamilyProjection.jl)** | 🚀 **Robustness & Memory-efficiency** |
+| 🔄 **Development of [ExponentialFamilyProjection.jl]()** ✅                | 🧠 **Automated inference with [ExponentialFamilyProjection.jl](https://github.com/reactivebayes/ExponentialFamilyProjection.jl)** | 🚀 **Robustness & Memory-efficiency** |
 
 For a more granular view of our progress and ongoing tasks, check out our [project board](https://github.com/orgs/reactivebayes/projects/2/views/4) or join our 4-weekly [public meetings](https://dynalist.io/d/F4aA-Z2c8X-M1iWTn9hY_ndN).
 

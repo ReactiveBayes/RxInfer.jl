@@ -69,7 +69,10 @@ foreach(vcat(ExamplesOverviewPath, ExamplesCategoriesOverviewPaths)) do path
         @warn "`$(path)` does not exist. Generating an empty overview. Use the `make examples` command to generate the overview and all examples."
         mkpath(dirname(path))
         open(path, "w") do f
-            write(f, "The overview is missing. Use the `make examples` command to generate the overview and all examples.")
+            write(f, """
+            $(isequal(path, ExamplesOverviewPath) ? "# [Examples overview](@id examples-overview)" : "")
+            The overview is missing. Use the `make examples` command to generate the overview and all examples.
+            """)
         end
     end
 end
@@ -108,7 +111,9 @@ makedocs(;
                 "Streamline inference" => "manuals/inference/streamlined.md",
                 "Initialization"   => "manuals/inference/initialization.md",
                 "Auto-updates"   => "manuals/inference/autoupdates.md",
-                "Deterministic nodes" => "manuals/inference/delta-node.md"
+                "Deterministic nodes" => "manuals/inference/delta-node.md",
+                "Non-conjugate inference" => "manuals/inference/nonconjugate.md",
+                "Undefined message update rules" => "manuals/inference/undefinedrules.md"
             ],
             "Inference customization"   => [
                 "Defining a custom node and rules" => "manuals/customization/custom-node.md",
