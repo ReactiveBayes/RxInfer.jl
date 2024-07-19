@@ -138,14 +138,12 @@ end
 The corresponding meta specification can be represented as:
 
 ```@example delta_node_example_cvi
-using StableRNGs
-
 delta_meta = @meta begin 
-    tanh() -> DeltaMeta(method = CVIProjection(rng = StableRNG(42)), inverse = nothing)
+    tanh() -> CVIProjection()
 end
 ```
 
-Consult the `CVIProjection` docstrings for a detailed explanation of these parameters. Additionally, read the [Non-conjugate Inference](@ref inference-nonconjugate) section.
+Consult the `CVIProjection` docstrings for a detailed explanation of its hyper-parameters. Additionally, read the [Non-conjugate Inference](@ref inference-nonconjugate) section.
 
 !!! note
     The `CVIProjection` method is an improved version of the now-deprecated `CVI` method. This new implementation features different hyperparameters, better accuracy, and improved stability.
