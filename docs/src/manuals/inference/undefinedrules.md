@@ -24,7 +24,7 @@ end
 Next, we define structures for both the `prior` and the `likelihood`. Let's start with the prior. Assume that the `p` parameter is best described by a `Beta` distribution. We can define it as follows:
 
 !!! note
-    The `Distributions.jl` package already defines `Beta` distributions. The example below redefines this structure for illustrative purposes.
+    The `Distributions.jl` package already provides a fully-featured implementation of `Beta` and `Bernoulli` distributions, including functions like `logpdf` and support checks. The example below redefines the `Beta` distribution structure and related functions solely for illustrative purposes. In practice, you often won't need to define these distributions yourself, as many of them has already been included in `Distributions.jl`.
 
 ```@example inference-undefinedrules
 using Distributions, BayesBase
@@ -58,18 +58,20 @@ The next step is to register these structures as valid factor nodes:
 @node BernoulliDistribution Stochastic [out, p]
 ```
 
+When specifying a node for our custom distributions, we must follow a specific edge ordering. The first edge is always `out`, which represents a sample in the `logpdf` function. All remaining edges must match the parameters of the distribution in the exact same order. For example, for the `BetaDistribution`, the node function is defined as `(out, a, b) -> logpdf(BetaDistribution(a, b), out)`. This ensures that the node specification and the `logpdf` function correctly maps the distribution parameters to the sample output.
+
 !!! note
     Although `Beta` is a conjugate prior for the parameter of the `Bernoulli` distribution, `ReactiveMP` and `RxInfer` are unaware of this and cannot exploit this information. To utilize conjugacy, refer to the [custom node creation section](@ref create-node) of the documentation.
 
 ## Generating a synthetic dataset
 
-We can generate a synthetic dataset as follows:
+Previously, we assumed that our dataset consists of discrete values: `true` and `false`. We can generate a synthetic dataset with these values as follows:
 
 ```@example inference-undefinedrules
 using StableRNGs, Plots
 
-hidden_p    = 1 / 3.14
-ndatapoints = 1_000
+hidden_p    = 1 / 3.1415 # a value between `0` and `1`
+ndatapoints = 1_000      # number of observarions
 dataset     = rand(StableRNG(42), Bernoulli(hidden_p), ndatapoints)
 
 bar(["true", "false"], [ count(==(true), dataset), count(==(false), dataset) ], label = "dataset")
@@ -77,12 +79,12 @@ bar(["true", "false"], [ count(==(true), dataset), count(==(false), dataset) ], 
 
 ## Inference with a rule fallback
 
-Now, we can run inference with `RxInfer`. Since explicit rules for our nodes are not defined, we can instruct the `ReactiveMP` backend to use fallback message update rules. Refer to the `ReactiveMP` documentation for available fallbacks. In this example, we will use the `NodeFunctionRuleFallback` structure, which uses the `logpdf` of the stochastic node to approximate messages.
+Now, we can run inference with `RxInfer`. Since explicit rules for our nodes have not defined, we can instruct the `ReactiveMP` backend to use fallback message update rules. Refer to the `ReactiveMP` documentation for available fallbacks. In this example, we will use the `NodeFunctionRuleFallback` structure, which uses the `logpdf` of the stochastic node to approximate messages.
 
 !!! note
     `NodeFunctionRuleFallback` employs a simple approximation for outbound messages, which may significantly degrade inference accuracy. Whenever possible, it is recommended to define [proper message update rules](@ref create-node).
 
-To complete the inference setup, we must define an approximation method for posteriors using the `@constraints` macro. We will utilize the `ExponentialFamilyProjection` library to project an arbitrary function onto a member of the exponential family. More information on `ExponentialFamilyProjection` can be found in the [Non-conjugate Inference](@ref inference-nonconjugate) section.
+To complete the inference setup, we must define an approximation method for posteriors using the `@constraints` macro. We will utilize the `ExponentialFamilyProjection` library to project an arbitrary function onto a member of the exponential family. More information on `ExponentialFamilyProjection` can be found in the [Non-conjugate Inference](@ref inference-nonconjugate) section and in its [official documentation](https://github.com/ReactiveBayes/ExponentialFamilyProjection.jl).
 
 ```@example inference-undefinedrules
 using ExponentialFamilyProjection

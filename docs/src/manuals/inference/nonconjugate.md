@@ -64,12 +64,16 @@ using ExponentialFamilyProjection
 end
 ```
 
-These constraints specify that the posterior over the hidden variable `m` must be re-projected to the `Beta` distribution to cover the region from `0` to `1`. The same applies to the variable `p`. We also assume that `m` and `p` are jointly independent.
+These constraints specify that the posterior distribution for the hidden variable `m` must be re-projected to a `Beta` distribution to cover the region from `0` to `1`. The same applies to the variable `p`.  
 
-!!! note
-    Dropping the assumption of joint independence would require initializing messages for `m` and `p` without guarantees of convergence.
+!!! note 
+    Note that the distribution specified in the `@constraints` does not need to match the distribution specified as a prior. For example, we could use a `Gamma` distribution as a prior and a `Beta` distribution as a posterior. The only requirement is that the support of the posterior distribution must be the same as or smaller than that of the prior.
 
-To fully explore the capabilities and hyper-parameters of the `ExponentialFamilyProjection` package, we invite you to read its detailed [documentation](https://github.com/ReactiveBayes/ExponentialFamilyProjection.jl).
+We also assume that `m` and `p` are jointly independent with the `q(m, p) = q(m)q(p)` specification.
+Dropping the assumption of joint independence would require initializing messages for `m` and `p` without guarantees of convergence.
+Read more about factorization constraints in the [Constraints Specification](@ref user-guide-constraints-specification) guide.
+
+The `ProjectedTo` structure is defined in the `ExponentialFamilyProjection` package. To fully explore its capabilities and hyper-parameters, we invite you to read the detailed [documentation](https://github.com/ReactiveBayes/ExponentialFamilyProjection.jl).
 
 ### Initialization
 
