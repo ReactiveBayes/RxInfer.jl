@@ -494,3 +494,31 @@ end
         plot(p1, p2, p3)
     end
 end
+
+@testitem "Projection constraint should skip processing of `ExponentialFamilyDistribution` instances" begin
+    using BayesBase, ExponentialFamily, Distributions, ExponentialFamilyProjection
+
+    struct NodePrior end
+    struct NodeLikelihood end
+
+    @node NodePrior Stochastic [out, in]
+    @node NodeLikelihood Stochastic [out, in]
+
+    @rule NodePrior(:out, Marginalisation) (q_in::Any,) = NodePrior()
+    @rule NodeLikelihood(:in, Marginalisation) (q_out::Any,) = NodeLikelihood()
+
+    BayesBase.prod(::GenericProd, ::NodePrior, ::NodeLikelihood) = convert(ExponentialFamilyDistribution, Beta(1, 1))
+
+    @model function mymodel(y)
+        a ~ NodePrior(1)
+        y ~ NodeLikelihood(a)
+    end
+
+    constraints = @constraints begin
+        q(a)::ProjectedTo(Beta)
+    end
+
+    result = infer(model = mymodel(), data = (y = 1.0,), constraints = constraints)
+
+    @test result.posteriors[:a] == Beta(1, 1)
+end
