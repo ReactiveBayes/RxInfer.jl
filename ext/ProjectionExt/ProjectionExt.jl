@@ -14,7 +14,7 @@ function ReactiveMP.prepare_context(constraint::ProjectedTo)
     return ProjectionContext{T}(nothing)
 end
 
-function ReactiveMP.constrain_form(constraint::ProjectedTo, context::ProjectionContext, something::Distribution)
+function ReactiveMP.constrain_form(constraint::ProjectedTo, context::ProjectionContext, something::Union{Distribution, ExponentialFamilyDistribution})
     T = ExponentialFamilyProjection.get_projected_to_type(constraint)
     D = ExponentialFamily.exponential_family_typetag(something)
     if T === D
