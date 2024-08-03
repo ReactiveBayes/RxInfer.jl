@@ -1,13 +1,16 @@
 import GraphPPL
 import MacroTools
 import ExponentialFamily
+import Static
 
 import MacroTools: @capture
 
 """
 A backend for GraphPPL that uses ReactiveMP for inference.
 """
-struct ReactiveMPGraphPPLBackend end
+struct ReactiveMPGraphPPLBackend{T}
+    should_contract_node::T
+end
 
 # Model specification with `@model` macro
 
@@ -159,6 +162,9 @@ function GraphPPL.NodeBehaviour(backend::ReactiveMPGraphPPLBackend, ::ReactiveMP
     return GraphPPL.Stochastic()
 end
 
+# function GraphPPL.NodeType(backend::ReactiveMPGraphPPLBackend, something::F) where {F}
+#     return GraphPPL.NodeType(backend, allows_contraction(backend), something)
+# end
 function GraphPPL.NodeType(::ReactiveMPGraphPPLBackend, something::F) where {F}
     # Fallback to the default behaviour
     return GraphPPL.NodeType(GraphPPL.DefaultBackend(), something)
@@ -208,7 +214,14 @@ function GraphPPL.default_parametrization(backend::ReactiveMPGraphPPLBackend, no
 end
 
 function GraphPPL.instantiate(::Type{ReactiveMPGraphPPLBackend})
-    return ReactiveMPGraphPPLBackend()
+    return ReactiveMPGraphPPLBackend(Static.False)
+end
+
+function GraphPPL.instantiate(::Type{ReactiveMPGraphPPLBackend{Static.True}})
+    return ReactiveMPGraphPPLBackend(Static.True)
+end
+function GraphPPL.instantiate(::Type{ReactiveMPGraphPPLBackend{Static.False}})
+    return ReactiveMPGraphPPLBackend(Static.False)
 end
 
 # Node specific aliases
@@ -240,3 +253,8 @@ GraphPPL.default_parametrization(::ReactiveMPGraphPPLBackend, ::Type{Gamma}) =
 
 GraphPPL.interface_aliases(::ReactiveMPGraphPPLBackend, ::Type{Gamma}) =
     GraphPPL.StaticInterfaceAliases(((:a, :α), (:shape, :α), (:β⁻¹, :θ), (:scale, :θ), (:θ⁻¹, :β), (:rate, :β)))
+
+# Backend helpers
+# allows_contraction(::ReactiveMPGraphPPLBackend{True}) = True()
+# allows_contraction(::ReactiveMPGraphPPLBackend{False}) = False()
+# allows_contraction(::ReactiveMPGraphPPLBackend) = False()

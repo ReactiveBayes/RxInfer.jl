@@ -273,6 +273,7 @@ function infer(;
     iterations = nothing,
     free_energy = false,
     free_energy_diagnostics = DefaultObjectiveDiagnosticChecks,
+    allow_node_contraction = false,
     showprogress = false, # batch specific
     catch_exception = false, # batch specific
     callbacks = nothing,
@@ -315,6 +316,7 @@ function infer(;
             iterations = iterations,
             free_energy = free_energy,
             free_energy_diagnostics = free_energy_diagnostics,
+            allow_node_contraction = allow_node_contraction,
             showprogress = showprogress,
             callbacks = callbacks,
             addons = addons,
@@ -340,6 +342,7 @@ function infer(;
             iterations = iterations,
             free_energy = free_energy,
             free_energy_diagnostics = free_energy_diagnostics,
+            allow_node_contraction = allow_node_contraction,
             autostart = autostart,
             callbacks = callbacks,
             addons = addons,

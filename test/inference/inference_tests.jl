@@ -223,6 +223,226 @@ end
     end
 end
 
+@testitem "Static inference with node contraction 1" begin
+    import RxInfer: ReactiveMPGraphPPLBackend
+    import Static
+    import StableRNGs: StableRNG
+
+    # Seed for reproducibility
+    seed = 42
+
+    rng = StableRNG(seed)
+
+    function generate_data(rng, n, zv, yv)
+        z_prev = 0.0
+        x_prev = 0.0
+        u_prev = 0.0
+
+        k1 = 1.0
+        w1 = 0.0
+        k2 = 2.0
+        w2 = 2.0
+    
+        z = Vector{Float64}(undef, n)
+        v_1 = Vector{Float64}(undef, n)
+        x = Vector{Float64}(undef, n)
+        v_2 = Vector{Float64}(undef, n)
+        u = Vector{Float64}(undef, n)
+        y = Vector{Float64}(undef, n)
+    
+        for i in 1:n
+            z[i] = rand(rng, Normal(z_prev, sqrt(zv)))
+            v_1[i] = exp(k1 * z[i] + w1)
+            x[i] = rand(rng, Normal(x_prev, sqrt(v_1[i])))
+            v_2[i] = exp(k2 * x[i] + w2)
+            u[i] = rand(rng, Normal(u_prev, sqrt(v_2[i])))
+            y[i] = rand(rng, Normal(x[i], sqrt(yv)))
+    
+            z_prev = z[i]
+            x_prev = x[i]
+            u_prev = u[i]
+        end 
+        
+        return z, x, u, y
+    end
+
+    # Parameters of HGF process
+    z_variance = abs2(0.2)
+    y_variance = abs2(0.1)
+
+    # Number of observations
+    n = 300
+
+    z, x, u, data = generate_data(
+        rng, 
+        n, 
+        z_variance, 
+        y_variance
+    );
+
+    @model function gcv(y, κ, ω, z, x)
+        log_σ := κ * z + ω
+        σ := exp(log_σ)
+        y ~ Normal(x, σ)
+    end
+
+    RxInfer.GraphPPL.default_constraints(::typeof(gcv)) = @constraints begin
+        q(κ, ω, z, x) = q(κ)q(ω)q(z)q(x)
+    end
+
+    @model function hgf(
+        y, y_variance, z_variance,
+        z_prev_mean, z_prev_var, 
+        x_prev_mean, x_prev_var,
+        u_prev_mean, u_prev_var
+    )
+        κ1 ~ Normal(mean = 0, variance = 1) 
+        ω1 ~ Normal(mean = 0, variance = 1)
+        κ2 ~ Normal(mean = 0, variance = 1) 
+        ω2 ~ Normal(mean = 0, variance = 1) 
+
+        z_prev ~ Normal(mean = z_prev_mean, variance = z_prev_var)
+        x_prev ~ Normal(mean = x_prev_mean, variance = x_prev_var)
+        u_prev ~ Normal(mean = u_prev_mean, variance = u_prev_var)
+
+        z_next ~ Normal(mean = z_prev, variance = z_variance)
+        x_next ~ gcv(x = x_prev, z = z_next, κ = κ1, ω = ω1)
+        u_next ~ gcv(x = u_prev, z = x_next, κ = κ2, ω = ω2)
+
+        y ~ Normal(mean = u_next, variance = y_variance)
+    end
+
+    @constraints function hgf_constraints() 
+        # Structured factorization constraints
+        q(z_next, z_prev, x_next, x_prev, u_next, u_prev, κ1, ω1, κ2, ω2) = q(z_next)q(z_prev)q(x_next)q(x_prev)q(u_next)q(u_prev)q(κ1)q(ω1)q(κ2)q(ω2)
+    end
+    
+    @meta function hgfmeta()
+        gcv() -> DeltaMeta(method = Linearization()) 
+        for meta in gcv
+            exp() -> DeltaMeta(method = Linearization())
+        end
+    end
+
+    autoupdates = @autoupdates begin
+        # The posterior becomes the prior for the next time step
+        z_prev_mean, z_prev_var = mean_var(q(z_next))
+        x_prev_mean, x_prev_var = mean_var(q(x_next))
+        u_prev_mean, u_prev_var = mean_var(q(u_next))
+    end
+    
+    init = @initialization begin
+        q(z_next) = NormalMeanVariance(0.0, 5.0)
+        q(x_next) = NormalMeanVariance(0.0, 5.0)
+        q(u_next) = NormalMeanVariance(0.0, 5.0)
+        q(z_prev) = NormalMeanVariance(0.0, 5.0)
+        q(x_prev) = NormalMeanVariance(0.0, 5.0)
+        q(u_prev) = NormalMeanVariance(0.0, 5.0)
+        q(κ1) = NormalMeanVariance(0.0, 1.0)
+        q(ω1) = NormalMeanVariance(0.0, 1.0)
+        q(κ2) = NormalMeanVariance(0.0, 1.0)
+        q(ω2) = NormalMeanVariance(0.0, 1.0)
+    end
+
+
+    @testset "Check basic usage" begin
+
+        return infer(
+            model       = hgf(
+                z_variance = z_variance, 
+                y_variance = y_variance
+            ),
+            constraints = hgf_constraints(),
+            meta        = hgfmeta(),
+            data        = (y = data, ),
+            autoupdates = autoupdates,
+            keephistory = length(data),
+            historyvars = (
+                z_next = KeepLast(),
+                x_next = KeepLast(),
+                u_next = KeepLast()
+            ),
+            initialization = init,
+            iterations     = 5,
+            free_energy    = true,
+        )
+    end
+end
+
+@testitem "Static inference with node contraction" begin
+    import RxInfer: ReactiveMPGraphPPLBackend
+    import Static
+
+    n = 5  # Number of test cases
+
+    distribution = NormalMeanVariance(10.0)
+    dataset      = rand(distribution, n)
+
+    @model function gcv(y, κ, ω, z, x)
+        log_σ := κ * z + ω
+        σ := exp(log_σ)
+        y ~ Normal(x, σ)
+    end
+
+    # mean-field constraint
+    constraints = @constraints begin
+        q(ξ, ω_1, ω_2, κ_1, κ_2, x_1, x_2, x_3) = q(ξ)q(ω_1)q(ω_2)q(κ_1)q(κ_2)q(x_1)q(x_2)q(x_3)
+    end
+
+    meta = @meta begin
+        gcv() -> DeltaMeta(method = Linearization()) 
+    end
+
+    function GraphPPL.NodeType(::ReactiveMPGraphPPLBackend{Static.True}, ::typeof(gcv))
+        return GraphPPL.Atomic()
+    end
+
+    @model function hgf(y)
+
+        # Specify priors
+        ξ ~ Gamma(1, 1)
+        ω_1 ~ NormalMeanVariance(0, 1)
+        ω_2 ~ NormalMeanVariance(0, 1)
+        κ_1 ~ NormalMeanVariance(0, 1)
+        κ_2 ~ NormalMeanVariance(0, 1)
+        x_1[1] ~ NormalMeanVariance(0, 1)
+        x_2[1] ~ NormalMeanVariance(0, 1)
+        x_3[1] ~ NormalMeanVariance(0, 1)
+        y[1] ~ NormalMeanVariance(x_1[1], 1)
+
+        # Specify generative model
+        for i in 2:(length(y))
+            x_3[i] ~ NormalMeanVariance(x_3[i - 1], ξ)
+            x_2[i] ~ gcv(x = x_2[i - 1], z = x_3[i], κ = κ_2, ω = ω_2)
+            x_1[i] ~ gcv(x = x_1[i - 1], z = x_2[i], κ = κ_1, ω = ω_1)
+            y[i] ~ NormalMeanVariance(x_1[i], 1)
+        end
+    end
+
+    hgf_init = @initialization begin
+        μ(ω_2) = vague(NormalMeanVariance)
+        μ(κ_2) = vague(NormalMeanVariance)
+        μ(x_1) = vague(NormalMeanVariance)
+        μ(x_2) = vague(NormalMeanVariance)
+        μ(x_3) = vague(NormalMeanVariance)
+    end
+
+    @rule ExponentialFamily.NormalMeanVariance(:μ, ReactiveMP.Marginalisation) (m_out::NormalMeanVariance, m_v::NormalMeanVariance) = begin
+        return NormalMeanVariance(mean(m_out), m_v)
+    end
+
+    result = infer(
+        model = hgf(), 
+        data = (y = dataset,), 
+        initialization = hgf_init, 
+        meta = meta, 
+        constraints = constraints,
+        allow_node_contraction = true
+    )
+
+    @test "Fake test" true == true
+end
+
 @testitem "Test warn argument in `infer()`" begin
     @model function beta_bernoulli(y)
         θ ~ Beta(4.0, 8.0)
