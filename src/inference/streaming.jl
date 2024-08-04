@@ -1,3 +1,5 @@
+import Static
+
 """
     RxInferenceEngine
 
@@ -455,6 +457,7 @@ function streaming_inference(;
     iterations = nothing,
     free_energy = false,
     free_energy_diagnostics = DefaultObjectiveDiagnosticChecks,
+    allow_node_contraction = false,
     autostart = true,
     events = nothing,
     addons = nothing,
@@ -510,7 +513,7 @@ function streaming_inference(;
     end
 
     # The `_model` here still must be a `ModelGenerator`
-    _model = GraphPPL.with_plugins(model, modelplugins)
+    _model = GraphPPL.with_backend(GraphPPL.with_plugins(model, modelplugins), ReactiveMPGraphPPLBackend(Static.static(allow_node_contraction)))
     _autoupdates = something(autoupdates, EmptyAutoUpdateSpecification)
 
     check_model_generator_compatibility(_autoupdates, _model)
