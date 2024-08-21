@@ -401,9 +401,7 @@ end
     end
 
     @meta function mymeta()
-        foo() -> CVIProjection(
-            prjparams = ProjectionParameters(niterations = 500)
-        )
+        foo() -> CVIProjection(prjparams = ProjectionParameters(niterations = 500))
     end
 
     result = infer(
@@ -468,11 +466,7 @@ end
     end
 
     @meta function mymeta()
-        foo() -> CVIProjection(
-            rng = StableRNG(42),
-            marginalsamples = 20,
-            outsamples = 5,
-        )
+        foo() -> CVIProjection(rng = StableRNG(42), marginalsamples = 20, outsamples = 5)
     end
 
     result = infer(
