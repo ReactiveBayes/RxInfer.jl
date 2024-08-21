@@ -275,7 +275,7 @@ end
     include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
     foo(x) = cos(x)
-    bar(x) = exp(x) + x
+    bar(x) = sin(x) + x
 
     @model function iid_with_delta_transforms(y)
         a ~ Beta(1, 1)
@@ -401,7 +401,9 @@ end
     end
 
     @meta function mymeta()
-        foo() -> CVIProjection(rng = StableRNG(42))
+        foo() -> CVIProjection(
+            prjparams = ProjectionParameters(niterations = 500)
+        )
     end
 
     result = infer(
@@ -470,7 +472,6 @@ end
             rng = StableRNG(42),
             marginalsamples = 20,
             outsamples = 5,
-            prjparams = ProjectionParameters(strategy = ExponentialFamilyProjection.ControlVariateStrategy(nsamples = 450))
         )
     end
 
