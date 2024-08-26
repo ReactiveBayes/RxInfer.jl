@@ -251,3 +251,37 @@ end
         @test isapprox(fres[end], 2.26551, atol = 0.1)
     end
 end
+
+@testitem "`ProductOf` should display the name of the variable in question" begin
+    struct DistributionA
+        a
+    end
+    struct DistributionB
+        b
+    end
+
+    @node DistributionA Stochastic [out, a]
+    @node DistributionB Stochastic [out, b]
+
+    @rule DistributionA(:out, Marginalisation) (q_a::Any,) = DistributionA(mean(q_a))
+    @rule DistributionB(:b, Marginalisation) (q_out::Any,) = DistributionB(mean(q_out))
+
+    @model function invalid_product(out)
+        b ~ DistributionA(1.0)
+        out ~ DistributionB(b)
+    end
+
+    @test_throws """
+    The posterior `q(b)` has an undefined functional form of type `ProductOf{DistributionA, DistributionB}`.
+    This is likely due to the fact that the inference backend does not support the product of these two distributions.
+    Possible solutions:
+        - Implement the `BayesBase.prod` method for the `DistributionA` and `DistributionB` types (refer to the `BayesBase` documentation manual).
+        - Use a functional form constraint to specify the form of the posterior with the `@constraints` macro. E.g.
+          ```julia
+          @constraints begin
+              q(b) :: PointMassFormConstraint()
+          end
+          ```
+          Refer to the documentation manual for more information about functional form constraints.
+    """ result = infer(model = invalid_product(), data = (out = 1.0,))
+end
