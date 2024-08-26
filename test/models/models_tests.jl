@@ -259,23 +259,30 @@ end
     struct DistributionB
         b
     end
+    struct LikelihoodDistribution
+        input
+    end
 
     @node DistributionA Stochastic [out, a]
     @node DistributionB Stochastic [out, b]
+    @node LikelihoodDistribution Stochastic [out, input]
 
     @rule DistributionA(:out, Marginalisation) (q_a::Any,) = DistributionA(mean(q_a))
-    @rule DistributionB(:b, Marginalisation) (q_out::Any,) = DistributionB(mean(q_out))
+    @rule DistributionB(:out, Marginalisation) (q_b::Any,) = DistributionB(mean(q_b))
+    @rule LikelihoodDistribution(:input, Marginalisation) (q_out::Any,) = LikelihoodDistribution(mean(q_out))
 
-    @model function invalid_product(out)
-        b ~ DistributionA(1.0)
-        out ~ DistributionB(b)
+    @model function invalid_product_posterior(out)
+        input ~ DistributionA(1.0)
+        out ~ LikelihoodDistribution(input)
     end
 
+    # Product of `DistributionA` & `LikelihoodDistribution` in the posterior
     @test_throws """
-    The posterior `q(b)` has an undefined functional form of type `ProductOf{DistributionA, DistributionB}`.
+    The `q(b)` has an undefined functional form of type `ProductOf{DistributionA, LikelihoodDistribution}`.
     This is likely due to the fact that the inference backend does not support the product of these two distributions.
+    As a result the inference backend cannot compute the quantities of interest, such as `mean` or `var` of `q(b)`.
     Possible solutions:
-        - Implement the `BayesBase.prod` method for the `DistributionA` and `DistributionB` types (refer to the `BayesBase` documentation manual).
+        - Implement the `BayesBase.prod` method for the `DistributionA` and `LikelihoodDistribution` types (refer to the `BayesBase` documentation manual).
         - Use a functional form constraint to specify the form of the posterior with the `@constraints` macro. E.g.
           ```julia
           @constraints begin
@@ -283,5 +290,27 @@ end
           end
           ```
           Refer to the documentation manual for more information about functional form constraints.
-    """ result = infer(model = invalid_product(), data = (out = 1.0,))
+    """ result = infer(model = invalid_product_posterior(), data = (out = 1.0,))
+
+    # Product of `DistributionA` & `DistributionB` in the message
+    @model function invalid_product_message(out)
+        input ~ DistributionA(1.0)
+        input ~ DistributionB(1.0)
+        out ~ LikelihoodDistribution(input)
+    end
+
+    @test_throws """
+    The `μ(b)` has an undefined functional form of type `ProductOf{DistributionA, LikelihoodDistribution}`.
+    This is likely due to the fact that the inference backend does not support the product of these two distributions.
+    As a result the inference backend cannot compute the quantities of interest, such as `mean` or `var` of `q(b)`.
+    Possible solutions:
+        - Implement the `BayesBase.prod` method for the `DistributionA` and `LikelihoodDistribution` types (refer to the `BayesBase` documentation manual).
+        - Use a functional form constraint to specify the form of the posterior with the `@constraints` macro. E.g.
+          ```julia
+          @constraints begin
+              μ(b) :: PointMassFormConstraint()
+          end
+          ```
+          Refer to the documentation manual for more information about functional form constraints.
+    """ result = infer(model = invalid_product_message(), data = (out = 1.0,))
 end
