@@ -1,5 +1,7 @@
 import ReactiveMP: AbstractFormConstraint
 
+# This is an internal functional form constraint that only checks that the result 
+# is of a supported form. Displays a user-friendly error message if the form is not supported.
 struct EnsureSupportedFunctionalForm <: AbstractFormConstraint
     prefix::Symbol
     name::Symbol
