@@ -167,12 +167,14 @@ function activate_rmp_variable!(plugin::ReactiveMPInferencePlugin, model::Model,
         # By default it is `UnspecifiedFormConstraint` which means that the form of the resulting distribution is not specified in advance
         # and follows from the computation, but users may override it with other form constraints, e.g. `PointMassFormConstraint`, which
         # constraints the resulting distribution to be of a point mass form
-        messages_form_constraint = ReactiveMP.preprocess_form_constraints(
-            plugin, model, getextra(nodedata, GraphPPL.VariationalConstraintsMessagesFormConstraintKey, ReactiveMP.UnspecifiedFormConstraint())
-        )
-        marginal_form_constraint = ReactiveMP.preprocess_form_constraints(
-            plugin, model, getextra(nodedata, GraphPPL.VariationalConstraintsMarginalFormConstraintKey, ReactiveMP.UnspecifiedFormConstraint())
-        )
+        messages_form_constraint =
+            ReactiveMP.preprocess_form_constraints(
+                plugin, model, getextra(nodedata, GraphPPL.VariationalConstraintsMessagesFormConstraintKey, ReactiveMP.UnspecifiedFormConstraint())
+            ) + EnsureSupportedFunctionalForm(:μ, GraphPPL.getname(nodeproperties), GraphPPL.index(nodeproperties))
+        marginal_form_constraint =
+            ReactiveMP.preprocess_form_constraints(
+                plugin, model, getextra(nodedata, GraphPPL.VariationalConstraintsMarginalFormConstraintKey, ReactiveMP.UnspecifiedFormConstraint())
+            ) + EnsureSupportedFunctionalForm(:q, GraphPPL.getname(nodeproperties), GraphPPL.index(nodeproperties))
         # Fetch "prod-constraint" for messages and marginals. The prod-constraint usually defines the constraints for a single product of messages
         # It can for example preserve a specific parametrization of distribution 
         messages_prod_constraint = getextra(nodedata, :messages_prod_constraint, ReactiveMP.default_prod_constraint(messages_form_constraint))
