@@ -1002,3 +1002,75 @@ end
         model = beta_bernoulli(), data = (y = 1,), initmessages = (t = Normal(0.0, 1.0))
     )
 end
+
+@testitem "Unsupported functional forms (e.g. `ProductOf`) should display the name of the variable and suggestions" begin
+    struct DistributionA
+        a
+    end
+    struct DistributionB
+        b
+    end
+    struct LikelihoodDistribution
+        input
+    end
+
+    @node DistributionA Stochastic [out, a]
+    @node DistributionB Stochastic [out, b]
+    @node LikelihoodDistribution Stochastic [out, input]
+
+    @rule DistributionA(:out, Marginalisation) (q_a::Any,) = DistributionA(mean(q_a))
+    @rule DistributionB(:out, Marginalisation) (q_b::Any,) = DistributionB(mean(q_b))
+    @rule LikelihoodDistribution(:input, Marginalisation) (q_out::Any,) = LikelihoodDistribution(mean(q_out))
+
+    @model function invalid_product_posterior(out)
+        θ ~ DistributionA(1.0)
+        out ~ LikelihoodDistribution(θ)
+    end
+
+    # Product of `DistributionA` & `LikelihoodDistribution` in the posterior
+    P = typeof(prod(GenericProd(), DistributionA(1.0), LikelihoodDistribution(1.0)))
+    @test_throws """
+    The expression `q(θ)` has an undefined functional form of type `$(P)`. 
+    This is likely because the inference backend does not support the product of these distributions. 
+    As a result, `RxInfer` cannot compute key quantities such as the `mean` or `var` of `q(θ)`.
+
+    Possible solutions:
+    - Implement the `BayesBase.prod` method (refer to the `BayesBase` documentation for guidance).
+    - Use a functional form constraint to specify the posterior form with the `@constraints` macro. For example:
+    ```julia
+    using ExponentialFamilyProjection
+
+    @constraints begin
+        q(θ) :: ProjectedTo(NormalMeanVariance)
+    end
+    ```
+    Refer to the documentation for more details on functional form constraints.
+    """ result = infer(model = invalid_product_posterior(), data = (out = 1.0,))
+
+    # Product of `DistributionA` & `DistributionB` in the message
+    @model function invalid_product_message(out)
+        input[1] ~ DistributionA(1.0)
+        input[1] ~ DistributionB(1.0)
+        θ ~ DistributionA(input[1])
+        out ~ LikelihoodDistribution(θ)
+    end
+
+    T = typeof(prod(GenericProd(), DistributionA(1.0), DistributionB(1.0)))
+    @test_throws """
+    The expression `μ(input[1])` has an undefined functional form of type `$(T)`. 
+    This is likely because the inference backend does not support the product of these distributions. 
+    As a result, `RxInfer` cannot compute key quantities such as the `mean` or `var` of `μ(input[1])`.
+
+    Possible solutions:
+    - Implement the `BayesBase.prod` method (refer to the `BayesBase` documentation for guidance).
+    - Use a functional form constraint to specify the posterior form with the `@constraints` macro. For example:
+    ```julia
+    using ExponentialFamilyProjection
+
+    @constraints begin
+        μ(input) :: ProjectedTo(NormalMeanVariance)
+    end
+    ```
+    Refer to the documentation for more details on functional form constraints.
+    """ result = infer(model = invalid_product_message(), data = (out = 1.0,), returnvars = (θ = KeepEach(),))
+end

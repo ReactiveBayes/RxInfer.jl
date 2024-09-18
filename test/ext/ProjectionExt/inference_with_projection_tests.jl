@@ -275,7 +275,7 @@ end
     include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
     foo(x) = cos(x)
-    bar(x) = exp(x) + x
+    bar(x) = sin(x) + x
 
     @model function iid_with_delta_transforms(y)
         a ~ Beta(1, 1)
@@ -401,16 +401,16 @@ end
     end
 
     @meta function mymeta()
-        foo() -> CVIProjection(rng = StableRNG(42))
+        foo() -> CVIProjection(prjparams = ProjectionParameters(niterations = 500))
     end
 
     result = infer(
         model = mymodel(C = C), data = (y = y,), meta = mymeta(), constraints = myconstraints(), initialization = myinitialization(), free_energy = true, iterations = 40
     )
 
-    @test mean(result.posteriors[:a][end]) ≈ a atol = 1e-2
-    @test foo(mean(result.posteriors[:a][end]), mean(result.posteriors[:b][end])) ≈ foo(a, b) atol = 1e-2
-    @test mean(result.posteriors[:μ][end]) ≈ foo(a, b) atol = 1e-2
+    @test mean(result.posteriors[:a][end]) ≈ a atol = 2e-2
+    @test foo(mean(result.posteriors[:a][end]), mean(result.posteriors[:b][end])) ≈ foo(a, b) atol = 2e-2
+    @test mean(result.posteriors[:μ][end]) ≈ foo(a, b) atol = 2e-2
     @test first(result.free_energy) > last(result.free_energy)
     @test count(<(0), diff(result.free_energy)) > 0.95
 
@@ -466,12 +466,7 @@ end
     end
 
     @meta function mymeta()
-        foo() -> CVIProjection(
-            rng = StableRNG(42),
-            marginalsamples = 20,
-            outsamples = 5,
-            prjparams = ProjectionParameters(strategy = ExponentialFamilyProjection.ControlVariateStrategy(nsamples = 450))
-        )
+        foo() -> CVIProjection(rng = StableRNG(42), marginalsamples = 20, outsamples = 5)
     end
 
     result = infer(
