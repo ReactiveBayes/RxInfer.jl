@@ -238,32 +238,31 @@ end
         y ~ Normal(mean = x, precision = σ)
     end
 
-    @node typeof(gcv) Stochastic [ y, x, z, κ, ω ]
+    @node typeof(gcv) Stochastic [y, x, z, κ, ω]
 
     RxInfer.ReactiveMP.default_meta(::typeof(gcv)) = RxInfer.ReactiveMP.default_meta(GCV)
 
-    @rule typeof(gcv)(:y, Marginalisation) (q_x::Any, q_z::Any, q_κ::Any, q_ω::Any, meta::Any) = begin 
+    @rule typeof(gcv)(:y, Marginalisation) (q_x::Any, q_z::Any, q_κ::Any, q_ω::Any, meta::Any) = begin
         return @call_rule GCV(:y, Marginalisation) (q_x = q_x, q_z = q_z, q_κ = q_κ, q_ω = q_ω, meta = meta)
     end
 
-    @rule typeof(gcv)(:x, Marginalisation) (q_y::Any, q_z::Any, q_κ::Any, q_ω::Any, meta::Any) = begin 
+    @rule typeof(gcv)(:x, Marginalisation) (q_y::Any, q_z::Any, q_κ::Any, q_ω::Any, meta::Any) = begin
         return @call_rule GCV(:x, Marginalisation) (q_y = q_y, q_z = q_z, q_κ = q_κ, q_ω = q_ω, meta = meta)
     end
 
-    @rule typeof(gcv)(:ω, Marginalisation) (q_y::Any, q_x::Any, q_z::Any, q_κ::Any, meta::Any) = begin 
+    @rule typeof(gcv)(:ω, Marginalisation) (q_y::Any, q_x::Any, q_z::Any, q_κ::Any, meta::Any) = begin
         return @call_rule GCV(:ω, Marginalisation) (q_y = q_y, q_x = q_x, q_z = q_z, q_κ = q_κ, meta = meta)
     end
 
-    @rule typeof(gcv)(:z, Marginalisation) (q_y::Any, q_x::Any, q_κ::Any, q_ω::Any, meta::Any) = begin 
+    @rule typeof(gcv)(:z, Marginalisation) (q_y::Any, q_x::Any, q_κ::Any, q_ω::Any, meta::Any) = begin
         return @call_rule GCV(:z, Marginalisation) (q_y = q_y, q_x = q_x, q_κ = q_κ, q_ω = q_ω, meta = meta)
     end
 
-    @rule typeof(gcv)(:κ, Marginalisation) (q_y::Any, q_x::Any, q_z::Any, q_ω::Any, meta::Any) = begin 
+    @rule typeof(gcv)(:κ, Marginalisation) (q_y::Any, q_x::Any, q_z::Any, q_ω::Any, meta::Any) = begin
         return @call_rule GCV(:κ, Marginalisation) (q_y = q_y, q_x = q_x, q_z = q_z, q_ω = q_ω, meta = meta)
     end
 
-    @average_energy typeof(gcv) (q_y::Any, q_x::Any, q_z::Any, q_κ::Any, q_ω::Any, meta::Union{<:GCVMetadata, Nothing}) =
-    begin
+    @average_energy typeof(gcv) (q_y::Any, q_x::Any, q_z::Any, q_κ::Any, q_ω::Any, meta::Union{<:GCVMetadata, Nothing}) = begin
         y_mean, y_var = mean_var(q_y)
         x_mean, x_var = mean_var(q_x)
         z_mean, z_var = mean_var(q_z)
@@ -300,15 +299,8 @@ end
         q(x) = NormalMeanVariance(0, 1)
     end
 
-    result_1 = infer(
-        model = hgf_1(), 
-        data = (y = dataset,), 
-        initialization = hgf_1_initialization(), 
-        constraints = MeanField(),
-        allow_node_contraction = true,
-        free_energy = true
-    )
-    
+    result_1 = infer(model = hgf_1(), data = (y = dataset,), initialization = hgf_1_initialization(), constraints = MeanField(), allow_node_contraction = true, free_energy = true)
+
     @test all(!isnan, mean.(result_1.posteriors[:x]))
     @test all(!isnan, var.(result_1.posteriors[:x]))
     @test all(<=(0), diff(result_1.free_energy))
@@ -344,13 +336,7 @@ end
         q(x_3) = vague(NormalMeanVariance)
     end
 
-    result_2 = infer(
-        model = hgf_2(), 
-        data = (y = dataset,), 
-        initialization = hgf_2_initialization(), 
-        constraints = MeanField(),
-        allow_node_contraction = true
-    )
+    result_2 = infer(model = hgf_2(), data = (y = dataset,), initialization = hgf_2_initialization(), constraints = MeanField(), allow_node_contraction = true)
 
     @test result_2.posteriors[:x_1] isa Vector{<:NormalMeanVariance}
 end

@@ -176,7 +176,6 @@ function GraphPPL.NodeType(backend::ReactiveMPGraphPPLBackend{Static.True}, ::Re
     return GraphPPL.Atomic()
 end
 
-
 # Fallback to the default behaviour
 function GraphPPL.NodeType(::ReactiveMPGraphPPLBackend{Static.False}, something::F) where {F}
     return GraphPPL.NodeType(GraphPPL.DefaultBackend(), something)
