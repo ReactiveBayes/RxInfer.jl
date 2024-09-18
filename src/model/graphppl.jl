@@ -225,14 +225,14 @@ function GraphPPL.default_parametrization(backend::ReactiveMPGraphPPLBackend, no
 end
 
 function GraphPPL.instantiate(::Type{ReactiveMPGraphPPLBackend})
-    return ReactiveMPGraphPPLBackend(Static.False)
+    return ReactiveMPGraphPPLBackend(Static.False())
 end
 
 function GraphPPL.instantiate(::Type{ReactiveMPGraphPPLBackend{Static.True}})
-    return ReactiveMPGraphPPLBackend(Static.True)
+    return ReactiveMPGraphPPLBackend(Static.True())
 end
 function GraphPPL.instantiate(::Type{ReactiveMPGraphPPLBackend{Static.False}})
-    return ReactiveMPGraphPPLBackend(Static.False)
+    return ReactiveMPGraphPPLBackend(Static.False())
 end
 
 # Node specific aliases

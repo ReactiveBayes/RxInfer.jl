@@ -227,7 +227,7 @@ end
     import RxInfer: ReactiveMPGraphPPLBackend
     import Static
 
-    n = 5  # Number of test cases
+    n = 6  # Number of test cases
 
     distribution = NormalMeanVariance(0.0, 1.0)
     dataset      = rand(distribution, n)
@@ -332,13 +332,13 @@ end
         q(ω_2) = vague(NormalMeanVariance)
         q(κ_2) = vague(NormalMeanVariance)
         q(x_1) = vague(NormalMeanVariance)
-        q(x_2) = vague(NormalMeanVariance)
+        q(x_2[1:2:n]) = vague(NormalMeanVariance)
         q(x_3) = vague(NormalMeanVariance)
     end
 
     result_2 = infer(model = hgf_2(), data = (y = dataset,), initialization = hgf_2_initialization(), constraints = MeanField(), allow_node_contraction = true)
 
-    @test result_2.posteriors[:x_1] isa Vector{<:NormalMeanVariance}
+    @test result_2.posteriors[:x_1] isa Vector{<:NormalDistributionsFamily}
 end
 
 @testitem "Test warn argument in `infer()`" begin

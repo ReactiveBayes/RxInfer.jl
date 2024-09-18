@@ -92,12 +92,13 @@ end
     import RxInfer: ReactiveMPGraphPPLBackend
     import ReactiveMP: @node
     import GraphPPL
+    using Static
 
     struct CustomStochasticNode end
 
     @node CustomStochasticNode Stochastic [out, (x, aliases = [xx]), (y, aliases = [yy]), z]
 
-    backend = ReactiveMPGraphPPLBackend()
+    backend = ReactiveMPGraphPPLBackend(Static.False())
 
     @test GraphPPL.NodeBehaviour(backend, CustomStochasticNode) === GraphPPL.Stochastic()
     @test GraphPPL.NodeType(backend, CustomStochasticNode) === GraphPPL.Atomic()
@@ -135,7 +136,7 @@ end
 
     @node CustomStochasticNode Stochastic [out, (x, aliases = [xx]), (y, aliases = [yy]), z]
 
-    backend = ReactiveMPGraphPPLBackend(true)
+    backend = ReactiveMPGraphPPLBackend(Static.True())
 
     @test GraphPPL.NodeBehaviour(backend, CustomStochasticNode) === GraphPPL.Stochastic()
     @test GraphPPL.NodeType(backend, CustomStochasticNode) === GraphPPL.Atomic()
