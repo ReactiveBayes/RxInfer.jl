@@ -146,7 +146,7 @@ See the documentation to [`GraphPPL.@model`](https://github.com/ReactiveBayes/Gr
 $(begin io = IOBuffer(); RxInfer.show_tilderhs_alias(io); String(take!(io)) end)
 """
 macro model(model_specification)
-    return esc(GraphPPL.model_macro_interior(ReactiveMPGraphPPLBackend, model_specification))
+    return esc(GraphPPL.model_macro_interior(ReactiveMPGraphPPLBackend{Static.False}, model_specification))
 end
 
 # Backend specific methods
@@ -162,14 +162,26 @@ function GraphPPL.NodeBehaviour(backend::ReactiveMPGraphPPLBackend, ::ReactiveMP
     return GraphPPL.Stochastic()
 end
 
-# function GraphPPL.NodeType(backend::ReactiveMPGraphPPLBackend, something::F) where {F}
-#     return GraphPPL.NodeType(backend, allows_contraction(backend), something)
-# end
-function GraphPPL.NodeType(::ReactiveMPGraphPPLBackend, something::F) where {F}
-    # Fallback to the default behaviour
+# If node contraction is enabled, we need to check if the node is predefined in `ReactiveMP`
+# if this is the case, we use the `Atomic` node type, otherwise we fallback to the `DefaultBackend`
+function GraphPPL.NodeType(backend::ReactiveMPGraphPPLBackend{Static.True}, something::F) where {F}
+    return GraphPPL.NodeType(backend, ReactiveMP.is_predefined_node(something), something)
+end
+function GraphPPL.NodeType(backend::ReactiveMPGraphPPLBackend{Static.True}, ::ReactiveMP.UndefinedNodeFunctionalForm, something::F) where {F}
+    # Fallback to the default behaviour if the node is not predefined
+    return GraphPPL.NodeType(ReactiveMPGraphPPLBackend(Static.False), something)
+end
+function GraphPPL.NodeType(backend::ReactiveMPGraphPPLBackend{Static.True}, ::ReactiveMP.PredefinedNodeFunctionalForm, something::F) where {F}
+    # Fallback to the default behaviour if the node is not predefined
+    return GraphPPL.Atomic()
+end
+
+
+# Fallback to the default behaviour
+function GraphPPL.NodeType(::ReactiveMPGraphPPLBackend{Static.False}, something::F) where {F}
     return GraphPPL.NodeType(GraphPPL.DefaultBackend(), something)
 end
-function GraphPPL.aliases(::ReactiveMPGraphPPLBackend, something::F) where {F}
+function GraphPPL.aliases(::ReactiveMPGraphPPLBackend{Static.False}, something::F) where {F}
     # Fallback to the default behaviour
     return GraphPPL.aliases(GraphPPL.DefaultBackend(), something)
 end
@@ -253,8 +265,3 @@ GraphPPL.default_parametrization(::ReactiveMPGraphPPLBackend, ::Type{Gamma}) =
 
 GraphPPL.interface_aliases(::ReactiveMPGraphPPLBackend, ::Type{Gamma}) =
     GraphPPL.StaticInterfaceAliases(((:a, :α), (:shape, :α), (:β⁻¹, :θ), (:scale, :θ), (:θ⁻¹, :β), (:rate, :β)))
-
-# Backend helpers
-# allows_contraction(::ReactiveMPGraphPPLBackend{True}) = True()
-# allows_contraction(::ReactiveMPGraphPPLBackend{False}) = False()
-# allows_contraction(::ReactiveMPGraphPPLBackend) = False()
