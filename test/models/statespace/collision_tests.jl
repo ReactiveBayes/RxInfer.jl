@@ -112,10 +112,9 @@
             returnvars     = KeepLast(),
             showprogress   = false
         )
-        @test mean(result.posteriors[:x][1, 1]) ≈ [0, 0, 0, 0] atol=5e-1
-        @test mean(result.posteriors[:x][1, nr_steps]) ≈ [0, 0, 50, 0] atol=5e-1
-        @test mean(result.posteriors[:x][2, 1]) ≈ [0, 0, 50, 0] atol=5e-1
-        @test mean(result.posteriors[:x][2, nr_steps]) ≈ [0, 0, 0, 0] atol=5e-1
-
+        @test mean(result.posteriors[:x][1, 1]) ≈ [0, 0, 0, 0] atol = 5e-1
+        @test mean(result.posteriors[:x][1, nr_steps]) ≈ [0, 0, 50, 0] atol = 5e-1
+        @test mean(result.posteriors[:x][2, 1]) ≈ [0, 0, 50, 0] atol = 5e-1
+        @test mean(result.posteriors[:x][2, nr_steps]) ≈ [0, 0, 0, 0] atol = 5e-1
     end
 end
