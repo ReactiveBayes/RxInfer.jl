@@ -110,7 +110,8 @@
             initialization = init(),
             iterations     = 100,
             returnvars     = KeepLast(),
-            showprogress   = false
+            showprogress   = false,
+            options        = (limit_stack_depth = 100,)
         )
         @test mean(result.posteriors[:x][1, 1]) ≈ [0, 0, 0, 0] atol = 5e-1
         @test mean(result.posteriors[:x][1, nr_steps]) ≈ [0, 0, 50, 0] atol = 5e-1
