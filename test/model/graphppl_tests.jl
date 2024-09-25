@@ -163,3 +163,15 @@ end
     @test_throws ErrorException GraphPPL.default_parametrization(backend, GraphPPL.Atomic(), f, (1,))
     @test_throws ErrorException GraphPPL.default_parametrization(backend, GraphPPL.Atomic(), f, (1, 2, 3))
 end
+
+@testitem "Backend Tests" begin
+    import GraphPPL
+    import Static
+    import RxInfer: ReactiveMPGraphPPLBackend
+
+    @test GraphPPL.instantiate(ReactiveMPGraphPPLBackend{Static.True}) == ReactiveMPGraphPPLBackend(Static.True())
+    @test GraphPPL.instantiate(ReactiveMPGraphPPLBackend{Static.False}) == ReactiveMPGraphPPLBackend(Static.False())
+    @test GraphPPL.instantiate(ReactiveMPGraphPPLBackend) == ReactiveMPGraphPPLBackend(Static.False())
+
+    @test GraphPPL.NodeType(ReactiveMPGraphPPLBackend(Static.True()), ReactiveMP.UndefinedNodeFunctionalForm(), sum) == GraphPPL.Atomic()
+end

@@ -169,7 +169,7 @@ function GraphPPL.NodeType(backend::ReactiveMPGraphPPLBackend{Static.True}, some
 end
 function GraphPPL.NodeType(backend::ReactiveMPGraphPPLBackend{Static.True}, ::ReactiveMP.UndefinedNodeFunctionalForm, something::F) where {F}
     # Fallback to the default behaviour if the node is not predefined
-    return GraphPPL.NodeType(ReactiveMPGraphPPLBackend(Static.False), something)
+    return GraphPPL.NodeType(ReactiveMPGraphPPLBackend(Static.False()), something)
 end
 function GraphPPL.NodeType(backend::ReactiveMPGraphPPLBackend{Static.True}, ::ReactiveMP.PredefinedNodeFunctionalForm, something::F) where {F}
     # Fallback to the default behaviour if the node is not predefined
