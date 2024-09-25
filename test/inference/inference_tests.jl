@@ -926,7 +926,7 @@ end
     end
 
     # Product of `DistributionA` & `LikelihoodDistribution` in the posterior
-    P = typeof(prod(GenericProd(), DistributionA(1.0), LikelihoodDistribution(1.0)))
+    P = typeof(prod(GenericProd(), DistributionA(1.0), LikelihoodDistribution(1.0))) # the actual order may change though
     @test_throws """
     The expression `q(θ)` has an undefined functional form of type `$(P)`. 
     This is likely because the inference backend does not support the product of these distributions. 
@@ -953,7 +953,7 @@ end
         out ~ LikelihoodDistribution(θ)
     end
 
-    T = typeof(prod(GenericProd(), DistributionA(1.0), DistributionB(1.0)))
+    T = typeof(prod(GenericProd(), DistributionB(1.0), DistributionA(1.0))) # the actual order may change though
     @test_throws """
     The expression `μ(input[1])` has an undefined functional form of type `$(T)`. 
     This is likely because the inference backend does not support the product of these distributions. 
