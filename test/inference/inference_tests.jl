@@ -854,3 +854,48 @@ end
     Refer to the documentation for more details on functional form constraints.
     """ result = infer(model = invalid_product_message(), data = (out = 1.0,), returnvars = (θ = KeepEach(),))
 end
+
+@testitem "`infer` with UnfactorizedData" begin
+    using RxInfer
+
+    @model function pred_model(p_s_t, y, goal, p_B, A)
+        s[1] ~ p_s_t
+        B ~ p_B
+        y[1] ~ Transition(s[1], A)
+        for i in 2:3
+            s[i] ~ Transition(s[i - 1], B)
+            y[i] ~ Transition(s[i], A)
+        end
+        s[3] ~ Categorical(goal)
+    end
+
+    pred_model_constraints = @constraints begin
+        q(s, B) = q(s)q(B)
+    end
+
+    @initialization function pred_model_init(q_B)
+        q(B) = q_B
+    end
+
+    result = infer(
+        model = pred_model(A = diageye(4), goal = [0, 1, 0, 0], p_B = MatrixDirichlet(ones(4, 4)), p_s_t = Categorical([0.7, 0.3, 0, 0])),
+        data = (y = [[1, 0, 0, 0], missing, missing],),
+        initialization = pred_model_init(MatrixDirichlet(ones(4, 4))),
+        constraints = pred_model_constraints,
+        iterations = 10
+    )
+    @test last(result.predictions[:y])[1] == Categorical([0.25, 0.25, 0.25, 0.25])
+
+    pred_model_constraints = @constraints begin
+        q(s, B) = q(s)q(B)
+        q(y[1], s) = q(y[1])q(s)
+    end
+    result = infer(
+        model = pred_model(A = diageye(4), goal = [0, 0, 1, 0], p_B = MatrixDirichlet(ones(4, 4)), p_s_t = Categorical([0.7, 0.3, 0, 0])),
+        data = (y = UnfactorizedData([[1, 0, 0, 0], missing, missing]),),
+        initialization = pred_model_init(MatrixDirichlet(ones(4, 4))),
+        constraints = pred_model_constraints,
+        iterations = 10
+    )
+    @test probvec(last(last(result.predictions[:y]))) ≈ [0, 0, 1, 0]
+end
