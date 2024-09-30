@@ -223,6 +223,124 @@ end
     end
 end
 
+@testitem "Static inference with node contraction" begin
+    import RxInfer: ReactiveMPGraphPPLBackend
+    import Static
+
+    n = 6  # Number of test cases
+
+    distribution = NormalMeanVariance(0.0, 1.0)
+    dataset      = rand(distribution, n)
+
+    @model function gcv(y, x, z, κ, ω)
+        log_σ := κ * z + ω
+        σ := exp(log_σ)
+        y ~ Normal(mean = x, precision = σ)
+    end
+
+    @node typeof(gcv) Stochastic [y, x, z, κ, ω]
+
+    RxInfer.ReactiveMP.default_meta(::typeof(gcv)) = RxInfer.ReactiveMP.default_meta(GCV)
+
+    @rule typeof(gcv)(:y, Marginalisation) (q_x::Any, q_z::Any, q_κ::Any, q_ω::Any, meta::Any) = begin
+        return @call_rule GCV(:y, Marginalisation) (q_x = q_x, q_z = q_z, q_κ = q_κ, q_ω = q_ω, meta = meta)
+    end
+
+    @rule typeof(gcv)(:x, Marginalisation) (q_y::Any, q_z::Any, q_κ::Any, q_ω::Any, meta::Any) = begin
+        return @call_rule GCV(:x, Marginalisation) (q_y = q_y, q_z = q_z, q_κ = q_κ, q_ω = q_ω, meta = meta)
+    end
+
+    @rule typeof(gcv)(:ω, Marginalisation) (q_y::Any, q_x::Any, q_z::Any, q_κ::Any, meta::Any) = begin
+        return @call_rule GCV(:ω, Marginalisation) (q_y = q_y, q_x = q_x, q_z = q_z, q_κ = q_κ, meta = meta)
+    end
+
+    @rule typeof(gcv)(:z, Marginalisation) (q_y::Any, q_x::Any, q_κ::Any, q_ω::Any, meta::Any) = begin
+        return @call_rule GCV(:z, Marginalisation) (q_y = q_y, q_x = q_x, q_κ = q_κ, q_ω = q_ω, meta = meta)
+    end
+
+    @rule typeof(gcv)(:κ, Marginalisation) (q_y::Any, q_x::Any, q_z::Any, q_ω::Any, meta::Any) = begin
+        return @call_rule GCV(:κ, Marginalisation) (q_y = q_y, q_x = q_x, q_z = q_z, q_ω = q_ω, meta = meta)
+    end
+
+    @average_energy typeof(gcv) (q_y::Any, q_x::Any, q_z::Any, q_κ::Any, q_ω::Any, meta::Union{<:GCVMetadata, Nothing}) = begin
+        y_mean, y_var = mean_var(q_y)
+        x_mean, x_var = mean_var(q_x)
+        z_mean, z_var = mean_var(q_z)
+        κ_mean, κ_var = mean_var(q_κ)
+        ω_mean, ω_var = mean_var(q_ω)
+
+        ksi = (κ_mean^2) * z_var + (z_mean^2) * κ_var + κ_var * z_var
+        psi = (y_mean - x_mean)^2 + y_var + x_var
+        A = exp(-ω_mean + ω_var / 2)
+        B = exp(-κ_mean * z_mean + ksi / 2)
+
+        (log(2π) + (z_mean * κ_mean + ω_mean) + (psi * A * B)) / 2
+    end
+
+    @model function hgf_1(y)
+        ω ~ NormalMeanVariance(0, 1)
+        κ ~ NormalMeanVariance(1, 1)
+        x_0 ~ NormalMeanVariance(0, 1)
+        z[1] ~ NormalMeanVariance(0, 1)
+        x[1] ~ gcv(x = x_0, z = z[1], κ = κ, ω = ω)
+        y[1] ~ NormalMeanVariance(x[1], 1)
+
+        for i in 2:length(y)
+            z[i] ~ NormalMeanPrecision(z[i - 1], 1)
+            x[i] ~ gcv(x = x[i - 1], z = z[i], κ = κ, ω = ω)
+            y[i] ~ NormalMeanVariance(x[i], 1)
+        end
+    end
+
+    @initialization function hgf_1_initialization()
+        q(ω) = NormalMeanVariance(0, 1)
+        q(κ) = NormalMeanVariance(1, 1)
+        q(z) = NormalMeanVariance(0, 1)
+        q(x) = NormalMeanVariance(0, 1)
+    end
+
+    result_1 = infer(model = hgf_1(), data = (y = dataset,), initialization = hgf_1_initialization(), constraints = MeanField(), allow_node_contraction = true, free_energy = true)
+
+    @test all(!isnan, mean.(result_1.posteriors[:x]))
+    @test all(!isnan, var.(result_1.posteriors[:x]))
+    @test all(<=(0), diff(result_1.free_energy))
+
+    @model function hgf_2(y)
+
+        # Specify priors
+        ω_1 ~ NormalMeanVariance(0, 1)
+        ω_2 ~ NormalMeanVariance(0, 1)
+        κ_1 ~ NormalMeanVariance(1, 1)
+        κ_2 ~ NormalMeanVariance(1, 1)
+        x_1[1] ~ NormalMeanVariance(0, 1)
+        x_2[1] ~ NormalMeanVariance(0, 1)
+        x_3[1] ~ NormalMeanVariance(0, 1)
+        y[1] ~ NormalMeanVariance(x_1[1], 1)
+
+        # Specify generative model
+        for i in 2:(length(y))
+            x_3[i] ~ NormalMeanPrecision(x_3[i - 1], 1)
+            x_2[i] ~ gcv(x = x_2[i - 1], z = x_3[i], κ = κ_2, ω = ω_2)
+            x_1[i] ~ gcv(x = x_1[i - 1], z = x_2[i], κ = κ_1, ω = ω_1)
+            y[i] ~ NormalMeanVariance(x_1[i], 1)
+        end
+    end
+
+    @initialization function hgf_2_initialization()
+        q(ω_1) = vague(NormalMeanVariance)
+        q(κ_1) = vague(NormalMeanVariance)
+        q(ω_2) = vague(NormalMeanVariance)
+        q(κ_2) = vague(NormalMeanVariance)
+        q(x_1) = vague(NormalMeanVariance)
+        q(x_2[1:2:n]) = vague(NormalMeanVariance)
+        q(x_3) = vague(NormalMeanVariance)
+    end
+
+    result_2 = infer(model = hgf_2(), data = (y = dataset,), initialization = hgf_2_initialization(), constraints = MeanField(), allow_node_contraction = true)
+
+    @test result_2.posteriors[:x_1] isa Vector{<:NormalDistributionsFamily}
+end
+
 @testitem "Test warn argument in `infer()`" begin
     @model function beta_bernoulli(y)
         θ ~ Beta(4.0, 8.0)

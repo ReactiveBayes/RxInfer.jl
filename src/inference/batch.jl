@@ -1,3 +1,5 @@
+import Static
+
 """
     InferenceResult
 
@@ -115,6 +117,8 @@ function batch_inference(;
     free_energy = false,
     # Default BFE stream checks
     free_energy_diagnostics = DefaultObjectiveDiagnosticChecks,
+    # Enables node contraction with additional implementation, optional, defaults to false.
+    allow_node_contraction = false,
     # Show progress module, optional, defaults to false
     showprogress = false,
     # Inference cycle callbacks
@@ -156,11 +160,11 @@ function batch_inference(;
     end
 
     # The `_model` here still must be a `ModelGenerator`
-    _model = GraphPPL.with_plugins(model, modelplugins)
+    _model = GraphPPL.with_backend(GraphPPL.with_plugins(model, modelplugins), ReactiveMPGraphPPLBackend(Static.static(allow_node_contraction)))
 
     infer_check_dicttype(:data, data)
 
-    # If `predictvars` is specified implicitly as `KeepEach` or `KeepLast`, we replace it with the same value for each data variable
+    # If `predictvars` is specified implicitly as `KeepEach` or `KeepLast`, we replace it a the same value for each data variable
     if (predictvars === KeepEach() || predictvars === KeepLast())
         if !isnothing(data)
             predictoption = predictvars

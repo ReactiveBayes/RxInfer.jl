@@ -95,15 +95,15 @@ end
 
     @model function gcv(κ, ω, z, x, y)
         log_σ := κ * z + ω
-        y ~ Normal(x, exp(log_σ))
+        y ~ NormalMeanVariance(x, exp(log_σ))
     end
 
     @model function gcv_collection()
-        κ ~ Normal(0, 1)
-        ω ~ Normal(0, 1)
-        z ~ Normal(0, 1)
+        κ ~ NormalMeanVariance(0, 1)
+        ω ~ NormalMeanVariance(0, 1)
+        z ~ NormalMeanVariance(0, 1)
         for i in 1:10
-            x[i] ~ Normal(0, 1)
+            x[i] ~ NormalMeanVariance(0, 1)
             y[i] ~ gcv(κ = κ, ω = ω, z = z, x = x[i])
         end
     end
