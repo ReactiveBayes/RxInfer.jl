@@ -58,14 +58,14 @@ end
     @test create_model(conditioned) isa ProbabilisticModel
 end
 
-@testitem "create_deffered_data_handlers" begin
-    import RxInfer: create_deffered_data_handlers, DeferredDataHandler
+@testitem "create_deferred_data_handlers" begin
+    import RxInfer: create_deferred_data_handlers, DeferredDataHandler
 
-    @testset "Creating deffered labels from tuple of symbols" begin
-        @test create_deffered_data_handlers((:x, :y)) === (x = DeferredDataHandler(), y = DeferredDataHandler())
+    @testset "Creating deferred labels from tuple of symbols" begin
+        @test create_deferred_data_handlers((:x, :y)) === (x = DeferredDataHandler(), y = DeferredDataHandler())
     end
 
-    @testset "Creating deffered labels from array of symbols" begin
-        @test create_deffered_data_handlers([:x, :y]) == Dict(:x => DeferredDataHandler(), :y => DeferredDataHandler())
+    @testset "Creating deferred labels from array of symbols" begin
+        @test create_deferred_data_handlers([:x, :y]) == Dict(:x => DeferredDataHandler(), :y => DeferredDataHandler())
     end
 end

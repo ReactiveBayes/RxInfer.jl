@@ -250,6 +250,28 @@ end
 ```
 More information can be found in the [GraphPPL documentation](https://reactivebayes.github.io/GraphPPL.jl/stable/plugins/constraint_specification/#Default-constraints).
 
+## Constraints on the data
+
+By default, `RxInfer` assumes that, since the data comes into the model as observed, the posterior marginal distribution of the data is independent from other marginals and is a Dirac-delta distribution. However, this assumption breaks when we pass missing data into our model. When the data is missing, we might have a joint dependency between the data and latent variables, as the missing data essentially behaves as a latent variable. In such cases, we can wrap the data in a `UnfactorizedData`. This will notify the inference engine that the data should not be factorized out and we can specify a custom factorization constraint on these variables using the `@constraints` macro. 
+
+```@docs
+UnfactorizedData
+```
+
+```@example constraints-specification
+unfactorized_example_constraints = @constraints begin
+    q(y[1:1000], μ, τ) = q(y[1:1000])q(μ)q(τ)
+    q(y[1001:1100], μ, τ) = q(y[1001:1100], μ)q(τ)
+end
+result = infer(
+    model       = iid_normal(),
+    data        = (y = UnfactorizedData(vcat(rand(NormalMeanPrecision(3.1415, 2.7182), 1000), [missing for _ in 1:100])),),
+    constraints = unfactorized_example_constraints, 
+    initialization = init,
+    iterations = 25
+)
+```
+
 ## Prespecified constraints
 `GraphPPL` exports some [prespecified constraints](https://reactivebayes.github.io/GraphPPL.jl/stable/plugins/constraint_specification/#Prespecified-constraints) that can be used in the `@constraints` macro, but these constraints can also be passed as top-level constraints in the `infer` function. For example, to specify a mean-field assumption on all variables in the model, we can use the `MeanField` constraint:
 

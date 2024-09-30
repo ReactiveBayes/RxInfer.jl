@@ -1,11 +1,29 @@
 
-export ProbabilisticModel
+export ProbabilisticModel, UnfactorizedData
 export getmodel, getreturnval, getvardict, getrandomvars, getconstantvars, getdatavars, getfactornodes
 
 import Base: push!, show, getindex, haskey, firstindex, lastindex
 import ReactiveMP: getaddons, AbstractFactorNode
 import GraphPPL: ModelGenerator, getmodel, getkwargs, create_model
 import Rocket: getscheduler
+
+"""
+    UnfactorizedData{D}
+
+A wrapper struct to wrap data that should not be factorized out by default during inference.
+When performing Bayesian Inference with message passing, every factor node contains a local
+factorization constraint on the variational posterior distribution. For data, we usually regarding
+data as an independent component in the variational posterior distribution. However, in some cases,
+for example when we are predicting data, we do not want to factorize out the data. In such cases,
+we can wrap the data with `UnfactorizedData` struct to prevent the factorization and craft a custom
+node-local factorization with the `@constraints` macro.
+"""
+struct UnfactorizedData{D}
+    data::D
+end
+
+get_data(x) = x
+get_data(x::UnfactorizedData) = x.data
 
 "A structure that holds the factor graph representation of a probabilistic model."
 struct ProbabilisticModel{M}
@@ -146,6 +164,11 @@ function __infer_create_data_interface(model, context, key::Symbol, ::DeferredDa
 end
 
 # In all other cases we use the `datalabel` to instantiate the data interface for the model and the data is known at the time of the model creation
+function __infer_create_data_interface(model, context, key::Symbol, data::UnfactorizedData{D}) where {D}
+    return GraphPPL.datalabel(model, context, GraphPPL.NodeCreationOptions(kind = :data, factorized = false), key, get_data(data))
+end
+
+# In all other cases we use the `datalabel` to instantiate the data interface for the model and the data is known at the time of the model creation
 function __infer_create_data_interface(model, context, key::Symbol, data)
     return GraphPPL.datalabel(model, context, GraphPPL.NodeCreationOptions(kind = :data, factorized = true), key, data)
 end
@@ -156,11 +179,11 @@ merge_data_handlers(data::NamedTuple, newdata::Dict) = merge(convert(Dict, data)
 merge_data_handlers(data::NamedTuple, newdata::NamedTuple) = merge(data, newdata)
 
 # This function creates a named tuple of `DeferredDataHandler` objects from a tuple of symbols
-function create_deffered_data_handlers(symbols::NTuple{N, Symbol}) where {N}
+function create_deferred_data_handlers(symbols::NTuple{N, Symbol}) where {N}
     return NamedTuple{symbols}(map(_ -> DeferredDataHandler(), symbols))
 end
 
 # This function creates a dictionary of `DeferredDataHandler` objects from an array of symbols
-function create_deffered_data_handlers(symbols::AbstractVector{Symbol})
+function create_deferred_data_handlers(symbols::AbstractVector{Symbol})
     return Dict{Symbol, DeferredDataHandler}(map(s -> s => DeferredDataHandler(), symbols))
 end
