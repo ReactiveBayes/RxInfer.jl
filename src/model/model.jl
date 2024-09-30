@@ -7,6 +7,17 @@ import ReactiveMP: getaddons, AbstractFactorNode
 import GraphPPL: ModelGenerator, getmodel, getkwargs, create_model
 import Rocket: getscheduler
 
+"""
+    UnfactorizedData{D}
+
+A wrapper struct to wrap data that should not be factorized out by default during inference.
+When performing Bayesian Inference with message passing, every factor node contains a local
+factorization constraint on the variational posterior distribution. For data, we usually regarding
+data as an independent component in the variational posterior distribution. However, in some cases,
+for example when we are predicting data, we do not want to factorize out the data. In such cases,
+we can wrap the data with `UnfactorizedData` struct to prevent the factorization and craft a custom
+node-local factorization with the `@constraints` macro.
+"""
 struct UnfactorizedData{D}
     data::D
 end
