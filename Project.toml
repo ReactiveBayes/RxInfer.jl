@@ -44,8 +44,8 @@ ProgressMeter = "1.0.0"
 Random = "1.9"
 ReactiveMP = "~4.4.1"
 Reexport = "1.2.0"
-Static = "0.8.10"
 Rocket = "1.8.0"
+Static = "0.8.10, 1"
 TupleTools = "1.2.0"
 julia = "1.10"
 
@@ -72,25 +72,4 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 TestSetExtensions = "98d24dd4-01ad-11ea-1b02-c9a08f80db04"
 
 [targets]
-test = [
-    "Test",
-    "Pkg",
-    "Logging",
-    "InteractiveUtils",
-    "TestSetExtensions",
-    "Coverage",
-    "CpuId",
-    "Dates",
-    "Distributed",
-    "Documenter",
-    "ExponentialFamilyProjection",
-    "Plots",
-    "BenchmarkCI",
-    "BenchmarkTools",
-    "PkgBenchmark",
-    "Aqua",
-    "StableRNGs",
-    "StatsFuns",
-    "Optimisers",
-    "ReTestItems",
-]
+test = ["Test", "Pkg", "Logging", "InteractiveUtils", "TestSetExtensions", "Coverage", "CpuId", "Dates", "Distributed", "Documenter", "ExponentialFamilyProjection", "Plots", "BenchmarkCI", "BenchmarkTools", "PkgBenchmark", "Aqua", "StableRNGs", "StatsFuns", "Optimisers", "ReTestItems"]
