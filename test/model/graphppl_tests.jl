@@ -12,7 +12,7 @@
     input = :(a = constvar())
     @test @capture(apply_pipeline(input, error_datavar_constvar_randomvar), error(_))
 
-    input = :(x ~ Normal(0, 1))
+    input = :(x ~ Normal(mean = 0.0, var = 1.0))
     @test apply_pipeline(input, error_datavar_constvar_randomvar) == input
 end
 

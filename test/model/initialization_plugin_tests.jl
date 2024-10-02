@@ -26,8 +26,8 @@ end
     import RxInfer: SpecificSubModelInit, InitSpecification, InitDescriptor, InitMarginal, InitObject, GeneralSubModelInit
 
     @model function dummymodel()
-        x ~ Normal(0, 1)
-        y ~ Normal(x, 1)
+        x ~ Normal(mean = 0.0, var = 1.0)
+        y ~ Normal(mean = x, var = 1.0)
     end
 
     @test SpecificSubModelInit(GraphPPL.FactorID(dummymodel, 1), InitSpecification()) isa SpecificSubModelInit
@@ -42,8 +42,8 @@ end
     import RxInfer: SpecificSubModelInit, InitSpecification, InitDescriptor, InitMarginal, InitObject, GeneralSubModelInit
 
     @model function dummymodel()
-        x ~ Normal(0, 1)
-        y ~ Normal(x, 1)
+        x ~ Normal(mean = 0.0, var = 1.0)
+        y ~ Normal(mean = x, var = 1.0)
     end
 
     @test GeneralSubModelInit(dummymodel, InitSpecification()) isa GeneralSubModelInit
@@ -641,7 +641,7 @@ end
         local x
         for i in 1:3
             for j in 1:3
-                x[i, j] ~ Normal(0, 1)
+                x[i, j] ~ Normal(mean = 0.0, var = 1.0)
             end
         end
     end
@@ -683,7 +683,7 @@ end
     @test default_init(some_model) === RxInfer.EmptyInit
 
     @model function model_with_init()
-        x ~ Normal(0.0, 1.0)
+        x ~ Normal(mean = 0.0, var = 1.0)
     end
 
     default_init(::typeof(model_with_init)) = @initialization begin

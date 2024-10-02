@@ -49,19 +49,19 @@ Nowadays there's plenty of probabilistic programming languages and packages avai
 using RxInfer #hide
 
 @model function inner_inner(τ, y, x)
-    y ~ Normal(τ[1], τ[2] + x)
+    y ~ Normal(mean = τ[1], var = τ[2] + x)
 end
 
 @model function inner(θ, α)
-    β ~ Normal(0, 1)
-    α ~ Gamma(β, 1)
+    β ~ Normal(mean = 0.0, var = 1.0)
+    α ~ Gamma(shape = β, rate = 1.0)
     α ~ inner_inner(τ = θ, x = 3)
 end
 
 @model function outer()
     local w
     for i = 1:5
-        w[i] ~ inner(θ = Gamma(1, 1))
+        w[i] ~ inner(θ = Gamma(shape = 1.0, rate = 1.0))
     end
     y ~ inner(θ = w[2:3])
 end

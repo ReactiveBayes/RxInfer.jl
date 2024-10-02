@@ -177,19 +177,19 @@ Read more about the `@constraints` macro in the [official documentation](https:/
 
 ```@example manual_constraints
 @model function inner_inner(τ, y)
-    y ~ Normal(τ[1], τ[2])
+    y ~ Normal(mean = τ[1], var = τ[2])
 end
 
 @model function inner(θ, α)
-    β ~ Normal(0, 1)
-    α ~ Gamma(β, 1)
+    β ~ Normal(mean = 0.0, var = 1.0)
+    α ~ Gamma(shape = β, rate = 1.0)
     α ~ inner_inner(τ = θ)
 end
 
 @model function outer()
     local w
     for i = 1:5
-        w[i] ~ inner(θ = Gamma(1, 1))
+        w[i] ~ inner(θ = Gamma(shape = 1.0, rate = 1.0))
     end
     y ~ inner(θ = w[2:3])
 end

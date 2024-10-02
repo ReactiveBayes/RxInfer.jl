@@ -23,7 +23,7 @@ The `@model` macro returns a regular Julia function (in this example `model_name
 ```@example model-specification-model-macro
 using RxInfer #hide
 @model function my_model(observation, hyperparameter)
-    observations ~ Normal(0.0, hyperparameter)
+    observations ~ Normal(mean = 0.0, var = hyperparameter)
 end
 ```
 
