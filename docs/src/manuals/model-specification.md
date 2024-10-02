@@ -159,6 +159,21 @@ not only creates a latent variable `x₁` but also a factor node `Normal`.
     do not require it explicitly. However, for nodes, which have many different useful parametrizations (e.g. `Normal`) labeling the arguments 
     is a requirement that helps to avoid any possible confusion. Read more about `Distributions` compatibility [here](@ref user-guide-model-specification-distributions).
 
+### [Deterministic relationships](@id user-guide-model-specification-node-creation-deterministic)
+
+In contrast to other probabilistic programming languages in Julia, `RxInfer` does not allow use of `=` operator for creating deterministic relationships between (latent)variables. 
+Instead, we can use `:=` operator for this purpose. For example:
+
+```julia
+t ~ Normal(mean = 0.0, variance = 1.0)
+x := exp(t) # x is linked deterministically to t
+y ~ Normal(mean = x, variance = 1.0)
+```
+
+Using `x = exp(t)` directly would be incorrect and most likely would result in an `MethodError` because `t` does not have a definitive value at the model creation time 
+(remember that our models create a factor graph under the hood and latent states do not have a value until the inference is performed). At the model creation time, 
+`t` holds a reference to a node in the graph, instead of an actual value sample from the `Normal` distribution.
+
 ### [Control flow statements](@id user-guide-model-specification-node-creation-control-flow)
 
 In general, it is possible to use any Julia code within model specification function, including control flow statements, such as `for`, `while` and `if` statements. However, it is not possible to use any latent states within such statements. This is due to the fact that it is necessary to know exactly the structure of the graph before the inference. Thus it is **not possible** to write statements like:
