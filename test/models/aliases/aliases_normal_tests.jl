@@ -39,3 +39,23 @@
     @test last(result.free_energy) ≈ 2.319611135721246
     @test all(iszero, diff(result.free_energy))
 end
+
+@testitem "`Normal` by itself cannot be used as a node" begin
+    @model function normal_by_itself(d)
+        x ~ Normal(0.0, 1.0)
+        d ~ Normal(x, 1.0)
+    end
+    @test_throws "`Normal` cannot be constructed without keyword arguments. Use `Normal(mean = ..., var = ...)` or `Normal(mean = ..., precision = ...)`." infer(
+        model = normal_by_itself(), data = (d = 1.0,), iterations = 1, free_energy = false
+    )
+end
+
+@testitem "`MvNormal` by itself cannot be used as a node" begin
+    @model function mvnormal_by_itself(d)
+        x ~ MvNormal(zeros(2), diageye(2))
+        d ~ MvNormal(x, diageye(2))
+    end
+    @test_throws "`MvNormal` cannot be constructed without keyword arguments. Use `MvNormal(mean = ..., covariance = ...)` or `MvNormal(mean = ..., precision = ...)`." infer(
+        model = mvnormal_by_itself(), data = (d = 1.0,), iterations = 1, free_energy = false
+    )
+end

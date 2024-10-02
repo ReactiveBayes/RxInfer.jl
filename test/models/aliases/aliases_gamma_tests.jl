@@ -37,3 +37,13 @@
     @test first(results.free_energy[end]) ≈ 4.385584096993327
     @test all(<=(1e-14), diff(results.free_energy)) # it oscilates a bit at the end, but all should be less or equal to zero
 end
+
+@testitem "`Gamma` by itself cannot be used as a node" begin
+    @model function gamma_by_itself(d)
+        x ~ Gamma(1.0, 1.0)
+        d ~ Gamma(x, 1.0)
+    end
+    @test_throws "`Gamma` cannot be constructed without keyword arguments. Use `Gamma(shape = ..., rate = ...)` or `Gamma(shape = ..., scale = ...)`." infer(
+        model = gamma_by_itself(), data = (d = 1.0,), iterations = 1, free_energy = false
+    )
+end
