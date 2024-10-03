@@ -30,7 +30,7 @@ end
 @testitem "__infer_create_factor_graph_model" begin
     @model function simple_model_for_infer_create_model(y, a, b)
         x ~ Beta(a, b)
-        y ~ Normal(x, 1.0)
+        y ~ Normal(mean = x, var = 1.0)
     end
 
     import RxInfer: __infer_create_factor_graph_model, ProbabilisticModel, getmodel
@@ -52,7 +52,7 @@ end
     # A simple model for testing that resembles a simple kalman filter with
     # random walk state transition and unknown observational noise
     @model function test_model1(y)
-        τ ~ Gamma(1.0, 1.0)
+        τ ~ Gamma(shape = 1.0, rate = 1.0)
 
         x[1] ~ Normal(mean = 0.0, variance = 1.0)
         y[1] ~ Normal(mean = x[1], precision = τ)
@@ -364,7 +364,7 @@ end
 @testitem "Invalid data size error" begin
     @model function test_model1(y)
         n = length(y)
-        τ ~ Gamma(1.0, 1.0)
+        τ ~ Gamma(shape = 1.0, rate = 1.0)
 
         x[1] ~ Normal(mean = 0.0, variance = 1.0)
         y[1] ~ Normal(mean = x[1], precision = τ)

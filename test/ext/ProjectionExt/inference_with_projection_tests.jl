@@ -383,7 +383,7 @@ end
 
     @model function mymodel(y, C)
         a ~ Beta(2, 1)
-        b ~ Gamma(2, 1)
+        b ~ Gamma(shape = 2.0, rate = 1.0)
         μ := foo(a, b)
         for i in eachindex(y)
             y[i] ~ Normal(mean = μ, variance = C)
@@ -448,7 +448,7 @@ end
 
     @model function mymodel(y, C)
         a ~ Beta(1, 1)
-        b ~ Gamma(1, 1)
+        b ~ Gamma(shape = 1.0, rate = 1.0)
         μ := foo(a, b)
         for i in eachindex(y)
             y[i] ~ MvNormal(mean = μ, covariance = C)
