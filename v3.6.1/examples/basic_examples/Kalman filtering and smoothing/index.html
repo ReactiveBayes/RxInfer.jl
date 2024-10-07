@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Kalman filtering and smoothing · RxInfer.jl</title><meta name="title" content="Kalman filtering and smoothing · RxInfer.jl"/><meta property="og:title" content="Kalman filtering and smoothing · RxInfer.jl"/><meta property="twitter:title" content="Kalman filtering and smoothing · RxInfer.jl"/><meta name="description" content="Julia package for automated Bayesian inference on a factor graph with reactive message passing"/><meta property="og:description" content="Julia package for automated Bayesian inference on a factor graph with reactive message passing"/><meta property="twitter:description" content="Julia package for automated Bayesian inference on a factor graph with reactive message passing"/><meta property="og:url" content="https://reactivebayes.github.io/RxInfer.jl/examples/basic_examples/Kalman filtering and smoothing/"/><meta property="twitter:url" content="https://reactivebayes.github.io/RxInfer.jl/examples/basic_examples/Kalman filtering and smoothing/"/><link rel="canonical" href="https://reactivebayes.github.io/RxInfer.jl/examples/basic_examples/Kalman filtering and smoothing/"/><script data-outdated-warner src="../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../search_index.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><link href="../../../assets/theme.css" rel="stylesheet" type="text/css"/><link href="../../../assets/header.css" rel="stylesheet" type="text/css"/><script src="../../../assets/header.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img class="docs-light-only" src="../../../assets/logo.svg" alt="RxInfer.jl logo"/><img class="docs-dark-only" src="../../../assets/logo-dark.svg" alt="RxInfer.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../../../">RxInfer.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../../">Home</a></li><li><span class="tocitem">User guide</span><ul><li><a class="tocitem" href="../../../manuals/getting-started/">Getting started</a></li><li><a class="tocitem" href="../../../manuals/comparison/">RxInfer.jl vs. Others</a></li><li><a class="tocitem" href="../../../manuals/model-specification/">Model specification</a></li><li><a class="tocitem" href="../../../manuals/constraints-specification/">Constraints specification</a></li><li><a class="tocitem" href="../../../manuals/meta-specification/">Meta specification</a></li><li><input class="collapse-toggle" id="menuitem-2-6" type="checkbox"/><label class="tocitem" for="menuitem-2-6"><span class="docs-label">Inference specification</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../manuals/inference/overview/">Overview</a></li><li><a class="tocitem" href="../../../manuals/inference/static/">Static inference</a></li><li><a class="tocitem" href="../../../manuals/inference/streamlined/">Streamline inference</a></li><li><a class="tocitem" href="../../../manuals/inference/initialization/">Initialization</a></li><li><a class="tocitem" href="../../../manuals/inference/autoupdates/">Auto-updates</a></li><li><a class="tocitem" href="../../../manuals/inference/delta-node/">Deterministic nodes</a></li><li><a class="tocitem" href="../../../manuals/inference/nonconjugate/">Non-conjugate inference</a></li><li><a class="tocitem" href="../../../manuals/inference/undefinedrules/">Undefined message update rules</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-7" type="checkbox"/><label class="tocitem" for="menuitem-2-7"><span class="docs-label">Inference customization</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../manuals/customization/custom-node/">Defining a custom node and rules</a></li><li><a class="tocitem" href="../../../manuals/customization/postprocess/">Inference results postprocessing</a></li></ul></li><li><a class="tocitem" href="../../../manuals/debugging/">Debugging</a></li><li><a class="tocitem" href="../../../manuals/migration-guide-v2-v3/">Migration from v2 to v3</a></li></ul></li><li><span class="tocitem">Library</span><ul><li><a class="tocitem" href="../../../library/model-construction/">Model construction</a></li><li><a class="tocitem" href="../../../library/bethe-free-energy/">Bethe Free Energy</a></li><li><a class="tocitem" href="../../../library/functional-forms/">Functional form constraints</a></li><li><a class="tocitem" href="../../../library/exported-methods/">Exported methods</a></li></ul></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../../overview/">Overview</a></li><li><input class="collapse-toggle" id="menuitem-4-2" type="checkbox" checked/><label class="tocitem" for="menuitem-4-2"><span class="docs-label">Basic examples</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../overview/">Overview</a></li><li><a class="tocitem" href="../Coin Toss Model/">Coin toss model (Beta-Bernoulli)</a></li><li><a class="tocitem" href="../Bayesian Linear Regression Tutorial/">Bayesian Linear Regression Tutorial</a></li><li class="is-active"><a class="tocitem" href>Kalman filtering and smoothing</a><ul class="internal"><li><a class="tocitem" href="#Gaussian-Linear-Dynamical-System"><span>Gaussian Linear Dynamical System</span></a></li><li><a class="tocitem" href="#System-Identification-Problem"><span>System Identification Problem</span></a></li><li><a class="tocitem" href="#Handling-Missing-Data"><span>Handling Missing Data</span></a></li></ul></li><li><a class="tocitem" href="../Predicting Bike Rental Demand/">Predicting Bike Rental Demand</a></li><li><a class="tocitem" href="../Hidden Markov Model/">How to train your Hidden Markov Model</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-4-3" type="checkbox"/><label class="tocitem" for="menuitem-4-3"><span class="docs-label">Advanced examples</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../advanced_examples/overview/">Overview</a></li><li><a class="tocitem" href="../../advanced_examples/Active Inference Mountain car/">Active Inference Mountain car</a></li><li><a class="tocitem" href="../../advanced_examples/Advanced Tutorial/">Advanced Tutorial</a></li><li><a class="tocitem" href="../../advanced_examples/Assessing People Skills/">Assessing People’s Skills</a></li><li><a class="tocitem" href="../../advanced_examples/Chance Constraints/">Chance-Constrained Active Inference</a></li><li><a class="tocitem" href="../../advanced_examples/Conjugate-Computational Variational Message Passing/">Conjugate-Computational Variational Message Passing (CVI)</a></li><li><a class="tocitem" href="../../advanced_examples/Global Parameter Optimisation/">Global Parameter Optimisation</a></li><li><a class="tocitem" href="../../advanced_examples/GP Regression by SSM/">Solve GP regression by SDE</a></li><li><a class="tocitem" href="../../advanced_examples/Infinite Data Stream/">Infinite Data Stream</a></li><li><a class="tocitem" href="../../advanced_examples/Nonlinear Sensor Fusion/">Nonlinear Sensor Fusion</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-4-4" type="checkbox"/><label class="tocitem" for="menuitem-4-4"><span class="docs-label">Problem specific</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../problem_specific/overview/">Overview</a></li><li><a class="tocitem" href="../../problem_specific/Autoregressive Models/">Autoregressive Models</a></li><li><a class="tocitem" href="../../problem_specific/Gamma Mixture/">Gamma Mixture Model</a></li><li><a class="tocitem" href="../../problem_specific/Gaussian Mixture/">Gaussian Mixture</a></li><li><a class="tocitem" href="../../problem_specific/Hierarchical Gaussian Filter/">Hierarchical Gaussian Filter</a></li><li><a class="tocitem" href="../../problem_specific/Invertible Neural Network Tutorial/">Invertible neural networks: a tutorial</a></li><li><a class="tocitem" href="../../problem_specific/Probit Model (EP)/">Probit Model (EP)</a></li><li><a class="tocitem" href="../../problem_specific/RTS vs BIFM Smoothing/">RTS vs BIFM Smoothing</a></li><li><a class="tocitem" href="../../problem_specific/Simple Nonlinear Node/">Simple Nonlinear Node</a></li><li><a class="tocitem" href="../../problem_specific/Universal Mixtures/">Universal Mixtures</a></li></ul></li><li><a class="tocitem" href="../../../contributing/external-examples/">External examples</a></li></ul></li><li><span class="tocitem">Contributing</span><ul><li><a class="tocitem" href="../../../contributing/guide/">Contribution guide</a></li><li><a class="tocitem" href="../../../contributing/guidelines/">Contribution guidelines</a></li><li><a class="tocitem" href="../../../contributing/new-documentation/">Contributing to the documentation</a></li><li><a class="tocitem" href="../../../contributing/new-example/">Contributing to the examples</a></li><li><a class="tocitem" href="../../../contributing/new-release/">Publishing a new release</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li><a class="is-disabled">Basic examples</a></li><li class="is-active"><a href>Kalman filtering and smoothing</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Kalman filtering and smoothing</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/ReactiveBayes/RxInfer.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/ReactiveBayes/RxInfer.jl/blob/main/docs/src/examples/basic_examples/Kalman filtering and smoothing.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><p>This example has been auto-generated from the <a href="https://github.com/reactivebayes/RxInfer.jl/tree/main/examples"><code>examples/</code></a> folder at GitHub repository.</p><h1 id="examples-kalman-filtering-and-smoothing"><a class="docs-heading-anchor" href="#examples-kalman-filtering-and-smoothing">Kalman filtering and smoothing</a><a id="examples-kalman-filtering-and-smoothing-1"></a><a class="docs-heading-anchor-permalink" href="#examples-kalman-filtering-and-smoothing" title="Permalink"></a></h1><pre><code class="language-julia hljs"># Activate local environment, see `Project.toml`
+import Pkg; Pkg.activate(&quot;..&quot;); Pkg.instantiate();</code></pre><p>In the following set of examples the goal is to estimate hidden states of a Dynamical process where all hidden states are Gaussians.</p><p>We start our journey with a simple multivariate Linear Gaussian State Space Model (LGSSM), which can be solved analytically.</p><p>We then solve an identification problem which does not have an analytical solution.</p><p>Utimately, we show how <strong>RxInfer.jl</strong> can deal with missing observations.</p><h2 id="Gaussian-Linear-Dynamical-System"><a class="docs-heading-anchor" href="#Gaussian-Linear-Dynamical-System">Gaussian Linear Dynamical System</a><a id="Gaussian-Linear-Dynamical-System-1"></a><a class="docs-heading-anchor-permalink" href="#Gaussian-Linear-Dynamical-System" title="Permalink"></a></h2><p>LGSSM can be described with the following equations:</p><p class="math-container">\[\begin{aligned}
+ p(x_i|x_{i - 1}) &amp; = \mathcal{N}(x_i|A * x_{i - 1}, \mathcal{P}),\\
+ p(y_i|x_i) &amp; = \mathcal{N}(y_i|B * x_i, \mathcal{Q}),
+\end{aligned}\]</p><p>where <span>$x_i$</span> are hidden states, <span>$y_i$</span> are noisy observations, <span>$A$</span>, <span>$B$</span> are state transition and observational matrices, <span>$\mathcal{P}$</span> and <span>$\mathcal{Q}$</span> are state transition noise and observation noise covariance matrices. For a more rigorous introduction to Linear Gaussian Dynamical systems we refer to <a href="https://users.aalto.fi/~ssarkka/pub/cup_book_online_20131111.pdf">Simo Sarkka, Bayesian Filtering and Smoothing</a> book.</p><p>To model this process in <code>RxInfer</code>, first, we start with importing all needed packages:</p><pre><code class="language-julia hljs">using RxInfer, BenchmarkTools, Random, LinearAlgebra, Plots</code></pre><p>Next step, is to generate some synthetic data:</p><pre><code class="language-julia hljs">function generate_data(rng, A, B, Q, P)
+    x_prev = [ 10.0, -10.0 ]
+
+    x = Vector{Vector{Float64}}(undef, n)
+    y = Vector{Vector{Float64}}(undef, n)
+
+    for i in 1:n
+        x[i] = rand(rng, MvNormal(A * x_prev, Q))
+        y[i] = rand(rng, MvNormal(B * x[i], P))
+        x_prev = x[i]
+    end
+    
+    return x, y
+end</code></pre><pre><code class="nohighlight hljs">generate_data (generic function with 1 method)</code></pre><pre><code class="language-julia hljs"># Seed for reproducibility
+seed = 1234
+
+rng = MersenneTwister(1234)
+
+# We will model 2-dimensional observations with rotation matrix `A`
+# To avoid clutter we also assume that matrices `A`, `B`, `P` and `Q`
+# are known and fixed for all time-steps
+θ = π / 35
+A = [ cos(θ) -sin(θ); sin(θ) cos(θ) ]
+B = diageye(2)
+Q = diageye(2)
+P = 25.0 .* diageye(2)
+
+# Number of observations
+n = 300;</code></pre><pre><code class="language-julia hljs">x, y = generate_data(rng, A, B, Q, P);</code></pre><p>Let&#39;s plot our synthetic dataset. Lines represent our hidden states we want to estimate using noisy observations, which are represented as dots.</p><pre><code class="language-julia hljs">px = plot()
+
+px = plot!(px, getindex.(x, 1), label = &quot;Hidden Signal (dim-1)&quot;, color = :orange)
+px = scatter!(px, getindex.(y, 1), label = false, markersize = 2, color = :orange)
+px = plot!(px, getindex.(x, 2), label = &quot;Hidden Signal (dim-2)&quot;, color = :green)
+px = scatter!(px, getindex.(y, 2), label = false, markersize = 2, color = :green)
+
+plot(px)</code></pre><p><img src="../../../assets/examples/Kalman filtering and smoothing_6_1.png" alt/></p><p>To create a model we use <code>GraphPPL</code> package and <code>@model</code> macro:</p><pre><code class="language-julia hljs">@model function rotate_ssm(y, x0, A, B, Q, P)
+    x_prior ~ MvNormalMeanCovariance(mean(x0), cov(x0))
+    x_prev = x_prior
+    
+    for i in 1:length(y)
+        x[i] ~ MvNormalMeanCovariance(A * x_prev, Q)
+        y[i] ~ MvNormalMeanCovariance(B * x[i], P)
+        x_prev = x[i]
+    end
+
+end</code></pre><p>To run inference we also specify prior for out first hidden state:</p><pre><code class="language-julia hljs">x0 = MvNormalMeanCovariance(zeros(2), 100.0 * diageye(2));</code></pre><pre><code class="language-julia hljs"># For large number of observations you need to use limit_stack_depth = 100 option during model creation, e.g. 
+# infer(..., options = (limit_stack_depth = 500, ))`
+result = infer(
+    model = rotate_ssm(x0=x0, A=A, B=B, Q=Q, P=P), 
+    data = (y = y,),
+    free_energy = true
+);
+
+xmarginals  = result.posteriors[:x]
+logevidence = -result.free_energy; # given the analytical solution, free energy will be equal to the negative log evidence</code></pre><pre><code class="language-julia hljs">px = plot()
+
+px = plot!(px, getindex.(x, 1), label = &quot;Hidden Signal (dim-1)&quot;, color = :orange)
+px = plot!(px, getindex.(x, 2), label = &quot;Hidden Signal (dim-2)&quot;, color = :green)
+
+px = plot!(px, getindex.(mean.(xmarginals), 1), ribbon = getindex.(var.(xmarginals), 1) .|&gt; sqrt, fillalpha = 0.5, label = &quot;Estimated Signal (dim-1)&quot;, color = :teal)
+px = plot!(px, getindex.(mean.(xmarginals), 2), ribbon = getindex.(var.(xmarginals), 2) .|&gt; sqrt, fillalpha = 0.5, label = &quot;Estimated Signal (dim-1)&quot;, color = :violet)
+
+plot(px)</code></pre><p><img src="../../../assets/examples/Kalman filtering and smoothing_10_1.png" alt/></p><p>As we can see from our plot, estimated signal resembles closely to the real hidden states with small variance. We maybe also interested in the value for minus log evidence:</p><pre><code class="language-julia hljs">logevidence</code></pre><pre><code class="nohighlight hljs">1-element Vector{Float64}:
+ -1882.2434870099432</code></pre><h2 id="System-Identification-Problem"><a class="docs-heading-anchor" href="#System-Identification-Problem">System Identification Problem</a><a id="System-Identification-Problem-1"></a><a class="docs-heading-anchor-permalink" href="#System-Identification-Problem" title="Permalink"></a></h2><p>In this example we are going to attempt to run Bayesian inference and decouple two random-walk signals, which were combined into a single single through some deterministic function <code>f</code>. We do not have access to the real values of these signals, but only to their combination. First, we create the <code>generate_data</code> function that accepts <code>f</code> as an argument:</p><pre><code class="language-julia hljs">using RxInfer, Distributions, StableRNGs, Plots</code></pre><pre><code class="language-julia hljs">function generate_data(f, n; seed = 123, x_i_min = -20.0, w_i_min = 20.0, noise = 20.0, real_x_τ = 0.1, real_w_τ = 1.0)
+
+    rng = StableRNG(seed)
+
+    real_x = Vector{Float64}(undef, n)
+    real_w = Vector{Float64}(undef, n)
+    real_y = Vector{Float64}(undef, n)
+
+    for i in 1:n
+        real_x[i] = rand(rng, Normal(x_i_min, sqrt(1.0 / real_x_τ)))
+        real_w[i] = rand(rng, Normal(w_i_min, sqrt(1.0 / real_w_τ)))
+        real_y[i] = rand(rng, Normal(f(real_x[i], real_w[i]), sqrt(noise)))
+
+        x_i_min = real_x[i]
+        w_i_min = real_w[i]
+    end
+    
+    return real_x, real_w, real_y
+end</code></pre><pre><code class="nohighlight hljs">generate_data (generic function with 2 methods)</code></pre><p>The function returns the real signals <code>real_x</code> and  <code>real_w</code> for later comparison (we are not going to use them during inference) and their combined version <code>real_y</code> (we are going to use it as our observations during the inference). We also assume that <code>real_y</code> is corrupted with some measurement noise.</p><h3 id="Combination-1:-y-x-w"><a class="docs-heading-anchor" href="#Combination-1:-y-x-w">Combination 1: y = x + w</a><a id="Combination-1:-y-x-w-1"></a><a class="docs-heading-anchor-permalink" href="#Combination-1:-y-x-w" title="Permalink"></a></h3><p>In our first example, we are going to use a simple addition (<code>+</code>) as the function <code>f</code>. In general, it is impossible to decouple the signals <code>x</code> and <code>w</code> without strong priors, but we can try and see how good an inference can be. The <code>+</code> operation on two random variables also has a special meaning in the probabilistic inference, namely the convolution of pdf&#39;s of the two random variables, and <code>RxInfer</code> treats it specially with many precomputed analytical rules, which may make the inference task easier. First, let us create a test dataset:</p><pre><code class="language-julia hljs">n = 250
+real_x, real_w, real_y = generate_data(+, n);
+
+pl = plot(title = &quot;Underlying signals&quot;)
+pl = plot!(pl, real_x, label = &quot;x&quot;)
+pl = plot!(pl, real_w, label = &quot;w&quot;)
+
+pr = plot(title = &quot;Combined y = x + w&quot;)
+pr = scatter!(pr, real_y, ms = 3, color = :red, label = &quot;y&quot;)
+
+plot(pl, pr, size = (800, 300))</code></pre><p><img src="../../../assets/examples/Kalman filtering and smoothing_14_1.png" alt/></p><p>To run inference, we need to create a probabilistic model: our beliefs about how our data could have been generated. For this we can use the <code>@model</code> macro from <code>RxInfer.jl</code>:</p><pre><code class="language-julia hljs">@model function identification_problem(f, y, m_x_0, τ_x_0, a_x, b_x, m_w_0, τ_w_0, a_w, b_w, a_y, b_y)
+    
+    x0 ~ Normal(mean = m_x_0, precision = τ_x_0)
+    τ_x ~ Gamma(shape = a_x, rate = b_x)
+    w0 ~ Normal(mean = m_w_0, precision = τ_w_0)
+    τ_w ~ Gamma(shape = a_w, rate = b_w)
+    τ_y ~ Gamma(shape = a_y, rate = b_y)
+    
+    x_i_min = x0
+    w_i_min = w0
+
+    local x
+    local w
+    local s
+    
+    for i in 1:length(y)
+        x[i] ~ Normal(mean = x_i_min, precision = τ_x)
+        w[i] ~ Normal(mean = w_i_min, precision = τ_w)
+        s[i] := f(x[i], w[i])
+        y[i] ~ Normal(mean = s[i], precision = τ_y)
+        
+        x_i_min = x[i]
+        w_i_min = w[i]
+    end
+    
+end</code></pre><p><code>RxInfer</code> runs Bayesian inference as a variational optimisation procedure between the real solution and its variational proxy <code>q</code>. In our model specification we assumed noise components to be unknown, thus, we need to enforce a structured mean-field assumption for the variational family of distributions <code>q</code>. This inevitably reduces the accuracy of the result, but makes the task easier and allows for fast and analytical message passing-based variational inference:</p><pre><code class="language-julia hljs">constraints = @constraints begin 
+    q(x0, w0, x, w, τ_x, τ_w, τ_y, s) = q(x, x0, w, w0, s)q(τ_w)q(τ_x)q(τ_y)
+end</code></pre><pre><code class="nohighlight hljs">Constraints: 
+  q(x0, w0, x, w, τ_x, τ_w, τ_y, s) = q(x, x0, w, w0, s)q(τ_w)q(τ_x)q(τ_y)</code></pre><p>The next step is to assign priors, initialise needed messages and marginals and call the <code>inference</code> function:</p><pre><code class="language-julia hljs">m_x_0, τ_x_0 = -20.0, 1.0
+m_w_0, τ_w_0 = 20.0, 1.0
+
+# We set relatively strong priors for random walk noise components
+# and sort of vague prior for the noise of the observations
+a_x, b_x = 0.01, 0.01var(real_x)
+a_w, b_w = 0.01, 0.01var(real_w)
+a_y, b_y = 1.0, 1.0
+
+# We set relatively strong priors for messages
+xinit = map(r -&gt; NormalMeanPrecision(r, τ_x_0), reverse(range(-60, -20, length = n)))
+winit = map(r -&gt; NormalMeanPrecision(r, τ_w_0), range(20, 60, length = n))
+
+
+init = @initialization begin
+    μ(x) = xinit
+    μ(w) = winit
+    q(τ_x) = GammaShapeRate(a_x, b_x)
+    q(τ_w) = GammaShapeRate(a_w, b_w)
+    q(τ_y) = GammaShapeRate(a_y, b_y)
+end
+
+result = infer(
+    model = identification_problem(f=+, m_x_0=m_x_0, τ_x_0=τ_x_0, a_x=a_x, b_x=b_x, m_w_0=m_w_0, τ_w_0=τ_w_0, a_w=a_w, b_w=b_w, a_y=a_y, b_y=b_y),
+    data  = (y = real_y,), 
+    options = (limit_stack_depth = 500, ), 
+    constraints = constraints, 
+    initialization = init,
+    iterations = 50
+)</code></pre><pre><code class="nohighlight hljs">Inference results:
+  Posteriors       | available for (x, w, x0, s, τ_x, τ_w, τ_y, w0)</code></pre><p>Let&#39;s examine our inference results:</p><pre><code class="language-julia hljs">τ_x_marginals = result.posteriors[:τ_x]
+τ_w_marginals = result.posteriors[:τ_w]
+τ_y_marginals = result.posteriors[:τ_y]
+
+smarginals = result.posteriors[:s]
+xmarginals = result.posteriors[:x]
+wmarginals = result.posteriors[:w];</code></pre><pre><code class="language-julia hljs">px1 = plot(legend = :bottomleft, title = &quot;Estimated hidden signals&quot;)
+px2 = plot(legend = :bottomright, title = &quot;Estimated combined signals&quot;)
+
+px1 = plot!(px1, real_x, label = &quot;Real hidden X&quot;)
+px1 = plot!(px1, mean.(xmarginals[end]), ribbon = var.(xmarginals[end]), label = &quot;Estimated X&quot;)
+
+px1 = plot!(px1, real_w, label = &quot;Real hidden W&quot;)
+px1 = plot!(px1, mean.(wmarginals[end]), ribbon = var.(wmarginals[end]), label = &quot;Estimated W&quot;)
+
+px2 = scatter!(px2, real_y, label = &quot;Observations&quot;, ms = 2, alpha = 0.5, color = :red)
+px2 = plot!(px2, mean.(smarginals[end]), ribbon = std.(smarginals[end]), label = &quot;Combined estimated signal&quot;, color = :green)
+
+plot(px1, px2, size = (800, 300))</code></pre><p><img src="../../../assets/examples/Kalman filtering and smoothing_19_1.png" alt/></p><p>The inference results are not so bad, even though <code>RxInfer</code> missed the correct values of the signals between <code>100</code> and <code>150</code>.</p><h3 id="Combination-2:-y-min(x,-w)"><a class="docs-heading-anchor" href="#Combination-2:-y-min(x,-w)">Combination 2: y = min(x, w)</a><a id="Combination-2:-y-min(x,-w)-1"></a><a class="docs-heading-anchor-permalink" href="#Combination-2:-y-min(x,-w)" title="Permalink"></a></h3><p>In this example we use a slightly more complex function, for which <code>RxInfer</code> does not have precomputed analytical message update rules. We are going to attempt to run Bayesian inference with <code>min</code> as a combination function. Note, however, that directly using <code>min</code> may cause problems for the built-in approximation methods as it has zero partial derviates with respect to all but one of the variables. We generate data with the <code>min</code> function directly however we model it with a somewhat smoothed version:</p><pre><code class="language-julia hljs"># Smoothed version of `min` without zero-ed derivatives
+function smooth_min(x, y)    
+    if x &lt; y
+        return x + 1e-4 * y
+    else
+        return y + 1e-4 * x
+    end
+end</code></pre><pre><code class="nohighlight hljs">smooth_min (generic function with 1 method)</code></pre><p><code>RxInfer</code> supports arbitrary nonlinear functions, but it requires an explicit approximation method specification. That can be achieved with the built-in <code>@meta</code> macro:</p><pre><code class="language-julia hljs">min_meta = @meta begin 
+    # In this example we are going to use a simple `Linearization` method
+    smooth_min() -&gt; Linearization()
+end</code></pre><pre><code class="nohighlight hljs">Meta: 
+  smooth_min() -&gt; Linearization()</code></pre><pre><code class="language-julia hljs">n = 200
+min_real_x, min_real_w, min_real_y = generate_data(min, n, seed = 1, x_i_min = 0.0, w_i_min = 0.0, noise = 1.0, real_x_τ = 1.0, real_w_τ = 1.0);
+
+pl = plot(title = &quot;Underlying signals&quot;)
+pl = plot!(pl, min_real_x, label = &quot;x&quot;)
+pl = plot!(pl, min_real_w, label = &quot;w&quot;)
+
+pr = plot(title = &quot;Combined y = min(x, w)&quot;)
+pr = scatter!(pr, min_real_y, ms = 3, color = :red, label = &quot;y&quot;)
+
+plot(pl, pr, size = (800, 300))</code></pre><p><img src="../../../assets/examples/Kalman filtering and smoothing_22_1.png" alt/></p><pre><code class="language-julia hljs">min_m_x_0, min_τ_x_0 = -1.0, 1.0
+min_m_w_0, min_τ_w_0 = 1.0, 1.0
+
+min_a_x, min_b_x = 1.0, 1.0
+min_a_w, min_b_w = 1.0, 1.0
+min_a_y, min_b_y = 1.0, 1.0
+
+init = @initialization begin
+   μ(x) = NormalMeanPrecision(min_m_x_0, min_τ_x_0) 
+   μ(w) = NormalMeanPrecision(min_m_w_0, min_τ_w_0)
+   q(τ_x) = GammaShapeRate(min_a_x, min_b_x) 
+   q(τ_w) = GammaShapeRate(min_a_w, min_b_w)
+   q(τ_y) = GammaShapeRate(min_a_y, min_b_y)
+end
+
+
+min_result = infer(
+    model = identification_problem(f=smooth_min, m_x_0=min_m_x_0, τ_x_0=min_τ_x_0, a_x=min_a_x, b_x=min_b_x, m_w_0=min_m_w_0, τ_w_0=min_τ_w_0, a_w=min_a_w, b_w=min_b_w, a_y=min_a_y, b_y=min_b_y),
+    data  = (y = min_real_y,), 
+    options = (limit_stack_depth = 500, ), 
+    constraints = constraints, 
+    initialization = init,
+    meta = min_meta,
+    iterations = 50
+)</code></pre><pre><code class="nohighlight hljs">Inference results:
+  Posteriors       | available for (x, w, x0, s, τ_x, τ_w, τ_y, w0)</code></pre><pre><code class="language-julia hljs">min_τ_x_marginals = min_result.posteriors[:τ_x]
+min_τ_w_marginals = min_result.posteriors[:τ_w]
+min_τ_y_marginals = min_result.posteriors[:τ_y]
+
+min_smarginals = min_result.posteriors[:s]
+min_xmarginals = min_result.posteriors[:x]
+min_wmarginals = min_result.posteriors[:w]
+
+px1 = plot(legend = :bottomleft, title = &quot;Estimated hidden signals&quot;)
+px2 = plot(legend = :bottomright, title = &quot;Estimated combined signals&quot;)
+
+px1 = plot!(px1, min_real_x, label = &quot;Real hidden X&quot;)
+px1 = plot!(px1, mean.(min_xmarginals[end]), ribbon = var.(min_xmarginals[end]), label = &quot;Estimated X&quot;)
+
+px1 = plot!(px1, min_real_w, label = &quot;Real hidden W&quot;)
+px1 = plot!(px1, mean.(min_wmarginals[end]), ribbon = var.(min_wmarginals[end]), label = &quot;Estimated W&quot;)
+
+px2 = scatter!(px2, min_real_y, label = &quot;Observations&quot;, ms = 2, alpha = 0.5, color = :red)
+px2 = plot!(px2, mean.(min_smarginals[end]), ribbon = std.(min_smarginals[end]), label = &quot;Combined estimated signal&quot;, color = :green)
+
+plot(px1, px2, size = (800, 300))</code></pre><p><img src="../../../assets/examples/Kalman filtering and smoothing_24_1.png" alt/></p><p>As we can see inference with the <code>min</code> function is significantly harder. Even though the combined signal has been inferred with high precision the underlying <code>x</code> and <code>w</code> signals are barely inferred. This may be expected, since the <code>min</code> function essentially destroy the information about one of the signals, thus, making it impossible to decouple two seemingly identical random walk signals. The only one inferred signal is the one which is lower and we have no inference information about the signal which is above. It might be possible to infer the states, however, with more informative priors and structural information about two different signals (e.g. if these are not random walks). </p><h3 id="Online-(filtering)-identification:-y-min(x,-w)"><a class="docs-heading-anchor" href="#Online-(filtering)-identification:-y-min(x,-w)">Online (filtering) identification: y = min(x, w)</a><a id="Online-(filtering)-identification:-y-min(x,-w)-1"></a><a class="docs-heading-anchor-permalink" href="#Online-(filtering)-identification:-y-min(x,-w)" title="Permalink"></a></h3><p>Another way to approach to this problem is to use online (filtering) inference procedure from <code>RxInfer</code>, but for that we also need to modify our model specification a bit:</p><pre><code class="language-julia hljs">@model function rx_identification(f, m_x_0, τ_x_0, m_w_0, τ_w_0, a_x, b_x, a_y, b_y, a_w, b_w, y)
+    x0 ~ Normal(mean = m_x_0, precision = τ_x_0)
+    τ_x ~ Gamma(shape = a_x, rate = b_x)
+    w0 ~ Normal(mean = m_w_0, precision = τ_w_0)
+    τ_w ~ Gamma(shape = a_w, rate = b_w)
+    τ_y ~ Gamma(shape = a_y, rate = b_y)
+    
+    x ~ Normal(mean = x0, precision = τ_x)
+    w ~ Normal(mean = w0, precision = τ_w)
+
+    s := f(x, w)
+    y ~ Normal(mean = s, precision = τ_y)
+    
+end</code></pre><p>We impose structured mean-field assumption for this model as well:</p><pre><code class="language-julia hljs">rx_constraints = @constraints begin 
+    q(x0, x, w0, w, τ_x, τ_w, τ_y, s) = q(x0, x)q(w, w0)q(τ_w)q(τ_x)q(s)q(τ_y)
+end</code></pre><pre><code class="nohighlight hljs">Constraints: 
+  q(x0, x, w0, w, τ_x, τ_w, τ_y, s) = q(x0, x)q(w, w0)q(τ_w)q(τ_x)q(s)q(τ_y
+)</code></pre><p>Online inference in the <code>RxInfer</code> supports the <code>@autoupdates</code> specification, which tells inference procedure how to update priors based on new computed posteriors:</p><pre><code class="language-julia hljs">autoupdates = @autoupdates begin 
+    m_x_0, τ_x_0 = mean_precision(q(x))
+    m_w_0, τ_w_0 = mean_precision(q(w))
+    a_x = shape(q(τ_x)) 
+    b_x = rate(q(τ_x))
+    a_y = shape(q(τ_y))
+    b_y = rate(q(τ_y))
+    a_w = shape(q(τ_w)) 
+    b_w = rate(q(τ_w))
+end</code></pre><pre><code class="nohighlight hljs">@autoupdates begin
+    (m_x_0, τ_x_0) = mean_precision(q(x))
+    (m_w_0, τ_w_0) = mean_precision(q(w))
+    a_x = shape(q(τ_x))
+    b_x = rate(q(τ_x))
+    a_y = shape(q(τ_y))
+    b_y = rate(q(τ_y))
+    a_w = shape(q(τ_w))
+    b_w = rate(q(τ_w))
+end</code></pre><p>As previously we need to define the <code>@meta</code> structure that specifies the approximation method for the nonlinear function <code>smooth_min</code> (<code>f</code> in the model specification):</p><pre><code class="language-julia hljs">rx_meta = @meta begin 
+    smooth_min() -&gt; Linearization()
+end</code></pre><pre><code class="nohighlight hljs">Meta: 
+  smooth_min() -&gt; Linearization()</code></pre><p>Next step is to generate our dataset and to run the actual inference procedure! For that we use the <code>infer</code> function with <code>autoupdates</code> keyword:</p><pre><code class="language-julia hljs">n = 300
+rx_real_x, rx_real_w, rx_real_y = generate_data(min, n, seed = 1, x_i_min = 1.0, w_i_min = -1.0, noise = 1.0, real_x_τ = 1.0, real_w_τ = 1.0);
+
+pl = plot(title = &quot;Underlying signals&quot;)
+pl = plot!(pl, rx_real_x, label = &quot;x&quot;)
+pl = plot!(pl, rx_real_w, label = &quot;w&quot;)
+
+pr = plot(title = &quot;Combined y = min(x, w)&quot;)
+pr = scatter!(pr, rx_real_y, ms = 3, color = :red, label = &quot;y&quot;)
+
+plot(pl, pr, size = (800, 300))</code></pre><p><img src="../../../assets/examples/Kalman filtering and smoothing_29_1.png" alt/></p><pre><code class="language-julia hljs">init = @initialization begin
+    q(w)= NormalMeanVariance(-2.0, 1.0) 
+    q(x) = NormalMeanVariance(2.0, 1.0) 
+    q(τ_x) = GammaShapeRate(1.0, 1.0) 
+    q(τ_w) = GammaShapeRate(1.0, 1.0) 
+    q(τ_y) = GammaShapeRate(1.0, 20.0)
+end
+
+engine = infer(
+    model         = rx_identification(f=smooth_min),
+    constraints   = rx_constraints,
+    data          = (y = rx_real_y,),
+    autoupdates   = autoupdates,
+    meta          = rx_meta,
+    returnvars    = (:x, :w, :τ_x, :τ_w, :τ_y, :s),
+    keephistory   = 1000,
+    historyvars   =  KeepLast(),
+    initialization = init,
+    iterations    = 10,
+    free_energy = true, 
+    free_energy_diagnostics = nothing,
+    autostart     = true,
+)</code></pre><pre><code class="nohighlight hljs">RxInferenceEngine:
+  Posteriors stream    | enabled for (w, s, τ_x, τ_w, τ_y, x)
+  Free Energy stream   | enabled
+  Posteriors history   | available for (x, w, x0, s, τ_x, τ_w, τ_y, w0)
+  Free Energy history  | available
+  Enabled events       | [  ]</code></pre><pre><code class="language-julia hljs">rx_smarginals = engine.history[:s]
+rx_xmarginals = engine.history[:x]
+rx_wmarginals = engine.history[:w];</code></pre><pre><code class="language-julia hljs">px1 = plot(legend = :bottomleft, title = &quot;Estimated hidden signals&quot;)
+px2 = plot(legend = :bottomright, title = &quot;Estimated combined signals&quot;)
+
+px1 = plot!(px1, rx_real_x, label = &quot;Real hidden X&quot;)
+px1 = plot!(px1, mean.(rx_xmarginals), ribbon = var.(rx_xmarginals), label = &quot;Estimated X&quot;)
+
+px1 = plot!(px1, rx_real_w, label = &quot;Real hidden W&quot;)
+px1 = plot!(px1, mean.(rx_wmarginals), ribbon = var.(rx_wmarginals), label = &quot;Estimated W&quot;)
+
+px2 = scatter!(px2, rx_real_y, label = &quot;Observations&quot;, ms = 2, alpha = 0.5, color = :red)
+px2 = plot!(px2, mean.(rx_smarginals), ribbon = std.(rx_smarginals), label = &quot;Combined estimated signal&quot;, color = :green)
+
+plot(px1, px2, size = (800, 300))</code></pre><p><img src="../../../assets/examples/Kalman filtering and smoothing_32_1.png" alt/></p><p>The results are quite similar to the smoothing case and, as we can see, one of the random walk is again in the &quot;disabled&quot; state, does not infer anything and simply increases its variance (which is expected for the random walk).</p><h2 id="Handling-Missing-Data"><a class="docs-heading-anchor" href="#Handling-Missing-Data">Handling Missing Data</a><a id="Handling-Missing-Data-1"></a><a class="docs-heading-anchor-permalink" href="#Handling-Missing-Data" title="Permalink"></a></h2><p>An interesting case in filtering and smoothing problems is the processing of missing data. It can happen that sometimes your reading devices failt to acquire the data leading to missing observation.</p><p>Let us assume that the following model generates the data</p><p class="math-container">\[\begin{aligned}
+    {x}_t &amp;\sim \mathcal{N}\left({x}_{t-1}, 1.0\right) \\
+    {y}_t &amp;\sim \mathcal{N}\left({x}_{t}, P \right) 
+\end{aligned}\]</p><p>with prior <span>${x}_0 \sim \mathcal{N}({m_{{x}_0}}, {v_{{x}_0}})$</span>. Suppose that our measurement device fails to acquire data from time to time.  In this case, instead of scalar observation <span>$\hat{y}_t \in \mathrm{R}$</span> we sometimes will catch <code>missing</code> observations.</p><pre><code class="language-julia hljs">using RxInfer, Plots</code></pre><pre><code class="language-julia hljs">@model function smoothing(x0, y)
+    
+    P ~ Gamma(shape = 0.001, scale = 0.001)
+    x_prior ~ Normal(mean = mean(x0), var = var(x0)) 
+
+    local x
+    x_prev = x_prior
+
+    for i in 1:length(y)
+        x[i] ~ Normal(mean = x_prev, precision = 1.0)
+        y[i] ~ Normal(mean = x[i], precision = P)
+        
+        x_prev = x[i]
+    end
+
+end</code></pre><pre><code class="language-julia hljs">P = 1.0
+n = 250
+
+real_signal     = map(e -&gt; sin(0.05 * e), collect(1:n))
+noisy_data      = real_signal + rand(Normal(0.0, sqrt(P)), n);
+missing_indices = 100:125
+missing_data    = similar(noisy_data, Union{Float64, Missing}, )
+
+copyto!(missing_data, noisy_data)
+
+for index in missing_indices
+    missing_data[index] = missing
+end</code></pre><pre><code class="language-julia hljs">constraints = @constraints begin
+    q(x_prior, x, y, P) = q(x_prior, x)q(P)q(y)
+end</code></pre><pre><code class="nohighlight hljs">Constraints: 
+  q(x_prior, x, y, P) = q(x_prior, x)q(P)q(y)</code></pre><pre><code class="language-julia hljs">x0_prior = NormalMeanVariance(0.0, 1000.0)
+initm = @initialization begin
+    q(P) = Gamma(0.001, 0.001)
+end
+
+result = infer(
+    model = smoothing(x0=x0_prior), 
+    data  = (y = missing_data,), 
+    constraints = constraints,
+    initialization = initm, 
+    returnvars = (x = KeepLast(),),
+    iterations = 20
+);</code></pre><pre><code class="language-julia hljs">plot(real_signal, label = &quot;Noisy signal&quot;, legend = :bottomright)
+scatter!(missing_indices, real_signal[missing_indices], ms = 2, opacity = 0.75, label = &quot;Missing region&quot;)
+plot!(mean.(result.posteriors[:x]), ribbon = var.(result.posteriors[:x]), label = &quot;Estimated hidden state&quot;)</code></pre><p><img src="../../../assets/examples/Kalman filtering and smoothing_38_1.png" alt/></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../Bayesian Linear Regression Tutorial/">« Bayesian Linear Regression Tutorial</a><a class="docs-footer-nextpage" href="../Predicting Bike Rental Demand/">Predicting Bike Rental Demand »</a><div class="flexbox-break"></div><p class="footer-message">Created in <a href="https://biaslab.github.io/">BIASlab</a>, maintained by <a href="https://github.com/ReactiveBayes">ReactiveBayes</a>, powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.7.0 on <span class="colophon-date" title="Saturday 21 September 2024 08:33">Saturday 21 September 2024</span>. Using Julia version 1.10.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
