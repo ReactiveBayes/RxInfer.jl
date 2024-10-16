@@ -22,6 +22,7 @@ function ReactiveMP.constrain_form(constraint::EnsureSupportedFunctionalForm, so
         As a result, `RxInfer` cannot compute key quantities such as the `mean` or `var` of `$expr`.
 
         Possible solutions:
+        - Alter model specification to ensure the prior is conjugate (see https://en.wikipedia.org/wiki/Conjugate_prior).
         - Implement the `BayesBase.prod` method (refer to the `BayesBase` documentation for guidance).
         - Use a functional form constraint to specify the posterior form with the `@constraints` macro. For example:
         ```julia
