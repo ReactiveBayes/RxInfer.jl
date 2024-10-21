@@ -17,10 +17,16 @@ macro test_plot(group, id, code)
         base_output = joinpath($dir, "_output", $group)
         mkpath(base_output)
         plot_output = joinpath(base_output, $outputfile)
+        # recent.png output can be used to rerun tests and see 
+        # the recent picture update automatical in a VScode tab
+        plot_output_debug = joinpath(base_output, "recent.png")
         plotfn = () -> begin
             $code
         end
-        savefig(plotfn(), plot_output)
+        local __p = plotfn()
+        savefig(__p, plot_output)
+        savefig(__p, plot_output_debug)
+        nothing
     end
     return esc(ret)
 end

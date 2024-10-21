@@ -30,7 +30,7 @@ end
 @testitem "__infer_create_factor_graph_model" begin
     @model function simple_model_for_infer_create_model(y, a, b)
         x ~ Beta(a, b)
-        y ~ Normal(x, 1.0)
+        y ~ Normal(mean = x, var = 1.0)
     end
 
     import RxInfer: __infer_create_factor_graph_model, ProbabilisticModel, getmodel
@@ -52,7 +52,7 @@ end
     # A simple model for testing that resembles a simple kalman filter with
     # random walk state transition and unknown observational noise
     @model function test_model1(y)
-        τ ~ Gamma(1.0, 1.0)
+        τ ~ Gamma(shape = 1.0, rate = 1.0)
 
         x[1] ~ Normal(mean = 0.0, variance = 1.0)
         y[1] ~ Normal(mean = x[1], precision = τ)
@@ -223,6 +223,124 @@ end
     end
 end
 
+@testitem "Static inference with node contraction" begin
+    import RxInfer: ReactiveMPGraphPPLBackend
+    import Static
+
+    n = 6  # Number of test cases
+
+    distribution = NormalMeanVariance(0.0, 1.0)
+    dataset      = rand(distribution, n)
+
+    @model function gcv(y, x, z, κ, ω)
+        log_σ := κ * z + ω
+        σ := exp(log_σ)
+        y ~ Normal(mean = x, precision = σ)
+    end
+
+    @node typeof(gcv) Stochastic [y, x, z, κ, ω]
+
+    RxInfer.ReactiveMP.default_meta(::typeof(gcv)) = RxInfer.ReactiveMP.default_meta(GCV)
+
+    @rule typeof(gcv)(:y, Marginalisation) (q_x::Any, q_z::Any, q_κ::Any, q_ω::Any, meta::Any) = begin
+        return @call_rule GCV(:y, Marginalisation) (q_x = q_x, q_z = q_z, q_κ = q_κ, q_ω = q_ω, meta = meta)
+    end
+
+    @rule typeof(gcv)(:x, Marginalisation) (q_y::Any, q_z::Any, q_κ::Any, q_ω::Any, meta::Any) = begin
+        return @call_rule GCV(:x, Marginalisation) (q_y = q_y, q_z = q_z, q_κ = q_κ, q_ω = q_ω, meta = meta)
+    end
+
+    @rule typeof(gcv)(:ω, Marginalisation) (q_y::Any, q_x::Any, q_z::Any, q_κ::Any, meta::Any) = begin
+        return @call_rule GCV(:ω, Marginalisation) (q_y = q_y, q_x = q_x, q_z = q_z, q_κ = q_κ, meta = meta)
+    end
+
+    @rule typeof(gcv)(:z, Marginalisation) (q_y::Any, q_x::Any, q_κ::Any, q_ω::Any, meta::Any) = begin
+        return @call_rule GCV(:z, Marginalisation) (q_y = q_y, q_x = q_x, q_κ = q_κ, q_ω = q_ω, meta = meta)
+    end
+
+    @rule typeof(gcv)(:κ, Marginalisation) (q_y::Any, q_x::Any, q_z::Any, q_ω::Any, meta::Any) = begin
+        return @call_rule GCV(:κ, Marginalisation) (q_y = q_y, q_x = q_x, q_z = q_z, q_ω = q_ω, meta = meta)
+    end
+
+    @average_energy typeof(gcv) (q_y::Any, q_x::Any, q_z::Any, q_κ::Any, q_ω::Any, meta::Union{<:GCVMetadata, Nothing}) = begin
+        y_mean, y_var = mean_var(q_y)
+        x_mean, x_var = mean_var(q_x)
+        z_mean, z_var = mean_var(q_z)
+        κ_mean, κ_var = mean_var(q_κ)
+        ω_mean, ω_var = mean_var(q_ω)
+
+        ksi = (κ_mean^2) * z_var + (z_mean^2) * κ_var + κ_var * z_var
+        psi = (y_mean - x_mean)^2 + y_var + x_var
+        A = exp(-ω_mean + ω_var / 2)
+        B = exp(-κ_mean * z_mean + ksi / 2)
+
+        (log(2π) + (z_mean * κ_mean + ω_mean) + (psi * A * B)) / 2
+    end
+
+    @model function hgf_1(y)
+        ω ~ NormalMeanVariance(0, 1)
+        κ ~ NormalMeanVariance(1, 1)
+        x_0 ~ NormalMeanVariance(0, 1)
+        z[1] ~ NormalMeanVariance(0, 1)
+        x[1] ~ gcv(x = x_0, z = z[1], κ = κ, ω = ω)
+        y[1] ~ NormalMeanVariance(x[1], 1)
+
+        for i in 2:length(y)
+            z[i] ~ NormalMeanPrecision(z[i - 1], 1)
+            x[i] ~ gcv(x = x[i - 1], z = z[i], κ = κ, ω = ω)
+            y[i] ~ NormalMeanVariance(x[i], 1)
+        end
+    end
+
+    @initialization function hgf_1_initialization()
+        q(ω) = NormalMeanVariance(0, 1)
+        q(κ) = NormalMeanVariance(1, 1)
+        q(z) = NormalMeanVariance(0, 1)
+        q(x) = NormalMeanVariance(0, 1)
+    end
+
+    result_1 = infer(model = hgf_1(), data = (y = dataset,), initialization = hgf_1_initialization(), constraints = MeanField(), allow_node_contraction = true, free_energy = true)
+
+    @test all(!isnan, mean.(result_1.posteriors[:x]))
+    @test all(!isnan, var.(result_1.posteriors[:x]))
+    @test all(<=(0), diff(result_1.free_energy))
+
+    @model function hgf_2(y)
+
+        # Specify priors
+        ω_1 ~ NormalMeanVariance(0, 1)
+        ω_2 ~ NormalMeanVariance(0, 1)
+        κ_1 ~ NormalMeanVariance(1, 1)
+        κ_2 ~ NormalMeanVariance(1, 1)
+        x_1[1] ~ NormalMeanVariance(0, 1)
+        x_2[1] ~ NormalMeanVariance(0, 1)
+        x_3[1] ~ NormalMeanVariance(0, 1)
+        y[1] ~ NormalMeanVariance(x_1[1], 1)
+
+        # Specify generative model
+        for i in 2:(length(y))
+            x_3[i] ~ NormalMeanPrecision(x_3[i - 1], 1)
+            x_2[i] ~ gcv(x = x_2[i - 1], z = x_3[i], κ = κ_2, ω = ω_2)
+            x_1[i] ~ gcv(x = x_1[i - 1], z = x_2[i], κ = κ_1, ω = ω_1)
+            y[i] ~ NormalMeanVariance(x_1[i], 1)
+        end
+    end
+
+    @initialization function hgf_2_initialization()
+        q(ω_1) = vague(NormalMeanVariance)
+        q(κ_1) = vague(NormalMeanVariance)
+        q(ω_2) = vague(NormalMeanVariance)
+        q(κ_2) = vague(NormalMeanVariance)
+        q(x_1) = vague(NormalMeanVariance)
+        q(x_2[1:2:n]) = vague(NormalMeanVariance)
+        q(x_3) = vague(NormalMeanVariance)
+    end
+
+    result_2 = infer(model = hgf_2(), data = (y = dataset,), initialization = hgf_2_initialization(), constraints = MeanField(), allow_node_contraction = true)
+
+    @test result_2.posteriors[:x_1] isa Vector{<:NormalDistributionsFamily}
+end
+
 @testitem "Test warn argument in `infer()`" begin
     @model function beta_bernoulli(y)
         θ ~ Beta(4.0, 8.0)
@@ -246,7 +364,7 @@ end
 @testitem "Invalid data size error" begin
     @model function test_model1(y)
         n = length(y)
-        τ ~ Gamma(1.0, 1.0)
+        τ ~ Gamma(shape = 1.0, rate = 1.0)
 
         x[1] ~ Normal(mean = 0.0, variance = 1.0)
         y[1] ~ Normal(mean = x[1], precision = τ)
@@ -781,4 +899,121 @@ end
     @test_throws "`initmessages` and `initmarginals` keyword arguments have been deprecated and removed. Use the `@initialization` macro and the `initialization` keyword instead." infer(
         model = beta_bernoulli(), data = (y = 1,), initmessages = (t = Normal(0.0, 1.0))
     )
+end
+
+@testitem "Unsupported functional forms (e.g. `ProductOf`) should display the name of the variable and suggestions" begin
+    struct DistributionA
+        a
+    end
+    struct DistributionB
+        b
+    end
+    struct LikelihoodDistribution
+        input
+    end
+
+    @node DistributionA Stochastic [out, a]
+    @node DistributionB Stochastic [out, b]
+    @node LikelihoodDistribution Stochastic [out, input]
+
+    @rule DistributionA(:out, Marginalisation) (q_a::Any,) = DistributionA(mean(q_a))
+    @rule DistributionB(:out, Marginalisation) (q_b::Any,) = DistributionB(mean(q_b))
+    @rule LikelihoodDistribution(:input, Marginalisation) (q_out::Any,) = LikelihoodDistribution(mean(q_out))
+
+    @model function invalid_product_posterior(out)
+        θ ~ DistributionA(1.0)
+        out ~ LikelihoodDistribution(θ)
+    end
+
+    # Product of `DistributionA` & `LikelihoodDistribution` in the posterior
+    P = typeof(prod(GenericProd(), DistributionA(1.0), LikelihoodDistribution(1.0))) # the actual order may change though
+    @test_throws """
+    The expression `q(θ)` has an undefined functional form of type `$(P)`. 
+    This is likely because the inference backend does not support the product of these distributions. 
+    As a result, `RxInfer` cannot compute key quantities such as the `mean` or `var` of `q(θ)`.
+
+    Possible solutions:
+    - Implement the `BayesBase.prod` method (refer to the `BayesBase` documentation for guidance).
+    - Use a functional form constraint to specify the posterior form with the `@constraints` macro. For example:
+    ```julia
+    using ExponentialFamilyProjection
+
+    @constraints begin
+        q(θ) :: ProjectedTo(NormalMeanVariance)
+    end
+    ```
+    Refer to the documentation for more details on functional form constraints.
+    """ result = infer(model = invalid_product_posterior(), data = (out = 1.0,))
+
+    # Product of `DistributionA` & `DistributionB` in the message
+    @model function invalid_product_message(out)
+        input[1] ~ DistributionA(1.0)
+        input[1] ~ DistributionB(1.0)
+        θ ~ DistributionA(input[1])
+        out ~ LikelihoodDistribution(θ)
+    end
+
+    T = typeof(prod(GenericProd(), DistributionB(1.0), DistributionA(1.0))) # the actual order may change though
+    @test_throws """
+    The expression `μ(input[1])` has an undefined functional form of type `$(T)`. 
+    This is likely because the inference backend does not support the product of these distributions. 
+    As a result, `RxInfer` cannot compute key quantities such as the `mean` or `var` of `μ(input[1])`.
+
+    Possible solutions:
+    - Implement the `BayesBase.prod` method (refer to the `BayesBase` documentation for guidance).
+    - Use a functional form constraint to specify the posterior form with the `@constraints` macro. For example:
+    ```julia
+    using ExponentialFamilyProjection
+
+    @constraints begin
+        μ(input) :: ProjectedTo(NormalMeanVariance)
+    end
+    ```
+    Refer to the documentation for more details on functional form constraints.
+    """ result = infer(model = invalid_product_message(), data = (out = 1.0,), returnvars = (θ = KeepEach(),))
+end
+
+@testitem "`infer` with UnfactorizedData" begin
+    using RxInfer
+
+    @model function pred_model(p_s_t, y, goal, p_B, A)
+        s[1] ~ p_s_t
+        B ~ p_B
+        y[1] ~ Transition(s[1], A)
+        for i in 2:3
+            s[i] ~ Transition(s[i - 1], B)
+            y[i] ~ Transition(s[i], A)
+        end
+        s[3] ~ Categorical(goal)
+    end
+
+    pred_model_constraints = @constraints begin
+        q(s, B) = q(s)q(B)
+    end
+
+    @initialization function pred_model_init(q_B)
+        q(B) = q_B
+    end
+
+    result = infer(
+        model = pred_model(A = diageye(4), goal = [0, 1, 0, 0], p_B = MatrixDirichlet(ones(4, 4)), p_s_t = Categorical([0.7, 0.3, 0, 0])),
+        data = (y = [[1, 0, 0, 0], missing, missing],),
+        initialization = pred_model_init(MatrixDirichlet(ones(4, 4))),
+        constraints = pred_model_constraints,
+        iterations = 10
+    )
+    @test last(result.predictions[:y])[1] == Categorical([0.25, 0.25, 0.25, 0.25])
+
+    pred_model_constraints = @constraints begin
+        q(s, B) = q(s)q(B)
+        q(y[1], s) = q(y[1])q(s)
+    end
+    result = infer(
+        model = pred_model(A = diageye(4), goal = [0, 0, 1, 0], p_B = MatrixDirichlet(ones(4, 4)), p_s_t = Categorical([0.7, 0.3, 0, 0])),
+        data = (y = UnfactorizedData([[1, 0, 0, 0], missing, missing]),),
+        initialization = pred_model_init(MatrixDirichlet(ones(4, 4))),
+        constraints = pred_model_constraints,
+        iterations = 10
+    )
+    @test probvec(last(last(result.predictions[:y]))) ≈ [0, 0, 1, 0]
 end

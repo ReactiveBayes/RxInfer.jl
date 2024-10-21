@@ -27,7 +27,7 @@ jobs:
           journal: joss
           # This should be the path to the paper within your repo.
           paper-path: paper/paper.md
-      - uses: actions/upload-artifact@v1
+      - uses: actions/upload-artifact@v4
         with:
           name: paper
           # This is the output path where Pandoc will write the compiled
@@ -42,7 +42,7 @@ jobs:
       fail-fast: false
       matrix:
         version:
-          - '1.10'
+          - '1.11'
         os:
           - ubuntu-latest
         arch:
@@ -62,7 +62,7 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       - name: Archive test artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: test-output
           path: test/_output

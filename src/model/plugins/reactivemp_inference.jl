@@ -16,20 +16,24 @@ Creates model inference options object. The list of available options is present
 ### Advanced options
 
 - `scheduler`: changes the scheduler of reactive streams, see Rocket.jl for more info, defaults to `AsapScheduler`.
+- `rulefallback`: specifies a global message update rule fallback for cases when a specific message update rule is not available. Consult `ReactiveMP` documentation for the list of available callbacks.
 
 See also: [`infer`](@ref)
 """
-struct ReactiveMPInferenceOptions{S, A}
-    scheduler :: S
-    addons    :: A
-    warn      :: Bool
+struct ReactiveMPInferenceOptions{S, A, R}
+    scheduler    :: S
+    addons       :: A
+    warn         :: Bool
+    rulefallback :: R
 end
 
-ReactiveMPInferenceOptions(scheduler, addons) = ReactiveMPInferenceOptions(scheduler, addons, true)
+ReactiveMPInferenceOptions(scheduler, addons) = ReactiveMPInferenceOptions(scheduler, addons, true, nothing)
+ReactiveMPInferenceOptions(scheduler, addons, warn) = ReactiveMPInferenceOptions(scheduler, addons, warn, nothing)
 
-setscheduler(options::ReactiveMPInferenceOptions, scheduler) = ReactiveMPInferenceOptions(scheduler, options.addons, options.warn)
-setaddons(options::ReactiveMPInferenceOptions, addons) = ReactiveMPInferenceOptions(options.scheduler, addons, options.warn)
-setwarn(options::ReactiveMPInferenceOptions, warn) = ReactiveMPInferenceOptions(options.scheduler, options.addons, warn)
+setscheduler(options::ReactiveMPInferenceOptions, scheduler) = ReactiveMPInferenceOptions(scheduler, options.addons, options.warn, options.rulefallback)
+setaddons(options::ReactiveMPInferenceOptions, addons) = ReactiveMPInferenceOptions(options.scheduler, addons, options.warn, options.rulefallback)
+setwarn(options::ReactiveMPInferenceOptions, warn) = ReactiveMPInferenceOptions(options.scheduler, options.addons, warn, options.rulefallback)
+setrulefallback(options::ReactiveMPInferenceOptions, rulefallback) = ReactiveMPInferenceOptions(options.scheduler, options.addons, options.warn, rulefallback)
 
 import Base: convert
 
@@ -38,7 +42,7 @@ function Base.convert(::Type{ReactiveMPInferenceOptions}, options::Nothing)
 end
 
 function Base.convert(::Type{ReactiveMPInferenceOptions}, options::NamedTuple{keys}) where {keys}
-    available_options = (:scheduler, :limit_stack_depth, :addons, :warn)
+    available_options = (:scheduler, :limit_stack_depth, :addons, :warn, :rulefallback)
 
     for key in keys
         key ∈ available_options || error("Unknown model inference options: $(key).")
@@ -46,6 +50,7 @@ function Base.convert(::Type{ReactiveMPInferenceOptions}, options::NamedTuple{ke
 
     warn = haskey(options, :warn) ? options.warn : true
     addons = haskey(options, :addons) ? options.addons : nothing
+    rulefallback = haskey(options, :rulefallback) ? options.rulefallback : nothing
 
     if warn && haskey(options, :scheduler) && haskey(options, :limit_stack_depth)
         @warn "Inference options have `scheduler` and `limit_stack_depth` options specified together. Ignoring `limit_stack_depth`. Use `warn = false` option in `ModelInferenceOptions` to suppress this warning."
@@ -59,15 +64,18 @@ function Base.convert(::Type{ReactiveMPInferenceOptions}, options::NamedTuple{ke
         nothing
     end
 
-    return ReactiveMPInferenceOptions(scheduler, addons, warn)
+    return ReactiveMPInferenceOptions(scheduler, addons, warn, rulefallback)
 end
 
 Rocket.getscheduler(options::ReactiveMPInferenceOptions) = something(options.scheduler, AsapScheduler())
+
+import ReactiveMP: getaddons, getrulefallback
 
 ReactiveMP.getaddons(options::ReactiveMPInferenceOptions) = ReactiveMP.getaddons(options, options.addons)
 ReactiveMP.getaddons(options::ReactiveMPInferenceOptions, addons::ReactiveMP.AbstractAddon) = (addons,) # ReactiveMP expects addons to be of type tuple
 ReactiveMP.getaddons(options::ReactiveMPInferenceOptions, addons::Nothing) = addons                     # Do nothing if addons is `nothing`
 ReactiveMP.getaddons(options::ReactiveMPInferenceOptions, addons::Tuple) = addons                       # Do nothing if addons is a `Tuple`
+ReactiveMP.getrulefallback(options::ReactiveMPInferenceOptions) = options.rulefallback
 
 struct ReactiveMPInferencePlugin{Options <: ReactiveMPInferenceOptions}
     options::Options
@@ -159,12 +167,14 @@ function activate_rmp_variable!(plugin::ReactiveMPInferencePlugin, model::Model,
         # By default it is `UnspecifiedFormConstraint` which means that the form of the resulting distribution is not specified in advance
         # and follows from the computation, but users may override it with other form constraints, e.g. `PointMassFormConstraint`, which
         # constraints the resulting distribution to be of a point mass form
-        messages_form_constraint = ReactiveMP.preprocess_form_constraints(
-            plugin, model, getextra(nodedata, GraphPPL.VariationalConstraintsMessagesFormConstraintKey, ReactiveMP.UnspecifiedFormConstraint())
-        )
-        marginal_form_constraint = ReactiveMP.preprocess_form_constraints(
-            plugin, model, getextra(nodedata, GraphPPL.VariationalConstraintsMarginalFormConstraintKey, ReactiveMP.UnspecifiedFormConstraint())
-        )
+        messages_form_constraint =
+            ReactiveMP.preprocess_form_constraints(
+                plugin, model, getextra(nodedata, GraphPPL.VariationalConstraintsMessagesFormConstraintKey, ReactiveMP.UnspecifiedFormConstraint())
+            ) + EnsureSupportedFunctionalForm(:μ, GraphPPL.getname(nodeproperties), GraphPPL.index(nodeproperties))
+        marginal_form_constraint =
+            ReactiveMP.preprocess_form_constraints(
+                plugin, model, getextra(nodedata, GraphPPL.VariationalConstraintsMarginalFormConstraintKey, ReactiveMP.UnspecifiedFormConstraint())
+            ) + EnsureSupportedFunctionalForm(:q, GraphPPL.getname(nodeproperties), GraphPPL.index(nodeproperties))
         # Fetch "prod-constraint" for messages and marginals. The prod-constraint usually defines the constraints for a single product of messages
         # It can for example preserve a specific parametrization of distribution 
         messages_prod_constraint = getextra(nodedata, :messages_prod_constraint, ReactiveMP.default_prod_constraint(messages_form_constraint))
@@ -215,7 +225,9 @@ function activate_rmp_factornode!(plugin::ReactiveMPInferencePlugin, model::Mode
 
     scheduler = getscheduler(getoptions(plugin))
     addons = getaddons(getoptions(plugin))
-    options = ReactiveMP.FactorNodeActivationOptions(metadata, dependencies, pipeline, addons, scheduler)
+    rulefallback = getrulefallback(getoptions(plugin))
+
+    options = ReactiveMP.FactorNodeActivationOptions(metadata, dependencies, pipeline, addons, scheduler, rulefallback)
 
     return ReactiveMP.activate!(getextra(nodedata, ReactiveMPExtraFactorNodeKey), options)
 end

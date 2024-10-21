@@ -47,4 +47,14 @@
             end
         end
     end
+
+    @testset "approximation when left or right is LinearizedProductOf" begin
+        using LinearAlgebra
+        left = MvNormalMeanCovariance(randn(2), Diagonal(rand(2)))
+
+        right = LinearizedProductOf([ContinuousMultivariateLogPdf(2, (x) -> rand()) for _ in 1:10], 10)
+        constraint = SampleListFormConstraint(100)
+        q = constrain_form(constraint, prod(GenericProd(), left, right))
+        @test q isa SampleList
+    end
 end

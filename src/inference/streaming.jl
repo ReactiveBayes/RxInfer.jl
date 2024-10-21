@@ -1,3 +1,5 @@
+import Static
+
 """
     RxInferenceEngine
 
@@ -455,6 +457,7 @@ function streaming_inference(;
     iterations = nothing,
     free_energy = false,
     free_energy_diagnostics = DefaultObjectiveDiagnosticChecks,
+    allow_node_contraction = false,
     autostart = true,
     events = nothing,
     addons = nothing,
@@ -510,7 +513,7 @@ function streaming_inference(;
     end
 
     # The `_model` here still must be a `ModelGenerator`
-    _model = GraphPPL.with_plugins(model, modelplugins)
+    _model = GraphPPL.with_backend(GraphPPL.with_plugins(model, modelplugins), ReactiveMPGraphPPLBackend(Static.static(allow_node_contraction)))
     _autoupdates = something(autoupdates, EmptyAutoUpdateSpecification)
 
     check_model_generator_compatibility(_autoupdates, _model)
@@ -523,7 +526,7 @@ function streaming_inference(;
             error(lazy"`$(_autoupdate_data_handler_key)` is present both in the `data` and in the `autoupdates`.")
         end
     end
-    _condition_on = merge_data_handlers(create_deffered_data_handlers(datavarnames), autoupdates_data_handlers(autoupdates))
+    _condition_on = merge_data_handlers(create_deferred_data_handlers(datavarnames), autoupdates_data_handlers(autoupdates))
 
     inference_invoke_callback(callbacks, :before_model_creation)
     fmodel = create_model(_model | _condition_on)

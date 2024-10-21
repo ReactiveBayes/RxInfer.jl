@@ -1,7 +1,7 @@
 name = "RxInfer"
 uuid = "86711068-29c9-4ff7-b620-ae75d7495b3d"
 authors = ["Bagaev Dmitry <d.v.bagaev@tue.nl> and contributors"]
-version = "3.4.0"
+version = "3.7.1"
 
 [deps]
 BayesBase = "b4ee3484-f114-42fe-b91c-797d54a0c67e"
@@ -19,14 +19,22 @@ Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 ReactiveMP = "a194aa59-28ba-4574-a09c-4a745416d6e3"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 Rocket = "df971d30-c9d6-4b37-b8ff-e965b2cb3a40"
+Static = "aedffcd0-7271-4cad-89d0-dc628f76c6d3"
 TupleTools = "9d95972d-f1c8-5527-a6e0-b4b365fa01f6"
+
+[weakdeps]
+ExponentialFamilyProjection = "17f509fa-9a96-44ba-99b2-1c5f01f0931b"
+
+[extensions]
+ProjectionExt = "ExponentialFamilyProjection"
 
 [compat]
 BayesBase = "1.1"
 DataStructures = "0.18"
 Distributions = "0.25"
 DomainSets = "0.5.2, 0.6, 0.7"
-ExponentialFamily = "1.2"
+ExponentialFamily = "1.5"
+ExponentialFamilyProjection = "1.1"
 FastCholesky = "1.3.0"
 GraphPPL = "~4.3.0"
 LinearAlgebra = "1.9"
@@ -34,9 +42,10 @@ MacroTools = "0.5.6"
 Optim = "1.0.0"
 ProgressMeter = "1.0.0"
 Random = "1.9"
-ReactiveMP = "~4.2.0"
+ReactiveMP = "~4.4.1"
 Reexport = "1.2.0"
 Rocket = "1.8.0"
+Static = "0.8.10, 1"
 TupleTools = "1.2.0"
 julia = "1.10"
 
@@ -49,6 +58,7 @@ CpuId = "adafc99b-e345-5852-983c-f28acb93d879"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+ExponentialFamilyProjection = "17f509fa-9a96-44ba-99b2-1c5f01f0931b"
 InteractiveUtils = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
 Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
 Optimisers = "3bd65402-5787-11e9-1adc-39752487f4e2"
@@ -62,4 +72,4 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 TestSetExtensions = "98d24dd4-01ad-11ea-1b02-c9a08f80db04"
 
 [targets]
-test = ["Test", "Pkg", "Logging", "InteractiveUtils", "TestSetExtensions", "Coverage", "CpuId", "Dates", "Distributed", "Documenter", "Plots", "BenchmarkCI", "BenchmarkTools", "PkgBenchmark", "Aqua", "StableRNGs", "StatsFuns", "Optimisers", "ReTestItems"]
+test = ["Test", "Pkg", "Logging", "InteractiveUtils", "TestSetExtensions", "Coverage", "CpuId", "Dates", "Distributed", "Documenter", "ExponentialFamilyProjection", "Plots", "BenchmarkCI", "BenchmarkTools", "PkgBenchmark", "Aqua", "StableRNGs", "StatsFuns", "Optimisers", "ReTestItems"]

@@ -23,7 +23,7 @@ The `@model` macro returns a regular Julia function (in this example `model_name
 ```@example model-specification-model-macro
 using RxInfer #hide
 @model function my_model(observation, hyperparameter)
-    observations ~ Normal(0.0, hyperparameter)
+    observations ~ Normal(mean = 0.0, var = hyperparameter)
 end
 ```
 
@@ -159,6 +159,21 @@ not only creates a latent variable `x₁` but also a factor node `Normal`.
     do not require it explicitly. However, for nodes, which have many different useful parametrizations (e.g. `Normal`) labeling the arguments 
     is a requirement that helps to avoid any possible confusion. Read more about `Distributions` compatibility [here](@ref user-guide-model-specification-distributions).
 
+### [Deterministic relationships](@id user-guide-model-specification-node-creation-deterministic)
+
+In contrast to other probabilistic programming languages in Julia, `RxInfer` does not allow use of `=` operator for creating deterministic relationships between (latent)variables. 
+Instead, we can use `:=` operator for this purpose. For example:
+
+```julia
+t ~ Normal(mean = 0.0, variance = 1.0)
+x := exp(t) # x is linked deterministically to t
+y ~ Normal(mean = x, variance = 1.0)
+```
+
+Using `x = exp(t)` directly would be incorrect and most likely would result in an `MethodError` because `t` does not have a definitive value at the model creation time 
+(remember that our models create a factor graph under the hood and latent states do not have a value until the inference is performed). At the model creation time, 
+`t` holds a reference to a node in the graph, instead of an actual value sample from the `Normal` distribution.
+
 ### [Control flow statements](@id user-guide-model-specification-node-creation-control-flow)
 
 In general, it is possible to use any Julia code within model specification function, including control flow statements, such as `for`, `while` and `if` statements. However, it is not possible to use any latent states within such statements. This is due to the fact that it is necessary to know exactly the structure of the graph before the inference. Thus it is **not possible** to write statements like:
@@ -256,6 +271,119 @@ model = RxInfer.create_model(conditioned)
 # Call `gplot` function from `GraphPlot` to visualise the structure of the graph
 GraphPlot.gplot(RxInfer.getmodel(model))
 ```
+
+## Node Contraction
+
+RxInfer's model specification extension for GraphPPL supports a feature called _node contraction_. This feature allows you to _contract_ (or _replace_) a submodel with a corresponding factor node. Node contraction can be useful in several scenarios:
+
+- When running inference in a submodel is computationally expensive
+- When a submodel contains many variables whose inference results are not of primary importance
+- When specialized message passing update rules can be derived for variables in the Markov blanket of the submodel
+
+Let's illustrate this concept with a simple example. We'll first create a basic submodel and then allow the inference backend to replace it with a corresponding node that has well-defined message update rules.
+
+```@example node-contraction
+using RxInfer, Plots
+
+@model function ShiftedNormal(data, mean, precision, shift)
+    shifted_mean := mean + shift
+    data ~ Normal(mean = shifted_mean, precision = precision)
+end
+
+@model function Model(data, precision, shift)
+    mean ~ Normal(mean = 15.0, var = 1.0)
+    data ~ ShiftedNormal(mean = mean, precision = precision, shift = shift)
+end
+
+result = infer(
+    model = Model(precision = 1.0, shift = 1.0),
+    data  = (data = 10.0, )
+)
+
+plot(title = "Inference results over `mean`")
+plot!(0:0.1:20.0, (x) -> pdf(NormalMeanVariance(15.0, 1.0), x), label = "prior", fill = 0, fillalpha = 0.2)
+plot!(0:0.1:20.0, (x) -> pdf(result.posteriors[:mean], x), label = "posterior", fill = 0, fillalpha = 0.2)
+vline!([ 10.0 ], label = "data point")
+```
+
+As we can see, we can run inference on this model. We can also visualize the model's structure, as shown in the [Model structure visualisation](@ref user-guide-model-specification-visualization) section.
+
+```@example node-contraction
+using Cairo, GraphPlot
+
+GraphPlot.gplot(getmodel(result.model))
+```
+
+Now, let's create an optimized version of the `ShiftedNormal` submodel as a standalone node with its own message passing update rules.
+
+!!! note
+    Creating correct message passing update rules is beyond the scope of this section. For more information about custom message passing update rules, refer to the [Custom Node](@ref create-node) section.
+
+```@example node-contraction
+@node typeof(ShiftedNormal) Stochastic [ data, mean, precision, shift ]
+
+@rule typeof(ShiftedNormal)(:mean, Marginalisation) (q_data::PointMass, q_precision::PointMass, q_shift::PointMass, ) = begin 
+    return @call_rule NormalMeanPrecision(:μ, Marginalisation) (q_out = PointMass(mean(q_data) - mean(q_shift)), q_τ = q_precision)
+end
+
+result_with_contraction = infer(
+    model = Model(precision = 1.0, shift = 1.0),
+    data  = (data = 10.0, ),
+    allow_node_contraction = true
+)
+using Test #hide
+@test result.posteriors[:mean] ≈ result_with_contraction.posteriors[:mean] #hide
+
+plot(title = "Inference results over `mean` with node contraction")
+plot!(0:0.1:20.0, (x) -> pdf(NormalMeanVariance(15.0, 1.0), x), label = "prior", fill = 0, fillalpha = 0.2)
+plot!(0:0.1:20.0, (x) -> pdf(result_with_contraction.posteriors[:mean], x), label = "posterior", fill = 0, fillalpha = 0.2)
+vline!([ 10.0 ], label = "data point")
+```
+
+As you can see, the inference result is identical to the previous case. However, the structure of the model is different:
+
+```@example node-contraction
+GraphPlot.gplot(getmodel(result_with_contraction.model))
+```
+
+With node contraction, we no longer have access to the variables defined inside the `ShiftedNormal` submodel, as it has been contracted to a single factor node. It's worth noting that this feature heavily relies on existing message passing update rules for the submodel. However, it can also be combined with another useful inference technique [where no explicit message passing update rules are required](@ref inference-undefinedrules).
+
+We can also verify that node contraction indeed improves the performance of the inference:
+
+```@example node-contraction
+using BenchmarkTools
+
+benchmark_without_contraction = @benchmark infer(
+    model = Model(precision = 1.0, shift = 1.0),
+    data  = (data = 10.0, )
+)
+
+benchmark_with_contraction = @benchmark infer(
+    model = Model(precision = 1.0, shift = 1.0),
+    data  = (data = 10.0, ),
+    allow_node_contraction = true
+)
+
+using Test #hide
+@test benchmark_with_contraction.allocs < benchmark_without_contraction.allocs #hide
+@test mean(benchmark_with_contraction.times) < mean(benchmark_without_contraction.times) #hide
+@test median(benchmark_with_contraction.times) < median(benchmark_without_contraction.times) #hide
+@test minimum(benchmark_with_contraction.times) < minimum(benchmark_without_contraction.times) #hide
+nothing #hide
+```
+
+Let's examine the benchmark results:
+
+```@example node-contraction
+benchmark_without_contraction
+```
+
+```@example node-contraction
+benchmark_with_contraction
+```
+
+As we can see, the inference with node contraction runs faster due to the simplified model structure and optimized message update rules. 
+This performance improvement is reflected in reduced execution time and fewer memory allocations.
 
 ### [Node creation options](@id user-guide-model-specification-node-creation-options)
 

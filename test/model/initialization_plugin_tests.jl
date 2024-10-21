@@ -26,8 +26,8 @@ end
     import RxInfer: SpecificSubModelInit, InitSpecification, InitDescriptor, InitMarginal, InitObject, GeneralSubModelInit
 
     @model function dummymodel()
-        x ~ Normal(0, 1)
-        y ~ Normal(x, 1)
+        x ~ Normal(mean = 0.0, var = 1.0)
+        y ~ Normal(mean = x, var = 1.0)
     end
 
     @test SpecificSubModelInit(GraphPPL.FactorID(dummymodel, 1), InitSpecification()) isa SpecificSubModelInit
@@ -42,8 +42,8 @@ end
     import RxInfer: SpecificSubModelInit, InitSpecification, InitDescriptor, InitMarginal, InitObject, GeneralSubModelInit
 
     @model function dummymodel()
-        x ~ Normal(0, 1)
-        y ~ Normal(x, 1)
+        x ~ Normal(mean = 0.0, var = 1.0)
+        y ~ Normal(mean = x, var = 1.0)
     end
 
     @test GeneralSubModelInit(dummymodel, InitSpecification()) isa GeneralSubModelInit
@@ -95,15 +95,15 @@ end
 
     @model function gcv(κ, ω, z, x, y)
         log_σ := κ * z + ω
-        y ~ Normal(x, exp(log_σ))
+        y ~ NormalMeanVariance(x, exp(log_σ))
     end
 
     @model function gcv_collection()
-        κ ~ Normal(0, 1)
-        ω ~ Normal(0, 1)
-        z ~ Normal(0, 1)
+        κ ~ NormalMeanVariance(0, 1)
+        ω ~ NormalMeanVariance(0, 1)
+        z ~ NormalMeanVariance(0, 1)
         for i in 1:10
-            x[i] ~ Normal(0, 1)
+            x[i] ~ NormalMeanVariance(0, 1)
             y[i] ~ gcv(κ = κ, ω = ω, z = z, x = x[i])
         end
     end
@@ -641,7 +641,7 @@ end
         local x
         for i in 1:3
             for j in 1:3
-                x[i, j] ~ Normal(0, 1)
+                x[i, j] ~ Normal(mean = 0.0, var = 1.0)
             end
         end
     end
@@ -683,7 +683,7 @@ end
     @test default_init(some_model) === RxInfer.EmptyInit
 
     @model function model_with_init()
-        x ~ Normal(0.0, 1.0)
+        x ~ Normal(mean = 0.0, var = 1.0)
     end
 
     default_init(::typeof(model_with_init)) = @initialization begin

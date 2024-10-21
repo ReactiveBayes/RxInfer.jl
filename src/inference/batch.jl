@@ -1,3 +1,5 @@
+import Static
+
 """
     InferenceResult
 
@@ -115,6 +117,8 @@ function batch_inference(;
     free_energy = false,
     # Default BFE stream checks
     free_energy_diagnostics = DefaultObjectiveDiagnosticChecks,
+    # Enables node contraction with additional implementation, optional, defaults to false.
+    allow_node_contraction = false,
     # Show progress module, optional, defaults to false
     showprogress = false,
     # Inference cycle callbacks
@@ -156,11 +160,11 @@ function batch_inference(;
     end
 
     # The `_model` here still must be a `ModelGenerator`
-    _model = GraphPPL.with_plugins(model, modelplugins)
+    _model = GraphPPL.with_backend(GraphPPL.with_plugins(model, modelplugins), ReactiveMPGraphPPLBackend(Static.static(allow_node_contraction)))
 
     infer_check_dicttype(:data, data)
 
-    # If `predictvars` is specified implicitly as `KeepEach` or `KeepLast`, we replace it with the same value for each data variable
+    # If `predictvars` is specified implicitly as `KeepEach` or `KeepLast`, we replace it a the same value for each data variable
     if (predictvars === KeepEach() || predictvars === KeepLast())
         if !isnothing(data)
             predictoption = predictvars
@@ -175,7 +179,7 @@ function batch_inference(;
         # But only if the data has missing values in it
     elseif isnothing(predictvars) && !isnothing(data)
         predictoption = iterations isa Number ? KeepEach() : KeepLast()
-        predictvars = Dict(variable => predictoption for (variable, value) in pairs(data) if inference_check_dataismissing(value))
+        predictvars = Dict(variable => predictoption for (variable, value) in pairs(data) if inference_check_dataismissing(get_data(value)))
         # If both `predictvar` and `data` are specified we double check if there are some entries in the `predictvars`
         # which are not specified in the `data` and inject them
         # We do the same the other way around for the `data` entries which are not specified in the `predictvars`
@@ -297,7 +301,7 @@ function batch_inference(;
             end
             inference_invoke_callback(callbacks, :before_data_update, fmodel, data)
             for (key, value) in fdata
-                update!(cacheddatavars[key], value)
+                update!(cacheddatavars[key], get_data(value))
             end
             inference_invoke_callback(callbacks, :after_data_update, fmodel, data)
 
