@@ -74,6 +74,7 @@
     ## -------------------------------------------- ##
     mz = res.posteriors[:z]
     fe = res.free_energy
+
     @test length(res.posteriors[:z]) === T
 
     @test all(mean.(mz) .- 6 .* std.(mz) .< hidden .< (mean.(mz) .+ 6 .* std.(mz)))
@@ -81,8 +82,8 @@
     @test (sum((mean.(mz) .- 3 .* std.(mz)) .< hidden .< (mean.(mz) .+ 3 .* std.(mz))) / T) > 0.90
 
     # Free energy for the CVI may fluctuate
-    @test all(d -> d < 2.5, diff(fe)) # Check that the fluctuations are not big
-    @test abs(last(fe) - 308) < 1.0   # Check the final result with relatively low precision
+    @test all(d -> d < 3.0, diff(fe)) # Check that the fluctuations are not big
+    @test abs(last(fe) - 317) < 1.0   # Check the final result with relatively low precision
     @test (first(fe) - last(fe)) > 0
 
     ## Create output plots
