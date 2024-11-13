@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Bayesian Linear Regression Tutorial · RxInfer.jl</title><meta name="title" content="Bayesian Linear Regression Tutorial · RxInfer.jl"/><meta property="og:title" content="Bayesian Linear Regression Tutorial · RxInfer.jl"/><meta property="twitter:title" content="Bayesian Linear Regression Tutorial · RxInfer.jl"/><meta name="description" content="Documentation for RxInfer.jl."/><meta property="og:description" content="Documentation for RxInfer.jl."/><meta property="twitter:description" content="Documentation for RxInfer.jl."/><meta property="og:url" content="https://reactivebayes.github.io/RxInfer.jl/examples/basic_examples/Bayesian Linear Regression Tutorial/"/><meta property="twitter:url" content="https://reactivebayes.github.io/RxInfer.jl/examples/basic_examples/Bayesian Linear Regression Tutorial/"/><link rel="canonical" href="https://reactivebayes.github.io/RxInfer.jl/examples/basic_examples/Bayesian Linear Regression Tutorial/"/><script data-outdated-warner src="../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../search_index.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><link href="../../../assets/theme.css" rel="stylesheet" type="text/css"/><link href="../../../assets/header.css" rel="stylesheet" type="text/css"/><script src="../../../assets/header.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img class="docs-light-only" src="../../../assets/logo.svg" alt="RxInfer.jl logo"/><img class="docs-dark-only" src="../../../assets/logo-dark.svg" alt="RxInfer.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../../../">RxInfer.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../../">Home</a></li><li><span class="tocitem">User guide</span><ul><li><a class="tocitem" href="../../../manuals/getting-started/">Getting started</a></li><li><a class="tocitem" href="../../../manuals/comparison/">RxInfer.jl vs. Others</a></li><li><a class="tocitem" href="../../../manuals/model-specification/">Model specification</a></li><li><a class="tocitem" href="../../../manuals/constraints-specification/">Constraints specification</a></li><li><a class="tocitem" href="../../../manuals/meta-specification/">Meta specification</a></li><li><input class="collapse-toggle" id="menuitem-2-6" type="checkbox"/><label class="tocitem" for="menuitem-2-6"><span class="docs-label">Inference specification</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../manuals/inference/overview/">Overview</a></li><li><a class="tocitem" href="../../../manuals/inference/infer/">Static vs Streamline inference</a></li><li><a class="tocitem" href="../../../manuals/inference/postprocess/">Inference results postprocessing</a></li><li><a class="tocitem" href="../../../manuals/inference/manual/">Manual inference specification</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-7" type="checkbox"/><label class="tocitem" for="menuitem-2-7"><span class="docs-label">Inference customization</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../manuals/custom-node/">Defining a custom node and rules</a></li></ul></li><li><a class="tocitem" href="../../../manuals/understanding-why-to-initialize-messages/">Messages initialization</a></li><li><a class="tocitem" href="../../../manuals/debugging/">Debugging</a></li><li><a class="tocitem" href="../../../manuals/delta-node/">Delta node</a></li></ul></li><li><span class="tocitem">Library</span><ul><li><a class="tocitem" href="../../../library/functional-forms/">Built-in functional form constraints</a></li><li><a class="tocitem" href="../../../library/model-specification/">Model specification</a></li><li><a class="tocitem" href="../../../library/bethe-free-energy/">Bethe Free Energy</a></li><li><a class="tocitem" href="../../../library/exported-methods/">Exported methods</a></li></ul></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../../overview/">Overview</a></li><li><input class="collapse-toggle" id="menuitem-4-2" type="checkbox" checked/><label class="tocitem" for="menuitem-4-2"><span class="docs-label">Basic examples</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../overview/">Overview</a></li><li><a class="tocitem" href="../Coin Toss Model/">Coin toss model (Beta-Bernoulli)</a></li><li class="is-active"><a class="tocitem" href>Bayesian Linear Regression Tutorial</a><ul class="internal"><li><a class="tocitem" href="#Part-1.-Bayesian-Linear-Regression"><span>Part 1. Bayesian Linear Regression</span></a></li><li><a class="tocitem" href="#Part-2.-Hierarchical-Bayesian-Linear-Regression"><span>Part 2. Hierarchical Bayesian Linear Regression</span></a></li></ul></li><li><a class="tocitem" href="../Kalman filtering and smoothing/">Kalman filtering and smoothing</a></li><li><a class="tocitem" href="../Predicting Bike Rental Demand/">Predicting Bike Rental Demand</a></li><li><a class="tocitem" href="../Hidden Markov Model/">How to train your Hidden Markov Model</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-4-3" type="checkbox"/><label class="tocitem" for="menuitem-4-3"><span class="docs-label">Advanced examples</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../advanced_examples/overview/">Overview</a></li><li><a class="tocitem" href="../../advanced_examples/Active Inference Mountain car/">Active Inference Mountain car</a></li><li><a class="tocitem" href="../../advanced_examples/Advanced Tutorial/">Advanced Tutorial</a></li><li><a class="tocitem" href="../../advanced_examples/Assessing People Skills/">Assessing People’s Skills</a></li><li><a class="tocitem" href="../../advanced_examples/Chance Constraints/">Chance-Constrained Active Inference</a></li><li><a class="tocitem" href="../../advanced_examples/Conjugate-Computational Variational Message Passing/">Conjugate-Computational Variational Message Passing (CVI)</a></li><li><a class="tocitem" href="../../advanced_examples/Global Parameter Optimisation/">Global Parameter Optimisation</a></li><li><a class="tocitem" href="../../advanced_examples/GP Regression by SSM/">Solve GP regression by SDE</a></li><li><a class="tocitem" href="../../advanced_examples/Infinite Data Stream/">Infinite Data Stream</a></li><li><a class="tocitem" href="../../advanced_examples/Nonlinear Sensor Fusion/">Nonlinear Sensor Fusion</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-4-4" type="checkbox"/><label class="tocitem" for="menuitem-4-4"><span class="docs-label">Problem specific</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../problem_specific/overview/">Overview</a></li><li><a class="tocitem" href="../../problem_specific/Autoregressive Models/">Autoregressive Models</a></li><li><a class="tocitem" href="../../problem_specific/Gamma Mixture/">Gamma Mixture Model</a></li><li><a class="tocitem" href="../../problem_specific/Gaussian Mixture/">Gaussian Mixture</a></li><li><a class="tocitem" href="../../problem_specific/Hierarchical Gaussian Filter/">Hierarchical Gaussian Filter</a></li><li><a class="tocitem" href="../../problem_specific/Invertible Neural Network Tutorial/">Invertible neural networks: a tutorial</a></li><li><a class="tocitem" href="../../problem_specific/Probit Model (EP)/">Probit Model (EP)</a></li><li><a class="tocitem" href="../../problem_specific/RTS vs BIFM Smoothing/">RTS vs BIFM Smoothing</a></li><li><a class="tocitem" href="../../problem_specific/Simple Nonlinear Node/">Simple Nonlinear Node</a></li><li><a class="tocitem" href="../../problem_specific/Universal Mixtures/">Universal Mixtures</a></li></ul></li></ul></li><li><span class="tocitem">Contributing</span><ul><li><a class="tocitem" href="../../../contributing/overview/">Overview</a></li><li><a class="tocitem" href="../../../contributing/new-documentation/">Contributing to the documentation</a></li><li><a class="tocitem" href="../../../contributing/new-package/">Contributing to the dependencies</a></li><li><a class="tocitem" href="../../../contributing/new-example/">Contributing to the examples</a></li><li><a class="tocitem" href="../../../contributing/new-release/">Publishing a new release</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li><a class="is-disabled">Basic examples</a></li><li class="is-active"><a href>Bayesian Linear Regression Tutorial</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Bayesian Linear Regression Tutorial</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/ReactiveBayes/RxInfer.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/ReactiveBayes/RxInfer.jl/blob/main/docs/src/examples/basic_examples/Bayesian Linear Regression Tutorial.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><p>This example has been auto-generated from the <a href="https://github.com/reactivebayes/RxInfer.jl/tree/main/examples"><code>examples/</code></a> folder at GitHub repository.</p><h1 id="examples-bayesian-linear-regression-tutorial"><a class="docs-heading-anchor" href="#examples-bayesian-linear-regression-tutorial">Bayesian Linear Regression Tutorial</a><a id="examples-bayesian-linear-regression-tutorial-1"></a><a class="docs-heading-anchor-permalink" href="#examples-bayesian-linear-regression-tutorial" title="Permalink"></a></h1><p>This notebook is an extensive tutorial on Bayesian linear regression with <code>RxInfer</code> and consists of two major parts:</p><ul><li>The first part uses a regular Bayesian Linear Regression on a simple application of fuel consumption for a car with synthetic data.</li><li>The second part is an adaptation of a <a href="https://num.pyro.ai/en/latest/tutorials/bayesian_hierarchical_linear_regression.html">tutorial from NumPyro</a> and uses Hierarchical Bayesian linear regression on the <a href="https://www.kaggle.com/c/osic-pulmonary-fibrosis-progression">OSIC pulmonary fibrosis progression dataset</a> from Kaggle.</li></ul><pre><code class="language-julia hljs"># Activate local environment, see `Project.toml`
+import Pkg; Pkg.activate(&quot;..&quot;); Pkg.instantiate();</code></pre><pre><code class="language-julia hljs">using RxInfer, Random, Plots, StableRNGs, LinearAlgebra, StatsPlots, LaTeXStrings, DataFrames, CSV, GLM</code></pre><h2 id="Part-1.-Bayesian-Linear-Regression"><a class="docs-heading-anchor" href="#Part-1.-Bayesian-Linear-Regression">Part 1. Bayesian Linear Regression</a><a id="Part-1.-Bayesian-Linear-Regression-1"></a><a class="docs-heading-anchor-permalink" href="#Part-1.-Bayesian-Linear-Regression" title="Permalink"></a></h2><p>John recently purchased a new car and is interested in its fuel consumption rate. He believes that this rate has a linear relationship with speed, and as such, he wants to conduct tests by driving his car on different types of roads, recording both the fuel usage and speed. In order to determine the fuel consumption rate, John employs Bayesian linear regression.</p><h3 id="Univariate-regression-with-known-noise"><a class="docs-heading-anchor" href="#Univariate-regression-with-known-noise">Univariate regression with known noise</a><a id="Univariate-regression-with-known-noise-1"></a><a class="docs-heading-anchor-permalink" href="#Univariate-regression-with-known-noise" title="Permalink"></a></h3><p>First, he drives the car on a urban road. John enjoys driving on the well-built, wide, and flat urban roads. Urban roads also offer the advantage of precise fuel consumption measurement with minimal noise. Therefore John models the fuel consumption <span>$y_n\in\mathbb{R}$</span> as a normal distribution and treats <span>$x_n$</span> as a fixed hyper-parameter:</p><p class="math-container">\[\begin{aligned}
+p(y_n \mid a, b) = \mathcal{N}(y_n \mid a x_n + b , 1)
+\end{aligned}\]</p><p>The recorded speed is denoted as <span>$x_n \in \mathbb{R}$</span> and the recorded fuel consumption as <span>$y_n \in \mathbb{R}$</span>. Prior beliefs on <span>$a$</span> and <span>$b$</span> are informed by the vehicle manual.</p><p class="math-container">\[\begin{aligned}
+    p(a) &amp;= \mathcal{N}(a \mid m_a, v_a) \\
+    p(b) &amp;= \mathcal{N}(b \mid m_b, v_b) 
+\end{aligned}\]</p><p>Together they form the probabilistic model <span>$p(y, a, b) = p(a)p(b) \prod_{N=1}^N p(y_n \mid a, b),$</span> where the goal is to infer the posterior distributions <span>$p(a \mid y)$</span> and <span>$p(b\mid y)$</span>.</p><p>He records the speed and fuel consumption for the urban road which is the <code>xdata</code> and <code>ydata</code>.</p><pre><code class="language-julia hljs">function generate_data(a, b, v, nr_samples; rng=StableRNG(1234))
+    x = float.(collect(1:nr_samples))
+    y = a .* x .+ b .+ randn(rng, nr_samples) .* sqrt(v)
+    return x, y
+end;</code></pre><pre><code class="language-julia hljs">x_data, y_data = generate_data(0.5, 25.0, 1.0, 250)
+
+scatter(x_data, y_data, title = &quot;Dataset (City road)&quot;, legend=false)
+xlabel!(&quot;Speed&quot;)
+ylabel!(&quot;Fuel consumption&quot;)</code></pre><p><img src="../../../assets/examples/Bayesian Linear Regression Tutorial_4_1.png" alt/></p><p>In order to estimate the two parameters with the recorded data, he uses a <code>RxInfer.jl</code> to create the above described model.</p><pre><code class="language-julia hljs">@model function linear_regression(nr_samples)
+    a ~ Normal(mean = 0.0, variance = 1.0)
+    b ~ Normal(mean = 0.0, variance = 100.0)
+    
+    x = datavar(Float64, nr_samples)
+    y = datavar(Float64, nr_samples)
+    
+    y .~ Normal(mean = a .* x .+ b, variance = 1.0)
+end</code></pre><p>He is delighted that he can utilize the inference function from this package, saving him the effort of starting from scratch and enabling him to obtain the desired results for this road. He does note that there is a loop in his model, namely all <span>$a$</span> and <span>$b$</span> variables are connected over all observations, therefore he needs to initialize one of the messages and run multiple iterations for the loopy belief propagation algorithm. It is worth noting that loopy belief propagation is not guaranteed to converge in general and might be highly influenced by the choice of the initial messages in the <code>initmessages</code> argument. He is going to evaluate the convergency performance of the algorithm with the <code>free_energy = true</code> option:</p><pre><code class="language-julia hljs">results = infer(
+    model        = linear_regression(length(x_data)), 
+    data         = (y = y_data, x = x_data), 
+    initmessages = (b = NormalMeanVariance(0.0, 100.0), ), 
+    returnvars   = (a = KeepLast(), b = KeepLast()),
+    iterations   = 20,
+    free_energy  = true
+)</code></pre><pre><code class="nohighlight hljs">Inference results:
+  Posteriors       | available for (a, b)
+  Free Energy:     | Real[450.062, 8526.84, 4960.42, 2949.02, 1819.14, 1184
+.44, 827.897, 627.595, 515.064, 451.839, 416.313, 396.349, 385.129, 378.821
+, 375.274, 373.279, 372.156, 371.524, 371.167, 370.966]</code></pre><p>He knows the theoretical coefficients and noise for this car from the manual. He is going to compare the experimental solution with theoretical results.</p><pre><code class="language-julia hljs">pra = plot(range(-3, 3, length = 1000), (x) -&gt; pdf(NormalMeanVariance(0.0, 1.0), x), title=L&quot;Prior for $a$ parameter&quot;, fillalpha=0.3, fillrange = 0, label=L&quot;$p(a)$&quot;, c=1,)
+pra = vline!(pra, [ 0.5 ], label=L&quot;True $a$&quot;, c = 3)
+psa = plot(range(0.45, 0.55, length = 1000), (x) -&gt; pdf(results.posteriors[:a], x), title=L&quot;Posterior for $a$ parameter&quot;, fillalpha=0.3, fillrange = 0, label=L&quot;$p(a\mid y)$&quot;, c=2,)
+psa = vline!(psa, [ 0.5 ], label=L&quot;True $a$&quot;, c = 3)
+
+plot(pra, psa, size = (1000, 200), xlabel=L&quot;$a$&quot;, ylabel=L&quot;$p(a)$&quot;, ylims=[0,Inf])</code></pre><p><img src="../../../assets/examples/Bayesian Linear Regression Tutorial_7_1.png" alt/></p><pre><code class="language-julia hljs">prb = plot(range(-40, 40, length = 1000), (x) -&gt; pdf(NormalMeanVariance(0.0, 100.0), x), title=L&quot;Prior for $b$ parameter&quot;, fillalpha=0.3, fillrange = 0, label=L&quot;p(b)&quot;, c=1, legend = :topleft)
+prb = vline!(prb, [ 25 ], label=L&quot;True $b$&quot;, c = 3)
+psb = plot(range(23, 28, length = 1000), (x) -&gt; pdf(results.posteriors[:b], x), title=L&quot;Posterior for $b$ parameter&quot;, fillalpha=0.3, fillrange = 0, label=L&quot;p(b\mid y)&quot;, c=2, legend = :topleft)
+psb = vline!(psb, [ 25 ], label=L&quot;True $b$&quot;, c = 3)
+
+plot(prb, psb, size = (1000, 200), xlabel=L&quot;$b$&quot;, ylabel=L&quot;$p(b)$&quot;, ylims=[0, Inf])</code></pre><p><img src="../../../assets/examples/Bayesian Linear Regression Tutorial_8_1.png" alt/></p><pre><code class="language-julia hljs">a = results.posteriors[:a]
+b = results.posteriors[:b]
+
+println(&quot;Real a: &quot;, 0.5, &quot; | Estimated a: &quot;, mean_var(a), &quot; | Error: &quot;, abs(mean(a) - 0.5))
+println(&quot;Real b: &quot;, 25.0, &quot; | Estimated b: &quot;, mean_var(b), &quot; | Error: &quot;, abs(mean(b) - 25.0))</code></pre><pre><code class="nohighlight hljs">Real a: 0.5 | Estimated a: (0.501490188462706, 1.9162284531300301e-7) | Err
+or: 0.001490188462705988
+Real b: 25.0 | Estimated b: (24.81264210195605, 0.0040159675312827) | Error
+: 0.18735789804394898</code></pre><p>Based on the Bethe free energy below, John knows that the loopy belief propagation has actually converged after 20 iterations:</p><pre><code class="language-julia hljs"># drop first iteration, which is influenced by the `initmessages`
+plot(2:20, results.free_energy[2:end], title=&quot;Free energy&quot;, xlabel=&quot;Iteration&quot;, ylabel=&quot;Free energy [nats]&quot;, legend=false)</code></pre><p><img src="../../../assets/examples/Bayesian Linear Regression Tutorial_10_1.png" alt/></p><h3 id="Univariate-regression-with-unknown-noise"><a class="docs-heading-anchor" href="#Univariate-regression-with-unknown-noise">Univariate regression with unknown noise</a><a id="Univariate-regression-with-unknown-noise-1"></a><a class="docs-heading-anchor-permalink" href="#Univariate-regression-with-unknown-noise" title="Permalink"></a></h3><p>Afterwards, he plans to test the car on a mountain road. However, mountain roads are typically narrow and filled with small stones, which makes it more difficult to establish a clear relationship between fuel consumption and speed, leading to an unknown level of noise in the regression model. Therefore, he design a model with unknown Inverse-Gamma distribution on the variance. <span>$\begin{aligned} p(y_n \mid a, b, s) &amp;= \mathcal{N}(y_n \mid ax_n + b, s)\\
+p(s) &amp;= \mathcal{IG}(s\mid\alpha, \theta)\\
+p(a) &amp;= \mathcal{N}(a \mid m_a, v_a) \\
+p(b) &amp;= \mathcal{N}(b \mid m_b, v_b)  \end{aligned}$</span></p><pre><code class="language-julia hljs">@model function linear_regression_unknown_noise(nr_samples)
+    a ~ Normal(mean = 0.0, variance = 1.0)
+    b ~ Normal(mean = 0.0, variance = 100.0)
+    s ~ InverseGamma(1.0, 1.0)
+    
+    x = datavar(Float64, nr_samples)
+    y = datavar(Float64, nr_samples)
+    
+    y .~ Normal(mean = a .* x .+ b, variance = s)
+end</code></pre><pre><code class="language-julia hljs">x_data_un, y_data_un = generate_data(0.5, 25.0, 400.0, 250)
+
+scatter(x_data_un, y_data_un, title = &quot;Dateset with unknown noise (mountain road)&quot;, legend=false)
+xlabel!(&quot;Speed&quot;)
+ylabel!(&quot;Fuel consumption&quot;)</code></pre><p><img src="../../../assets/examples/Bayesian Linear Regression Tutorial_12_1.png" alt/></p><p>To solve this problem in closed-from we need to resort to a variational approximation. The procedure will be a combination of variational inference and loopy belief propagation. He chooses <code>constraints = MeanField()</code> as a global variational approximation and provides initial marginals with the <code>initmarginals</code> argument. He is, again, going to evaluate the convergency performance of the algorithm with the <code>free_energy = true</code> option:</p><pre><code class="language-julia hljs">results_unknown_noise = infer(
+    model           = linear_regression_unknown_noise(length(x_data_un)), 
+    data            = (y = y_data_un, x = x_data_un), 
+    initmessages    = (b = NormalMeanVariance(0.0, 100.0), ), 
+    returnvars      = (a = KeepLast(), b = KeepLast(), s = KeepLast()), 
+    iterations      = 20,
+    constraints     = MeanField(),
+    initmarginals   = (s = vague(InverseGamma), ),
+    free_energy     = true
+)</code></pre><pre><code class="nohighlight hljs">Inference results:
+  Posteriors       | available for (a, b, s)
+  Free Energy:     | Real[1657.49, 1192.08, 1142.31, 1135.43, 1129.19, 1125
+.47, 1123.34, 1122.13, 1121.44, 1121.05, 1120.82, 1120.69, 1120.61, 1120.56
+, 1120.53, 1120.52, 1120.5, 1120.5, 1120.49, 1120.49]</code></pre><p>Based on the Bethe free energy below, John knows that his algorithm has converged after 20 iterations:</p><pre><code class="language-julia hljs">plot(results_unknown_noise.free_energy, title=&quot;Free energy&quot;, xlabel=&quot;Iteration&quot;, ylabel=&quot;Free energy [nats]&quot;, legend=false)</code></pre><p><img src="../../../assets/examples/Bayesian Linear Regression Tutorial_14_1.png" alt/></p><p>Below he visualizes the obtained posterior distributions for parameters:</p><pre><code class="language-julia hljs">pra = plot(range(-3, 3, length = 1000), (x) -&gt; pdf(NormalMeanVariance(0.0, 1.0), x), title=L&quot;Prior for $a$ parameter&quot;, fillalpha=0.3, fillrange = 0, label=L&quot;$p(a)$&quot;, c=1,)
+pra = vline!(pra, [ 0.5 ], label=L&quot;True $a$&quot;, c = 3)
+psa = plot(range(0.45, 0.55, length = 1000), (x) -&gt; pdf(results_unknown_noise.posteriors[:a], x), title=L&quot;Posterior for $a$ parameter&quot;, fillalpha=0.3, fillrange = 0, label=L&quot;$q(a)$&quot;, c=2,)
+psa = vline!(psa, [ 0.5 ], label=L&quot;True $a$&quot;, c = 3)
+
+plot(pra, psa, size = (1000, 200), xlabel=L&quot;$a$&quot;, ylabel=L&quot;$p(a)$&quot;, ylims=[0, Inf])</code></pre><p><img src="../../../assets/examples/Bayesian Linear Regression Tutorial_15_1.png" alt/></p><pre><code class="language-julia hljs">prb = plot(range(-40, 40, length = 1000), (x) -&gt; pdf(NormalMeanVariance(0.0, 100.0), x), title=L&quot;Prior for $b$ parameter&quot;, fillalpha=0.3, fillrange = 0, label=L&quot;$p(b)$&quot;, c=1, legend = :topleft)
+prb = vline!(prb, [ 25.0 ], label=L&quot;True $b$&quot;, c = 3)
+psb = plot(range(23, 28, length = 1000), (x) -&gt; pdf(results_unknown_noise.posteriors[:b], x), title=L&quot;Posterior for $b$ parameter&quot;, fillalpha=0.3, fillrange = 0, label=L&quot;$q(b)$&quot;, c=2, legend = :topleft)
+psb = vline!(psb, [ 25.0 ], label=L&quot;True $b$&quot;, c = 3)
+
+plot(prb, psb, size = (1000, 200), xlabel=L&quot;$b$&quot;, ylabel=L&quot;$p(b)$&quot;, ylims=[0, Inf])</code></pre><p><img src="../../../assets/examples/Bayesian Linear Regression Tutorial_16_1.png" alt/></p><pre><code class="language-julia hljs">prb = plot(range(0.001, 400, length = 1000), (x) -&gt; pdf(InverseGamma(1.0, 1.0), x), title=L&quot;Prior for $s$ parameter&quot;, fillalpha=0.3, fillrange = 0, label=L&quot;$p(s)$&quot;, c=1, legend = :topleft)
+prb = vline!(prb, [ 200 ], label=L&quot;True $s$&quot;, c = 3)
+psb = plot(range(0.001, 400, length = 1000), (x) -&gt; pdf(results_unknown_noise.posteriors[:s], x), title=L&quot;Posterior for $s$ parameter&quot;, fillalpha=0.3, fillrange = 0, label=L&quot;$q(s)$&quot;, c=2, legend = :topleft)
+psb = vline!(psb, [ 200 ], label=L&quot;True $s$&quot;, c = 3)
+
+plot(prb, psb, size = (1000, 200), xlabel=L&quot;$s$&quot;, ylabel=L&quot;$p(s)$&quot;, ylims=[0, Inf])</code></pre><p><img src="../../../assets/examples/Bayesian Linear Regression Tutorial_17_1.png" alt/></p><p>He sees that in the presence of more noise the inference result is more uncertain about the actual values for <span>$a$</span> and <span>$b$</span> parameters.</p><p>John samples <span>$a$</span> and <span>$b$</span> and plot many possible regression lines on the same plot:</p><pre><code class="language-julia hljs">as = rand(results_unknown_noise.posteriors[:a], 100)
+bs = rand(results_unknown_noise.posteriors[:b], 100)
+p = scatter(x_data_un, y_data_un, title = &quot;Linear regression with more noise&quot;, legend=false)
+xlabel!(&quot;Speed&quot;)
+ylabel!(&quot;Fuel consumption&quot;)
+for (a, b) in zip(as, bs)
+    global p = plot!(p, x_data_un, a .* x_data_un .+ b, alpha = 0.05, color = :red)
+end
+
+plot(p, size = (900, 400))</code></pre><p><img src="../../../assets/examples/Bayesian Linear Regression Tutorial_18_1.png" alt/></p><p>From this plot John can see that many lines do fit the data well and there is no definite &quot;best&quot; answer to the regression coefficients. He realize that most of these lines, however, resemble a similar angle and shift.</p><h3 id="Multivariate-linear-regression"><a class="docs-heading-anchor" href="#Multivariate-linear-regression">Multivariate linear regression</a><a id="Multivariate-linear-regression-1"></a><a class="docs-heading-anchor-permalink" href="#Multivariate-linear-regression" title="Permalink"></a></h3><p>In addition to fuel consumption, he is also interested in evaluating the car&#39;s power performance, braking performance, handling stability, smoothness, and other factors. To investigate the car&#39;s performance, he includes additional measurements. Essentially, this approach involves performing multiple linear regression tasks simultaneously, using multiple data vectors for x and y with different levels of noise. As in the previous example, he assumes the level of noise to be unknown.</p><pre><code class="language-julia hljs">@model function linear_regression_multivariate(dim, nr_samples)
+    a ~ MvNormal(mean = zeros(dim), covariance = 100 * diageye(dim))
+    b ~ MvNormal(mean = ones(dim), covariance = 100 * diageye(dim))
+    W ~ InverseWishart(dim + 2, 100 * diageye(dim))
+
+    # Here is a small trick to make the example work
+    # We treat the `x` vector as a Diagonal matrix such that we can easily multiply it with `a`
+    x = datavar(Diagonal{Float64, Vector{Float64}}, nr_samples)
+    y = datavar(Vector{Float64}, nr_samples)
+    z = randomvar(nr_samples)
+
+    z .~ x .* a .+ b
+    y .~ MvNormal(mean = z, covariance = W)
+
+end</code></pre><p>After received all the measurement records, he plots the measurements and performance index:</p><pre><code class="language-julia hljs">dim_mv = 6
+nr_samples_mv = 50
+rng_mv = StableRNG(42)
+a_mv = randn(rng_mv, dim_mv)
+b_mv = 10 * randn(rng_mv, dim_mv)
+v_mv = 100 * rand(rng_mv, dim_mv)
+
+x_data_mv, y_data_mv = collect(zip(generate_data.(a_mv, b_mv, v_mv, nr_samples_mv)...));</code></pre><pre><code class="language-julia hljs">p = plot(title = &quot;Multivariate linear regression&quot;, legend = :topleft)
+
+plt = palette(:tab10)
+
+data_set_label = [&quot;&quot;]
+
+for k in 1:dim_mv
+    global p = scatter!(p, x_data_mv[k], y_data_mv[k], label = &quot;Measurement #$k&quot;, ms = 2, color = plt[k])
+end
+xlabel!(L&quot;$x$&quot;)
+ylabel!(L&quot;$y$&quot;)
+p</code></pre><p><img src="../../../assets/examples/Bayesian Linear Regression Tutorial_21_1.png" alt/></p><p>Before this data can be used to perform inference, John needs to change its format slightly.</p><pre><code class="language-julia hljs">x_data_mv_processed = map(i -&gt; Diagonal([getindex.(x_data_mv, i)...]), 1:nr_samples_mv)
+y_data_mv_processed = map(i -&gt; [getindex.(y_data_mv, i)...], 1:nr_samples_mv);</code></pre><pre><code class="language-julia hljs">results_mv = infer(
+    model           = linear_regression_multivariate(dim_mv, nr_samples_mv),
+    data            = (y = y_data_mv_processed, x = x_data_mv_processed),
+    initmarginals   = (W = InverseWishart(dim_mv + 2, 10 * diageye(dim_mv)), ),
+    initmessages    = (b = MvNormalMeanCovariance(ones(dim_mv), 10 * diageye(dim_mv)), ),
+    returnvars      = (a = KeepLast(), b = KeepLast(), W = KeepLast()),
+    free_energy     = true,
+    iterations      = 50,
+    constraints     = MeanField()
+)</code></pre><pre><code class="nohighlight hljs">Inference results:
+  Posteriors       | available for (a, b, W)
+  Free Energy:     | Real[864.485, 789.026, 769.094, 750.865, 737.67, 724.7
+22, 712.341, 700.865, 690.782, 682.505  …  664.434, 664.434, 664.434, 664.4
+34, 664.434, 664.434, 664.434, 664.434, 664.434, 664.434]</code></pre><p>Again, the algorithm nicely converged, because the Bethe free energy reached a plateau. John also draws the results for the linear regression parameters and sees that the lines very nicely follow the provided data.</p><pre><code class="language-julia hljs">p = plot(title = &quot;Multivariate linear regression&quot;, legend = :topleft, xlabel=L&quot;$x$&quot;, ylabel=L&quot;$y$&quot;)
+
+# how many lines to plot
+r = 50
+
+i_a = collect.(eachcol(rand(results_mv.posteriors[:a], r)))
+i_b = collect.(eachcol(rand(results_mv.posteriors[:b], r)))
+
+plt = palette(:tab10)
+
+for k in 1:dim_mv
+    x_mv_k = x_data_mv[k]
+    y_mv_k = y_data_mv[k]
+
+    for i in 1:r
+        global p = plot!(p, x_mv_k, x_mv_k .* i_a[i][k] .+ i_b[i][k], label = nothing, alpha = 0.05, color = plt[k])
+    end
+
+    global p = scatter!(p, x_mv_k, y_mv_k, label = &quot;Measurement #$k&quot;, ms = 2, color = plt[k])
+end
+
+# truncate the init step
+f = plot(results_mv.free_energy[2:end], title =&quot;Bethe free energy convergence&quot;, label = nothing, xlabel = &quot;Iteration&quot;, ylabel = &quot;Bethe free energy [nats]&quot;) 
+
+plot(p, f, size = (1000, 400))</code></pre><p><img src="../../../assets/examples/Bayesian Linear Regression Tutorial_24_1.png" alt/></p><p>He needs more iterations to converge in comparison to the very first example, but that is expected since the problem became multivariate and, hence, more difficult.</p><pre><code class="language-julia hljs">i_a_mv = results_mv.posteriors[:a]
+
+ps_a = []
+
+for k in 1:dim_mv
+    
+    local _p = plot(title = L&quot;Estimated $a_{%$k}$&quot;, xlabel=L&quot;$a_{%$k}$&quot;, ylabel=L&quot;$p(a_{%$k})$&quot;, xlims = (-1.5,1.5), xticks=[-1.5, 0, 1.5], ylims=[0, Inf])
+
+    local m_a_mv_k = mean(i_a_mv)[k]
+    local v_a_mv_k = std(i_a_mv)[k, k]
+    
+    _p = plot!(_p, Normal(m_a_mv_k, v_a_mv_k), fillalpha=0.3, fillrange = 0, label=L&quot;$q(a_{%$k})$&quot;, c=2,)
+    _p = vline!(_p, [ a_mv[k] ], label=L&quot;True $a_{%$k}$&quot;, c = 3)
+           
+    push!(ps_a, _p)
+end
+
+plot(ps_a...)</code></pre><p><img src="../../../assets/examples/Bayesian Linear Regression Tutorial_25_1.png" alt/></p><pre><code class="language-julia hljs">i_b_mv = results_mv.posteriors[:b]
+
+ps_b = []
+
+for k in 1:dim_mv
+    
+    local _p = plot(title = L&quot;Estimated $b_{%$k}$&quot;, xlabel=L&quot;$b_{%$k}$&quot;, ylabel=L&quot;$p(b_{%$k})$&quot;, xlims = (-20,20), xticks=[-20, 0, 20], ylims =[0, Inf])
+    local m_b_mv_k = mean(i_b_mv)[k]
+    local v_b_mv_k = std(i_b_mv)[k, k]
+
+    _p = plot!(_p, Normal(m_b_mv_k, v_b_mv_k), fillalpha=0.3, fillrange = 0, label=L&quot;$q(b_{%$k})$&quot;, c=2,)
+    _p = vline!(_p, [ b_mv[k] ], label=L&quot;Real $b_{%$k}$&quot;, c = 3)
+           
+    push!(ps_b, _p)
+end
+
+plot(ps_b...)</code></pre><p><img src="../../../assets/examples/Bayesian Linear Regression Tutorial_26_1.png" alt/></p><p>He also checks the noise estimation procedure and sees that the noise variance are currently a bit underestimated. Note here that he neglects the covariance terms between the individual elements, which might result in this kind of behaviour.</p><pre><code class="language-julia hljs">scatter(1:dim_mv, v_mv, ylims=(0, 100), label=L&quot;True $s_d$&quot;)
+scatter!(1:dim_mv, diag(mean(results_mv.posteriors[:W])); yerror=sqrt.(diag(var(results_mv.posteriors[:W]))), label=L&quot;$\mathrm{E}[s_d] \pm \sigma$&quot;)
+plot!(; xlabel=L&quot;Dimension $d$&quot;, ylabel=&quot;Variance&quot;, title=&quot;Estimated variance of the noise&quot;)</code></pre><p><img src="../../../assets/examples/Bayesian Linear Regression Tutorial_27_1.png" alt/></p><h2 id="Part-2.-Hierarchical-Bayesian-Linear-Regression"><a class="docs-heading-anchor" href="#Part-2.-Hierarchical-Bayesian-Linear-Regression">Part 2. Hierarchical Bayesian Linear Regression</a><a id="Part-2.-Hierarchical-Bayesian-Linear-Regression-1"></a><a class="docs-heading-anchor-permalink" href="#Part-2.-Hierarchical-Bayesian-Linear-Regression" title="Permalink"></a></h2><p><strong>Disclaimer</strong> The tutorial below is an adaptation of the <a href="https://github.com/pyro-ppl/numpyro/blob/a66391dfed461fc48d6b082b10c76a1c1d75a9af/notebooks/source/bayesian_hierarchical_linear_regression.ipynb">Bayesian Hierarchical Linear Regression</a> tutorial implemented in NumPyro. </p><p>The original author in NumPyro is <a href="mailto:souza@gatech.edu">Carlos Souza</a>. Updated by <a href="cstoafer@gmail.com">Chris Stoafer</a> in NumPyro. Adapted to RxInfer by Dmitry Bagaev.</p><p>Probabilistic Machine Learning models can not only make predictions about future data but also model uncertainty. In areas such as personalized medicine, there might be a large amount of data, but there is still a relatively small amount available for each patient. To customize predictions for each person, it becomes necessary to build a model for each individual — considering its inherent uncertainties — and then couple these models together in a hierarchy so that information can be borrowed from other similar individuals [1].</p><p>The purpose of this tutorial is to demonstrate how to implement a Bayesian Hierarchical Linear Regression model using RxInfer. To provide motivation for the tutorial, I will use the <a href="https://www.kaggle.com/c/osic-pulmonary-fibrosis-progression">OSIC Pulmonary Fibrosis Progression competition</a>, hosted on Kaggle.</p><pre><code class="language-julia hljs"># https://www.machinelearningplus.com/linear-regression-in-julia/
+# https://nbviewer.org/github/pyro-ppl/numpyro/blob/master/notebooks/source/bayesian_hierarchical_linear_regression.ipynb</code></pre><h3 id="Understanding-the-Task"><a class="docs-heading-anchor" href="#Understanding-the-Task">Understanding the Task</a><a id="Understanding-the-Task-1"></a><a class="docs-heading-anchor-permalink" href="#Understanding-the-Task" title="Permalink"></a></h3><p>Pulmonary fibrosis is a disorder characterized by scarring of the lungs, and its cause and cure are currently unknown. In this competition, the objective was to predict the severity of decline in lung function for patients. Lung function is assessed based on the output from a spirometer, which measures the forced vital capacity (FVC), representing the volume of air exhaled.</p><p>In medical applications, it is valuable to evaluate a model&#39;s confidence in its decisions. As a result, the metric used to rank the teams was designed to reflect both the accuracy and certainty of each prediction. This metric is a modified version of the Laplace Log Likelihood (further details will be provided later).</p><p>Now, let&#39;s explore the data and delve deeper into the problem involved.</p><pre><code class="language-julia hljs">dataset = CSV.read(&quot;../data/hbr/osic_pulmonary_fibrosis.csv&quot;, DataFrame);</code></pre><pre><code class="language-julia hljs">describe(dataset)</code></pre><pre><code class="nohighlight hljs">7×7 DataFrame
+ Row │ variable       mean     min                        median   max     
+    ⋯
+     │ Symbol         Union…   Any                        Union…   Any     
+    ⋯
+─────┼─────────────────────────────────────────────────────────────────────
+─────
+   1 │ Patient                 ID00007637202177411956430           ID004266
+372 ⋯
+   2 │ Weeks          31.8618  -5                         28.0     133
+   3 │ FVC            2690.48  827                        2641.0   6399
+   4 │ Percent        77.6727  28.8776                    75.6769  153.145
+   5 │ Age            67.1885  49                         68.0     88      
+    ⋯
+   6 │ Sex                     Female                              Male
+   7 │ SmokingStatus           Currently smokes                    Never sm
+oke
+                                                               3 columns om
+itted</code></pre><pre><code class="language-julia hljs">first(dataset, 5)</code></pre><pre><code class="nohighlight hljs">5×7 DataFrame
+ Row │ Patient                    Weeks  FVC    Percent  Age    Sex      Sm
+oki ⋯
+     │ String31                   Int64  Int64  Float64  Int64  String7  St
+rin ⋯
+─────┼─────────────────────────────────────────────────────────────────────
+─────
+   1 │ ID00007637202177411956430     -4   2315  58.2536     79  Male     Ex
+-sm ⋯
+   2 │ ID00007637202177411956430      5   2214  55.7121     79  Male     Ex
+-sm
+   3 │ ID00007637202177411956430      7   2061  51.8621     79  Male     Ex
+-sm
+   4 │ ID00007637202177411956430      9   2144  53.9507     79  Male     Ex
+-sm
+   5 │ ID00007637202177411956430     11   2069  52.0634     79  Male     Ex
+-sm ⋯
+                                                                1 column om
+itted</code></pre><p>The dataset provided us with a baseline chest CT scan and relevant clinical information for a group of patients. Each patient has an image taken at Week = 0, and they undergo numerous follow-up visits over approximately 1-2 years, during which their Forced Vital Capacity (FVC) is measured. For the purpose of this tutorial, we will only consider the Patient ID, the weeks, and the FVC measurements, discarding all other information. Restricting our analysis to these specific columns allowed our team to achieve a competitive score, highlighting the effectiveness of Bayesian hierarchical linear regression models, especially when dealing with uncertainty, which is a crucial aspect of the problem.</p><p>Since this is real medical data, the relative timing of FVC measurements varies widely, as shown in the 3 sample patients below:</p><pre><code class="language-julia hljs">patientinfo(dataset, patient_id) = filter(:Patient =&gt; ==(patient_id), dataset)</code></pre><pre><code class="nohighlight hljs">patientinfo (generic function with 1 method)</code></pre><pre><code class="language-julia hljs">function patientchart(dataset, patient_id; line_kws = true)
+    info = patientinfo(dataset, patient_id)
+    x = info[!, &quot;Weeks&quot;]
+    y = info[!, &quot;FVC&quot;]
+
+    p = plot(tickfontsize = 10, margin = 1Plots.cm, size = (400, 400), titlefontsize = 11)
+    p = scatter!(p, x, y, title = patient_id, legend = false, xlabel = &quot;Weeks&quot;, ylabel = &quot;FVC&quot;)
+    
+    if line_kws
+        # Use the `GLM.jl` package to estimate linear regression
+        linearFormulae = @formula(FVC ~ Weeks)
+        linearRegressor = lm(linearFormulae, patientinfo(dataset, patient_id))
+        linearPredicted = predict(linearRegressor)
+        p = plot!(p, x, linearPredicted, color = :red, lw = 3)
+    end
+
+    return p
+end</code></pre><pre><code class="nohighlight hljs">patientchart (generic function with 1 method)</code></pre><pre><code class="language-julia hljs">p1 = patientchart(dataset, &quot;ID00007637202177411956430&quot;)
+p2 = patientchart(dataset, &quot;ID00009637202177434476278&quot;)
+p3 = patientchart(dataset, &quot;ID00010637202177584971671&quot;)
+
+plot(p1, p2, p3, layout = @layout([ a b c ]), size = (1200, 400))</code></pre><p><img src="../../../assets/examples/Bayesian Linear Regression Tutorial_34_1.png" alt/></p><p>On average, each of the 176 patients provided in the dataset had 9 visits during which their FVC was measured. These visits occurred at specific weeks within the interval <code>[-12, 133]</code>. The decline in lung capacity is evident, but it also varies significantly from one patient to another.</p><p>Our task was to predict the FVC measurements for each patient at every possible week within the <code>[-12, 133]</code> interval, along with providing a confidence score for each prediction. In other words, we were required to fill a matrix, as shown below, with the predicted values and their corresponding confidence scores:</p><p><img src="../../../assets/examples/pics/hblr-matrix-completion.jpeg" alt/></p><p>The task was ideal for applying Bayesian inference. However, the vast majority of solutions shared within the Kaggle community utilized discriminative machine learning models, disregarding the fact that most discriminative methods struggle to provide realistic uncertainty estimates. This limitation stems from their typical training process, which aims to optimize parameters to minimize certain loss criteria (such as predictive error). As a result, these models do not inherently incorporate uncertainty into their parameters or subsequent predictions. While some methods may produce uncertainty estimates as a by-product or through post-processing steps, these are often heuristic-based and lack a statistically principled approach to estimate the target uncertainty distribution [2].</p><h3 id="Modelling:-Bayesian-Hierarchical-Linear-Regression-with-Partial-Pooling"><a class="docs-heading-anchor" href="#Modelling:-Bayesian-Hierarchical-Linear-Regression-with-Partial-Pooling">Modelling: Bayesian Hierarchical Linear Regression with Partial Pooling</a><a id="Modelling:-Bayesian-Hierarchical-Linear-Regression-with-Partial-Pooling-1"></a><a class="docs-heading-anchor-permalink" href="#Modelling:-Bayesian-Hierarchical-Linear-Regression-with-Partial-Pooling" title="Permalink"></a></h3><p>In a basic linear regression, which is not hierarchical, the assumption is that all FVC decline curves share the same α and β values. This model is known as the &quot;pooled model.&quot; On the other extreme, we could assume a model where each patient has a personalized FVC decline curve, and these curves are entirely independent of one another. This model is referred to as the &quot;unpooled model,&quot; where each patient has completely separate regression lines.</p><p>In this analysis, we will adopt a middle ground approach known as &quot;Partial pooling.&quot; Specifically, we will assume that while α&#39;s and β&#39;s are different for each patient, as in the unpooled case, these coefficients share some similarities. This partial pooling will be achieved by modeling each individual coefficient as being drawn from a common group distribution.:</p><p>Mathematically, the model is described by the following equations:</p><p class="math-container">\[\begin{equation}
+    \begin{aligned}
+        \mu_\alpha &amp;\sim \mathcal{N}(\mathrm{mean} = 0.0, \mathrm{variance} = 250000.0) \\
+        \sigma_\alpha &amp;\sim \mathcal{\Gamma}(\mathrm{shape} = 1.75, \mathrm{scale} = 45.54) \\
+        \mu_\beta &amp;\sim \mathcal{N}(\mathrm{mean} = 0.0, \mathrm{variance} = 9.0) \\
+        \sigma_\beta &amp;\sim \mathcal{\Gamma}(\mathrm{shape} = 1.75, \mathrm{scale} = 1.36) \\
+        \alpha_i &amp;\sim \mathcal{N}(\mathrm{mean} = \mu_\alpha, \mathrm{precision} = \sigma_\alpha) \\
+        \beta &amp;\sim \mathcal{N}(\mathrm{mean} = \mu_\beta, \mathrm{precision} = \sigma_\beta) \\
+        \sigma &amp;\sim \mathcal{\Gamma}(\mathrm{shape} = 1.75, \mathrm{scale} = 45.54) \\
+        \mathrm{FVC}_{ij} &amp;\sim \mathcal{N}(\mathrm{mean} = \alpha_i + t \beta_i, \mathrm{precision} = \sigma)
+    \end{aligned}
+\end{equation}\]</p><p>where <code>t</code> is the time in weeks. Those are very uninformative priors, but that&#39;s ok: our model will converge!</p><p>Implementing this model in <code>RxInfer</code> is pretty straightforward:</p><pre><code class="language-julia hljs">@model function partially_pooled(patient_codes, weeks)
+    μ_α ~ Normal(mean = 0.0, var = 250000.0) # Prior for the mean of α (intercept)
+    μ_β ~ Normal(mean = 0.0, var = 9.0)      # Prior for the mean of β (slope)
+    σ_α ~ Gamma(shape = 1.75, scale = 45.54) # Prior for the precision of α (intercept)
+    σ_β ~ Gamma(shape = 1.75, scale = 1.36)  # Prior for the precision of β (slope)
+
+    n_codes = length(patient_codes)            # Total number of data points
+    n_patients = length(unique(patient_codes)) # Number of unique patients in the data
+
+    α = randomvar(n_patients)                # Individual intercepts for each patient
+    β = randomvar(n_patients)                # Individual slopes for each patient
+
+    for i in 1:n_patients
+        α[i] ~ Normal(mean = μ_α, precision = σ_α) # Sample the intercept α from a Normal distribution
+        β[i] ~ Normal(mean = μ_β, precision = σ_β) # Sample the slope β from a Normal distribution
+    end
+
+    σ ~ Gamma(shape = 1.75, scale = 45.54)   # Prior for the standard deviation of the error term
+    
+    FVC_est = randomvar(n_codes)
+    data = datavar(Int, n_codes) # Observed FVC measurements
+
+    for i in 1:n_codes
+        FVC_est[i] ~ α[patient_codes[i]] + β[patient_codes[i]] * weeks[i] # FVC estimation using patient-specific α and β
+        data[i] ~ Normal(mean = FVC_est[i], precision = σ)              # Likelihood of the observed FVC data
+    end
+end</code></pre><p>Variational constraints are used in variational methods to restrict the set of functions or probability distributions that the method can explore during optimization. These constraints help guide the optimization process towards more meaningful and tractable solutions. We need variational constraints to ensure that the optimization converges to valid and interpretable solutions, avoiding solutions that might not be meaningful or appropriate for the given problem. By incorporating constraints, we can control the complexity and shape of the solutions, making them more useful for practical applications. We use the <code>@constraints</code> macro from <code>RxInfer</code> to define approriate variational constraints.</p><pre><code class="language-julia hljs">@constraints function partially_pooled_constraints()
+    # Assume that `μ_α`, `σ_α`, `μ_β`, `σ_β` and `σ` are jointly independent
+    q(μ_α, σ_α, μ_β, σ_β, σ) = q(μ_α)q(σ_α)q(μ_β)q(σ_β)q(σ)
+    # Assume that `μ_α`, `σ_α`, `α` are jointly independent
+    q(μ_α, σ_α, α) = q(μ_α, α)q(σ_α)
+    # Assume that `μ_β`, `σ_β`, `β` are jointly independent
+    q(μ_β, σ_β, β) = q(μ_β, β)q(σ_β)
+    # Assume that `FVC_est`, `σ` are jointly independent
+    q(FVC_est, σ) = q(FVC_est)q(σ) 
+end</code></pre><pre><code class="nohighlight hljs">partially_pooled_constraints (generic function with 1 method)</code></pre><p>These <code>@constraints</code> assume some structural independencies in the resulting variational approximation. For simplicity we can also use <code>constraints = MeanField()</code> in the <code>inference</code> function below. That&#39;s all for modelling!</p><h3 id="Inference-in-the-model"><a class="docs-heading-anchor" href="#Inference-in-the-model">Inference in the model</a><a id="Inference-in-the-model-1"></a><a class="docs-heading-anchor-permalink" href="#Inference-in-the-model" title="Permalink"></a></h3><p>A significant achievement of Probabilistic Programming Languages, like <code>RxInfer</code>, is the ability to separate model specification and inference. Once I define my generative model with priors, condition statements, and data likelihoods, I can delegate the challenging inference tasks to <code>RxInfer</code>&#39;s inference engine.</p><p>Calling the inference engine only takes a few lines of code. Before proceeding, let&#39;s assign a numerical Patient ID to each patient code, a task that can be easily accomplished using label encoding.</p><pre><code class="language-julia hljs">patient_ids          = dataset[!, &quot;Patient&quot;] # get the column of all patients
+patient_code_encoder = Dict(map(((id, patient), ) -&gt; patient =&gt; id, enumerate(unique(patient_ids))));
+patient_code_column  = map(patient -&gt; patient_code_encoder[patient], patient_ids)
+
+dataset[!, :PatientCode] = patient_code_column
+
+first(patient_code_encoder, 5)</code></pre><pre><code class="nohighlight hljs">5-element Vector{Pair{InlineStrings.String31, Int64}}:
+ &quot;ID00197637202246865691526&quot; =&gt; 85
+ &quot;ID00388637202301028491611&quot; =&gt; 160
+ &quot;ID00341637202287410878488&quot; =&gt; 142
+ &quot;ID00020637202178344345685&quot; =&gt; 9
+ &quot;ID00305637202281772703145&quot; =&gt; 127</code></pre><pre><code class="language-julia hljs">function partially_pooled_inference(dataset)
+
+    patient_codes = values(dataset[!, &quot;PatientCode&quot;])
+    weeks = values(dataset[!, &quot;Weeks&quot;])
+    FVC_obs = values(dataset[!, &quot;FVC&quot;]);
+
+    results = infer(
+        model = partially_pooled(patient_codes, weeks),
+        data = (data = FVC_obs, ),
+        options = (limit_stack_depth = 500, ),
+        constraints = partially_pooled_constraints(),
+        initmessages = (
+            α = vague(NormalMeanVariance),
+            β = vague(NormalMeanVariance),
+        ),
+        initmarginals = (
+            α = vague(NormalMeanVariance),
+            β = vague(NormalMeanVariance),
+            σ = vague(Gamma),
+            σ_α = vague(Gamma),
+            σ_β = vague(Gamma),
+        ),
+        returnvars = KeepLast(),
+        iterations = 100
+    )
+    
+end</code></pre><pre><code class="nohighlight hljs">partially_pooled_inference (generic function with 1 method)</code></pre><p>We use a hybrid message passing approach combining exact and variational inference. In loopy models, where there are cycles or feedback loops in the graphical model, we need to initialize messages to kick-start the message passing process. Messages are passed between connected nodes in the model to exchange information and update beliefs iteratively. Initializing messages provides a starting point for the iterative process and ensures that the model converges to a meaningful solution.</p><p>In variational inference procedures, we need to initialize marginals because variational methods aim to approximate the true posterior distribution with a simpler, tractable distribution. Initializing marginals involves providing initial estimates for the parameters of this approximating distribution. These initial estimates serve as a starting point for the optimization process, allowing the algorithm to iteratively refine the approximation until it converges to a close approximation of the true posterior distribution. </p><pre><code class="language-julia hljs">partially_pooled_inference_results = partially_pooled_inference(dataset)</code></pre><pre><code class="nohighlight hljs">Inference results:
+  Posteriors       | available for (α, σ_α, σ_β, σ, FVC_est, μ_β, μ_α, β)</code></pre><h3 id="Checking-the-model"><a class="docs-heading-anchor" href="#Checking-the-model">Checking the model</a><a id="Checking-the-model-1"></a><a class="docs-heading-anchor-permalink" href="#Checking-the-model" title="Permalink"></a></h3><h4 id="Inspecting-the-learned-parameters"><a class="docs-heading-anchor" href="#Inspecting-the-learned-parameters">Inspecting the learned parameters</a><a id="Inspecting-the-learned-parameters-1"></a><a class="docs-heading-anchor-permalink" href="#Inspecting-the-learned-parameters" title="Permalink"></a></h4><pre><code class="language-julia hljs"># Convert to `Normal` since it supports easy plotting with `StatsPlots`
+let 
+    local μ_α = Normal(mean_std(partially_pooled_inference_results.posteriors[:μ_α])...)
+    local μ_β = Normal(mean_std(partially_pooled_inference_results.posteriors[:μ_β])...)
+    local α = map(d -&gt; Normal(mean_std(d)...), partially_pooled_inference_results.posteriors[:α])
+    local β = map(d -&gt; Normal(mean_std(d)...), partially_pooled_inference_results.posteriors[:β])
+    
+    local p1 = plot(μ_α, title = &quot;q(μ_α)&quot;, fill = 0, fillalpha = 0.2, label = false)
+    local p2 = plot(μ_β, title = &quot;q(μ_β)&quot;, fill = 0, fillalpha = 0.2, label = false)
+    
+    local p3 = plot(title = &quot;q(α)...&quot;, legend = false)
+    local p4 = plot(title = &quot;q(β)...&quot;, legend = false)
+    
+    foreach(d -&gt; plot!(p3, d), α) # Add each individual `α` on plot `p3`
+    foreach(d -&gt; plot!(p4, d), β) # Add each individual `β` on plot `p4`
+    
+    plot(p1, p2, p3, p4, size = (1200, 400), layout = @layout([ a b; c d ]))
+end</code></pre><p><img src="../../../assets/examples/Bayesian Linear Regression Tutorial_40_1.png" alt/></p><p>Looks like our model learned personalized alphas and betas for each patient!</p><h3 id="Visualizing-FVC-decline-curves-for-some-patients"><a class="docs-heading-anchor" href="#Visualizing-FVC-decline-curves-for-some-patients">Visualizing FVC decline curves for some patients</a><a id="Visualizing-FVC-decline-curves-for-some-patients-1"></a><a class="docs-heading-anchor-permalink" href="#Visualizing-FVC-decline-curves-for-some-patients" title="Permalink"></a></h3><p>Now, let&#39;s visually inspect the FVC decline curves predicted by our model. We will complete the FVC table by predicting all the missing values. To do this, we need to create a table to accommodate the predictions.</p><pre><code class="language-julia hljs">function patientchart_bayesian(results, dataset, encoder, patient_id; kwargs...)
+    info            = patientinfo(dataset, patient_id)
+    patient_code_id = encoder[patient_id]
+
+    patient_α = results.posteriors[:α][patient_code_id]
+    patient_β = results.posteriors[:β][patient_code_id]
+
+    estimated_σ = inv(mean(results.posteriors[:σ]))
+    
+    predict_weeks = range(-12, 134)
+
+    predicted = map(predict_weeks) do week
+        pm = mean(patient_α) + mean(patient_β) * week
+        pv = var(patient_α) + var(patient_β) * week ^ 2 + estimated_σ
+        return pm, sqrt(pv)
+    end
+    
+    p = patientchart(dataset, patient_id; kwargs...)
+    
+    return plot!(p, predict_weeks, getindex.(predicted, 1), ribbon = getindex.(predicted, 2), color = :orange)
+end</code></pre><pre><code class="nohighlight hljs">patientchart_bayesian (generic function with 1 method)</code></pre><pre><code class="language-julia hljs">p1 = patientchart_bayesian(partially_pooled_inference_results, dataset, patient_code_encoder, &quot;ID00007637202177411956430&quot;)
+p2 = patientchart_bayesian(partially_pooled_inference_results, dataset, patient_code_encoder, &quot;ID00009637202177434476278&quot;)
+p3 = patientchart_bayesian(partially_pooled_inference_results, dataset, patient_code_encoder, &quot;ID00011637202177653955184&quot;)
+
+plot(p1, p2, p3, layout = @layout([ a b c ]), size = (1200, 400))</code></pre><p><img src="../../../assets/examples/Bayesian Linear Regression Tutorial_42_1.png" alt/></p><p>The results match our expectations perfectly! Let&#39;s highlight the observations:</p><ul><li><p>The model successfully learned Bayesian Linear Regressions! The orange line representing the learned predicted FVC mean closely aligns with the red line representing the deterministic linear regression. More importantly, the model effectively predicts uncertainty, demonstrated by the light orange region surrounding the mean FVC line.</p></li><li><p>The model predicts higher uncertainty in cases where the data points are more dispersed, such as in the 1st and 3rd patients. In contrast, when data points are closely grouped together, as seen in the 2nd patient, the model predicts higher confidence, resulting in a narrower light orange region.</p></li><li><p>Additionally, across all patients, we observe that the uncertainty increases as we look further into the future. The light orange region widens as the number of weeks increases, reflecting the growth of uncertainty over time.</p></li></ul><h3 id="Computing-the-modified-Laplace-Log-Likelihood-and-RMSE"><a class="docs-heading-anchor" href="#Computing-the-modified-Laplace-Log-Likelihood-and-RMSE">Computing the modified Laplace Log Likelihood and RMSE</a><a id="Computing-the-modified-Laplace-Log-Likelihood-and-RMSE-1"></a><a class="docs-heading-anchor-permalink" href="#Computing-the-modified-Laplace-Log-Likelihood-and-RMSE" title="Permalink"></a></h3><p>As mentioned earlier, the competition evaluated models using a modified version of the Laplace Log Likelihood, which takes into account both the accuracy and certainty of each prediction—a valuable feature in medical applications.</p><p>To compute the metric, we predicted both the FVC value and its associated confidence measure (standard deviation σ). The metric is given by the formula:</p><p class="math-container">\[\begin{equation}
+    \begin{aligned}
+        \sigma_{\mathrm{clipped}} &amp;= \max(\sigma, 70) \\
+        \delta &amp;= \min(\vert \mathrm{FVC}_{\mathrm{true}} - \mathrm{FVC}_{\mathrm{pred}}\vert, 1000) \\
+        \mathrm{metric} &amp;= -\frac{\sqrt{2}\delta}{\sigma_{\mathrm{clipped}}} - \mathrm{ln}(\sqrt{2}\sigma_{\mathrm{clipped}}) \\
+    \end{aligned}
+\end{equation}\]</p><p>To prevent large errors from disproportionately penalizing results, errors were thresholded at 1000 ml. Additionally, confidence values were clipped at 70 ml to account for the approximate measurement uncertainty in FVC. The final score was determined by averaging the metric across all (Patient, Week) pairs. It is worth noting that metric values will be negative, and a higher score indicates better model performance.</p><pre><code class="language-julia hljs">function FVC_predict(results)
+    return broadcast(results.posteriors[:FVC_est], Ref(results.posteriors[:σ])) do f, s
+        return @call_rule NormalMeanPrecision(:out, Marginalisation) (m_μ = f, q_τ = s)
+    end
+end</code></pre><pre><code class="nohighlight hljs">FVC_predict (generic function with 1 method)</code></pre><pre><code class="language-julia hljs">function compute_rmse(results, dataset)
+    FVC_predicted = FVC_predict(results)
+    return mean((dataset[!, &quot;FVC&quot;] .- mean.(FVC_predicted)) .^ 2) ^ (1/2)
+end
+
+function compute_laplace_log_likelihood(results, dataset)
+    FVC_predicted = FVC_predict(results)
+    sigma_c = std.(FVC_predicted)
+    sigma_c[sigma_c .&lt; 70] .= 70
+    delta = abs.(mean.(FVC_predicted) .- dataset[!, &quot;FVC&quot;])
+    delta[delta .&gt; 1000] .= 1000
+    return mean(-sqrt(2) .* delta ./ sigma_c .- log.(sqrt(2) .* sigma_c))
+end</code></pre><pre><code class="nohighlight hljs">compute_laplace_log_likelihood (generic function with 1 method)</code></pre><pre><code class="language-julia hljs">println(&quot;RMSE: $(compute_rmse(partially_pooled_inference_results, dataset))&quot;)
+println(&quot;Laplace Log Likelihood: $(compute_laplace_log_likelihood(partially_pooled_inference_results, dataset))&quot;)</code></pre><pre><code class="nohighlight hljs">RMSE: 124.0313266260767
+Laplace Log Likelihood: -6.15689374755478</code></pre><p>What do these numbers signify? They indicate that adopting this approach would lead to outperforming the majority of public solutions in the competition. In several seconds of inference!</p><p>Interestingly, most public solutions rely on a standard deterministic Neural Network and attempt to model uncertainty through a quantile loss, adhering to a frequentist approach. The importance of uncertainty in single predictions is growing in the field of machine learning, becoming a crucial requirement. Especially when the consequences of an inaccurate prediction are significant, knowing the probability distribution of individual predictions becomes essential.</p><h3 id="Add-layer-to-model-hierarchy:-Smoking-Status"><a class="docs-heading-anchor" href="#Add-layer-to-model-hierarchy:-Smoking-Status">Add layer to model hierarchy: Smoking Status</a><a id="Add-layer-to-model-hierarchy:-Smoking-Status-1"></a><a class="docs-heading-anchor-permalink" href="#Add-layer-to-model-hierarchy:-Smoking-Status" title="Permalink"></a></h3><p>We can enhance the model by incorporating the column &quot;SmokingStatus&quot; as a pooling level, where model parameters will be partially pooled within the groups &quot;Never smoked,&quot; &quot;Ex-smoker,&quot; and &quot;Currently smokes.&quot; To achieve this, we need to:</p><p>Encode the &quot;SmokingStatus&quot; column. Map the patient encoding to the corresponding &quot;SmokingStatus&quot; encodings. Refine and retrain the model with the additional hierarchical structure.</p><pre><code class="language-julia hljs">combine(groupby(dataset, &quot;SmokingStatus&quot;), nrow)</code></pre><pre><code class="nohighlight hljs">3×2 DataFrame
+ Row │ SmokingStatus     nrow
+     │ String31          Int64
+─────┼─────────────────────────
+   1 │ Ex-smoker          1038
+   2 │ Never smoked        429
+   3 │ Currently smokes     82</code></pre><pre><code class="language-julia hljs">smoking_id_mapping   = Dict(map(((code, smoking_status), ) -&gt; smoking_status =&gt; code, enumerate(unique(dataset[!, &quot;SmokingStatus&quot;]))))
+smoking_code_encoder = Dict(map(unique(values(patient_ids))) do patient_id
+    smoking_status = first(unique(patientinfo(dataset, patient_id)[!, &quot;SmokingStatus&quot;]))
+    return patient_code_encoder[patient_id] =&gt; smoking_id_mapping[smoking_status]
+end)
+
+smoking_status_patient_mapping = map(id -&gt; smoking_code_encoder[id], 1:length(unique(patient_ids)));</code></pre><pre><code class="language-julia hljs">@model function partially_pooled_with_smoking(patient_codes, smoking_status_patient_mapping, weeks)
+    μ_α_global ~ Normal(mean = 0.0, var = 250000.0) # Prior for the mean of α (intercept)
+    μ_β_global ~ Normal(mean = 0.0, var = 250000.0) # Prior for the mean of β (slope)
+    σ_α_global ~ Gamma(shape = 1.75, scale = 45.54) # Corresponds to half-normal with scale 100.0
+    σ_β_global ~ Gamma(shape = 1.75, scale = 1.36)  # Corresponds to half-normal with scale 3.0
+
+    n_codes = length(patient_codes) # Total number of data points
+    n_smoking_statuses = length(unique(smoking_status_patient_mapping)) # Number of different smoking patterns
+    n_patients = length(unique(patient_codes)) # Number of unique patients in the data
+
+    μ_α_smoking_status = randomvar(n_smoking_statuses) # Individual intercepts for smoking pattern
+    μ_β_smoking_status = randomvar(n_smoking_statuses) # Individual slopes for smoking pattern
+    
+    for i in 1:n_smoking_statuses
+        μ_α_smoking_status[i] ~ Normal(mean = μ_α_global, precision = σ_α_global)
+        μ_β_smoking_status[i] ~ Normal(mean = μ_β_global, precision = σ_β_global)
+    end
+    
+    α = randomvar(n_patients) # Individual intercepts for each patient
+    β = randomvar(n_patients) # Individual slopes for each patient
+
+    for i in 1:n_patients
+        α[i] ~ Normal(mean = μ_α_smoking_status[smoking_status_patient_mapping[i]], precision = σ_α_global)
+        β[i] ~ Normal(mean = μ_β_smoking_status[smoking_status_patient_mapping[i]], precision = σ_β_global)
+    end
+
+    σ ~ Gamma(shape = 1.75, scale = 45.54) # Corresponds to half-normal with scale 100.0
+
+    FVC_est = randomvar(n_codes)
+    data = datavar(Int, n_codes)
+
+    for i in 1:n_codes
+        FVC_est[i] ~ α[patient_codes[i]] + β[patient_codes[i]] * weeks[i] # FVC estimation using patient-specific α and β
+        data[i] ~ Normal(mean = FVC_est[i], precision = σ)              # Likelihood of the observed FVC data
+    end
+    
+end
+
+@constraints function partially_pooled_with_smooking_constraints()
+    q(μ_α_global, σ_α_global, μ_β_global, σ_β_global) = q(μ_α_global)q(σ_α_global)q(μ_β_global)q(σ_β_global)
+    q(μ_α_smoking_status, μ_β_smoking_status, σ_α_global, σ_β_global) = q(μ_α_smoking_status)q(μ_β_smoking_status)q(σ_α_global)q(σ_β_global)
+    q(μ_α_global, σ_α_global, μ_β_global, σ_β_global, σ) = q(μ_α_global)q(σ_α_global)q(μ_β_global)q(σ_β_global)q(σ)
+    q(μ_α_global, σ_α_global, α) = q(μ_α_global, α)q(σ_α_global)
+    q(μ_β_global, σ_β_global, β) = q(μ_β_global, β)q(σ_β_global)
+    q(FVC_est, σ) = q(FVC_est)q(σ) 
+end</code></pre><pre><code class="nohighlight hljs">partially_pooled_with_smooking_constraints (generic function with 1 method)</code></pre><pre><code class="language-julia hljs">function partially_pooled_with_smoking(dataset, smoking_status_patient_mapping)
+    patient_codes = values(dataset[!, &quot;PatientCode&quot;])
+    weeks = values(dataset[!, &quot;Weeks&quot;])
+    FVC_obs = values(dataset[!, &quot;FVC&quot;]);
+    
+    return infer(
+        model = partially_pooled_with_smoking(patient_codes, smoking_status_patient_mapping, weeks),
+        data = (data = FVC_obs, ),
+        options = (limit_stack_depth = 500, ),
+        constraints = partially_pooled_with_smooking_constraints(),
+        initmessages = (
+            α = vague(NormalMeanVariance),
+            β = vague(NormalMeanVariance),
+        ),
+        initmarginals = (
+            σ = Gamma(1.75, 45.54),
+            σ_α_global = Gamma(1.75, 45.54),
+            σ_β_global = Gamma(1.75, 1.36),
+        ),
+        returnvars = KeepLast(),
+        iterations = 100,
+    )
+end</code></pre><pre><code class="nohighlight hljs">partially_pooled_with_smoking (generic function with 2 methods)</code></pre><pre><code class="language-julia hljs">partially_pooled_with_smoking_inference_results = partially_pooled_with_smoking(dataset, smoking_status_patient_mapping);</code></pre><h3 id="Inspect-the-learned-parameters"><a class="docs-heading-anchor" href="#Inspect-the-learned-parameters">Inspect the learned parameters</a><a id="Inspect-the-learned-parameters-1"></a><a class="docs-heading-anchor-permalink" href="#Inspect-the-learned-parameters" title="Permalink"></a></h3><pre><code class="language-julia hljs"># Convert to `Normal` since it supports easy plotting with `StatsPlots`
+let 
+    local μ_α = Normal(mean_std(partially_pooled_with_smoking_inference_results.posteriors[:μ_α_global])...)
+    local μ_β = Normal(mean_std(partially_pooled_with_smoking_inference_results.posteriors[:μ_β_global])...)
+    local αsmoking = map(d -&gt; Normal(mean_std(d)...), partially_pooled_with_smoking_inference_results.posteriors[:μ_α_smoking_status])
+    local βsmoking = map(d -&gt; Normal(mean_std(d)...), partially_pooled_with_smoking_inference_results.posteriors[:μ_β_smoking_status])
+    local α = map(d -&gt; Normal(mean_std(d)...), partially_pooled_with_smoking_inference_results.posteriors[:α])
+    local β = map(d -&gt; Normal(mean_std(d)...), partially_pooled_with_smoking_inference_results.posteriors[:β])
+    
+    local p1 = plot(μ_α, title = &quot;q(μ_α_global)&quot;, fill = 0, fillalpha = 0.2, label = false)
+    local p2 = plot(μ_β, title = &quot;q(μ_β_global)&quot;, fill = 0, fillalpha = 0.2, label = false)
+    
+    local p3 = plot(title = &quot;q(α)...&quot;, legend = false)
+    local p4 = plot(title = &quot;q(β)...&quot;, legend = false)
+    
+    foreach(d -&gt; plot!(p3, d), α) # Add each individual `α` on plot `p3`
+    foreach(d -&gt; plot!(p4, d), β) # Add each individual `β` on plot `p4`
+    
+    local p5 = plot(title = &quot;q(μ_α_smoking_status)...&quot;, legend = false)
+    local p6 = plot(title = &quot;q(μ_β_smoking_status)...&quot;, legend = false)
+    
+    foreach(d -&gt; plot!(p5, d, fill = 0, fillalpha = 0.2), αsmoking) 
+    foreach(d -&gt; plot!(p6, d, fill = 0, fillalpha = 0.2), βsmoking)
+    
+    plot(p1, p2, p3, p4, p5, p6, size = (1200, 600), layout = @layout([ a b; c d; e f ]))
+end</code></pre><p><img src="../../../assets/examples/Bayesian Linear Regression Tutorial_51_1.png" alt/></p><h3 id="Interpret-smoking-status-model-parameters"><a class="docs-heading-anchor" href="#Interpret-smoking-status-model-parameters">Interpret smoking status model parameters</a><a id="Interpret-smoking-status-model-parameters-1"></a><a class="docs-heading-anchor-permalink" href="#Interpret-smoking-status-model-parameters" title="Permalink"></a></h3><p>The model parameters for each smoking status reveal intriguing findings, particularly concerning the trend, <code>μ_β_smoking_status</code>. In the summary below, it is evident that the trend for current smokers has a positive mean, while the trend for ex-smokers and those who have never smoked is negative.</p><pre><code class="language-julia hljs">smoking_id_mapping</code></pre><pre><code class="nohighlight hljs">Dict{InlineStrings.String31, Int64} with 3 entries:
+  &quot;Currently smokes&quot; =&gt; 3
+  &quot;Ex-smoker&quot;        =&gt; 1
+  &quot;Never smoked&quot;     =&gt; 2</code></pre><pre><code class="language-julia hljs">posteriors_μ_β_smoking_status = partially_pooled_with_smoking_inference_results.posteriors[:μ_β_smoking_status]
+
+println(&quot;Trend for&quot;)
+foreach(pairs(smoking_id_mapping)) do (key, id)
+    println(&quot;  $key: $(mean(posteriors_μ_β_smoking_status[id]))&quot;)
+end</code></pre><pre><code class="nohighlight hljs">Trend for
+  Currently smokes: 1.8157457671008241
+  Ex-smoker: -4.56516461765951
+  Never smoked: -4.446729680170274</code></pre><p>Let&#39;s look at these curves for individual patients to help interpret these model results.</p><pre><code class="language-julia hljs"># Never smoked
+p1 = patientchart_bayesian(partially_pooled_with_smoking_inference_results, dataset, patient_code_encoder, &quot;ID00007637202177411956430&quot;) 
+# Ex-smoker
+p2 = patientchart_bayesian(partially_pooled_with_smoking_inference_results, dataset, patient_code_encoder, &quot;ID00009637202177434476278&quot;) 
+# Currently smokes
+p3 = patientchart_bayesian(partially_pooled_with_smoking_inference_results, dataset, patient_code_encoder, &quot;ID00011637202177653955184&quot;) 
+
+plot(p1, p2, p3, layout = @layout([ a b c ]), size = (1200, 400))</code></pre><p><img src="../../../assets/examples/Bayesian Linear Regression Tutorial_54_1.png" alt/></p><h3 id="Review-patients-that-currently-smoke"><a class="docs-heading-anchor" href="#Review-patients-that-currently-smoke">Review patients that currently smoke</a><a id="Review-patients-that-currently-smoke-1"></a><a class="docs-heading-anchor-permalink" href="#Review-patients-that-currently-smoke" title="Permalink"></a></h3><p>When plotting each patient with the smoking status &quot;Currently smokes,&quot; we observe different trends. Some patients show a clear positive trend, while others do not exhibit a clear trend or even have a negative trend. Compared to the unpooled trend lines, the trend lines with partial pooling are less prone to overfitting and display greater uncertainty in both slope and intercept.</p><p>Depending on the purpose of the model, we can proceed in different ways:</p><ul><li><p>If our goal is to gain insights into how different attributes relate to a patient&#39;s FVC over time, we can stop here and understand that current smokers might experience an increase in FVC over time when monitored for Pulmonary Fibrosis. We may then formulate hypotheses to explore the reasons behind this observation and design new experiments for further testing.</p></li><li><p>However, if our aim is to develop a model for generating predictions to treat patients, it becomes crucial to ensure that the model does not overfit and can be trusted with new patients. To achieve this, we could adjust model parameters to shrink the &quot;Currently smokes&quot; group&#39;s parameters closer to the global parameters, or even consider merging the group with &quot;Ex-smokers.&quot; Additionally, collecting more data for current smokers could help in ensuring the model&#39;s robustness and preventing overfitting.</p></li></ul><pre><code class="language-julia hljs">let 
+    local plots = []
+
+    for (i, patient) in enumerate(unique(filter(:SmokingStatus =&gt; ==(&quot;Currently smokes&quot;), dataset)[!, &quot;Patient&quot;]))
+        push!(plots, patientchart_bayesian(partially_pooled_with_smoking_inference_results, dataset, patient_code_encoder, patient))
+    end
+
+    plot(plots..., size = (1200, 1200))
+end</code></pre><p><img src="../../../assets/examples/Bayesian Linear Regression Tutorial_55_1.png" alt/></p><h3 id="Modified-Laplace-Log-Likelihood-and-RMSE-for-model-with-Smoking-Status-Level"><a class="docs-heading-anchor" href="#Modified-Laplace-Log-Likelihood-and-RMSE-for-model-with-Smoking-Status-Level">Modified Laplace Log Likelihood and RMSE for model with Smoking Status Level</a><a id="Modified-Laplace-Log-Likelihood-and-RMSE-for-model-with-Smoking-Status-Level-1"></a><a class="docs-heading-anchor-permalink" href="#Modified-Laplace-Log-Likelihood-and-RMSE-for-model-with-Smoking-Status-Level" title="Permalink"></a></h3><p>We calculate the metrics for the updated model and compare to the original model.</p><pre><code class="language-julia hljs">println(&quot;RMSE: $(compute_rmse(partially_pooled_with_smoking_inference_results, dataset))&quot;)
+println(&quot;Laplace Log Likelihood: $(compute_laplace_log_likelihood(partially_pooled_with_smoking_inference_results, dataset))&quot;)</code></pre><pre><code class="nohighlight hljs">RMSE: 124.7845980866563
+Laplace Log Likelihood: -6.165346437287973</code></pre><p>Both the Laplace Log Likelihood and RMSE indicate slightly worse performance for the smoking status model. Adding this hierarchy level as it is did not improve the model&#39;s performance significantly. However, we did discover some interesting results from the smoking status level that might warrant further investigation. Additionally, we could attempt to enhance model performance by adjusting priors or exploring different hierarchy levels, such as gender.</p><h3 id="References"><a class="docs-heading-anchor" href="#References">References</a><a id="References-1"></a><a class="docs-heading-anchor-permalink" href="#References" title="Permalink"></a></h3><p>[1] Ghahramani, Z. Probabilistic machine learning and artificial intelligence. Nature 521, 452–459 (2015). https://doi.org/10.1038/nature14541</p><p>[2] Rainforth, Thomas William Gamlen. Automating Inference, Learning, and Design Using Probabilistic Programming. University of Oxford, 2017.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../Coin Toss Model/">« Coin toss model (Beta-Bernoulli)</a><a class="docs-footer-nextpage" href="../Kalman filtering and smoothing/">Kalman filtering and smoothing »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.3.0 on <span class="colophon-date" title="Monday 18 March 2024 15:32">Monday 18 March 2024</span>. Using Julia version 1.10.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
