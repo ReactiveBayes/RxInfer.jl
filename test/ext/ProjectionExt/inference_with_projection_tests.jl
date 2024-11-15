@@ -401,7 +401,10 @@ end
     end
 
     @meta function mymeta()
-        foo() -> CVIProjection(prjparams = ProjectionParameters(niterations = 500))
+        foo() -> CVIProjection(
+            out_prjparams = ProjectionParameters(niterations = 500),
+            in_prjparams = (in_1 = ProjectionParameters(niterations = 500), in_2 = ProjectionParameters(niterations = 500))
+        )
     end
 
     result = infer(
