@@ -162,7 +162,7 @@ return (
             category = :problem_specific
         ),
         (
-            filename  = "LitterModel.ipynb", 
+            filename  = "Litter Model.ipynb", 
             title = "Litter Model", 
             description = "Using Bayesian Inference and RxInfer to estimate daily litter events (adapted from https://learnableloop.com/posts/LitterModel_PORT.html)",
             category = :problem_specific

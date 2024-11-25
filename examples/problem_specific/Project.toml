@@ -1,9 +1,0 @@
-[deps]
-DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
-Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
-LaTeXStrings = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
-Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
-PrettyPrinting = "54e16d92-306c-5ea0-a30b-337be88ac337"
-Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
-RxInfer = "86711068-29c9-4ff7-b620-ae75d7495b3d"
-XLSX = "fdbf4ff8-1666-58a4-91e7-1b58723a45e0"
