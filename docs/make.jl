@@ -122,7 +122,7 @@ makedocs(;
         "Examples" => [
             "Overview" => "examples/overview.md", # This must be auto-generated with `make examples`
             ExamplesPages...,
-            "Contribute by examples" => "contributing/examples.md"
+            "Contribute with examples" => "contributing/examples.md"
         ],
         "Contributing" => [
             "Contribution guide" => "contributing/guide.md",

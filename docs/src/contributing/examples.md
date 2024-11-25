@@ -1,4 +1,4 @@
-# [Contributing by examples](@id examples)
+# [Contribute with examples](@id examples)
 
 We welcome examples from the community that showcase RxInfer.jl in action! Whether you're working in machine learning, signal processing, robotics, computational biology, or any other domain - your contributions help others learn and explore probabilistic modeling with RxInfer.jl.
 
