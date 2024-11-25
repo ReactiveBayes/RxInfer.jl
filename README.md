@@ -172,6 +172,19 @@ Our high-level project roadmap outlines the key milestones and focus areas for t
 For a more granular view of our progress and ongoing tasks, check out our [project board](https://github.com/orgs/reactivebayes/projects/2/views/4) or join our 4-weekly [public meetings](https://dynalist.io/d/F4aA-Z2c8X-M1iWTn9hY_ndN).
 
 
+## Ecosystem
+
+The `RxInfer` framework consists of three *core* packages developed by [ReactiveBayes](https://github.com/reactivebayes/):
+
+- [`ReactiveMP.jl`](https://github.com/reactivebayes/ReactiveMP.jl) - the underlying message passing-based inference engine
+- [`GraphPPL.jl`](https://github.com/reactivebayes/GraphPPL.jl) - model and constraints specification package
+- [`Rocket.jl`](https://github.com/reactivebayes/Rocket.jl) - reactive extensions package for Julia 
+
+# Where to go next?
+
+There are a set of [examples](https://reactivebayes.github.io/RxInfer.jl/stable/examples/overview/) available in `RxInfer` repository that demonstrate the more advanced features of the package. Alternatively, you can head to the [documentation](https://reactivebayes.github.io/RxInfer.jl/stable/) that provides more detailed information of how to use `RxInfer` to specify more complex probabilistic models.
+
+
 # Join Our Community and Contribute to RxInfer
 
 RxInfer is a community-driven project and we welcome all contributions! To get started:
@@ -196,6 +209,23 @@ The community maintains educational content and tutorials on [Learnable Loop](ht
 - Sales forecasting with time-varying autoregressive models
 - Hidden Markov models with control
 - Applications of Active Inference across different domains
+
+## JuliaCon 2023 presentation
+
+Additionally, checkout our [video from JuliaCon 2023](https://www.youtube.com/watch?v=qXrvDVm_fnE) for a high-level overview of the package
+
+<p align="center">
+    <a href="https://www.youtube.com/watch?v=qXrvDVm_fnE"><img style="width: 100%" src="https://img.youtube.com/vi/qXrvDVm_fnE/0.jpg"></a>
+</p>
+
+## Our presentation at the Julia User Group Munich meetup
+
+Also check out the recorded presentation at the Julia User Group Munich meetup for a more detailed overview of the package
+
+<p align="center">
+    <a href="https://www.youtube.com/watch?v=KuluqEzFtm8"><img style="width: 100%" src="https://img.youtube.com/vi/KuluqEzFtm8/0.jpg"></a>
+</p>
+
 
 # License
 
