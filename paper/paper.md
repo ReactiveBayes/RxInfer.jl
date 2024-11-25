@@ -133,7 +133,7 @@ We present **RxInfer.jl**, a package for processing infinite data streams by rea
     inference solutions for linear Gaussian dynamical systems, autoregressive models, hierarchical models, 
     discrete-valued models, mixture models, invertible neural networks [@van_erp_hybrid_2022], arbitrary nonlinear state transition 
     functions, and conjugate pair primitives.
-- The inference procedure is auto-differentiable with external packages, such as **ForwardDiff.jl** [@revels_forward-mode_2016] 
+- The inference procedure is auto-differentiable with automatic differentiation packages of Julia community, such as **ForwardDiff.jl** [@revels_forward-mode_2016] 
     or **ReverseDiff.jl**.
 - The inference engine supports different types of floating-point numbers, such as `Float32`, `Float64`, and `BigFloat`.
 

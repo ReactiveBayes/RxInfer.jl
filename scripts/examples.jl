@@ -223,7 +223,7 @@ function Base.run(examplesrunner::ExamplesRunner)
             end
         end
 
-        write(io_main_overview, "- [External examples](@ref external-examples): Featured examples from the community.\n")
+        write(io_main_overview, "- [Contribute by examples](@ref examples): Featured examples from the community.\n")
 
         foreach(examples) do example
             mdname = replace(example[:filename], ".ipynb" => ".md")
