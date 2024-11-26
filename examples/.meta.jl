@@ -141,7 +141,23 @@ return (
             description = "In this example we create a non-conjugate model and use a nonlinear link function between variables. We show how to extend the functionality of `RxInfer` and to create a custom factor node with arbitrary message passing update rules.",
             category = :problem_specific
         ),
-        (filename = "Universal Mixtures.ipynb", title = "Universal Mixtures", description = "Universal mixture modeling.", category = :problem_specific),
-        (filename = "Tiny Benchmark.ipynb", title = "Tiny Benchmark", description = "Tiny Benchmark for Internal testing.", category = :hidden_examples)
+        (
+            filename  = "Universal Mixtures.ipynb", 
+            title = "Universal Mixtures", 
+            description = "Universal mixture modeling.",
+            category = :problem_specific
+        ),
+        (
+            filename  = "Litter Model.ipynb", 
+            title = "Litter Model", 
+            description = "Using Bayesian Inference and RxInfer to estimate daily litter events (adapted from https://learnableloop.com/posts/LitterModel_PORT.html)",
+            category = :problem_specific
+        ),
+        (
+            filename  = "Tiny Benchmark.ipynb", 
+            title = "Tiny Benchmark", 
+            description = "Tiny Benchmark for Internal testing.",
+            category = :hidden_examples
+        ),
     ]
 )
