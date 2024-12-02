@@ -3,22 +3,10 @@
 # Please carefully read the documentation section `Contributing: new example` for more information
 return (
     categories = (
-        basic_examples = (
-            title = "Basic examples",
-            description = "Basic examples contain \"Hello World!\" of Bayesian inference in RxInfer.",
-        ),
-        advanced_examples = (
-            title = "Advanced examples",
-            description = "Advanced examples contain more complex inference problems.",
-        ),
-        problem_specific = (
-            title = "Problem specific",
-            description = "Problem specific examples contain specialized models and inference for various domains.",
-        ),
-        hidden_examples = (
-            title = "",
-            description = ""
-        )
+        basic_examples = (title = "Basic examples", description = "Basic examples contain \"Hello World!\" of Bayesian inference in RxInfer."),
+        advanced_examples = (title = "Advanced examples", description = "Advanced examples contain more complex inference problems."),
+        problem_specific = (title = "Problem specific", description = "Problem specific examples contain specialized models and inference for various domains."),
+        hidden_examples = (title = "", description = "")
     ),
     examples = [
         (
@@ -39,16 +27,14 @@ return (
             description = "In this demo, we are interested in Bayesian state estimation in different types of State-Space Models, including linear, nonlinear, and cases with missing observations",
             category = :basic_examples
         ),
-
         (
             filename = "Predicting Bike Rental Demand.ipynb",
             title = "Predicting Bike Rental Demand",
             description = "An illustrative guide to implementing prediction mechanisms within RxInfer.jl, using bike rental demand forecasting as a contextual example.",
             category = :basic_examples
         ),
-
         (
-            filename  = "Hidden Markov Model.ipynb",
+            filename = "Hidden Markov Model.ipynb",
             title = "How to train your Hidden Markov Model",
             description = "An example of structured variational Bayesian inference in Hidden Markov Model with unknown transition and observational matrices.",
             category = :basic_examples
@@ -108,8 +94,8 @@ return (
             category = :advanced_examples
         ),
         (
-            filename  = "Autoregressive Models.ipynb", 
-            title = "Autoregressive Models", 
+            filename = "Autoregressive Models.ipynb",
+            title = "Autoregressive Models",
             description = "An example of Bayesian treatment of latent AR and ARMA models. Reference: [Albert Podusenko, Message Passing-Based Inference for Time-Varying Autoregressive Models](https://www.mdpi.com/1099-4300/23/6/683).",
             category = :problem_specific
         ),
@@ -135,7 +121,7 @@ return (
             filename = "Invertible Neural Network Tutorial.ipynb",
             title = "Invertible neural networks: a tutorial",
             description = "An example of variational Bayesian Inference with invertible neural networks. Reference: Bart van Erp, Hybrid Inference with Invertible Neural Networks in Factor Graphs.",
-            category = :problem_specific  
+            category = :problem_specific
         ),
         (
             filename = "Probit Model (EP).ipynb",
@@ -161,7 +147,12 @@ return (
             description = "Universal mixture modeling.",
             category = :problem_specific
         ),
-
+        (
+            filename  = "Litter Model.ipynb", 
+            title = "Litter Model", 
+            description = "Using Bayesian Inference and RxInfer to estimate daily litter events (adapted from https://learnableloop.com/posts/LitterModel_PORT.html)",
+            category = :problem_specific
+        ),
         (
             filename  = "Tiny Benchmark.ipynb", 
             title = "Tiny Benchmark", 

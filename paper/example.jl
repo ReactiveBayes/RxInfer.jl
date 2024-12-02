@@ -143,11 +143,11 @@ savefig(p, "inference.pdf")
 using BenchmarkTools
 
 # See the optimization flags in the `compile.sh` file
-benchmark = @benchmark experiment(data[3]) setup=(data = dataset(T = 1000; precision = 1.0)) seconds = 15
+benchmark = @benchmark experiment(data[3]) setup = (data = dataset(T = 1000; precision = 1.0)) seconds = 15
 
 @info "Writing the benchmark results..."
 
-open("benchmark.txt", "w") do file 
+open("benchmark.txt", "w") do file
     show(file, "text/plain", benchmark)
     versioninfo(file, verbose = false)
 end
