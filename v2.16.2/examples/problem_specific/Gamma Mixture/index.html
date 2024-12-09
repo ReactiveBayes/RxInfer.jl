@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Gamma Mixture Model · RxInfer.jl</title><meta name="title" content="Gamma Mixture Model · RxInfer.jl"/><meta property="og:title" content="Gamma Mixture Model · RxInfer.jl"/><meta property="twitter:title" content="Gamma Mixture Model · RxInfer.jl"/><meta name="description" content="Documentation for RxInfer.jl."/><meta property="og:description" content="Documentation for RxInfer.jl."/><meta property="twitter:description" content="Documentation for RxInfer.jl."/><meta property="og:url" content="https://reactivebayes.github.io/RxInfer.jl/examples/problem_specific/Gamma Mixture/"/><meta property="twitter:url" content="https://reactivebayes.github.io/RxInfer.jl/examples/problem_specific/Gamma Mixture/"/><link rel="canonical" href="https://reactivebayes.github.io/RxInfer.jl/examples/problem_specific/Gamma Mixture/"/><script data-outdated-warner src="../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../search_index.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><link href="../../../assets/theme.css" rel="stylesheet" type="text/css"/><link href="../../../assets/header.css" rel="stylesheet" type="text/css"/><script src="../../../assets/header.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img class="docs-light-only" src="../../../assets/logo.svg" alt="RxInfer.jl logo"/><img class="docs-dark-only" src="../../../assets/logo-dark.svg" alt="RxInfer.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../../../">RxInfer.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../../">Home</a></li><li><span class="tocitem">User guide</span><ul><li><a class="tocitem" href="../../../manuals/getting-started/">Getting started</a></li><li><a class="tocitem" href="../../../manuals/comparison/">RxInfer.jl vs. Others</a></li><li><a class="tocitem" href="../../../manuals/model-specification/">Model specification</a></li><li><a class="tocitem" href="../../../manuals/constraints-specification/">Constraints specification</a></li><li><a class="tocitem" href="../../../manuals/meta-specification/">Meta specification</a></li><li><input class="collapse-toggle" id="menuitem-2-6" type="checkbox"/><label class="tocitem" for="menuitem-2-6"><span class="docs-label">Inference specification</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../manuals/inference/overview/">Overview</a></li><li><a class="tocitem" href="../../../manuals/inference/infer/">Static vs Streamline inference</a></li><li><a class="tocitem" href="../../../manuals/inference/postprocess/">Inference results postprocessing</a></li><li><a class="tocitem" href="../../../manuals/inference/manual/">Manual inference specification</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-7" type="checkbox"/><label class="tocitem" for="menuitem-2-7"><span class="docs-label">Inference customization</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../manuals/custom-node/">Defining a custom node and rules</a></li></ul></li><li><a class="tocitem" href="../../../manuals/understanding-why-to-initialize-messages/">Messages initialization</a></li><li><a class="tocitem" href="../../../manuals/debugging/">Debugging</a></li><li><a class="tocitem" href="../../../manuals/delta-node/">Delta node</a></li></ul></li><li><span class="tocitem">Library</span><ul><li><a class="tocitem" href="../../../library/functional-forms/">Built-in functional form constraints</a></li><li><a class="tocitem" href="../../../library/model-specification/">Model specification</a></li><li><a class="tocitem" href="../../../library/bethe-free-energy/">Bethe Free Energy</a></li><li><a class="tocitem" href="../../../library/exported-methods/">Exported methods</a></li></ul></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../../overview/">Overview</a></li><li><input class="collapse-toggle" id="menuitem-4-2" type="checkbox"/><label class="tocitem" for="menuitem-4-2"><span class="docs-label">Basic examples</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../basic_examples/overview/">Overview</a></li><li><a class="tocitem" href="../../basic_examples/Coin Toss Model/">Coin toss model (Beta-Bernoulli)</a></li><li><a class="tocitem" href="../../basic_examples/Bayesian Linear Regression Tutorial/">Bayesian Linear Regression Tutorial</a></li><li><a class="tocitem" href="../../basic_examples/Kalman filtering and smoothing/">Kalman filtering and smoothing</a></li><li><a class="tocitem" href="../../basic_examples/Predicting Bike Rental Demand/">Predicting Bike Rental Demand</a></li><li><a class="tocitem" href="../../basic_examples/Hidden Markov Model/">How to train your Hidden Markov Model</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-4-3" type="checkbox"/><label class="tocitem" for="menuitem-4-3"><span class="docs-label">Advanced examples</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../advanced_examples/overview/">Overview</a></li><li><a class="tocitem" href="../../advanced_examples/Active Inference Mountain car/">Active Inference Mountain car</a></li><li><a class="tocitem" href="../../advanced_examples/Advanced Tutorial/">Advanced Tutorial</a></li><li><a class="tocitem" href="../../advanced_examples/Assessing People Skills/">Assessing People’s Skills</a></li><li><a class="tocitem" href="../../advanced_examples/Chance Constraints/">Chance-Constrained Active Inference</a></li><li><a class="tocitem" href="../../advanced_examples/Conjugate-Computational Variational Message Passing/">Conjugate-Computational Variational Message Passing (CVI)</a></li><li><a class="tocitem" href="../../advanced_examples/Global Parameter Optimisation/">Global Parameter Optimisation</a></li><li><a class="tocitem" href="../../advanced_examples/GP Regression by SSM/">Solve GP regression by SDE</a></li><li><a class="tocitem" href="../../advanced_examples/Infinite Data Stream/">Infinite Data Stream</a></li><li><a class="tocitem" href="../../advanced_examples/Nonlinear Sensor Fusion/">Nonlinear Sensor Fusion</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-4-4" type="checkbox" checked/><label class="tocitem" for="menuitem-4-4"><span class="docs-label">Problem specific</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../overview/">Overview</a></li><li><a class="tocitem" href="../Autoregressive Models/">Autoregressive Models</a></li><li class="is-active"><a class="tocitem" href>Gamma Mixture Model</a><ul class="internal"><li><a class="tocitem" href="#Load-packages"><span>Load packages</span></a></li><li><a class="tocitem" href="#Model-specification"><span>Model specification</span></a></li></ul></li><li><a class="tocitem" href="../Gaussian Mixture/">Gaussian Mixture</a></li><li><a class="tocitem" href="../Hierarchical Gaussian Filter/">Hierarchical Gaussian Filter</a></li><li><a class="tocitem" href="../Invertible Neural Network Tutorial/">Invertible neural networks: a tutorial</a></li><li><a class="tocitem" href="../Probit Model (EP)/">Probit Model (EP)</a></li><li><a class="tocitem" href="../RTS vs BIFM Smoothing/">RTS vs BIFM Smoothing</a></li><li><a class="tocitem" href="../Simple Nonlinear Node/">Simple Nonlinear Node</a></li><li><a class="tocitem" href="../Universal Mixtures/">Universal Mixtures</a></li></ul></li></ul></li><li><span class="tocitem">Contributing</span><ul><li><a class="tocitem" href="../../../contributing/overview/">Overview</a></li><li><a class="tocitem" href="../../../contributing/new-documentation/">Contributing to the documentation</a></li><li><a class="tocitem" href="../../../contributing/new-package/">Contributing to the dependencies</a></li><li><a class="tocitem" href="../../../contributing/new-example/">Contributing to the examples</a></li><li><a class="tocitem" href="../../../contributing/new-release/">Publishing a new release</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li><a class="is-disabled">Problem specific</a></li><li class="is-active"><a href>Gamma Mixture Model</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Gamma Mixture Model</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/ReactiveBayes/RxInfer.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/ReactiveBayes/RxInfer.jl/blob/main/docs/src/examples/problem_specific/Gamma Mixture.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><p>This example has been auto-generated from the <a href="https://github.com/reactivebayes/RxInfer.jl/tree/main/examples"><code>examples/</code></a> folder at GitHub repository.</p><h1 id="examples-gamma-mixture-model"><a class="docs-heading-anchor" href="#examples-gamma-mixture-model">Gamma Mixture Model</a><a id="examples-gamma-mixture-model-1"></a><a class="docs-heading-anchor-permalink" href="#examples-gamma-mixture-model" title="Permalink"></a></h1><pre><code class="language-julia hljs"># Activate local environment, see `Project.toml`
+import Pkg; Pkg.activate(&quot;..&quot;); Pkg.instantiate();</code></pre><p>This notebook implements one of the experiments outlined in <a href="https://biaslab.github.io/publication/mp-based-inference-in-gmm/">https://biaslab.github.io/publication/mp-based-inference-in-gmm/</a>.</p><h2 id="Load-packages"><a class="docs-heading-anchor" href="#Load-packages">Load packages</a><a id="Load-packages-1"></a><a class="docs-heading-anchor-permalink" href="#Load-packages" title="Permalink"></a></h2><pre><code class="language-julia hljs">using RxInfer, Random, StatsPlots</code></pre><pre><code class="language-julia hljs"># create custom structure for model parameters for simplicity
+struct GammaMixtureModelParameters
+    nmixtures   # number of mixtures
+    priors_as   # tuple of priors for variable a
+    priors_bs   # tuple of priors for variable b
+    prior_s     # prior of variable s
+end</code></pre><h2 id="Model-specification"><a class="docs-heading-anchor" href="#Model-specification">Model specification</a><a id="Model-specification-1"></a><a class="docs-heading-anchor-permalink" href="#Model-specification" title="Permalink"></a></h2><pre><code class="language-julia hljs">@model function gamma_mixture_model(nobservations, parameters::GammaMixtureModelParameters)
+
+    # fetch information from struct
+    nmixtures = parameters.nmixtures
+    priors_as = parameters.priors_as
+    priors_bs = parameters.priors_bs
+    prior_s   = parameters.prior_s
+
+    # set prior on global selection variable
+    s ~ Dirichlet(probvec(prior_s))
+
+    # allocate vectors of random variables
+    as = randomvar(nmixtures)
+    bs = randomvar(nmixtures)
+
+    # set priors on variables of mixtures
+    for i in 1:nmixtures
+        as[i] ~ Gamma(shape = shape(priors_as[i]), rate = rate(priors_as[i]))
+        bs[i] ~ Gamma(shape = shape(priors_bs[i]), rate = rate(priors_bs[i]))
+    end
+
+    # introduce random variables for local selection variables and data
+    z = randomvar(nobservations)
+    y = datavar(Float64, nobservations)
+
+    # convert vector to tuples for proper functioning of GammaMixture node
+    tas = tuple(as...)
+    tbs = tuple(bs...)
+
+    # specify local selection variable and data generating process
+    for i in 1:nobservations
+        z[i] ~ Categorical(s)
+        y[i] ~ GammaMixture(z[i], tas, tbs)
+    end
+    
+end</code></pre><pre><code class="language-julia hljs">constraints = @constraints begin 
+
+    q(z, as, bs, s) = q(z)q(as)q(bs)q(s)
+
+    q(as) = q(as[begin])..q(as[end])
+    q(bs) = q(bs[begin])..q(bs[end])
+    
+    q(as) :: PointMass(starting_point = (args...) -&gt; [ 1.0 ])
+end</code></pre><pre><code class="nohighlight hljs">Constraints:
+  marginals form:
+    q(as) :: PointMassFormConstraint() [ prod_constraint = GenericProd() ]
+  messages form:
+  factorisation:
+    q(z, as, bs, s) = q(z)q(as)q(bs)q(s)
+    q(as) = q(as[(begin)..(end)])
+    q(bs) = q(bs[(begin)..(end)])
+Options:
+  warn = true</code></pre><pre><code class="language-julia hljs"># specify seed and number of data points
+rng = MersenneTwister(43)
+n_samples = 2500
+
+# specify parameters of mixture model that generates the data
+# Note that mixture components have exactly the same means
+mixtures  = [ Gamma(9.0, inv(27.0)), Gamma(90.0, inv(270.0)) ]
+nmixtures = length(mixtures)
+mixing    = rand(rng, nmixtures)
+mixing    = mixing ./ sum(mixing)
+mixture   = MixtureModel(mixtures, mixing)
+
+# generate data set
+dataset = rand(rng, mixture, n_samples);</code></pre><pre><code class="language-julia hljs"># specify priors of probabilistic model
+# NOTE: As the means of the mixtures &quot;collide&quot;, we specify informative prior for selector variable
+nmixtures = 2
+gpriors = GammaMixtureModelParameters(
+    nmixtures,                                                    # number of mixtures
+    [ Gamma(1.0, 0.1), Gamma(1.0, 1.0) ],                         # priors on variables a
+    [ GammaShapeRate(10.0, 2.0), GammaShapeRate(1.0, 3.0) ],      # priors on variables b
+    Dirichlet(1e3*mixing)                                         # prior on variable s
+)
+
+gmodel         = gamma_mixture_model(length(dataset), gpriors)
+gdata          = (y = dataset, )
+ginitmarginals = (s = gpriors.prior_s, z = vague(Categorical, gpriors.nmixtures), bs = GammaShapeRate(1.0, 1.0))
+greturnvars    = (s = KeepLast(), z = KeepLast(), as = KeepEach(), bs = KeepEach())
+
+goptions = (
+     
+    default_factorisation = MeanField() # Mixture models require Mean-Field assumption currently
+)
+
+gresult = infer(
+    model         = gmodel, 
+    data          = gdata,
+    constraints   = constraints,
+    options       = (limit_stack_depth = 100,),
+    initmarginals = ginitmarginals,
+    returnvars    = greturnvars,
+    free_energy   = true,
+    iterations    = 250, 
+    showprogress  = true
+);</code></pre><pre><code class="language-julia hljs"># extract inferred parameters
+_as, _bs = mean.(gresult.posteriors[:as][end]), mean.(gresult.posteriors[:bs][end])
+_dists   = map(g -&gt; Gamma(g[1], inv(g[2])), zip(_as, _bs))
+_mixing = mean(gresult.posteriors[:s])
+
+# create model from inferred parameters
+_mixture   = MixtureModel(_dists, _mixing);</code></pre><pre><code class="language-julia hljs"># report on outcome of inference
+println(&quot;Generated means: $(mean(mixtures[1])) and $(mean(mixtures[2]))&quot;)
+println(&quot;Inferred means: $(mean(_dists[1])) and $(mean(_dists[2]))&quot;)
+println(&quot;========&quot;)
+println(&quot;Generated mixing: $(mixing)&quot;)
+println(&quot;Inferred mixing: $(_mixing)&quot;)</code></pre><pre><code class="nohighlight hljs">Generated means: 0.3333333333333333 and 0.33333333333333337
+Inferred means: 0.33822470398804994 and 0.33305534672666653
+========
+Generated mixing: [0.18923488676601088, 0.8107651132339891]
+Inferred mixing: [0.11395888467453213, 0.8860411153254679]</code></pre><pre><code class="language-julia hljs"># plot results
+p1 = histogram(dataset, ylim = (0, 13), xlim = (0, 1), normalize=:pdf, label=&quot;data&quot;, opacity=0.3)
+p1 = plot!(mixture, label=false, title=&quot;Generated mixtures&quot;, linewidth=3.0)
+
+p2 = histogram(dataset, ylim = (0, 13), xlim = (0, 1), normalize=:pdf, label=&quot;data&quot;, opacity=0.3)
+p2 = plot!(_mixture, label=false, title=&quot;Inferred mixtures&quot;, linewidth=3.0)
+
+# evaluate the convergence of the algorithm by monitoring the BFE
+p3 = plot(gresult.free_energy, label=false, xlabel=&quot;iterations&quot;, title=&quot;Bethe FE&quot;)
+
+plot(plot(p1, p2, layout = @layout([ a; b ])), plot(p3), layout = @layout([ a b ]), size = (800, 400))</code></pre><p><img src="../../../assets/examples/Gamma Mixture_10_1.png" alt/></p><pre><code class="language-julia hljs"></code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../Autoregressive Models/">« Autoregressive Models</a><a class="docs-footer-nextpage" href="../Gaussian Mixture/">Gaussian Mixture »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="auto">Automatic (OS)</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.2.1 on <span class="colophon-date" title="Thursday 22 February 2024 13:40">Thursday 22 February 2024</span>. Using Julia version 1.10.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
