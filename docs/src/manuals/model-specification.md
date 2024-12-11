@@ -260,16 +260,43 @@ Specifically for the Gaussian/Normal case we have custom implementations that yi
 
 ## [Model structure visualisation](@id user-guide-model-specification-visualization)
 
-It is also possible to visualize the model structure after conditioning on data. For that we need two extra packages installed: `Cairo` and `GraphPlot`. Note, that those packages are not included in the `RxInfer` package and must be installed separately.
+Models specified using GraphPPL.jl in RxInfer.jl can be visualized in several ways to help understand their structure and relationships between variables. Let's create a simple model and visualize it.
+
+```@example model-specification-visualization
+@model function coin_toss(y)
+    t ~ Beta(1, 1)
+    for i in eachindex(y)
+        y[i] ~ Bernoulli(t)
+    end
+end
+
+model_generator = coin_toss() | (y = [ true, false, true ], )
+model           = RxInfer.getmodel(RxInfer.create_model(model_generator)))
+nothing #
+```
+
+### [GraphViz.jl](@id user-guide-model-specification-visualization-graphviz)
+
+It is possible to visualize the model structure after conditioning on data with the `GraphViz.jl` package.
+Note that this package is not included in the `RxInfer` package and must be installed separately.
+
+```@example model-specification-ssm
+using GraphViz
+
+# Call `load` function from `GraphViz` to visualise the structure of the graph
+GraphViz.load(model, strategy = :simple)
+```
+
+### [Cairo](@id user-guide-model-specification-visualization-cairo)
+
+There is an alternative way to visuzalise the model structure with `Cairo` and `GraphPlot`
+Note, that those packages are also not included in the `RxInfer` package and must be installed separately.
 
 ```@example model-specification-ssm
 using Cairo, GraphPlot
 
-# `Create` the actual graph of the model conditioned on the data
-model = RxInfer.create_model(conditioned)
-
 # Call `gplot` function from `GraphPlot` to visualise the structure of the graph
-GraphPlot.gplot(RxInfer.getmodel(model))
+GraphPlot.gplot(model)
 ```
 
 ## Node Contraction
