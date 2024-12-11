@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Gaussian Mixture · RxInfer.jl</title><meta name="title" content="Gaussian Mixture · RxInfer.jl"/><meta property="og:title" content="Gaussian Mixture · RxInfer.jl"/><meta property="twitter:title" content="Gaussian Mixture · RxInfer.jl"/><meta name="description" content="Julia package for automated Bayesian inference on a factor graph with reactive message passing"/><meta property="og:description" content="Julia package for automated Bayesian inference on a factor graph with reactive message passing"/><meta property="twitter:description" content="Julia package for automated Bayesian inference on a factor graph with reactive message passing"/><meta property="og:url" content="https://reactivebayes.github.io/RxInfer.jl/examples/problem_specific/Gaussian Mixture/"/><meta property="twitter:url" content="https://reactivebayes.github.io/RxInfer.jl/examples/problem_specific/Gaussian Mixture/"/><link rel="canonical" href="https://reactivebayes.github.io/RxInfer.jl/examples/problem_specific/Gaussian Mixture/"/><script data-outdated-warner src="../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../search_index.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><link href="../../../assets/theme.css" rel="stylesheet" type="text/css"/><link href="../../../assets/header.css" rel="stylesheet" type="text/css"/><script src="../../../assets/header.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img class="docs-light-only" src="../../../assets/logo.svg" alt="RxInfer.jl logo"/><img class="docs-dark-only" src="../../../assets/logo-dark.svg" alt="RxInfer.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../../../">RxInfer.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../../">Home</a></li><li><span class="tocitem">User guide</span><ul><li><a class="tocitem" href="../../../manuals/getting-started/">Getting started</a></li><li><a class="tocitem" href="../../../manuals/comparison/">RxInfer.jl vs. Others</a></li><li><a class="tocitem" href="../../../manuals/model-specification/">Model specification</a></li><li><a class="tocitem" href="../../../manuals/constraints-specification/">Constraints specification</a></li><li><a class="tocitem" href="../../../manuals/meta-specification/">Meta specification</a></li><li><input class="collapse-toggle" id="menuitem-2-6" type="checkbox"/><label class="tocitem" for="menuitem-2-6"><span class="docs-label">Inference specification</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../manuals/inference/overview/">Overview</a></li><li><a class="tocitem" href="../../../manuals/inference/static/">Static inference</a></li><li><a class="tocitem" href="../../../manuals/inference/streamlined/">Streamline inference</a></li><li><a class="tocitem" href="../../../manuals/inference/initialization/">Initialization</a></li><li><a class="tocitem" href="../../../manuals/inference/autoupdates/">Auto-updates</a></li><li><a class="tocitem" href="../../../manuals/inference/delta-node/">Deterministic nodes</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-7" type="checkbox"/><label class="tocitem" for="menuitem-2-7"><span class="docs-label">Inference customization</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../manuals/customization/custom-node/">Defining a custom node and rules</a></li><li><a class="tocitem" href="../../../manuals/customization/postprocess/">Inference results postprocessing</a></li></ul></li><li><a class="tocitem" href="../../../manuals/debugging/">Debugging</a></li><li><a class="tocitem" href="../../../manuals/migration-guide-v2-v3/">Migration from v2 to v3</a></li></ul></li><li><span class="tocitem">Library</span><ul><li><a class="tocitem" href="../../../library/model-construction/">Model construction</a></li><li><a class="tocitem" href="../../../library/bethe-free-energy/">Bethe Free Energy</a></li><li><a class="tocitem" href="../../../library/functional-forms/">Functional form constraints</a></li><li><a class="tocitem" href="../../../library/exported-methods/">Exported methods</a></li></ul></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../../overview/">Overview</a></li><li><input class="collapse-toggle" id="menuitem-4-2" type="checkbox"/><label class="tocitem" for="menuitem-4-2"><span class="docs-label">Basic examples</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../basic_examples/overview/">Overview</a></li><li><a class="tocitem" href="../../basic_examples/Coin Toss Model/">Coin toss model (Beta-Bernoulli)</a></li><li><a class="tocitem" href="../../basic_examples/Bayesian Linear Regression Tutorial/">Bayesian Linear Regression Tutorial</a></li><li><a class="tocitem" href="../../basic_examples/Kalman filtering and smoothing/">Kalman filtering and smoothing</a></li><li><a class="tocitem" href="../../basic_examples/Predicting Bike Rental Demand/">Predicting Bike Rental Demand</a></li><li><a class="tocitem" href="../../basic_examples/Hidden Markov Model/">How to train your Hidden Markov Model</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-4-3" type="checkbox"/><label class="tocitem" for="menuitem-4-3"><span class="docs-label">Advanced examples</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../advanced_examples/overview/">Overview</a></li><li><a class="tocitem" href="../../advanced_examples/Active Inference Mountain car/">Active Inference Mountain car</a></li><li><a class="tocitem" href="../../advanced_examples/Advanced Tutorial/">Advanced Tutorial</a></li><li><a class="tocitem" href="../../advanced_examples/Assessing People Skills/">Assessing People’s Skills</a></li><li><a class="tocitem" href="../../advanced_examples/Chance Constraints/">Chance-Constrained Active Inference</a></li><li><a class="tocitem" href="../../advanced_examples/Conjugate-Computational Variational Message Passing/">Conjugate-Computational Variational Message Passing (CVI)</a></li><li><a class="tocitem" href="../../advanced_examples/Global Parameter Optimisation/">Global Parameter Optimisation</a></li><li><a class="tocitem" href="../../advanced_examples/GP Regression by SSM/">Solve GP regression by SDE</a></li><li><a class="tocitem" href="../../advanced_examples/Infinite Data Stream/">Infinite Data Stream</a></li><li><a class="tocitem" href="../../advanced_examples/Nonlinear Sensor Fusion/">Nonlinear Sensor Fusion</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-4-4" type="checkbox" checked/><label class="tocitem" for="menuitem-4-4"><span class="docs-label">Problem specific</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../overview/">Overview</a></li><li><a class="tocitem" href="../Autoregressive Models/">Autoregressive Models</a></li><li><a class="tocitem" href="../Gamma Mixture/">Gamma Mixture Model</a></li><li class="is-active"><a class="tocitem" href>Gaussian Mixture</a><ul class="internal"><li><a class="tocitem" href="#Univariate-Gaussian-Mixture-Model"><span>Univariate Gaussian Mixture Model</span></a></li><li><a class="tocitem" href="#Multivariate-Gaussian-Mixture-Model"><span>Multivariate Gaussian Mixture Model</span></a></li></ul></li><li><a class="tocitem" href="../Hierarchical Gaussian Filter/">Hierarchical Gaussian Filter</a></li><li><a class="tocitem" href="../Invertible Neural Network Tutorial/">Invertible neural networks: a tutorial</a></li><li><a class="tocitem" href="../Probit Model (EP)/">Probit Model (EP)</a></li><li><a class="tocitem" href="../RTS vs BIFM Smoothing/">RTS vs BIFM Smoothing</a></li><li><a class="tocitem" href="../Simple Nonlinear Node/">Simple Nonlinear Node</a></li><li><a class="tocitem" href="../Universal Mixtures/">Universal Mixtures</a></li></ul></li><li><a class="tocitem" href="../../../contributing/external-examples/">External examples</a></li></ul></li><li><span class="tocitem">Contributing</span><ul><li><a class="tocitem" href="../../../contributing/guide/">Contribution guide</a></li><li><a class="tocitem" href="../../../contributing/guidelines/">Contribution guidelines</a></li><li><a class="tocitem" href="../../../contributing/new-documentation/">Contributing to the documentation</a></li><li><a class="tocitem" href="../../../contributing/new-example/">Contributing to the examples</a></li><li><a class="tocitem" href="../../../contributing/new-release/">Publishing a new release</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li><a class="is-disabled">Problem specific</a></li><li class="is-active"><a href>Gaussian Mixture</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Gaussian Mixture</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/ReactiveBayes/RxInfer.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/ReactiveBayes/RxInfer.jl/blob/main/docs/src/examples/problem_specific/Gaussian Mixture.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><p>This example has been auto-generated from the <a href="https://github.com/reactivebayes/RxInfer.jl/tree/main/examples"><code>examples/</code></a> folder at GitHub repository.</p><h1 id="examples-gaussian-mixture"><a class="docs-heading-anchor" href="#examples-gaussian-mixture">Gaussian Mixture</a><a id="examples-gaussian-mixture-1"></a><a class="docs-heading-anchor-permalink" href="#examples-gaussian-mixture" title="Permalink"></a></h1><pre><code class="language-julia hljs"># Activate local environment, see `Project.toml`
+import Pkg; Pkg.activate(&quot;..&quot;); Pkg.instantiate();</code></pre><p>This notebook illustrates how to use the <code>NormalMixture</code> node in <code>RxInfer.jl</code> for both univariate and multivariate observations.</p><h3 id="Load-packages"><a class="docs-heading-anchor" href="#Load-packages">Load packages</a><a id="Load-packages-1"></a><a class="docs-heading-anchor-permalink" href="#Load-packages" title="Permalink"></a></h3><pre><code class="language-julia hljs">using RxInfer, Plots, Random, LinearAlgebra, StableRNGs, LaTeXStrings</code></pre><h2 id="Univariate-Gaussian-Mixture-Model"><a class="docs-heading-anchor" href="#Univariate-Gaussian-Mixture-Model">Univariate Gaussian Mixture Model</a><a id="Univariate-Gaussian-Mixture-Model-1"></a><a class="docs-heading-anchor-permalink" href="#Univariate-Gaussian-Mixture-Model" title="Permalink"></a></h2><p>Consider the data set of length <span>$N$</span> observed below.</p><pre><code class="language-julia hljs">function generate_univariate_data(nr_samples; rng = MersenneTwister(123))
+
+    # data generating parameters
+    class        = [1/3, 2/3]
+    mean1, mean2 = -10, 10
+    precision    = 1.777
+
+    # generate data
+    z = rand(rng, Categorical(class), nr_samples)
+    y = zeros(nr_samples)
+    for k in 1:nr_samples
+        y[k] = rand(rng, Normal(z[k] == 1 ? mean1 : mean2, 1/sqrt(precision)))
+    end
+
+    return y
+
+end;</code></pre><pre><code class="language-julia hljs">data_univariate = generate_univariate_data(100)
+histogram(data_univariate, bins=50, label=&quot;data&quot;, normed=true)
+xlims!(minimum(data_univariate), maximum(data_univariate))
+ylims!(0, Inf)
+ylabel!(&quot;relative occurrence [%]&quot;)
+xlabel!(&quot;y&quot;)</code></pre><p><img src="../../../assets/examples/Gaussian Mixture_4_1.png" alt/></p><h3 id="Model-specification"><a class="docs-heading-anchor" href="#Model-specification">Model specification</a><a id="Model-specification-1"></a><a class="docs-heading-anchor-permalink" href="#Model-specification" title="Permalink"></a></h3><p>The goal here is to create a model for the data set above. In this case a Gaussian mixture model with <span>$K$</span> components seems to suite the situation well. We specify the factorized model as  <span>$p(y, z, s, m, w) = \prod_{n=1}^N \bigg(p(y_n \mid m, w, z_n) p(z_n \mid s) \bigg)\prod_{k=1}^K \bigg(p(m_k) p(w_k) \bigg) p(s),$</span> where the individual terms are specified as <span>$\begin{aligned}     p(s)                    &amp;= \mathrm{Beta}(s \mid \alpha_s, \beta_s) \\
+    p(m_{k})                &amp;= \mathcal{N}(m_k \mid \mu_k, \sigma_k^2) \\         p(w_{k})                &amp;= \Gamma(w_k \mid \alpha_k, \beta_k) \\
+    p(z_n \mid s)           &amp;= \mathrm{Ber}(z_n \mid s) \\
+    p(y_n \mid m, w, z_n)   &amp;= \prod_{k=1}^K \mathcal{N}\left(y_n \mid m_{k}, w_{k}\right)^{z_{nk}} \end{aligned}$</span></p><p>The set of observations <span>$y = \{y_1, y_2, \ldots, y_N\}$</span> is modeled by a mixture of Gaussian distributions, parameterized by means <span>$m = \{m_1, m_2, \ldots, m_K\}$</span> and precisions <span>$w = \{ w_1, w_2, \ldots, w_K\}$</span>, where <span>$k$</span> denotes the component index. This component is selected per observation by the indicator variable <span>$z_n$</span>, which is a one-of-<span>$K$</span> encoded vector satisfying <span>$\sum_{k=1}^K z_{nk} = 1$</span> and <span>$z_{nk} \in \{0, 1\} \forall k$</span>. We put a hyperprior on these variables, termed <span>$s$</span>, which represents the relative occurrence of the different realizations of <span>$z_n$</span>.</p><p>Here we implement the following model with uninformative values for the hyperparameters as</p><pre><code class="language-julia hljs">@model function univariate_gaussian_mixture_model(y)
+    
+    s ~ Beta(1.0, 1.0)
+
+    m[1] ~ Normal(mean = -2.0, variance = 1e3)
+    w[1] ~ Gamma(shape = 0.01, rate = 0.01)
+
+    m[2] ~ Normal(mean = 2.0, variance = 1e3)
+    w[2] ~ Gamma(shape = 0.01, rate = 0.01)
+
+    for i in eachindex(y)
+        z[i] ~ Bernoulli(s)
+        y[i] ~ NormalMixture(switch = z[i], m = m, p = w)
+    end
+    
+end</code></pre><h3 id="Probabilistic-inference"><a class="docs-heading-anchor" href="#Probabilistic-inference">Probabilistic inference</a><a id="Probabilistic-inference-1"></a><a class="docs-heading-anchor-permalink" href="#Probabilistic-inference" title="Permalink"></a></h3><p>In order to fit the model to the data, we are interested in computing the posterior distribution <span>$p(z, s, m, w \mid y)$</span> However, computation of this term is intractable. Therefore, it is approximated by a naive mean-field approximation, specified as  <span>$p(z, s, m, w \mid y) \approx \prod_{n=1}^N q(z_n) \prod_{k=1}^K \bigg(q(m_k) q(w_k)\bigg) q(s),$</span> with the functional forms <span>$\begin{aligned}     q(s)   &amp;= \mathrm{Beta}(s \mid \hat{\alpha}_s, \hat{\beta}_s) \\
+    q(m_k) &amp;= \mathcal{N}(m_k \mid \hat{\mu}_k, \hat{\sigma}^2_k) \\
+    q(w_k) &amp;= \Gamma (w_k \mid \hat{\alpha}_k, \hat{\beta}_k) \\
+    q(z_n) &amp;= \mathrm{Ber}(z_n \mid \hat{p}_n) \end{aligned}$</span> In order to get the inference procedure started, these marginal distribution need to be initialized.</p><pre><code class="language-julia hljs">n_iterations = 10
+
+init = @initialization begin
+    q(s) = vague(Beta)
+    q(m) = [NormalMeanVariance(-2.0, 1e3), NormalMeanVariance(2.0, 1e3)]
+    q(w) = [vague(GammaShapeRate), vague(GammaShapeRate)]
+end
+
+results_univariate = infer(
+    model = univariate_gaussian_mixture_model(), 
+    constraints = MeanField(),
+    data  = (y = data_univariate,), 
+    initialization = init, 
+    iterations  = n_iterations, 
+    free_energy = true
+)</code></pre><pre><code class="nohighlight hljs">Inference results:
+  Posteriors       | available for (m, w, s, z)
+  Free Energy:     | Real[245.113, 188.579, 149.369, 121.985, 121.592, 121.
+591, 121.591, 121.591, 121.591, 121.591]</code></pre><h3 id="Results"><a class="docs-heading-anchor" href="#Results">Results</a><a id="Results-1"></a><a class="docs-heading-anchor-permalink" href="#Results" title="Permalink"></a></h3><p>Below the inference results can be seen as a function of the iterations</p><pre><code class="language-julia hljs">m1 = [results_univariate.posteriors[:m][i][1] for i in 1:n_iterations]
+m2 = [results_univariate.posteriors[:m][i][2] for i in 1:n_iterations]
+w1 = [results_univariate.posteriors[:w][i][1] for i in 1:n_iterations]
+w2 = [results_univariate.posteriors[:w][i][2] for i in 1:n_iterations];</code></pre><pre><code class="language-julia hljs">mp = plot(mean.(m1), ribbon = std.(m1) .|&gt; sqrt, label = L&quot;posterior $m_1$&quot;)
+mp = plot!(mean.(m2), ribbon = std.(m2) .|&gt; sqrt, label = L&quot;posterior $m_2$&quot;)
+mp = plot!(mp, [ -10 ], seriestype = :hline, label = L&quot;true $m_1$&quot;)
+mp = plot!(mp, [ 10 ], seriestype = :hline, label = L&quot;true $m_2$&quot;)
+
+wp = plot(mean.(w1), ribbon = std.(w1) .|&gt; sqrt, label = L&quot;posterior $w_1$&quot;, legend = :bottomright, ylim = (-1, 3))
+wp = plot!(wp, mean.(w2), ribbon = std.(w2) .|&gt; sqrt, label = L&quot;posterior $w_2$&quot;)
+wp = plot!(wp, [ 1.777 ], seriestype = :hline, label = L&quot;true $w_1$&quot;)
+wp = plot!(wp, [ 1.777 ], seriestype = :hline, label = L&quot;true $w_2$&quot;)
+
+swp = plot(mean.(results_univariate.posteriors[:s]), ribbon = std.(results_univariate.posteriors[:s]) .|&gt; sqrt, label = L&quot;posterior $s$&quot;)
+swp = plot!(swp, [ 2/3 ], seriestype = :hline, label = L&quot;true $s$&quot;)
+
+fep = plot(results_univariate.free_energy, label = &quot;Free Energy&quot;, legend = :topright)
+
+plot(mp, wp, swp, fep, layout = @layout([ a b; c d ]), size = (800, 400))
+xlabel!(&quot;iteration&quot;)</code></pre><p><img src="../../../assets/examples/Gaussian Mixture_8_1.png" alt/></p><h2 id="Multivariate-Gaussian-Mixture-Model"><a class="docs-heading-anchor" href="#Multivariate-Gaussian-Mixture-Model">Multivariate Gaussian Mixture Model</a><a id="Multivariate-Gaussian-Mixture-Model-1"></a><a class="docs-heading-anchor-permalink" href="#Multivariate-Gaussian-Mixture-Model" title="Permalink"></a></h2><p>The above example can also be extended to the multivariate case. Consider the data set below</p><pre><code class="language-julia hljs">function generate_multivariate_data(nr_samples; rng = MersenneTwister(123))
+
+    L         = 50.0
+    nr_mixtures = 6
+
+    probvec = normalize!(ones(nr_mixtures), 1)
+
+    switch = Categorical(probvec)
+
+    gaussians = map(1:nr_mixtures) do index
+        angle      = 2π / nr_mixtures * (index - 1)
+        basis_v    = L * [ 1.0, 0.0 ]
+        R          = [ cos(angle) -sin(angle); sin(angle) cos(angle) ]
+        mean       = R * basis_v 
+        covariance = Matrix(Hermitian(R * [ 10.0 0.0; 0.0 20.0 ] * transpose(R)))
+        return MvNormal(mean, covariance)
+    end
+
+    z = rand(rng, switch, nr_samples)
+    y = Vector{Vector{Float64}}(undef, nr_samples)
+
+    for n in 1:nr_samples
+        y[n] = rand(rng, gaussians[z[n]])
+    end
+
+    return y
+
+end;</code></pre><pre><code class="language-julia hljs">data_multivariate = generate_multivariate_data(500)
+
+sdim(n) = (a) -&gt; map(d -&gt; d[n], a) # helper function
+scatter(data_multivariate |&gt; sdim(1), data_multivariate |&gt; sdim(2), ms = 2, alpha = 0.4, size = (600, 400), legend=false)
+xlabel!(L&quot;y_1&quot;)
+ylabel!(L&quot;y_2&quot;)</code></pre><p><img src="../../../assets/examples/Gaussian Mixture_10_1.png" alt/></p><h3 id="Model-specification-2"><a class="docs-heading-anchor" href="#Model-specification-2">Model specification</a><a class="docs-heading-anchor-permalink" href="#Model-specification-2" title="Permalink"></a></h3><p>The goal here is to create a model for the data set above. In this case a Gaussian mixture model with <span>$K$</span> components seems to suite the situation well. We specify the factorized model as  <span>$p(y, z, s, m, w) = \prod_{n=1}^N \bigg(p(y_n \mid m, W, z_n) p(z_n \mid s) \bigg)\prod_{k=1}^K \bigg(p(m_k) p(W_k) \bigg) p(s),$</span> where the individual terms are specified as <span>$\begin{aligned}     p(s)                    &amp;= \mathrm{Dir}(s \mid \alpha_s) \\
+    p(m_{k})                &amp;= \mathcal{N}(m_k \mid \mu_k, \Sigma_k) \\         p(W_{k})                &amp;= \mathcal{W}(W_k \mid V_k, \nu_k) \\
+    p(z_n \mid s)           &amp;= \mathrm{Cat}(z_n \mid s) \\
+    p(y_n \mid m, W, z_n)   &amp;= \prod_{k=1}^K \mathcal{N}\left(y_n \mid m_{k}, W_{k}\right)^{z_{nk}} \end{aligned}$</span></p><p>The set of observations <span>$y = \{y_1, y_2, \ldots, y_N\}$</span> is modeled by a mixture of Gaussian distributions, parameterized by means <span>$m = \{m_1, m_2, \ldots, m_K\}$</span> and precisions <span>$W = \{ W_1, W_2, \ldots, W_K\}$</span>, where <span>$k$</span> denotes the component index. This component is selected per observation by the indicator variable <span>$z_n$</span>, which is a one-of-<span>$K$</span> encoded vector satisfying <span>$\sum_{k=1}^K z_{nk} = 1$</span> and <span>$z_{nk} \in \{0, 1\} \forall k$</span>. We put a hyperprior on these variables, termed <span>$s$</span>, which represents the relative occurrence of the different realizations of <span>$z_n$</span>.</p><pre><code class="language-julia hljs">@model function multivariate_gaussian_mixture_model(nr_mixtures, priors, y)
+    local m
+    local w
+
+    for k in 1:nr_mixtures        
+        m[k] ~ priors[k]
+        w[k] ~ Wishart(3, 1e2*diagm(ones(2)))
+    end
+    
+    s ~ Dirichlet(ones(nr_mixtures))
+    
+    for n in eachindex(y)
+        z[n] ~ Categorical(s) 
+        y[n] ~ NormalMixture(switch = z[n], m = m, p = w)
+    end
+    
+end</code></pre><h3 id="Probabilistic-inference-2"><a class="docs-heading-anchor" href="#Probabilistic-inference-2">Probabilistic inference</a><a class="docs-heading-anchor-permalink" href="#Probabilistic-inference-2" title="Permalink"></a></h3><p>In order to fit the model to the data, we are interested in computing the posterior distribution <span>$p(z, s, m, W \mid y)$</span> However, computation of this term is intractable. Therefore, it is approximated by a naive mean-field approximation, specified as  <span>$p(z, s, m, W \mid y) \approx \prod_{n=1}^N q(z_n) \prod_{k=1}^K \bigg(q(m_k) q(W_k)\bigg) q(s),$</span> with the functional forms <span>$\begin{aligned}     q(s)   &amp;= \mathrm{Dir}(s \mid \hat{\alpha}_s) \\
+    q(m_k) &amp;= \mathcal{N}(m_k \mid \hat{\mu}_k, \hat{\Sigma}_k) \\
+    q(w_k) &amp;= \mathcal{W}(W_k \mid \hat{V}_k, \hat{\nu}_k) \\
+    q(z_n) &amp;= \mathrm{Cat}(z_n \mid \hat{p}_n) \end{aligned}$</span> In order to get the inference procedure started, these marginal distribution need to be initialized.</p><pre><code class="language-julia hljs">rng = MersenneTwister(121)
+priors = [MvNormal([cos(k*2π/6), sin(k*2π/6)], diagm(1e2 * ones(2))) for k in 1:6]
+init = @initialization begin
+    q(s) = vague(Dirichlet, 6)
+    q(m) = priors
+    q(w) = Wishart(3, diagm(1e2 * ones(2)))
+end
+
+results_multivariate = infer(
+    model = multivariate_gaussian_mixture_model(
+        nr_mixtures = 6, 
+        priors = priors,
+    ), 
+    data  = (y = data_multivariate,), 
+    constraints   = MeanField(),
+    initialization = init, 
+    iterations  = 50, 
+    free_energy = true
+)</code></pre><pre><code class="nohighlight hljs">Inference results:
+  Posteriors       | available for (w, m, s, z)
+  Free Energy:     | Real[3946.64, 3902.88, 3902.88, 3902.88, 3902.88, 3902
+.88, 3902.88, 3902.88, 3902.88, 3902.88  …  3902.88, 3902.88, 3902.88, 3902
+.88, 3902.88, 3902.88, 3902.88, 3902.88, 3902.88, 3902.88]</code></pre><h3 id="Results-2"><a class="docs-heading-anchor" href="#Results-2">Results</a><a class="docs-heading-anchor-permalink" href="#Results-2" title="Permalink"></a></h3><p>Below the inference results can be seen</p><pre><code class="language-julia hljs">p_data = scatter(data_multivariate |&gt; sdim(1), data_multivariate |&gt; sdim(2), ms = 2, alpha = 0.4, legend=false, title=&quot;Data&quot;, xlims=(-75, 75), ylims=(-75, 75))
+p_result = plot(xlims = (-75, 75), ylims = (-75, 75), title=&quot;Inference result&quot;, legend=false, colorbar = false)
+for (e_m, e_w) in zip(results_multivariate.posteriors[:m][end], results_multivariate.posteriors[:w][end])
+    gaussian = MvNormal(mean(e_m), Matrix(Hermitian(mean(inv, e_w))))
+    global p_result = contour!(p_result, range(-75, 75, step = 0.25), range(-75, 75, step = 0.25), (x, y) -&gt; pdf(gaussian, [ x, y ]), title=&quot;Inference result&quot;, legend=false, levels = 7, colorbar = false)
+end
+p_fe = plot(results_multivariate.free_energy, label = &quot;Free Energy&quot;)
+
+plot(p_data, p_result, p_fe, layout = @layout([ a b; c ]))</code></pre><p><img src="../../../assets/examples/Gaussian Mixture_13_1.png" alt/></p><pre><code class="language-julia hljs"></code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../Gamma Mixture/">« Gamma Mixture Model</a><a class="docs-footer-nextpage" href="../Hierarchical Gaussian Filter/">Hierarchical Gaussian Filter »</a><div class="flexbox-break"></div><p class="footer-message">Created in <a href="https://biaslab.github.io/">BIASlab</a>, maintained by <a href="https://github.com/ReactiveBayes">ReactiveBayes</a>, powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.4.1 on <span class="colophon-date" title="Tuesday 18 June 2024 12:13">Tuesday 18 June 2024</span>. Using Julia version 1.10.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
