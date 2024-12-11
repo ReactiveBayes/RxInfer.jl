@@ -263,6 +263,8 @@ Specifically for the Gaussian/Normal case we have custom implementations that yi
 Models specified using GraphPPL.jl in RxInfer.jl can be visualized in several ways to help understand their structure and relationships between variables. Let's create a simple model and visualize it.
 
 ```@example model-specification-visualization
+using RxInfer
+
 @model function coin_toss(y)
     t ~ Beta(1, 1)
     for i in eachindex(y)
@@ -271,8 +273,8 @@ Models specified using GraphPPL.jl in RxInfer.jl can be visualized in several wa
 end
 
 model_generator = coin_toss() | (y = [ true, false, true ], )
-model           = RxInfer.getmodel(RxInfer.create_model(model_generator))
-nothing #
+model_to_plot   = RxInfer.getmodel(RxInfer.create_model(model_generator))
+nothing #hide
 ```
 
 ### [GraphViz.jl](@id user-guide-model-specification-visualization-graphviz)
@@ -284,7 +286,7 @@ Note that this package is not included in the `RxInfer` package and must be inst
 using GraphViz
 
 # Call `load` function from `GraphViz` to visualise the structure of the graph
-GraphViz.load(model, strategy = :simple)
+GraphViz.load(model_to_plot, strategy = :simple)
 ```
 
 ### [Cairo](@id user-guide-model-specification-visualization-cairo)
@@ -296,7 +298,7 @@ Note, that those packages are also not included in the `RxInfer` package and mus
 using Cairo, GraphPlot
 
 # Call `gplot` function from `GraphPlot` to visualise the structure of the graph
-GraphPlot.gplot(model)
+GraphPlot.gplot(model_to_plot)
 ```
 
 ## Node Contraction
