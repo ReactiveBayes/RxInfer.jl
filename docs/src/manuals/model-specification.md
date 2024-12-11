@@ -271,7 +271,7 @@ Models specified using GraphPPL.jl in RxInfer.jl can be visualized in several wa
 end
 
 model_generator = coin_toss() | (y = [ true, false, true ], )
-model           = RxInfer.getmodel(RxInfer.create_model(model_generator)))
+model           = RxInfer.getmodel(RxInfer.create_model(model_generator))
 nothing #
 ```
 
@@ -280,7 +280,7 @@ nothing #
 It is possible to visualize the model structure after conditioning on data with the `GraphViz.jl` package.
 Note that this package is not included in the `RxInfer` package and must be installed separately.
 
-```@example model-specification-ssm
+```@example model-specification-visualization
 using GraphViz
 
 # Call `load` function from `GraphViz` to visualise the structure of the graph
@@ -292,7 +292,7 @@ GraphViz.load(model, strategy = :simple)
 There is an alternative way to visuzalise the model structure with `Cairo` and `GraphPlot`
 Note, that those packages are also not included in the `RxInfer` package and must be installed separately.
 
-```@example model-specification-ssm
+```@example model-specification-visualization
 using Cairo, GraphPlot
 
 # Call `gplot` function from `GraphPlot` to visualise the structure of the graph
