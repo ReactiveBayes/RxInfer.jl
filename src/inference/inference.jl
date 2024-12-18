@@ -87,6 +87,25 @@ end
 ## Extra error handling
 
 function inference_process_error(error)
+    # By default, rethrow the error
+    return inference_process_error(error, true)
+end
+
+function inference_process_error(error, rethrow)
+    if error isa StackOverflowError
+        @error """
+        Stack overflow error detected during inference. This can happen with large model graphs 
+        due to recursive message updates.
+
+        Possible solution:
+        Try using the `limit_stack_depth` inference option. If this does not resolve the issue,
+        please open a GitHub issue at https://github.com/ReactiveBayes/RxInfer.jl/issues and we'll help investigate.
+
+        For more details:
+        • Stack overflow guide: https://reactivebayes.github.io/RxInfer.jl/stable/manuals/sharpbits/stack-overflow-inference/
+        • See `infer` function docs for options
+        """
+    end
     @error """
     We encountered an error during inference, but don't worry - we're here to help! 🤝
 
@@ -94,7 +113,7 @@ function inference_process_error(error)
 
     1. Check our Sharp bits documentation which covers common issues:
        https://reactivebayes.github.io/RxInfer.jl/stable/manuals/sharpbits/overview/
-    
+
     2. Browse our existing issues - your question may already be answered:
        https://github.com/ReactiveBayes/RxInfer.jl/issues
 
@@ -110,30 +129,10 @@ function inference_process_error(error)
 
     Together we'll get your inference working! 💪
     """
-    # By default, rethrow the error
-    return inference_process_error(error, true)
-end
-
-function inference_process_error(error, rethrow)
     if rethrow
         Base.rethrow(error)
     end
     return error, catch_backtrace()
-end
-
-# We want to show an extra hint in case the error is of type `StackOverflowError`
-function inference_process_error(err::StackOverflowError, rethrow)
-    @error """
-    Stack overflow error occurred during the inference procedure. 
-    The inference engine may execute message update rules recursively, hence, the model graph size might be causing this error. 
-    To resolve this issue, try using `limit_stack_depth` inference option for model creation. 
-    See the documentation page (https://reactivebayes.github.io/RxInfer.jl/stable/manuals/sharpbits/stack-overflow-inference/) for more details. 
-    Also see the `infer` function documentation for more details about the `options` parameter and how to use it.
-    """
-    if rethrow
-        Base.rethrow(err) # Shows the original stack trace
-    end
-    return err, catch_backtrace()
 end
 
 function inference_check_itertype(::Symbol, ::Union{Nothing, Tuple, Vector})
