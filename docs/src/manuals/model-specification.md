@@ -171,8 +171,9 @@ y ~ Normal(mean = x, variance = 1.0)
 ```
 
 Using `x = exp(t)` directly would be incorrect and most likely would result in an `MethodError` because `t` does not have a definitive value at the model creation time 
-(remember that our models create a factor graph under the hood and latent states do not have a value until the inference is performed). At the model creation time, 
-`t` holds a reference to a node in the graph, instead of an actual value sample from the `Normal` distribution.
+(remember that our models create a factor graph under the hood and latent states do not have a value until the inference is performed).
+
+See [Using `=` instead of `:=` for deterministic nodes](@ref usage-colon-equality) for a detailed explanation of this design choice.
 
 ### [Control flow statements](@id user-guide-model-specification-node-creation-control-flow)
 

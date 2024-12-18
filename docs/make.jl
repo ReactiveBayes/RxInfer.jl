@@ -1,5 +1,6 @@
 using RxInfer
 using Documenter
+using DocumenterMermaid
 
 ## https://discourse.julialang.org/t/generation-of-documentation-fails-qt-qpa-xcb-could-not-connect-to-display/60988
 ## https://gr-framework.org/workstations.html#no-output
@@ -85,8 +86,10 @@ ExamplesPages = map(collect(pairs(ExamplesCategoriesPages))) do (label, info)
     return info.title => info.pages
 end
 
+draft = get(ENV, "DOCS_DRAFT", "false") == "true"
+
 makedocs(;
-    draft = false,
+    draft = draft,
     warnonly = false,
     modules = [RxInfer],
     authors = "Bagaev Dmitry <d.v.bagaev@tue.nl> and contributors",
@@ -111,7 +114,13 @@ makedocs(;
             "Inference specification"   => ["Overview" => "manuals/inference/overview.md", "Static inference" => "manuals/inference/static.md", "Streamline inference" => "manuals/inference/streamlined.md", "Initialization" => "manuals/inference/initialization.md", "Auto-updates" => "manuals/inference/autoupdates.md", "Deterministic nodes" => "manuals/inference/delta-node.md", "Non-conjugate inference" => "manuals/inference/nonconjugate.md", "Undefined message update rules" => "manuals/inference/undefinedrules.md"],
             "Inference customization"   => ["Defining a custom node and rules" => "manuals/customization/custom-node.md", "Inference results postprocessing" => "manuals/customization/postprocess.md"],
             "Debugging"                 => "manuals/debugging.md",
-            "Migration from v2 to v3"   => "manuals/migration-guide-v2-v3.md"
+            "Migration from v2 to v3"   => "manuals/migration-guide-v2-v3.md",
+            "Sharp bits of RxInfer"     => [
+                "Overview" => "manuals/sharpbits/overview.md",
+                "Rule Not Found Error" => "manuals/sharpbits/rule-not-found.md",
+                "Stack Overflow in Message Computations" => "manuals/sharpbits/stack-overflow-inference.md",
+                "Using `=` instead of `:=` for deterministic nodes" => "manuals/sharpbits/usage-colon-equality.md"
+            ]
         ],
         "Library" => [
             "Model construction" => "library/model-construction.md",
