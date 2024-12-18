@@ -50,31 +50,35 @@ To better understand where message passing rules are needed, let's look at a sim
 
 ```mermaid
 graph LR
-    x((x)) --- f[f] --- y((y))
-    z((z)) --- f
+    %% Other parts of the graph
+    g1[g] -.-> x
+    h1[h] -.-> z
+    y -.-> g2[p]
+    
+    %% Main focus area
+    x((x)) -.- m1[["μ<sub>x→f</sub>"]] --> f[f]
+    f --> m2[["μ<sub>f→y</sub>"]] -.- y((y))
+    z((z)) -.- m3[["μ<sub>z→f</sub>"]] --> f
 
+    %% Styling
     classDef variable fill:#b3e0ff,stroke:#333,stroke-width:2px;
-    classDef factor fill:#ff9999,stroke:#333,stroke-width:2px;
+    classDef factor fill:#ff9999,stroke:#333,stroke-width:2px,shape:square;
+    classDef otherFactor fill:#ff9999,stroke:#333,stroke-width:2px,opacity:0.3;
+    classDef message fill:none,stroke:none;
     class x,y,z variable;
     class f factor;
-
-    %% Add message arrows
-    m1[["μx→f"]] -.-> f
-    f -.-> m2[["μf→y"]]
-    m3[["μz→f"]] -.-> f
-
-    style m1 fill:none,stroke:none
-    style m2 fill:none,stroke:none
-    style m3 fill:none,stroke:none
+    class g1,g2,h1 otherFactor;
+    class m1,m2,m3 message;
 ```
 
 In this example:
 - Variables (`x`, `y`, `z`) are represented as circles
 - The factor node (`f`) is represented as a square
-- Messages (μ) flow between variables and factors
+- Messages (μ) flow along the edges between variables and factors, with subscripts indicating direction (e.g., x→f flows from x to f)
+- Faded nodes (g, h) represent other parts of the factor graph that aren't relevant for this local message computation
 
-To compute the outgoing message `μf→y`, RxInfer needs:
-1. Rules for how to process incoming messages `μx→f` and `μz→f`
+To compute the outgoing message `f→y`, RxInfer needs:
+1. Rules for how to process incoming messages `x→f` and `z→f`
 2. Rules for combining these messages based on the factor `f`'s type
 3. Rules for producing the outgoing message type that `y` expects
 
