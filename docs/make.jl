@@ -85,8 +85,10 @@ ExamplesPages = map(collect(pairs(ExamplesCategoriesPages))) do (label, info)
     return info.title => info.pages
 end
 
+draft = get(ENV, "DOCS_DRAFT", "false") == "true"
+
 makedocs(;
-    draft = false,
+    draft = draft,
     warnonly = false,
     modules = [RxInfer],
     authors = "Bagaev Dmitry <d.v.bagaev@tue.nl> and contributors",
@@ -115,7 +117,8 @@ makedocs(;
             "Sharp bits of RxInfer"     => [
                 "Overview" => "manuals/sharpbits/overview.md",
                 "Rule Not Found Error" => "manuals/sharpbits/rule-not-found.md",
-                "Stack Overflow in Message Computations" => "manuals/sharpbits/stack-overflow-inference.md"
+                "Stack Overflow in Message Computations" => "manuals/sharpbits/stack-overflow-inference.md",
+                "Using `=` instead of `:=` for deterministic nodes" => "manuals/sharpbits/usage-colon-equality.md"
             ]
         ],
         "Library" => [

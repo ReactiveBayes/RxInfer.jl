@@ -87,6 +87,29 @@ end
 ## Extra error handling
 
 function inference_process_error(error)
+    @error """
+    We encountered an error during inference, but don't worry - we're here to help! 🤝
+
+    Here are some helpful resources to get you back on track:
+
+    1. Check our Sharp bits documentation which covers common issues:
+       https://reactivebayes.github.io/RxInfer.jl/stable/manuals/sharpbits/overview/
+    
+    2. Browse our existing issues - your question may already be answered:
+       https://github.com/ReactiveBayes/RxInfer.jl/issues
+
+    Still stuck? We'd love to help! You can:
+    - Start a discussion for questions and help:
+      https://github.com/ReactiveBayes/RxInfer.jl/discussions
+    - Report a bug or request a feature:
+      https://github.com/ReactiveBayes/RxInfer.jl/issues
+
+    To help us help you, please include:
+    - A minimal example that reproduces the issue
+    - The complete error message and stack trace
+
+    Together we'll get your inference working! 💪
+    """
     # By default, rethrow the error
     return inference_process_error(error, true)
 end
@@ -103,8 +126,9 @@ function inference_process_error(err::StackOverflowError, rethrow)
     @error """
     Stack overflow error occurred during the inference procedure. 
     The inference engine may execute message update rules recursively, hence, the model graph size might be causing this error. 
-    To resolve this issue, try using `limit_stack_depth` inference option for model creation. See `?infer` documentation for more details.
-    The `limit_stack_depth` option does not help against over stack overflow errors that might happening outside of the model creation or message update rules execution.
+    To resolve this issue, try using `limit_stack_depth` inference option for model creation. 
+    See the documentation page (https://reactivebayes.github.io/RxInfer.jl/stable/manuals/sharpbits/stack-overflow-inference/) for more details. 
+    Also see the `infer` function documentation for more details about the `options` parameter and how to use it.
     """
     if rethrow
         Base.rethrow(err) # Shows the original stack trace
@@ -224,6 +248,9 @@ include("streaming.jl")
 
 This function provides a generic way to perform probabilistic inference for batch/static and streamline/online scenarios.
 Returns either an [`InferenceResult`](@ref) (batch setting) or [`RxInferenceEngine`](@ref) (streamline setting) based on the parameters used.
+
+!!! note
+    Before using this function, you may want to review common issues and solutions in the [Sharp bits of RxInfer](@ref sharp-bits) section of the documentation.
 
 ## Arguments
 

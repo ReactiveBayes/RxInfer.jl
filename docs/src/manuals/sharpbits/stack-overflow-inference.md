@@ -6,7 +6,7 @@ When working with large probabilistic models in RxInfer, you might encounter a `
 
 RxInfer uses reactive streams to compute messages between nodes in the factor graph. The subscription to these streams happens recursively, which means:
 
-1. Each node subscribes to its input messages
+1. Each node subscribes to its input messages or posteriors
 2. Those input messages may need to subscribe to their own inputs
 3. This continues until all dependencies are resolved
 
@@ -34,15 +34,15 @@ You can enable stack depth limiting by passing it through the `options` paramete
 using RxInfer
 
 @model function long_state_space_model(y)
-    x[1] ~ Normal(0.0, 1.0)
-    y[1] ~ Normal(x[1], 1.0)
+    x[1] ~ Normal(mean = 0.0, var = 1.0)
+    y[1] ~ Normal(mean = x[1], var = 1.0)
     for i in 2:length(y)
-        x[i] ~ Normal(x[i - 1], 1.0)
-        y[i] ~ Normal(x[i], 1.0)
+        x[i] ~ Normal(mean = x[i - 1], var = 1.0)
+        y[i] ~ Normal(mean = x[i], var = 1.0)
     end
 end
 
-data = rand(10000)
+data = (y = rand(10000), )
 
 using Test #hide
 @test_throws StackOverflowError infer(model = long_state_space_model(), data = data) #hide
@@ -51,10 +51,13 @@ results = infer(
     model = long_state_space_model(),
     data = data,
     options = (
-        limit_stack_depth = 100
+        limit_stack_depth = 100, # note the comma
     )
 )
 ```
+
+!!! note
+    Note the comma after `limit_stack_depth = 100`. This is important because it tells Julia that the option is placed in the named tuple `options`.
 
 Without `limit_stack_depth` enabled, the inference will fail with a `StackOverflowError`
 
