@@ -249,7 +249,7 @@ This function provides a generic way to perform probabilistic inference for batc
 Returns either an [`InferenceResult`](@ref) (batch setting) or [`RxInferenceEngine`](@ref) (streamline setting) based on the parameters used.
 
 !!! note
-    Before using this function, you may want to review common issues and solutions in the [Sharp bits of RxInfer](@ref sharp-bits) section of the documentation.
+    Before using this function, you may want to review common issues and solutions in the Sharp bits of RxInfer section of the documentation.
 
 ## Arguments
 

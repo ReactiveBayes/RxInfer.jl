@@ -34,7 +34,6 @@ You're likely to encounter this error when:
 3. Using complex transformations between variables that don't have defined message computations
 4. Mixing different types of distributions in ways that don't have analytical solutions
 
-
 ## Design Philosophy
 
 RxInfer prioritizes performance over generality in its message-passing implementation. By default, it only uses analytically derived message update rules, even in cases where numerical approximations might be possible. This design choice:
@@ -44,6 +43,42 @@ RxInfer prioritizes performance over generality in its message-passing implement
 - Throws an error when analytical solutions don't exist
 
 This means you may encounter `RuleNotFoundError` even in cases where approximate solutions could theoretically work. This is intentional - RxInfer will tell you explicitly when you need to consider alternative approaches (like those described in the Solutions section below) rather than silently falling back to potentially slower or less reliable approximations.
+
+## Visualizing the message passing graph
+
+To better understand where message passing rules are needed, let's look at a simple factor graph visualization:
+
+```mermaid
+graph LR
+    x((x)) --- f[f] --- y((y))
+    z((z)) --- f
+
+    classDef variable fill:#b3e0ff,stroke:#333,stroke-width:2px;
+    classDef factor fill:#ff9999,stroke:#333,stroke-width:2px;
+    class x,y,z variable;
+    class f factor;
+
+    %% Add message arrows
+    m1[["μx→f"]] -.-> f
+    f -.-> m2[["μf→y"]]
+    m3[["μz→f"]] -.-> f
+
+    style m1 fill:none,stroke:none
+    style m2 fill:none,stroke:none
+    style m3 fill:none,stroke:none
+```
+
+In this example:
+- Variables (`x`, `y`, `z`) are represented as circles
+- The factor node (`f`) is represented as a square
+- Messages (μ) flow between variables and factors
+
+To compute the outgoing message `μf→y`, RxInfer needs:
+1. Rules for how to process incoming messages `μx→f` and `μz→f`
+2. Rules for combining these messages based on the factor `f`'s type
+3. Rules for producing the outgoing message type that `y` expects
+
+A `RuleNotFoundError` occurs when any of these rules are missing. For example, if `x` sends a `Normal` message but `f` doesn't know how to process `Normal` inputs, or if `f` can't produce the type of message that `y` expects.
 
 ## Solutions
 
