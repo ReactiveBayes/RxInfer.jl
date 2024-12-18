@@ -103,7 +103,7 @@ function inference_process_error(err::StackOverflowError, rethrow)
     @error """
     Stack overflow error occurred during the inference procedure. 
     The inference engine may execute message update rules recursively, hence, the model graph size might be causing this error. 
-    To resolve this issue, try using `limit_stack_depth` inference option for model creation. See `?inference` documentation for more details.
+    To resolve this issue, try using `limit_stack_depth` inference option for model creation. See `?infer` documentation for more details.
     The `limit_stack_depth` option does not help against over stack overflow errors that might happening outside of the model creation or message update rules execution.
     """
     if rethrow
