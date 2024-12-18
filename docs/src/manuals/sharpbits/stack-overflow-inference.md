@@ -51,7 +51,7 @@ results = infer(
     model = long_state_space_model(),
     data = data,
     options = (
-        limit_stack_depth = true
+        limit_stack_depth = 100
     )
 )
 ```
