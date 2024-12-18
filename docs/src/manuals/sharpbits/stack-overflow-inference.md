@@ -14,12 +14,10 @@ For large models, this recursive subscription process can consume the entire sta
 
 ## Example Error
 
-When this occurs, you'll see an error message like this:
+When this occurs, you'll see an error message that looks something like this:
 
 ```julia
 ERROR: Stack overflow error occurred during the inference procedure. 
-The inference engine may execute message update rules recursively, hence, the model graph size might be causing this error. 
-To resolve this issue, try using `limit_stack_depth` inference option for model creation. See the documentation page (https://reactivebayes.github.io/RxInfer.jl/stable/manuals/sharpbits/stack-overflow-inference/) for more details. Also see the `infer` function documentation for more details about the `options` parameter and how to use it.
 ```
 
 ## Solution: Limiting Stack Depth
