@@ -325,6 +325,8 @@ In some advanced scenarios, you might need access to the node object itself with
 Here's how to implement a rule with node access. First we define a custom node and a simple model that uses this node:
 
 ```@example custom-node-node-in-a-rule
+using RxInfer
+
 struct MyExperimentalNode end
 
 @node MyExperimentalNode Stochastic [ out, θ ]
