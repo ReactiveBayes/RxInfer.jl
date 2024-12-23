@@ -123,6 +123,9 @@ function inference_process_error(error, rethrow)
     - Report a bug or request a feature:
       https://github.com/ReactiveBayes/RxInfer.jl/issues
 
+    Note that we use GitHub discussions not just for technical questions! We welcome all kinds of discussions,
+    whether you're new to Bayesian inference, have questions about use cases, or just want to share your experience.
+
     To help us help you, please include:
     - A minimal example that reproduces the issue
     - The complete error message and stack trace
