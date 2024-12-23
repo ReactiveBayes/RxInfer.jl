@@ -11,7 +11,7 @@ Message-passing inference works by exchanging messages between nodes in a factor
 3. The interface through which the message is being computed
 4. The inference method being used (Belief Propagation or Variational Message Passing)
 
-The last point is particularly important - some message update rules may exist for Variational Message Passing (VMP) but not for Belief Propagation (BP), or vice versa. This is because VMP and BP use different mathematical formulations for computing messages.
+The last point is particularly important - some message update rules may exist for Variational Message Passing (VMP) but not for Belief Propagation (BP), or vice versa. This is because BP aims to compute exact posterior distributions through message passing (when possible), while VMP approximates the posterior using the Bethe approximation. For a detailed mathematical treatment of these differences, see our [Bethe Free Energy implementation](@ref lib-bethe-free-energy) guide.
 
 For example, consider this simple model:
 
@@ -42,7 +42,7 @@ RxInfer prioritizes performance over generality in its message-passing implement
 - Avoids potential numerical instabilities from approximations
 - Throws an error when analytical solutions don't exist
 
-This means you may encounter `RuleNotFoundError` even in cases where approximate solutions could theoretically work. This is intentional - RxInfer will tell you explicitly when you need to consider alternative approaches (like those described in the Solutions section below) rather than silently falling back to potentially slower or less reliable approximations.
+This means you may encounter `RuleNotFoundError` even in cases where approximate solutions could theoretically work. This is intentional - RxInfer will tell you explicitly when you need to consider alternative approaches rather than silently falling back to potentially slower or less reliable approximations. See the [Solutions](@ref rule-not-found-solutions) section below for more details.
 
 ## Visualizing the message passing graph
 
@@ -84,11 +84,11 @@ To compute the outgoing message `f→y`, RxInfer needs:
 
 A `RuleNotFoundError` occurs when any of these rules are missing. For example, if `x` sends a `Normal` message but `f` doesn't know how to process `Normal` inputs, or if `f` can't produce the type of message that `y` expects.
 
-## Solutions
+## [Solutions](@id rule-not-found-solutions)
 
 ### 1. Convert to conjugate pairs
 
-First, try to reformulate your model using conjugate prior-likelihood pairs. Conjugate pairs have analytical solutions for message passing and are well-supported in RxInfer. For example, instead of using a Normal likelihood with Beta prior on its precision, use a Normal-Gamma conjugate pair. See [Conjugate prior - Wikipedia](https://en.wikipedia.org/wiki/Conjugate_prior#Table_of_conjugate_distributions) for a comprehensive list of conjugate distributions.
+First, try to reformulate your model using conjugate prior-likelihood pairs. Conjugate pairs have analytical solutions for message passing and are well-supported in RxInfer. For example, instead of using a `Normal` likelihood with `Beta` prior on its precision, use a `Normal-Gamma` conjugate pair. See [Conjugate prior - Wikipedia](https://en.wikipedia.org/wiki/Conjugate_prior#Table_of_conjugate_distributions) for a comprehensive list of conjugate distributions.
 
 ### 2. Check available rules
 
@@ -123,6 +123,10 @@ result = infer(
 !!! note
     When using variational constraints, you will likely need to initialize certain messages or marginals to handle loops in the factor graph. See [Initialization](@ref initialization) for details on how to properly initialize your model.
 
+For more details on constraints and variational inference, see:
+
+- [Constraints Specification](@ref user-guide-constraints-specification) for a complete guide on using constraints
+- [Bethe Free Energy](@ref lib-bethe-free-energy) for the mathematical background on variational inference and message passing
 
 ## Implementation details
 
