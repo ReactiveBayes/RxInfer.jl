@@ -67,7 +67,12 @@ end
 end
 ```
 
-- **Expressiveness**: `RxInfer.jl` empowers users to elegantly and concisely craft models, closely mirroring probabilistic notation, thanks to Julia's macro capabilities. To illustrate this, let's consider the following model:
+- **Expressiveness**: `RxInfer.jl` empowers users to elegantly and concisely craft models, closely mirroring probabilistic notation, thanks to Julia's macro capabilities.
+
+!!! note
+    RxInfer uses `:=` for deterministic relationships (see [Using `=` instead of `:=` for deterministic nodes](@ref usage-colon-equality)) which might differ from other frameworks but enables powerful message-passing capabilities.
+
+To illustrate the expressiveness, let's consider the following model:
 
 $$\begin{aligned}
  x & \sim \mathrm{Normal}(0.0, 1.0)\\
