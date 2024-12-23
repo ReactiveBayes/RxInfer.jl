@@ -118,7 +118,7 @@ function inference_process_error(error, rethrow)
        https://github.com/ReactiveBayes/RxInfer.jl/issues
 
     Still stuck? We'd love to help! You can:
-    - Start a discussion for questions and help:
+    - Start a discussion for questions and help. Feedback and questions from new users is also welcome! If you are stuck, please reach out and we will solve it together.
       https://github.com/ReactiveBayes/RxInfer.jl/discussions
     - Report a bug or request a feature:
       https://github.com/ReactiveBayes/RxInfer.jl/issues
