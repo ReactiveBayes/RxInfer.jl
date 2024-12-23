@@ -106,6 +106,8 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1.10' # 1.11 is not supported by Cairo/GraphViz
       - uses: actions/cache@v3
         id: examples
         with:
