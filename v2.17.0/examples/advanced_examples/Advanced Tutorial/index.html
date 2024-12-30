@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Advanced Tutorial · RxInfer.jl</title><meta name="title" content="Advanced Tutorial · RxInfer.jl"/><meta property="og:title" content="Advanced Tutorial · RxInfer.jl"/><meta property="twitter:title" content="Advanced Tutorial · RxInfer.jl"/><meta name="description" content="Documentation for RxInfer.jl."/><meta property="og:description" content="Documentation for RxInfer.jl."/><meta property="twitter:description" content="Documentation for RxInfer.jl."/><meta property="og:url" content="https://reactivebayes.github.io/RxInfer.jl/examples/advanced_examples/Advanced Tutorial/"/><meta property="twitter:url" content="https://reactivebayes.github.io/RxInfer.jl/examples/advanced_examples/Advanced Tutorial/"/><link rel="canonical" href="https://reactivebayes.github.io/RxInfer.jl/examples/advanced_examples/Advanced Tutorial/"/><script data-outdated-warner src="../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../search_index.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><link href="../../../assets/theme.css" rel="stylesheet" type="text/css"/><link href="../../../assets/header.css" rel="stylesheet" type="text/css"/><script src="../../../assets/header.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img class="docs-light-only" src="../../../assets/logo.svg" alt="RxInfer.jl logo"/><img class="docs-dark-only" src="../../../assets/logo-dark.svg" alt="RxInfer.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../../../">RxInfer.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../../">Home</a></li><li><span class="tocitem">User guide</span><ul><li><a class="tocitem" href="../../../manuals/getting-started/">Getting started</a></li><li><a class="tocitem" href="../../../manuals/comparison/">RxInfer.jl vs. Others</a></li><li><a class="tocitem" href="../../../manuals/model-specification/">Model specification</a></li><li><a class="tocitem" href="../../../manuals/constraints-specification/">Constraints specification</a></li><li><a class="tocitem" href="../../../manuals/meta-specification/">Meta specification</a></li><li><input class="collapse-toggle" id="menuitem-2-6" type="checkbox"/><label class="tocitem" for="menuitem-2-6"><span class="docs-label">Inference specification</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../manuals/inference/overview/">Overview</a></li><li><a class="tocitem" href="../../../manuals/inference/infer/">Static vs Streamline inference</a></li><li><a class="tocitem" href="../../../manuals/inference/postprocess/">Inference results postprocessing</a></li><li><a class="tocitem" href="../../../manuals/inference/manual/">Manual inference specification</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-7" type="checkbox"/><label class="tocitem" for="menuitem-2-7"><span class="docs-label">Inference customization</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../manuals/custom-node/">Defining a custom node and rules</a></li></ul></li><li><a class="tocitem" href="../../../manuals/understanding-why-to-initialize-messages/">Messages initialization</a></li><li><a class="tocitem" href="../../../manuals/debugging/">Debugging</a></li><li><a class="tocitem" href="../../../manuals/delta-node/">Delta node</a></li></ul></li><li><span class="tocitem">Library</span><ul><li><a class="tocitem" href="../../../library/functional-forms/">Built-in functional form constraints</a></li><li><a class="tocitem" href="../../../library/model-specification/">Model specification</a></li><li><a class="tocitem" href="../../../library/bethe-free-energy/">Bethe Free Energy</a></li><li><a class="tocitem" href="../../../library/exported-methods/">Exported methods</a></li></ul></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../../overview/">Overview</a></li><li><input class="collapse-toggle" id="menuitem-4-2" type="checkbox"/><label class="tocitem" for="menuitem-4-2"><span class="docs-label">Basic examples</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../basic_examples/overview/">Overview</a></li><li><a class="tocitem" href="../../basic_examples/Coin Toss Model/">Coin toss model (Beta-Bernoulli)</a></li><li><a class="tocitem" href="../../basic_examples/Bayesian Linear Regression Tutorial/">Bayesian Linear Regression Tutorial</a></li><li><a class="tocitem" href="../../basic_examples/Kalman filtering and smoothing/">Kalman filtering and smoothing</a></li><li><a class="tocitem" href="../../basic_examples/Predicting Bike Rental Demand/">Predicting Bike Rental Demand</a></li><li><a class="tocitem" href="../../basic_examples/Hidden Markov Model/">How to train your Hidden Markov Model</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-4-3" type="checkbox" checked/><label class="tocitem" for="menuitem-4-3"><span class="docs-label">Advanced examples</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../overview/">Overview</a></li><li><a class="tocitem" href="../Active Inference Mountain car/">Active Inference Mountain car</a></li><li class="is-active"><a class="tocitem" href>Advanced Tutorial</a><ul class="internal"><li><a class="tocitem" href="#General-model-specification-syntax"><span>General model specification syntax</span></a></li><li><a class="tocitem" href="#Probabilistic-inference-in-RxInfer.jl"><span>Probabilistic inference in RxInfer.jl</span></a></li><li><a class="tocitem" href="#Reactive-Online-Inference"><span>Reactive Online Inference</span></a></li><li><a class="tocitem" href="#Variational-inference"><span>Variational inference</span></a></li><li><a class="tocitem" href="#Creating-custom-nodes-and-message-computation-rules"><span>Creating custom nodes and message computation rules</span></a></li></ul></li><li><a class="tocitem" href="../Assessing People Skills/">Assessing People’s Skills</a></li><li><a class="tocitem" href="../Chance Constraints/">Chance-Constrained Active Inference</a></li><li><a class="tocitem" href="../Conjugate-Computational Variational Message Passing/">Conjugate-Computational Variational Message Passing (CVI)</a></li><li><a class="tocitem" href="../Global Parameter Optimisation/">Global Parameter Optimisation</a></li><li><a class="tocitem" href="../GP Regression by SSM/">Solve GP regression by SDE</a></li><li><a class="tocitem" href="../Infinite Data Stream/">Infinite Data Stream</a></li><li><a class="tocitem" href="../Nonlinear Sensor Fusion/">Nonlinear Sensor Fusion</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-4-4" type="checkbox"/><label class="tocitem" for="menuitem-4-4"><span class="docs-label">Problem specific</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../problem_specific/overview/">Overview</a></li><li><a class="tocitem" href="../../problem_specific/Autoregressive Models/">Autoregressive Models</a></li><li><a class="tocitem" href="../../problem_specific/Gamma Mixture/">Gamma Mixture Model</a></li><li><a class="tocitem" href="../../problem_specific/Gaussian Mixture/">Gaussian Mixture</a></li><li><a class="tocitem" href="../../problem_specific/Hierarchical Gaussian Filter/">Hierarchical Gaussian Filter</a></li><li><a class="tocitem" href="../../problem_specific/Invertible Neural Network Tutorial/">Invertible neural networks: a tutorial</a></li><li><a class="tocitem" href="../../problem_specific/Probit Model (EP)/">Probit Model (EP)</a></li><li><a class="tocitem" href="../../problem_specific/RTS vs BIFM Smoothing/">RTS vs BIFM Smoothing</a></li><li><a class="tocitem" href="../../problem_specific/Simple Nonlinear Node/">Simple Nonlinear Node</a></li><li><a class="tocitem" href="../../problem_specific/Universal Mixtures/">Universal Mixtures</a></li></ul></li></ul></li><li><span class="tocitem">Contributing</span><ul><li><a class="tocitem" href="../../../contributing/overview/">Overview</a></li><li><a class="tocitem" href="../../../contributing/new-documentation/">Contributing to the documentation</a></li><li><a class="tocitem" href="../../../contributing/new-package/">Contributing to the dependencies</a></li><li><a class="tocitem" href="../../../contributing/new-example/">Contributing to the examples</a></li><li><a class="tocitem" href="../../../contributing/new-release/">Publishing a new release</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li><a class="is-disabled">Advanced examples</a></li><li class="is-active"><a href>Advanced Tutorial</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Advanced Tutorial</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/ReactiveBayes/RxInfer.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/ReactiveBayes/RxInfer.jl/blob/main/docs/src/examples/advanced_examples/Advanced Tutorial.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><p>This example has been auto-generated from the <a href="https://github.com/reactivebayes/RxInfer.jl/tree/main/examples"><code>examples/</code></a> folder at GitHub repository.</p><h1 id="examples-advanced-tutorial"><a class="docs-heading-anchor" href="#examples-advanced-tutorial">Advanced Tutorial</a><a id="examples-advanced-tutorial-1"></a><a class="docs-heading-anchor-permalink" href="#examples-advanced-tutorial" title="Permalink"></a></h1><pre><code class="language-julia hljs"># Activate local environment, see `Project.toml`
+import Pkg; Pkg.activate(&quot;..&quot;); Pkg.instantiate();</code></pre><pre><code class="language-julia hljs">using RxInfer, Plots</code></pre><p>This notebook covers the fundamentals and advanced usage of the <code>RxInfer.jl</code> package.</p><p>This tutorial is also available in the <a href="https://reactivebayes.github.io/RxInfer.jl/stable/">documentation</a>.</p><h2 id="General-model-specification-syntax"><a class="docs-heading-anchor" href="#General-model-specification-syntax">General model specification syntax</a><a id="General-model-specification-syntax-1"></a><a class="docs-heading-anchor-permalink" href="#General-model-specification-syntax" title="Permalink"></a></h2><p>We use the <code>@model</code> macro from the <code>RxInfer.jl</code> package to create a probabilistic model <span>$p(s, y)$</span> and we also specify extra constraints on the variational family of distributions <span>$\mathcal{Q}$</span>, used for approximating intractable posterior distributions. Below there is a simple example of the general syntax for model specification. In this tutorial we do not cover all possible ways to create models or advanced features of <code>RxInfer.jl</code>.  Instead we refer the interested reader to the documentation for a more rigorous explanation and illustrative examples.</p><pre><code class="language-julia hljs"># the `@model` macro accepts a regular Julia function
+@model function test_model1(s_mean, s_precision)
+    
+    # We use the `randomvar` function to create 
+    # a random variable in our model
+    s = randomvar()
+    
+    # the `tilde` operator creates a functional dependency
+    # between variables in our model and can be read as 
+    # `sampled from` or `is modeled by`
+    s ~ Normal(mean = s_mean, precision = s_precision)
+    
+    # We use the `datavar` function to create 
+    # observed data variables in our models
+    # We also need to specify the type of our data 
+    # In this example it is `Float64`
+    y = datavar(Float64)
+    
+    y ~ Normal(mean = s, precision = 1.0)
+    
+    # It is possible to return something from the model specification (including variables and nodes)
+    return &quot;Hello world&quot;
+end</code></pre><p>The <code>@model</code> macro creates a function with the same name and with the same set of input arguments as the original function (<code>test_model1(s_mean, s_precision)</code> in this example). The return value is modified in such a way to contain a reference to the model object as the first value and to the user specified variables in the form of a tuple as the second value.</p><pre><code class="language-julia hljs">modelgenerator = test_model1(0.0, 1.0)
+
+model, returnval = create_model(modelgenerator)</code></pre><pre><code class="nohighlight hljs">(FactorGraphModel(), &quot;Hello world&quot;)</code></pre><p>The benefits of using model generator as a way to create a model is that it allows to change inference constraints and meta specification for nodes. We will talk about factorisation and form constraints and meta specification later on in this demo.</p><p><code>RxInfer.jl</code> returns a factor graph-based representation of a model. We can examine this factor graph structure with the help of some utility functions such as: </p><ul><li><code>getnodes()</code>: returns an array of factor nodes in a corresponding factor graph</li><li><code>getrandom()</code>: returns an array of random variables in the model</li><li><code>getdata()</code>: returns an array of data inputs in the model</li><li><code>getconstant()</code>: returns an array of constant values in the model</li></ul><pre><code class="language-julia hljs">getnodes(model)</code></pre><pre><code class="nohighlight hljs">FactorNodesCollection(nodes: 2)</code></pre><pre><code class="language-julia hljs">getrandom(model) .|&gt; name</code></pre><pre><code class="nohighlight hljs">1-element Vector{Symbol}:
+ :s</code></pre><pre><code class="language-julia hljs">getdata(model) .|&gt; name</code></pre><pre><code class="nohighlight hljs">1-element Vector{Symbol}:
+ :y</code></pre><pre><code class="language-julia hljs">getconstant(model) .|&gt; getconst</code></pre><pre><code class="nohighlight hljs">3-element Vector{Float64}:
+ 0.0
+ 1.0
+ 1.0</code></pre><p>It is also possible to use control flow statements such as <code>if</code> or <code>for</code> blocks in the model specification function. In general, any valid snippet of Julia code can be used inside the <code>@model</code> block. As an example consider the following (valid!) model:</p><pre><code class="language-julia hljs">@model function test_model2(n)
+    
+    if n &lt;= 1
+        error(&quot;`n` argument must be greater than one.&quot;)
+    end
+    
+    # `randomvar(n)` creates a dense sequence of 
+    # random variables
+    s = randomvar(n)
+    
+    # `datavar(Float64, n)` creates a dense sequence of 
+    # observed data variables of type `Float64`
+    y = datavar(Float64, n)
+    
+    s[1] ~ Normal(mean = 0.0, precision = 0.1)
+    y[1] ~ Normal(mean = s[1], precision = 1.0)
+    
+    for i in 2:n
+        s[i] ~ Normal(mean = s[i - 1], precision = 1.0)
+        y[i] ~ Normal(mean = s[i], precision = 1.0)
+    end
+    
+end</code></pre><pre><code class="language-julia hljs">model, _ = create_model(test_model2(10));</code></pre><pre><code class="language-julia hljs"># An amount of factor nodes in generated Factor Graph
+getnodes(model) |&gt; length</code></pre><pre><code class="nohighlight hljs">20</code></pre><pre><code class="language-julia hljs"># An amount of random variables
+getrandom(model) |&gt; length</code></pre><pre><code class="nohighlight hljs">10</code></pre><pre><code class="language-julia hljs"># An amount of data inputs
+getdata(model) |&gt; length</code></pre><pre><code class="nohighlight hljs">10</code></pre><pre><code class="language-julia hljs"># An amount of constant values
+getconstant(model) |&gt; length</code></pre><pre><code class="nohighlight hljs">21</code></pre><p>It is also possible to use complex expressions inside the functional dependency expressions</p><pre><code class="language-julia hljs">y ~ NormalMeanPrecision(2.0 * (s + 1.0), 1.0)</code></pre><p>The <code>~</code> operator automatically creates a random variable if none was created before with the same name and throws an error if this name already exists</p><pre><code class="language-julia hljs"># s = randomvar() here is optional
+# `~` creates random variables automatically
+s ~ NormalMeanPrecision(0.0, 1.0)</code></pre><p>An example model which will throw an error:</p><pre><code class="language-julia hljs">@model function error_model1()
+    s = 1.0
+    s ~ NormalMeanPrecision(0.0, 1.0)
+end</code></pre><p>By default the <code>RxInfer.jl</code> package creates new references for constants (literals like <code>0.0</code> or <code>1.0</code>) in a model. In some situations this may not be efficient, especially when these constants represent large matrices. <code>RxInfer.jl</code> will by default create new copies of some constant (e.g. matrix) in a model every time it uses it. However it is possible to use <code>constvar()</code> function to create and reuse similar constants in the model specification syntax as</p><pre><code class="language-julia hljs"># Creates constant reference in a model with a prespecified value
+c = constvar(0.0)</code></pre><p>An example:</p><pre><code class="language-julia hljs">@model function test_model5(dim::Int, n::Int, A::Matrix, P::Matrix, Q::Matrix)
+    
+    s = randomvar(n)
+    
+    y = datavar(Vector{Float64}, n)
+    
+    # Here we create constant references
+    # for constant matrices in our model 
+    # to make inference more memory efficient
+    cA = constvar(A)
+    cP = constvar(P)
+    cQ = constvar(Q)
+    
+    s[1] ~ MvNormal(mean = zeros(dim), covariance = cP)
+    y[1] ~ MvNormal(mean = s[1], covariance = cQ)
+    
+    for i in 2:n
+        s[i] ~ MvNormal(mean = cA * s[i - 1], covariance = cP)
+        y[i] ~ MvNormal(mean = s[i], covariance = cQ)
+    end
+    
+end</code></pre><p>The <code>~</code> expression can also return a reference to a newly created node in a corresponding factor graph for convenience in later usage:</p><pre><code class="language-julia hljs">@model function test_model()
+
+    # In this example `ynode` refers to the corresponding 
+    # `GaussianMeanVariance` node created in the factor graph
+    ynode, y ~ GaussianMeanVariance(0.0, 1.0)
+    
+    return ynode, y
+end</code></pre><h2 id="Probabilistic-inference-in-RxInfer.jl"><a class="docs-heading-anchor" href="#Probabilistic-inference-in-RxInfer.jl">Probabilistic inference in RxInfer.jl</a><a id="Probabilistic-inference-in-RxInfer.jl-1"></a><a class="docs-heading-anchor-permalink" href="#Probabilistic-inference-in-RxInfer.jl" title="Permalink"></a></h2><p><code>RxInfer.jl</code> uses the <code>Rocket.jl</code> package API for inference routines. <code>Rocket.jl</code> is a reactive programming extension for Julia that is higly inspired by <code>RxJS</code> and similar libraries from the <code>Rx</code> ecosystem. It consists of <strong>observables</strong>, <strong>actors</strong>, <strong>subscriptions</strong> and <strong>operators</strong>. For more information and rigorous examples see <a href="https://github.com/biaslab/Rocket.jl">Rocket.jl github page</a>.</p><h3 id="Observables"><a class="docs-heading-anchor" href="#Observables">Observables</a><a id="Observables-1"></a><a class="docs-heading-anchor-permalink" href="#Observables" title="Permalink"></a></h3><p>Observables are lazy push-based collections and they deliver their values over time.</p><pre><code class="language-julia hljs"># Timer that emits a new value every second and has an initial one second delay 
+observable = timer(300, 300)</code></pre><pre><code class="nohighlight hljs">TimerObservable(300, 300)</code></pre><p>A subscription allows us to subscribe on future values of some observable, and actors specify what to do with these new values:</p><pre><code class="language-julia hljs">actor = (value) -&gt; println(value)
+subscription1 = subscribe!(observable, actor)</code></pre><pre><code class="nohighlight hljs">TimerSubscription()</code></pre><pre><code class="language-julia hljs"># We always need to unsubscribe from some observables
+unsubscribe!(subscription1)</code></pre><pre><code class="language-julia hljs"># We can modify our observables
+modified = observable |&gt; filter(d -&gt; rem(d, 2) === 1) |&gt; map(Int, d -&gt; d ^ 2)</code></pre><pre><code class="nohighlight hljs">ProxyObservable(Int64, MapProxy(Int64))</code></pre><pre><code class="language-julia hljs">subscription2 = subscribe!(modified, (value) -&gt; println(value))</code></pre><pre><code class="nohighlight hljs">TimerSubscription()</code></pre><pre><code class="language-julia hljs">unsubscribe!(subscription2)</code></pre><pre><code class="language-julia hljs">@model function coin_toss_model(n)
+
+    # `datavar` creates data &#39;inputs&#39; in our model
+    # We will pass data later on to these inputs
+    # In this example we create a sequence of inputs that accepts Float64
+    y = datavar(Float64, n)
+    
+    # We endow θ parameter of our model with some prior
+    θ ~ Beta(2.0, 7.0)
+    
+    # We assume that the outcome of each coin flip 
+    # is modeled by a Bernoulli distribution
+    for i in 1:n
+        y[i] ~ Bernoulli(θ)
+    end
+    
+    # We return references to our data inputs and θ parameter
+    # We will use these references later on during the inference step
+    return y, θ
+end</code></pre><p>We can call the <code>inference</code> function to run inference in such model:</p><pre><code class="language-julia hljs">p = 0.75 # Bias of a coin
+
+dataset = float.(rand(Bernoulli(p), 500));
+
+result = infer(
+    model = coin_toss_model(length(dataset)),
+    data  = (y = dataset, )
+)
+
+println(&quot;Inferred bias: &quot;, mean_var(result.posteriors[:θ]))</code></pre><pre><code class="nohighlight hljs">Inferred bias: (0.7111984282907662, 0.00040273573311276487)</code></pre><p>We can see that the inferred bias is quite close to the actual value we used in the dataset generation.</p><p>The <code>RxInfer.jl</code> package&#39;s API is more flexible (and reactive!) and can return posterior marginal distributions in our specified model in the form of an observable. It is possible to subscribe on its future updates, but for convenience <code>RxInfer.jl</code> only caches the last obtained values of all marginals in a model. To get a reference for the posterior marginal of some random variable in a model <code>RxInfer.jl</code> exports two functions: </p><ul><li><code>getmarginal(x)</code>: for a single random variable <code>x</code></li><li><code>getmarginals(xs)</code>: for a dense sequence of random variables <code>sx</code></li></ul><p>Let&#39;s see how it works in practice. Here we create a simple coin toss model. We assume that observations are governed by the <code>Bernoulli</code> distribution with unknown bias parameter <code>θ</code>. To have a fully Bayesian treatment of this problem we endow <code>θ</code> with the <code>Beta</code> prior.</p><pre><code class="language-julia hljs">_, (y, θ) = create_model(coin_toss_model(length(dataset)));</code></pre><pre><code class="language-julia hljs"># As soon as we have a new value for the marginal posterior over the `θ` variable
+# we simply print the first two statistics of it
+θ_subscription = subscribe!(getmarginal(θ), (marginal) -&gt; println(&quot;New update: mean(θ) = &quot;, mean(marginal), &quot;, std(θ) = &quot;, std(marginal)));</code></pre><p>To pass data to our model we use <code>update!</code> function</p><pre><code class="language-julia hljs">update!(y, dataset)</code></pre><pre><code class="nohighlight hljs">New update: mean(θ) = 0.7111984282907662, std(θ) = 0.020068276784835436</code></pre><pre><code class="language-julia hljs"># It is necessary to always unsubscribe from running observables
+unsubscribe!(θ_subscription)</code></pre><pre><code class="language-julia hljs"># The ReactiveMP.jl inference backend is lazy and does not compute posterior marginals if no-one is listening for them
+# At this moment we have already unsubscribed from the new posterior updates so this `update!` does nothing
+update!(y, dataset)</code></pre><p><code>Rocket.jl</code> provides some useful built-in actors for obtaining posterior marginals especially with static datasets.</p><pre><code class="language-julia hljs"># the `keep` actor simply keeps all incoming updates in an internal storage, ordered
+θvalues = keep(Marginal)</code></pre><pre><code class="nohighlight hljs">KeepActor{Marginal}(Marginal[])</code></pre><pre><code class="language-julia hljs"># `getmarginal` always emits last cached value as its first value
+subscribe!(getmarginal(θ) |&gt; take(1), θvalues);</code></pre><pre><code class="language-julia hljs">getvalues(θvalues)</code></pre><pre><code class="nohighlight hljs">1-element Vector{Marginal}:
+ Marginal(Beta{Float64}(α=362.0, β=147.0))</code></pre><pre><code class="language-julia hljs">subscribe!(getmarginal(θ) |&gt; take(1), θvalues);</code></pre><pre><code class="language-julia hljs">getvalues(θvalues)</code></pre><pre><code class="nohighlight hljs">2-element Vector{Marginal}:
+ Marginal(Beta{Float64}(α=362.0, β=147.0))
+ Marginal(Beta{Float64}(α=362.0, β=147.0))</code></pre><pre><code class="language-julia hljs"># the `buffer` actor keeps very last incoming update in an internal storage and can also store 
+# an array of updates for a sequence of random variables
+θbuffer = buffer(Marginal, 1)</code></pre><pre><code class="nohighlight hljs">BufferActor{Marginal, Vector{Marginal}}(Marginal[#undef])</code></pre><pre><code class="language-julia hljs">subscribe!(getmarginals([ θ ]) |&gt; take(1), θbuffer);</code></pre><pre><code class="language-julia hljs">getvalues(θbuffer)</code></pre><pre><code class="nohighlight hljs">1-element Vector{Marginal}:
+ Marginal(Beta{Float64}(α=362.0, β=147.0))</code></pre><pre><code class="language-julia hljs">subscribe!(getmarginals([ θ ]) |&gt; take(1), θbuffer);</code></pre><pre><code class="language-julia hljs">getvalues(θbuffer)</code></pre><pre><code class="nohighlight hljs">1-element Vector{Marginal}:
+ Marginal(Beta{Float64}(α=362.0, β=147.0))</code></pre><h2 id="Reactive-Online-Inference"><a class="docs-heading-anchor" href="#Reactive-Online-Inference">Reactive Online Inference</a><a id="Reactive-Online-Inference-1"></a><a class="docs-heading-anchor-permalink" href="#Reactive-Online-Inference" title="Permalink"></a></h2><p>RxInfer.jl naturally supports reactive streams of data and it is possible to run reactive inference with some external datasource.</p><pre><code class="language-julia hljs">@model function online_coin_toss_model()
+    
+    # We create datavars for the prior 
+    # over `θ` variable
+    θ_a = datavar(Float64)
+    θ_b = datavar(Float64)
+    
+    θ ~ Beta(θ_a, θ_b)
+    
+    y = datavar(Float64)
+    y ~ Bernoulli(θ)
+
+end</code></pre><pre><code class="language-julia hljs">autoupdates = @autoupdates begin 
+    θ_a, θ_b = params(q(θ))
+end</code></pre><pre><code class="nohighlight hljs">(θ_a,θ_b = params(q(θ)),)</code></pre><pre><code class="language-julia hljs">rxresult = infer(
+    model = online_coin_toss_model(),
+    data  = (y = dataset, ),
+    autoupdates = autoupdates,
+    historyvars = (θ = KeepLast(), ),
+    keephistory = length(dataset),
+    initmarginals = (
+        θ = vague(Beta),
+    ),
+    autostart = true
+);</code></pre><pre><code class="language-julia hljs">animation = @animate for i in 1:length(dataset)
+    plot(mean.(rxresult.history[:θ][1:i]), ribbon = std.(rxresult.history[:θ][1:i]), title = &quot;Online coin bias inference&quot;, label = &quot;Inferred bias&quot;, legend = :bottomright)
+    hline!([ p ], label = &quot;Real bias&quot;, size = (600, 200))
+end
+
+gif(animation, &quot;../pics/online-coin-bias-inference.gif&quot;, fps = 24, show_msg = false);</code></pre><p><img src="../../../assets/examples/pics/online-coin-bias-inference.gif" alt/></p><p>In this example we used static dataset and the <code>history</code> field of the reactive inference result, but the <code>rxinference</code> function also supports any real-time reactive stream and can run indefinitely.</p><p>That was an example of exact Bayesian inference with Sum-Product (or Belief Propagation) algorithm. However, <code>RxInfer</code> is not limited to only the sum-product algorithm but it also supports variational message passing with <a href="https://www.mdpi.com/1099-4300/23/7/807">Constrained Bethe Free Energy Minimisation</a>.</p><h2 id="Variational-inference"><a class="docs-heading-anchor" href="#Variational-inference">Variational inference</a><a id="Variational-inference-1"></a><a class="docs-heading-anchor-permalink" href="#Variational-inference" title="Permalink"></a></h2><p>On a very high-level, ReactiveMP.jl is aimed to solve the Constrained Bethe Free Energy minimisation problem. For this task we approximate our exact posterior marginal distribution by some family of distributions <span>$q \in \mathcal{Q}$</span>. Often this involves assuming some factorization over <span>$q$</span>. For this purpose the <code>@model</code> macro supports optional <code>where { ... }</code> clauses for every <code>~</code> expression in a model specification.</p><pre><code class="language-julia hljs">@model function test_model6_with_manual_constraints(n)
+    τ ~ Gamma(shape = 1.0, rate = 1.0) 
+    μ ~ Normal(mean = 0.0, variance = 100.0)
+    
+    y = datavar(Float64, n)
+    
+    for i in 1:n
+        # Here we assume a mean-field assumption on our 
+        # variational family of distributions locally for the current node
+        y[i] ~ Normal(mean = μ, precision = τ) where { q = q(y[i])q(μ)q(τ) }
+    end
+
+end</code></pre><p>In this example we specified an extra constraints for <span>$q_a$</span> for Bethe factorisation:</p><p class="math-container">\[\begin{aligned}
+q(s) = \prod_{a \in \mathcal{V}} q_a(s_a) \prod_{i \in \mathcal{E}} q_i^{-1}(s_i)
+\end{aligned}\]</p><p>There are several options to specify the mean-field factorisation constraint. </p><pre><code class="language-julia hljs">y[i] ~ NormalMeanPrecision(μ, τ) where { q = q(y[i])q(μ)q(τ) } # With names from model specification
+y[i] ~ NormalMeanPrecision(μ, τ) where { q = q(out)q(mean)q(precision) } # With names from node specification
+y[i] ~ NormalMeanPrecision(μ, τ) where { q = MeanField() } # With alias name</code></pre><p>It is also possible to use local structured factorisation:</p><pre><code class="language-julia hljs">y[i] ~ NormalMeanPrecision(μ, τ) where { q = q(y[i], μ)q(τ) } # With names from model specification
+y[i] ~ NormalMeanPrecision(μ, τ) where { q = q(out, mean)q(precision) } # With names from node specification</code></pre><h3 id="RxInfer.jl-constraints-macro"><a class="docs-heading-anchor" href="#RxInfer.jl-constraints-macro">RxInfer.jl constraints macro</a><a id="RxInfer.jl-constraints-macro-1"></a><a class="docs-heading-anchor-permalink" href="#RxInfer.jl-constraints-macro" title="Permalink"></a></h3><p><code>RxInfer.jl</code> package exports <code>@constraints</code> macro to simplify factorisation and form constraints specification. Read more about <code>@constraints</code> macro in the corresponding documentation section, here we show a simple example of the same factorisation constraints specification, but with <code>@constraints</code> macro:</p><pre><code class="language-julia hljs">constraints6 = @constraints begin
+     q(μ, τ) = q(μ)q(τ) # Mean-Field over `μ` and `τ`
+end</code></pre><pre><code class="nohighlight hljs">Constraints:
+  marginals form:
+  messages form:
+  factorisation:
+    q(μ, τ) = q(μ)q(τ)
+Options:
+  warn = true</code></pre><p><strong>Note</strong>: <code>where</code> blocks have higher priority over constraints specification</p><pre><code class="language-julia hljs">@model function test_model6(n)
+    τ ~ Gamma(shape = 1.0, rate = 1.0) 
+    μ ~ Normal(mean = 0.0, variance = 100.0)
+    
+    y = datavar(Float64, n)
+    
+    for i in 1:n
+        # Here we assume a mean-field assumption on our 
+        # variational family of distributions locally for the current node
+        y[i] ~ Normal(mean = μ, precision = τ)
+    end
+    
+    return μ, τ, y
+end</code></pre><h3 id="Inference"><a class="docs-heading-anchor" href="#Inference">Inference</a><a id="Inference-1"></a><a class="docs-heading-anchor-permalink" href="#Inference" title="Permalink"></a></h3><p>To run inference in this model we again need to create a synthetic dataset:</p><pre><code class="language-julia hljs">dataset = rand(Normal(-3.0, inv(sqrt(5.0))), 1000);</code></pre><h4 id="inference-function"><a class="docs-heading-anchor" href="#inference-function"><code>inference</code> function</a><a id="inference-function-1"></a><a class="docs-heading-anchor-permalink" href="#inference-function" title="Permalink"></a></h4><p>In order to simplify model and inference testing, <code>RxInfer.jl</code> exports pre-written inference function, that is aimed for simple use cases with static datasets:</p><p>Use <code>?inference</code> to quickly check the documentation for the <code>inference</code> function.</p><pre><code class="language-julia hljs">result = infer(
+    model         = test_model6(length(dataset)),
+    data          = (y = dataset, ),
+    constraints   = constraints6, 
+    initmarginals = (μ = vague(NormalMeanPrecision), τ = vague(GammaShapeRate)),
+    returnvars    = (μ = KeepLast(), τ = KeepLast()),
+    iterations    = 10,
+    free_energy   = true,
+    showprogress  = true
+)</code></pre><pre><code class="nohighlight hljs">Inference results:
+  Posteriors       | available for (μ, τ)
+  Free Energy:     | Real[14763.3, 3275.61, 677.771, 638.999, 638.999, 638.
+999, 638.999, 638.999, 638.999, 638.999]</code></pre><pre><code class="language-julia hljs">println(&quot;μ: mean = &quot;, mean(result.posteriors[:μ]), &quot;, std = &quot;, std(result.posteriors[:μ]))</code></pre><pre><code class="nohighlight hljs">μ: mean = -2.9911720127823576, std = 0.014385693681891484</code></pre><pre><code class="language-julia hljs">println(&quot;τ: mean = &quot;, mean(result.posteriors[:τ]), &quot;, std = &quot;, std(result.posteriors[:τ]))</code></pre><pre><code class="nohighlight hljs">τ: mean = 4.832117477075352, std = 0.21588308782601645</code></pre><h4 id="Manual-inference"><a class="docs-heading-anchor" href="#Manual-inference">Manual inference</a><a id="Manual-inference-1"></a><a class="docs-heading-anchor-permalink" href="#Manual-inference" title="Permalink"></a></h4><p>For advanced use cases it is advised to write inference functions manually as it provides more flexibility, here is an example of manual inference specification:</p><pre><code class="language-julia hljs">model, (μ, τ, y) = create_model(test_model6(length(dataset)), constraints = constraints6);</code></pre><p>For variational inference we also usually need to set initial marginals for our inference procedure. For that purpose <code>ReactiveMP</code> inference engine export the <code>setmarginal!</code> function:</p><pre><code class="language-julia hljs">setmarginal!(μ, vague(NormalMeanPrecision))
+setmarginal!(τ, vague(GammaShapeRate))</code></pre><pre><code class="language-julia hljs">μ_values = keep(Marginal)
+τ_values = keep(Marginal)
+
+μ_subscription = subscribe!(getmarginal(μ), μ_values)
+τ_subscription = subscribe!(getmarginal(τ), τ_values)
+
+for i in 1:10
+    update!(y, dataset)
+end</code></pre><pre><code class="language-julia hljs">getvalues(μ_values)</code></pre><pre><code class="nohighlight hljs">10-element Vector{Marginal}:
+ Marginal(NormalWeightedMeanPrecision{Float64}(xi=-2.9971605593498067e-9, w
+=0.010000001002000566))
+ Marginal(NormalWeightedMeanPrecision{Float64}(xi=-27.458018715668306, w=9.
+189666623804795))
+ Marginal(NormalWeightedMeanPrecision{Float64}(xi=-9485.164667817513, w=317
+1.0563316412668))
+ Marginal(NormalWeightedMeanPrecision{Float64}(xi=-14446.172355628796, w=48
+29.6026806630625))
+ Marginal(NormalWeightedMeanPrecision{Float64}(xi=-14453.716930674778, w=48
+32.124956012063))
+ Marginal(NormalWeightedMeanPrecision{Float64}(xi=-14453.724464098663, w=48
+32.127474559346))
+ Marginal(NormalWeightedMeanPrecision{Float64}(xi=-14453.724471616966, w=48
+32.127477072738))
+ Marginal(NormalWeightedMeanPrecision{Float64}(xi=-14453.724471624482, w=48
+32.127477075371))
+ Marginal(NormalWeightedMeanPrecision{Float64}(xi=-14453.724471624493, w=48
+32.127477075371))
+ Marginal(NormalWeightedMeanPrecision{Float64}(xi=-14453.72447162447, w=483
+2.12747707537))</code></pre><pre><code class="language-julia hljs">getvalues(τ_values)</code></pre><pre><code class="nohighlight hljs">10-element Vector{Marginal}:
+ Marginal(GammaShapeRate{Float64}(a=501.0, b=5.00000000004577e14))
+ Marginal(GammaShapeRate{Float64}(a=501.0, b=54577.1453944523))
+ Marginal(GammaShapeRate{Float64}(a=501.0, b=157.99201512791828))
+ Marginal(GammaShapeRate{Float64}(a=501.0, b=103.7354562023287))
+ Marginal(GammaShapeRate{Float64}(a=501.0, b=103.6813081974935))
+ Marginal(GammaShapeRate{Float64}(a=501.0, b=103.68125415777223))
+ Marginal(GammaShapeRate{Float64}(a=501.0, b=103.6812541038407))
+ Marginal(GammaShapeRate{Float64}(a=501.0, b=103.68125410378694))
+ Marginal(GammaShapeRate{Float64}(a=501.0, b=103.68125410378688))
+ Marginal(GammaShapeRate{Float64}(a=501.0, b=103.68125410378705))</code></pre><pre><code class="language-julia hljs">println(&quot;μ: mean = &quot;, mean(last(μ_values)), &quot;, std = &quot;, std(last(μ_values)))</code></pre><pre><code class="nohighlight hljs">μ: mean = -2.9911720127823576, std = 0.014385693681891484</code></pre><pre><code class="language-julia hljs">println(&quot;τ: mean = &quot;, mean(last(τ_values)), &quot;, std = &quot;, std(last(τ_values)))</code></pre><pre><code class="nohighlight hljs">τ: mean = 4.832117477075352, std = 0.21588308782601645</code></pre><h3 id="Form-constraints"><a class="docs-heading-anchor" href="#Form-constraints">Form constraints</a><a id="Form-constraints-1"></a><a class="docs-heading-anchor-permalink" href="#Form-constraints" title="Permalink"></a></h3><p>In order to support form constraints, the <code>randomvar()</code> function also supports a <code>where { ... }</code> clause with some optional arguments. One of these arguments is <code>form_constraint</code> that allows us to specify a form constraint to the random variables in our model. Another one is <code>prod_constraint</code> that allows to specify an additional constraints during computation of product of two colliding messages. For example we can perform the EM algorithm if we assign a point mass contraint on some variables in our model.</p><p>&lt;img style=&quot;display: block;   margin-left: auto;   margin-right: auto;   width: 50%;&quot; src=&quot;./pics/posterior.png&quot; /&gt;</p><pre><code class="language-julia hljs">@model function test_model7_with_manual_constraints(n)
+    τ ~ Gamma(shape = 1.0, rate = 1.0) 
+    
+    # In case of form constraints `randomvar()` call is necessary
+    μ = randomvar() where { marginal_form_constraint = PointMassFormConstraint() }
+    μ ~ Normal(mean = 0.0, variance = 100.0)
+    
+    y = datavar(Float64, n)
+    
+    for i in 1:n
+        y[i] ~ Normal(mean = μ, precision = τ) where { q = q(y[i])q(μ)q(τ) }
+    end
+    
+    return μ, τ, y
+end</code></pre><p>As in the previous example we can use <code>@constraints</code> macro to achieve the same goal with a nicer syntax:</p><pre><code class="language-julia hljs">constraints7 = @constraints begin 
+    q(μ) :: PointMass
+    
+    q(μ, τ) = q(μ)q(τ) # Mean-Field over `μ` and `τ`
+end</code></pre><pre><code class="nohighlight hljs">Constraints:
+  marginals form:
+    q(μ) :: PointMassFormConstraint() [ prod_constraint = GenericProd() ]
+  messages form:
+  factorisation:
+    q(μ, τ) = q(μ)q(τ)
+Options:
+  warn = true</code></pre><p>In this example we specified an extra constraints for <span>$q_i$</span> for Bethe factorisation:</p><p class="math-container">\[\begin{aligned}
+q(s) = \prod_{a \in \mathcal{V}} q_a(s_a) \prod_{i \in \mathcal{E}} q_i^{-1}(s_i)
+\end{aligned}\]</p><pre><code class="language-julia hljs">@model function test_model7(n)
+    τ ~ Gamma(shape = 1.0, rate = 1.0) 
+    
+    # In case of form constraints `randomvar()` call is necessary
+    μ = randomvar()
+    μ ~ Normal(mean = 0.0, variance = 100.0)
+    
+    y = datavar(Float64, n)
+    
+    for i in 1:n
+        y[i] ~ Normal(mean = μ, precision = τ)
+    end
+    
+    return μ, τ, y
+end</code></pre><pre><code class="language-julia hljs">model, (μ, τ, y) = create_model(test_model7(length(dataset)), constraints = constraints7);</code></pre><pre><code class="language-julia hljs">setmarginal!(μ, vague(NormalMeanPrecision))
+setmarginal!(τ, PointMass(1.0))
+
+μ_values = keep(Marginal)
+τ_values = keep(Marginal)
+
+μ_subscription = subscribe!(getmarginal(μ), μ_values)
+τ_subscription = subscribe!(getmarginal(τ), τ_values)
+
+for i in 1:10
+    update!(y, dataset)
+end</code></pre><pre><code class="language-julia hljs">getvalues(μ_values) |&gt; last</code></pre><pre><code class="nohighlight hljs">Marginal(PointMass{Float64}(-2.9911720189601794))</code></pre><pre><code class="language-julia hljs">getvalues(τ_values) |&gt; last</code></pre><pre><code class="nohighlight hljs">Marginal(GammaShapeRate{Float64}(a=501.0, b=103.57778001239399))</code></pre><p>By default <code>RxInfer</code> tries to compute an analytical product of two colliding messages and throws an error if no analytical solution is known. However, it is possible to fall back to a generic product that does not require an analytical solution to be known. In this case the inference backend will simply propagate the product of two messages in a form of a tuple. It is not possible to use such a tuple-product during an inference and in this case it is mandatory to use some form constraint to approximate this product.</p><pre><code class="language-julia hljs">μ = randomvar() where { 
+    prod_constraint = ProdGeneric(),
+    form_constraint = SampleListFormConstraint() 
+}</code></pre><p>Sometimes it is useful to preserve a specific parametrisation of the resulting product later on in an inference procedure. The <code>ReactiveMP</code> inference engine exports a special <code>prod_constraint</code> called <code>ProdPreserveType</code> especially for that purpose:</p><pre><code class="language-julia hljs">μ = randomvar() where { prod_constraint = ProdPreserveType(NormalWeightedMeanPrecision) }</code></pre><p><strong>Note</strong>: <code>@constraints</code> macro specifies required <code>prod_constraint</code> automatically.</p><h3 id="Free-Energy"><a class="docs-heading-anchor" href="#Free-Energy">Free Energy</a><a id="Free-Energy-1"></a><a class="docs-heading-anchor-permalink" href="#Free-Energy" title="Permalink"></a></h3><p>During variational inference the <code>RxInfer</code> optimises a special functional called the Bethe Free Energy functional. It is possible to obtain its values for all VMP iterations with the <code>score</code> function.</p><pre><code class="language-julia hljs">model, (μ, τ, y) = create_model(test_model6(length(dataset)), constraints = constraints6);</code></pre><pre><code class="language-julia hljs">bfe_observable = score(model, Float64, BetheFreeEnergy())</code></pre><pre><code class="nohighlight hljs">ProxyObservable(Float64, ErrorIfProxy())</code></pre><pre><code class="language-julia hljs">bfe_subscription = subscribe!(bfe_observable, (fe) -&gt; println(&quot;Current BFE value: &quot;, fe));</code></pre><pre><code class="language-julia hljs"># Reset the model with vague marginals
+setmarginal!(μ, vague(NormalMeanPrecision))
+setmarginal!(τ, vague(GammaShapeRate))
+
+for i in 1:10
+    update!(y, dataset)
+end</code></pre><pre><code class="nohighlight hljs">Current BFE value: 651.5265205942324
+Current BFE value: 638.9989032798353
+Current BFE value: 638.9989030309189
+Current BFE value: 638.9989030309166
+Current BFE value: 638.9989030309184
+Current BFE value: 638.9989030309189
+Current BFE value: 638.9989030309207
+Current BFE value: 638.9989030309184
+Current BFE value: 638.9989030309189
+Current BFE value: 638.9989030309193</code></pre><pre><code class="language-julia hljs"># It always necessary to unsubscribe and release computer resources
+unsubscribe!([ μ_subscription, τ_subscription, bfe_subscription ])</code></pre><h3 id="Meta-data-specification"><a class="docs-heading-anchor" href="#Meta-data-specification">Meta data specification</a><a id="Meta-data-specification-1"></a><a class="docs-heading-anchor-permalink" href="#Meta-data-specification" title="Permalink"></a></h3><p>During model specification some functional dependencies may accept an optional <code>meta</code> object in the <code>where { ... }</code> clause. The purpose of the <code>meta</code> object is to adjust, modify or supply some extra information to the inference backend during the computations of the messages. The <code>meta</code> object for example may contain an approximation method that needs to be used during various approximations or it may specify the tradeoff between accuracy and performance:</p><pre><code class="language-julia hljs"># In this example the `meta` object for the autoregressive `AR` node specifies the variate type of 
+# the autoregressive process and its order. In addition it specifies that the message computation rules should
+# respect accuracy over speed with the `ARsafe()` strategy. In contrast, `ARunsafe()` strategy tries to speedup computations
+# by cost of possible numerical instabilities during an inference procedure
+s[i] ~ AR(s[i - 1], θ, γ) where { q = q(s[i - 1], s[i])q(θ)q(γ), meta = ARMeta(Multivariate, order, ARsafe()) }
+...
+s[i] ~ AR(s[i - 1], θ, γ) where { q = q(s[i - 1], s[i])q(θ)q(γ), meta = ARMeta(Univariate, order, ARunsafe()) }</code></pre><p>Another example with <code>GaussianControlledVariance</code>, or simply <code>GCV</code> [see Hierarchical Gaussian Filter], node:</p><pre><code class="language-julia hljs"># In this example we specify structured factorisation and flag meta with `GaussHermiteCubature` 
+# method with `21` sigma points for approximation of non-lineariety between hierarchy layers
+xt ~ GCV(xt_min, zt, real_k, real_w) where { q = q(xt, xt_min)q(zt)q(κ)q(ω), meta = GCVMetadata(GaussHermiteCubature(21)) }</code></pre><p>The Meta object is useful to pass any extra information to a node that is not a random variable or constant model variable. It may include extra approximation methods, differentiation methods, optional non-linear functions, extra inference parameters etc.</p><h3 id="RxInfer.jl-@meta-macro"><a class="docs-heading-anchor" href="#RxInfer.jl-@meta-macro">RxInfer.jl <code>@meta</code> macro</a><a id="RxInfer.jl-@meta-macro-1"></a><a class="docs-heading-anchor-permalink" href="#RxInfer.jl-@meta-macro" title="Permalink"></a></h3><p>Users can use <code>@meta</code> macro from the <code>RxInfer.jl</code> package to achieve the same goal. Read more about <code>@meta</code> macro in the corresponding documentation section. Here is a simple example of the same meta specification:</p><pre><code class="language-julia hljs">@meta begin 
+     AR(s, θ, γ) -&gt; ARMeta(Multivariate, 5, ARsafe())
+end</code></pre><pre><code class="nohighlight hljs">Meta specification:
+  AR(s, θ, γ) -&gt; ARMeta{Multivariate, ARsafe}(5, ARsafe())
+Options:
+  warn = true</code></pre><h2 id="Creating-custom-nodes-and-message-computation-rules"><a class="docs-heading-anchor" href="#Creating-custom-nodes-and-message-computation-rules">Creating custom nodes and message computation rules</a><a id="Creating-custom-nodes-and-message-computation-rules-1"></a><a class="docs-heading-anchor-permalink" href="#Creating-custom-nodes-and-message-computation-rules" title="Permalink"></a></h2><h3 id="Custom-nodes"><a class="docs-heading-anchor" href="#Custom-nodes">Custom nodes</a><a id="Custom-nodes-1"></a><a class="docs-heading-anchor-permalink" href="#Custom-nodes" title="Permalink"></a></h3><p>To create a custom functional form and to make it available during model specification the <code>ReactiveMP</code> inference engine exports the <code>@node</code> macro:</p><pre><code class="language-julia hljs"># `@node` macro accepts a name of the functional form, its type, either `Stochastic` or `Deterministic` and an array of interfaces:
+@node NormalMeanVariance Stochastic [ out, μ, v ]
+
+# Interfaces may have aliases for their names that might be convenient for factorisation constraints specification
+@node NormalMeanVariance Stochastic [ out, (μ, aliases = [ mean ]), (v, aliases = [ var ]) ]
+
+# `NormalMeanVariance` structure declaration must exist, otherwise `@node` macro will throw an error
+struct NormalMeanVariance end 
+
+@node NormalMeanVariance Stochastic [ out, μ, v ]
+
+# It is also possible to use function objects as a node functional form
+function dot end
+
+# Syntax for functions is a bit differet, as it is necesssary to use `typeof(...)` function for them 
+# out = dot(x, a)
+@node typeof(dot) Deterministic [ out, x, a ]</code></pre><p><strong>Note</strong>: Deterministic nodes do not support factorisation constraints with the <code>where { q = ... }</code> clause.</p><p>After that it is possible to use the newly created node during model specification:</p><pre><code class="language-julia hljs">@model function test_model()
+    ...
+    y ~ dot(x, a)
+    ...
+end</code></pre><h3 id="Custom-messages-computation-rules"><a class="docs-heading-anchor" href="#Custom-messages-computation-rules">Custom messages computation rules</a><a id="Custom-messages-computation-rules-1"></a><a class="docs-heading-anchor-permalink" href="#Custom-messages-computation-rules" title="Permalink"></a></h3><p><code>RxInfer.jl</code> exports the <code>@rule</code> macro to create custom message computation rules. For example let us create a simple <code>+</code> node to be available for usage in the model specification usage. We refer to <em>A Factor Graph Approach to Signal Modelling , System Identification and Filtering</em> [ Sascha Korl, 2005, page 32 ] for a rigorous explanation of the <code>+</code> node in factor graphs. According to Korl, assuming that inputs are Gaussian Sum-Product message computation rule for <code>+</code> node is the following:</p><p class="math-container">\[\begin{aligned}
+\mu_z = \mu_x + \mu_y\\
+V_z = V_x + V_y
+\end{aligned}\]</p><p>To specify this in <code>RxInfer.jl</code> we use the <code>@node</code> and <code>@rule</code> macros:</p><pre><code class="language-julia hljs">@node typeof(+) Deterministic  [ z, x, y ]
+
+@rule typeof(+)(:z, Marginalisation) (m_x::UnivariateNormalDistributionsFamily, m_y::UnivariateNormalDistributionsFamily) = begin
+    x_mean, x_var = mean_var(m_x)
+    y_mean, y_var = mean_var(m_y)
+    return NormalMeanVariance(x_mean + y_mean, x_var + y_var)
+end</code></pre><p>In this example, for the <code>@rule</code> macro, we specify a type of our functional form: <code>typeof(+)</code>. Next, we specify an edge we are going to compute an outbound message for. <code>Marginalisation</code> indicates that the corresponding message respects the marginalisation constraint for posterior over corresponding edge:</p><p class="math-container">\[\begin{aligned}
+q(z) = \int q(z, x, y) \mathrm{d}x\mathrm{d}y
+\end{aligned}\]</p><p>If we look on difference between sum-product rules and variational rules with mean-field assumption we notice that they require different local information to compute an outgoing message:</p><p><img src="../../../assets/examples/pics/sp.png" alt/> <img src="../../../assets/examples/pics/vmp.png" alt/></p><p class="math-container">\[\begin{aligned}
+\mu(z) = \int f(x, y, z)\mu(x)\mu(y)\mathrm{d}x\mathrm{d}y
+\end{aligned}\]</p><p class="math-container">\[\begin{aligned}
+\nu(z) = \exp{ \int \log f(x, y, z)q(x)q(y)\mathrm{d}x\mathrm{d}y }
+\end{aligned}\]</p><p>The <code>@rule</code> macro supports both cases with special prefixes during rule specification:</p><ul><li><code>m_</code> prefix corresponds to the incoming message on a specific edge</li><li><code>q_</code> prefix corresponds to the posterior marginal of a specific edge</li></ul><p>Example of a Sum-Product rule with <code>m_</code> messages used:</p><pre><code class="language-julia hljs">@rule NormalMeanPrecision(:μ, Marginalisation) (m_out::UnivariateNormalDistributionsFamily, m_τ::PointMass) = begin 
+    m_out_mean, m_out_cov = mean_cov(m_out)
+    return NormalMeanPrecision(m_out_mean, inv(m_out_cov + inv(mean(m_τ))))
+end</code></pre><p>Example of a Variational rule with Mean-Field assumption with <code>q_</code> posteriors used:</p><pre><code class="language-julia hljs">@rule NormalMeanPrecision(:μ, Marginalisation) (q_out::Any, q_τ::Any) = begin 
+    return NormalMeanPrecision(mean(q_out), mean(q_τ))
+end</code></pre><p><code>RxInfer.jl</code> also supports structured rules. It is possible to obtain joint marginal over a set of edges:</p><pre><code class="language-julia hljs">@rule NormalMeanPrecision(:τ, Marginalisation) (q_out_μ::Any, ) = begin
+    m, V = mean_cov(q_out_μ)
+    θ = 2 / (V[1,1] - V[1,2] - V[2,1] + V[2,2] + abs2(m[1] - m[2]))
+    α = convert(typeof(θ), 1.5)
+    return Gamma(α, θ)
+end</code></pre><p><strong>NOTE</strong>: In the <code>@rule</code> specification the messages or marginals arguments <strong>must</strong> be in order with interfaces specification from <code>@node</code> macro:</p><pre><code class="language-julia hljs"># Inference backend expects arguments in `@rule` macro to be in the same order
+@node NormalMeanPrecision Stochastic [ out, μ, τ ]</code></pre><p>Any rule always has access to the meta information with hidden the <code>meta::Any</code> variable:</p><pre><code class="language-julia hljs">@rule MyCustomNode(:out, Marginalisation) (m_in1::Any, m_in2::Any) = begin 
+    ...
+    println(meta)
+    ...
+end</code></pre><p>It is also possible to dispatch on a specific type of a meta object:</p><pre><code class="language-julia hljs">@rule MyCustomNode(:out, Marginalisation) (m_in1::Any, m_in2::Any, meta::LaplaceApproximation) = begin 
+    ...
+end</code></pre><p>or</p><pre><code class="language-julia hljs">@rule MyCustomNode(:out, Marginalisation) (m_in1::Any, m_in2::Any, meta::GaussHermiteCubature) = begin 
+    ...
+end</code></pre><h3 id="Customizing-messages-computational-pipeline"><a class="docs-heading-anchor" href="#Customizing-messages-computational-pipeline">Customizing messages computational pipeline</a><a id="Customizing-messages-computational-pipeline-1"></a><a class="docs-heading-anchor-permalink" href="#Customizing-messages-computational-pipeline" title="Permalink"></a></h3><p>In certain situations it might be convenient to customize the default message computational pipeline. <code>RxInfer.jl</code> supports the <code>pipeline</code> keyword in the <code>where { ... }</code> clause to add some extra steps after a message has been computed. A use case might be an extra approximation method to preserve conjugacy in the model, debugging or simple printing.</p><p>&lt;img style=&quot;display: block;   margin-left: auto;   margin-right: auto;   width: 30%;&quot; src=&quot;./pics/pipeline.png&quot; width=&quot;20%&quot; /&gt;</p><pre><code class="language-julia hljs"># Logs all outbound messages
+y[i] ~ NormalMeanPrecision(x[i], 1.0) where { pipeline = LoggerPipelineStage() }
+# Initialise messages to be vague
+y[i] ~ NormalMeanPrecision(x[i], 1.0) where { pipeline = InitVaguePipelineStage() }
+# In principle, it is possible to approximate outbound messages with Laplace Approximation
+y[i] ~ NormalMeanPrecision(x[i], 1.0) where { pipeline = LaplaceApproximation() }</code></pre><p>Let us return to the coin toss model, but this time we want to print flowing messages:</p><pre><code class="language-julia hljs">@model function coin_toss_model_log(n)
+
+    y = datavar(Float64, n)
+
+    θ ~ Beta(2.0, 7.0) where { pipeline = LoggerPipelineStage(&quot;θ&quot;) }
+
+    for i in 1:n
+        y[i] ~ Bernoulli(θ)  where { pipeline = LoggerPipelineStage(&quot;y[$i]&quot;) }
+    end
+    
+    return y, θ
+end</code></pre><pre><code class="language-julia hljs">_, (y, θ) = RxInfer.create_model(coin_toss_model_log(5));</code></pre><pre><code class="language-julia hljs">θ_subscription = subscribe!(getmarginal(θ), (value) -&gt; println(&quot;New posterior marginal for θ: &quot;, value));</code></pre><pre><code class="nohighlight hljs">[θ][Beta][out]: VariationalMessage()</code></pre><pre><code class="language-julia hljs">coinflips = float.(rand(Bernoulli(0.5), 5));</code></pre><pre><code class="language-julia hljs">update!(y, coinflips)</code></pre><pre><code class="nohighlight hljs">[y[1]][Bernoulli][p]: VariationalMessage()
+[y[2]][Bernoulli][p]: VariationalMessage()
+[y[3]][Bernoulli][p]: VariationalMessage()
+[y[4]][Bernoulli][p]: VariationalMessage()
+[y[5]][Bernoulli][p]: VariationalMessage()
+New posterior marginal for θ: Marginal(Beta{Float64}(α=7.0, β=7.0))</code></pre><pre><code class="language-julia hljs">unsubscribe!(θ_subscription)</code></pre><pre><code class="language-julia hljs"># Inference is lazy and does not send messages if no one is listening for them
+update!(y, coinflips)</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../Active Inference Mountain car/">« Active Inference Mountain car</a><a class="docs-footer-nextpage" href="../Assessing People Skills/">Assessing People’s Skills »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.3.0 on <span class="colophon-date" title="Monday 18 March 2024 15:32">Monday 18 March 2024</span>. Using Julia version 1.10.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
