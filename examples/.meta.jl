@@ -154,6 +154,12 @@ return (
             category = :problem_specific
         ),
         (
+            filename  = "Structural Dynamics with Augmented Kalman Filter.ipynb", 
+            title = "Structural Dynamics with Augmented Kalman Filter", 
+            description = "In this example, we estimate system states and unknown input forces for a simple **structural dynamical system** using the Augmented Kalman Filter (AKF) (https://www.sciencedirect.com/science/article/abs/pii/S0888327011003931) in **RxInfer**.",
+            category = :problem_specific
+        ),
+        (
             filename  = "Tiny Benchmark.ipynb", 
             title = "Tiny Benchmark", 
             description = "Tiny Benchmark for Internal testing.",

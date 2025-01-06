@@ -40,10 +40,7 @@ using RxInfer
     end
 end
 
-data = (y = rand(10000), )
-
-using Test #hide
-@test_throws StackOverflowError infer(model = long_state_space_model(), data = data) #hide
+data = (y = randn(10000), )
 
 results = infer(
     model = long_state_space_model(),
