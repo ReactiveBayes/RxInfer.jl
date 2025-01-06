@@ -171,8 +171,9 @@ y ~ Normal(mean = x, variance = 1.0)
 ```
 
 Using `x = exp(t)` directly would be incorrect and most likely would result in an `MethodError` because `t` does not have a definitive value at the model creation time 
-(remember that our models create a factor graph under the hood and latent states do not have a value until the inference is performed). At the model creation time, 
-`t` holds a reference to a node in the graph, instead of an actual value sample from the `Normal` distribution.
+(remember that our models create a factor graph under the hood and latent states do not have a value until the inference is performed).
+
+See [Using `=` instead of `:=` for deterministic nodes](@ref usage-colon-equality) for a detailed explanation of this design choice.
 
 ### [Control flow statements](@id user-guide-model-specification-node-creation-control-flow)
 
@@ -260,16 +261,45 @@ Specifically for the Gaussian/Normal case we have custom implementations that yi
 
 ## [Model structure visualisation](@id user-guide-model-specification-visualization)
 
-It is also possible to visualize the model structure after conditioning on data. For that we need two extra packages installed: `Cairo` and `GraphPlot`. Note, that those packages are not included in the `RxInfer` package and must be installed separately.
+Models specified using GraphPPL.jl in RxInfer.jl can be visualized in several ways to help understand their structure and relationships between variables. Let's create a simple model and visualize it.
 
-```@example model-specification-ssm
+```@example model-specification-visualization
+using RxInfer
+
+@model function coin_toss(y)
+    t ~ Beta(1, 1)
+    for i in eachindex(y)
+        y[i] ~ Bernoulli(t)
+    end
+end
+
+model_generator = coin_toss() | (y = [ true, false, true ], )
+model_to_plot   = RxInfer.getmodel(RxInfer.create_model(model_generator))
+nothing #hide
+```
+
+### [GraphViz.jl](@id user-guide-model-specification-visualization-graphviz)
+
+It is possible to visualize the model structure after conditioning on data with the `GraphViz.jl` package.
+Note that this package is not included in the `RxInfer` package and must be installed separately.
+
+```@example model-specification-visualization
+using GraphViz
+
+# Call `load` function from `GraphViz` to visualise the structure of the graph
+GraphViz.load(model_to_plot, strategy = :simple)
+```
+
+### [Cairo](@id user-guide-model-specification-visualization-cairo)
+
+There is an alternative way to visuzalise the model structure with `Cairo` and `GraphPlot`
+Note, that those packages are also not included in the `RxInfer` package and must be installed separately.
+
+```@example model-specification-visualization
 using Cairo, GraphPlot
 
-# `Create` the actual graph of the model conditioned on the data
-model = RxInfer.create_model(conditioned)
-
 # Call `gplot` function from `GraphPlot` to visualise the structure of the graph
-GraphPlot.gplot(RxInfer.getmodel(model))
+GraphPlot.gplot(model_to_plot)
 ```
 
 ## Node Contraction

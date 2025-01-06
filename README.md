@@ -166,32 +166,11 @@ Our high-level project roadmap outlines the key milestones and focus areas for t
 
 | Q1/Q2 2024          | Q3/Q4 2024                | 2025                | 
 |---------------------|---------------------------|--------------------|
-| 🧩 **Nested models with [GraphPPL.jl](https://github.com/reactivebayes/GraphPPL.jl)** ✅    | 🌐 **Graph structure visualization** | 🔀 **Stochastic Processes** |
-| 🔄 **Development of [ExponentialFamilyProjection.jl]()** ✅                | 🧠 **Automated inference with [ExponentialFamilyProjection.jl](https://github.com/reactivebayes/ExponentialFamilyProjection.jl)** | 🚀 **Robustness & Memory-efficiency** |
+| 🧩 **Nested models with [GraphPPL.jl](https://github.com/reactivebayes/GraphPPL.jl)** ✅    | 🌐 **Graph structure visualization** ✅ | 🧠🧠 **Automated Inference** |
+| 🔄 **Development of [ExponentialFamilyProjection.jl]()** ✅                | 🧠 **Semi-automated inference with [ExponentialFamilyProjection.jl](https://github.com/reactivebayes/ExponentialFamilyProjection.jl)** ✅| 🚀 **Stochastic Processes** |
 
 For a more granular view of our progress and ongoing tasks, check out our [project board](https://github.com/orgs/reactivebayes/projects/2/views/4) or join our 4-weekly [public meetings](https://dynalist.io/d/F4aA-Z2c8X-M1iWTn9hY_ndN).
 
-# External Contributors
-
-RxInfer has benefited from the contributions and development efforts of external collaborators and organizations. We're grateful for their involvement in advancing the project.
-
-## Active Inference Institute
-
-Members of the [Active Inference Institute](https://www.activeinference.org/) have been working on improving the visualization capabilities of RxInfer/GraphPPL. Their efforts focus on developing better model visualization capabilities, creating various summary/subgraph visualization modalities, implementing different graph layout algorithms, and improving the ability to inspect and understand models.
-
-For more details on their ongoing work, see the [RxInfer development project board](https://coda.io/d/RxInfer-2024-Active-Inference-Institute_ddtS-XZ4BJb/Developing-RxInfer-jl_sufeCeIa#_lutfq_7F).
-
-## Educational Content
-
-Educational content and tutorials related to RxInfer are being developed and can be found on [Learnable Loop](https://learnableloop.com/#category=RxInfer). These resources cover a range of topics including visualizing Forney Factor Graphs, sales forecasting with time-varying autoregressive models, hidden Markov models with control, and various applications of Active Inference across different domains.
-
-# Contributing
-
-We welcome contributions from the community. If you are interested in contributing to the development of `RxInfer.jl`, please check out our [contributing guide](https://reactivebayes.github.io/RxInfer.jl/stable/contributing/guide), the [contributing guidelines](https://reactivebayes.github.io/RxInfer.jl/stable/contributing/guidelines), or look at the [issues linked with the `good first issue` label](https://github.com/ReactiveBayes/RxInfer.jl/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22) to get started.
-
-# Where to go next?
-
-There are a set of [examples](https://reactivebayes.github.io/RxInfer.jl/stable/examples/overview/) available in `RxInfer` repository that demonstrate the more advanced features of the package. Alternatively, you can head to the [documentation](https://reactivebayes.github.io/RxInfer.jl/stable/) that provides more detailed information of how to use `RxInfer` to specify more complex probabilistic models.
 
 ## Ecosystem
 
@@ -200,6 +179,36 @@ The `RxInfer` framework consists of three *core* packages developed by [Reactive
 - [`ReactiveMP.jl`](https://github.com/reactivebayes/ReactiveMP.jl) - the underlying message passing-based inference engine
 - [`GraphPPL.jl`](https://github.com/reactivebayes/GraphPPL.jl) - model and constraints specification package
 - [`Rocket.jl`](https://github.com/reactivebayes/Rocket.jl) - reactive extensions package for Julia 
+
+# Where to go next?
+
+There are a set of [examples](https://reactivebayes.github.io/RxInfer.jl/stable/examples/overview/) available in `RxInfer` repository that demonstrate the more advanced features of the package. Alternatively, you can head to the [documentation](https://reactivebayes.github.io/RxInfer.jl/stable/) that provides more detailed information of how to use `RxInfer` to specify more complex probabilistic models.
+
+
+# Join Our Community and Contribute to RxInfer
+
+RxInfer is a community-driven project and we welcome all contributions! To get started:
+- Check out our [contributing guide](https://reactivebayes.github.io/RxInfer.jl/stable/contributing/guide)
+- Review the [contributing guidelines](https://reactivebayes.github.io/RxInfer.jl/stable/contributing/guidelines)
+- Browse [beginner-friendly issues](https://github.com/ReactiveBayes/RxInfer.jl/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22) to find something that interests you
+
+## Active Inference Institute Collaboration
+
+The [Active Inference Institute](https://www.activeinference.org/) community members are enhancing RxInfer/GraphPPL's visualization capabilities. Their work includes:
+- Developing advanced model visualization features ✅ ([PR](https://github.com/ReactiveBayes/GraphPPL.jl/pull/251))
+- Creating summary and subgraph visualization modalities
+- Implementing various graph layout algorithms
+- Improving model inspection and understanding tools
+
+For more details on ongoing work, see the [RxInfer development project board](https://coda.io/d/RxInfer-2024-Active-Inference-Institute_ddtS-XZ4BJb/Developing-RxInfer-jl_sufeCeIa#_lutfq_7F).
+
+## Learning Resources
+
+The community maintains educational content and tutorials on [Learnable Loop](https://learnableloop.com/#category=RxInfer), covering topics such as:
+- Visualizing Forney Factor Graphs
+- Sales forecasting with time-varying autoregressive models
+- Hidden Markov models with control
+- Applications of Active Inference across different domains
 
 ## JuliaCon 2023 presentation
 
@@ -216,6 +225,7 @@ Also check out the recorded presentation at the Julia User Group Munich meetup f
 <p align="center">
     <a href="https://www.youtube.com/watch?v=KuluqEzFtm8"><img style="width: 100%" src="https://img.youtube.com/vi/KuluqEzFtm8/0.jpg"></a>
 </p>
+
 
 # License
 

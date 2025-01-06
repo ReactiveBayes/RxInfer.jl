@@ -1,5 +1,6 @@
 using RxInfer
 using Documenter
+using DocumenterMermaid
 
 ## https://discourse.julialang.org/t/generation-of-documentation-fails-qt-qpa-xcb-could-not-connect-to-display/60988
 ## https://gr-framework.org/workstations.html#no-output
@@ -69,10 +70,13 @@ foreach(vcat(ExamplesOverviewPath, ExamplesCategoriesOverviewPaths)) do path
         @warn "`$(path)` does not exist. Generating an empty overview. Use the `make examples` command to generate the overview and all examples."
         mkpath(dirname(path))
         open(path, "w") do f
-            write(f, """
-            $(isequal(path, ExamplesOverviewPath) ? "# [Examples overview](@id examples-overview)" : "")
-            The overview is missing. Use the `make examples` command to generate the overview and all examples.
-            """)
+            write(
+                f,
+                """
+       $(isequal(path, ExamplesOverviewPath) ? "# [Examples overview](@id examples-overview)" : "")
+       The overview is missing. Use the `make examples` command to generate the overview and all examples.
+       """
+            )
         end
     end
 end
@@ -82,8 +86,10 @@ ExamplesPages = map(collect(pairs(ExamplesCategoriesPages))) do (label, info)
     return info.title => info.pages
 end
 
+draft = get(ENV, "DOCS_DRAFT", "false") == "true"
+
 makedocs(;
-    draft = false,
+    draft = draft,
     warnonly = false,
     modules = [RxInfer],
     authors = "Bagaev Dmitry <d.v.bagaev@tue.nl> and contributors",
@@ -105,22 +111,16 @@ makedocs(;
             "Model specification"       => "manuals/model-specification.md",
             "Constraints specification" => "manuals/constraints-specification.md",
             "Meta specification"        => "manuals/meta-specification.md",
-            "Inference specification"   => [
-                "Overview" => "manuals/inference/overview.md", 
-                "Static inference" => "manuals/inference/static.md", 
-                "Streamline inference" => "manuals/inference/streamlined.md",
-                "Initialization"   => "manuals/inference/initialization.md",
-                "Auto-updates"   => "manuals/inference/autoupdates.md",
-                "Deterministic nodes" => "manuals/inference/delta-node.md",
-                "Non-conjugate inference" => "manuals/inference/nonconjugate.md",
-                "Undefined message update rules" => "manuals/inference/undefinedrules.md"
-            ],
-            "Inference customization"   => [
-                "Defining a custom node and rules" => "manuals/customization/custom-node.md",
-                "Inference results postprocessing" => "manuals/customization/postprocess.md", 
-            ],
-            "Debugging" => "manuals/debugging.md",
-            "Migration from v2 to v3" => "manuals/migration-guide-v2-v3.md"
+            "Inference specification"   => ["Overview" => "manuals/inference/overview.md", "Static inference" => "manuals/inference/static.md", "Streamline inference" => "manuals/inference/streamlined.md", "Initialization" => "manuals/inference/initialization.md", "Auto-updates" => "manuals/inference/autoupdates.md", "Deterministic nodes" => "manuals/inference/delta-node.md", "Non-conjugate inference" => "manuals/inference/nonconjugate.md", "Undefined message update rules" => "manuals/inference/undefinedrules.md"],
+            "Inference customization"   => ["Defining a custom node and rules" => "manuals/customization/custom-node.md", "Inference results postprocessing" => "manuals/customization/postprocess.md"],
+            "Debugging"                 => "manuals/debugging.md",
+            "Migration from v2 to v3"   => "manuals/migration-guide-v2-v3.md",
+            "Sharp bits of RxInfer"     => [
+                "Overview" => "manuals/sharpbits/overview.md",
+                "Rule Not Found Error" => "manuals/sharpbits/rule-not-found.md",
+                "Stack Overflow in Message Computations" => "manuals/sharpbits/stack-overflow-inference.md",
+                "Using `=` instead of `:=` for deterministic nodes" => "manuals/sharpbits/usage-colon-equality.md"
+            ]
         ],
         "Library" => [
             "Model construction" => "library/model-construction.md",
@@ -131,11 +131,11 @@ makedocs(;
         "Examples" => [
             "Overview" => "examples/overview.md", # This must be auto-generated with `make examples`
             ExamplesPages...,
-            "External examples" => "contributing/external-examples.md"
+            "Contribute with examples" => "contributing/examples.md"
         ],
         "Contributing" => [
             "Contribution guide" => "contributing/guide.md",
-            "Contribution guidelines"=> "contributing/guidelines.md",
+            "Contribution guidelines" => "contributing/guidelines.md",
             "Contributing to the documentation" => "contributing/new-documentation.md",
             "Contributing to the examples" => "contributing/new-example.md",
             "Publishing a new release" => "contributing/new-release.md"

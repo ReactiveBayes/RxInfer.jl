@@ -92,24 +92,50 @@ function inference_process_error(error)
 end
 
 function inference_process_error(error, rethrow)
+    if error isa StackOverflowError
+        @error """
+        Stack overflow error detected during inference. This can happen with large model graphs 
+        due to recursive message updates.
+
+        Possible solution:
+        Try using the `limit_stack_depth` inference option. If this does not resolve the issue,
+        please open a GitHub issue at https://github.com/ReactiveBayes/RxInfer.jl/issues and we'll help investigate.
+
+        For more details:
+        • Stack overflow guide: https://reactivebayes.github.io/RxInfer.jl/stable/manuals/sharpbits/stack-overflow-inference/
+        • See `infer` function docs for options
+        """
+    end
+    @error """
+    We encountered an error during inference, but don't worry - we're here to help! 🤝
+
+    Here are some helpful resources to get you back on track:
+
+    1. Check our Sharp bits documentation which covers common issues:
+       https://reactivebayes.github.io/RxInfer.jl/stable/manuals/sharpbits/overview/
+
+    2. Browse our existing issues - your question may already be answered:
+       https://github.com/ReactiveBayes/RxInfer.jl/issues
+
+    Still stuck? We'd love to help! You can:
+    - Start a discussion for questions and help. Feedback and questions from new users is also welcome! If you are stuck, please reach out and we will solve it together.
+      https://github.com/ReactiveBayes/RxInfer.jl/discussions
+    - Report a bug or request a feature:
+      https://github.com/ReactiveBayes/RxInfer.jl/issues
+
+    Note that we use GitHub discussions not just for technical questions! We welcome all kinds of discussions,
+    whether you're new to Bayesian inference, have questions about use cases, or just want to share your experience.
+
+    To help us help you, please include:
+    - A minimal example that reproduces the issue
+    - The complete error message and stack trace
+
+    Together we'll get your inference working! 💪
+    """
     if rethrow
         Base.rethrow(error)
     end
     return error, catch_backtrace()
-end
-
-# We want to show an extra hint in case the error is of type `StackOverflowError`
-function inference_process_error(err::StackOverflowError, rethrow)
-    @error """
-    Stack overflow error occurred during the inference procedure. 
-    The inference engine may execute message update rules recursively, hence, the model graph size might be causing this error. 
-    To resolve this issue, try using `limit_stack_depth` inference option for model creation. See `?inference` documentation for more details.
-    The `limit_stack_depth` option does not help against over stack overflow errors that might happening outside of the model creation or message update rules execution.
-    """
-    if rethrow
-        Base.rethrow(err) # Shows the original stack trace
-    end
-    return err, catch_backtrace()
 end
 
 function inference_check_itertype(::Symbol, ::Union{Nothing, Tuple, Vector})
@@ -224,6 +250,9 @@ include("streaming.jl")
 
 This function provides a generic way to perform probabilistic inference for batch/static and streamline/online scenarios.
 Returns either an [`InferenceResult`](@ref) (batch setting) or [`RxInferenceEngine`](@ref) (streamline setting) based on the parameters used.
+
+!!! note
+    Before using this function, you may want to review common issues and solutions in the Sharp bits of RxInfer section of the documentation.
 
 ## Arguments
 
