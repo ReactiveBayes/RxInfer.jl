@@ -8,4 +8,4 @@ We welcome examples from the community that showcase RxInfer.jl in action! Wheth
 - **Tutorial Series on RxInfer.jl** - Explore a series of engaging tutorial videos on RxInfer.jl's functionalities, presented by [@doggotodjl](https://www.youtube.com/@doggodotjl/search?query=RxInfer).
 
 !!! note 
-    If you're interested in contributing an example, we'd love to hear from you! Please initiate an issue or start a new discussion on our [GitHub repository](https://github.com/reactivebayes/RxInfer.jl) to get involved.
+    If you're interested in contributing an example, we'd love to hear from you! Please initiate an issue or start a new discussion on our [GitHub repository](https://github.com/reactivebayes/RxInfer.jl) to get involved. The example notebook must follow a specific structure, which is described in the [Contribute to the examples](@ref contributing-new-example) section.
