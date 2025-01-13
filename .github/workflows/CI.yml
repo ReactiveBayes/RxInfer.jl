@@ -83,7 +83,6 @@ jobs:
             docs/src/examples
             docs/src/assets/examples
           key: ${{ github.sha }}
-      - run: julia -e 'using Pkg; Pkg.add("Weave"); Pkg.precompile()'
       - run: make examples
   docs:
     name: Documentation
