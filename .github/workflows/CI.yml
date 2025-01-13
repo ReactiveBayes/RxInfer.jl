@@ -92,6 +92,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: 
       - test
+      - test-examples
     permissions:
       contents: write
     steps:
