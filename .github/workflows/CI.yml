@@ -66,6 +66,27 @@ jobs:
         with:
           name: test-output
           path: test/_output
+  test-examples:
+    name: Test Examples
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout RxInfer
+        uses: actions/checkout@v4
+        with:
+          path: RxInfer.jl
+      - name: Checkout Examples
+        uses: actions/checkout@v4
+        with:
+          repository: ReactiveBayes/RxInferExamples.jl
+          path: RxInferExamples.jl
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1.11'
+      - uses: julia-actions/cache@v1
+      - name: Build and test examples
+        run: |
+          cd RxInferExamples.jl
+          make examples-dev RXINFER=../RxInfer.jl
   docs:
     name: Documentation
     runs-on: ubuntu-latest
