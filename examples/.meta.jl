@@ -22,6 +22,12 @@ return (
             category = :basic_examples
         ),
         (
+            filename = "Binomial Regression.ipynb",
+            title = "Binomial Regression",
+            description = "An example of Bayesian inference in Binomial regression with Expectation Propagation.",
+            category = :basic_examples
+        ),
+        (
             filename = "Kalman filtering and smoothing.ipynb",
             title = "Kalman filtering and smoothing",
             description = "In this demo, we are interested in Bayesian state estimation in different types of State-Space Models, including linear, nonlinear, and cases with missing observations",
