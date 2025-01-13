@@ -33,7 +33,7 @@ window.onload = function() {
                     { title: "Home", link: "http://www.rxinfer.ml", icon: [ "fas", "fa-diagram-project" ] },
                     { title: "Get Started", link: "https://reactivebayes.github.io/RxInfer.jl/stable/manuals/getting-started/", icon: [ "fas", "fa-person-chalkboard" ] },
                     { title: "Documentation", link: "https://reactivebayes.github.io/RxInfer.jl/stable/", icon: [ "fas", "fa-book" ] },
-                    { title: "Examples", link: "https://reactivebayes.github.io/RxInfer.jl/stable/examples/overview/", icon: [ "fas", "fa-laptop-code" ] },
+                    { title: "Examples", link: "https://reactivebayes.github.io/RxInferExamples.jl/", icon: [ "fas", "fa-laptop-code" ] },
                     { title: "Papers", link: "https://biaslab.github.io/publication/", icon: [ "far", "fa-book-open" ] },
                     { title: "Team", link: "https://github.com/orgs/ReactiveBayes/people", icon: [ "fas", "fa-people-group" ] },
                     { title: "Discussions", link: "https://github.com/orgs/ReactiveBayes/discussions", icon: [ "far", "fa-comment" ] },
@@ -81,18 +81,5 @@ window.onload = function() {
     const documenterTarget = document.querySelector('#documenter');
     
     documenterTarget.parentNode.insertBefore(header, documenterTarget);
-
-    // Edit broken links in the examples, see issue #70
-    const editOnGithubLinkTarget = document.querySelector('.docs-edit-link');
-
-    if (editOnGithubLinkTarget) {
-        const link = editOnGithubLinkTarget.href;
-        if (link.includes('docs/src/examples')) {
-            const fixedLink = link.replace('docs/src/', '').replace('.md', '.ipynb');
-            editOnGithubLinkTarget.href = fixedLink;
-            console.log('Fixed link for the example: ', fixedLink)
-        }
-    }
-
 }
 

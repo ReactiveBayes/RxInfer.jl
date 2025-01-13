@@ -66,30 +66,11 @@ jobs:
         with:
           name: test-output
           path: test/_output
-  examples:
-    name: Examples
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-      - uses: julia-actions/setup-julia@v2
-      - uses: julia-actions/cache@v1
-      - uses: julia-actions/julia-buildpkg@v1
-      - uses: actions/cache@v3
-        id: examples
-        with:
-          path: |
-            docs/src/examples
-            docs/src/assets/examples
-          key: ${{ github.sha }}
-      - run: make examples
   docs:
     name: Documentation
     runs-on: ubuntu-latest
     needs: 
       - test
-      - examples
     permissions:
       contents: write
     steps:
@@ -97,13 +78,6 @@ jobs:
       - uses: julia-actions/setup-julia@v2
         with:
           version: '1.10' # 1.11 is not supported by Cairo/GraphViz
-      - uses: actions/cache@v3
-        id: examples
-        with:
-          path: |
-            docs/src/examples
-            docs/src/assets/examples
-          key: ${{ github.sha }}
       - uses: julia-actions/cache@v1
       - uses: julia-actions/julia-buildpkg@v1
       - run: make docs

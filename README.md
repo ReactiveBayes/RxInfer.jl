@@ -1,10 +1,9 @@
-
 ![](docs/src/assets/biglogo-blacktheme.svg?raw=true&sanitize=true)
 
 [![Official page](https://img.shields.io/badge/official%20page%20-RxInfer-blue)](https://reactivebayes.github.io/rxinfer-website/)
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://reactivebayes.github.io/RxInfer.jl/stable/)
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://reactivebayes.github.io/RxInfer.jl/dev/)
-[![Examples](https://img.shields.io/badge/examples-RxInfer-brightgreen)](https://reactivebayes.github.io/RxInfer.jl/stable/examples/overview/)
+[![Examples](https://img.shields.io/badge/examples-RxInfer-brightgreen)](https://reactivebayes.github.io/RxInferExamples.jl/)
 [![Q&A](https://img.shields.io/badge/Q&A-RxInfer-orange)](https://github.com/reactivebayes/RxInfer.jl/discussions)
 [![Roadmap](https://img.shields.io/badge/roadmap-RxInfer-yellow)](#roadmap)
 [![Build Status](https://github.com/reactivebayes/RxInfer.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/reactivebayes/RxInfer.jl/actions/workflows/CI.yml?query=branch%3Amain)
@@ -66,7 +65,7 @@ For more information about `RxInfer.jl` please refer to the [documentation](http
 
 # Getting Started
 
-There are examples available to get you started in the `examples/` folder. Alternatively, preview the same examples in the [documentation](https://reactivebayes.github.io/RxInfer.jl/stable/examples/overview/).
+There are examples available to get you started in the [RxInferExamples.jl](https://reactivebayes.github.io/RxInferExamples.jl/) repository.
 
 ### Coin flip simulation
 
@@ -182,7 +181,7 @@ The `RxInfer` framework consists of three *core* packages developed by [Reactive
 
 # Where to go next?
 
-There are a set of [examples](https://reactivebayes.github.io/RxInfer.jl/stable/examples/overview/) available in `RxInfer` repository that demonstrate the more advanced features of the package. Alternatively, you can head to the [documentation](https://reactivebayes.github.io/RxInfer.jl/stable/) that provides more detailed information of how to use `RxInfer` to specify more complex probabilistic models.
+There are a set of [examples](https://reactivebayes.github.io/RxInferExamples.jl/) available in the `RxInferExamples.jl` repository that demonstrate the more advanced features of the package. Alternatively, you can head to the [documentation](https://reactivebayes.github.io/RxInfer.jl/stable/) that provides more detailed information of how to use `RxInfer` to specify more complex probabilistic models.
 
 
 # Join Our Community and Contribute to RxInfer
