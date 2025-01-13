@@ -5,12 +5,11 @@
 
     function generate_synthetic_binomial_data(
         n_samples::Int,
-        n_features::Int,
         true_beta::Vector{Float64};
         seed::Int=42
     )
         rng = StableRNG(seed)
-        
+        n_features = length(true_beta)
         # Generate design matrix X
         X = randn(rng, n_samples, n_features)
         
@@ -42,7 +41,7 @@
         end
     end
 
-    function binomial_inference(binomial_model, iterations, X, y, n_trials)
+    function binomial_inference(binomial_model, iterations, X, y, n_trials, n_features)
         return infer(
             model = binomial_model(prior_xi = zeros(n_features), prior_precision =diageye(n_features),),
             data = (X=X, y=y,n_trials=n_trials),
@@ -52,17 +51,18 @@
         )   
     end
 
-    function run_simulation(n_sims::Int, n_samples::Int, n_features::Int, true_beta::Vector{Float64};iterations = n_iterations)
+    function run_simulation(n_sims::Int, n_samples::Int, true_beta::Vector{Float64};iterations = n_iterations)
         # Storage for results
+        n_features = length(true_beta)
         coverage = Vector{Vector{Float64}}(undef, n_sims)
         fes = Vector{Vector{Float64}}(undef, n_sims)
         for sim in 1:n_sims
             # Generate new dataset
-            X, y, n_trials = generate_synthetic_binomial_data(n_samples, n_features, true_beta, seed = sim)
+            X, y, n_trials = generate_synthetic_binomial_data(n_samples, true_beta, seed = sim)
             X = [collect(row) for row in eachrow(X)]
             
             # Run inference
-            results = binomial_inference(binomial_model, iterations, X, y, n_trials) 
+            results = binomial_inference(binomial_model, iterations, X, y, n_trials, n_features) 
             # Extract posterior parameters
             post = results.posteriors[:β][end]
             m = mean(post)
@@ -81,7 +81,7 @@
     end;
 
 
-    coverage, fes = run_simulation(n_sims, n_samples, n_features, true_beta)
+    coverage, fes = run_simulation(n_sims, n_samples, true_beta)
     for i in 1:n_sims
         @test fes[i][end] < fes[i][1]
     end
