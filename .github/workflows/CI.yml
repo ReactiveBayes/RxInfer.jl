@@ -85,6 +85,7 @@ jobs:
       - uses: julia-actions/cache@v1
       - name: Build and test examples
         run: |
+          julia -e 'using Pkg; Pkg.add("Weave"); Pkg.precompile()'
           cd RxInferExamples.jl
           make examples-dev RXINFER=../RxInfer.jl
   docs:
