@@ -65,7 +65,8 @@ For more information about `RxInfer.jl` please refer to the [documentation](http
 
 # Getting Started
 
-There are examples available to get you started in the [RxInferExamples.jl](https://reactivebayes.github.io/RxInferExamples.jl/) repository.
+> [!NOTE]
+> There are examples available to get you started in the [RxInferExamples.jl](https://reactivebayes.github.io/RxInferExamples.jl/) repository.
 
 ### Coin flip simulation
 
