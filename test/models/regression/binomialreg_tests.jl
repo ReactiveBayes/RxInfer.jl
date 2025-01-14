@@ -1,4 +1,4 @@
-@testitem "Linear regression" begin
+@testitem "Linear regression with BinomialPolya node" begin
     using BenchmarkTools, Plots, Dates, LinearAlgebra, StableRNGs
 
     include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
