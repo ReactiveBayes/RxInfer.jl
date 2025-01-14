@@ -35,6 +35,7 @@ jobs:
           # paper.md
           path: paper/paper.pdf
   code-style:
+    name: Code Style Suggestions
     runs-on: ubuntu-latest
     steps:
       - uses: julia-actions/julia-format@v3
