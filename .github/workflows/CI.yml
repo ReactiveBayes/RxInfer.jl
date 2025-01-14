@@ -35,7 +35,7 @@ jobs:
           # paper.md
           path: paper/paper.pdf
   test:
-    name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
+    name: Tests ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ contains(matrix.version, 'nightly') }}
     strategy:
@@ -67,7 +67,7 @@ jobs:
           name: test-output
           path: test/_output
   test-examples:
-    name: Test Examples
+    name: Examples
     runs-on: ubuntu-latest
     steps:
       - name: Checkout RxInfer
@@ -85,7 +85,7 @@ jobs:
       - uses: julia-actions/cache@v1
       - name: Build and test examples
         run: |
-          julia -e 'using Pkg; Pkg.add("Weave"); Pkg.precompile()'
+          julia -e 'using Pkg; Pkg.add("Weave"); Pkg.develop(path="RxInfer.jl"); Pkg.precompile()'
           cd RxInferExamples.jl
           make examples-dev RXINFER=../RxInfer.jl
   docs:
