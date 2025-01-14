@@ -8,84 +8,6 @@ ENV["GKSwstype"] = "100"
 
 DocMeta.setdocmeta!(RxInfer, :DocTestSetup, :(using RxInfer); recursive = true)
 
-# This must be auto-generated with `make examples`
-ExamplesPath = joinpath(@__DIR__, "src", "examples")
-ExamplesOverviewPath = joinpath(ExamplesPath, "overview.md")
-ExamplesMeta = include(joinpath(@__DIR__, "..", "examples", ".meta.jl"))
-
-ExamplesCategories = ExamplesMeta[:categories]
-ExamplesCategories = ExamplesCategories[setdiff(keys(ExamplesCategories), [:hidden_examples])]
-
-ExamplesCategoriesOverviewPaths = map(collect(pairs(ExamplesCategories))) do (label, _)
-    return joinpath(ExamplesPath, string(label), "overview.md")
-end
-
-Examples = map(filter(example -> !isequal(example[:category], :hidden_examples), ExamplesMeta[:examples])) do examplemeta
-    filename = examplemeta.filename
-    category = examplemeta.category
-    mdpath = replace(filename, ".ipynb" => ".md")
-    title = examplemeta.title
-
-    fullpath = joinpath(ExamplesPath, string(category), mdpath)
-    shortpath = joinpath("examples", string(category), mdpath)
-
-    # We use `fullpath` to check if the file exists
-    # We use `shortpath` to make a page reference in the left panel in the documentation
-    return title => (fullpath, shortpath, category)
-end
-
-if !isdir(ExamplesPath)
-    mkpath(ExamplesPath)
-end
-
-# Check if some examples are missing from the build
-# The `isfile` check needs only the full path, so we ignore the short path
-ExistingExamples = filter(Examples) do (title, info)
-    fullpath, _, _ = info
-    exists = isfile(fullpath)
-    if !exists
-        @warn "Example at path $(fullpath) does not exist. Skipping."
-    end
-    return exists
-end
-
-# Create an array of pages for each category
-ExamplesCategoriesPages = map(collect(pairs(ExamplesCategories))) do (label, category)
-    return label => (title = category.title, pages = ["Overview" => joinpath("examples", string(label), "overview.md")])
-end |> NamedTuple
-
-# The `pages` argument in the `makedocs` needs only a short path, so we ignore the full path
-foreach(ExistingExamples) do (title, info)
-    _, shortpath, category = info
-    push!(ExamplesCategoriesPages[category].pages, title => shortpath)
-end
-
-if length(Examples) !== length(ExistingExamples)
-    @warn "Some examples were not found. Use the `make examples` command to generate all examples."
-end
-
-# Check if the main `overview.md` file exists + sub categories `overview.md` files
-foreach(vcat(ExamplesOverviewPath, ExamplesCategoriesOverviewPaths)) do path
-    if !isfile(path)
-        @warn "`$(path)` does not exist. Generating an empty overview. Use the `make examples` command to generate the overview and all examples."
-        mkpath(dirname(path))
-        open(path, "w") do f
-            write(
-                f,
-                """
-       $(isequal(path, ExamplesOverviewPath) ? "# [Examples overview](@id examples-overview)" : "")
-       The overview is missing. Use the `make examples` command to generate the overview and all examples.
-       """
-            )
-        end
-    end
-end
-
-# Generate the final list of examples for each sub-category
-ExamplesPages = map(collect(pairs(ExamplesCategoriesPages))) do (label, info)
-    return info.title => info.pages
-end
-
 draft = get(ENV, "DOCS_DRAFT", "false") == "true"
 
 makedocs(;
@@ -128,11 +50,7 @@ makedocs(;
             "Functional form constraints" => "library/functional-forms.md",
             "Exported methods" => "library/exported-methods.md"
         ],
-        "Examples" => [
-            "Overview" => "examples/overview.md", # This must be auto-generated with `make examples`
-            ExamplesPages...,
-            "Contribute with examples" => "contributing/examples.md"
-        ],
+        "Examples" => "examples/overview.md",
         "Contributing" => [
             "Contribution guide" => "contributing/guide.md",
             "Contribution guidelines" => "contributing/guidelines.md",

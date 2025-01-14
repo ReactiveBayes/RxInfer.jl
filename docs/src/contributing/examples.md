@@ -1,6 +1,9 @@
 # [Contribute with examples](@id examples)
 
-We welcome examples from the community that showcase RxInfer.jl in action! Whether you're working in machine learning, signal processing, robotics, computational biology, or any other domain - your contributions help others learn and explore probabilistic modeling with RxInfer.jl.
+The examples for RxInfer.jl are now maintained in a dedicated repository at [RxInferExamples.jl](https://reactivebayes.github.io/RxInferExamples.jl/). Please visit the examples repository to:
+- Browse existing examples
+- Learn how to contribute your own examples
+- Get started with RxInfer.jl
 
 ## Featured Examples
 
@@ -8,4 +11,4 @@ We welcome examples from the community that showcase RxInfer.jl in action! Wheth
 - **Tutorial Series on RxInfer.jl** - Explore a series of engaging tutorial videos on RxInfer.jl's functionalities, presented by [@doggotodjl](https://www.youtube.com/@doggodotjl/search?query=RxInfer).
 
 !!! note 
-    If you're interested in contributing an example, we'd love to hear from you! Please initiate an issue or start a new discussion on our [GitHub repository](https://github.com/reactivebayes/RxInfer.jl) to get involved. The example notebook must follow a specific structure, which is described in the [Contribute to the examples](@ref contributing-new-example) section.
+    If you're interested in contributing an example, please visit the [RxInferExamples.jl](https://reactivebayes.github.io/RxInferExamples.jl/) repository. We welcome all contributions that help demonstrate the capabilities of RxInfer.jl!

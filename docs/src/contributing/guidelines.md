@@ -45,10 +45,10 @@ We use the standard [GitHub Flow](https://guides.github.com/introduction/flow/) 
 - Commit your contributions to your fork
 - Create a pull request on the `main` branch of the `RxInfer` repository.
 
-Before opening a pull request, ensure all tests pass without errors. Additionally, ensure all examples (found in the `/examples/` directory) run succesfully. 
+Before opening a pull request, ensure all tests pass without errors.
 
 !!! note
-    Use `make test`, `make examples` and `make docs` commands to verify that all tests, examples, and documentation build correctly. See the `Makefile` section below for detailed command descriptions.
+    Use `make test` and `make docs` commands to verify that all tests and documentation build correctly. See the `Makefile` section below for detailed command descriptions.
 
 ### Style conventions
 
@@ -97,8 +97,6 @@ make test
 - `make devtest`: Alias for the `make test dev=true ...`
 - `make docs`: Compile documentation
 - `make devdocs`: Same as `make docs`, but uses `dev-ed` versions of core packages
-- `make examples`: Run all examples and put them in the `docs/` folder if successfull 
-- `make devexamples`: Same as `make examples`, but uses `dev-ed` versions of core packages
 - `make lint`: Check codestyle
 - `make format`: Check and fix codestyle 
 
