@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Structural Dynamics with Augmented Kalman Filter · RxInfer.jl</title><meta name="title" content="Structural Dynamics with Augmented Kalman Filter · RxInfer.jl"/><meta property="og:title" content="Structural Dynamics with Augmented Kalman Filter · RxInfer.jl"/><meta property="twitter:title" content="Structural Dynamics with Augmented Kalman Filter · RxInfer.jl"/><meta name="description" content="Julia package for automated Bayesian inference on a factor graph with reactive message passing"/><meta property="og:description" content="Julia package for automated Bayesian inference on a factor graph with reactive message passing"/><meta property="twitter:description" content="Julia package for automated Bayesian inference on a factor graph with reactive message passing"/><meta property="og:url" content="https://reactivebayes.github.io/RxInfer.jl/examples/problem_specific/Structural Dynamics with Augmented Kalman Filter/"/><meta property="twitter:url" content="https://reactivebayes.github.io/RxInfer.jl/examples/problem_specific/Structural Dynamics with Augmented Kalman Filter/"/><link rel="canonical" href="https://reactivebayes.github.io/RxInfer.jl/examples/problem_specific/Structural Dynamics with Augmented Kalman Filter/"/><script data-outdated-warner src="../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../search_index.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><link href="../../../assets/theme.css" rel="stylesheet" type="text/css"/><link href="../../../assets/header.css" rel="stylesheet" type="text/css"/><script src="../../../assets/header.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img class="docs-light-only" src="../../../assets/logo.svg" alt="RxInfer.jl logo"/><img class="docs-dark-only" src="../../../assets/logo-dark.svg" alt="RxInfer.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../../../">RxInfer.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../../">Home</a></li><li><span class="tocitem">User guide</span><ul><li><a class="tocitem" href="../../../manuals/getting-started/">Getting started</a></li><li><a class="tocitem" href="../../../manuals/comparison/">RxInfer.jl vs. Others</a></li><li><a class="tocitem" href="../../../manuals/model-specification/">Model specification</a></li><li><a class="tocitem" href="../../../manuals/constraints-specification/">Constraints specification</a></li><li><a class="tocitem" href="../../../manuals/meta-specification/">Meta specification</a></li><li><input class="collapse-toggle" id="menuitem-2-6" type="checkbox"/><label class="tocitem" for="menuitem-2-6"><span class="docs-label">Inference specification</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../manuals/inference/overview/">Overview</a></li><li><a class="tocitem" href="../../../manuals/inference/static/">Static inference</a></li><li><a class="tocitem" href="../../../manuals/inference/streamlined/">Streamline inference</a></li><li><a class="tocitem" href="../../../manuals/inference/initialization/">Initialization</a></li><li><a class="tocitem" href="../../../manuals/inference/autoupdates/">Auto-updates</a></li><li><a class="tocitem" href="../../../manuals/inference/delta-node/">Deterministic nodes</a></li><li><a class="tocitem" href="../../../manuals/inference/nonconjugate/">Non-conjugate inference</a></li><li><a class="tocitem" href="../../../manuals/inference/undefinedrules/">Undefined message update rules</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-7" type="checkbox"/><label class="tocitem" for="menuitem-2-7"><span class="docs-label">Inference customization</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../manuals/customization/custom-node/">Defining a custom node and rules</a></li><li><a class="tocitem" href="../../../manuals/customization/postprocess/">Inference results postprocessing</a></li></ul></li><li><a class="tocitem" href="../../../manuals/debugging/">Debugging</a></li><li><a class="tocitem" href="../../../manuals/migration-guide-v2-v3/">Migration from v2 to v3</a></li><li><input class="collapse-toggle" id="menuitem-2-10" type="checkbox"/><label class="tocitem" for="menuitem-2-10"><span class="docs-label">Sharp bits of RxInfer</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../manuals/sharpbits/overview/">Overview</a></li><li><a class="tocitem" href="../../../manuals/sharpbits/rule-not-found/">Rule Not Found Error</a></li><li><a class="tocitem" href="../../../manuals/sharpbits/stack-overflow-inference/">Stack Overflow in Message Computations</a></li><li><a class="tocitem" href="../../../manuals/sharpbits/usage-colon-equality/">Using <code>=</code> instead of <code>:=</code> for deterministic nodes</a></li></ul></li></ul></li><li><span class="tocitem">Library</span><ul><li><a class="tocitem" href="../../../library/model-construction/">Model construction</a></li><li><a class="tocitem" href="../../../library/bethe-free-energy/">Bethe Free Energy</a></li><li><a class="tocitem" href="../../../library/functional-forms/">Functional form constraints</a></li><li><a class="tocitem" href="../../../library/exported-methods/">Exported methods</a></li></ul></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../../overview/">Overview</a></li><li><input class="collapse-toggle" id="menuitem-4-2" type="checkbox"/><label class="tocitem" for="menuitem-4-2"><span class="docs-label">Basic examples</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../basic_examples/overview/">Overview</a></li><li><a class="tocitem" href="../../basic_examples/Coin Toss Model/">Coin toss model (Beta-Bernoulli)</a></li><li><a class="tocitem" href="../../basic_examples/Bayesian Linear Regression Tutorial/">Bayesian Linear Regression Tutorial</a></li><li><a class="tocitem" href="../../basic_examples/Kalman filtering and smoothing/">Kalman filtering and smoothing</a></li><li><a class="tocitem" href="../../basic_examples/Predicting Bike Rental Demand/">Predicting Bike Rental Demand</a></li><li><a class="tocitem" href="../../basic_examples/Hidden Markov Model/">How to train your Hidden Markov Model</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-4-3" type="checkbox"/><label class="tocitem" for="menuitem-4-3"><span class="docs-label">Advanced examples</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../advanced_examples/overview/">Overview</a></li><li><a class="tocitem" href="../../advanced_examples/Active Inference Mountain car/">Active Inference Mountain car</a></li><li><a class="tocitem" href="../../advanced_examples/Advanced Tutorial/">Advanced Tutorial</a></li><li><a class="tocitem" href="../../advanced_examples/Assessing People Skills/">Assessing People’s Skills</a></li><li><a class="tocitem" href="../../advanced_examples/Chance Constraints/">Chance-Constrained Active Inference</a></li><li><a class="tocitem" href="../../advanced_examples/Conjugate-Computational Variational Message Passing/">Conjugate-Computational Variational Message Passing (CVI)</a></li><li><a class="tocitem" href="../../advanced_examples/Global Parameter Optimisation/">Global Parameter Optimisation</a></li><li><a class="tocitem" href="../../advanced_examples/GP Regression by SSM/">Solve GP regression by SDE</a></li><li><a class="tocitem" href="../../advanced_examples/Infinite Data Stream/">Infinite Data Stream</a></li><li><a class="tocitem" href="../../advanced_examples/Nonlinear Sensor Fusion/">Nonlinear Sensor Fusion</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-4-4" type="checkbox" checked/><label class="tocitem" for="menuitem-4-4"><span class="docs-label">Problem specific</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../overview/">Overview</a></li><li><a class="tocitem" href="../Autoregressive Models/">Autoregressive Models</a></li><li><a class="tocitem" href="../Gamma Mixture/">Gamma Mixture Model</a></li><li><a class="tocitem" href="../Gaussian Mixture/">Gaussian Mixture</a></li><li><a class="tocitem" href="../Hierarchical Gaussian Filter/">Hierarchical Gaussian Filter</a></li><li><a class="tocitem" href="../Invertible Neural Network Tutorial/">Invertible neural networks: a tutorial</a></li><li><a class="tocitem" href="../Probit Model (EP)/">Probit Model (EP)</a></li><li><a class="tocitem" href="../RTS vs BIFM Smoothing/">RTS vs BIFM Smoothing</a></li><li><a class="tocitem" href="../Simple Nonlinear Node/">Simple Nonlinear Node</a></li><li><a class="tocitem" href="../Universal Mixtures/">Universal Mixtures</a></li><li><a class="tocitem" href="../Litter Model/">Litter Model</a></li><li class="is-active"><a class="tocitem" href>Structural Dynamics with Augmented Kalman Filter</a><ul class="internal"><li><a class="tocitem" href="#State-and-Input-Estimation"><span>State and Input Estimation</span></a></li><li><a class="tocitem" href="#4-floor-shear-building-model"><span>4-floor shear building model</span></a></li><li><a class="tocitem" href="#State-and-Input-Estimation-with-RxInfer"><span>State and Input Estimation with RxInfer</span></a></li></ul></li></ul></li><li><a class="tocitem" href="../../../contributing/examples/">Contribute with examples</a></li></ul></li><li><span class="tocitem">Contributing</span><ul><li><a class="tocitem" href="../../../contributing/guide/">Contribution guide</a></li><li><a class="tocitem" href="../../../contributing/guidelines/">Contribution guidelines</a></li><li><a class="tocitem" href="../../../contributing/new-documentation/">Contributing to the documentation</a></li><li><a class="tocitem" href="../../../contributing/new-example/">Contributing to the examples</a></li><li><a class="tocitem" href="../../../contributing/new-release/">Publishing a new release</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li><a class="is-disabled">Problem specific</a></li><li class="is-active"><a href>Structural Dynamics with Augmented Kalman Filter</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Structural Dynamics with Augmented Kalman Filter</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/ReactiveBayes/RxInfer.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/ReactiveBayes/RxInfer.jl/blob/main/docs/src/examples/problem_specific/Structural Dynamics with Augmented Kalman Filter.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><p>This example has been auto-generated from the <a href="https://github.com/reactivebayes/RxInfer.jl/tree/main/examples"><code>examples/</code></a> folder at GitHub repository.</p><h1 id="examples-structural-dynamics-with-augmented-kalman-filter"><a class="docs-heading-anchor" href="#examples-structural-dynamics-with-augmented-kalman-filter">Structural Dynamics with Augmented Kalman Filter</a><a id="examples-structural-dynamics-with-augmented-kalman-filter-1"></a><a class="docs-heading-anchor-permalink" href="#examples-structural-dynamics-with-augmented-kalman-filter" title="Permalink"></a></h1><pre><code class="language-julia hljs"># Activate local environment, see `Project.toml`
+import Pkg; Pkg.activate(&quot;..&quot;); Pkg.instantiate();</code></pre><p>This example demonstrates state and input force estimation for structural dynamical systems with <a href="https://www.sciencedirect.com/science/article/abs/pii/S0888327011003931">Augmented Kalman Filter (AKF)</a> implemented in RxInfer.</p><p><strong>NOTE</strong>: This example was originally featured in <a href="https://vflores-io.github.io/">this blog post</a>. Check it out for additional insights! The notebook has been prepared by <a href="https://vflores-io.github.io/">Víctor Flores</a> and adapted by <a href="https://github.com/bvdmitri">Dmitry Bagaev</a>.</p><h2 id="State-and-Input-Estimation"><a class="docs-heading-anchor" href="#State-and-Input-Estimation">State and Input Estimation</a><a id="State-and-Input-Estimation-1"></a><a class="docs-heading-anchor-permalink" href="#State-and-Input-Estimation" title="Permalink"></a></h2><p>State-space models are fundamental tools in control theory and signal processing that allow us to analyze complex dynamical systems by breaking them down into first-order differential equations. They are particularly important for structural dynamics problems because they can capture both the internal states (like position and velocity) and external influences (like forces) in a unified mathematical framework. A typical <strong>state-space model</strong> formulation might look like this:</p><p>$</p><p>x[k+1] \sim \mathcal{N}(A x[k] + B p[k], Q), $ $ y[k] \sim \mathcal{N}(G x[k] + J p[k], R), $</p><p>where:</p><ul><li><p class="math-container">\[x[k]\]</p>represents the system states at time-step <span>$k$</span></li><li><p class="math-container">\[p[k]\]</p>represents the unknown input forces at time-step <span>$k$</span></li><li><p class="math-container">\[y[k]\]</p>represents our noisy measurements at time-step <span>$k$</span></li><li><p class="math-container">\[A\]</p>is the state transition matrix that describes how the system evolves from one time step to the next</li><li><p class="math-container">\[B\]</p>is the input matrix that maps the external forces to their effects on the states</li><li><p class="math-container">\[Q\]</p>is the process noise covariance matrix that captures uncertainties in the system dynamics</li><li><p class="math-container">\[R\]</p>is the measurement noise covariance matrix that represents uncertainties in sensor measurements</li></ul><h2 id="4-floor-shear-building-model"><a class="docs-heading-anchor" href="#4-floor-shear-building-model">4-floor shear building model</a><a id="4-floor-shear-building-model-1"></a><a class="docs-heading-anchor-permalink" href="#4-floor-shear-building-model" title="Permalink"></a></h2><p>For this example, we consider a simplified <strong>4-floor shear building model</strong> with <strong>4 degrees of freedom (DOF)</strong>. This system is depicted below:</p><p><img src="../../../assets/examples/pics/shear_model.png" alt/></p><p>In this example, the dynamics of a structural system are governed by its <strong>mass</strong> ($ M <span>$), **stiffness** ($</span> K <span>$), and **damping** ($</span> C $) matrices, leading to the equation of motion:</p><p>$</p><p>M \ddot{x}(t) + C \dot{x}(t) + K x(t) = p(t), $</p><p>where $ x(t) $ represents the displacements at each degree of freedom, and $ (t) $ is the external force applied to the system.</p><p>This model captures the essential dynamics of a multi-story structure while remaining computationally manageable. The system matrices are defined as follows:</p><ul><li>$ M $ is the diagonal mass matrix representing the lumped masses at each floor,  </li><li>$ K $ is the stiffness matrix representing inter-floor lateral stiffness, and  </li><li>$ C $ is the proportional damping matrix reflecting energy dissipation.</li></ul><p>Lets begin the experiment! To start, we import the necessary packages.</p><pre><code class="language-julia hljs">using LinearAlgebra, Statistics, Random, Plots</code></pre><p>To keep our analysis organized, we&#39;ll use a custom <code>StructuralModelData</code> data structure. This structure serves as a central repository for <strong>model parameters</strong>, <strong>simulation settings</strong>, <strong>system matrices</strong>, <strong>results</strong>, and <strong>outputs</strong>.</p><pre><code class="language-julia hljs"># define a data structure for the structural model environment
+struct StructuralModelData
+    t::Union{Nothing, Any}
+    ndof::Union{Nothing, Int64}
+    nf::Union{Nothing, Int64}
+    N_data::Union{Nothing, Int64}
+    y_meas::Union{Nothing, Vector{Vector{Float64}}}
+    A_aug::Union{Nothing, Matrix{Float64}}
+    G_aug::Union{Nothing, Matrix{Float64}}
+    G_aug_fullfield::Union{Nothing, Matrix{Float64}}
+    Q_akf::Union{Nothing, Matrix{Float64}}
+    R::Union{Nothing, LinearAlgebra.Diagonal{Float64, Vector{Float64}}}
+    x_real::Union{Nothing, Matrix{Float64}}
+    y_real::Union{Nothing, Matrix{Float64}}
+    p_real::Union{Nothing, Matrix{Float64}}
+end</code></pre><p>We also define a structure for the system matrices.</p><pre><code class="language-julia hljs"># define the structural system matrices
+struct StructuralMatrices
+    M::Union{Nothing, Matrix{Float64}}
+    K::Union{Nothing, Matrix{Float64}}
+    C::Union{Nothing, Matrix{Float64}}
+end
+
+
+M = I(4)
+
+
+K = [
+    2  -1   0    0;
+   -1   2  -1    0;
+    0  -1   2   -1;
+    0   0  -1    1
+] * 1e3
+
+C = [
+    2   -1    0    0;
+   -1    2   -1    0;
+    0   -1    2   -1;
+    0    0   -1    1
+]
+
+StructuralModel = StructuralMatrices(M, K, C);</code></pre><h4 id="Constructing-the-State-Space-Model"><a class="docs-heading-anchor" href="#Constructing-the-State-Space-Model">Constructing the State-Space Model</a><a id="Constructing-the-State-Space-Model-1"></a><a class="docs-heading-anchor-permalink" href="#Constructing-the-State-Space-Model" title="Permalink"></a></h4><p>We convert the structural system into its <strong>discrete-time state-space form</strong> for numerical simulation. Starting from the equation of motion:</p><p>$</p><p>M \ddot{x}(t) + C \dot{x}(t) + K x(t) = F(t), $</p><p>we introduce the state variable: $ z(t) = \begin{bmatrix} x(t) \ \dot{x}(t) \end{bmatrix}, $ which allows us to express the system as: $ \dot{z}(t) = A<em>{\text{c}} z(t) + B</em>{\text{c}} p(t), $ where:</p><ul><li>$ A_{\text{c}} = \begin{bmatrix} 0 &amp; I \ -(M^{-1} K) &amp; -(M^{-1} C) \end{bmatrix} $</li><li>$ B<em>{\text{c}} = \begin{bmatrix} 0 \ M^{-1} S</em>p \end{bmatrix} $</li><li>$ S_p $ is the input selection matrix that determines where the external forces $ p(t) $ are applied.</li></ul><p>To perform simulations, the system is discretized using a time step $ \Delta t $ as: $ z[k+1] = A z[k] + B p[k], $ where:</p><ul><li>$ A = e^{A_{\text{c}} \Delta t} $ is the <strong>state transition matrix</strong>.</li><li>$ B = (A - I) A<em>{\text{c}}^{-1} B</em>{\text{c}} $ is the <strong>input matrix</strong>, obtained by integrating the continuous-time system.</li></ul><p>This state-space representation forms the basis for propagating the system states during simulation.</p><pre><code class="language-julia hljs"># function to construct the state space model
+function construct_ssm(StructuralModel,dt, ndof, nf)
+    # unpack the structural model
+    M = StructuralModel.M
+    K = StructuralModel.K
+    C = StructuralModel.C
+    
+    
+    Sp = zeros(ndof, nf)
+    Sp[4, 1] = 1
+
+    Z = zeros(ndof, ndof)
+    Id = I(ndof)
+
+    A_continuous = [Z Id;
+                    -(M \ K) -(M \ C)]
+    B_continuous = [Z; Id \ M] * Sp
+
+    A = exp(dt * A_continuous)
+    B = (A - I(2*ndof)) * A_continuous \ B_continuous
+
+    return A, B, Sp
+end</code></pre><pre><code class="nohighlight hljs">construct_ssm (generic function with 1 method)</code></pre><h3 id="Generating-Input-Forces"><a class="docs-heading-anchor" href="#Generating-Input-Forces">Generating Input Forces</a><a id="Generating-Input-Forces-1"></a><a class="docs-heading-anchor-permalink" href="#Generating-Input-Forces" title="Permalink"></a></h3><p>External forces $ p[k] $ acting on the system are modeled as <strong>Gaussian white noise</strong>:</p><p>$</p><p>p[k] \sim \mathcal{N}(\mu, \sigma^2), $ where $ \mu $ is the mean and $ \sigma $ controls the intensity of the force.</p><p>In this example, the inputs are generated independently at each time step $ k $ and across input channels to simulate random excitations, such as wind or seismic forces.</p><pre><code class="language-julia hljs"># function to generate random input noise
+function generate_input(N_data::Int, nf::Int; input_mu::Float64, input_std::Float64)
+    Random.seed!(42)
+    p_real = input_mu .+ randn(N_data, nf) .* input_std
+    return p_real
+end</code></pre><pre><code class="nohighlight hljs">generate_input (generic function with 1 method)</code></pre><h3 id="Observation-Model"><a class="docs-heading-anchor" href="#Observation-Model">Observation Model</a><a id="Observation-Model-1"></a><a class="docs-heading-anchor-permalink" href="#Observation-Model" title="Permalink"></a></h3><p>System responses, such as accelerations, are often measured at specific locations using sensors. The measurements are simulated using the equation:</p><p>$</p><p>y[k] = G x[k] + J p[k] + v[k], $ where:</p><ul><li>$ G $ maps the system states $ x[k] $ to measured outputs.</li><li>$ J $ maps the input forces $ p[k] $ to the measurements.</li><li>$ v[k] \sim \mathcal{N}(0, \sigma_y^2 I) $ is Gaussian noise representing sensor inaccuracies.</li></ul><p>The noise variance $ \sigma_y^2 $ is chosen as a fraction of the true system response variance for realism.</p><p>In this example, <strong>accelerations</strong> are measured at selected degrees of freedom (e.g., nodes 1 and 4).</p><pre><code class="language-julia hljs"># function to generate the measurements and noise
+function generate_measurements(ndof, na, nv, nd, N_data, x_real, y_real, p_real, StructuralModel, Sp)
+    # unpack the structural model
+    M = StructuralModel.M
+    K = StructuralModel.K
+    C = StructuralModel.C
+    
+    Sa = zeros(na, ndof)            # selection matrix
+    Sa[1, 1] = 1                    # acceleration at node 1
+    Sa[2, 4] = 1                    # acceleration at node 4
+    G = Sa * [-(M \ K) -(M \ C)] 
+    J = Sa * (I \ M) * Sp
+
+    ry = Statistics.var(y_real[2*ndof+1, :], ) * (0.1^2)        # simulate noise as 1% RMS of the noise-free acceleration response
+
+    nm = na + nv + nd
+
+    R = I(nm) .* ry
+
+    y_meas = zeros(nm, N_data)
+    y_noise = sqrt(ry) .* randn(nm, N_data)
+
+    # reconstruct the measurements
+    y_meas = Vector{Vector{Float64}}(undef, N_data)
+    for i in 1:N_data
+        y_meas[i] = G * x_real[:, i] + J * p_real[i, :] + y_noise[:, i]
+    end
+
+    return y_meas, G, J, R
+end</code></pre><pre><code class="nohighlight hljs">generate_measurements (generic function with 1 method)</code></pre><h3 id="Simulating-the-Structural-Response"><a class="docs-heading-anchor" href="#Simulating-the-Structural-Response">Simulating the Structural Response</a><a id="Simulating-the-Structural-Response-1"></a><a class="docs-heading-anchor-permalink" href="#Simulating-the-Structural-Response" title="Permalink"></a></h3><p>The structural response under applied forces is governed by the state-space equations:</p><p>$</p><p>\begin{aligned} x[k+1] &amp; = A x[k] + B p[k], \
+y[k]   &amp; = G<em>{\text{full}} x[k] + J</em>{\text{full}} p[k], \end{aligned} $ where $ x[k] $ are the system states, $ p[k] $ are the input forces, and $ y[k] $ are the <strong>full-field responses</strong>, i.e., the response at every degree of freedom in our structure.</p><p>The function below returns:</p><ul><li><strong>True States</strong>: $ x_{\text{real}} $, propagated using $ A $ and $ B $.</li><li><strong>Full-Field Responses</strong>: $ y_{\text{real}} $, incorporating both states and inputs.</li><li><strong>Input Forces</strong>: $ p_{\text{real}} $, generated as stochastic excitations.</li><li><strong>Response Matrices</strong>: $ G<em>{\text{full}} $ (state-to-response) and $ J</em>{\text{full}} $ (input-to-response).</li></ul><p>These outputs simulate the physical behavior of the system and serve as the basis for inference. We keep the matrices because they will be used later when analyzing our results.</p><pre><code class="language-julia hljs"># function to simulate the structural response
+function simulate_response(A, B, StructuralModel, Sp, nf, ndof, N_data)
+    # unpack the structural model
+    M = StructuralModel.M
+    K = StructuralModel.K
+    C = StructuralModel.C
+    
+    p_real = generate_input(N_data, nf, input_mu = 0.0, input_std = 0.05)
+
+    Z = zeros(ndof, ndof)
+    Id = I(ndof)
+    
+    G_full = [
+            Id Z;
+            Z Id;
+            -(M \ K) -(M \ C)
+            ]
+
+    J_full = [
+        Z;
+        Z;
+        Id \ M
+    ] * Sp
+    
+    # preallocate matrices
+    x_real = zeros(2 * ndof, N_data)
+    y_real = zeros(3 * ndof, N_data)
+
+    for i in 2:N_data
+        x_real[:, i] = A * x_real[:, i-1] + B * p_real[i-1, :]
+        y_real[:, i] = G_full * x_real[:, i-1] + J_full * p_real[i-1, :]
+    end
+
+    return x_real, y_real, p_real, G_full, J_full
+end</code></pre><pre><code class="nohighlight hljs">simulate_response (generic function with 1 method)</code></pre><h3 id="Augmented-State-Space-Model"><a class="docs-heading-anchor" href="#Augmented-State-Space-Model">Augmented State-Space Model</a><a id="Augmented-State-Space-Model-1"></a><a class="docs-heading-anchor-permalink" href="#Augmented-State-Space-Model" title="Permalink"></a></h3><p>In structural health monitoring, external input forces $ p[k] $ acting on a structure, such as environmental loads or unknown excitations, are often not directly measurable. To estimate both the system states $ x[k] $ and these unknown input forces, we <strong>augment the state vector</strong> as follows:</p><p>$</p><p>\tilde{x}[k] =  \begin{bmatrix} x[k] \
+p[k] \end{bmatrix}. $</p><p>This approach allows us to simultaneously infer the internal system states (e.g., displacements and velocities) and the unknown inputs using available measurements.</p><p>The augmented system dynamics are then expressed as:</p><p>$</p><p>\begin{aligned} \tilde{x}[k+1] &amp; = A<em>{\text{aug}} \tilde{x}[k] + w[k], \
+y[k] &amp; = G</em>{\text{aug}} \tilde{x}[k] + v[k], \end{aligned} $</p><p>where:</p><ul><li>$ A_{\text{aug}} $: Augmented state transition matrix.  </li><li>$ G_{\text{aug}} $: Augmented measurement matrix.  </li><li>$ Q_{\text{akf}} $: Augmented process noise covariance, capturing uncertainties in both states and inputs.  </li><li>$ w[k] $, $ v[k] $: Process and measurement noise.  </li></ul><h5 id="Full-Field-vs.-Measurement-Space"><a class="docs-heading-anchor" href="#Full-Field-vs.-Measurement-Space">Full-Field vs. Measurement Space</a><a id="Full-Field-vs.-Measurement-Space-1"></a><a class="docs-heading-anchor-permalink" href="#Full-Field-vs.-Measurement-Space" title="Permalink"></a></h5><p>To avoid confusion, we define two augmented measurement matrices:  </p><ul><li>$ G_{\text{aug}} $: Projects the augmented state vector $ \tilde{x}[k] $ to the observed <strong>sensor measurements</strong> (e.g., accelerations at specific nodes).  </li><li>$ G^* $: The <strong>augmented full-field measurement matrix</strong>, which projects the augmented state vector to the full-field <strong>system response</strong>. This includes all degrees of freedom (displacements, velocities, and accelerations).  </li></ul><p>The distinction is critical:</p><ul><li>$ G_{\text{aug}} $ is used directly in the smoother to estimate states and inputs from limited measurements.  </li><li>$ G^* $ is used later to reconstruct the full response field for visualization and validation.</li></ul><p>For clarity, we will refer to the <strong>augmented full-field matrix</strong> as $ G^* $ throughout the rest of this example, whereas, in the code, this will be the <code>G_aug_fullfield</code> object.</p><h4 id="Noise-Covariances"><a class="docs-heading-anchor" href="#Noise-Covariances">Noise Covariances</a><a id="Noise-Covariances-1"></a><a class="docs-heading-anchor-permalink" href="#Noise-Covariances" title="Permalink"></a></h4><p>In this step, the process and measurement noise covariances are assumed to be <strong>known</strong> or <strong>pre-calibrated</strong>. For example:</p><ul><li>The input force uncertainty $ Q_p $ is set to reflect significant variability.  </li><li>State noise covariance $ Q_x $ is chosen to reflect uncertainty in the model.  </li></ul><p>The augmented noise covariance matrix $ Q_{\text{akf}} $ combines these quantities:</p><p>$</p><p>Q<em>{\text{akf}} = \begin{aligned} \begin{bmatrix} Q</em>x &amp; 0 \
+0 &amp; Q_p \end{bmatrix} \end{aligned}. $</p><pre><code class="language-julia hljs"># function to construct the augmented model
+function construct_augmented_model(A, B, G, J, G_full, J_full, nf, ndof)
+    Z_aug = zeros(nf, 2*ndof)
+    A_aug = [
+        A B;
+        Z_aug I(nf)
+        ]
+    G_aug = [G J]
+
+    G_aug_fullfield = [G_full J_full]                               # full-field augmented matrix
+
+    Qp_aug = I(nf) * 1e-2                                           # assumed known or pre-callibrated
+    
+    Qx_aug = zeros(2*ndof, 2*ndof)
+    Qx_aug[(ndof+1):end, (ndof+1):end] = I(ndof) * 1e-1             # assumed known or pre-callibrated
+
+    Q_akf = [
+        Qx_aug Z_aug&#39;;
+        Z_aug Qp_aug
+    ]
+
+    return A_aug, G_aug, Q_akf, G_aug_fullfield
+end</code></pre><pre><code class="nohighlight hljs">construct_augmented_model (generic function with 1 method)</code></pre><p>Finally, we combine all the key steps into a single workflow to generate the system dynamics, responses, measurements, and the augmented state-space model.</p><p>The results are stored in a <code>StructuralModelData</code> object for convenient access:</p><pre><code class="language-julia hljs">function get_structural_model(StructuralModel, simulation_time, dt)
+
+    # intialize
+    ndof = size(StructuralModel.M)[1]                               # number of degrees of freedom
+    nf = 1                                                          # number of inputs
+    na, nv, nd = 2, 0, 0                                            # number of oberved accelerations, velocities, and displacements
+    N_data = Int(simulation_time / dt) + 1
+    t = range(0, stop=simulation_time, length=N_data)
+
+    # construct state-space model from structural matrices
+    A, B, Sp = construct_ssm(StructuralModel, dt, ndof, nf)
+
+    # Generate input and simulate response
+    x_real, y_real, p_real, G_full, J_full = simulate_response(A, B, StructuralModel, Sp, nf, ndof, N_data)
+
+    # Generate measurements
+    y_meas, G, J, R = generate_measurements(ndof, na, nv, nd, N_data, x_real, y_real, p_real, StructuralModel, Sp)
+
+    # Construct augmented model
+    A_aug, G_aug, Q_akf, G_aug_fullfield = construct_augmented_model(A, B, G, J, G_full, J_full, nf, ndof)
+
+    return StructuralModelData(t, ndof, nf, N_data, y_meas, A_aug, G_aug, G_aug_fullfield, Q_akf, R, x_real, y_real, p_real)
+end</code></pre><pre><code class="nohighlight hljs">get_structural_model (generic function with 1 method)</code></pre><p>We define the simulation time and time step, then run the workflow to generate the structural model:</p><pre><code class="language-julia hljs">simulation_time = 5.0
+dt = 0.001
+
+model_data = get_structural_model(StructuralModel, simulation_time, dt);</code></pre><h2 id="State-and-Input-Estimation-with-RxInfer"><a class="docs-heading-anchor" href="#State-and-Input-Estimation-with-RxInfer">State and Input Estimation with RxInfer</a><a id="State-and-Input-Estimation-with-RxInfer-1"></a><a class="docs-heading-anchor-permalink" href="#State-and-Input-Estimation-with-RxInfer" title="Permalink"></a></h2><p>In this section, we use <strong>RxInfer</strong> to estimate the system states and unknown input forces from the simulated noisy measurements using the Augmented State Space Model discussed.</p><pre><code class="language-julia hljs">using RxInfer</code></pre><h3 id="Defining-the-AKF-Smoother-Model"><a class="docs-heading-anchor" href="#Defining-the-AKF-Smoother-Model">Defining the AKF Smoother Model</a><a id="Defining-the-AKF-Smoother-Model-1"></a><a class="docs-heading-anchor-permalink" href="#Defining-the-AKF-Smoother-Model" title="Permalink"></a></h3><p>Here, we define our <strong>Augmented Kalman Filter (AKF)</strong> smoother using RxInfer. This probabilistic model estimates the system states and unknown input forces based on the measurements.</p><ul><li><strong>State Prior</strong>: We start with a prior belief about the initial state, <code>x0</code>.  </li><li><strong>State Transition</strong>: At each time step, the system state evolves based on the transition matrix $ A $ and process noise covariance $ Q $: $ x[k] \sim \mathcal{N}(A x[k-1], Q). $</li><li><strong>Measurements</strong>: The observations (sensor data) are modeled as noisy measurements of the states: $ y[k] \sim \mathcal{N}(G x[k], R), $ where $ G $ maps the states to the measurements, and $ R $ is the measurement noise covariance.</li></ul><pre><code class="language-julia hljs">@model function smoother_model(y, x0, A, G, Q, R)
+
+    x_prior ~ x0
+    x_prev = x_prior  # initialize previous state with x_prior
+
+    for i in 1:length(y)
+        x[i] ~ MvNormal(mean = A * x_prev, cov = Q)
+        y[i] ~ MvNormal(mean = G * x[i], cov = R)
+        x_prev = x[i]
+    end
+
+end</code></pre><h3 id="Running-the-AKF-Smoother"><a class="docs-heading-anchor" href="#Running-the-AKF-Smoother">Running the AKF Smoother</a><a id="Running-the-AKF-Smoother-1"></a><a class="docs-heading-anchor-permalink" href="#Running-the-AKF-Smoother" title="Permalink"></a></h3><p>Now that we have our system set up, it&#39;s time to estimate the system states and unknown input forces using RxInfer. We&#39;ll run the <strong>Augmented Kalman Filter (AKF) smoother</strong> to make sense of the noisy measurements.</p><p>Here’s the game plan:</p><ol><li><p><strong>Unpack the Data</strong>:   We grab everything we need from the <code>model_data</code> object – time, matrices, measurements, and noise covariances.</p></li><li><p><strong>Set the Initial State</strong>:   We start with a prior belief about the first state, assuming it&#39;s zero with some process noise:   $ x<em>0 \sim \mathcal{N}(0, Q</em>{\text{akf}}). $</p></li><li><p><strong>Run the Smoother</strong>:   We define a helper function to keep things tidy. This function calls RxInfer’s <code>infer</code> method, which does the heavy lifting for us.</p></li><li><p><strong>Extract and Reconstruct</strong>:  </p><ul><li>RxInfer gives us <strong>state marginals</strong>, which are the posterior estimates of the states.  </li><li>Using a helper function, we reconstruct the <strong>full-field responses</strong> (displacements, velocities, and accelerations).  </li><li>We also extract the estimated input forces, which are part of the augmented state.</li></ul></li></ol><p>That’s it! With just a few lines of code, RxInfer takes care of the math behind the scenes and delivers smooth, reliable estimates of what’s happening inside the system.</p><pre><code class="language-julia hljs"># RxInfer returns the result in its own structure. 
+# Here we wrap the results in a different struct for the example&#39;s convenience
+struct InferenceResults
+    state_marginals
+    y_full_means
+    y_full_stds
+    p_means
+    p_stds
+end
+
+function run_smoother(model_data)
+    # unpack the model data
+    t               = model_data.t;
+    N_data          = model_data.N_data
+    A_aug           = model_data.A_aug;
+    G_aug           = model_data.G_aug;
+    G_aug_fullfield = model_data.G_aug_fullfield;
+    Q_akf           = model_data.Q_akf;
+    R               = model_data.R;
+    y_meas          = model_data.y_meas;
+    
+    # initialize the state - required when doing smoothing
+    x0 = MvNormalMeanCovariance(zeros(size(A_aug, 1)), Q_akf);
+
+    # define the smoother engine
+    function smoother_engine(y_meas, A, G, Q, R)
+        # run the akf smoother
+        result_smoother = infer(
+            model   = smoother_model(x0 = x0, A = A, G = G, Q = Q, R = R),
+            data    = (y = y_meas,),
+            options = (limit_stack_depth = 500, ) # This setting is required for large models
+        )
+
+        # return posteriors as this inference task returns the results as posteriors
+        # because inference is done over the full graph
+        return result_smoother.posteriors[:x]
+    end
+
+    # get the marginals of x
+    state_marginals = smoother_engine(y_meas, A_aug, G_aug, Q_akf, R)
+    
+    # reconstructing the full-field response:
+    # use helper function to reconstruct the full-field response
+    y_full_means, y_full_stds = reconstruct_full_field(state_marginals, G_aug_fullfield, N_data)
+
+    # extract the estimated input (input modeled as an augmentation state)
+    p_results_means = getindex.(mean.(state_marginals), length(state_marginals[1]))
+    p_results_stds = getindex.(std.(state_marginals), length(state_marginals[1]))
+    
+    return InferenceResults(state_marginals, y_full_means, y_full_stds, p_results_means, p_results_stds)
+end</code></pre><pre><code class="nohighlight hljs">run_smoother (generic function with 1 method)</code></pre><h3 id="Mapping-States-to-Full-Field-Responses"><a class="docs-heading-anchor" href="#Mapping-States-to-Full-Field-Responses">Mapping States to Full-Field Responses</a><a id="Mapping-States-to-Full-Field-Responses-1"></a><a class="docs-heading-anchor-permalink" href="#Mapping-States-to-Full-Field-Responses" title="Permalink"></a></h3><p>In the <code>run_smoother</code> function, we used a helper function to map the <strong>state estimates</strong> from the AKF smoother back to the <strong>full-field responses</strong> (e.g., displacements, velocities, and accelerations).  </p><p><em>Why is this important?</em></p><p>While the smoother estimates the system states, we often care about physical quantities like accelerations or displacements across the entire structure.</p><p>Using the <strong>augmented full-field matrix</strong> $ G^* $, we compute:</p><ul><li><strong>Response means</strong> from state means:   $ \mu<em>y[i] = G^* \mu</em>x[i]. $  </li><li><strong>Response uncertainties</strong> from state covariances:   $ \sigma<em>y[i] = \sqrt{\text{diag}(G^* \Sigma</em>x[i] {G^*}^\top)}. $  </li></ul><p>This gives us both the expected <strong>responses</strong> and their <strong>uncertainties</strong> at each time step.  </p><p>In other words, this function connects the smoother’s internal state estimates to meaningful, physical quantities, making it easy to visualize the system’s behavior.  </p><pre><code class="language-julia hljs"># helper function to reconstruct the full field response from the state posteriors
+function reconstruct_full_field(
+    x_marginals,
+    G_aug_fullfield,
+    N_data::Int
+    )
+    
+    # preallocate the full field response
+    y_means = Vector{Vector{Float64}}(undef, N_data)        # vector of vectors
+    y_stds = Vector{Vector{Float64}}(undef, N_data)
+
+    # reconstruct the full-field response using G_aug_fullfield
+    for i in 1:N_data
+        # extract the mean and covariance of the state posterior
+        state_mean = mean(x_marginals[i])       # each index is a vector
+        state_cov = cov(x_marginals[i])
+
+        # project mean and covariance onto the full-field response space
+        y_means[i] = G_aug_fullfield * state_mean
+        y_stds[i] = sqrt.(diag(G_aug_fullfield * state_cov * G_aug_fullfield&#39;))
+    end
+
+    return y_means, y_stds
+
+end</code></pre><pre><code class="nohighlight hljs">reconstruct_full_field (generic function with 1 method)</code></pre><p>We now run the AKF smoother using the structural model data to estimate the system states, reconstruct the full-field responses, and extract the input forces along with their uncertainties.</p><p>Let’s fire up that RxInfer!</p><pre><code class="language-julia hljs"># run the smoother
+smoother_results = run_smoother(model_data);</code></pre><p>We first write a helper function and then plot the <strong>true states</strong>, <strong>full-field response</strong>, <strong>input</strong>, their <strong>estimates</strong>, and the associated <strong>uncertainty</strong>:</p><pre><code class="language-julia hljs"># helper function
+function plot_with_uncertainty(
+    t,
+    true_values,
+    estimated_means,
+    estimated_uncertainties,
+    ylabel_text,
+    title_text,
+    label_suffix=&quot;&quot;;
+    plot_size = (700,300),
+   
+)
+    # plot true values
+    plt = plot(
+        t,
+        true_values,
+        label=&quot;true ($label_suffix)&quot;,
+        lw=2,
+        color=:blue,
+        size=plot_size,
+        left_margin = 5Plots.mm,
+        top_margin = 5Plots.mm,  
+        bottom_margin = 5Plots.mm  
+    )
+
+    # plot estimated values with uncertainty ribbon
+    plot!(
+        plt,
+        t,
+        estimated_means,
+        ribbon=estimated_uncertainties,
+        fillalpha=0.3,
+        label=&quot;estimated ($label_suffix)&quot;,
+        lw=2,
+        color=:orange,
+        linestyle=:dash
+    )
+
+    # add labels and title
+    xlabel!(&quot;time (s)&quot;)
+    ylabel!(ylabel_text)
+    title!(title_text)
+    
+    return plt
+end</code></pre><pre><code class="nohighlight hljs">plot_with_uncertainty (generic function with 2 methods)</code></pre><pre><code class="language-julia hljs"># select some DOFs to plot
+ndof = size(StructuralModel.M)[1]
+
+display_state_dof    = 4                # dof 1:4 displacements, dof 5:8 velocities
+display_response_dof = 2*ndof + 1       # dof 1:4 displacements, dof 5:8 velocities, dof 9:12 accelerations
+display_input_dof    = 1                # the only one really
+
+# plot the states
+state_plot = plot_with_uncertainty(
+    model_data.t,
+    model_data.x_real[display_state_dof, :],
+    getindex.(mean.(smoother_results.state_marginals), display_state_dof),
+    getindex.(std.(smoother_results.state_marginals), display_state_dof),
+    &quot;state value&quot;,
+    &quot;state estimate (dof $(display_state_dof))&quot;,
+    &quot;state dof $(display_state_dof)&quot;
+);
+
+# plot the responses
+response_plot = plot_with_uncertainty(
+    model_data.t,
+    model_data.y_real[display_response_dof, :],
+    getindex.(smoother_results.y_full_means, display_response_dof),
+    getindex.(smoother_results.y_full_stds, display_response_dof),
+    &quot;response value&quot;,
+    &quot;reconstructed response (dof $(display_response_dof))&quot;,
+    &quot;response dof $(display_response_dof)&quot;
+);
+
+# plot the inputs
+input_plot = plot_with_uncertainty(
+    model_data.t,
+    model_data.p_real[:, display_input_dof],
+    smoother_results.p_means,
+    smoother_results.p_stds,
+    &quot;force value&quot;,
+    &quot;input estimate (applied at dof $(display_input_dof))&quot;,
+    &quot;input force $(display_input_dof)&quot;
+);
+
+display(state_plot)
+display(response_plot)
+display(input_plot)</code></pre><p><img src="../../../assets/examples/Structural Dynamics with Augmented Kalman Filter_18_1.png" alt/> <img src="../../../assets/examples/Structural Dynamics with Augmented Kalman Filter_18_2.png" alt/> <img src="../../../assets/examples/Structural Dynamics with Augmented Kalman Filter_18_3.png" alt/></p><p>Let&#39;s quickly go over these results now:</p><ol><li>State estimation: The <strong>true state</strong> and the <strong>estimated state</strong> show excellent agreement, demonstrating the accuracy of the smoother model implemented via <code>RxInfer</code>. The <strong>uncertainty bounds</strong> around the estimated states are noticeable, especially early in the domain. This reflects the natural uncertainty in state estimation since only <strong>accelerations</strong> are observed, whereas displacements and velocities are inferred through integration.</li><li>Reconstructed response: the <strong>real response</strong> and the <strong>reconstructed response</strong> align well across the domain, confirming that the filter captures the dynamics quite nicely. The uncertainty bounds here are narrower, showing that the confidence improves as the filter incorporates observations of these quantities of interest (i.e. accelerations).</li><li>Input force reconstruction: The <strong>input force</strong> and its <strong>reconstructed counterpart</strong> show significant high frequency variations with very narrow uncertainty bounds. This is expected because accelerations, being the directly observed quantities, are estimated with higher confidence. Plus, we gave ourselves a small advantage by using a well-calibrated prior on this quantity of interest (<span>$Q_p$</span>).</li></ol><p>The results demonstrate how well the smoother model, implemented with RxInfer, performs in capturing the system dynamics and reconstructing hidden states and inputs. Notably, setting up the probabilistic model was straightforward and intuitive—much easier than dealing with the rest of the structural modeling! This highlights the power of RxInfer for quickly building and solving complex inference problems while keeping the implementation clean and efficient.</p><p>With just a few lines of code, we were able to estimate states, reconstruct responses, and confidently quantify uncertainties—a win for both accuracy and usability. 🚀</p><script type="module">import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+mermaid.initialize({
+    startOnLoad: true,
+    theme: "neutral"
+});
+</script></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../Litter Model/">« Litter Model</a><a class="docs-footer-nextpage" href="../../../contributing/examples/">Contribute with examples »</a><div class="flexbox-break"></div><p class="footer-message">Created in <a href="https://biaslab.github.io/">BIASlab</a>, maintained by <a href="https://github.com/ReactiveBayes">ReactiveBayes</a>, powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.8.0 on <span class="colophon-date" title="Monday 6 January 2025 16:02">Monday 6 January 2025</span>. Using Julia version 1.10.7.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

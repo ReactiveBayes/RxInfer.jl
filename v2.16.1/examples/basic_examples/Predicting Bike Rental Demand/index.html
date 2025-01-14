@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Predicting Bike Rental Demand · RxInfer.jl</title><meta name="title" content="Predicting Bike Rental Demand · RxInfer.jl"/><meta property="og:title" content="Predicting Bike Rental Demand · RxInfer.jl"/><meta property="twitter:title" content="Predicting Bike Rental Demand · RxInfer.jl"/><meta name="description" content="Documentation for RxInfer.jl."/><meta property="og:description" content="Documentation for RxInfer.jl."/><meta property="twitter:description" content="Documentation for RxInfer.jl."/><meta property="og:url" content="https://reactivebayes.github.io/RxInfer.jl/examples/basic_examples/Predicting Bike Rental Demand/"/><meta property="twitter:url" content="https://reactivebayes.github.io/RxInfer.jl/examples/basic_examples/Predicting Bike Rental Demand/"/><link rel="canonical" href="https://reactivebayes.github.io/RxInfer.jl/examples/basic_examples/Predicting Bike Rental Demand/"/><script data-outdated-warner src="../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../search_index.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><link href="../../../assets/theme.css" rel="stylesheet" type="text/css"/><link href="../../../assets/header.css" rel="stylesheet" type="text/css"/><script src="../../../assets/header.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img class="docs-light-only" src="../../../assets/logo.svg" alt="RxInfer.jl logo"/><img class="docs-dark-only" src="../../../assets/logo-dark.svg" alt="RxInfer.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../../../">RxInfer.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../../">Home</a></li><li><span class="tocitem">User guide</span><ul><li><a class="tocitem" href="../../../manuals/getting-started/">Getting started</a></li><li><a class="tocitem" href="../../../manuals/comparison/">RxInfer.jl vs. Others</a></li><li><a class="tocitem" href="../../../manuals/model-specification/">Model specification</a></li><li><a class="tocitem" href="../../../manuals/constraints-specification/">Constraints specification</a></li><li><a class="tocitem" href="../../../manuals/meta-specification/">Meta specification</a></li><li><input class="collapse-toggle" id="menuitem-2-6" type="checkbox"/><label class="tocitem" for="menuitem-2-6"><span class="docs-label">Inference specification</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../manuals/inference/overview/">Overview</a></li><li><a class="tocitem" href="../../../manuals/inference/infer/">Static vs Streamline inference</a></li><li><a class="tocitem" href="../../../manuals/inference/postprocess/">Inference results postprocessing</a></li><li><a class="tocitem" href="../../../manuals/inference/manual/">Manual inference specification</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-7" type="checkbox"/><label class="tocitem" for="menuitem-2-7"><span class="docs-label">Inference customization</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../manuals/custom-node/">Defining a custom node and rules</a></li></ul></li><li><a class="tocitem" href="../../../manuals/debugging/">Debugging</a></li><li><a class="tocitem" href="../../../manuals/delta-node/">Delta node</a></li></ul></li><li><span class="tocitem">Library</span><ul><li><a class="tocitem" href="../../../library/functional-forms/">Built-in functional form constraints</a></li><li><a class="tocitem" href="../../../library/model-specification/">Model specification</a></li><li><a class="tocitem" href="../../../library/bethe-free-energy/">Bethe Free Energy</a></li><li><a class="tocitem" href="../../../library/exported-methods/">Exported methods</a></li></ul></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../../overview/">Overview</a></li><li><input class="collapse-toggle" id="menuitem-4-2" type="checkbox" checked/><label class="tocitem" for="menuitem-4-2"><span class="docs-label">Basic examples</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../overview/">Overview</a></li><li><a class="tocitem" href="../Coin Toss Model/">Coin toss model (Beta-Bernoulli)</a></li><li><a class="tocitem" href="../Bayesian Linear Regression Tutorial/">Bayesian Linear Regression Tutorial</a></li><li><a class="tocitem" href="../Kalman filtering and smoothing/">Kalman filtering and smoothing</a></li><li class="is-active"><a class="tocitem" href>Predicting Bike Rental Demand</a><ul class="internal"><li><a class="tocitem" href="#Preamble:-Enabling-Predictions"><span>Preamble: Enabling Predictions</span></a></li><li><a class="tocitem" href="#Objective"><span>Objective</span></a></li><li><a class="tocitem" href="#Dataset-Source"><span>Dataset Source</span></a></li><li><a class="tocitem" href="#Generative-Model-with-Priors"><span>Generative Model with Priors</span></a></li><li><a class="tocitem" href="#Conclusion"><span>Conclusion</span></a></li></ul></li><li><a class="tocitem" href="../Hidden Markov Model/">How to train your Hidden Markov Model</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-4-3" type="checkbox"/><label class="tocitem" for="menuitem-4-3"><span class="docs-label">Advanced examples</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../advanced_examples/overview/">Overview</a></li><li><a class="tocitem" href="../../advanced_examples/Active Inference Mountain car/">Active Inference Mountain car</a></li><li><a class="tocitem" href="../../advanced_examples/Advanced Tutorial/">Advanced Tutorial</a></li><li><a class="tocitem" href="../../advanced_examples/Assessing People Skills/">Assessing People’s Skills</a></li><li><a class="tocitem" href="../../advanced_examples/Chance Constraints/">Chance-Constrained Active Inference</a></li><li><a class="tocitem" href="../../advanced_examples/Conjugate-Computational Variational Message Passing/">Conjugate-Computational Variational Message Passing (CVI)</a></li><li><a class="tocitem" href="../../advanced_examples/Global Parameter Optimisation/">Global Parameter Optimisation</a></li><li><a class="tocitem" href="../../advanced_examples/GP Regression by SSM/">Solve GP regression by SDE</a></li><li><a class="tocitem" href="../../advanced_examples/Infinite Data Stream/">Infinite Data Stream</a></li><li><a class="tocitem" href="../../advanced_examples/Nonlinear Sensor Fusion/">Nonlinear Sensor Fusion</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-4-4" type="checkbox"/><label class="tocitem" for="menuitem-4-4"><span class="docs-label">Problem specific</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../problem_specific/overview/">Overview</a></li><li><a class="tocitem" href="../../problem_specific/Autoregressive Models/">Autoregressive Models</a></li><li><a class="tocitem" href="../../problem_specific/Gamma Mixture/">Gamma Mixture Model</a></li><li><a class="tocitem" href="../../problem_specific/Gaussian Mixture/">Gaussian Mixture</a></li><li><a class="tocitem" href="../../problem_specific/Hierarchical Gaussian Filter/">Hierarchical Gaussian Filter</a></li><li><a class="tocitem" href="../../problem_specific/Invertible Neural Network Tutorial/">Invertible neural networks: a tutorial</a></li><li><a class="tocitem" href="../../problem_specific/Probit Model (EP)/">Probit Model (EP)</a></li><li><a class="tocitem" href="../../problem_specific/RTS vs BIFM Smoothing/">RTS vs BIFM Smoothing</a></li><li><a class="tocitem" href="../../problem_specific/Simple Nonlinear Node/">Simple Nonlinear Node</a></li><li><a class="tocitem" href="../../problem_specific/Universal Mixtures/">Universal Mixtures</a></li></ul></li></ul></li><li><span class="tocitem">Contributing</span><ul><li><a class="tocitem" href="../../../contributing/overview/">Overview</a></li><li><a class="tocitem" href="../../../contributing/new-documentation/">Contributing to the documentation</a></li><li><a class="tocitem" href="../../../contributing/new-package/">Contributing to the dependencies</a></li><li><a class="tocitem" href="../../../contributing/new-example/">Contributing to the examples</a></li><li><a class="tocitem" href="../../../contributing/new-release/">Publishing a new release</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li><a class="is-disabled">Basic examples</a></li><li class="is-active"><a href>Predicting Bike Rental Demand</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Predicting Bike Rental Demand</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/ReactiveBayes/RxInfer.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/ReactiveBayes/RxInfer.jl/blob/main/docs/src/examples/basic_examples/Predicting Bike Rental Demand.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><p>This example has been auto-generated from the <a href="https://github.com/reactivebayes/RxInfer.jl/tree/main/examples"><code>examples/</code></a> folder at GitHub repository.</p><h1 id="examples-predicting-bike-rental-demand"><a class="docs-heading-anchor" href="#examples-predicting-bike-rental-demand">Predicting Bike Rental Demand</a><a id="examples-predicting-bike-rental-demand-1"></a><a class="docs-heading-anchor-permalink" href="#examples-predicting-bike-rental-demand" title="Permalink"></a></h1><pre><code class="language-julia hljs"># Activate local environment, see `Project.toml`
+import Pkg; Pkg.activate(&quot;..&quot;); Pkg.instantiate();</code></pre><pre><code class="language-julia hljs">using RxInfer</code></pre><h2 id="Preamble:-Enabling-Predictions"><a class="docs-heading-anchor" href="#Preamble:-Enabling-Predictions">Preamble: Enabling Predictions</a><a id="Preamble:-Enabling-Predictions-1"></a><a class="docs-heading-anchor-permalink" href="#Preamble:-Enabling-Predictions" title="Permalink"></a></h2><p><code>RxInfer.jl</code> facilitates predictions in two primary ways. </p><ol><li><strong>Implicit Prediction</strong>: By adding <code>missing</code> instances directly into the data, which are then treated as regular observations during inference. This method typically does not require model alterations.</li><li><strong>Explicit Prediction</strong>: By defining a separate data variable in the model. This approach doesn&#39;t necessitate passing <code>missing</code> instances as the data variable but does require specifying the <code>predictvar</code> argument in the inference function.</li></ol><h3 id="Example"><a class="docs-heading-anchor" href="#Example">Example</a><a id="Example-1"></a><a class="docs-heading-anchor-permalink" href="#Example" title="Permalink"></a></h3><p>Consider the following model:</p><pre><code class="language-julia hljs">@model function example_model()
+    y = datavar(Float64) where {allow_missing = true}
+
+    h ~ NormalMeanPrecision(0, 1.0)
+    x ~ NormalMeanPrecision(h, 1.0)
+    y ~ NormalMeanPrecision(x, 10.0)
+end</code></pre><pre><code class="language-julia hljs"># Implicit Prediction
+result = infer(model = example_model(), data = (y = missing,))</code></pre><pre><code class="nohighlight hljs">Inference results:
+  Posteriors       | available for (h, x)
+  Predictions      | available for (y)</code></pre><pre><code class="language-julia hljs"># Explicit Prediction
+result = infer(model = example_model(), predictvars = (y = KeepLast(),))</code></pre><pre><code class="nohighlight hljs">Inference results:
+  Posteriors       | available for (h, x)
+  Predictions      | available for (y)</code></pre><p>Both approaches yield the same results, but the choice depends on personal preferences and the model&#39;s structure. In scenarios with a clear distinction between observed and predicted variables, the explicit method is preferable. However, our subsequent example will not differentiate between observations and predictions, as it utilizes a state space representation.</p><pre><code class="language-julia hljs">using CSV, DataFrames, Plots</code></pre><h2 id="Objective"><a class="docs-heading-anchor" href="#Objective">Objective</a><a id="Objective-1"></a><a class="docs-heading-anchor-permalink" href="#Objective" title="Permalink"></a></h2><p>This example aims to simultaneously learn the dynamics of the feature space and predict hourly bike rental demand through reactive message passing, a signature approach of <code>RxInfer.jl</code>.</p><h2 id="Dataset-Source"><a class="docs-heading-anchor" href="#Dataset-Source">Dataset Source</a><a id="Dataset-Source-1"></a><a class="docs-heading-anchor-permalink" href="#Dataset-Source" title="Permalink"></a></h2><p>Data for this example study is sourced from the Kaggle <a href="https://www.kaggle.com/datasets/brajeshmohapatra/bike-count-prediction-data-set">Bike Count Prediction Dataset</a>. For the purpose of this example, the original dataset from Kaggle has been adapted by removing categorical variables such as season, holiday, and working day. Additionally we take only 500 entries. This modification allows us to focus on modeling the continuous variables without additional complexities of handling categorical data. Nevertheless, this extension is feasible within <code>RxInfer.jl</code>.</p><pre><code class="language-julia hljs"># Load the data
+df = CSV.read(&quot;../data/bike_count/modified_bicycle.csv&quot;, DataFrame)
+df[1:10, :]</code></pre><pre><code class="nohighlight hljs">10×6 DataFrame
+ Row │ datetime            temp     atemp    humidity  windspeed  count
+     │ String31            Float64  Float64  Float64   Float64    Int64
+─────┼──────────────────────────────────────────────────────────────────
+   1 │ 2011-01-01 0:00:00     9.84   14.395      81.0     0.0        16
+   2 │ 2011-01-01 1:00:00     9.02   13.635      80.0     0.0        40
+   3 │ 2011-01-01 2:00:00     9.02   13.635      80.0     0.0        32
+   4 │ 2011-01-01 3:00:00     9.84   14.395      75.0     0.0        13
+   5 │ 2011-01-01 4:00:00     9.84   14.395      75.0     0.0         1
+   6 │ 2011-01-01 5:00:00     9.84   12.88       75.0     6.0032      1
+   7 │ 2011-01-01 6:00:00     9.02   13.635      80.0     0.0         2
+   8 │ 2011-01-01 7:00:00     8.2    12.88       86.0     0.0         3
+   9 │ 2011-01-01 8:00:00     9.84   14.395      75.0     0.0         8
+  10 │ 2011-01-01 9:00:00    13.12   17.425      76.0     0.0        14</code></pre><pre><code class="language-julia hljs"># we reserve few samples for prediction
+n_future = 24
+
+X = Union{Vector{Float64}, Missing}[[row[i] for i in 2:(ncol(df))-1] for row in eachrow(df)][1:end-n_future]
+y = Union{Float64, Missing}[df[:, &quot;count&quot;]...][1:end-n_future]
+
+state_dim = length(X[1]); # dimensionality of feature space</code></pre><h2 id="Generative-Model-with-Priors"><a class="docs-heading-anchor" href="#Generative-Model-with-Priors">Generative Model with Priors</a><a id="Generative-Model-with-Priors-1"></a><a class="docs-heading-anchor-permalink" href="#Generative-Model-with-Priors" title="Permalink"></a></h2><p>We present a generative model that delineates the latent dynamics of feature evolution, represented by <span>$\mathbf{h}_t$</span>, and their link to the bike rental counts, <span>$\mathbf{y}_t$</span>.</p><h3 id="Equations-and-Priors"><a class="docs-heading-anchor" href="#Equations-and-Priors">Equations and Priors</a><a id="Equations-and-Priors-1"></a><a class="docs-heading-anchor-permalink" href="#Equations-and-Priors" title="Permalink"></a></h3><ol><li><p><strong>Feature Dynamics with Prior</strong>:</p><ul><li>Prior: <span>$\mathbf{a} \sim \mathcal{N}(\mathbf{0}, \mathbf{I})$</span></li><li>Dynamics: <span>$\mathbf{h}_t \sim \mathcal{N}(\mathbf{A h}_{t-1}, \mathbf{Q})$</span></li><li><p class="math-container">\[\mathbf{A}\]</p>is the transition matrix, reshaped from the prior vector <span>$\mathbf{a}$</span>, and <span>$\mathbf{Q}$</span> represents process noise.</li></ul></li><li><p><strong>Noisy Observations</strong>:</p><ul><li><p class="math-container">\[\mathbf{x}_t \sim \mathcal{N}(\mathbf{h}_t, \mathbf{P})\]</p></li><li>Represents the observed noisy state of the features.</li></ul></li><li><p><strong>Count Prediction with Prior</strong>:</p><ul><li>Prior: <span>$\boldsymbol{\theta} \sim \mathcal{N}(\mathbf{0}, \mathbf{I})$</span></li><li>Prediction: <span>$y_t \sim \mathcal{N}(\text{softplus}(\boldsymbol{\theta}^\top\mathbf{h}_t), \sigma^2)$</span></li><li>Models the bike rental count as influenced by a non-linear transformation of the hidden state.</li></ul></li></ol><h3 id="Interpretation"><a class="docs-heading-anchor" href="#Interpretation">Interpretation</a><a id="Interpretation-1"></a><a class="docs-heading-anchor-permalink" href="#Interpretation" title="Permalink"></a></h3><ul><li>This framework aims to simultaneously infer the transition matrix <span>$\mathbf{A}$</span> and the regression parameters <span>$\boldsymbol{\theta}$</span>, providing a comprehensive view of the feature space dynamics and the count prediction.</li><li>By employing Gaussian priors on both <span>$\mathbf{a}$</span> and <span>$\boldsymbol{\theta}$</span>, we incorporate beliefs about their distributions.</li><li>The inference process aims to discover these underlying dynamics, enabling predictions of both features <span>$\mathbf{x}_t$</span> and counts <span>$y_t$</span>.</li></ul><pre><code class="language-julia hljs"># We augument the dataset with missing entries for 24 hours ahead
+append!(X, repeat([missing], n_future))
+append!(y, repeat([missing], n_future));</code></pre><pre><code class="language-julia hljs"># Function to perform the state transition in the model.
+# It reshapes vector `a` into a matrix and multiplies it with vector `x` to simulate the transition.
+function transition(a, x)
+    nm, n = length(a), length(x)
+    m = nm ÷ n  # Calculate the number of rows for reshaping &#39;a&#39; into a matrix
+    A = reshape(a, (m, n))  
+    return A * x
+end</code></pre><pre><code class="nohighlight hljs">transition (generic function with 1 method)</code></pre><pre><code class="language-julia hljs"># The dotsoftplus function combines a dot product and softplus transformation.
+# While useful for ensuring positivity, it may not be the optimal choice for all scenarios,
+# especially if the data suggests other forms of relationships or distributions.
+function dotsoftplus(a, x)
+    log(1 + exp(dot(a, x)))
+end</code></pre><pre><code class="nohighlight hljs">dotsoftplus (generic function with 1 method)</code></pre><pre><code class="language-julia hljs"># model definction
+@model function bicycle_ssm(n, h0, θ0, a0, Q, P)
+
+    # `h` is a sequence of hidden states
+    h = randomvar(n)
+
+    # `x` is a sequence of observed states (features)
+    x = datavar(Vector{Float64}, n) where {allow_missing = true}
+    # `y` is a sequence of &quot;count&quot; bicycles
+    y = datavar(Float64, n) where {allow_missing = true}
+
+    a ~ MvNormal(μ=a0, Σ=diageye(length(a0)))
+
+    θ ~ MvNormal(μ=mean(θ0), Σ=cov(θ0))
+
+    h_prior ~ MvNormal(μ=mean(h0), Σ=cov(h0))
+    h_prev = h_prior
+    
+    for i in 1:n
+        
+        h[i] ~ MvNormal(μ=transition(a, h_prev), Σ=Q)
+        
+        x[i] ~ MvNormal(μ=h[i], Σ=P)
+        
+        y[i] ~ Normal(μ=dotsoftplus(θ, h[i]), σ²=1.0)
+        
+        h_prev = h[i]
+    end
+
+end</code></pre><pre><code class="language-julia hljs"># In this example, we opt for a basic Linearization approach for the transition and dotsoftplus functions.
+# However, alternative methods like Unscented or CVI approximations can also be considered.
+transition_meta = @meta begin 
+    transition() -&gt; Linearization()
+    dotsoftplus() -&gt; Linearization()
+end</code></pre><pre><code class="nohighlight hljs">Meta specification:
+  transition() -&gt; Linearization()
+  dotsoftplus() -&gt; Linearization()
+Options:
+  warn = true</code></pre><pre><code class="language-julia hljs"># We define rather uninformative priors 
+prior_θ = MvNormalMeanCovariance(ones(state_dim), diageye(state_dim))
+prior_h = MvNormalMeanCovariance(zeros(state_dim), 1e2diageye(state_dim))
+prior_a = MvNormalMeanCovariance(zeros(state_dim^2), diageye(state_dim^2))</code></pre><pre><code class="nohighlight hljs">MvNormalMeanCovariance(
+μ: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0
+.0, 0.0]
+Σ: [1.0 0.0 … 0.0 0.0; 0.0 1.0 … 0.0 0.0; … ; 0.0 0.0 … 1.0 0.0; 0.0 0.0 … 
+0.0 1.0]
+)</code></pre><pre><code class="language-julia hljs"># the deterministic relationsships (transition) and (dotsoftplus) will induce loops in the graph representation of our model, this necessiates the initialization of the messages
+imessages = ( h = prior_h, a = prior_a, θ = prior_θ,)
+
+bicycle_model = bicycle_ssm(length(y), prior_h, prior_θ, prior_a, diageye(state_dim), diageye(state_dim))
+
+result = infer(
+    model = bicycle_model,
+    data  = (y = y, x=X), 
+    options = (limit_stack_depth = 500, ), 
+    returnvars = KeepLast(),
+    initmessages = imessages,
+    meta = transition_meta,
+    iterations = 20,
+    showprogress=true,
+)</code></pre><pre><code class="nohighlight hljs">Inference results:
+  Posteriors       | available for (a, h, h_prior, θ)
+  Predictions      | available for (y, x)</code></pre><pre><code class="language-julia hljs"># For a sake of this example, we extract only predictions
+mean_y, cov_y = mean.(result.predictions[:y]), cov.(result.predictions[:y])
+mean_x, cov_x = mean.(result.predictions[:x]), var.(result.predictions[:x])
+
+mean_x1, cov_x1 = getindex.(mean_x, 1), getindex.(cov_x, 1)
+mean_x2, cov_x2 = getindex.(mean_x, 2), getindex.(cov_x, 2)
+mean_x3, cov_x3 = getindex.(mean_x, 3), getindex.(cov_x, 3)
+mean_x4, cov_x4 = getindex.(mean_x, 4), getindex.(cov_x, 4);</code></pre><pre><code class="language-julia hljs">slice = (300, length(y))
+data = df[:, &quot;count&quot;][length(y)-n_future:length(y)]
+
+p = scatter(y, 
+            color=:darkblue, 
+            markerstrokewidth=0,
+            label=&quot;Observed Count&quot;, 
+            alpha=0.6)
+
+# Plotting the mean prediction with variance ribbon
+plot!(mean_y, ribbon=sqrt.(cov_y), 
+      color=:orange, 
+      fillalpha=0.3,
+      label=&quot;Predicted Mean ± Std Dev&quot;)
+
+# Adding a vertical line to indicate the start of the future prediction
+vline!([length(y)-n_future], 
+       label=&quot;Prediction Start&quot;, 
+       linestyle=:dash, 
+       linecolor=:green)
+
+# Future (unobserved) data
+plot!(length(y)-n_future:length(y), data, label=&quot;Future Count&quot;)
+
+# Adjusting the limits
+xlims!(slice)
+
+# Enhancing the plot with titles and labels
+title!(&quot;Bike Rental Demand Prediction&quot;)
+xlabel!(&quot;Time&quot;)
+ylabel!(&quot;Bike Count&quot;)
+
+# Adjust the legend
+legend=:topright
+
+# Show the final plot
+display(p)</code></pre><p><img src="../../../assets/examples/Predicting Bike Rental Demand_17_1.png" alt/></p><pre><code class="language-julia hljs">using Plots
+
+# Define a color palette
+palette = cgrad(:viridis)
+
+# Plot the hidden states with observations
+p1 = plot(mean_x1, ribbon=sqrt.(cov_x1), color=palette[1], label=&quot;Hidden State 1&quot;, legend=:topleft)
+plot!(df[!, :temp], color=:grey, label=&quot;Temperature&quot;)
+vline!([length(y)-n_future], linestyle=:dash, color=:red, label=&quot;Prediction Start&quot;)
+xlabel!(&quot;Time&quot;)
+ylabel!(&quot;Value&quot;)
+title!(&quot;Temperature vs Hidden State 1&quot;)
+
+p2 = plot(mean_x2, ribbon=sqrt.(cov_x2), color=palette[2], label=&quot;Hidden State 2&quot;, legend=:topleft)
+plot!(df[!, :atemp], color=:grey, label=&quot;Feels-Like Temp&quot;)
+vline!([length(y)-n_future], linestyle=:dash, color=:red, label=&quot;&quot;)
+xlabel!(&quot;Time&quot;)
+ylabel!(&quot;Value&quot;)
+title!(&quot;Feels-Like Temp vs Hidden State 2&quot;)
+
+p3 = plot(mean_x3, ribbon=sqrt.(cov_x3), color=palette[3], label=&quot;Hidden State 3&quot;, legend=:topleft)
+plot!(df[!, :humidity], color=:grey, label=&quot;Humidity&quot;)
+vline!([length(y)-n_future], linestyle=:dash, color=:red, label=&quot;Prediction Start&quot;)
+xlabel!(&quot;Time&quot;)
+ylabel!(&quot;Value&quot;)
+title!(&quot;Humidity vs Hidden State 3&quot;)
+
+p4 = plot(mean_x4, ribbon=sqrt.(cov_x4), color=palette[4], label=&quot;Hidden State 4&quot;, legend=:topleft)
+plot!(df[!, :windspeed], color=:grey, label=&quot;Windspeed&quot;)
+vline!([length(y)-n_future], linestyle=:dash, color=:red, label=&quot;Prediction Start&quot;)
+xlabel!(&quot;Time&quot;)
+ylabel!(&quot;Value&quot;)
+title!(&quot;Windspeed vs Hidden State 4&quot;)
+
+for p in [p1, p2, p3, p4]
+    xlims!(p, first(slice), last(slice))
+end
+
+plot(p1, p2, p3, p4, layout=(2, 2), size=(800, 400))</code></pre><p><img src="../../../assets/examples/Predicting Bike Rental Demand_18_1.png" alt/></p><h2 id="Conclusion"><a class="docs-heading-anchor" href="#Conclusion">Conclusion</a><a id="Conclusion-1"></a><a class="docs-heading-anchor-permalink" href="#Conclusion" title="Permalink"></a></h2><p>While the predictions provided by our current model may not align closely with the real-world data, it&#39;s crucial to acknowledge the assumptions and simplifications that were made which could have influenced the outcomes. This model serves as a conceptual framework, demonstrating that it&#39;s possible to infer states, parameters, and predictions concurrently with a focus on the predictive aspect of the analysis.</p><p>The real power of modeling lies in iteration and refinement. We encourage the community to build upon this foundation. Through collaborative effort and shared insights, we can enhance the predictive accuracy of such models, making them not only illustrative but also practical for real-world applications.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../Kalman filtering and smoothing/">« Kalman filtering and smoothing</a><a class="docs-footer-nextpage" href="../Hidden Markov Model/">How to train your Hidden Markov Model »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="auto">Automatic (OS)</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.2.1 on <span class="colophon-date" title="Thursday 25 January 2024 11:32">Thursday 25 January 2024</span>. Using Julia version 1.10.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

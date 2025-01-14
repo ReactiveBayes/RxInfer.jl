@@ -1,0 +1,314 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink"
+     version="1.2"
+     width="100mm" height="100mm" viewBox="0 0 100 100"
+     stroke="none"
+     fill="#000000"
+     stroke-width="0.3"
+     font-size="3.88"
+>
+<defs>
+  <marker id="arrow" markerWidth="15" markerHeight="7" refX="5" refY="3.5" orient="auto" markerUnits="strokeWidth">
+    <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
+  </marker>
+</defs>
+<g fill="#000000" fill-opacity="0.000" id="img-9a3f0d07-1">
+  <g transform="translate(50,50)">
+    <path d="M-50,-50 L50,-50 50,50 -50,50  z" class="primitive"/>
+  </g>
+</g>
+<g stroke-width="0.6" stroke="#D3D3D3" id="img-9a3f0d07-2">
+</g>
+<g stroke-width="0.6" stroke="#D3D3D3" id="img-9a3f0d07-3">
+  <g transform="translate(27.96,79.2)">
+    <path fill="none" d="M-2.45,-1.87 L2.45,1.87 " class="primitive"/>
+  </g>
+  <g transform="translate(19.49,79.78)">
+    <path fill="none" d="M2.79,-2.38 L-2.79,2.38 " class="primitive"/>
+  </g>
+  <g transform="translate(25.41,68.73)">
+    <path fill="none" d="M-1.12,5.29 L1.12,-5.29 " class="primitive"/>
+  </g>
+  <g transform="translate(35.65,81.42)">
+    <path fill="none" d="M1.57,-0.4 L-1.57,0.4 " class="primitive"/>
+  </g>
+  <g transform="translate(34.76,85.47)">
+    <path fill="none" d="M1.34,1.56 L-1.34,-1.56 " class="primitive"/>
+  </g>
+  <g transform="translate(13.15,87.59)">
+    <path fill="none" d="M-1.06,2.2 L1.06,-2.2 " class="primitive"/>
+  </g>
+  <g transform="translate(11.72,84.04)">
+    <path fill="none" d="M-1.33,0.21 L1.33,-0.21 " class="primitive"/>
+  </g>
+  <g transform="translate(30.78,55.98)">
+    <path fill="none" d="M2.62,-3.72 L-2.62,3.72 " class="primitive"/>
+  </g>
+  <g transform="translate(39.09,46)">
+    <path fill="none" d="M-3.02,3.07 L3.02,-3.07 " class="primitive"/>
+  </g>
+  <g transform="translate(24.04,59.48)">
+    <path fill="none" d="M-1.18,-0.78 L1.18,0.78 " class="primitive"/>
+  </g>
+  <g transform="translate(47.65,37.3)">
+    <path fill="none" d="M2.62,-2.66 L-2.62,2.66 " class="primitive"/>
+  </g>
+  <g transform="translate(51.85,25.38)">
+    <path fill="none" d="M-0.09,5.69 L0.09,-5.69 " class="primitive"/>
+  </g>
+  <g transform="translate(55.44,38.87)">
+    <path fill="none" d="M-2.58,-3.97 L2.58,3.97 " class="primitive"/>
+  </g>
+  <g transform="translate(46.5,42.2)">
+    <path fill="none" d="M0.92,0.24 L-0.92,-0.24 " class="primitive"/>
+  </g>
+  <g transform="translate(53.45,13.12)">
+    <path fill="none" d="M0.83,-2.51 L-0.83,2.51 " class="primitive"/>
+  </g>
+  <g transform="translate(50.72,12.97)">
+    <path fill="none" d="M-0.71,-2.63 L0.71,2.63 " class="primitive"/>
+  </g>
+  <g transform="translate(62.08,51.4)">
+    <path fill="none" d="M2.1,4.89 L-2.1,-4.89 " class="primitive"/>
+  </g>
+  <g transform="translate(67.26,65.15)">
+    <path fill="none" d="M-1.61,-4.96 L1.61,4.96 " class="primitive"/>
+  </g>
+  <g transform="translate(58.15,41.68)">
+    <path fill="none" d="M-0.33,-0.94 L0.33,0.94 " class="primitive"/>
+  </g>
+  <g transform="translate(73.94,74.81)">
+    <path fill="none" d="M2.65,1.62 L-2.65,-1.62 " class="primitive"/>
+  </g>
+  <g transform="translate(82.37,79.63)">
+    <path fill="none" d="M-2.16,-1.14 L2.16,1.14 " class="primitive"/>
+  </g>
+  <g transform="translate(67.62,76.82)">
+    <path fill="none" d="M-1.12,2.8 L1.12,-2.8 " class="primitive"/>
+  </g>
+  <g transform="translate(87.99,78.93)">
+    <path fill="none" d="M0.58,-1 L-0.58,1 " class="primitive"/>
+  </g>
+  <g transform="translate(89.02,84.69)">
+    <path fill="none" d="M1.26,1.4 L-1.26,-1.4 " class="primitive"/>
+  </g>
+</g>
+<g fill="#D3D3D3" id="img-9a3f0d07-4">
+</g>
+<g fill="#D3D3D3" id="img-9a3f0d07-5">
+</g>
+<g font-size="4" fill="#000000" id="img-9a3f0d07-6">
+</g>
+<g stroke-width="0" stroke="#000000" stroke-opacity="0.000" fill="#40E0D0" id="img-9a3f0d07-7">
+  <g transform="translate(23.86,76.06)">
+    <circle cx="0" cy="0" r="2" class="primitive"/>
+  </g>
+  <g transform="translate(39.24,80.52)">
+    <circle cx="0" cy="0" r="2" class="primitive"/>
+  </g>
+  <g transform="translate(37.46,88.6)">
+    <circle cx="0" cy="0" r="2" class="primitive"/>
+  </g>
+  <g transform="translate(32.07,82.33)">
+    <circle cx="0" cy="0" r="2" class="primitive"/>
+  </g>
+  <g transform="translate(11.18,91.67)">
+    <circle cx="0" cy="0" r="2" class="primitive"/>
+  </g>
+  <g transform="translate(8.33,84.57)">
+    <circle cx="0" cy="0" r="2" class="primitive"/>
+  </g>
+  <g transform="translate(15.11,83.51)">
+    <circle cx="0" cy="0" r="2" class="primitive"/>
+  </g>
+  <g transform="translate(34.61,50.56)">
+    <circle cx="0" cy="0" r="2" class="primitive"/>
+  </g>
+  <g transform="translate(21.12,57.55)">
+    <circle cx="0" cy="0" r="2" class="primitive"/>
+  </g>
+  <g transform="translate(26.96,61.41)">
+    <circle cx="0" cy="0" r="2" class="primitive"/>
+  </g>
+  <g transform="translate(51.73,33.16)">
+    <circle cx="0" cy="0" r="2" class="primitive"/>
+  </g>
+  <g transform="translate(49.43,42.97)">
+    <circle cx="0" cy="0" r="2" class="primitive"/>
+  </g>
+  <g transform="translate(43.56,41.44)">
+    <circle cx="0" cy="0" r="2" class="primitive"/>
+  </g>
+  <g transform="translate(54.93,8.63)">
+    <circle cx="0" cy="0" r="2" class="primitive"/>
+  </g>
+  <g transform="translate(49.46,8.33)">
+    <circle cx="0" cy="0" r="2" class="primitive"/>
+  </g>
+  <g transform="translate(51.98,17.61)">
+    <circle cx="0" cy="0" r="2" class="primitive"/>
+  </g>
+  <g transform="translate(65,58.21)">
+    <circle cx="0" cy="0" r="2" class="primitive"/>
+  </g>
+  <g transform="translate(57.15,38.76)">
+    <circle cx="0" cy="0" r="2" class="primitive"/>
+  </g>
+  <g transform="translate(59.16,44.59)">
+    <circle cx="0" cy="0" r="2" class="primitive"/>
+  </g>
+  <g transform="translate(78.37,77.52)">
+    <circle cx="0" cy="0" r="2" class="primitive"/>
+  </g>
+  <g transform="translate(65.72,81.55)">
+    <circle cx="0" cy="0" r="2" class="primitive"/>
+  </g>
+  <g transform="translate(69.52,72.1)">
+    <circle cx="0" cy="0" r="2" class="primitive"/>
+  </g>
+  <g transform="translate(89.6,76.12)">
+    <circle cx="0" cy="0" r="2" class="primitive"/>
+  </g>
+  <g transform="translate(91.67,87.64)">
+    <circle cx="0" cy="0" r="2" class="primitive"/>
+  </g>
+  <g transform="translate(86.37,81.74)">
+    <circle cx="0" cy="0" r="2" class="primitive"/>
+  </g>
+</g>
+<g font-family="Helvetica" font-size="4" fill="#000000" id="img-9a3f0d07-8">
+  <g transform="translate(23.86,76.06)">
+    <g class="primitive">
+      <text text-anchor="middle" dy="0.35em">x</text>
+    </g>
+  </g>
+  <g transform="translate(39.24,80.52)">
+    <g class="primitive">
+      <text text-anchor="middle" dy="0.35em">constvar</text>
+    </g>
+  </g>
+  <g transform="translate(37.46,88.6)">
+    <g class="primitive">
+      <text text-anchor="middle" dy="0.35em">constvar</text>
+    </g>
+  </g>
+  <g transform="translate(32.07,82.33)">
+    <g class="primitive">
+      <text text-anchor="middle" dy="0.35em">NormalMeanVariance</text>
+    </g>
+  </g>
+  <g transform="translate(11.18,91.67)">
+    <g class="primitive">
+      <text text-anchor="middle" dy="0.35em">y</text>
+    </g>
+  </g>
+  <g transform="translate(8.33,84.57)">
+    <g class="primitive">
+      <text text-anchor="middle" dy="0.35em">constvar</text>
+    </g>
+  </g>
+  <g transform="translate(15.11,83.51)">
+    <g class="primitive">
+      <text text-anchor="middle" dy="0.35em">NormalMeanVariance</text>
+    </g>
+  </g>
+  <g transform="translate(34.61,50.56)">
+    <g class="primitive">
+      <text text-anchor="middle" dy="0.35em">anonymous_var_graphppl</text>
+    </g>
+  </g>
+  <g transform="translate(21.12,57.55)">
+    <g class="primitive">
+      <text text-anchor="middle" dy="0.35em">constvar</text>
+    </g>
+  </g>
+  <g transform="translate(26.96,61.41)">
+    <g class="primitive">
+      <text text-anchor="middle" dy="0.35em">+</text>
+    </g>
+  </g>
+  <g transform="translate(51.73,33.16)">
+    <g class="primitive">
+      <text text-anchor="middle" dy="0.35em">x</text>
+    </g>
+  </g>
+  <g transform="translate(49.43,42.97)">
+    <g class="primitive">
+      <text text-anchor="middle" dy="0.35em">constvar</text>
+    </g>
+  </g>
+  <g transform="translate(43.56,41.44)">
+    <g class="primitive">
+      <text text-anchor="middle" dy="0.35em">NormalMeanVariance</text>
+    </g>
+  </g>
+  <g transform="translate(54.93,8.63)">
+    <g class="primitive">
+      <text text-anchor="middle" dy="0.35em">y</text>
+    </g>
+  </g>
+  <g transform="translate(49.46,8.33)">
+    <g class="primitive">
+      <text text-anchor="middle" dy="0.35em">constvar</text>
+    </g>
+  </g>
+  <g transform="translate(51.98,17.61)">
+    <g class="primitive">
+      <text text-anchor="middle" dy="0.35em">NormalMeanVariance</text>
+    </g>
+  </g>
+  <g transform="translate(65,58.21)">
+    <g class="primitive">
+      <text text-anchor="middle" dy="0.35em">anonymous_var_graphppl</text>
+    </g>
+  </g>
+  <g transform="translate(57.15,38.76)">
+    <g class="primitive">
+      <text text-anchor="middle" dy="0.35em">constvar</text>
+    </g>
+  </g>
+  <g transform="translate(59.16,44.59)">
+    <g class="primitive">
+      <text text-anchor="middle" dy="0.35em">+</text>
+    </g>
+  </g>
+  <g transform="translate(78.37,77.52)">
+    <g class="primitive">
+      <text text-anchor="middle" dy="0.35em">x</text>
+    </g>
+  </g>
+  <g transform="translate(65.72,81.55)">
+    <g class="primitive">
+      <text text-anchor="middle" dy="0.35em">constvar</text>
+    </g>
+  </g>
+  <g transform="translate(69.52,72.1)">
+    <g class="primitive">
+      <text text-anchor="middle" dy="0.35em">NormalMeanVariance</text>
+    </g>
+  </g>
+  <g transform="translate(89.6,76.12)">
+    <g class="primitive">
+      <text text-anchor="middle" dy="0.35em">y</text>
+    </g>
+  </g>
+  <g transform="translate(91.67,87.64)">
+    <g class="primitive">
+      <text text-anchor="middle" dy="0.35em">constvar</text>
+    </g>
+  </g>
+  <g transform="translate(86.37,81.74)">
+    <g class="primitive">
+      <text text-anchor="middle" dy="0.35em">NormalMeanVariance</text>
+    </g>
+  </g>
+</g>
+<g font-family="Helvetica" font-size="4" fill="#000000" id="img-9a3f0d07-9">
+  <g transform="translate(50,0)">
+    <g class="primitive">
+      <text text-anchor="middle" dy="0.35em"></text>
+    </g>
+  </g>
+</g>
+</svg>

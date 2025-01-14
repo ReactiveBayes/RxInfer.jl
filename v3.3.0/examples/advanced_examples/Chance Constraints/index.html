@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Chance-Constrained Active Inference · RxInfer.jl</title><meta name="title" content="Chance-Constrained Active Inference · RxInfer.jl"/><meta property="og:title" content="Chance-Constrained Active Inference · RxInfer.jl"/><meta property="twitter:title" content="Chance-Constrained Active Inference · RxInfer.jl"/><meta name="description" content="Julia package for automated Bayesian inference on a factor graph with reactive message passing"/><meta property="og:description" content="Julia package for automated Bayesian inference on a factor graph with reactive message passing"/><meta property="twitter:description" content="Julia package for automated Bayesian inference on a factor graph with reactive message passing"/><meta property="og:url" content="https://reactivebayes.github.io/RxInfer.jl/examples/advanced_examples/Chance Constraints/"/><meta property="twitter:url" content="https://reactivebayes.github.io/RxInfer.jl/examples/advanced_examples/Chance Constraints/"/><link rel="canonical" href="https://reactivebayes.github.io/RxInfer.jl/examples/advanced_examples/Chance Constraints/"/><script data-outdated-warner src="../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../search_index.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><link href="../../../assets/theme.css" rel="stylesheet" type="text/css"/><link href="../../../assets/header.css" rel="stylesheet" type="text/css"/><script src="../../../assets/header.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img class="docs-light-only" src="../../../assets/logo.svg" alt="RxInfer.jl logo"/><img class="docs-dark-only" src="../../../assets/logo-dark.svg" alt="RxInfer.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../../../">RxInfer.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../../">Home</a></li><li><span class="tocitem">User guide</span><ul><li><a class="tocitem" href="../../../manuals/getting-started/">Getting started</a></li><li><a class="tocitem" href="../../../manuals/comparison/">RxInfer.jl vs. Others</a></li><li><a class="tocitem" href="../../../manuals/model-specification/">Model specification</a></li><li><a class="tocitem" href="../../../manuals/constraints-specification/">Constraints specification</a></li><li><a class="tocitem" href="../../../manuals/meta-specification/">Meta specification</a></li><li><input class="collapse-toggle" id="menuitem-2-6" type="checkbox"/><label class="tocitem" for="menuitem-2-6"><span class="docs-label">Inference specification</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../manuals/inference/overview/">Overview</a></li><li><a class="tocitem" href="../../../manuals/inference/static/">Static inference</a></li><li><a class="tocitem" href="../../../manuals/inference/streamlined/">Streamline inference</a></li><li><a class="tocitem" href="../../../manuals/inference/initialization/">Initialization</a></li><li><a class="tocitem" href="../../../manuals/inference/autoupdates/">Auto-updates</a></li><li><a class="tocitem" href="../../../manuals/inference/delta-node/">Deterministic nodes</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-7" type="checkbox"/><label class="tocitem" for="menuitem-2-7"><span class="docs-label">Inference customization</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../manuals/customization/custom-node/">Defining a custom node and rules</a></li><li><a class="tocitem" href="../../../manuals/customization/postprocess/">Inference results postprocessing</a></li></ul></li><li><a class="tocitem" href="../../../manuals/debugging/">Debugging</a></li><li><a class="tocitem" href="../../../manuals/migration-guide-v2-v3/">Migration from v2 to v3</a></li></ul></li><li><span class="tocitem">Library</span><ul><li><a class="tocitem" href="../../../library/model-construction/">Model construction</a></li><li><a class="tocitem" href="../../../library/bethe-free-energy/">Bethe Free Energy</a></li><li><a class="tocitem" href="../../../library/functional-forms/">Functional form constraints</a></li><li><a class="tocitem" href="../../../library/exported-methods/">Exported methods</a></li></ul></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../../overview/">Overview</a></li><li><input class="collapse-toggle" id="menuitem-4-2" type="checkbox"/><label class="tocitem" for="menuitem-4-2"><span class="docs-label">Basic examples</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../basic_examples/overview/">Overview</a></li><li><a class="tocitem" href="../../basic_examples/Coin Toss Model/">Coin toss model (Beta-Bernoulli)</a></li><li><a class="tocitem" href="../../basic_examples/Bayesian Linear Regression Tutorial/">Bayesian Linear Regression Tutorial</a></li><li><a class="tocitem" href="../../basic_examples/Kalman filtering and smoothing/">Kalman filtering and smoothing</a></li><li><a class="tocitem" href="../../basic_examples/Predicting Bike Rental Demand/">Predicting Bike Rental Demand</a></li><li><a class="tocitem" href="../../basic_examples/Hidden Markov Model/">How to train your Hidden Markov Model</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-4-3" type="checkbox" checked/><label class="tocitem" for="menuitem-4-3"><span class="docs-label">Advanced examples</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../overview/">Overview</a></li><li><a class="tocitem" href="../Active Inference Mountain car/">Active Inference Mountain car</a></li><li><a class="tocitem" href="../Advanced Tutorial/">Advanced Tutorial</a></li><li><a class="tocitem" href="../Assessing People Skills/">Assessing People’s Skills</a></li><li class="is-active"><a class="tocitem" href>Chance-Constrained Active Inference</a><ul class="internal"><li><a class="tocitem" href="#Chance-Constraint-Node-Definition"><span>Chance-Constraint Node Definition</span></a></li><li><a class="tocitem" href="#Definition-of-the-Environment"><span>Definition of the Environment</span></a></li><li><a class="tocitem" href="#Generative-Model-for-Regulator"><span>Generative Model for Regulator</span></a></li><li><a class="tocitem" href="#Reactive-Agent-Definition"><span>Reactive Agent Definition</span></a></li><li><a class="tocitem" href="#Action-Perception-Cycle"><span>Action-Perception Cycle</span></a></li><li><a class="tocitem" href="#Results"><span>Results</span></a></li></ul></li><li><a class="tocitem" href="../Conjugate-Computational Variational Message Passing/">Conjugate-Computational Variational Message Passing (CVI)</a></li><li><a class="tocitem" href="../Global Parameter Optimisation/">Global Parameter Optimisation</a></li><li><a class="tocitem" href="../GP Regression by SSM/">Solve GP regression by SDE</a></li><li><a class="tocitem" href="../Infinite Data Stream/">Infinite Data Stream</a></li><li><a class="tocitem" href="../Nonlinear Sensor Fusion/">Nonlinear Sensor Fusion</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-4-4" type="checkbox"/><label class="tocitem" for="menuitem-4-4"><span class="docs-label">Problem specific</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../problem_specific/overview/">Overview</a></li><li><a class="tocitem" href="../../problem_specific/Autoregressive Models/">Autoregressive Models</a></li><li><a class="tocitem" href="../../problem_specific/Gamma Mixture/">Gamma Mixture Model</a></li><li><a class="tocitem" href="../../problem_specific/Gaussian Mixture/">Gaussian Mixture</a></li><li><a class="tocitem" href="../../problem_specific/Hierarchical Gaussian Filter/">Hierarchical Gaussian Filter</a></li><li><a class="tocitem" href="../../problem_specific/Invertible Neural Network Tutorial/">Invertible neural networks: a tutorial</a></li><li><a class="tocitem" href="../../problem_specific/Probit Model (EP)/">Probit Model (EP)</a></li><li><a class="tocitem" href="../../problem_specific/RTS vs BIFM Smoothing/">RTS vs BIFM Smoothing</a></li><li><a class="tocitem" href="../../problem_specific/Simple Nonlinear Node/">Simple Nonlinear Node</a></li><li><a class="tocitem" href="../../problem_specific/Universal Mixtures/">Universal Mixtures</a></li></ul></li><li><a class="tocitem" href="../../../contributing/external-examples/">External examples</a></li></ul></li><li><span class="tocitem">Contributing</span><ul><li><a class="tocitem" href="../../../contributing/guide/">Contribution guide</a></li><li><a class="tocitem" href="../../../contributing/guidelines/">Contribution guidelines</a></li><li><a class="tocitem" href="../../../contributing/new-documentation/">Contributing to the documentation</a></li><li><a class="tocitem" href="../../../contributing/new-example/">Contributing to the examples</a></li><li><a class="tocitem" href="../../../contributing/new-release/">Publishing a new release</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li><a class="is-disabled">Advanced examples</a></li><li class="is-active"><a href>Chance-Constrained Active Inference</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Chance-Constrained Active Inference</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/ReactiveBayes/RxInfer.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/ReactiveBayes/RxInfer.jl/blob/main/docs/src/examples/advanced_examples/Chance Constraints.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><p>This example has been auto-generated from the <a href="https://github.com/reactivebayes/RxInfer.jl/tree/main/examples"><code>examples/</code></a> folder at GitHub repository.</p><h1 id="examples-chance-constrained-active-inference"><a class="docs-heading-anchor" href="#examples-chance-constrained-active-inference">Chance-Constrained Active Inference</a><a id="examples-chance-constrained-active-inference-1"></a><a class="docs-heading-anchor-permalink" href="#examples-chance-constrained-active-inference" title="Permalink"></a></h1><p>This notebook applies reactive message passing for active inference in the context of chance-constraints. The implementation is based on (van de Laar et al., 2021, &quot;Chance-constrained active inference&quot;) and <a href="https://discourse.julialang.org/t/use-of-update-in-rxinfer-to-handle-multiple-iterations">discussion</a> with John Boik.</p><p>We consider a 1-D agent that tries to elevate itself above ground level. Instead of a goal prior, we impose a chance constraint on future states, such that the agent prefers to avoid the ground with a preset probability (chance) level. </p><pre><code class="language-julia hljs">using Pkg; Pkg.activate(&quot;..&quot;); Pkg.instantiate();</code></pre><pre><code class="language-julia hljs">using Plots, Distributions, StatsFuns, RxInfer
+Pkg.status()</code></pre><pre><code class="nohighlight hljs">Status `~/work/RxInfer.jl/RxInfer.jl/docs/src/examples/Project.toml`
+  [b4ee3484] BayesBase v1.2.1
+  [6e4b80f9] BenchmarkTools v1.5.0
+  [336ed68f] CSV v0.10.14
+  [a93c6f00] DataFrames v1.6.1
+  [31c24e10] Distributions v0.25.108
+  [62312e5e] ExponentialFamily v1.4.1
+⌃ [587475ba] Flux v0.14.11
+  [38e38edf] GLM v1.9.0
+  [b3f8163a] GraphPPL v4.2.0
+  [34004b35] HypergeometricFunctions v0.3.23
+  [7073ff75] IJulia v1.24.2
+  [4138dd39] JLD v0.13.5
+  [b964fa9f] LaTeXStrings v1.3.1
+  [429524aa] Optim v1.9.4
+⌃ [3bd65402] Optimisers v0.2.20
+  [d96e819e] Parameters v0.12.3
+  [91a5bcdd] Plots v1.40.4
+  [92933f4c] ProgressMeter v1.10.0
+  [a194aa59] ReactiveMP v4.1.1
+  [37e2e3b7] ReverseDiff v1.15.3
+  [df971d30] Rocket v1.8.0
+  [86711068] RxInfer v3.3.0 `~/work/RxInfer.jl/RxInfer.jl`
+  [276daf66] SpecialFunctions v2.4.0
+  [860ef19b] StableRNGs v1.0.2
+  [4c63d2b9] StatsFuns v1.3.1
+  [f3b207a7] StatsPlots v0.15.7
+  [44d3d7a6] Weave v0.10.12
+Info Packages marked with ⌃ have new versions available and may be upgradab
+le.</code></pre><h2 id="Chance-Constraint-Node-Definition"><a class="docs-heading-anchor" href="#Chance-Constraint-Node-Definition">Chance-Constraint Node Definition</a><a id="Chance-Constraint-Node-Definition-1"></a><a class="docs-heading-anchor-permalink" href="#Chance-Constraint-Node-Definition" title="Permalink"></a></h2><p>A chance-constraint is meant to constraint a marginal distribution to abide by certain properties. In this case, a (posterior) probability distribution should not &quot;overflow&quot; a given region by more than a certain probability mass. This constraint then affects adjacent beliefs and ultimately the controls to (hopefully) account for the imposed constraint.</p><p>In order to enforce this constraint on a marginal distribution, an auxiliary chance-constraint node is included in the graphical model. This node then sends messages that enforce the marginal to abide by the preset conditions. In other words, the (chance) constraint on the (posterior) marginal, is converted to a prior constraint on the generative model that sends an adaptive message. We start by defining this chance-constraint node and its message.</p><pre><code class="language-julia hljs">struct ChanceConstraint end  
+
+# Node definition with safe region limits (lo, hi), overflow chance epsilon and tolerance atol
+@node ChanceConstraint Stochastic [out, lo, hi, epsilon, atol]</code></pre><pre><code class="language-julia hljs"># Function to compute normalizing constant and central moments of a truncated Gaussian distribution
+function truncatedGaussianMoments(m::Float64, V::Float64, a::Float64, b::Float64)
+    V = clamp(V, tiny, huge)
+    StdG = Distributions.Normal(m, sqrt(V))
+    TrG = Distributions.Truncated(StdG, a, b)
+    
+    Z = Distributions.cdf(StdG, b) - Distributions.cdf(StdG, a)  # safe mass for standard Gaussian
+    
+    if Z &lt; tiny
+        # Invalid region; return undefined mean and variance of truncated distribution
+        Z    = 0.0
+        m_tr = 0.0
+        V_tr = 0.0
+    else
+        m_tr = Distributions.mean(TrG)
+        V_tr = Distributions.var(TrG)
+    end
+    
+    return (Z, m_tr, V_tr)
+end;</code></pre><pre><code class="language-julia hljs">@rule ChanceConstraint(:out, Marginalisation) (
+    m_out::UnivariateNormalDistributionsFamily, # Require inbound message
+    q_lo::PointMass, 
+    q_hi::PointMass, 
+    q_epsilon::PointMass, 
+    q_atol::PointMass) = begin 
+
+    # Extract parameters
+    lo = mean(q_lo)
+    hi = mean(q_hi)
+    epsilon = mean(q_epsilon)
+    atol = mean(q_atol)
+    
+    (m_bw, V_bw) = mean_var(m_out)
+    (xi_bw, W_bw) = (m_bw, 1. /V_bw)  # check division by  zero
+    (m_tilde, V_tilde) = (m_bw, V_bw)
+    
+    # Compute statistics (and normalizing constant) of q in safe region G
+    # Phi_G is called the &quot;safe mass&quot; 
+    (Phi_G, m_G, V_G) = truncatedGaussianMoments(m_bw, V_bw, lo, hi)
+
+    xi_fw = xi_bw
+    W_fw  = W_bw
+    if epsilon &lt;= 1.0 - Phi_G # If constraint is active
+        # Initialize statistics of uncorrected belief
+        m_tilde = m_bw
+        V_tilde = V_bw
+        for i = 1:100 # Iterate at most this many times
+            (Phi_lG, m_lG, V_lG) = truncatedGaussianMoments(m_tilde, V_tilde, -Inf, lo) # Statistics for q in region left of G
+            (Phi_rG, m_rG, V_rG) = truncatedGaussianMoments(m_tilde, V_tilde, hi, Inf) # Statistics for q in region right of G
+
+            # Compute moments of non-G region as a mixture of left and right truncations
+            Phi_nG = Phi_lG + Phi_rG
+            m_nG = Phi_lG / Phi_nG * m_lG + Phi_rG / Phi_nG * m_rG
+            V_nG = Phi_lG / Phi_nG * (V_lG + m_lG^2) + Phi_rG/Phi_nG * (V_rG + m_rG^2) - m_nG^2
+
+            # Compute moments of corrected belief as a mixture of G and non-G regions
+            m_tilde = (1.0 - epsilon) * m_G + epsilon * m_nG
+            V_tilde = (1.0 - epsilon) * (V_G + m_G^2) + epsilon * (V_nG + m_nG^2) - m_tilde^2
+            # Re-compute statistics (and normalizing constant) of corrected belief
+            (Phi_G, m_G, V_G) = truncatedGaussianMoments(m_tilde, V_tilde, lo, hi)
+            if (1.0 - Phi_G) &lt; (1.0 + atol)*epsilon
+                break # Break the loop if the belief is sufficiently corrected
+            end
+        end
+        
+        # Convert moments of corrected belief to canonical form
+        W_tilde = inv(V_tilde)
+        xi_tilde = W_tilde * m_tilde
+
+        # Compute canonical parameters of forward message
+        xi_fw = xi_tilde - xi_bw
+        W_fw  = W_tilde - W_bw
+    end
+
+    return NormalWeightedMeanPrecision(xi_fw, W_fw)
+end</code></pre><h2 id="Definition-of-the-Environment"><a class="docs-heading-anchor" href="#Definition-of-the-Environment">Definition of the Environment</a><a id="Definition-of-the-Environment-1"></a><a class="docs-heading-anchor-permalink" href="#Definition-of-the-Environment" title="Permalink"></a></h2><p>We consider an environment where the agent has an elevation level, and where the agent directly controls its vertical velocity. After some time, an unexpected and sudden gust of wind tries to push the agent to the ground.</p><pre><code class="language-julia hljs">wind(t::Int64) = -0.1*(60 &lt;= t &lt; 100) # Time-dependent wind profile
+
+function initializeWorld()
+    x_0 = 0.0 # Initial elevation
+    
+    x_t_last = x_0
+    function execute(t::Int64, a_t::Float64)
+        x_t = x_t_last + a_t + wind(t) # Update elevation
+    
+        x_t_last = x_t # Reset state
+                
+        return x_t
+    end
+
+    x_t = x_0 # Predefine outcome variable
+    observe() = x_t # State is fully observed
+
+    return (execute, observe)
+end;</code></pre><h2 id="Generative-Model-for-Regulator"><a class="docs-heading-anchor" href="#Generative-Model-for-Regulator">Generative Model for Regulator</a><a id="Generative-Model-for-Regulator-1"></a><a class="docs-heading-anchor-permalink" href="#Generative-Model-for-Regulator" title="Permalink"></a></h2><p>We consider a fully observed Markov decision process, where the agent directly observes the true state (elevation) of the world. In this case we only need to define a chance-constrained generative model of future states. Inference for controls on this model then derives our controller.</p><pre><code class="language-julia hljs"># m_u ::Vector{Float64}, ,   Control prior means
+# v_u = datavar(Float64, T)  Control prior variances
+# x_t ::Float64              Fully observed state
+
+@model function regulator_model(T, m_u, v_u, x_t, lo, hi, epsilon, atol)
+    
+    # Loop over horizon
+    x_k_last = x_t
+    for k = 1:T
+        u[k] ~ NormalMeanVariance(m_u[k], v_u[k]) # Control prior
+        x[k] ~ x_k_last + u[k] # Transition model
+        x[k] ~ ChanceConstraint(lo, hi, epsilon, atol) where { # Simultaneous constraint on state
+            dependencies = RequireMessageFunctionalDependencies(out = NormalWeightedMeanPrecision(0, 0.01))} # Predefine inbound message to break circular dependency
+        x_k_last = x[k]
+    end
+ 
+end</code></pre><h2 id="Reactive-Agent-Definition"><a class="docs-heading-anchor" href="#Reactive-Agent-Definition">Reactive Agent Definition</a><a id="Reactive-Agent-Definition-1"></a><a class="docs-heading-anchor-permalink" href="#Reactive-Agent-Definition" title="Permalink"></a></h2><pre><code class="language-julia hljs">function initializeAgent()
+    # Set control prior statistics
+    m_u = zeros(T)
+    v_u = lambda^(-1)*ones(T)
+    
+    function compute(x_t::Float64)
+        model_t = regulator_model(;T=T, lo=lo, hi=hi, epsilon=epsilon, atol=atol)
+        data_t = (m_u = m_u, v_u = v_u, x_t = x_t)
+
+        result = infer(
+            model = model_t,
+            data = data_t,
+            iterations = n_its)
+
+        # Extract policy from inference results
+        pol = mode.(result.posteriors[:u][end])
+
+        return pol
+    end
+
+    pol = zeros(T) # Predefine policy variable
+    act() = pol[1]
+
+    return (compute, act)
+end;</code></pre><h2 id="Action-Perception-Cycle"><a class="docs-heading-anchor" href="#Action-Perception-Cycle">Action-Perception Cycle</a><a id="Action-Perception-Cycle-1"></a><a class="docs-heading-anchor-permalink" href="#Action-Perception-Cycle" title="Permalink"></a></h2><p>Next we define and execute the action-perception cycle. Because the state is fully observed, these is no slide (estimator) step in the cycle. </p><pre><code class="language-julia hljs"># Simulation parameters
+N = 160 # Total simulation time
+T = 1 # Lookahead time horizon
+lambda = 1.0 # Control prior precision
+lo = 1.0 # Chance region lower bound
+hi = Inf # Chance region upper bound
+epsilon = 0.01 # Allowed chance violation
+atol = 0.01 # Convergence tolerance for chance constraints
+n_its = 10;  # Number of inference iterations</code></pre><pre><code class="language-julia hljs">(execute, observe) = initializeWorld() # Let there be a world
+(compute, act) = initializeAgent() # Let there be an agent
+
+a = Vector{Float64}(undef, N) # Actions
+x = Vector{Float64}(undef, N) # States
+for t = 1:N
+    a[t] = act()
+           execute(t, a[t])
+    x[t] = observe()
+           compute(x[t])
+end</code></pre><h2 id="Results"><a class="docs-heading-anchor" href="#Results">Results</a><a id="Results-1"></a><a class="docs-heading-anchor-permalink" href="#Results" title="Permalink"></a></h2><p>Results show that the agent does not allow the wind to push it all the way to the ground.</p><pre><code class="language-julia hljs">p1 = plot(1:N, wind.(1:N), color=&quot;blue&quot;, label=&quot;Wind&quot;, ylabel=&quot;Velocity&quot;, lw=2)
+plot!(p1, 1:N, a, color=&quot;red&quot;, label=&quot;Control&quot;, lw=2)
+p2 = plot(1:N, x, color=&quot;black&quot;, lw=2, label=&quot;Agent&quot;, ylabel=&quot;Elevation&quot;)
+plot(p1, p2, layout=(2,1))</code></pre><p><img src="../../../assets/examples/Chance Constraints_11_1.png" alt/></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../Assessing People Skills/">« Assessing People’s Skills</a><a class="docs-footer-nextpage" href="../Conjugate-Computational Variational Message Passing/">Conjugate-Computational Variational Message Passing (CVI) »</a><div class="flexbox-break"></div><p class="footer-message">Created in <a href="https://biaslab.github.io/">BIASlab</a>, maintained by <a href="https://github.com/ReactiveBayes">ReactiveBayes</a>, powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.4.1 on <span class="colophon-date" title="Thursday 23 May 2024 17:01">Thursday 23 May 2024</span>. Using Julia version 1.10.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

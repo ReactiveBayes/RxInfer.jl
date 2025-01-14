@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Active Inference Mountain car · RxInfer.jl</title><meta name="title" content="Active Inference Mountain car · RxInfer.jl"/><meta property="og:title" content="Active Inference Mountain car · RxInfer.jl"/><meta property="twitter:title" content="Active Inference Mountain car · RxInfer.jl"/><meta name="description" content="Julia package for automated Bayesian inference on a factor graph with reactive message passing"/><meta property="og:description" content="Julia package for automated Bayesian inference on a factor graph with reactive message passing"/><meta property="twitter:description" content="Julia package for automated Bayesian inference on a factor graph with reactive message passing"/><meta property="og:url" content="https://reactivebayes.github.io/RxInfer.jl/examples/advanced_examples/Active Inference Mountain car/"/><meta property="twitter:url" content="https://reactivebayes.github.io/RxInfer.jl/examples/advanced_examples/Active Inference Mountain car/"/><link rel="canonical" href="https://reactivebayes.github.io/RxInfer.jl/examples/advanced_examples/Active Inference Mountain car/"/><script data-outdated-warner src="../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../search_index.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><link href="../../../assets/theme.css" rel="stylesheet" type="text/css"/><link href="../../../assets/header.css" rel="stylesheet" type="text/css"/><script src="../../../assets/header.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img class="docs-light-only" src="../../../assets/logo.svg" alt="RxInfer.jl logo"/><img class="docs-dark-only" src="../../../assets/logo-dark.svg" alt="RxInfer.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../../../">RxInfer.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../../">Home</a></li><li><span class="tocitem">User guide</span><ul><li><a class="tocitem" href="../../../manuals/getting-started/">Getting started</a></li><li><a class="tocitem" href="../../../manuals/comparison/">RxInfer.jl vs. Others</a></li><li><a class="tocitem" href="../../../manuals/model-specification/">Model specification</a></li><li><a class="tocitem" href="../../../manuals/constraints-specification/">Constraints specification</a></li><li><a class="tocitem" href="../../../manuals/meta-specification/">Meta specification</a></li><li><input class="collapse-toggle" id="menuitem-2-6" type="checkbox"/><label class="tocitem" for="menuitem-2-6"><span class="docs-label">Inference specification</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../manuals/inference/overview/">Overview</a></li><li><a class="tocitem" href="../../../manuals/inference/static/">Static inference</a></li><li><a class="tocitem" href="../../../manuals/inference/streamlined/">Streamline inference</a></li><li><a class="tocitem" href="../../../manuals/inference/initialization/">Initialization</a></li><li><a class="tocitem" href="../../../manuals/inference/autoupdates/">Auto-updates</a></li><li><a class="tocitem" href="../../../manuals/inference/delta-node/">Deterministic nodes</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-7" type="checkbox"/><label class="tocitem" for="menuitem-2-7"><span class="docs-label">Inference customization</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../manuals/customization/custom-node/">Defining a custom node and rules</a></li><li><a class="tocitem" href="../../../manuals/customization/postprocess/">Inference results postprocessing</a></li></ul></li><li><a class="tocitem" href="../../../manuals/debugging/">Debugging</a></li><li><a class="tocitem" href="../../../manuals/migration-guide-v2-v3/">Migration from v2 to v3</a></li></ul></li><li><span class="tocitem">Library</span><ul><li><a class="tocitem" href="../../../library/model-construction/">Model construction</a></li><li><a class="tocitem" href="../../../library/bethe-free-energy/">Bethe Free Energy</a></li><li><a class="tocitem" href="../../../library/functional-forms/">Functional form constraints</a></li><li><a class="tocitem" href="../../../library/exported-methods/">Exported methods</a></li></ul></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../../overview/">Overview</a></li><li><input class="collapse-toggle" id="menuitem-4-2" type="checkbox"/><label class="tocitem" for="menuitem-4-2"><span class="docs-label">Basic examples</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../basic_examples/overview/">Overview</a></li><li><a class="tocitem" href="../../basic_examples/Coin Toss Model/">Coin toss model (Beta-Bernoulli)</a></li><li><a class="tocitem" href="../../basic_examples/Bayesian Linear Regression Tutorial/">Bayesian Linear Regression Tutorial</a></li><li><a class="tocitem" href="../../basic_examples/Kalman filtering and smoothing/">Kalman filtering and smoothing</a></li><li><a class="tocitem" href="../../basic_examples/Predicting Bike Rental Demand/">Predicting Bike Rental Demand</a></li><li><a class="tocitem" href="../../basic_examples/Hidden Markov Model/">How to train your Hidden Markov Model</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-4-3" type="checkbox" checked/><label class="tocitem" for="menuitem-4-3"><span class="docs-label">Advanced examples</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../overview/">Overview</a></li><li class="is-active"><a class="tocitem" href>Active Inference Mountain car</a><ul class="internal"><li><a class="tocitem" href="#The-environmental-process-of-the-mountain"><span>The environmental process of the mountain</span></a></li><li><a class="tocitem" href="#Naive-approach"><span>Naive approach</span></a></li><li class="toplevel"><a class="tocitem" href="#Active-inference-approach"><span>Active inference approach</span></a></li><li class="toplevel"><a class="tocitem" href="#Reference"><span>Reference</span></a></li></ul></li><li><a class="tocitem" href="../Advanced Tutorial/">Advanced Tutorial</a></li><li><a class="tocitem" href="../Assessing People Skills/">Assessing People’s Skills</a></li><li><a class="tocitem" href="../Chance Constraints/">Chance-Constrained Active Inference</a></li><li><a class="tocitem" href="../Conjugate-Computational Variational Message Passing/">Conjugate-Computational Variational Message Passing (CVI)</a></li><li><a class="tocitem" href="../Global Parameter Optimisation/">Global Parameter Optimisation</a></li><li><a class="tocitem" href="../GP Regression by SSM/">Solve GP regression by SDE</a></li><li><a class="tocitem" href="../Infinite Data Stream/">Infinite Data Stream</a></li><li><a class="tocitem" href="../Nonlinear Sensor Fusion/">Nonlinear Sensor Fusion</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-4-4" type="checkbox"/><label class="tocitem" for="menuitem-4-4"><span class="docs-label">Problem specific</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../problem_specific/overview/">Overview</a></li><li><a class="tocitem" href="../../problem_specific/Autoregressive Models/">Autoregressive Models</a></li><li><a class="tocitem" href="../../problem_specific/Gamma Mixture/">Gamma Mixture Model</a></li><li><a class="tocitem" href="../../problem_specific/Gaussian Mixture/">Gaussian Mixture</a></li><li><a class="tocitem" href="../../problem_specific/Hierarchical Gaussian Filter/">Hierarchical Gaussian Filter</a></li><li><a class="tocitem" href="../../problem_specific/Invertible Neural Network Tutorial/">Invertible neural networks: a tutorial</a></li><li><a class="tocitem" href="../../problem_specific/Probit Model (EP)/">Probit Model (EP)</a></li><li><a class="tocitem" href="../../problem_specific/RTS vs BIFM Smoothing/">RTS vs BIFM Smoothing</a></li><li><a class="tocitem" href="../../problem_specific/Simple Nonlinear Node/">Simple Nonlinear Node</a></li><li><a class="tocitem" href="../../problem_specific/Universal Mixtures/">Universal Mixtures</a></li></ul></li><li><a class="tocitem" href="../../../contributing/external-examples/">External examples</a></li></ul></li><li><span class="tocitem">Contributing</span><ul><li><a class="tocitem" href="../../../contributing/guide/">Contribution guide</a></li><li><a class="tocitem" href="../../../contributing/guidelines/">Contribution guidelines</a></li><li><a class="tocitem" href="../../../contributing/new-documentation/">Contributing to the documentation</a></li><li><a class="tocitem" href="../../../contributing/new-example/">Contributing to the examples</a></li><li><a class="tocitem" href="../../../contributing/new-release/">Publishing a new release</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li><a class="is-disabled">Advanced examples</a></li><li class="is-active"><a href>Active Inference Mountain car</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Active Inference Mountain car</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/ReactiveBayes/RxInfer.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/ReactiveBayes/RxInfer.jl/blob/main/docs/src/examples/advanced_examples/Active Inference Mountain car.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><p>This example has been auto-generated from the <a href="https://github.com/reactivebayes/RxInfer.jl/tree/main/examples"><code>examples/</code></a> folder at GitHub repository.</p><h1 id="examples-active-inference-mountain-car"><a class="docs-heading-anchor" href="#examples-active-inference-mountain-car">Active Inference Mountain car</a><a id="examples-active-inference-mountain-car-1"></a><a class="docs-heading-anchor-permalink" href="#examples-active-inference-mountain-car" title="Permalink"></a></h1><pre><code class="language-julia hljs">import Pkg; Pkg.activate(&quot;..&quot;); Pkg.instantiate();</code></pre><pre><code class="language-julia hljs">using RxInfer, Plots</code></pre><p>A group of friends is going to a camping site that is located on the biggest mountain in the Netherlands. They use an electric car for the trip. When they are almost there, the car&#39;s battery is almost empty and is therefore limiting the engine force. Unfortunately, they are in the middle of a valley and don&#39;t have enough power to reach the camping site. Night is falling and they still need to reach the top of the mountain. As rescuers, let us develop an Active Inference (AI) agent that can get them up the hill with the limited engine power.</p><h2 id="The-environmental-process-of-the-mountain"><a class="docs-heading-anchor" href="#The-environmental-process-of-the-mountain">The environmental process of the mountain</a><a id="The-environmental-process-of-the-mountain-1"></a><a class="docs-heading-anchor-permalink" href="#The-environmental-process-of-the-mountain" title="Permalink"></a></h2><p>Firstly, we specify the environmental process according to Ueltzhoeffer (2017) &quot;Deep active inference&quot;. This process shows how the environment evolves after interacting with the agent.</p><p>Particularly, let&#39;s denote <span>$z_t = (\phi_t, \,\,\dot{\phi_t})$</span> as the environmental state depending on the position <span>$\phi_t$</span> and velocity <span>$\dot{\phi_t}$</span> of the car; <span>$a_t$</span> as the action of the environment on the car. Then the evolution of the state is described as follows  </p><p class="math-container">\[\begin{aligned} 
+\dot{\phi_t} &amp;= \dot{\phi}_{t-1} + F_g(\phi_{t-1}) + F_f(\dot{\phi}_{t-1}) + F_a(a_t)\\
+\phi_t &amp;= \phi_{t-1} + \dot{\phi_t} 
+\end{aligned}\]</p><p>where <span>$F_g(\phi_{t-1})$</span> is the gravitational force of the hill landscape that depends on the car&#39;s position</p><p class="math-container">\[F_g(\phi) = \begin{cases}
+        -0.05(2\phi + 1) , \, &amp; \mathrm{if} \, \phi &lt; 0 \\
+        -0.05 \left[(1 + 5\phi^2)^{-\frac{1}{2}} + \phi^2 (1 + 5\phi^2)^{-\frac{3}{2}} + \frac{1}{16}\phi^4 \right], \, &amp; \mathrm{otherwise}
+\end{cases}\]</p><p class="math-container">\[F_f(\dot{\phi})\]</p><p>is the friction on the car defined through the car&#39;s velocity <span>$F_f(\dot{\phi})  = -0.1 \, \dot{\phi}\,$</span> and <span>$F_a(a)$</span> is the engine force <span>$F_a(a) = 0.04 \,\tanh(a).$</span> Since the car is on low battery, we use the <span>$\tanh(\cdot)$</span> function to limit the engine force to the interval [-0.04, 0.04].</p><p>In the cell below, the <code>create_physics</code> function defines forces <span>$F_g,\, F_f,\, F_a\,$</span>; and the <code>create_world</code> function defines the environmental process of the mountain.</p><pre><code class="language-julia hljs">import HypergeometricFunctions: _₂F₁
+
+function create_physics(; engine_force_limit = 0.04, friction_coefficient = 0.1)
+    # Engine force as function of action
+    Fa = (a::Real) -&gt; engine_force_limit * tanh(a) 
+
+    # Friction force as function of velocity
+    Ff = (y_dot::Real) -&gt; -friction_coefficient * y_dot 
+    
+    # Gravitational force (horizontal component) as function of position
+    Fg = (y::Real) -&gt; begin
+        if y &lt; 0
+            0.05*(-2*y - 1)
+        else
+            0.05*(-(1 + 5*y^2)^(-0.5) - (y^2)*(1 + 5*y^2)^(-3/2) - (y^4)/16)
+        end
+    end
+    
+    # The height of the landscape as a function of the horizontal coordinate
+    height = (x::Float64) -&gt; begin
+        if x &lt; 0
+            h = x^2 + x
+        else
+            h = x * _₂F₁(0.5,0.5,1.5, -5*x^2) + x^3 * _₂F₁(1.5, 1.5, 2.5, -5*x^2) / 3 + x^5 / 80
+        end
+        return 0.05*h
+    end
+
+    return (Fa, Ff, Fg,height)
+end;
+
+function create_world(; Fg, Ff, Fa, initial_position = -0.5, initial_velocity = 0.0)
+
+    y_t_min = initial_position
+    y_dot_t_min = initial_velocity
+    
+    y_t = y_t_min
+    y_dot_t = y_dot_t_min
+    
+    execute = (a_t::Float64) -&gt; begin
+        # Compute next state
+        y_dot_t = y_dot_t_min + Fg(y_t_min) + Ff(y_dot_t_min) + Fa(a_t)
+        y_t = y_t_min + y_dot_t
+    
+        # Reset state for next step
+        y_t_min = y_t
+        y_dot_t_min = y_dot_t
+    end
+    
+    observe = () -&gt; begin 
+        return [y_t, y_dot_t]
+    end
+        
+    return (execute, observe)
+end</code></pre><pre><code class="nohighlight hljs">create_world (generic function with 1 method)</code></pre><p>Let&#39;s visualize the mountain landscape and the situation of the car. </p><pre><code class="language-julia hljs">engine_force_limit   = 0.04
+friction_coefficient = 0.1
+
+Fa, Ff, Fg, height = create_physics(
+    engine_force_limit = engine_force_limit,
+    friction_coefficient = friction_coefficient
+);
+initial_position = -0.5
+initial_velocity = 0.0
+
+x_target = [0.5, 0.0] 
+
+valley_x = range(-2, 2, length=400)
+valley_y = [ height(xs) for xs in valley_x ]
+plot(valley_x, valley_y, title = &quot;Mountain valley&quot;, label = &quot;Landscape&quot;, color = &quot;black&quot;)
+scatter!([ initial_position ], [ height(initial_position) ], label=&quot;initial car position&quot;)   
+scatter!([x_target[1]], [height(x_target[1])], label=&quot;camping site&quot;)</code></pre><p><img src="../../../assets/examples/Active Inference Mountain car_4_1.png" alt/></p><h2 id="Naive-approach"><a class="docs-heading-anchor" href="#Naive-approach">Naive approach</a><a id="Naive-approach-1"></a><a class="docs-heading-anchor-permalink" href="#Naive-approach" title="Permalink"></a></h2><p>Well, let&#39;s see how our friends were struggling with the low-battery car when they tried to get it to the camping site before we come to help. They basically used the brute-force method, i.e. just pushing the gas pedal for full power.</p><pre><code class="language-julia hljs">N_naive  = 100 # Total simulation time
+pi_naive = 100.0 * ones(N_naive) # Naive policy for right full-power only
+
+# Let there be a world
+(execute_naive, observe_naive) = create_world(; 
+    Fg = Fg, Ff = Ff, Fa = Fa, 
+    initial_position = initial_position, 
+    initial_velocity = initial_velocity
+);
+
+y_naive = Vector{Vector{Float64}}(undef, N_naive)
+for t = 1:N_naive
+    execute_naive(pi_naive[t]) # Execute environmental process
+    y_naive[t] = observe_naive() # Observe external states
+end
+
+animation_naive = @animate for i in 1:N_naive
+    plot(valley_x, valley_y, title = &quot;Naive policy&quot;, label = &quot;Landscape&quot;, color = &quot;black&quot;, size = (800, 400))
+    scatter!([y_naive[i][1]], [height(y_naive[i][1])], label=&quot;car&quot;)
+    scatter!([x_target[1]], [height(x_target[1])], label=&quot;goal&quot;)   
+end
+
+# The animation is saved and displayed as markdown picture for the automatic HTML generation
+gif(animation_naive, &quot;../pics/ai-mountain-car-naive.gif&quot;, fps = 24, show_msg = false);</code></pre><p><img src="../../../assets/examples/pics/ai-mountain-car-naive.gif" alt/></p><p>They failed as expected since the car doesn&#39;t have enough power. This helps to understand that the brute-force approach is not the most efficient one in this case and hopefully a bit of swinging is necessary to achieve the goal.</p><h1 id="Active-inference-approach"><a class="docs-heading-anchor" href="#Active-inference-approach">Active inference approach</a><a id="Active-inference-approach-1"></a><a class="docs-heading-anchor-permalink" href="#Active-inference-approach" title="Permalink"></a></h1><p>Now let&#39;s help them solve the problem with an active inference approach. Particularly, we create an agent that predicts the future car position as well as the best possible actions in a probabilistic manner.</p><p>We start by specifying a probabilistic model for the agent that describes the agent&#39;s internal beliefs over the external dynamics of the environment. The generative model is defined as follows</p><p class="math-container">\[\begin{aligned}
+p_t(x,s,u) \propto p(s_{t-1}) \prod_{k=t}^{t+T} p(x_k \mid s_k) \, p(s_k \mid s_{k-1},u_k) \, p(u_k) \, p&#39;(x_k) \nonumber
+\end{aligned}\]</p><p>where the factors are defined as</p><p class="math-container">\[p&#39;(x_k) = \mathcal{N}(x_k \mid x_{goal},\,V_{goal}) , \quad (\mathrm{target})\]</p><p class="math-container">\[p(s_k \mid s_{k-1},u_k) = \mathcal{N}(s_k \mid \tilde{g}(s_{k-1})+h(u_k),\,\gamma^{-1}) , \quad (\mathrm{state \,\, transition})\]</p><p class="math-container">\[p(x_k \mid s_k) = \mathcal{N}(x_k \mid s_k,\,\theta), \quad (\mathrm{observation})\]</p><p class="math-container">\[p(u_k) = \mathcal{N}(u_k \mid m_u,\,V_u), \quad (\mathrm{control})\]</p><p class="math-container">\[p(s_{t-1}) = \mathcal{N}(s_{t-1} \mid m_{t-1},\,V_{t-1}), \quad (\mathrm{previous \,\, state})\]</p><p>where </p><ul><li><p class="math-container">\[x\]</p>denotes observations of the agent after interacting with the environment; </li><li><p class="math-container">\[s_t = (s_t,\dot{s_t})\]</p>is the state of the car embodying its position and velocity; </li><li><p class="math-container">\[u_t\]</p>denotes the control state of the agent; </li><li><p class="math-container">\[h(\cdot)\]</p>is the <span>$\tanh(\cdot)$</span> function modeling engine control; </li><li><p class="math-container">\[\tilde{g}(\cdot)\]</p>executes a linear approximation of equations (1) and (2): </li></ul><p class="math-container">\[\begin{aligned} 
+\dot{s_t} &amp;= \dot{s}_{t-1} + F_g(s_{t-1}) + F_f(\dot{s}_{t-1})\\
+s_t &amp;= s_{t-1} + \dot{s_t}
+\end{aligned}\]</p><p>In the cell below, the <code>@model</code> macro and the <code>meta</code> blocks are used to define the probabilistic model and the approximation methods for the nonlinear state-transition functions, respectively. In addition, the beliefs over the future states (up to T steps ahead) of the agent is included.</p><pre><code class="language-julia hljs">@model function mountain_car(m_u, V_u, m_x, V_x, m_s_t_min, V_s_t_min, T, Fg, Fa, Ff, engine_force_limit)
+    
+    # Transition function modeling transition due to gravity and friction
+    g = (s_t_min::AbstractVector) -&gt; begin 
+        s_t = similar(s_t_min) # Next state
+        s_t[2] = s_t_min[2] + Fg(s_t_min[1]) + Ff(s_t_min[2]) # Update velocity
+        s_t[1] = s_t_min[1] + s_t[2] # Update position
+        return s_t
+    end
+    
+    # Function for modeling engine control
+    h = (u::AbstractVector) -&gt; [0.0, Fa(u[1])] 
+    
+    # Inverse engine force, from change in state to corresponding engine force
+    h_inv = (delta_s_dot::AbstractVector) -&gt; [atanh(clamp(delta_s_dot[2], -engine_force_limit+1e-3, engine_force_limit-1e-3)/engine_force_limit)] 
+    
+    # Internal model perameters
+    Gamma = 1e4*diageye(2) # Transition precision
+    Theta = 1e-4*diageye(2) # Observation variance
+
+    s_t_min ~ MvNormal(mean = m_s_t_min, cov = V_s_t_min)
+    s_k_min = s_t_min
+
+    local s
+    
+    for k in 1:T
+        u[k] ~ MvNormal(mean = m_u[k], cov = V_u[k])
+        u_h_k[k] ~ h(u[k]) where { meta = DeltaMeta(method = Linearization(), inverse = h_inv) }
+        s_g_k[k] ~ g(s_k_min) where { meta = DeltaMeta(method = Linearization()) }
+        u_s_sum[k] ~ s_g_k[k] + u_h_k[k]
+        s[k] ~ MvNormal(mean = u_s_sum[k], precision = Gamma)
+        x[k] ~ MvNormal(mean = s[k], cov = Theta)
+        x[k] ~ MvNormal(mean = m_x[k], cov = V_x[k]) # goal
+        s_k_min = s[k]
+    end
+    
+    return (s, )
+end</code></pre><p>After specifying the generative model, let&#39;s create an Active Inference(AI) agent for the car.  Technically, the agent goes through three phases: <strong>Act-Execute-Observe</strong>, <strong>Infer</strong> and <strong>Slide</strong>.</p><ol><li><strong>Act-Execute-Observe</strong>:   In this phase, the agent performs an action onto the environment at time <span>$t$</span> and gets <span>$T$</span> observations in exchange. These observations are basically the prediction of the agent on how the environment evolves over the next <span>$T$</span> time step. </li><li><strong>Infer</strong>:  After receiving observations, the agent starts updating its internal probabilistic model by doing inference. Particularly, it finds the posterior distributions over the state <span>$s_t$</span> and control <span>$u_t$</span>, i.e. <span>$p(s_t\mid x_t)$</span> and <span>$p(u_t\mid x_t)$</span>.</li><li><strong>Slide</strong>:  After updating its internal belief, the agent moves to the next time step and uses the inferred action <span>$u_t$</span> in the previous time step to interact with the environment.  </li></ol><p>In the cell below, we create the agent through the <code>create_agent</code> function, which includes <code>compute</code>, <code>act</code>, <code>slide</code> and <code>future</code> functions:</p><ul><li>The <code>act</code> function selects the next action based on the inferred policy. On the other hand, the <code>future</code> function predicts the next <span>$T$</span> positions based on the current action. These two function implement the <strong>Act-Execute-Observe</strong> phase.</li><li>The <code>compute</code> function infers the policy (which is a set of actions for the next <span>$T$</span> time steps) and the agent&#39;s state using the agent internal model. This function implements the <strong>Infer</strong> phase. We call it <code>compute</code> to avoid the clash with the <code>infer</code> function of <code>RxInfer.jl</code>.</li><li>The <code>slide</code> function implements the <strong>Slide</strong> phase, which moves the agent internal model to the next time step.</li></ul><pre><code class="language-julia hljs"># We are going to use some private functionality from ReactiveMP, 
+# in the future we should expose a proper API for this
+import RxInfer.ReactiveMP: getrecent, messageout
+
+function create_agent(;T = 20, Fg, Fa, Ff, engine_force_limit, x_target, initial_position, initial_velocity)
+    Epsilon = fill(huge, 1, 1)                # Control prior variance
+    m_u = Vector{Float64}[ [ 0.0] for k=1:T ] # Set control priors
+    V_u = Matrix{Float64}[ Epsilon for k=1:T ]
+
+    Sigma    = 1e-4*diageye(2) # Goal prior variance
+    m_x      = [zeros(2) for k=1:T]
+    V_x      = [huge*diageye(2) for k=1:T]
+    V_x[end] = Sigma # Set prior to reach goal at t=T
+
+    # Set initial brain state prior
+    m_s_t_min = [initial_position, initial_velocity] 
+    V_s_t_min = tiny * diageye(2)
+    
+    # Set current inference results
+    result = nothing
+
+    # The `infer` function is the heart of the agent
+    # It calls the `RxInfer.inference` function to perform Bayesian inference by message passing
+    compute = (upsilon_t::Float64, y_hat_t::Vector{Float64}) -&gt; begin
+        m_u[1] = [ upsilon_t ] # Register action with the generative model
+        V_u[1] = fill(tiny, 1, 1) # Clamp control prior to performed action
+
+        m_x[1] = y_hat_t # Register observation with the generative model
+        V_x[1] = tiny*diageye(2) # Clamp goal prior to observation
+
+        data = Dict(:m_u       =&gt; m_u, 
+                    :V_u       =&gt; V_u, 
+                    :m_x       =&gt; m_x, 
+                    :V_x       =&gt; V_x,
+                    :m_s_t_min =&gt; m_s_t_min,
+                    :V_s_t_min =&gt; V_s_t_min)
+        
+        model  = mountain_car(T = T, Fg = Fg, Fa = Fa, Ff = Ff, engine_force_limit = engine_force_limit) 
+        result = infer(model = model, data = data)
+    end
+    
+    # The `act` function returns the inferred best possible action
+    act = () -&gt; begin
+        if result !== nothing
+            return mode(result.posteriors[:u][2])[1]
+        else
+            return 0.0 # Without inference result we return some &#39;random&#39; action
+        end
+    end
+    
+    # The `future` function returns the inferred future states
+    future = () -&gt; begin 
+        if result !== nothing 
+            return getindex.(mode.(result.posteriors[:s]), 1)
+        else
+            return zeros(T)
+        end
+    end
+
+    # The `slide` function modifies the `(m_s_t_min, V_s_t_min)` for the next step
+    # and shifts (or slides) the array of future goals `(m_x, V_x)` and inferred actions `(m_u, V_u)`
+    slide = () -&gt; begin
+
+        model  = RxInfer.getmodel(result.model)
+        (s, )  = RxInfer.getreturnval(model)
+        varref = RxInfer.getvarref(model, s) 
+        var    = RxInfer.getvariable(varref)
+        
+        slide_msg_idx = 3 # This index is model dependend
+        (m_s_t_min, V_s_t_min) = mean_cov(getrecent(messageout(var[2], slide_msg_idx)))
+
+        m_u = circshift(m_u, -1)
+        m_u[end] = [0.0]
+        V_u = circshift(V_u, -1)
+        V_u[end] = Epsilon
+
+        m_x = circshift(m_x, -1)
+        m_x[end] = x_target
+        V_x = circshift(V_x, -1)
+        V_x[end] = Sigma
+    end
+
+    return (compute, act, slide, future)    
+end</code></pre><pre><code class="nohighlight hljs">create_agent (generic function with 1 method)</code></pre><p>Now it&#39;s time to see if we can help our friends arrive at the camping site by midnight?</p><pre><code class="language-julia hljs">(execute_ai, observe_ai) = create_world(
+    Fg = Fg, Ff = Ff, Fa = Fa, 
+    initial_position = initial_position, 
+    initial_velocity = initial_velocity
+) # Let there be a world
+
+T_ai = 50
+
+(compute_ai, act_ai, slide_ai, future_ai) = create_agent(; # Let there be an agent
+    T  = T_ai, 
+    Fa = Fa,
+    Fg = Fg, 
+    Ff = Ff, 
+    engine_force_limit = engine_force_limit,
+    x_target = x_target,
+    initial_position = initial_position,
+    initial_velocity = initial_velocity
+) 
+
+N_ai = 100
+
+# Step through experimental protocol
+agent_a = Vector{Float64}(undef, N_ai) # Actions
+agent_f = Vector{Vector{Float64}}(undef, N_ai) # Predicted future
+agent_x = Vector{Vector{Float64}}(undef, N_ai) # Observations
+
+for t=1:N_ai
+    agent_a[t] = act_ai()               # Invoke an action from the agent
+    agent_f[t] = future_ai()            # Fetch the predicted future states
+    execute_ai(agent_a[t])              # The action influences hidden external states
+    agent_x[t] = observe_ai()           # Observe the current environmental outcome (update p)
+    compute_ai(agent_a[t], agent_x[t]) # Infer beliefs from current model state (update q)
+    slide_ai()                          # Prepare for next iteration
+end
+
+animation_ai = @animate for i in 1:N_ai
+    # pls - plot landscape
+    pls = plot(valley_x, valley_y, title = &quot;Active inference results&quot;, label = &quot;Landscape&quot;, color = &quot;black&quot;)
+    pls = scatter!(pls, [agent_x[i][1]], [height(agent_x[i][1])], label=&quot;car&quot;)
+    pls = scatter!(pls, [x_target[1]], [height(x_target[1])], label=&quot;goal&quot;)   
+    pls = scatter!(pls, agent_f[i], height.(agent_f[i]), label = &quot;Predicted future&quot;, alpha = map(i -&gt; 0.5 / i, 1:T_ai))
+    
+    # pef - plot engine force
+    pef = plot(Fa.(agent_a[1:i]), title = &quot;Engine force (agents actions)&quot;, xlim = (0, N_ai), ylim = (-0.05, 0.05))
+    
+    plot(pls, pef, size = (800, 400))
+end
+    
+# The animation is saved and displayed as markdown picture for the automatic HTML generation
+gif(animation_ai, &quot;../pics/ai-mountain-car-ai.gif&quot;, fps = 24, show_msg = false);</code></pre><p><img src="../../../assets/examples/pics/ai-mountain-car-ai.gif" alt/></p><p>Voila! The car now is able to reach the camping site with a smart strategy.</p><p>The left figure shows the agent reached its goal by swinging and the right one shows the corresponding engine force. As we can see, at the beginning the agent tried to reach the goal directly (with full engine force) but after some trials it realized that&#39;s not possible. Since the agent looks ahead for 50 time steps, it has enough time to explore other policies, helping it learn to move back to get more momentum to reach the goal.</p><p>Now our friends can enjoy their trip at the camping site!. </p><h1 id="Reference"><a class="docs-heading-anchor" href="#Reference">Reference</a><a id="Reference-1"></a><a class="docs-heading-anchor-permalink" href="#Reference" title="Permalink"></a></h1><p>We refer reader to the Thijs van de Laar (2019) &quot;Simulating active inference processes by message passing&quot; original paper with more in-depth overview and explanation of the active inference agent implementation by message passing. The original environment/task description is from Ueltzhoeffer (2017) &quot;Deep active inference&quot;.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../overview/">« Overview</a><a class="docs-footer-nextpage" href="../Advanced Tutorial/">Advanced Tutorial »</a><div class="flexbox-break"></div><p class="footer-message">Created in <a href="https://biaslab.github.io/">BIASlab</a>, maintained by <a href="https://github.com/ReactiveBayes">ReactiveBayes</a>, powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.4.1 on <span class="colophon-date" title="Thursday 23 May 2024 17:01">Thursday 23 May 2024</span>. Using Julia version 1.10.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
