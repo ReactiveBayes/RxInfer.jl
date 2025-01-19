@@ -21,7 +21,7 @@ makedocs(;
         canonical = "https://reactivebayes.github.io/RxInfer.jl",
         edit_link = "main",
         warn_outdated = true,
-        assets = String["assets/theme.css", "assets/header.css", "assets/header.js"],
+        assets = String["assets/theme.css", "assets/header.css", "assets/header.js", "assets/chat.js"],
         description = "Julia package for automated Bayesian inference on a factor graph with reactive message passing",
         footer = "Created in [BIASlab](https://biaslab.github.io/), maintained by [ReactiveBayes](https://github.com/ReactiveBayes), powered by [Documenter.jl](https://github.com/JuliaDocs/Documenter.jl) and the [Julia Programming Language](https://julialang.org/)."
     ),
