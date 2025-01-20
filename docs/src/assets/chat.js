@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', function() {
             z-index: 999;
             position: fixed;
             --df-messenger-font-color: #2A56C6;
-            --df-messenger-font-family: Roboto Mono;
+            --df-messenger-font-family: PT Mono;
             --df-messenger-chat-background: #f3f6fc;
             --df-messenger-message-user-background: #d3e3fd;
             --df-messenger-message-bot-background: #fff;
