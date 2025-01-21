@@ -21,7 +21,14 @@ makedocs(;
         canonical = "https://reactivebayes.github.io/RxInfer.jl",
         edit_link = "main",
         warn_outdated = true,
-        assets = String["assets/theme.css", "assets/header.css", "assets/header.js"],
+        assets = [
+            "assets/theme.css",
+            "assets/header.css",
+            "assets/header.js",
+            asset("https://www.gstatic.com/dialogflow-console/fast/df-messenger/prod/v1/themes/df-messenger-default.css"),
+            asset("https://www.gstatic.com/dialogflow-console/fast/df-messenger/prod/v1/df-messenger.js"),
+            "assets/chat.js"
+        ],
         description = "Julia package for automated Bayesian inference on a factor graph with reactive message passing",
         footer = "Created in [BIASlab](https://biaslab.github.io/), maintained by [ReactiveBayes](https://github.com/ReactiveBayes), powered by [Documenter.jl](https://github.com/JuliaDocs/Documenter.jl) and the [Julia Programming Language](https://julialang.org/)."
     ),
@@ -37,12 +44,7 @@ makedocs(;
             "Inference customization"   => ["Defining a custom node and rules" => "manuals/customization/custom-node.md", "Inference results postprocessing" => "manuals/customization/postprocess.md"],
             "Debugging"                 => "manuals/debugging.md",
             "Migration from v2 to v3"   => "manuals/migration-guide-v2-v3.md",
-            "Sharp bits of RxInfer"     => [
-                "Overview" => "manuals/sharpbits/overview.md",
-                "Rule Not Found Error" => "manuals/sharpbits/rule-not-found.md",
-                "Stack Overflow in Message Computations" => "manuals/sharpbits/stack-overflow-inference.md",
-                "Using `=` instead of `:=` for deterministic nodes" => "manuals/sharpbits/usage-colon-equality.md"
-            ]
+            "Sharp bits of RxInfer"     => ["Overview" => "manuals/sharpbits/overview.md", "Rule Not Found Error" => "manuals/sharpbits/rule-not-found.md", "Stack Overflow in Message Computations" => "manuals/sharpbits/stack-overflow-inference.md", "Using `=` instead of `:=` for deterministic nodes" => "manuals/sharpbits/usage-colon-equality.md"]
         ],
         "Library" => [
             "Model construction" => "library/model-construction.md",
