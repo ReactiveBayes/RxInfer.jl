@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
     chatBubble.setAttribute('chat-subtitle', `
         Ask questions about RxInfer Documentation
     `);
-    chatBubble.setAttribute('chat-title-icon', 'assets/ld-rxinfer.png');
+    chatBubble.setAttribute('chat-title-icon', 'https://reactivebayes.github.io/RxInfer.jl/stable/assets/ld-rxinfer.png');
     messenger.appendChild(chatBubble);
 
     document.body.appendChild(messenger);
