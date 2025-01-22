@@ -1,7 +1,7 @@
 name = "RxInfer"
 uuid = "86711068-29c9-4ff7-b620-ae75d7495b3d"
 authors = ["Bagaev Dmitry <d.v.bagaev@tue.nl> and contributors"]
-version = "3.9.1"
+version = "3.10.0"
 
 [deps]
 BayesBase = "b4ee3484-f114-42fe-b91c-797d54a0c67e"
@@ -42,7 +42,7 @@ MacroTools = "0.5.6"
 Optim = "1.0.0"
 ProgressMeter = "1.0.0"
 Random = "1.9"
-ReactiveMP = "~4.5.0"
+ReactiveMP = "~4.6.0"
 Reexport = "1.2.0"
 Rocket = "1.8.0"
 Static = "0.8.10, 1"
