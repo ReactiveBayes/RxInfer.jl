@@ -25,8 +25,6 @@ makedocs(;
             "assets/theme.css",
             "assets/header.css",
             "assets/header.js",
-            asset("https://www.gstatic.com/dialogflow-console/fast/df-messenger/prod/v1/themes/df-messenger-default.css"),
-            asset("https://www.gstatic.com/dialogflow-console/fast/df-messenger/prod/v1/df-messenger.js"),
             "assets/chat.js"
         ],
         description = "Julia package for automated Bayesian inference on a factor graph with reactive message passing",
