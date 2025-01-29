@@ -1,5 +1,32 @@
 using Dates, UUIDs, Preferences
 
+struct InferInvokeDataEntry
+    name
+    type
+    size
+    elsize
+end
+
+# Very safe by default, logging should not crash if we don't know how to parse the data entry
+log_data_entry(data) = InferInvokeDataEntry(:unknown, :unknown, :unknown, :unknown)
+log_data_entry(data::Pair) = log_data_entry(first(data), last(data))
+
+log_data_entry(name::Union{Symbol, String}, data) = log_data_entry(name, Base.IteratorSize(data), data) 
+log_data_entry(name::Union{Symbol, String}, _, data) = InferInvokeDataEntry(name, typeof(data), :unknown, :unknown)
+log_data_entry(name::Union{Symbol, String}, ::Base.HasShape{0}, data) = InferInvokeDataEntry(name, typeof(data), (), ())
+log_data_entry(name::Union{Symbol, String}, ::Base.HasShape, data) = InferInvokeDataEntry(name, typeof(data), size(data), isempty(data) ? () : size(first(data)))
+
+# Julia has `Base.HasLength` by default, which is quite bad because it fallbacks here 
+# for structures that has nothing to do with being iterators, we are safe here 
+# and simply return :unknown
+log_data_entry(name::Union{Symbol, String}, ::Base.HasLength, data) = InferInvokeDataEntry(name, typeof(data), :unknown, :unknown)
+
+# Very safe by default, logging should not crash if we don't know how to parse the data entry
+log_data_entries(data) = :unknown
+
+log_data_entries(data::Union{NamedTuple, Dict}) = log_data_entries_from_pairs(pairs(data))
+log_data_entries_from_pairs(pairs) = collect(Iterators.map(log_data_entry, pairs))
+
 struct InferInvoke
 end
 
