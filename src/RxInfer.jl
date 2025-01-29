@@ -6,6 +6,7 @@ using Reexport
 
 include("helpers.jl")
 include("rocket.jl")
+include("session.jl")
 
 include("score/actor.jl")
 include("score/diagnostics.jl")
