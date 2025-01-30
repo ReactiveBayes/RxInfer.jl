@@ -362,7 +362,6 @@ function infer(;
     infer_check_dicttype(:data, data)
 
     return with_session(session) do invoke
-
         append_invoke_context(invoke) do ctx
             ctx[:model] = GraphPPL.getsource(model)
             ctx[:data] = log_data_entries(data)
