@@ -4,9 +4,24 @@
     @test hasproperty(session, :id)
     @test hasproperty(session, :created_at)
     @test hasproperty(session, :invokes)
+    @test hasproperty(session, :versioninfo)
 
     # Empty session has no invokes
     @test length(session.invokes) == 0
+
+    # Version info should contain all required fields
+    @test haskey(session.versioninfo, :julia_version)
+    @test haskey(session.versioninfo, :os)
+    @test haskey(session.versioninfo, :machine)
+    @test haskey(session.versioninfo, :cpu_threads)
+    @test haskey(session.versioninfo, :word_size)
+
+    # Version info should have correct types and values
+    @test session.versioninfo[:julia_version] == string(VERSION)
+    @test session.versioninfo[:os] == string(Sys.KERNEL)
+    @test session.versioninfo[:machine] == string(Sys.MACHINE)
+    @test session.versioninfo[:cpu_threads] == Sys.CPU_THREADS
+    @test session.versioninfo[:word_size] == Sys.WORD_SIZE
 end
 
 @testitem "RxInfer should have a default session" begin

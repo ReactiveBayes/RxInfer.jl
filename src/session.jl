@@ -17,8 +17,8 @@ log_data_entry(name::Union{Symbol, String}, ::Base.HasShape{0}, data) = InferInv
 log_data_entry(name::Union{Symbol, String}, ::Base.HasShape, data) = InferInvokeDataEntry(name, typeof(data), size(data), isempty(data) ? () : size(first(data)))
 
 # Julia has `Base.HasLength` by default, which is quite bad because it fallbacks here 
-# for structures that has nothing to do with being iterators, we are safe here 
-# and simply return :unknown
+# for structures that has nothing to do with being iterators nor implement `length`, 
+# Better to be safe here and simply return :unknown
 log_data_entry(name::Union{Symbol, String}, ::Base.HasLength, data) = InferInvokeDataEntry(name, typeof(data), :unknown, :unknown)
 
 # Very safe by default, logging should not crash if we don't know how to parse the data entry
@@ -41,6 +41,7 @@ a history of all inference invocations (`InferInvoke`) that occurred during its 
 - `id::UUID`: A unique identifier for the session
 - `created_at::DateTime`: Timestamp when the session was created
 - `invokes::Vector{InferInvoke}`: List of all inference invocations that occurred during the session
+- `versioninfo::Dict{Symbol, Any}`: Information about the Julia version and system when the session was created
 
 The session logging is transparent and only collects non-sensitive information about inference calls.
 Users can inspect the session at any time using `get_current_session()` and reset it using `reset_session!()`.
@@ -49,6 +50,7 @@ struct Session
     id::UUID
     created_at::DateTime
     invokes::Vector{InferInvoke}
+    versioninfo::Dict{Symbol, Any}
 end
 
 """
@@ -60,10 +62,19 @@ Create a new session with a unique identifier and current timestamp.
 - `Session`: A new session instance with no inference invocations recorded
 """
 function create_session()
+    vinfo = Dict{Symbol, Any}(
+        :julia_version => string(VERSION),
+        :os => string(Sys.KERNEL),
+        :machine => string(Sys.MACHINE),
+        :cpu_threads => Sys.CPU_THREADS,
+        :word_size => Sys.WORD_SIZE
+    )
+
     return Session(
-        uuid4(), # Generate unique ID
-        now(),  # Current timestamp
-        InferInvoke[] # Empty vector of invokes
+        uuid4(),           # Generate unique ID
+        now(),            # Current timestamp
+        InferInvoke[],    # Empty vector of invokes
+        vinfo             # Version information
     )
 end
 
