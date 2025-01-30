@@ -198,7 +198,7 @@ function summarize_session(io::IO, session::Union{Session, Nothing} = RxInfer.de
 end
 
 """
-    get_session_stats(session::Session, label::Symbol = :unknown)
+    get_session_stats(session::Session, label::Symbol = :inference)
 
 Return a NamedTuple with key session statistics for invokes with the specified label.
 
@@ -212,7 +212,7 @@ Return a NamedTuple with key session statistics for invokes with the specified l
 - `context_keys`: Set of all context keys used across invokes
 - `label`: The label used for filtering
 """
-function get_session_stats(session::Union{Nothing, Session} = RxInfer.default_session(), label::Symbol = :unknown)
+function get_session_stats(session::Union{Nothing, Session} = RxInfer.default_session(), label::Symbol = :inference)
     empty_session = (total_invokes = 0, success_rate = 0.0, failed_invokes = 0, context_keys = Symbol[], label = label)
 
     if isnothing(session)
