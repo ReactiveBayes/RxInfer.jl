@@ -9,7 +9,7 @@ import GraphPPL: ModelGenerator, create_model
 import ReactiveMP: israndom, isdata, isconst
 import ReactiveMP: CountingReal
 
-import ProgressMeter
+import ProgressMeter, Dates, UUIDs
 
 obtain_prediction(variable::Any) = getprediction(variable)
 obtain_prediction(variables::AbstractArray) = getpredictions(variables)
@@ -282,6 +282,7 @@ Check the official documentation for more information about some of the argument
 - `uselock = false`: specifies either to use the lock structure for the inference or not, if set to true uses `Base.Threads.SpinLock`. Accepts custom `AbstractLock`. (exclusive for streamline inference)
 - `autostart = true`: specifies whether to call `RxInfer.start` on the created engine automatically or not (exclusive for streamline inference)
 - `warn = true`: enables/disables warnings
+- `session = RxInfer.default_session()`: current logging session for the RxInfer invokes, see `Session` for more details, pass `nothing` to disable logging
 
 """
 function infer(;
@@ -311,7 +312,8 @@ function infer(;
     events = nothing, # streamline specific
     uselock = false, # streamline  specific
     autostart = true, # streamline specific
-    warn = true
+    warn = true,
+    session = RxInfer.default_session()
 )
     if isnothing(model)
         error("The `model` keyword argument is required for the `infer` function.")
@@ -330,55 +332,77 @@ function infer(;
     infer_check_dicttype(:callbacks, callbacks)
     infer_check_dicttype(:data, data)
 
-    if isnothing(autoupdates)
-        check_available_callbacks(warn, callbacks, available_callbacks(batch_inference))
-        check_available_events(warn, events, available_events(batch_inference))
-        batch_inference(
-            model = model,
-            data = data,
-            initialization = initialization,
-            constraints = constraints,
-            meta = meta,
-            options = options,
-            returnvars = returnvars,
-            predictvars = predictvars,
-            iterations = iterations,
-            free_energy = free_energy,
-            free_energy_diagnostics = free_energy_diagnostics,
-            allow_node_contraction = allow_node_contraction,
-            showprogress = showprogress,
-            callbacks = callbacks,
-            addons = addons,
-            postprocess = postprocess,
-            warn = warn,
-            catch_exception = catch_exception
-        )
-    else
-        check_available_callbacks(warn, callbacks, available_callbacks(streaming_inference))
-        check_available_events(warn, events, available_events(streaming_inference))
-        streaming_inference(
-            model = model,
-            data = data,
-            datastream = datastream,
-            autoupdates = autoupdates,
-            initialization = initialization,
-            constraints = constraints,
-            meta = meta,
-            options = options,
-            returnvars = returnvars,
-            historyvars = historyvars,
-            keephistory = keephistory,
-            iterations = iterations,
-            free_energy = free_energy,
-            free_energy_diagnostics = free_energy_diagnostics,
-            allow_node_contraction = allow_node_contraction,
-            autostart = autostart,
-            callbacks = callbacks,
-            addons = addons,
-            postprocess = postprocess,
-            warn = warn,
-            events = events,
-            uselock = uselock
-        )
+    try
+        status = :unknown
+        execution_start = Dates.now()
+        if isnothing(autoupdates)
+            check_available_callbacks(warn, callbacks, available_callbacks(batch_inference))
+            check_available_events(warn, events, available_events(batch_inference))
+            batch_inference(
+                model = model,
+                data = data,
+                initialization = initialization,
+                constraints = constraints,
+                meta = meta,
+                options = options,
+                returnvars = returnvars,
+                predictvars = predictvars,
+                iterations = iterations,
+                free_energy = free_energy,
+                free_energy_diagnostics = free_energy_diagnostics,
+                allow_node_contraction = allow_node_contraction,
+                showprogress = showprogress,
+                callbacks = callbacks,
+                addons = addons,
+                postprocess = postprocess,
+                warn = warn,
+                catch_exception = catch_exception
+            )
+        else
+            check_available_callbacks(warn, callbacks, available_callbacks(streaming_inference))
+            check_available_events(warn, events, available_events(streaming_inference))
+            streaming_inference(
+                model = model,
+                data = data,
+                datastream = datastream,
+                autoupdates = autoupdates,
+                initialization = initialization,
+                constraints = constraints,
+                meta = meta,
+                options = options,
+                returnvars = returnvars,
+                historyvars = historyvars,
+                keephistory = keephistory,
+                iterations = iterations,
+                free_energy = free_energy,
+                free_energy_diagnostics = free_energy_diagnostics,
+                allow_node_contraction = allow_node_contraction,
+                autostart = autostart,
+                callbacks = callbacks,
+                addons = addons,
+                postprocess = postprocess,
+                warn = warn,
+                events = events,
+                uselock = uselock
+            )
+        end
+    catch e
+        status = :failed
+        rethrow(e)
+    finally
+        execution_end = Dates.now()
+        status = :success
+        if !isnothing(session)
+            infer_id = UUIDs.uuid4()
+            infer_invoke = InferInvoke(
+                infer_id, 
+                status, 
+                execution_start,
+                execution_end,
+                GraphPPL.getsource(model),
+                RxInfer.log_data_entries(data)
+            )
+            push!(session.invokes, infer_invoke)
+        end
     end
 end

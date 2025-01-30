@@ -1,27 +1,34 @@
 @testitem "Session can be created" begin
+    using TOML
+
     session = RxInfer.create_session()
 
     @test hasproperty(session, :id)
     @test hasproperty(session, :created_at)
     @test hasproperty(session, :invokes)
-    @test hasproperty(session, :versioninfo)
+    @test hasproperty(session, :environment)
 
     # Empty session has no invokes
     @test length(session.invokes) == 0
 
     # Version info should contain all required fields
-    @test haskey(session.versioninfo, :julia_version)
-    @test haskey(session.versioninfo, :os)
-    @test haskey(session.versioninfo, :machine)
-    @test haskey(session.versioninfo, :cpu_threads)
-    @test haskey(session.versioninfo, :word_size)
+    @test haskey(session.environment, :julia_version)
+    @test haskey(session.environment, :rxinfer_version)
+    @test haskey(session.environment, :os)
+    @test haskey(session.environment, :machine)
+    @test haskey(session.environment, :cpu_threads)
+    @test haskey(session.environment, :word_size)
 
     # Version info should have correct types and values
-    @test session.versioninfo[:julia_version] == string(VERSION)
-    @test session.versioninfo[:os] == string(Sys.KERNEL)
-    @test session.versioninfo[:machine] == string(Sys.MACHINE)
-    @test session.versioninfo[:cpu_threads] == Sys.CPU_THREADS
-    @test session.versioninfo[:word_size] == Sys.WORD_SIZE
+    @test session.environment[:julia_version] == string(VERSION)
+    @test session.environment[:os] == string(Sys.KERNEL)
+    @test session.environment[:machine] == string(Sys.MACHINE)
+    @test session.environment[:cpu_threads] == Sys.CPU_THREADS
+    @test session.environment[:word_size] == Sys.WORD_SIZE
+
+    rxinfer_version = 
+        VersionNumber(TOML.parsefile(joinpath(pkgdir(RxInfer), "Project.toml"))["version"])
+    @test session.environment[:rxinfer_version] == string(rxinfer_version)
 end
 
 @testitem "RxInfer should have a default session" begin
@@ -29,7 +36,11 @@ end
 
     @test hasproperty(default_session, :id)
     @test hasproperty(default_session, :created_at)
+    @test hasproperty(default_session, :environment)
     @test hasproperty(default_session, :invokes)
+
+    # Check second invokation doesn't change the return value
+    @test default_session === RxInfer.default_session()
 end
 
 @testitem "It should be possible to change the default session" begin
@@ -219,35 +230,46 @@ end
 @testitem "Session Logging basic execution" begin
 
     # Create a simple model for testing
-    @model function simple_model()
-        x ~ Normal(0.0, 1.0)
-        y ~ Normal(x, 1.0)
-        return y
+    @model function simple_model(y)
+        x ~ Normal(mean = 0.0, var = 1.0)
+        y ~ Normal(mean = x, var = 1.0)
     end
 
     # Create test data
     test_data = (y = 1.0,)
 
-    session = RxInfer.create_session()
-
     # Run inference inside session `session`
-    result = infer(model = simple_model(), data = test_data, session = session)
+    result = infer(model = simple_model(), data = test_data)
 
-    # Basic checks
-    @test length(session_after.invokes) == 1
+    session = RxInfer.default_session()
+
+    # Basic checks, other tests may have produced more invokes here
+    @test length(session.invokes) >= 1
 
     # Check the latest invoke
-    latest_invoke = session_after.invokes[end]
+    latest_invoke = session.invokes[end]
     @test !isempty(latest_invoke.id)
     @test latest_invoke.status == :success
-    @test latest_invoke.execution_time > 0.0
+    @test latest_invoke.execution_end > latest_invoke.execution_start
     @test hasproperty(latest_invoke.context, :model)
     @test hasproperty(latest_invoke.context, :data)
+    @test !isnothing(latest_invoke.context.data)
+    @test latest_invoke.context.model == """
+    function simple_model(y)
+        x ~ Normal(0.0, 1.0)
+        y ~ Normal(x, 1.0)
+    end"""
     @test length(latest_invoke.context.data) === 1
 
     # Check saved properties of the passed data `y`
     saved_data_properties = latest_invoke.context.data[end]
     @test saved_data_properties.name === :y
     @test saved_data_properties.type === Int
-    @test saved_data_properties.length === 1
+
+    custom_session = RxInfer.create_session()
+    result = infer(model = simple_model(), data = test_data, session = session)
+
+    @test length(custom_session.invokes) === 1
+    @test latest_invoke.id != custom_session.invokes[1].id
+    @test latest_invoke.context == custom_session.invokes[1].context
 end

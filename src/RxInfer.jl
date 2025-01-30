@@ -25,4 +25,13 @@ include("constraints/form/form_sample_list.jl")
 include("inference/postprocess.jl")
 include("inference/inference.jl")
 
+preference_enable_session_logging = @load_preference("enable_session_logging", true)
+
+function __init__()
+    if RxInfer.preference_enable_session_logging
+        default_session = create_session()
+        RxInfer.set_default_session!(default_session)
+    end
+end
+
 end

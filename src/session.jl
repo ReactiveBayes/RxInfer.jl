@@ -11,7 +11,7 @@ end
 log_data_entry(data) = InferInvokeDataEntry(:unknown, :unknown, :unknown, :unknown)
 log_data_entry(data::Pair) = log_data_entry(first(data), last(data))
 
-log_data_entry(name::Union{Symbol, String}, data) = log_data_entry(name, Base.IteratorSize(data), data) 
+log_data_entry(name::Union{Symbol, String}, data) = log_data_entry(name, Base.IteratorSize(data), data)
 log_data_entry(name::Union{Symbol, String}, _, data) = InferInvokeDataEntry(name, typeof(data), :unknown, :unknown)
 log_data_entry(name::Union{Symbol, String}, ::Base.HasShape{0}, data) = InferInvokeDataEntry(name, typeof(data), (), ())
 log_data_entry(name::Union{Symbol, String}, ::Base.HasShape, data) = InferInvokeDataEntry(name, typeof(data), size(data), isempty(data) ? () : size(first(data)))
@@ -27,7 +27,13 @@ log_data_entries(data) = :unknown
 log_data_entries(data::Union{NamedTuple, Dict}) = log_data_entries_from_pairs(pairs(data))
 log_data_entries_from_pairs(pairs) = collect(Iterators.map(log_data_entry, pairs))
 
-struct InferInvoke
+struct InferInvoke 
+    id::UUID
+    status::Symbol
+    execution_start::DateTime
+    execution_end::DateTime
+    model
+    data
 end
 
 """
@@ -40,8 +46,8 @@ a history of all inference invocations (`InferInvoke`) that occurred during its 
 # Fields
 - `id::UUID`: A unique identifier for the session
 - `created_at::DateTime`: Timestamp when the session was created
+- `environment::Dict{Symbol, Any}`: Information about the Julia & RxInfer versions and system when the session was created
 - `invokes::Vector{InferInvoke}`: List of all inference invocations that occurred during the session
-- `versioninfo::Dict{Symbol, Any}`: Information about the Julia version and system when the session was created
 
 The session logging is transparent and only collects non-sensitive information about inference calls.
 Users can inspect the session at any time using `get_current_session()` and reset it using `reset_session!()`.
@@ -49,8 +55,8 @@ Users can inspect the session at any time using `get_current_session()` and rese
 struct Session
     id::UUID
     created_at::DateTime
+    environment::Dict{Symbol, Any}
     invokes::Vector{InferInvoke}
-    versioninfo::Dict{Symbol, Any}
 end
 
 """
@@ -62,32 +68,25 @@ Create a new session with a unique identifier and current timestamp.
 - `Session`: A new session instance with no inference invocations recorded
 """
 function create_session()
-    vinfo = Dict{Symbol, Any}(
+    environment = Dict{Symbol, Any}(
         :julia_version => string(VERSION),
+        :rxinfer_version => string(pkgversion(RxInfer)),
         :os => string(Sys.KERNEL),
         :machine => string(Sys.MACHINE),
         :cpu_threads => Sys.CPU_THREADS,
-        :word_size => Sys.WORD_SIZE
+        :word_size => Sys.WORD_SIZE,
     )
-
     return Session(
-        uuid4(),           # Generate unique ID
+        uuid4(),          # Generate unique ID
         now(),            # Current timestamp
-        InferInvoke[],    # Empty vector of invokes
-        vinfo             # Version information
+        environment,      # Environment information
+        InferInvoke[]     # Empty vector of invokes
     )
 end
-
-session_logging_preference = @load_preference("enable_session_logging", true)
 
 const default_session_sem = Base.Semaphore(1)
-
-# See `Preferences.jl` to see how it works, but it should be a compile time choice of a user
-@static if session_logging_preference
-const default_session_ref = Ref{Union{Nothing, Session}}(create_session())
-else
+# The `Ref` is initialized in the __init__ function based on user preferences
 const default_session_ref = Ref{Union{Nothing, Session}}(nothing) 
-end
 
 """
     default_session()::Union{Nothing, Session}
