@@ -156,19 +156,6 @@ RxInfer.create_session
 RxInfer.set_default_session!
 ```
 
-```@example manage-session
-using RxInfer
-
-# Create a new session
-new_session = RxInfer.create_session()
-
-# Set as default session
-RxInfer.set_default_session!(new_session)
-
-# Clear default session
-RxInfer.set_default_session!(nothing)
-```
-
 ## Best Practices
 
 1. **Error Handling**: Session logging automatically captures errors, making it easier to debug issues:
@@ -209,8 +196,6 @@ end
 durations = map(session.invokes) do invoke
     invoke.execution_end - invoke.execution_start
 end
-
-println("Mean duration: $(mean(durations))")
 ```
 
 3. **Data Validation**: Session logging helps track data characteristics:
