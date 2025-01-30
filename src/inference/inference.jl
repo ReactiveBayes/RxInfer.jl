@@ -187,9 +187,10 @@ function inference_process_error(error, rethrow)
 
     1. Check our Sharp bits documentation which covers common issues:
        https://reactivebayes.github.io/RxInfer.jl/stable/manuals/sharpbits/overview/
-
     2. Browse our existing issues - your question may already be answered:
        https://github.com/ReactiveBayes/RxInfer.jl/issues
+    3. Take inspiration from our set of examples:
+       https://reactivebayes.github.io/RxInferExamples.jl/
 
     Still stuck? We'd love to help! You can:
     - Start a discussion for questions and help. Feedback and questions from new users is also welcome! If you are stuck, please reach out and we will solve it together.

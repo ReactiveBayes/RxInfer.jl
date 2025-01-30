@@ -119,7 +119,8 @@ duration = latest_invoke.execution_end - latest_invoke.execution_start
 println("Duration: $duration")
 
 # Access model source
-println("Model source: $(latest_invoke.context[:model])")
+println("Model name: $(latest_invoke.context[:model_name])")
+println("Model source: $(latest_invoke.context[:model_source])")
 
 # Examine data properties
 for entry in latest_invoke.context[:data]
@@ -210,7 +211,6 @@ durations = map(session.invokes) do invoke
 end
 
 println("Mean duration: $(mean(durations))")
-println("Std duration: $(std(durations))")
 ```
 
 3. **Data Validation**: Session logging helps track data characteristics:
@@ -223,7 +223,7 @@ using RxInfer
 end
 
 session = RxInfer.create_session()
-result = infer(model = simple_model(), data = (y = [1.0, 2.0],), session = session)
+result = infer(model = simple_model(), data = (y = 1.0,), session = session)
 
 for entry in session.invokes[end].context[:data]
     println("Variable '$(entry.name)' size: $(entry.size)")
