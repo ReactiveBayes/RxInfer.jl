@@ -1,6 +1,6 @@
 # Session Logging
 
-RxInfer provides a built-in session logging system that helps track and analyze inference invocations. This feature is particularly useful for debugging, performance monitoring, and understanding the behavior of your inference models.
+RxInfer provides a built-in session logging system that helps track and analyze various aspects of RxInfer usages. This feature is particularly useful for debugging, performance monitoring, and understanding the behavior of your inference models.
 
 ## Overview
 
@@ -131,39 +131,29 @@ end
 
 ## Configuration
 
-### Enabling/Disabling Logging
+### Default Session
 
-Session logging can be enabled or disabled globally:
+The default session is created automatically when RxInfer is first imported. It is used for logging all inference invocations by default.
 
-```@example config-session
-using RxInfer
-
-# Disable session logging (takes effect after Julia restart)
-RxInfer.disable_session_logging!()
-
-# Enable session logging (takes effect after Julia restart)
-RxInfer.enable_session_logging!()
+```@docs
+RxInfer.default_session
 ```
 
-You can also disable logging for specific inference calls:
+### Enabling/Disabling Logging
 
-```@example disable-session
-using RxInfer
+Session logging can be enabled or disabled globally
 
-@model function simple_model(y)
-    x ~ Normal(mean = 0.0, var = 1.0)
-    y ~ Normal(mean = x, var = 1.0)
-end
-
-# Run inference without logging
-result = infer(
-    model = simple_model(),
-    data = (y = 1.0,),
-    session = nothing
-)
+```@docs
+RxInfer.disable_session_logging!
+RxInfer.enable_session_logging!
 ```
 
 ### Managing Sessions
+
+```@docs
+RxInfer.create_session
+RxInfer.set_default_session!
+```
 
 ```@example manage-session
 using RxInfer
@@ -240,17 +230,56 @@ for entry in session.invokes[end].context[:data]
 end
 ```
 
-## Thread Safety
+## Session Statistics
 
-The session logging system is thread-safe, using a semaphore to protect access to the default session:
+RxInfer automatically collects statistics about inference runs. You can view these statistics at any time to understand how your inference tasks are performing.
 
-```@example thread-safety
-using RxInfer
+!!! note
+    Session statistics below are collected during the documentation build.
 
-# Thread-safe access to default session
-session = RxInfer.default_session()
+## Viewing Statistics
 
-# Thread-safe session update
-new_session = RxInfer.create_session()
-RxInfer.set_default_session!(new_session)
-``` 
+The main function for viewing session statistics is `summarize_session`:
+
+```@docs
+RxInfer.summarize_session
+```
+
+```@example session-stats
+using RxInfer #hide
+RxInfer.summarize_session()
+```
+
+The summary includes:
+- Total number of inference invocations and success rate
+- Execution time statistics (mean, min, max)
+- List of context keys present
+- Number of unique models used
+- Table of most recent invocations showing:
+  - Status (success/failed)
+  - Duration in milliseconds
+  - Model name
+  - Data variables used
+
+## Programmatic Access
+
+If you need to access the statistics programmatically, use `get_session_stats`:
+
+```@docs
+RxInfer.get_session_stats
+```
+
+```@example session-stats
+using RxInfer #hide
+RxInfer.get_session_stats()
+```
+
+# Developers reference 
+
+
+```@docs
+RxInfer.Session
+RxInfer.with_session
+RxInfer.create_invoke
+RxInfer.append_invoke_context
+```

@@ -64,6 +64,13 @@ end
             @test entry.size === ()
             @test entry.elsize === ()
         end
+
+        let entry = log_data_entry(:x => missing)
+            @test entry.name === :x
+            @test entry.type === Missing
+            @test entry.size === :unknown
+            @test entry.elsize === :unknown
+        end
     end
 
     @testset "Vectors" begin
@@ -86,6 +93,20 @@ end
             @test entry.type === Vector{Vector{Int}}
             @test entry.size === (2,)
             @test entry.elsize === (2,)
+        end
+
+        let entry = log_data_entry(:x => [missing])
+            @test entry.name === :x
+            @test entry.type === Vector{Missing}
+            @test entry.size === (1, )
+            @test entry.elsize === ()
+        end
+
+        let entry = log_data_entry(:x => [1.0, missing])
+            @test entry.name === :x
+            @test entry.type === Vector{Union{Float64, Missing}}
+            @test entry.size === (2, )
+            @test entry.elsize === ()
         end
     end
 
@@ -1215,10 +1236,12 @@ end
     @test hasproperty(latest_invoke, :id)
     @test latest_invoke.status == :success
     @test latest_invoke.execution_end > latest_invoke.execution_start
-    @test haskey(latest_invoke.context, :model)
+    @test haskey(latest_invoke.context, :model_name)
+    @test haskey(latest_invoke.context, :model_source)
     @test haskey(latest_invoke.context, :data)
     @test !isnothing(latest_invoke.context[:data])
-    @test latest_invoke.context[:model] == """
+    @test occursin(latest_invoke.context[:model_name], "simple_model")
+    @test latest_invoke.context[:model_source] == """
     function simple_model(y)
         x ~ Normal(mean = 0.0, var = 1.0)
         y ~ Normal(mean = x, var = 1.0)
@@ -1236,4 +1259,69 @@ end
     @test length(custom_session.invokes) === 1
     @test latest_invoke.id != custom_session.invokes[1].id
     @test latest_invoke.context == custom_session.invokes[1].context
+end
+
+@testitem "Inference Session statistics" begin
+    using Statistics
+    
+    session = RxInfer.create_session()
+
+    # Test empty session
+    empty_stats = RxInfer.get_session_stats(session, :inference)
+    @test empty_stats.total_invokes == 0
+    @test empty_stats.success_rate == 0.0
+    @test empty_stats.failed_invokes == 0
+    @test isempty(empty_stats.context_keys)
+    @test empty_stats.label === :inference
+
+    # Create a simple model for testing
+    @model function simple_model(y)
+        x ~ Normal(mean = 0.0, var = 1.0)
+        y ~ Normal(mean = x, var = 1.0)
+    end
+
+    # Create test data
+    test_data = (y = 1.0,)
+
+    # Run inference inside session `session`
+    result = infer(model = simple_model(), data = test_data, session = session)
+
+    # Test get_session_stats for inference invokes
+    stats = RxInfer.get_session_stats(session, :inference)
+    @test stats.total_invokes == 1
+    @test stats.success_rate == 1
+    @test stats.failed_invokes == 0
+    @test :model_name ∈ Set(stats.context_keys)
+    @test :model_source ∈ Set(stats.context_keys)
+    @test :data ∈ Set(stats.context_keys)
+    @test stats.min_duration_ms <= stats.mean_duration_ms <= stats.max_duration_ms
+    @test stats.label === :inference
+
+    # Test get_session_stats for other invokes
+    other_stats = RxInfer.get_session_stats(session, :other)
+    @test other_stats.total_invokes == 0
+    @test other_stats.success_rate == 0.0
+    @test other_stats.failed_invokes == 0
+    @test Set(other_stats.context_keys) == Set([])
+
+    # Test summarize_session output format for inference invokes with default n_last
+    output = IOBuffer()
+    RxInfer.summarize_session(output, session, :inference; n_last = 3)
+    output_str = String(take!(output))
+
+    @test contains(output_str, "Session Summary (label: inference)")
+    @test contains(output_str, "Total invokes: 1")
+    @test contains(output_str, "Success rate: 100.0%")
+    @test contains(output_str, "Failed invokes: 0")
+    @test contains(output_str, "Execution time (ms)")
+    @test contains(output_str, "Context keys: ")
+    @test contains(output_str, "Inference specific:")
+    @test contains(output_str, "Unique models: 1")
+    @test contains(output_str, "Last 3 invokes:")
+    @test contains(output_str, "Status")
+    @test contains(output_str, "Duration")
+    @test contains(output_str, "Model")
+    @test contains(output_str, "simple_model")
+
+
 end

@@ -100,7 +100,11 @@ log_data_entry(data::Pair) = log_data_entry(first(data), last(data))
 log_data_entry(name::Union{Symbol, String}, data) = log_data_entry(name, Base.IteratorSize(data), data)
 log_data_entry(name::Union{Symbol, String}, _, data) = InferenceLoggedDataEntry(name, typeof(data), :unknown, :unknown)
 log_data_entry(name::Union{Symbol, String}, ::Base.HasShape{0}, data) = InferenceLoggedDataEntry(name, typeof(data), (), ())
-log_data_entry(name::Union{Symbol, String}, ::Base.HasShape, data) = InferenceLoggedDataEntry(name, typeof(data), size(data), isempty(data) ? () : size(first(data)))
+log_data_entry(name::Union{Symbol, String}, ::Base.HasShape, data) = InferenceLoggedDataEntry(name, typeof(data), log_data_entry_size(data), isempty(data) ? () : log_data_entry_size(first(data)))
+
+log_data_entry_size(data) = log_data_entry_size(Base.IteratorSize(data), data)
+log_data_entry_size(::Base.HasShape, data) = size(data)
+log_data_entry_size(_, data) = ()
 
 # Julia has `Base.HasLength` by default, which is quite bad because it fallbacks here 
 # for structures that has nothing to do with being iterators nor implement `length`, 
@@ -112,6 +116,46 @@ log_data_entries(data) = :unknown
 
 log_data_entries(data::Union{NamedTuple, Dict}) = log_data_entries_from_pairs(pairs(data))
 log_data_entries_from_pairs(pairs) = collect(Iterators.map(log_data_entry, pairs))
+
+function summarize_invokes(io::IO, ::Val{:inference}, invokes; n_last = 5)
+    # Count unique models
+    unique_models = length(unique(get(i.context, :model, nothing) for i in invokes))
+    
+    println(io, "\nInference specific:")
+    println(io, "  Unique models: $unique_models")
+    
+    # Show last N invokes in a table format
+    if !isempty(invokes)
+        println(io, "\nLast $n_last invokes:")
+        println(io, "┌──────────┬──────────┬───────────────────────────┬─────────────┐")
+        println(io, "│ Status   │ Duration │ Model                     │ Data        │")
+        println(io, "├──────────┼──────────┼───────────────────────────┼─────────────┤")
+        
+        for invoke in Iterators.take(Iterators.reverse(invokes), n_last)
+            status = invoke.status
+            duration = round(Dates.value(invoke.execution_end - invoke.execution_start) / 1000.0, digits=2)
+            model = get(invoke.context, :model_name, nothing)
+            model = model === nothing ? "N/A" : string(model)
+            model = length(model) > 25 ? model[1:23] * ".." : model
+            
+            data_entries = get(invoke.context, :data, nothing)
+            data_str = if data_entries === nothing || isempty(data_entries)
+                "N/A"
+            else
+                join(map(e -> string(e.name), data_entries), ",")
+            end
+            data_str = length(data_str) > 9 ? data_str[1:7] * ".." : data_str
+            
+            status_str = rpad(status, 8)
+            duration_str = rpad("$(duration)ms", 8)
+            model_str = rpad(model, 25)
+            data_str = rpad(data_str, 9)
+            
+            println(io, "│ $(status_str)│ $(duration_str)│ $(model_str)│ $(data_str)│")
+        end
+        println(io, "└──────────┴──────────┴───────────────────────────┴─────────────┘")
+    end
+end
 
 ## Extra error handling
 
@@ -274,7 +318,8 @@ include("streaming.jl")
         events = nothing,
         uselock = false,
         autostart = true,
-        catch_exception = false
+        catch_exception = false,
+        session = RxInfer.default_session()
     )
 
 This function provides a generic way to perform probabilistic inference for batch/static and streamline/online scenarios.
@@ -361,9 +406,10 @@ function infer(;
     infer_check_dicttype(:callbacks, callbacks)
     infer_check_dicttype(:data, data)
 
-    return with_session(session) do invoke
+    return with_session(session, :inference) do invoke
         append_invoke_context(invoke) do ctx
-            ctx[:model] = GraphPPL.getsource(model)
+            ctx[:model_name] = string(GraphPPL.getmodel(model))
+            ctx[:model_source] = GraphPPL.getsource(model)
             ctx[:data] = log_data_entries(data)
         end
 

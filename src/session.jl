@@ -1,7 +1,8 @@
 using Dates, UUIDs, Preferences
 
-mutable struct SessionInvoke 
+mutable struct SessionInvoke
     id::UUID
+    label::Symbol
     status::Symbol
     execution_start::DateTime
     execution_end::DateTime
@@ -46,7 +47,7 @@ function create_session()
         :os => string(Sys.KERNEL),
         :machine => string(Sys.MACHINE),
         :cpu_threads => Sys.CPU_THREADS,
-        :word_size => Sys.WORD_SIZE,
+        :word_size => Sys.WORD_SIZE
     )
     return Session(
         uuid4(),          # Generate unique ID
@@ -57,40 +58,38 @@ function create_session()
 end
 
 """
-    with_session(f::F, session) where {F}
+    create_invoke(label::Symbol)
 
-Execute function `f` within a session context. If `session` is provided, logs execution details including timing and errors.
+Create a new session invoke with the given label.
+"""
+function create_invoke(label::Symbol)
+    return SessionInvoke(uuid4(), label, :unknown, Dates.now(), Dates.now(), Dict{Symbol, Any}())
+end
+
+"""
+    with_session(f::F, session, label::Symbol = :unknown) where {F}
+
+Execute function `f` within a session context with the specified label. If `session` is provided, logs execution details including timing and errors.
 If `session` is `nothing`, executes `f` without logging.
 """
-function with_session(f::F, session) where {F}
+function with_session(f::F, session, label::Symbol = :unknown) where {F}
     if isnothing(session)
         return f(nothing)
     elseif session isa Session
-        invoke_id = uuid4()
-        invoke_status = :unknown
-        invoke_context = Dict{Symbol, Any}()
-        invoke_execution_start = Dates.now()
-        invoke_execution_end = Dates.now()
-        invoke = SessionInvoke(
-            invoke_id, 
-            invoke_status,
-            invoke_execution_start,
-            invoke_execution_end,
-            invoke_context
-        )
-        try 
+        invoke = create_invoke(label)
+        try
             result = f(invoke)
             invoke.status = :success
             invoke.execution_end = Dates.now()
             push!(session.invokes, invoke)
             return result
-        catch e 
+        catch e
             invoke.status = :failed
             invoke.context[:error] = string(e)
             push!(session.invokes, invoke)
             rethrow(e)
         end
-    else 
+    else
         error(lazy"Unsupported session type $(typeof(session)). Should either be `RxInfer.Session` or `nothing`.")
     end
 end
@@ -101,14 +100,14 @@ end
 Append context information to a session invoke. If `invoke` is a `SessionInvoke`, executes function `f` with the invoke's context.
 If `invoke` is `nothing`, does nothing.
 """
-function append_invoke_context end 
+function append_invoke_context end
 
 append_invoke_context(f::F, ::Nothing) where {F} = nothing
 append_invoke_context(f::F, invoke::SessionInvoke) where {F} = f(invoke.context)
 
 const default_session_sem = Base.Semaphore(1)
 # The `Ref` is initialized in the __init__ function based on user preferences
-const default_session_ref = Ref{Union{Nothing, Session}}(nothing) 
+const default_session_ref = Ref{Union{Nothing, Session}}(nothing)
 
 """
     default_session()::Union{Nothing, Session}
@@ -157,4 +156,84 @@ Restart Julia and verify it by `!isnothing(RxInfer.default_session())`.
 """
 function enable_session_logging!()
     @set_preferences!("enable_session_logging" => true)
+end
+
+"""
+    summarize_session([io::IO], session::Session, label::Symbol = :inference; n_last = 5)
+
+Print a concise summary of session statistics for invokes with the specified label.
+The default label is `:inference` which gathers statistics of the `infer` function calls.
+"""
+summarize_session(session::Session = RxInfer.default_session(), label::Symbol = :inference; n_last = 5) = summarize_session(stdout, session, label; n_last = n_last)
+
+function summarize_session(io::IO, session::Session = RxInfer.default_session(), label::Symbol = :inference; n_last = 5)
+    
+    stats = get_session_stats(session, label)
+    filtered_invokes = filter(i -> i.label === label, session.invokes)
+
+    println(io, "\nSession Summary (label: $label)")
+    println(io, "Total invokes: $(stats.total_invokes)")
+    println(io, "Success rate: $(round(stats.success_rate * 100, digits=1))%")
+    println(io, "Failed invokes: $(stats.failed_invokes)")
+    println(io, "\nExecution time (ms):")
+    println(io, "  Mean: $(round(stats.mean_duration_ms, digits=2))")
+    println(io, "  Min: $(round(stats.min_duration_ms, digits=2))")
+    println(io, "  Max: $(round(stats.max_duration_ms, digits=2))")
+    println(io, "\nContext keys: $(join(stats.context_keys, ", "))")
+
+    if stats.total_invokes == 0
+        println(io, "\nNo invokes found with label: $label")
+        return nothing
+    end
+
+    # Call label-specific summary with n_last parameter
+    summarize_invokes(io, Val(label), filtered_invokes; n_last = n_last)
+
+    return nothing
+end
+
+"""
+    get_session_stats(session::Session, label::Symbol = :unknown)
+
+Return a NamedTuple with key session statistics for invokes with the specified label.
+
+# Returns
+- `total_invokes`: Total number of invokes with the given label
+- `success_rate`: Fraction of successful invokes (between 0 and 1)
+- `failed_invokes`: Number of failed invokes
+- `mean_duration_ms`: Mean execution time in milliseconds
+- `min_duration_ms`: Minimum execution time in milliseconds
+- `max_duration_ms`: Maximum execution time in milliseconds
+- `context_keys`: Set of all context keys used across invokes
+- `label`: The label used for filtering
+"""
+function get_session_stats(session::Session = RxInfer.default_session(), label::Symbol = :unknown)
+    filtered_invokes = filter(i -> i.label === label, session.invokes)
+    n_invokes = length(filtered_invokes)
+
+    if n_invokes == 0
+        return (total_invokes = 0, success_rate = 0.0, failed_invokes = 0, context_keys = Symbol[], label = label)
+    end
+
+    n_success = count(i -> i.status === :success, filtered_invokes)
+    n_failed = count(i -> i.status === :failed, filtered_invokes)
+
+    durations = map(filtered_invokes) do invoke
+        Dates.value(invoke.execution_end - invoke.execution_start) / 1000.0
+    end
+
+    context_keys = unique(Iterators.flatten(keys(i.context) for i in filtered_invokes))
+
+    stats = (
+        total_invokes = n_invokes,
+        success_rate = n_success / n_invokes,
+        failed_invokes = n_failed,
+        mean_duration_ms = mean(durations),
+        min_duration_ms = minimum(durations),
+        max_duration_ms = maximum(durations),
+        context_keys = collect(context_keys),
+        label = label
+    )
+
+    return stats
 end
