@@ -98,14 +98,14 @@ end
         let entry = log_data_entry(:x => [missing])
             @test entry.name === :x
             @test entry.type === Vector{Missing}
-            @test entry.size === (1, )
+            @test entry.size === (1,)
             @test entry.elsize === ()
         end
 
         let entry = log_data_entry(:x => [1.0, missing])
             @test entry.name === :x
             @test entry.type === Vector{Union{Float64, Missing}}
-            @test entry.size === (2, )
+            @test entry.size === (2,)
             @test entry.elsize === ()
         end
     end
@@ -1263,7 +1263,7 @@ end
 
 @testitem "Inference Session statistics" begin
     using Statistics
-    
+
     session = RxInfer.create_session()
 
     # Test empty session
@@ -1322,6 +1322,4 @@ end
     @test contains(output_str, "Duration")
     @test contains(output_str, "Model")
     @test contains(output_str, "simple_model")
-
-
 end

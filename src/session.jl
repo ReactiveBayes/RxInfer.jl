@@ -147,6 +147,7 @@ Note that session logging still can be enabled manually for the current session 
 """
 function disable_session_logging!()
     @set_preferences!("enable_session_logging" => false)
+    @info "Disabled session logging. Changes will take effect after Julia restart."
 end
 
 """
@@ -156,6 +157,7 @@ Restart Julia and verify it by `!isnothing(RxInfer.default_session())`.
 """
 function enable_session_logging!()
     @set_preferences!("enable_session_logging" => true)
+    @info "Enabled session logging. Changes will take effect after Julia restart."
 end
 
 """
@@ -166,8 +168,11 @@ The default label is `:inference` which gathers statistics of the `infer` functi
 """
 summarize_session(session::Session = RxInfer.default_session(), label::Symbol = :inference; n_last = 5) = summarize_session(stdout, session, label; n_last = n_last)
 
-function summarize_session(io::IO, session::Session = RxInfer.default_session(), label::Symbol = :inference; n_last = 5)
-    
+function summarize_session(io::IO, session::Union{Session, Nothing} = RxInfer.default_session(), label::Symbol = :inference; n_last = 5)
+    if isnothing(session)
+        println(io, "Session logging is disabled")
+    end
+
     stats = get_session_stats(session, label)
     filtered_invokes = filter(i -> i.label === label, session.invokes)
 
@@ -207,12 +212,18 @@ Return a NamedTuple with key session statistics for invokes with the specified l
 - `context_keys`: Set of all context keys used across invokes
 - `label`: The label used for filtering
 """
-function get_session_stats(session::Session = RxInfer.default_session(), label::Symbol = :unknown)
+function get_session_stats(session::Union{Nothing, Session} = RxInfer.default_session(), label::Symbol = :unknown)
+    empty_session = (total_invokes = 0, success_rate = 0.0, failed_invokes = 0, context_keys = Symbol[], label = label)
+
+    if isnothing(session)
+        return empty_session
+    end
+
     filtered_invokes = filter(i -> i.label === label, session.invokes)
     n_invokes = length(filtered_invokes)
 
     if n_invokes == 0
-        return (total_invokes = 0, success_rate = 0.0, failed_invokes = 0, context_keys = Symbol[], label = label)
+        return empty_session
     end
 
     n_success = count(i -> i.status === :success, filtered_invokes)
