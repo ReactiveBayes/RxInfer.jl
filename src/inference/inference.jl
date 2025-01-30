@@ -84,6 +84,35 @@ function check_and_reset_updated!(updates)
     end
 end
 
+## Logging utilities 
+
+struct InferenceLoggedDataEntry
+    name
+    type
+    size
+    elsize
+end
+
+# Very safe by default, logging should not crash if we don't know how to parse the data entry
+log_data_entry(data) = InferenceLoggedDataEntry(:unknown, :unknown, :unknown, :unknown)
+log_data_entry(data::Pair) = log_data_entry(first(data), last(data))
+
+log_data_entry(name::Union{Symbol, String}, data) = log_data_entry(name, Base.IteratorSize(data), data)
+log_data_entry(name::Union{Symbol, String}, _, data) = InferenceLoggedDataEntry(name, typeof(data), :unknown, :unknown)
+log_data_entry(name::Union{Symbol, String}, ::Base.HasShape{0}, data) = InferenceLoggedDataEntry(name, typeof(data), (), ())
+log_data_entry(name::Union{Symbol, String}, ::Base.HasShape, data) = InferenceLoggedDataEntry(name, typeof(data), size(data), isempty(data) ? () : size(first(data)))
+
+# Julia has `Base.HasLength` by default, which is quite bad because it fallbacks here 
+# for structures that has nothing to do with being iterators nor implement `length`, 
+# Better to be safe here and simply return :unknown
+log_data_entry(name::Union{Symbol, String}, ::Base.HasLength, data) = InferenceLoggedDataEntry(name, typeof(data), :unknown, :unknown)
+
+# Very safe by default, logging should not crash if we don't know how to parse the data entry
+log_data_entries(data) = :unknown
+
+log_data_entries(data::Union{NamedTuple, Dict}) = log_data_entries_from_pairs(pairs(data))
+log_data_entries_from_pairs(pairs) = collect(Iterators.map(log_data_entry, pairs))
+
 ## Extra error handling
 
 function inference_process_error(error)
@@ -332,9 +361,13 @@ function infer(;
     infer_check_dicttype(:callbacks, callbacks)
     infer_check_dicttype(:data, data)
 
-    try
-        status = :unknown
-        execution_start = Dates.now()
+    return with_session(session) do invoke
+
+        append_invoke_context(invoke) do ctx
+            ctx[:model] = GraphPPL.getsource(model)
+            ctx[:data] = log_data_entries(data)
+        end
+
         if isnothing(autoupdates)
             check_available_callbacks(warn, callbacks, available_callbacks(batch_inference))
             check_available_events(warn, events, available_events(batch_inference))
@@ -385,24 +418,6 @@ function infer(;
                 events = events,
                 uselock = uselock
             )
-        end
-    catch e
-        status = :failed
-        rethrow(e)
-    finally
-        execution_end = Dates.now()
-        status = :success
-        if !isnothing(session)
-            infer_id = UUIDs.uuid4()
-            infer_invoke = InferInvoke(
-                infer_id, 
-                status, 
-                execution_start,
-                execution_end,
-                GraphPPL.getsource(model),
-                RxInfer.log_data_entries(data)
-            )
-            push!(session.invokes, infer_invoke)
         end
     end
 end

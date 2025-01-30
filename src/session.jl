@@ -1,39 +1,11 @@
 using Dates, UUIDs, Preferences
 
-struct InferInvokeDataEntry
-    name
-    type
-    size
-    elsize
-end
-
-# Very safe by default, logging should not crash if we don't know how to parse the data entry
-log_data_entry(data) = InferInvokeDataEntry(:unknown, :unknown, :unknown, :unknown)
-log_data_entry(data::Pair) = log_data_entry(first(data), last(data))
-
-log_data_entry(name::Union{Symbol, String}, data) = log_data_entry(name, Base.IteratorSize(data), data)
-log_data_entry(name::Union{Symbol, String}, _, data) = InferInvokeDataEntry(name, typeof(data), :unknown, :unknown)
-log_data_entry(name::Union{Symbol, String}, ::Base.HasShape{0}, data) = InferInvokeDataEntry(name, typeof(data), (), ())
-log_data_entry(name::Union{Symbol, String}, ::Base.HasShape, data) = InferInvokeDataEntry(name, typeof(data), size(data), isempty(data) ? () : size(first(data)))
-
-# Julia has `Base.HasLength` by default, which is quite bad because it fallbacks here 
-# for structures that has nothing to do with being iterators nor implement `length`, 
-# Better to be safe here and simply return :unknown
-log_data_entry(name::Union{Symbol, String}, ::Base.HasLength, data) = InferInvokeDataEntry(name, typeof(data), :unknown, :unknown)
-
-# Very safe by default, logging should not crash if we don't know how to parse the data entry
-log_data_entries(data) = :unknown
-
-log_data_entries(data::Union{NamedTuple, Dict}) = log_data_entries_from_pairs(pairs(data))
-log_data_entries_from_pairs(pairs) = collect(Iterators.map(log_data_entry, pairs))
-
-struct InferInvoke 
+mutable struct SessionInvoke 
     id::UUID
     status::Symbol
     execution_start::DateTime
     execution_end::DateTime
-    model
-    data
+    context::Dict{Symbol, Any}
 end
 
 """
@@ -41,22 +13,22 @@ end
 
 A structure that maintains a log of all inference invocations during a RxInfer session.
 Each session has a unique identifier and tracks when it was created. The session stores
-a history of all inference invocations (`InferInvoke`) that occurred during its lifetime.
+a history of all session invocations (`SessionInvoke`) that occurred during its lifetime.
 
 # Fields
 - `id::UUID`: A unique identifier for the session
 - `created_at::DateTime`: Timestamp when the session was created
 - `environment::Dict{Symbol, Any}`: Information about the Julia & RxInfer versions and system when the session was created
-- `invokes::Vector{InferInvoke}`: List of all inference invocations that occurred during the session
+- `invokes::Vector{SessionInvoke}`: List of all inference invocations that occurred during the session
 
-The session logging is transparent and only collects non-sensitive information about inference calls.
+The session logging is transparent and only collects non-sensitive information about calls.
 Users can inspect the session at any time using `get_current_session()` and reset it using `reset_session!()`.
 """
 struct Session
     id::UUID
     created_at::DateTime
     environment::Dict{Symbol, Any}
-    invokes::Vector{InferInvoke}
+    invokes::Vector{SessionInvoke}
 end
 
 """
@@ -80,9 +52,59 @@ function create_session()
         uuid4(),          # Generate unique ID
         now(),            # Current timestamp
         environment,      # Environment information
-        InferInvoke[]     # Empty vector of invokes
+        SessionInvoke[]     # Empty vector of invokes
     )
 end
+
+"""
+    with_session(f::F, session) where {F}
+
+Execute function `f` within a session context. If `session` is provided, logs execution details including timing and errors.
+If `session` is `nothing`, executes `f` without logging.
+"""
+function with_session(f::F, session) where {F}
+    if isnothing(session)
+        return f(nothing)
+    elseif session isa Session
+        invoke_id = uuid4()
+        invoke_status = :unknown
+        invoke_context = Dict{Symbol, Any}()
+        invoke_execution_start = Dates.now()
+        invoke_execution_end = Dates.now()
+        invoke = SessionInvoke(
+            invoke_id, 
+            invoke_status,
+            invoke_execution_start,
+            invoke_execution_end,
+            invoke_context
+        )
+        try 
+            result = f(invoke)
+            invoke.status = :success
+            invoke.execution_end = Dates.now()
+            push!(session.invokes, invoke)
+            return result
+        catch e 
+            invoke.status = :failed
+            invoke.context[:error] = string(e)
+            push!(session.invokes, invoke)
+            rethrow(e)
+        end
+    else 
+        error(lazy"Unsupported session type $(typeof(session)). Should either be `RxInfer.Session` or `nothing`.")
+    end
+end
+
+"""
+    append_invoke_context(f, invoke)
+
+Append context information to a session invoke. If `invoke` is a `SessionInvoke`, executes function `f` with the invoke's context.
+If `invoke` is `nothing`, does nothing.
+"""
+function append_invoke_context end 
+
+append_invoke_context(f::F, ::Nothing) where {F} = nothing
+append_invoke_context(f::F, invoke::SessionInvoke) where {F} = f(invoke.context)
 
 const default_session_sem = Base.Semaphore(1)
 # The `Ref` is initialized in the __init__ function based on user preferences
