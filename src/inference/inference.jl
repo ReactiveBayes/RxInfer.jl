@@ -197,14 +197,12 @@ function inference_process_error(error, rethrow)
         """
     end
     @error """
-    We encountered an error during inference, but don't worry - we're here to help! 🤝
-
-    Here are some helpful resources to get you back on track:
+    We encountered an error during inference, here are some helpful resources to get you back on track:
 
     1. Check our Sharp bits documentation which covers common issues:
        https://reactivebayes.github.io/RxInfer.jl/stable/manuals/sharpbits/overview/
-    2. Browse our existing issues - your question may already be answered:
-       https://github.com/ReactiveBayes/RxInfer.jl/issues
+    2. Browse our existing discussions - your question may already be answered:
+       https://github.com/ReactiveBayes/RxInfer.jl/discussions
     3. Take inspiration from our set of examples:
        https://reactivebayes.github.io/RxInferExamples.jl/
 
@@ -221,7 +219,7 @@ function inference_process_error(error, rethrow)
     - A minimal example that reproduces the issue
     - The complete error message and stack trace
 
-    Together we'll get your inference working! 💪
+    Use `RxInfer.disable_inference_error_hint!()` to disable this message. 
     """
     if rethrow
         Base.rethrow(error)

@@ -59,8 +59,7 @@ session = RxInfer.create_session(capacity = 100)
 # Create a session with larger history
 large_session = RxInfer.create_session(capacity = 5000)
 
-println("Session capacity: $(capacity(session.invokes))")
-println("Large session capacity: $(capacity(large_session.invokes))")
+nothing #hide
 ```
 
 This is particularly useful when:
@@ -68,7 +67,7 @@ This is particularly useful when:
 - Working with long-running applications
 - Managing memory usage in resource-constrained environments
 
-You can also create and use custom sessions:
+You can also pass custom sessions to the `infer` function:
 
 ```@example custom-session
 using RxInfer
@@ -91,6 +90,18 @@ result = infer(
 println("Session ID: $(session.id)")
 println("Created at: $(session.created_at)")
 ```
+
+or pass `nothing` to disable session logging:
+
+```@example custom-session
+result = infer(
+    model = simple_model(),
+    data = (y = 1.0,),
+    session = nothing # skips session logging for this invocation
+)
+```
+
+See [Configuration](@ref session-configuration) for more details on how to manage sessions.
 
 ## Session Structure
 
@@ -156,7 +167,7 @@ for entry in latest_invoke.context[:data]
 end
 ```
 
-## Configuration
+## [Configuration](@id session-configuration)
 
 ### Default Session
 
@@ -184,12 +195,12 @@ RxInfer.set_default_session!
 
 ## Best Practices
 
-1. **Error Handling**: Session logging automatically captures errors, making it easier to debug issues:
+**Error Handling**: Session logging automatically captures errors, making it easier to debug issues:
 ```@example error-handling
 using RxInfer
 
 @model function problematic_model(y)
-    x ~ Normal(mean = 0.0, var = -1.0) # Invalid variance
+    x ~ Normal(mean = 0.0, var = sqrt(-1.0)) # Invalid variance
     y ~ Normal(mean = x, var = 1.0)
 end
 
@@ -203,7 +214,7 @@ catch e
 end
 ```
 
-2. **Performance Monitoring**: Use session data to monitor inference performance:
+**Performance Monitoring**: Use session data to monitor inference performance:
 ```@example performance
 using RxInfer, Statistics
 
@@ -224,7 +235,10 @@ durations = map(session.invokes) do invoke
 end
 ```
 
-3. **Data Validation**: Session logging helps track data characteristics:
+!!! note
+    The first invocation is typically slower due to Julia's JIT compilation.
+
+**Data Validation**: Session logging helps track data characteristics:
 ```@example validation
 using RxInfer
 
