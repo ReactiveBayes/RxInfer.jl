@@ -113,7 +113,7 @@ end
     result = infer(
         model = multinomial_model(N = N, k = k, ξ_ψ = zeros(k-1), W_ψ = rand(Wishart(k, diageye(k-1)))),
         data = (y=X_missing, ),
-        iterations = 5,
+        iterations = 20,
         keephistory = length(X_missing),
         showprogress = false,
         options = (
