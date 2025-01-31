@@ -125,26 +125,26 @@ using PrettyTables
 function summarize_invokes(io::IO, ::Val{:inference}, invokes; n_last = 5)
     # Count unique models
     unique_models = length(unique(get(i.context, :model_name, nothing) for i in invokes))
-    
+
     println(io, "\nInference specific:")
     println(io, "  Unique models: $unique_models")
-    
+
     # Show last N invokes in a table format
     if !isempty(invokes)
         println(io, "\nLast $n_last invokes, use `n_last` keyword argument to see more or less.")
         println(io, "*  Note that benchmarking with `BenchmarkTools` or similar will pollute the session with test invokes.")
         println(io, "   It is advised to explicitly pass `session = nothing` when benchmarking code involving the `infer` function.")
-        
+
         # Prepare data for the table
         last_invokes = collect(Iterators.take(Iterators.reverse(invokes), n_last))
         data = Matrix{String}(undef, length(last_invokes), 5)
-        
+
         for (i, invoke) in enumerate(last_invokes)
             status = string(invoke.status)
             duration = round(Dates.value(invoke.execution_end - invoke.execution_start) / 1000.0, digits = 2)
             model = get(invoke.context, :model_name, nothing)
             model = model === nothing ? "N/A" : string(model)
-            
+
             data_entries = get(invoke.context, :data, nothing)
             data_str = if data_entries isa Symbol
                 string(data_entries)
@@ -155,24 +155,16 @@ function summarize_invokes(io::IO, ::Val{:inference}, invokes; n_last = 5)
             end
 
             error_str = string(get(invoke.context, :error, ""))
-            
+
             data[i, 1] = status
             data[i, 2] = "$(duration)ms"
             data[i, 3] = model
             data[i, 4] = data_str
             data[i, 5] = error_str
         end
-        
+
         header = (["Status", "Duration", "Model", "Data", "Error"],)
-        pretty_table(
-            io, 
-            data;
-            header = header,
-            tf = tf_unicode_rounded,
-            maximum_columns_width = [8, 10, 35, 25, 25],
-            autowrap = true,
-            linebreaks = true
-        )
+        pretty_table(io, data; header = header, tf = tf_unicode_rounded, maximum_columns_width = [8, 10, 35, 25, 25], autowrap = true, linebreaks = true)
     end
 end
 
@@ -472,8 +464,15 @@ function infer(;
     return with_session(session, :inference) do invoke
         append_invoke_context(invoke) do ctx
             ctx[:model_name] = string(GraphPPL.getmodel(model))
-            ctx[:model_source] = GraphPPL.getsource(model)
+            ctx[:model] = GraphPPL.getsource(model)
             ctx[:data] = log_data_entries(data)
+            
+            !isnothing(datastream) && (ctx[:datastream_type] = eltype(datastream))
+            !isnothing(constraints) && (ctx[:constraints] = GraphPPL.source_code(constraints))
+            !isnothing(meta) && (ctx[:meta] = GraphPPL.source_code(meta))
+
+            ctx[:iterations] = iterations
+            ctx[:free_energy] = free_energy
         end
 
         if isnothing(autoupdates)

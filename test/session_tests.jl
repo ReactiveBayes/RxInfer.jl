@@ -10,7 +10,7 @@
 
     # Empty session has no invokes
     @test length(session.invokes) == 0
-    
+
     # Default capacity should be 1000
     @test capacity(session.invokes) == 1000
 
@@ -38,24 +38,24 @@ end
 
 @testitem "Session capacity limits" begin
     using DataStructures
-    
+
     # Test default capacity
     session = RxInfer.create_session()
     @test capacity(session.invokes) == 1000
-    
+
     # Test custom capacity
     small_session = RxInfer.create_session(capacity = 5)
     @test capacity(small_session.invokes) == 5
-    
+
     # Test circular behavior
     for i in 1:10
         invoke = RxInfer.create_invoke(:test)
         push!(small_session.invokes, invoke)
     end
-    
+
     # Should only keep last 5 invokes
     @test length(small_session.invokes) == 5
-    
+
     # The invokes should be the last 5 ones
     @test all(invoke.label === :test for invoke in small_session.invokes)
 end

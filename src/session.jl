@@ -2,7 +2,6 @@ using Dates, UUIDs, Preferences
 
 import DataStructures: CircularBuffer, capacity
 
-
 mutable struct SessionInvoke
     id::UUID
     label::Symbol
@@ -24,6 +23,7 @@ a history of all session invocations (`SessionInvoke`) that occurred during its 
 - `created_at::DateTime`: Timestamp when the session was created
 - `environment::Dict{Symbol, Any}`: Information about the Julia & RxInfer versions and system when the session was created
 - `invokes::CircularBuffer{SessionInvoke}`: Circular buffer of inference invocations with fixed capacity
+- `semaphore::Base.Semaphore`: Thread-safe semaphore for pushing invokes
 
 The session logging is transparent and only collects non-sensitive information about calls.
 Users can inspect the session at any time using `get_current_session()` and reset it using `reset_session!()`.
@@ -33,6 +33,7 @@ struct Session
     created_at::DateTime
     environment::Dict{Symbol, Any}
     invokes::CircularBuffer{SessionInvoke}
+    semaphore::Base.Semaphore
 end
 
 """
@@ -60,7 +61,8 @@ function create_session(; capacity::Int = 1000)
         uuid4(),          # Generate unique ID
         now(),            # Current timestamp
         environment,      # Environment information
-        CircularBuffer{SessionInvoke}(capacity)  # Fixed-size circular buffer
+        CircularBuffer{SessionInvoke}(capacity),  # Fixed-size circular buffer
+        Base.Semaphore(1)  # semaphore for thread safety
     )
 end
 
@@ -71,6 +73,25 @@ Create a new session invoke with the given label.
 """
 function create_invoke(label::Symbol)
     return SessionInvoke(uuid4(), label, :unknown, Dates.now(), Dates.now(), Dict{Symbol, Any}())
+end
+
+"""
+    Base.push!(session::Session, invoke::SessionInvoke)
+
+Thread-safely push a new invoke into the session's circular buffer.
+Uses a semaphore to ensure thread safety when multiple threads try to push invokes simultaneously.
+
+# Arguments
+- `session::Session`: The session to push the invoke to
+- `invoke::SessionInvoke`: The invoke to push
+
+# Returns
+- `Nothing`
+"""
+function Base.push!(session::Session, invoke::SessionInvoke)
+    return Base.acquire(session.semaphore) do
+        push!(session.invokes, invoke)
+    end
 end
 
 """
@@ -88,12 +109,12 @@ function with_session(f::F, session, label::Symbol = :unknown) where {F}
             result = f(invoke)
             invoke.status = :success
             invoke.execution_end = Dates.now()
-            push!(session.invokes, invoke)
+            push!(session, invoke)
             return result
         catch e
             invoke.status = :error
             invoke.context[:error] = string(e)
-            push!(session.invokes, invoke)
+            push!(session, invoke)
             rethrow(e)
         end
     else
@@ -222,14 +243,7 @@ Return a NamedTuple with key session statistics for invokes with the specified l
 """
 function get_session_stats(session::Union{Nothing, Session} = RxInfer.default_session(), label::Symbol = :inference)
     empty_session = (
-        total_invokes = 0, 
-        success_rate = 0.0, 
-        failed_invokes = 0,
-        mean_duration_ms = 0.0,
-        min_duration_ms = 0.0,
-        max_duration_ms = 0.0,
-        context_keys = Symbol[],
-        label = label
+        total_invokes = 0, success_rate = 0.0, failed_invokes = 0, mean_duration_ms = 0.0, min_duration_ms = 0.0, max_duration_ms = 0.0, context_keys = Symbol[], label = label
     )
 
     if isnothing(session)

@@ -47,7 +47,7 @@ end
     end
 end
 
-@testitem "log_data_entry" begin
+@testitem "session context log_data_entry" begin
     import RxInfer: log_data_entry
 
     @testset "Scalar values" begin
@@ -150,7 +150,7 @@ end
     end
 end
 
-@testitem "log_data_entries" begin
+@testitem "session context log_data_entries" begin
     import RxInfer: log_data_entry, log_data_entries
 
     @testset "Named tuple entries" begin
@@ -1237,15 +1237,13 @@ end
     @test latest_invoke.status == :success
     @test latest_invoke.execution_end > latest_invoke.execution_start
     @test haskey(latest_invoke.context, :model_name)
-    @test haskey(latest_invoke.context, :model_source)
+    @test haskey(latest_invoke.context, :model)
     @test haskey(latest_invoke.context, :data)
     @test !isnothing(latest_invoke.context[:data])
     @test occursin(latest_invoke.context[:model_name], "simple_model")
-    @test latest_invoke.context[:model_source] == """
-    function simple_model(y)
-        x ~ Normal(mean = 0.0, var = 1.0)
-        y ~ Normal(mean = x, var = 1.0)
-    end"""
+    @test occursin("function simple_model", latest_invoke.context[:model])
+    @test occursin("Normal(mean = 0.0, var = 1.0)", latest_invoke.context[:model])
+    @test occursin("Normal(mean = x, var = 1.0)", latest_invoke.context[:model])
     @test length(latest_invoke.context[:data]) === 1
 
     # Check saved properties of the passed data `y`
@@ -1261,7 +1259,7 @@ end
     @test latest_invoke.context == custom_session.invokes[1].context
 end
 
-@testitem "Inference Session statistics #1" begin
+@testitem "Session statistics for a simple model" begin
     using Statistics
 
     session = RxInfer.create_session()
@@ -1284,7 +1282,19 @@ end
     test_data = (y = 1.0,)
 
     # Run inference inside session `session`
-    result = infer(model = simple_model(), data = test_data, session = session)
+    result = infer(
+        model = simple_model(), 
+        data = test_data,
+        iterations = 10, 
+        free_energy = true,
+        session = session
+    )
+
+    last_invoke = last(session.invokes)
+    @test last_invoke.context[:model_name] == "simple_model"
+    @test last_invoke.context[:iterations] == 10
+    @test last_invoke.context[:free_energy] == true
+    @test last_invoke.context[:data][begin].name == :y
 
     # Test get_session_stats for inference invokes
     stats = RxInfer.get_session_stats(session, :inference)
@@ -1292,8 +1302,10 @@ end
     @test stats.success_rate == 1
     @test stats.failed_invokes == 0
     @test :model_name ∈ Set(stats.context_keys)
-    @test :model_source ∈ Set(stats.context_keys)
+    @test :model ∈ Set(stats.context_keys)
     @test :data ∈ Set(stats.context_keys)
+    @test :iterations ∈ Set(stats.context_keys)
+    @test :free_energy ∈ Set(stats.context_keys)
     @test stats.min_duration_ms <= stats.mean_duration_ms <= stats.max_duration_ms
     @test stats.label === :inference
 
@@ -1363,4 +1375,71 @@ end
 
     @test last_invoke.status === :error
     @test last_invoke.context[:error] === "ErrorException(\"Oops\")"
+end
+
+@testitem "Session statistics should be able to handle reactive infer call" begin
+    @model function state_space_model_one_time_step(y, x_prev_mean, x_prev_var)
+        x_prev ~ Normal(mean = x_prev_mean, var = x_prev_var)
+        x_next ~ Normal(mean = x_prev, var = 1.0)
+        y ~ Normal(mean = x_next, var = 1.0)
+    end
+
+    datastream = from([(y = 1,), (y = 2,), (y = 3,)])
+
+    autoupdates = @autoupdates begin
+        x_prev_mean, x_prev_var = mean_var(q(x_next))
+    end
+
+    initialization = @initialization begin
+        q(x_next) = vague(NormalMeanVariance)
+    end
+
+    session = RxInfer.create_session()
+
+    engine = infer(model = state_space_model_one_time_step(), datastream = datastream, autoupdates = autoupdates, initialization = initialization, session = session)
+
+    @test length(session.invokes) === 1
+    @test haskey(session.invokes[end].context, :datastream_type)
+    @test session.invokes[end].context[:datastream_type] == @NamedTuple{y::Int64}
+end
+
+@testitem "Session statistics should save constraints" begin
+    @model function iid(y)
+        m ~ Normal(mean = 0.0, var = 1.0)
+        t ~ Gamma(shape = 1.0, rate = 1.0)
+        y ~ Normal(mean = m, prec = t)
+    end
+    @constraints function iidconstraints()
+        q(m, t) = q(m) * q(t)
+    end
+    @initialization function iidinit()
+        q(t) = vague(Gamma)
+    end
+    session = RxInfer.create_session()
+    result = infer(model = iid(), data = (y = 1.0,), constraints = iidconstraints(), initialization = iidinit(), session = session)
+    last_invoke = session.invokes[end]
+    @test haskey(last_invoke.context, :constraints)
+    @test occursin("function iidconstraints()", last_invoke.context[:constraints])
+    @test occursin("q(m, t)", last_invoke.context[:constraints])
+    @test occursin("q(m)", last_invoke.context[:constraints])
+    @test occursin("q(t)", last_invoke.context[:constraints])
+end
+
+@testitem "Session statistics should save meta" begin
+    f(a) = a + 1
+    @model function simple_nonlinear_model(y)
+        m ~ Normal(mean = 0.0, var = 1.0)
+        y ~ Normal(mean = f(m), prec = 1.0)
+    end
+    @meta function model_meta()
+        f() -> Linearization()
+    end
+    session = RxInfer.create_session()
+    result = infer(model = simple_nonlinear_model(), data = (y = 1.0,), meta = model_meta(), session = session)
+    last_invoke = session.invokes[end]
+    @test haskey(last_invoke.context, :meta)
+    @test occursin("function model_meta()", last_invoke.context[:meta])
+    @test occursin("f()", last_invoke.context[:meta])
+    @test occursin("->", last_invoke.context[:meta])
+    @test occursin("Linearization()", last_invoke.context[:meta])
 end

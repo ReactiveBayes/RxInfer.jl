@@ -157,7 +157,7 @@ println("Duration: $duration")
 
 # Access model source
 println("Model name: $(latest_invoke.context[:model_name])")
-println("Model source: $(latest_invoke.context[:model_source])")
+println("Model source: $(latest_invoke.context[:model])")
 
 # Examine data properties
 for entry in latest_invoke.context[:data]
@@ -349,4 +349,5 @@ RxInfer.Session
 RxInfer.with_session
 RxInfer.create_invoke
 RxInfer.append_invoke_context
+Base.push!(session::Session, invoke::SessionInvoke)
 ```
