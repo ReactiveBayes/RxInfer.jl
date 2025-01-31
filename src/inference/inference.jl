@@ -3,6 +3,8 @@ export infer
 export InferenceResult
 export RxInferenceEngine, RxInferenceEvent
 
+using Preferences
+
 import DataStructures: CircularBuffer
 import GraphPPL: ModelGenerator, create_model
 
@@ -181,6 +183,40 @@ function inference_process_error(error)
     return inference_process_error(error, true)
 end
 
+const preference_inference_error_hint = @load_preference("inference_error_hint", true)
+
+"""
+    disable_inference_error_hint!()
+
+Disable error hints that are shown when an error occurs during inference.
+
+The change requires a Julia session restart to take effect. When disabled, only the raw error will be shown
+without additional context or suggestions.
+
+See also: [`enable_inference_error_hint!`](@ref), [`infer`](@ref)
+"""
+function disable_inference_error_hint!()
+    @set_preferences!("inference_error_hint" => false)
+    @info "Inference error hints are disabled. Restart Julia session for the change to take effect."
+end
+
+"""
+    enable_inference_error_hint!()
+
+Enable error hints that are shown when an error occurs during inference.
+
+The change requires a Julia session restart to take effect. When enabled, errors during the inference call will include:
+- Links to relevant documentation
+- Common solutions and troubleshooting steps  
+- Information about where to get help
+
+See also: [`disable_inference_error_hint!`](@ref), [`infer`](@ref)
+"""
+function enable_inference_error_hint!()
+    @set_preferences!("inference_error_hint" => true)
+    @info "Inference error hints are enabled. Restart Julia session for the change to take effect."
+end
+
 function inference_process_error(error, rethrow)
     if error isa StackOverflowError
         @error """
@@ -196,31 +232,33 @@ function inference_process_error(error, rethrow)
         • See `infer` function docs for options
         """
     end
-    @error """
-    We encountered an error during inference, here are some helpful resources to get you back on track:
+    @static if preference_inference_error_hint
+        @error """
+        We encountered an error during inference, here are some helpful resources to get you back on track:
 
-    1. Check our Sharp bits documentation which covers common issues:
-       https://reactivebayes.github.io/RxInfer.jl/stable/manuals/sharpbits/overview/
-    2. Browse our existing discussions - your question may already be answered:
-       https://github.com/ReactiveBayes/RxInfer.jl/discussions
-    3. Take inspiration from our set of examples:
-       https://reactivebayes.github.io/RxInferExamples.jl/
+        1. Check our Sharp bits documentation which covers common issues:
+        https://reactivebayes.github.io/RxInfer.jl/stable/manuals/sharpbits/overview/
+        2. Browse our existing discussions - your question may already be answered:
+        https://github.com/ReactiveBayes/RxInfer.jl/discussions
+        3. Take inspiration from our set of examples:
+        https://reactivebayes.github.io/RxInferExamples.jl/
 
-    Still stuck? We'd love to help! You can:
-    - Start a discussion for questions and help. Feedback and questions from new users is also welcome! If you are stuck, please reach out and we will solve it together.
-      https://github.com/ReactiveBayes/RxInfer.jl/discussions
-    - Report a bug or request a feature:
-      https://github.com/ReactiveBayes/RxInfer.jl/issues
+        Still stuck? We'd love to help! You can:
+        - Start a discussion for questions and help. Feedback and questions from new users is also welcome! If you are stuck, please reach out and we will solve it together.
+        https://github.com/ReactiveBayes/RxInfer.jl/discussions
+        - Report a bug or request a feature:
+        https://github.com/ReactiveBayes/RxInfer.jl/issues
 
-    Note that we use GitHub discussions not just for technical questions! We welcome all kinds of discussions,
-    whether you're new to Bayesian inference, have questions about use cases, or just want to share your experience.
+        Note that we use GitHub discussions not just for technical questions! We welcome all kinds of discussions,
+        whether you're new to Bayesian inference, have questions about use cases, or just want to share your experience.
 
-    To help us help you, please include:
-    - A minimal example that reproduces the issue
-    - The complete error message and stack trace
+        To help us help you, please include:
+        - A minimal example that reproduces the issue
+        - The complete error message and stack trace
 
-    Use `RxInfer.disable_inference_error_hint!()` to disable this message. 
-    """
+        Use `RxInfer.disable_inference_error_hint!()` to disable this message. 
+        """
+    end
     if rethrow
         Base.rethrow(error)
     end
@@ -373,6 +411,15 @@ Check the official documentation for more information about some of the argument
 - `autostart = true`: specifies whether to call `RxInfer.start` on the created engine automatically or not (exclusive for streamline inference)
 - `warn = true`: enables/disables warnings
 - `session = RxInfer.default_session()`: current logging session for the RxInfer invokes, see `Session` for more details, pass `nothing` to disable logging
+
+## Error hints
+
+By default, RxInfer provides helpful error hints with documentation links, solutions, and troubleshooting guidance.
+
+Use `RxInfer.disable_inference_error_hint!()` to disable error hints or `RxInfer.enable_inference_error_hint!()` to enable them.
+Note that changes to error hint settings require a Julia session restart to take effect.
+
+See also: [`RxInfer.disable_inference_error_hint!`](@ref), [`RxInfer.enable_inference_error_hint!`](@ref)
 
 """
 function infer(;
