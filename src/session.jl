@@ -1,5 +1,8 @@
 using Dates, UUIDs, Preferences
 
+import DataStructures: CircularBuffer, capacity
+
+
 mutable struct SessionInvoke
     id::UUID
     label::Symbol
@@ -20,7 +23,7 @@ a history of all session invocations (`SessionInvoke`) that occurred during its 
 - `id::UUID`: A unique identifier for the session
 - `created_at::DateTime`: Timestamp when the session was created
 - `environment::Dict{Symbol, Any}`: Information about the Julia & RxInfer versions and system when the session was created
-- `invokes::Vector{SessionInvoke}`: List of all inference invocations that occurred during the session
+- `invokes::CircularBuffer{SessionInvoke}`: Circular buffer of inference invocations with fixed capacity
 
 The session logging is transparent and only collects non-sensitive information about calls.
 Users can inspect the session at any time using `get_current_session()` and reset it using `reset_session!()`.
@@ -29,18 +32,22 @@ struct Session
     id::UUID
     created_at::DateTime
     environment::Dict{Symbol, Any}
-    invokes::Vector{SessionInvoke}
+    invokes::CircularBuffer{SessionInvoke}
 end
 
 """
-    create_session()
+    create_session(; capacity::Int = 1000)
 
 Create a new session with a unique identifier and current timestamp.
+
+# Arguments
+- `capacity::Int = 1000`: Maximum number of invokes to store in the session. When exceeded, 
+   oldest invokes are automatically dropped.
 
 # Returns
 - `Session`: A new session instance with no inference invocations recorded
 """
-function create_session()
+function create_session(; capacity::Int = 1000)
     environment = Dict{Symbol, Any}(
         :julia_version => string(VERSION),
         :rxinfer_version => string(pkgversion(RxInfer)),
@@ -53,7 +60,7 @@ function create_session()
         uuid4(),          # Generate unique ID
         now(),            # Current timestamp
         environment,      # Environment information
-        SessionInvoke[]     # Empty vector of invokes
+        CircularBuffer{SessionInvoke}(capacity)  # Fixed-size circular buffer
     )
 end
 
@@ -84,7 +91,7 @@ function with_session(f::F, session, label::Symbol = :unknown) where {F}
             push!(session.invokes, invoke)
             return result
         catch e
-            invoke.status = :failed
+            invoke.status = :error
             invoke.context[:error] = string(e)
             push!(session.invokes, invoke)
             rethrow(e)
@@ -178,6 +185,7 @@ function summarize_session(io::IO, session::Union{Session, Nothing} = RxInfer.de
 
     println(io, "\nSession Summary (label: $label)")
     println(io, "Total invokes: $(stats.total_invokes)")
+    println(io, "Session invokes limit: $(capacity(session.invokes))")
     println(io, "Success rate: $(round(stats.success_rate * 100, digits=1))%")
     println(io, "Failed invokes: $(stats.failed_invokes)")
     println(io, "\nExecution time (ms):")
@@ -213,7 +221,16 @@ Return a NamedTuple with key session statistics for invokes with the specified l
 - `label`: The label used for filtering
 """
 function get_session_stats(session::Union{Nothing, Session} = RxInfer.default_session(), label::Symbol = :inference)
-    empty_session = (total_invokes = 0, success_rate = 0.0, failed_invokes = 0, context_keys = Symbol[], label = label)
+    empty_session = (
+        total_invokes = 0, 
+        success_rate = 0.0, 
+        failed_invokes = 0,
+        mean_duration_ms = 0.0,
+        min_duration_ms = 0.0,
+        max_duration_ms = 0.0,
+        context_keys = Symbol[],
+        label = label
+    )
 
     if isnothing(session)
         return empty_session

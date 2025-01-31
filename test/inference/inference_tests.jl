@@ -1261,7 +1261,7 @@ end
     @test latest_invoke.context == custom_session.invokes[1].context
 end
 
-@testitem "Inference Session statistics" begin
+@testitem "Inference Session statistics #1" begin
     using Statistics
 
     session = RxInfer.create_session()
@@ -1317,9 +1317,50 @@ end
     @test contains(output_str, "Context keys: ")
     @test contains(output_str, "Inference specific:")
     @test contains(output_str, "Unique models: 1")
-    @test contains(output_str, "Last 3 invokes:")
+    @test contains(output_str, "Last 3 invokes")
     @test contains(output_str, "Status")
     @test contains(output_str, "Duration")
     @test contains(output_str, "Model")
     @test contains(output_str, "simple_model")
+end
+
+@testitem "Session statistics should be robust with models which have no data" begin
+    f(a, M) = a * M
+
+    @model function simple_model_missing_data(y)
+        a ~ Normal(mean = 0.0, variance = 1.0)
+        M ~ Normal(mean = 0.0, variance = 1.0)
+        y := f(a, M)
+    end
+
+    meta = @meta begin
+        f() -> Linearization()
+    end
+
+    result = infer(model = simple_model_missing_data(), predictvars = (y = KeepEach(),), meta = meta)
+
+    # Test summarize_session output format for inference invokes with default n_last
+    output = IOBuffer()
+    RxInfer.summarize_session(output; n_last = 1)
+    output_str = String(take!(output))
+
+    @test contains(output_str, "Status")
+    @test contains(output_str, "Duration")
+    @test contains(output_str, "Model")
+    @test contains(output_str, "simple_model_missing_data")
+end
+
+@testitem "Session should save the error message" begin
+    @model function simple_errored_model(y)
+        error("Oops")
+    end
+
+    session = RxInfer.create_session()
+
+    @test_throws "Oops" infer(model = simple_errored_model(), data = (y = 1,), session = session)
+
+    last_invoke = last(session.invokes)
+
+    @test last_invoke.status === :error
+    @test last_invoke.context[:error] === "ErrorException(\"Oops\")"
 end

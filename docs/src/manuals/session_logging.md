@@ -42,6 +42,32 @@ println("Number of invokes: $(length(session.invokes))")
     The number of logged invocations may be different from the number of invocations in the example above
     since the session is created and logged at the start of the documentation build.
 
+## Session Capacity
+
+By default, RxInfer maintains a fixed-size history of the last 1000 inference invocations. 
+When this limit is exceeded, the oldest invocations are automatically dropped. This prevents 
+memory growth while maintaining recent history.
+
+You can customize the capacity when creating a session:
+
+```@example custom-session
+using RxInfer
+
+# Create a session that keeps last 100 invokes
+session = RxInfer.create_session(capacity = 100)
+
+# Create a session with larger history
+large_session = RxInfer.create_session(capacity = 5000)
+
+println("Session capacity: $(capacity(session.invokes))")
+println("Large session capacity: $(capacity(large_session.invokes))")
+```
+
+This is particularly useful when:
+- Running benchmarks that might generate many invocations
+- Working with long-running applications
+- Managing memory usage in resource-constrained environments
+
 You can also create and use custom sessions:
 
 ```@example custom-session
@@ -52,8 +78,8 @@ using RxInfer
     y ~ Normal(mean = x, var = 1.0)
 end
 
-# Create a custom session
-session = RxInfer.create_session()
+# Create a custom session with capacity of 10 invokes
+session = RxInfer.create_session(capacity = 10)
 
 # Run inference with custom session
 result = infer(
@@ -74,7 +100,7 @@ A session consists of the following components:
 - `id::UUID`: Unique identifier for the session
 - `created_at::DateTime`: Session creation timestamp
 - `environment::Dict{Symbol, Any}`: System and environment information
-- `invokes::Vector{SessionInvoke}`: List of inference invocations
+- `invokes::CircularBuffer{SessionInvoke}`: Fixed-size circular buffer of inference invocations
 
 ### Environment Information
 The session automatically captures system information including:
@@ -105,7 +131,7 @@ using RxInfer
     y ~ Normal(mean = x, var = 1.0)
 end
 
-session = RxInfer.create_session()
+session = RxInfer.create_session(capacity = 100)
 result = infer(model = simple_model(), data = (y = 1.0,), session = session)
 
 # Get the latest invoke
@@ -186,7 +212,7 @@ using RxInfer, Statistics
     y ~ Normal(mean = x, var = 1.0)
 end
 
-session = RxInfer.create_session()
+session = RxInfer.create_session(capacity = 100)
 
 # Run multiple inferences
 for i in 1:5
@@ -207,7 +233,7 @@ using RxInfer
     y ~ Normal(mean = x, var = 1.0)
 end
 
-session = RxInfer.create_session()
+session = RxInfer.create_session(capacity = 100)
 result = infer(model = simple_model(), data = (y = 1.0,), session = session)
 
 for entry in session.invokes[end].context[:data]
@@ -232,7 +258,7 @@ RxInfer.summarize_session
 
 ```@example session-stats
 using RxInfer #hide
-RxInfer.summarize_session()
+RxInfer.summarize_session(; n_last = 25)
 ```
 
 The summary includes:
@@ -257,6 +283,48 @@ RxInfer.get_session_stats
 ```@example session-stats
 using RxInfer #hide
 RxInfer.get_session_stats()
+```
+
+## Benchmarking Considerations
+
+When benchmarking code that involves the `infer` function, it's important to be aware of session logging behavior:
+
+### Why Disable Session Logging During Benchmarking?
+
+1. **Multiple Executions**: Benchmarking tools like `BenchmarkTools.jl` execute the code multiple times to gather accurate performance metrics. Each execution is logged as a separate invoke in the session, which can quickly fill up the session buffer.
+
+2. **Session Pollution**: These benchmark runs can pollute your session history with test invocations, making it harder to track and analyze your actual inference calls.
+
+3. **Performance Impact**: While minimal, session logging does add some overhead to each `infer` call, which could affect benchmark results.
+
+### Best Practices
+
+To get accurate benchmarking results and maintain a clean session history:
+
+```julia
+# DON'T: This will fill your session with benchmark invocations
+@benchmark infer(model = my_model, data = my_data)
+
+# DO: Explicitly disable session logging during benchmarking
+@benchmark infer(model = my_model, data = my_data, session = nothing)
+```
+
+You can also temporarily disable session logging globally:
+
+```julia
+# Disable session logging
+previous_session = RxInfer.default_session()
+RxInfer.set_default_session!(nothing)
+# Run your benchmarks
+# ...
+# Re-enable session logging reusing the previous session
+RxInfer.set_default_session!(previous_session)
+```
+
+or disable it explicitly:
+
+```julia
+RxInfer.disable_session_logging!() # works after Julia restart
 ```
 
 # Developers reference 

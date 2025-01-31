@@ -9,7 +9,7 @@ import GraphPPL: ModelGenerator, create_model
 import ReactiveMP: israndom, isdata, isconst
 import ReactiveMP: CountingReal
 
-import ProgressMeter, Dates, UUIDs
+import ProgressMeter
 
 obtain_prediction(variable::Any) = getprediction(variable)
 obtain_prediction(variables::AbstractArray) = getpredictions(variables)
@@ -118,43 +118,59 @@ log_data_entries(data) = :unknown
 log_data_entries(data::Union{NamedTuple, Dict}) = log_data_entries_from_pairs(pairs(data))
 log_data_entries_from_pairs(pairs) = collect(Iterators.map(log_data_entry, pairs))
 
+using PrettyTables
+
 function summarize_invokes(io::IO, ::Val{:inference}, invokes; n_last = 5)
     # Count unique models
-    unique_models = length(unique(get(i.context, :model, nothing) for i in invokes))
-
+    unique_models = length(unique(get(i.context, :model_name, nothing) for i in invokes))
+    
     println(io, "\nInference specific:")
     println(io, "  Unique models: $unique_models")
-
+    
     # Show last N invokes in a table format
     if !isempty(invokes)
-        println(io, "\nLast $n_last invokes:")
-        println(io, "┌──────────┬──────────┬───────────────────────────┬─────────────┐")
-        println(io, "│ Status   │ Duration │ Model                     │ Data        │")
-        println(io, "├──────────┼──────────┼───────────────────────────┼─────────────┤")
-
-        for invoke in Iterators.take(Iterators.reverse(invokes), n_last)
-            status = invoke.status
+        println(io, "\nLast $n_last invokes, use `n_last` keyword argument to see more or less.")
+        println(io, "*  Note that benchmarking with `BenchmarkTools` or similar will pollute the session with test invokes.")
+        println(io, "   It is advised to explicitly pass `session = nothing` when benchmarking code involving the `infer` function.")
+        
+        # Prepare data for the table
+        last_invokes = collect(Iterators.take(Iterators.reverse(invokes), n_last))
+        data = Matrix{String}(undef, length(last_invokes), 5)
+        
+        for (i, invoke) in enumerate(last_invokes)
+            status = string(invoke.status)
             duration = round(Dates.value(invoke.execution_end - invoke.execution_start) / 1000.0, digits = 2)
             model = get(invoke.context, :model_name, nothing)
             model = model === nothing ? "N/A" : string(model)
-            model = length(model) > 25 ? model[1:23] * ".." : model
-
+            
             data_entries = get(invoke.context, :data, nothing)
-            data_str = if data_entries === nothing || isempty(data_entries)
+            data_str = if data_entries isa Symbol
+                string(data_entries)
+            elseif isnothing(data_entries) || ismissing(data_entries) || isempty(data_entries)
                 "N/A"
             else
-                join(map(e -> string(e.name), data_entries), ",")
+                join(map(e -> string(e.name, " isa ", e.type), data_entries), ",")
             end
-            data_str = length(data_str) > 9 ? data_str[1:7] * ".." : data_str
 
-            status_str = rpad(status, 8)
-            duration_str = rpad("$(duration)ms", 8)
-            model_str = rpad(model, 25)
-            data_str = rpad(data_str, 9)
-
-            println(io, "│ $(status_str)│ $(duration_str)│ $(model_str)│ $(data_str)│")
+            error_str = string(get(invoke.context, :error, ""))
+            
+            data[i, 1] = status
+            data[i, 2] = "$(duration)ms"
+            data[i, 3] = model
+            data[i, 4] = data_str
+            data[i, 5] = error_str
         end
-        println(io, "└──────────┴──────────┴───────────────────────────┴─────────────┘")
+        
+        header = (["Status", "Duration", "Model", "Data", "Error"],)
+        pretty_table(
+            io, 
+            data;
+            header = header,
+            tf = tf_unicode_rounded,
+            maximum_columns_width = [8, 10, 35, 25, 25],
+            autowrap = true,
+            linebreaks = true
+        )
     end
 end
 
