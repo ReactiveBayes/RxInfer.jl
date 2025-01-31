@@ -77,3 +77,24 @@ macro test_expression_generating(lhs, rhs)
         end
     )
 end
+
+function generate_multinomial_data(rng=StableRNG(123); N = 3, k=3, nsamples = 5000)
+    ψ = randn(rng, k)
+    p = ReactiveMP.softmax(ψ)
+
+    X = rand(rng, Multinomial(N, p), nsamples)
+    X = [X[:,i] for i in axes(X,2)]
+    return X, ψ,p
+end
+
+function logistic_stic_breaking(m)
+    Km1 = length(m)
+
+    p = Array{Float64}(undef, Km1+1)
+    p[1] = logistic(m[1])
+    for i in 2:Km1
+        p[i] = logistic(m[i])*(1 - sum(p[1:i-1]))
+    end
+    p[end] = 1 - sum(p[1:end-1])
+    return p
+end

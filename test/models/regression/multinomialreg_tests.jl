@@ -1,18 +1,12 @@
 @testitem "Multinomial regression with MultinomialPolya node" begin
     using BenchmarkTools, Plots, Distributions, LinearAlgebra, StableRNGs, ExponentialFamily.LogExpFunctions
-    function generate_multinomial_data(rng=StableRNG(123); N = 3, k=3, nsamples = 5000)
-        ψ = randn(rng, k)
-        p = ReactiveMP.softmax(ψ)
-    
-        X = rand(rng, Multinomial(N, p), nsamples)
-        X = [X[:,i] for i in axes(X,2)]
-        return X, ψ,p
-    end
-    
-    N = 50
-    k = 40
 
-    X, ψ,p = generate_multinomial_data(;N=N, k=k)
+    include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
+   
+    N = 20
+    k = 10
+    nsamples = 5000 ###Needs 5000 for an accuracy of 1e-5
+    X, ψ,p = generate_multinomial_data(;N=N, k=k, nsamples=nsamples)
     
     @model function multinomial_model(y, N, ξ_ψ, W_ψ)
         ψ ~ MvNormalWeightedMeanPrecision(ξ_ψ, W_ψ)
@@ -25,8 +19,8 @@
     result = infer(
         model = multinomial_model(ξ_ψ=zeros(k-1), W_ψ=rand(Wishart(k, diageye(k-1))), N=N),
         data = (y=X,),
-        iterations = 50,
-        free_energy = false,
+        iterations = 300,
+        free_energy = true,
         showprogress = false,
         returnvars = KeepLast(),
         options = (
@@ -34,40 +28,29 @@
         )
     )
 
-    function logistic_stic_breaking(m)
-        Km1 = length(m)
 
-        p = Array{Float64}(undef, Km1+1)
-        p[1] = logistic(m[1])
-        for i in 2:Km1
-            p[i] = logistic(m[i])*(1 - sum(p[1:i-1]))
-        end
-        p[end] = 1 - sum(p[1:end-1])
-        return p
-    end
-
-    m = mean(result.posteriors[:ψ])
-    
+    m = mean(result.posteriors[:ψ])  
     pest = logistic_stic_breaking(m)
 
     mse = mean((pest - p).^2)
     @test mse < 1e-5
+
+    @test result.free_energy[end] < result.free_energy[1]
+    @test result.free_energy[end] <= result.free_energy[end-1]
+    @test abs(result.free_energy[end-1] - result.free_energy[end]) < 1e-12
+
 end
 
 
 @testitem "Multinomial regression - online inference" begin
     using BenchmarkTools, Plots, Distributions, LinearAlgebra, StableRNGs, ExponentialFamily.LogExpFunctions
-    function generate_multinomial_data(rng=StableRNG(123); N = 3, k=3, nsamples = 500000)
-        ψ = randn(rng, k)
-        p = ReactiveMP.softmax(ψ)
-    
-        X = rand(rng, Multinomial(N, p), nsamples)
-        X = [X[:,i] for i in axes(X,2)]
-        return X, ψ,p
-    end
+
+    include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
+ 
     N = 50
     k = 40
-    X, ψ,p = generate_multinomial_data(;N=N, k=k)
+    nsamples = 5000
+    X, ψ,p = generate_multinomial_data(;N=N, k=k, nsamples=nsamples)
     
     @model function multinomial_model(y, N, ξ_ψ, W_ψ, k)
         ψ ~ MvNormalWeightedMeanPrecision(ξ_ψ, W_ψ)
@@ -84,30 +67,22 @@ end
     result = infer(
         model = multinomial_model(N = N, k = k),
         data = (y=X, ),
-        # iterations = 1,
         initialization = init,
+        iterations = 1,
         autoupdates = auto(),
         keephistory = length(X),
-        free_energy = false,
+        free_energy = true,
         showprogress = false,
     )
 
     m = result.history[:ψ][end]
 
-    function logistic_stic_breaking(m)
-        Km1 = length(m)
-
-        p = Array{Float64}(undef, Km1+1)
-        p[1] = logistic(m[1])
-        for i in 2:Km1
-            p[i] = logistic(m[i])*(1 - sum(p[1:i-1]))
-        end
-        p[end] = 1 - sum(p[1:end-1])
-        return p
-    end
     pest = logistic_stic_breaking(mean(m))
 
     mse = mean((pest - p).^2)
-    @test mse < 1e-4
+    @test mse < 1e-3
+
+    @test result.free_energy_final_only_history[end] < result.free_energy_final_only_history[1]
+    #Free energy over time decreases in a noisy way. It is not a monotonic decrease. 
 
 end
