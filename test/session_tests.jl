@@ -5,14 +5,11 @@
 
     @test hasproperty(session, :id)
     @test hasproperty(session, :created_at)
-    @test hasproperty(session, :invokes)
+    @test hasproperty(session, :stats)
     @test hasproperty(session, :environment)
 
-    # Empty session has no invokes
-    @test length(session.invokes) == 0
-
-    # Default capacity should be 1000
-    @test capacity(session.invokes) == 1000
+    # Empty session has no stats in the beginning
+    @test length(session.stats) == 0
 
     # Version info should contain all required fields
     @test haskey(session.environment, :julia_version)
@@ -36,28 +33,23 @@
     end
 end
 
-@testitem "Session capacity limits" begin
+@testitem "SessionStats should have capacity limits" begin
     using DataStructures
 
     # Test default capacity
     session = RxInfer.create_session()
-    @test capacity(session.invokes) == 1000
+    stats = RxInfer.get_session_stats(session, :for_testing)
 
-    # Test custom capacity
-    small_session = RxInfer.create_session(capacity = 5)
-    @test capacity(small_session.invokes) == 5
+    @test capacity(stats.invokes) == RxInfer.DEFAULT_SESSION_STATS_CAPACITY
 
     # Test circular behavior
-    for i in 1:10
-        invoke = RxInfer.create_invoke(:test)
-        push!(small_session.invokes, invoke)
+    for i in 1:(RxInfer.DEFAULT_SESSION_STATS_CAPACITY + 1)
+        invoke = RxInfer.create_invoke()
+        RxInfer.update_session!(session, :for_testing, invoke)
     end
 
-    # Should only keep last 5 invokes
-    @test length(small_session.invokes) == 5
-
-    # The invokes should be the last 5 ones
-    @test all(invoke.label === :test for invoke in small_session.invokes)
+    # Should only keep last `RxInfer.DEFAULT_SESSION_STATS_CAPACITY`
+    @test length(stats.invokes) == RxInfer.DEFAULT_SESSION_STATS_CAPACITY
 end
 
 @testitem "RxInfer should have a default session" begin
@@ -66,7 +58,7 @@ end
     @test hasproperty(default_session, :id)
     @test hasproperty(default_session, :created_at)
     @test hasproperty(default_session, :environment)
-    @test hasproperty(default_session, :invokes)
+    @test hasproperty(default_session, :stats)
 
     # Check second invokation doesn't change the return value
     @test default_session === RxInfer.default_session()
@@ -87,20 +79,21 @@ end
 
 @testitem "Log session should save the context" begin
     session = RxInfer.create_session()
-    result = RxInfer.with_session(session) do invoke
+    result = RxInfer.with_session(session, :testing_session) do invoke
         RxInfer.append_invoke_context(invoke) do ctx
             ctx[:a] = 1
             ctx[:b] = 2
         end
         return 3
     end
-    @test length(session.invokes) === 1
-    last_invoke = session.invokes[end]
+    stats = RxInfer.get_session_stats(session, :testing_session)
+    @test length(stats.invokes) === 1
+    last_invoke = stats.invokes[end]
     @test last_invoke.context[:a] === 1
     @test last_invoke.context[:b] === 2
     @test result === 3
 
-    result = RxInfer.with_session(nothing) do invoke
+    result = RxInfer.with_session(nothing, :testing_session) do invoke
         RxInfer.append_invoke_context(invoke) do ctx
             ctx[:a] = 1
             ctx[:b] = 2
@@ -108,18 +101,122 @@ end
         return 4
     end
     @test result === 4
+    @test length(stats.invokes) === 1
 end
 
 @testitem "Log session should save errors if any" begin
     session = RxInfer.create_session()
-    @test_throws "I'm an error" RxInfer.with_session(session) do invoke
+    @test_throws "I'm an error" RxInfer.with_session(session, :error_session) do invoke
         error("I'm an error")
     end
-    @test length(session.invokes) === 1
-    last_invoke = session.invokes[end]
+    stats = RxInfer.get_session_stats(session, :error_session)
+    @test length(stats.invokes) === 1
+    last_invoke = stats.invokes[end]
     @test last_invoke.context[:error] == "ErrorException(\"I'm an error\")"
 
-    @test_throws "I'm an error" RxInfer.with_session(nothing) do invoke
+    @test_throws "I'm an error" RxInfer.with_session(nothing, :error_session) do invoke
         error("I'm an error")
     end
+    @test length(stats.invokes) === 1
+end
+
+@testitem "Real-time session statistics" begin
+    using Dates
+
+    session = RxInfer.create_session()
+
+    # Test initial empty state
+    @test isempty(session.stats)
+    empty_stats = RxInfer.get_session_stats(session, :test)
+    @test empty_stats.total_invokes == 0
+    @test empty_stats.success_count == 0
+    @test empty_stats.failed_count == 0
+    @test empty_stats.success_rate == 0.0
+    @test empty_stats.total_duration_ms == 0.0
+    @test empty_stats.min_duration_ms == Inf
+    @test empty_stats.max_duration_ms == -Inf
+    @test isempty(empty_stats.context_keys)
+
+    # Create test invokes with controlled durations
+    start_time = now()
+    
+    # First invoke: 100ms duration
+    invoke1 = RxInfer.create_invoke()
+    invoke1.status = :success
+    invoke1.context[:key1] = "value1"
+    invoke1.execution_start = start_time
+    invoke1.execution_end = start_time + Millisecond(100)
+
+    # Test after first successful invoke
+    RxInfer.update_session!(session, :session_stats_test, invoke1)
+    stats1 = RxInfer.get_session_stats(session, :session_stats_test)
+    @test stats1.total_invokes == 1
+    @test stats1.success_count == 1
+    @test stats1.failed_count == 0
+    @test stats1.success_rate == 1.0
+    @test stats1.total_duration_ms == 100.0
+    @test stats1.min_duration_ms == 100.0
+    @test stats1.max_duration_ms == 100.0
+    @test stats1.context_keys == Set([:key1])
+
+    # Second invoke: 200ms duration
+    invoke2 = RxInfer.create_invoke()
+    invoke2.status = :error
+    invoke2.context[:key2] = "value2"
+    invoke2.context[:error] = "test error"
+    invoke2.execution_start = start_time + Millisecond(200)
+    invoke2.execution_end = start_time + Millisecond(400)  # 200ms duration
+
+    # Test after error invoke
+    RxInfer.update_session!(session, :session_stats_test, invoke2)
+    stats2 = RxInfer.get_session_stats(session, :session_stats_test)
+    @test stats2.total_invokes == 2
+    @test stats2.success_count == 1
+    @test stats2.failed_count == 1
+    @test stats2.success_rate == 0.5
+    @test stats2.total_duration_ms == 300.0  # 100ms + 200ms
+    @test stats2.min_duration_ms == 100.0
+    @test stats2.max_duration_ms == 200.0
+    @test stats2.context_keys == Set([:key1, :key2, :error])
+
+    # Third invoke: 50ms duration (shortest)
+    invoke3 = RxInfer.create_invoke()
+    invoke3.status = :success
+    invoke3.context[:key3] = "value3"
+    invoke3.execution_start = start_time + Millisecond(500)
+    invoke3.execution_end = start_time + Millisecond(550)  # 50ms duration
+
+    # Test after quick successful invoke
+    RxInfer.update_session!(session, :session_stats_test, invoke3)
+    stats3 = RxInfer.get_session_stats(session, :session_stats_test)
+    @test stats3.total_invokes == 3
+    @test stats3.success_count == 2
+    @test stats3.failed_count == 1
+    @test stats3.success_rate ≈ 2/3
+    @test stats3.total_duration_ms == 350.0  # 100ms + 200ms + 50ms
+    @test stats3.min_duration_ms == 50.0
+    @test stats3.max_duration_ms == 200.0
+    @test stats3.context_keys == Set([:key1, :key2, :key3, :error])
+
+    # Test multiple labels with 150ms duration
+    other_invoke = RxInfer.create_invoke()
+    other_invoke.status = :success
+    other_invoke.context[:other_key] = "other_value"
+    other_invoke.execution_start = start_time + Millisecond(600)
+    other_invoke.execution_end = start_time + Millisecond(750)  # 150ms duration
+
+    RxInfer.update_session!(session, :other_session_stats_test, other_invoke)
+    other_stats = RxInfer.get_session_stats(session, :other_session_stats_test)
+    @test other_stats.total_invokes == 1
+    @test other_stats.success_count == 1
+    @test other_stats.failed_count == 0
+    @test other_stats.success_rate == 1.0
+    @test other_stats.total_duration_ms == 150.0
+    @test other_stats.min_duration_ms == 150.0
+    @test other_stats.max_duration_ms == 150.0
+    @test other_stats.context_keys == Set([:other_key])
+
+    # Verify original stats unchanged
+    final_test_stats = RxInfer.get_session_stats(session, :session_stats_test)
+    @test final_test_stats === stats3  # Should be exactly the same object
 end

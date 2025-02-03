@@ -1228,11 +1228,13 @@ end
 
     session = RxInfer.default_session()
 
+    stats = RxInfer.get_session_stats(session, :inference)
+
     # Basic checks, other tests may have produced more invokes here
-    @test length(session.invokes) >= 1
+    @test length(stats.invokes) >= 1
 
     # Check the latest invoke
-    latest_invoke = session.invokes[end]
+    latest_invoke = stats.invokes[end]
     @test hasproperty(latest_invoke, :id)
     @test latest_invoke.status == :success
     @test latest_invoke.execution_end > latest_invoke.execution_start
@@ -1253,10 +1255,11 @@ end
 
     custom_session = RxInfer.create_session()
     result = infer(model = simple_model(), data = test_data, session = custom_session)
+    custom_stats = RxInfer.get_session_stats(custom_session, :inference)
 
-    @test length(custom_session.invokes) === 1
-    @test latest_invoke.id != custom_session.invokes[1].id
-    @test latest_invoke.context == custom_session.invokes[1].context
+    @test length(custom_stats.invokes) === 1
+    @test latest_invoke.id != custom_stats.invokes[1].id
+    @test latest_invoke.context == custom_stats.invokes[1].context
 end
 
 @testitem "Session statistics for a simple model" begin
@@ -1268,7 +1271,7 @@ end
     empty_stats = RxInfer.get_session_stats(session, :inference)
     @test empty_stats.total_invokes == 0
     @test empty_stats.success_rate == 0.0
-    @test empty_stats.failed_invokes == 0
+    @test empty_stats.failed_count == 0
     @test isempty(empty_stats.context_keys)
     @test empty_stats.label === :inference
 
@@ -1290,30 +1293,30 @@ end
         session = session
     )
 
-    last_invoke = last(session.invokes)
+    stats = RxInfer.get_session_stats(session, :inference)
+    last_invoke = last(stats.invokes)
     @test last_invoke.context[:model_name] == "simple_model"
     @test last_invoke.context[:iterations] == 10
     @test last_invoke.context[:free_energy] == true
     @test last_invoke.context[:data][begin].name == :y
 
-    # Test get_session_stats for inference invokes
-    stats = RxInfer.get_session_stats(session, :inference)
     @test stats.total_invokes == 1
     @test stats.success_rate == 1
-    @test stats.failed_invokes == 0
+    @test stats.failed_count == 0
     @test :model_name ∈ Set(stats.context_keys)
     @test :model ∈ Set(stats.context_keys)
     @test :data ∈ Set(stats.context_keys)
     @test :iterations ∈ Set(stats.context_keys)
     @test :free_energy ∈ Set(stats.context_keys)
-    @test stats.min_duration_ms <= stats.mean_duration_ms <= stats.max_duration_ms
+    @test stats.min_duration_ms <= stats.total_duration_ms
+    @test stats.max_duration_ms <= stats.total_duration_ms
     @test stats.label === :inference
 
     # Test get_session_stats for other invokes
     other_stats = RxInfer.get_session_stats(session, :other)
     @test other_stats.total_invokes == 0
     @test other_stats.success_rate == 0.0
-    @test other_stats.failed_invokes == 0
+    @test other_stats.failed_count == 0
     @test Set(other_stats.context_keys) == Set([])
 
     # Test summarize_session output format for inference invokes with default n_last
@@ -1371,7 +1374,8 @@ end
 
     @test_throws "Oops" infer(model = simple_errored_model(), data = (y = 1,), session = session)
 
-    last_invoke = last(session.invokes)
+    stats = RxInfer.get_session_stats(session, :inference)
+    last_invoke = last(stats.invokes)
 
     @test last_invoke.status === :error
     @test last_invoke.context[:error] === "ErrorException(\"Oops\")"
@@ -1397,10 +1401,11 @@ end
     session = RxInfer.create_session()
 
     engine = infer(model = state_space_model_one_time_step(), datastream = datastream, autoupdates = autoupdates, initialization = initialization, session = session)
+    stats = RxInfer.get_session_stats(session, :inference)
 
-    @test length(session.invokes) === 1
-    @test haskey(session.invokes[end].context, :datastream_type)
-    @test session.invokes[end].context[:datastream_type] == @NamedTuple{y::Int64}
+    @test length(stats.invokes) === 1
+    @test haskey(stats.invokes[end].context, :datastream_type)
+    @test stats.invokes[end].context[:datastream_type] == @NamedTuple{y::Int64}
 end
 
 @testitem "Session statistics should save constraints" begin
@@ -1417,7 +1422,8 @@ end
     end
     session = RxInfer.create_session()
     result = infer(model = iid(), data = (y = 1.0,), constraints = iidconstraints(), initialization = iidinit(), session = session)
-    last_invoke = session.invokes[end]
+    stats = RxInfer.get_session_stats(session, :inference)
+    last_invoke = stats.invokes[end]
     @test haskey(last_invoke.context, :constraints)
     @test occursin("function iidconstraints()", last_invoke.context[:constraints])
     @test occursin("q(m, t)", last_invoke.context[:constraints])
@@ -1436,7 +1442,8 @@ end
     end
     session = RxInfer.create_session()
     result = infer(model = simple_nonlinear_model(), data = (y = 1.0,), meta = model_meta(), session = session)
-    last_invoke = session.invokes[end]
+    stats = RxInfer.get_session_stats(session, :inference)
+    last_invoke = stats.invokes[end]
     @test haskey(last_invoke.context, :meta)
     @test occursin("function model_meta()", last_invoke.context[:meta])
     @test occursin("f()", last_invoke.context[:meta])
