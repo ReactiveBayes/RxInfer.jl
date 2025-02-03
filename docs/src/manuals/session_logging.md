@@ -174,7 +174,7 @@ You can access these statistics using `get_session_stats`:
 ```@example stats-example
 using RxInfer
 
-session = RxInfer.create_session()
+session = RxInfer.default_session()
 stats = RxInfer.get_session_stats(session, :inference)
 
 println("Total invokes: $(stats.total_invokes)")
