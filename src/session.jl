@@ -131,12 +131,7 @@ end
 """
     update_stats!(stats::SessionStats, invoke::SessionInvoke)
 
-Update session statistics with a new invoke. Updates all statistics including:
-- Total invokes count
-- Success/failure counts and success rate
-- Duration statistics (min, max, total)
-- Context keys set
-- Invokes history
+Update session statistics with a new invoke.
 """
 function update_stats!(stats::SessionStats, invoke::SessionInvoke)
     stats.total_invokes += 1
@@ -287,11 +282,10 @@ end
     summarize_session([io::IO], session::Session, label::Symbol = :inference; n_last = 5)
 
 Print a concise summary of session statistics for invokes with the specified label.
-The summary includes total invokes, success rate, execution time statistics,
-context keys used, and details of the most recent invokes.
-
 The default label is `:inference` which gathers statistics of the `infer` function calls.
 """
+summarize_session(session::Session = RxInfer.default_session(), label::Symbol = :inference; n_last = 5) = summarize_session(stdout, session, label; n_last = n_last)
+
 function summarize_session(io::IO, session::Union{Session, Nothing} = RxInfer.default_session(), label::Symbol = :inference; n_last = 5)
     if isnothing(session)
         println(io, "Session logging is disabled")
@@ -333,18 +327,12 @@ returns a new empty `SessionStats` instance.
 - `session::Union{Nothing, Session}`: The session to get statistics from, or nothing
 - `label::Symbol`: The label to get statistics for, defaults to :inference
 
-# Returns
-- `SessionStats`: Statistics for the specified label, including:
-  - Total invokes count
-  - Success/failure counts and success rate
-  - Duration statistics (min, max, total)
-  - Context keys set
-  - Recent invokes history
 """
 function get_session_stats(session::Union{Nothing, Session} = RxInfer.default_session(), label::Symbol = :inference)
     if isnothing(session)
         return SessionStats(label)
     end
-
-    return get!(session.stats, label, SessionStats(label))
+    return Base.acquire(session.semaphore) do
+        return get!(session.stats, label, SessionStats(label))
+    end
 end
