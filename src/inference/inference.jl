@@ -466,7 +466,7 @@ function infer(;
             ctx[:model_name] = string(GraphPPL.getmodel(model))
             ctx[:model] = GraphPPL.getsource(model)
             ctx[:data] = log_data_entries(data)
-            
+
             !isnothing(datastream) && (ctx[:datastream_type] = eltype(datastream))
             !isnothing(constraints) && (ctx[:constraints] = GraphPPL.source_code(constraints))
             !isnothing(meta) && (ctx[:meta] = GraphPPL.source_code(meta))

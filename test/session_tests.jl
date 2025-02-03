@@ -139,7 +139,7 @@ end
 
     # Create test invokes with controlled durations
     start_time = now()
-    
+
     # First invoke: 100ms duration
     invoke1 = RxInfer.create_invoke()
     invoke1.status = :success
@@ -192,7 +192,7 @@ end
     @test stats3.total_invokes == 3
     @test stats3.success_count == 2
     @test stats3.failed_count == 1
-    @test stats3.success_rate ≈ 2/3
+    @test stats3.success_rate ≈ 2 / 3
     @test stats3.total_duration_ms == 350.0  # 100ms + 200ms + 50ms
     @test stats3.min_duration_ms == 50.0
     @test stats3.max_duration_ms == 200.0

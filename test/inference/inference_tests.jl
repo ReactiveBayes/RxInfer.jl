@@ -1285,13 +1285,7 @@ end
     test_data = (y = 1.0,)
 
     # Run inference inside session `session`
-    result = infer(
-        model = simple_model(), 
-        data = test_data,
-        iterations = 10, 
-        free_energy = true,
-        session = session
-    )
+    result = infer(model = simple_model(), data = test_data, iterations = 10, free_energy = true, session = session)
 
     stats = RxInfer.get_session_stats(session, :inference)
     last_invoke = last(stats.invokes)

@@ -53,7 +53,8 @@ end
 
 A structure that maintains a log of RxInfer usage.
 Each session has a unique identifier and saves when it was created together with its environment. 
-The session stores a dictionary of labeled stats, each of each maintains a series invocations (`SessionInvoke`) that occurred during its lifetime.
+The session maintains a dictionary of labeled statistics, each tracking a series of invocations (`SessionInvoke`) 
+and computing real-time statistics.
 
 # Fields
 - `id::UUID`: A unique identifier for the session
@@ -77,6 +78,8 @@ end
     create_session()
 
 Create a new session with a unique identifier, environment info and current timestamp.
+The session maintains separate statistics for each label, with each label's statistics
+having its own circular buffer of invokes.
 """
 function create_session()
     environment = Dict{Symbol, Any}(
@@ -99,17 +102,18 @@ end
 """
     reset_session!(session, [ labels ])
 
-Removes gathered statistics from the session. Optionally accepts a vector of labels to delete. If no labels specified deletes everything.
+Removes gathered statistics from the session. Optionally accepts a vector of labels to delete.
+If no labels specified deletes everything.
 """
 function reset_session!(session::Union{Nothing, Session} = RxInfer.default_session(), labels = nothing)
     if isnothing(labels)
         labels = keys(session.stats)
     end
-    for label in labels 
+    for label in labels
         if haskey(session.stats, label)
             delete!(session.stats, label)
             @info "Removed statistics for `$label`"
-        else 
+        else
             @warn "Cannot remove statistics for `$label`. Statistics labeled with `$label` do not exist."
         end
     end
@@ -127,7 +131,12 @@ end
 """
     update_stats!(stats::SessionStats, invoke::SessionInvoke)
 
-Update session statistics with a new invoke labeled as `label`.
+Update session statistics with a new invoke. Updates all statistics including:
+- Total invokes count
+- Success/failure counts and success rate
+- Duration statistics (min, max, total)
+- Context keys set
+- Invokes history
 """
 function update_stats!(stats::SessionStats, invoke::SessionInvoke)
     stats.total_invokes += 1
@@ -159,12 +168,13 @@ end
 """
     update_session!(session::Session, label::Symbol, invoke::SessionInvoke)
 
-Thread-safely push a new invoke labeled with `label` into the session's circular buffer and update statistics. Uses a semaphore to ensure thread safety when multiple threads try to push invokes simultaneously.
+Thread-safely update session statistics for a given label with a new invoke.
+Uses a semaphore to ensure thread safety when multiple threads try to update statistics simultaneously.
 
 # Arguments
-- `session::Session`: The session to push the invoke to
+- `session::Session`: The session to update
 - `label::Symbol`: Label for the invoke
-- `invoke::SessionInvoke`: The invoke to push
+- `invoke::SessionInvoke`: The invoke to add to statistics
 """
 function update_session!(session::Session, label::Symbol, invoke::SessionInvoke)
     return Base.acquire(session.semaphore) do
@@ -181,7 +191,8 @@ end
 """
     with_session(f::F, session, label::Symbol = :unknown) where {F}
 
-Execute function `f` within a session context with the specified label. If `session` is provided, logs execution details including timing and errors.
+Execute function `f` within a session context with the specified label. If `session` is provided,
+logs execution details including timing and errors, and updates the session statistics for the given label.
 If `session` is `nothing`, executes `f` without logging.
 """
 function with_session(f::F, session, label::Symbol) where {F}
@@ -276,10 +287,11 @@ end
     summarize_session([io::IO], session::Session, label::Symbol = :inference; n_last = 5)
 
 Print a concise summary of session statistics for invokes with the specified label.
+The summary includes total invokes, success rate, execution time statistics,
+context keys used, and details of the most recent invokes.
+
 The default label is `:inference` which gathers statistics of the `infer` function calls.
 """
-summarize_session(session::Session = RxInfer.default_session(), label::Symbol = :inference; n_last = 5) = summarize_session(stdout, session, label; n_last = n_last)
-
 function summarize_session(io::IO, session::Union{Session, Nothing} = RxInfer.default_session(), label::Symbol = :inference; n_last = 5)
     if isnothing(session)
         println(io, "Session logging is disabled")
@@ -314,14 +326,20 @@ end
 """
     get_session_stats(session::Session, label::Symbol = :inference)
 
-Get statistics for invokes with the specified label.
+Get statistics for invokes with the specified label. If the label doesn't exist in the session,
+returns a new empty `SessionStats` instance.
 
 # Arguments
 - `session::Union{Nothing, Session}`: The session to get statistics from, or nothing
-- `label::Symbol`: The label to filter invokes by, defaults to :inference
+- `label::Symbol`: The label to get statistics for, defaults to :inference
 
 # Returns
-- `SessionStats`: Statistics for the specified label
+- `SessionStats`: Statistics for the specified label, including:
+  - Total invokes count
+  - Success/failure counts and success rate
+  - Duration statistics (min, max, total)
+  - Context keys set
+  - Recent invokes history
 """
 function get_session_stats(session::Union{Nothing, Session} = RxInfer.default_session(), label::Symbol = :inference)
     if isnothing(session)

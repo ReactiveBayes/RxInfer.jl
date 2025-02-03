@@ -4,13 +4,13 @@ RxInfer provides a built-in session logging system that helps track and analyze 
 
 ## Overview
 
-Session logging in RxInfer automatically captures:
-- Model source code
-- Input data characteristics and metadata
-- Execution timing
-- Success/failure status
+Session logging in RxInfer automatically captures and maintains statistics for:
+- Model source code and metadata
+- Input data characteristics
+- Execution timing and success rates
 - Error information (if any)
 - Environment information (Julia version, OS, etc.)
+- Context keys used across invocations
 
 ## Basic Usage
 
@@ -34,8 +34,10 @@ result = infer(
 # Access the current session
 session = RxInfer.default_session()
 
-# Show the number of logged invocations
-println("Number of invokes: $(length(session.invokes))")
+# Get statistics for inference invocations
+stats = RxInfer.get_session_stats(session, :inference)
+println("Number of invokes: $(stats.total_invokes)")
+println("Success rate: $(round(stats.success_rate * 100, digits=1))%")
 ```
 
 !!! note
@@ -103,6 +105,32 @@ result = infer(
 
 See [Configuration](@ref session-configuration) for more details on how to manage sessions.
 
+## Session Statistics
+
+RxInfer maintains detailed statistics for each label in a session. These statistics include:
+
+### Per-Label Statistics
+- Total number of invocations
+- Success and failure counts
+- Success rate
+- Minimum, maximum, and total execution duration
+- Set of all context keys used
+- Fixed-size history of recent invocations
+
+You can access these statistics using `get_session_stats`:
+
+```@example stats-example
+using RxInfer
+
+session = RxInfer.create_session()
+stats = RxInfer.get_session_stats(session, :inference)
+
+println("Total invokes: $(stats.total_invokes)")
+println("Success rate: $(round(stats.success_rate * 100, digits=1))%")
+println("Failed invokes: $(stats.failed_count)")
+println("Mean duration (ms): $(stats.total_invokes > 0 ? round(stats.total_duration_ms / stats.total_invokes, digits=2) : 0.0)")
+```
+
 ## Session Structure
 
 A session consists of the following components:
@@ -111,7 +139,8 @@ A session consists of the following components:
 - `id::UUID`: Unique identifier for the session
 - `created_at::DateTime`: Session creation timestamp
 - `environment::Dict{Symbol, Any}`: System and environment information
-- `invokes::CircularBuffer{SessionInvoke}`: Fixed-size circular buffer of inference invocations
+- `stats::Dict{Symbol, SessionStats}`: Statistics per label
+- `semaphore::Base.Semaphore`: Thread-safe semaphore for concurrent updates
 
 ### Environment Information
 The session automatically captures system information including:
@@ -122,13 +151,18 @@ The session automatically captures system information including:
 - CPU threads
 - System word size
 
-### Invoke Information
-Each inference invocation (`SessionInvoke`) captures:
-- `id::UUID`: Unique identifier for the invocation
-- `status::Symbol`: Status of the invocation (`:success`, `:failed`, or `:unknown`)
-- `execution_start::DateTime`: Start timestamp
-- `execution_end::DateTime`: End timestamp
-- `context::Dict{Symbol, Any}`: Contextual information about the invocation
+### Statistics Information
+Each label's statistics (`SessionStats`) captures:
+- `label::Symbol`: The label these statistics are for
+- `total_invokes::Int`: Total number of invokes
+- `success_count::Int`: Number of successful invokes
+- `failed_count::Int`: Number of failed invokes
+- `success_rate::Float64`: Fraction of successful invokes
+- `min_duration_ms::Float64`: Minimum execution duration
+- `max_duration_ms::Float64`: Maximum execution duration
+- `total_duration_ms::Float64`: Total execution duration
+- `context_keys::Set{Symbol}`: Set of all context keys used
+- `invokes::CircularBuffer{SessionInvoke}`: Recent invocations history
 
 ## Accessing Session Data
 
@@ -142,11 +176,14 @@ using RxInfer
     y ~ Normal(mean = x, var = 1.0)
 end
 
-session = RxInfer.create_session(capacity = 100)
+session = RxInfer.create_session()
 result = infer(model = simple_model(), data = (y = 1.0,), session = session)
 
+# Get inference statistics
+stats = RxInfer.get_session_stats(session, :inference)
+
 # Get the latest invoke
-latest_invoke = session.invokes[end]
+latest_invoke = stats.invokes[end]
 
 # Check invocation status
 println("Status: $(latest_invoke.status)")
@@ -208,13 +245,14 @@ try
     result = infer(model = problematic_model(), data = (y = 1.0,))
 catch e
     # Check the latest invoke for error details
-    latest_invoke = RxInfer.default_session().invokes[end]
+    stats = RxInfer.get_session_stats(RxInfer.default_session(), :inference)
+    latest_invoke = stats.invokes[end]
     println("Status: $(latest_invoke.status)")
     println("Error: $(latest_invoke.context[:error])")
 end
 ```
 
-**Performance Monitoring**: Use session data to monitor inference performance:
+**Performance Monitoring**: Use session statistics to monitor inference performance:
 ```@example performance
 using RxInfer, Statistics
 
@@ -223,16 +261,16 @@ using RxInfer, Statistics
     y ~ Normal(mean = x, var = 1.0)
 end
 
-session = RxInfer.create_session(capacity = 100)
+session = RxInfer.create_session()
 
 # Run multiple inferences
 for i in 1:5
     infer(model = simple_model(), data = (y = randn(),), session = session)
 end
 
-durations = map(session.invokes) do invoke
-    invoke.execution_end - invoke.execution_start
-end
+stats = RxInfer.get_session_stats(session, :inference)
+println("Mean duration (ms): $(round(stats.total_duration_ms / stats.total_invokes, digits=2))")
+println("Success rate: $(round(stats.success_rate * 100, digits=1))%")
 ```
 
 !!! note
@@ -247,22 +285,25 @@ using RxInfer
     y ~ Normal(mean = x, var = 1.0)
 end
 
-session = RxInfer.create_session(capacity = 100)
+session = RxInfer.create_session()
 result = infer(model = simple_model(), data = (y = 1.0,), session = session)
 
-for entry in session.invokes[end].context[:data]
-    println("Variable '$(entry.name)' size: $(entry.size)")
+stats = RxInfer.get_session_stats(session, :inference)
+latest_invoke = stats.invokes[end]
+
+# Check data properties
+for entry in latest_invoke.context[:data]
+    println("Variable: $(entry.name)")
+    println("Type: $(entry.type)")
 end
 ```
 
-## Session Statistics
+## Session Summary
 
-RxInfer automatically collects statistics about inference runs. You can view these statistics at any time to understand how your inference tasks are performing.
+You can view a tabular summary of these statistics at any time to understand how your inference tasks are performing:
 
 !!! note
     Session statistics below are collected during the documentation build.
-
-## Viewing Statistics
 
 The main function for viewing session statistics is `summarize_session`:
 
@@ -296,7 +337,8 @@ RxInfer.get_session_stats
 
 ```@example session-stats
 using RxInfer #hide
-RxInfer.get_session_stats()
+session = RxInfer.default_session()
+stats = RxInfer.get_session_stats(session, :inference)
 ```
 
 ## Benchmarking Considerations
@@ -349,5 +391,6 @@ RxInfer.Session
 RxInfer.with_session
 RxInfer.create_invoke
 RxInfer.append_invoke_context
-Base.push!(session::Session, invoke::SessionInvoke)
+RxInfer.reset_session!
+RxInfer.update_session!
 ```
