@@ -134,6 +134,30 @@ For the `:inference` label, each invocation records:
 !!! note
     No actual data is collected for the `:inference` label. Only metadata such as size and type is recorded.
 
+#### An example of a last infer call in the session
+
+The documentation build for `RxInfer` executes real code and maintains its own session. Let's look at an example of a last infer call in the session:
+
+```@example docs-build-stats
+using RxInfer
+
+session = RxInfer.default_session()
+```
+
+```@example docs-build-stats
+stats = RxInfer.get_session_stats(session, :inference)
+```
+
+```@example docs-build-stats
+last_invoke = stats.invokes[end]
+```
+
+```@example docs-build-stats
+last_invoke.context
+```
+
+### Aggregated statistics
+
 These individual invocations are then aggregated into real-time statistics:
 - Total number of invocations and success/failure counts
 - Success rate (fraction of successful invokes)

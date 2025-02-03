@@ -86,6 +86,20 @@ function SessionStats(label::Symbol, capacity::Int = DEFAULT_SESSION_STATS_CAPAC
     return SessionStats(label, 0, 0, 0, 0.0, Inf, -Inf, 0.0, Set{Symbol}(), invokes)
 end
 
+# Show methods for nice printing
+function Base.show(io::IO, invoke::SessionInvoke)
+    duration_ms = round(Dates.value(Dates.Millisecond(invoke.execution_end - invoke.execution_start)), digits=2)
+    print(io, "SessionInvoke(status=$(invoke.status), duration=$(duration_ms)ms, context_keys=[$(join(keys(invoke.context), ", "))])")
+end
+
+function Base.show(io::IO, stats::SessionStats)
+    print(io, "SessionStats(label=:$(stats.label), total=$(stats.total_invokes), success_rate=$(round(stats.success_rate * 100, digits=1))%, invokes=$(length(stats.invokes))/$(capacity(stats.invokes)))")
+end
+
+function Base.show(io::IO, session::Session)
+    print(io, "Session(id=$(session.id), labels=[$(join(keys(session.stats), ", "))])")
+end
+
 """
     Session
 
