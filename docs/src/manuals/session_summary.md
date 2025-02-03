@@ -1,4 +1,4 @@
-# Session Logging
+# [Session Summary](@id manual-session-summary)
 
 RxInfer provides a built-in session logging system that helps track and analyze various aspects of RxInfer usages. This feature is particularly useful for debugging, performance monitoring, and understanding the behavior of your inference models.
 

@@ -41,7 +41,8 @@ makedocs(;
             "Inference specification"   => ["Overview" => "manuals/inference/overview.md", "Static inference" => "manuals/inference/static.md", "Streamline inference" => "manuals/inference/streamlined.md", "Initialization" => "manuals/inference/initialization.md", "Auto-updates" => "manuals/inference/autoupdates.md", "Deterministic nodes" => "manuals/inference/delta-node.md", "Non-conjugate inference" => "manuals/inference/nonconjugate.md", "Undefined message update rules" => "manuals/inference/undefinedrules.md"],
             "Inference customization"   => ["Defining a custom node and rules" => "manuals/customization/custom-node.md", "Inference results postprocessing" => "manuals/customization/postprocess.md"],
             "Debugging"                 => "manuals/debugging.md",
-            "Session logging"           => "manuals/session_logging.md",
+            "Session summary"           => "manuals/session_summary.md",
+            "Sharing sessions & telemetry" => "manuals/telemetry.md",
             "Migration from v2 to v3"   => "manuals/migration-guide-v2-v3.md",
             "Sharp bits of RxInfer"     => ["Overview" => "manuals/sharpbits/overview.md", "Rule Not Found Error" => "manuals/sharpbits/rule-not-found.md", "Stack Overflow in Message Computations" => "manuals/sharpbits/stack-overflow-inference.md", "Using `=` instead of `:=` for deterministic nodes" => "manuals/sharpbits/usage-colon-equality.md"]
         ],
