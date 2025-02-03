@@ -141,7 +141,7 @@ function summarize_invokes(io::IO, ::Val{:inference}, invokes; n_last = 5)
 
         for (i, invoke) in enumerate(last_invokes)
             status = string(invoke.status)
-            duration = round(Dates.value(invoke.execution_end - invoke.execution_start) / 1000.0, digits = 2)
+            duration = round(Dates.value(Dates.Millisecond(invoke.execution_end - invoke.execution_start)), digits = 2)
             model = get(invoke.context, :model_name, nothing)
             model = model === nothing ? "N/A" : string(model)
 

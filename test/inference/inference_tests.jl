@@ -1322,7 +1322,7 @@ end
     @test contains(output_str, "Total invokes: 1")
     @test contains(output_str, "Success rate: 100.0%")
     @test contains(output_str, "Failed invokes: 0")
-    @test contains(output_str, "Execution time (ms)")
+    @test contains(output_str, "Average execution time")
     @test contains(output_str, "Context keys: ")
     @test contains(output_str, "Inference specific:")
     @test contains(output_str, "Unique models: 1")

@@ -37,19 +37,20 @@ end
     using DataStructures
 
     # Test default capacity
+    default_capacity = RxInfer.DEFAULT_SESSION_STATS_CAPACITY
     session = RxInfer.create_session()
     stats = RxInfer.get_session_stats(session, :for_testing)
 
-    @test capacity(stats.invokes) == RxInfer.DEFAULT_SESSION_STATS_CAPACITY
+    @test capacity(stats.invokes) == default_capacity
 
     # Test circular behavior
-    for i in 1:(RxInfer.DEFAULT_SESSION_STATS_CAPACITY + 1)
+    for i in 1:(default_capacity + 1)
         invoke = RxInfer.create_invoke()
         RxInfer.update_session!(session, :for_testing, invoke)
     end
 
-    # Should only keep last `RxInfer.DEFAULT_SESSION_STATS_CAPACITY`
-    @test length(stats.invokes) == RxInfer.DEFAULT_SESSION_STATS_CAPACITY
+    # Should only keep last `default_capacity`
+    @test length(stats.invokes) == default_capacity
 end
 
 @testitem "RxInfer should have a default session" begin

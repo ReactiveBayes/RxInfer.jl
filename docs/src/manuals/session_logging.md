@@ -46,28 +46,25 @@ println("Success rate: $(round(stats.success_rate * 100, digits=1))%")
 
 ## Session Capacity
 
-By default, RxInfer maintains a fixed-size history of the last 1000 inference invocations. 
+By default, RxInfer maintains a fixed-size history of the invocations. 
 When this limit is exceeded, the oldest invocations are automatically dropped. This prevents 
-memory growth while maintaining recent history.
+memory growth while maintaining recent history. 
 
-You can customize the capacity when creating a session:
-
-```@example custom-session
-using RxInfer
-
-# Create a session that keeps last 100 invokes
-session = RxInfer.create_session(capacity = 100)
-
-# Create a session with larger history
-large_session = RxInfer.create_session(capacity = 5000)
-
-nothing #hide
+```@docs
+RxInfer.DEFAULT_SESSION_STATS_CAPACITY
+RxInfer.set_session_stats_capacity!
 ```
 
 This is particularly useful when:
 - Running benchmarks that might generate many invocations
 - Working with long-running applications
 - Managing memory usage in resource-constrained environments
+
+!!! note
+    Changing the session stats capacity requires a Julia session restart to take effect.
+    The change is persistent across Julia sessions until explicitly changed again.
+
+## Custom sessions
 
 You can also pass custom sessions to the `infer` function:
 
@@ -79,8 +76,8 @@ using RxInfer
     y ~ Normal(mean = x, var = 1.0)
 end
 
-# Create a custom session with capacity of 10 invokes
-session = RxInfer.create_session(capacity = 10)
+# Create a custom session
+session = RxInfer.create_session()
 
 # Run inference with custom session
 result = infer(
@@ -105,17 +102,48 @@ result = infer(
 
 See [Configuration](@ref session-configuration) for more details on how to manage sessions.
 
+## Session Reset 
+
+You can reset the session to its initial state with [`RxInfer.reset_session!`](@ref) function:
+
+```@docs
+RxInfer.reset_session!
+```
+
 ## Session Statistics
 
-RxInfer maintains detailed statistics for each label in a session. These statistics include:
+RxInfer maintains detailed statistics for each label in a session. Currently, only the `:inference` label is actively used, which collects information about inference invocations.
 
-### Per-Label Statistics
-- Total number of invocations
-- Success and failure counts
-- Success rate
-- Minimum, maximum, and total execution duration
-- Set of all context keys used
-- Fixed-size history of recent invocations
+### What's being collected
+
+For the `:inference` label, each invocation records:
+- **Basic Information**:
+  - Unique identifier (UUID)
+  - Status (`:success` or `:error`)
+  - Execution start and end timestamps
+- **Model Information**:
+  - Model source code
+  - Model name
+  - Inference parameters (e.g. number of iterations, free energy)
+- **Data Information**:
+  - Input variable names and types
+  - Data characteristics
+- **Error Information** (if any):
+  - Error message and type
+
+!!! note
+    No actual data is collected for the `:inference` label. Only metadata such as size and type is recorded.
+
+These individual invocations are then aggregated into real-time statistics:
+- Total number of invocations and success/failure counts
+- Success rate (fraction of successful invokes)
+- Execution timing statistics (min, max, total duration)
+- Set of all context keys used across invocations
+- Fixed-size history of recent invocations (controlled by `DEFAULT_SESSION_STATS_CAPACITY`)
+
+```@docs
+RxInfer.SessionStats
+```
 
 You can access these statistics using `get_session_stats`:
 
@@ -163,6 +191,11 @@ Each label's statistics (`SessionStats`) captures:
 - `total_duration_ms::Float64`: Total execution duration
 - `context_keys::Set{Symbol}`: Set of all context keys used
 - `invokes::CircularBuffer{SessionInvoke}`: Recent invocations history
+
+```@docs
+RxInfer.SessionInvoke
+RxInfer.create_invoke
+```
 
 ## Accessing Session Data
 
@@ -383,14 +416,12 @@ or disable it explicitly:
 RxInfer.disable_session_logging!() # works after Julia restart
 ```
 
-# Developers reference 
-
+# Developers Reference 
 
 ```@docs
 RxInfer.Session
 RxInfer.with_session
-RxInfer.create_invoke
 RxInfer.append_invoke_context
-RxInfer.reset_session!
 RxInfer.update_session!
+RxInfer.update_stats!
 ```

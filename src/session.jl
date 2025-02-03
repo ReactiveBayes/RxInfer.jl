@@ -2,6 +2,18 @@ using Dates, UUIDs, Preferences
 
 import DataStructures: CircularBuffer, capacity
 
+"""
+    SessionInvoke
+
+Represents a single invocation of an inference operation.
+
+# Fields
+- `id::UUID`: Unique identifier for this invocation
+- `status::Symbol`: Status of the invocation (e.g. :success, :failure)
+- `execution_start::DateTime`: When the invocation started
+- `execution_end::DateTime`: When the invocation completed
+- `context::Dict{Symbol, Any}`: Additional contextual information
+"""
 mutable struct SessionInvoke
     id::UUID
     status::Symbol
@@ -40,7 +52,33 @@ mutable struct SessionStats
     invokes::CircularBuffer{SessionInvoke}
 end
 
-const DEFAULT_SESSION_STATS_CAPACITY = 1000
+"""
+    DEFAULT_SESSION_STATS_CAPACITY
+
+The default capacity for the circular buffer storing session invocations.
+This value determines how many past invocations are stored for each label's statistics.
+Can be modified at compile time using preferences:
+
+```julia
+using RxInfer
+set_session_stats_capacity!(100)
+```
+
+The change requires a Julia session restart to take effect. Default value is `1000`.
+Must be a positive integer.
+"""
+const DEFAULT_SESSION_STATS_CAPACITY = @load_preference("session_stats_capacity", 1000)
+
+"""
+    set_session_stats_capacity!(capacity::Int)
+
+Set the default capacity for session statistics at compile time. The change requires a Julia session restart to take effect.
+"""
+function set_session_stats_capacity!(capacity::Int)
+    @assert capacity > 0 "Session stats capacity must be positive"
+    @set_preferences!("session_stats_capacity" => capacity)
+    @info "Session stats capacity set to $capacity. Restart Julia for the change to take effect."
+end
 
 # Constructor for empty stats
 function SessionStats(label::Symbol, capacity::Int = DEFAULT_SESSION_STATS_CAPACITY)
@@ -300,11 +338,13 @@ function summarize_session(io::IO, session::Union{Session, Nothing} = RxInfer.de
     println(io, "Session invokes limit: $(capacity(invokes))")
     println(io, "Success rate: $(round(stats.success_rate * 100, digits=1))%")
     println(io, "Failed invokes: $(stats.failed_count)")
-    println(io, "\nExecution time (ms):")
-    println(io, "  Mean: $(round(stats.total_duration_ms / max(1, stats.total_invokes), digits=2))")
-    println(io, "  Min: $(stats.min_duration_ms == Inf ? 0.0 : round(stats.min_duration_ms, digits=2))")
-    println(io, "  Max: $(stats.max_duration_ms == -Inf ? 0.0 : round(stats.max_duration_ms, digits=2))")
-    println(io, "\nContext keys: $(join(collect(stats.context_keys), ", "))")
+
+    mean_execution = round(stats.total_duration_ms / max(1, stats.total_invokes), digits=2)
+    min_execution = stats.min_duration_ms == Inf ? 0.0 : round(stats.min_duration_ms, digits=2)
+    max_execution = stats.max_duration_ms == -Inf ? 0.0 : round(stats.max_duration_ms, digits=2)
+
+    println(io, "Average execution time ", mean_execution, "ms (min: ", min_execution, "ms, max: ", max_execution, "ms)")
+    println(io, "Context keys: $(join(collect(stats.context_keys), ", "))")
 
     if stats.total_invokes == 0
         println(io, "\nNo invokes found with label: $label")

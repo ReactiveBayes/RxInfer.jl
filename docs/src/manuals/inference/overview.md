@@ -322,7 +322,7 @@ By default, the inference function uses the `DefaultPostprocess` strategy, which
 Change this setting to `NoopPostprocess` if you would like to keep the `Marginal` wrapper type, which might be useful in the combination with the `addons` argument.
 If the `addons` argument has been used, automatically changes the default strategy value to `NoopPostprocess`.
 
-- ### [Error hints](@id inference-error-hints)
+- ### Error hints
 
 By default, RxInfer provides helpful error hints when an error occurs during inference.
 This, for example, includes links to relevant documentation, common solutions and troubleshooting steps, information about where to get help, and suggestions for providing good bug reports.
