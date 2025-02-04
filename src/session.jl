@@ -30,6 +30,7 @@ end
 Statistics for a specific label in a session.
 
 # Fields
+- `id::UUID`: Unique identifier for these statistics
 - `label::Symbol`: The label these statistics are for
 - `total_invokes::Int`: Total number of invokes with this label
 - `success_count::Int`: Number of successful invokes
@@ -42,6 +43,7 @@ Statistics for a specific label in a session.
 - `invokes::CircularBuffer{SessionInvoke}`: A series of invokes attached to the statistics
 """
 mutable struct SessionStats
+    id::UUID
     label::Symbol
     total_invokes::Int
     success_count::Int
@@ -85,7 +87,7 @@ end
 # Constructor for empty stats
 function SessionStats(label::Symbol, capacity::Int = DEFAULT_SESSION_STATS_CAPACITY)
     invokes = CircularBuffer{SessionInvoke}(capacity)
-    return SessionStats(label, 0, 0, 0, 0.0, Inf, -Inf, 0.0, Set{Symbol}(), invokes)
+    return SessionStats(uuid4(), label, 0, 0, 0, 0.0, Inf, -Inf, 0.0, Set{Symbol}(), invokes)
 end
 
 """
@@ -382,11 +384,11 @@ end
 # Show methods for nice printing
 function Base.show(io::IO, invoke::SessionInvoke)
     duration_ms = round(Dates.value(Dates.Millisecond(invoke.execution_end - invoke.execution_start)), digits=2)
-    print(io, "SessionInvoke(status=$(invoke.status), duration=$(duration_ms)ms, context_keys=[$(join(keys(invoke.context), ", "))])")
+    print(io, "SessionInvoke(id=$(invoke.id), status=$(invoke.status), duration=$(duration_ms)ms, context_keys=[$(join(keys(invoke.context), ", "))])")
 end
 
 function Base.show(io::IO, stats::SessionStats)
-    print(io, "SessionStats(label=:$(stats.label), total=$(stats.total_invokes), success_rate=$(round(stats.success_rate * 100, digits=1))%, invokes=$(length(stats.invokes))/$(capacity(stats.invokes)))")
+    print(io, "SessionStats(id=$(stats.id), label=:$(stats.label), total=$(stats.total_invokes), success_rate=$(round(stats.success_rate * 100, digits=1))%, invokes=$(length(stats.invokes))/$(capacity(stats.invokes)))")
 end
 
 function Base.show(io::IO, session::Session)

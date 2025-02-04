@@ -205,6 +205,7 @@ The session automatically captures system information including:
 
 ### Statistics Information
 Each label's statistics (`SessionStats`) captures:
+- `id::UUID`: Unique identifier for these statistics
 - `label::Symbol`: The label these statistics are for
 - `total_invokes::Int`: Total number of invokes
 - `success_count::Int`: Number of successful invokes

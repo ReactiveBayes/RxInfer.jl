@@ -61,21 +61,8 @@ function log_using_rxinfer()
     end
 
     Base.Threads.@spawn :interactive try
-        # Firestore requires collection name in the URL
-        collection = "using_rxinfer"
-        endpoint = joinpath(preference_telemetry_endpoint, collection)
-
-        # Headers required for Firestore REST API
-        headers = ["Accept" => "application/json", "Content-Type" => "application/json"]
-
-        # Firestore document structure
-        # See: https://firebase.google.com/docs/firestore/reference/rest/v1/projects.databases.documents
-        payload = Dict(
-            "fields" => Dict("timestamp" => Dict("timestampValue" => Dates.format(now(UTC), "yyyy-mm-ddTHH:MM:SS.sssZ")), "id" => Dict("stringValue" => string(uuid4())))
-        )
-
-        # Make request to Firestore REST API
-        HTTP.post(endpoint, headers, JSON.json(payload))
+        id = string(uuid4())
+        __add_document(id, "using_rxinfer", (fields = (timestamp = (timestampValue = Dates.format(now(UTC), "yyyy-mm-ddTHH:MM:SS.sssZ"),), id = (stringValue = id,)),))
     catch e
         nothing # Discard any log errors to avoid disrupting the user
     end
@@ -108,5 +95,63 @@ See also: [`set_telemetry_endpoint!`](@ref), [`disable_rxinfer_using_telemetry!`
 function enable_rxinfer_using_telemetry!()
     @set_preferences!("enable_using_rxinfer_telemetry" => true)
     @info "Enabled telemetry collection on `using RxInfer`. Changes will take effect after Julia restart."
+    return nothing
+end
+
+# The mapping of the document ID to the endpoint name
+# This is used to avoid duplicate documents in Firestore
+const id_name_mapping = Dict{String, String}()
+
+# Adds or updates a document in Firestore based on the provided id and collection.
+# If a document with the same id already exists (tracked in id_name_mapping), 
+# it updates that document instead of creating a new one to avoid duplicates.
+# The document name from Firestore is stored in id_name_mapping for future updates.
+function __add_document(id, collection, payload)
+    if !isnothing(preference_telemetry_endpoint)
+        # Headers required for Firestore REST API
+        headers = ["Accept" => "application/json", "Content-Type" => "application/json"]
+
+        # Example values:
+        # id = "550e8400-e29b-41d4-a716-446655440000" (a UUID string)
+        # collection = "using_rxinfer"
+        # payload = (fields = (
+        #     timestamp = (timestampValue = "2024-01-20T14:30:15.123Z"),
+        #     id = (stringValue = "550e8400-e29b-41d4-a716-446655440000")
+        # ))
+        # preference_telemetry_endpoint = "https://firestore.googleapis.com/v1/projects/myproject/databases/(default)/documents"
+
+        # Firestore document structure
+        # See: https://firebase.google.com/docs/firestore/reference/rest/v1/projects.databases.documents
+        response = if haskey(id_name_mapping, id)
+            # If document exists, endpoint would be like:
+            # "https://firestore.../using_rxinfer/abc123def456"
+            endpoint = string(rstrip(preference_telemetry_endpoint, '/'), '/', collection, '/', id_name_mapping[id])
+            HTTP.patch(endpoint, headers, JSON.json(payload))
+        else
+            # For new documents, endpoint would be like:
+            # "https://firestore.../using_rxinfer"
+            endpoint = string(rstrip(preference_telemetry_endpoint, '/'), '/', collection)
+            HTTP.post(endpoint, headers, JSON.json(payload))
+        end
+
+        # Parse response if successful
+        # Example response body:
+        # {
+        #   "name": "projects/myproject/databases/(default)/documents/using_rxinfer/abc123def456",
+        #   "fields": { ... },
+        #   "createTime": "2024-01-20T14:30:15.123456Z",
+        #   "updateTime": "2024-01-20T14:30:15.123456Z"
+        # }
+        if response.status == 200
+            body = JSON.parse(String(response.body))
+            name = get(body, "name", nothing)
+            if !isnothing(name)
+                # Extract just the document ID ("abc123def456") from the full path
+                name = split(name, "/") |> last
+                id_name_mapping[id] = name
+            end
+            return name
+        end
+    end
     return nothing
 end
