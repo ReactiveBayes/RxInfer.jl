@@ -26,30 +26,20 @@ This page serves as a collection of sharp bits - potential pitfalls and common i
 
 When you encounter issues with RxInfer, we want to help you as effectively as possible. Here's how you can help us help you:
 
-### Session IDs and Telemetry
+### Session Data and Telemetry
 
-RxInfer includes an optional telemetry system that can help us understand how the package is used and identify areas for improvement. By default, telemetry is disabled. If you'd like to help improve RxInfer by enabling telemetry, please see [Usage Telemetry](@ref manual-usage-telemetry) for details about:
+RxInfer includes optional telemetry and session sharing features to help us provide better support and improve the package. When enabled, these features help us:
 
-- How to enable telemetry
-- What data is collected (only anonymous usage statistics) 
-- How this data helps improve RxInfer
-- How we discuss aggregate patterns in our community meetings
+- Understand how the package is used in practice
+- Identify and debug issues more effectively 
+- Make informed decisions about improvements
+- Share aggregate usage patterns in community meetings
 
-When telemetry is enabled and you open an issue, including your session ID helps us provide better support by understanding your usage context.
+For details on enabling telemetry and sharing session data, see:
+- [Usage Telemetry](@ref manual-usage-telemetry) - Learn about anonymous usage statistics
+- [Session Sharing](@ref manual-session-sharing) - Share session data for debugging
 
-### Sharing Sessions for Debugging
-
-For more complex issues, you can share your session data with us. This helps us:
-- Understand exactly what's happening in your model
-- Identify potential issues more quickly
-- Provide more accurate solutions
-
-See [Session Sharing](@ref manual-session-sharing) to learn how to:
-- Share your session data securely
-- Control what information is shared
-- Use session IDs in GitHub issues
-
-Remember, all data sharing is optional and under your control. We value your privacy while trying to provide the best possible support for the RxInfer community.
+All data sharing is optional and privacy-focused. When opening issues, including your session ID helps us provide more targeted support by understanding your usage context.
 
 ## How to contribute
 

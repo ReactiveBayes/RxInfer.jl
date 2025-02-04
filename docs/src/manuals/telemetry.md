@@ -2,62 +2,59 @@
 
 ## [Usage Telemetry](@id manual-usage-telemetry)
 
-RxInfer collects minimal anonymous usage statistics to help improve the package. The only data collected is:
+RxInfer includes an optional telemetry system that can help us understand how the package is used and guide our improvements. By default, telemetry is disabled. If you'd like to help improve RxInfer by enabling telemetry, here's what you need to know:
+
+### What We Collect
+
+When telemetry is enabled, we collect minimal anonymous usage statistics:
 - A timestamp of when the package is loaded
 - A random UUID for deduplication
+- No personal information
+- No code from your sessions
+- No actual data or model parameters
 
-These statistics help us understand how RxInfer is being used and guide our development efforts. We share and discuss these numbers in our public meetings, which happen every 4 weeks. We encourage you to join our community meetings to:
-- Learn about usage patterns and how others are using RxInfer
-- Provide feedback and suggestions
-- Help shape the future of the package
-- Connect with the RxInfer community
+### How This Helps
 
-### Join Our Meetings
+This anonymous data helps us:
+- Understand how RxInfer is used in practice
+- Identify areas that need improvement
+- Make informed decisions about future development
+- Share aggregate usage patterns in our community meetings
 
-We hold public meetings every 4 weeks where we:
-- Share and discuss usage statistics
-- Present new features and improvements
-- Discuss the roadmap and future development
-- Answer questions from the community
-- Welcome feedback and suggestions
+### Community Transparency
 
-To join:
-1. Check our [meeting schedule](https://dynalist.io/d/F4aA-Z2c8X-M1iWTn9hY_ndN) for the next meeting date
-2. Join our [GitHub discussions](https://github.com/reactivebayes/RxInfer.jl/discussions) to stay updated
-3. Feel free to add topics you'd like to discuss to the meeting agenda
+We believe in full transparency about how we use this data:
+- We discuss aggregate statistics in our public meetings (every 4 weeks)
+- All telemetry code is open source and can be inspected in `src/telemetry.jl`
+- Failed telemetry requests are silently discarded
+- All requests are asynchronous and never block your work
 
-We welcome participants of all experience levels - whether you're new to RxInfer or a seasoned user!
+### How to Enable/Disable Telemetry
 
-### Default Behavior
+By default, telemetry is disabled. You can enable it in several ways:
 
-By default, [Usage Telemetry](@ref manual-usage-telemetry) is enabled but you can disable it in several ways:
-
-1. Using environment variables:
-   ```bash
-   export LOG_USING_RXINFER=false
+1. Using Julia functions:
+   ```julia
+   using RxInfer
+   RxInfer.enable_rxinfer_using_telemetry!() # Requires Julia restart
    ```
 
-2. Using Julia functions:
+2. Or disable it at any time:
    ```julia
    using RxInfer
    RxInfer.disable_rxinfer_using_telemetry!() # Requires Julia restart
    ```
 
-3. Setting the endpoint to `nothing`:
-   ```julia
-   using RxInfer
-   RxInfer.set_telemetry_endpoint!(nothing) # Requires Julia restart
+3. Using environment variables:
+   ```bash
+   # To disable
+   export LOG_USING_RXINFER=false
+   
+   # To enable (default)
+   export LOG_USING_RXINFER=true
    ```
 
-### Configuration Functions
-
-The following functions are available for telemetry configuration:
-
-- `set_telemetry_endpoint!(endpoint)`: Set a custom telemetry endpoint or disable telemetry by setting it to `nothing`
-- `disable_rxinfer_using_telemetry!()`: Disable telemetry collection (requires Julia restart)
-- `enable_rxinfer_using_telemetry!()`: Enable telemetry collection (requires Julia restart)
-
-### When Telemetry is Disabled
+### When Telemetry is Automatically Disabled
 
 Telemetry is automatically disabled in the following cases:
 1. When running in CI environments (detected via `CI=true` environment variable)
@@ -65,15 +62,46 @@ Telemetry is automatically disabled in the following cases:
 3. When telemetry is disabled via `disable_rxinfer_using_telemetry!()`
 4. When the telemetry endpoint is set to `nothing`
 
-### Privacy Considerations
-
-- No personal information is collected
-- No code from your sessions is transmitted, but you can share your sessions if you want to help us to debug issues and improve the package. Read more about [session sharing](@ref manual-session-sharing)
-- All requests are made asynchronously and will never block or affect your work
-- Failed telemetry requests are silently discarded
-- The code is open source and can be inspected in the `src/telemetry.jl` file
-- Usage statistics are shared during our public meetings
+```@docs 
+RxInfer.disable_rxinfer_using_telemetry!
+RxInfer.enable_rxinfer_using_telemetry!
+RxInfer.set_telemetry_endpoint!
+```
 
 ## [Session Sharing](@id manual-session-sharing)
 
-Please, first read the [Session Summary](@ref manual-session-summary) manual to understand the basic concepts of RxInfer sessions.
+For more complex scenarios, like debugging issues or getting help from the community, you can choose to share your session data. This is separate from telemetry and gives us more context to help solve problems.
+
+### What Session Data Contains
+
+When you share a session, it includes:
+- Basic session info (Julia version, OS, etc.)
+- Anonymous statistics about different types of package usage
+- Information about individual labeled runs
+- No personal information or sensitive data
+
+### How to Share Sessions
+
+You can share your session data using the `share_session_data` function:
+
+```@docs
+RxInfer.share_session_data
+```
+
+### Using Session IDs in Issues
+
+When you share a session and then open a GitHub issue, include your session ID. This helps us:
+- Link your issue to the shared session data
+- Understand your usage context
+- Provide more accurate and helpful support
+
+### Privacy and Control
+
+Remember:
+- Session sharing is completely optional
+- All statistics are anonymous
+- No actual data is shared, only meta information, e.g. type of the data, number of observations, etc.
+- You can inspect the sharing code in `src/telemetry.jl`
+- We only use this data to help improve RxInfer and provide better support
+
+We appreciate your help in making RxInfer better! Whether you choose to enable telemetry or share sessions, your contribution helps us improve the package for everyone.
