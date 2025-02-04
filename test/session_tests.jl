@@ -26,7 +26,7 @@
     @test session.environment[:cpu_threads] == Sys.CPU_THREADS
     @test session.environment[:word_size] == Sys.WORD_SIZE
 
-    if get(ENV, "CI", "false") === "true"
+    if get(ENV, "CI", "false") == "true"
         # This test breaks precompilation in VSCode, thus disabled locally, executes only in CI
         rxinfer_version = VersionNumber(TOML.parsefile(joinpath(pkgdir(RxInfer), "Project.toml"))["version"])
         @test session.environment[:rxinfer_version] == string(rxinfer_version)

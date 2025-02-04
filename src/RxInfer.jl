@@ -26,14 +26,18 @@ include("constraints/form/form_sample_list.jl")
 include("inference/postprocess.jl")
 include("inference/inference.jl")
 
-function __init__()
-    if RxInfer.preference_enable_session_logging
-        default_session = create_session()
-        RxInfer.set_default_session!(default_session)
-    end
+_isprecompiling() = ccall(:jl_generating_output, Cint, ()) == 1
 
-    if RxInfer.preference_enable_using_rxinfer_telemetry
-        log_using_rxinfer()
+function __init__()
+    if !_isprecompiling()
+        if RxInfer.preference_enable_session_logging
+            default_session = create_session()
+            RxInfer.set_default_session!(default_session)
+        end
+
+        if RxInfer.preference_enable_using_rxinfer_telemetry
+            log_using_rxinfer()
+        end
     end
 end
 
