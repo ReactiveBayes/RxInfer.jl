@@ -54,6 +54,10 @@ By default, telemetry is disabled. You can enable it in several ways:
    export LOG_USING_RXINFER=true
    ```
 
+```@docs 
+RxInfer.log_using_rxinfer
+```
+
 ### When Telemetry is Automatically Disabled
 
 Telemetry is automatically disabled in the following cases:
