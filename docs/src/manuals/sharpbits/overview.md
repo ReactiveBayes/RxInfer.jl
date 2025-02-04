@@ -14,8 +14,42 @@ This page serves as a collection of sharp bits - potential pitfalls and common i
 - [Using `=` instead of `:=` for deterministic nodes](@ref usage-colon-equality)
     - Why not `=`?
 
+- [Getting Help with Issues](@ref getting-help)
+    - Using session IDs for better support
+    - Understanding telemetry benefits
+    - Sharing sessions for debugging
+
 !!! note
     This is a community document that will be updated as we identify more common issues and their solutions. If you encounter a problem that isn't covered here, please consider opening an [issue/discussion](https://github.com/rxinfer/rxinfer/discussions) or contributing to this guide.
+
+## [Getting Help with Issues](@id getting-help)
+
+When you encounter issues with RxInfer, we want to help you as effectively as possible. Here's how you can help us help you:
+
+### Session IDs and Telemetry
+
+RxInfer includes an optional telemetry system that can help us understand how the package is used and identify areas for improvement. By default, telemetry is disabled. If you'd like to help improve RxInfer by enabling telemetry, please see [Usage Telemetry](@ref manual-usage-telemetry) for details about:
+
+- How to enable telemetry
+- What data is collected (only anonymous usage statistics) 
+- How this data helps improve RxInfer
+- How we discuss aggregate patterns in our community meetings
+
+When telemetry is enabled and you open an issue, including your session ID helps us provide better support by understanding your usage context.
+
+### Sharing Sessions for Debugging
+
+For more complex issues, you can share your session data with us. This helps us:
+- Understand exactly what's happening in your model
+- Identify potential issues more quickly
+- Provide more accurate solutions
+
+See [Session Sharing](@ref manual-session-sharing) to learn how to:
+- Share your session data securely
+- Control what information is shared
+- Use session IDs in GitHub issues
+
+Remember, all data sharing is optional and under your control. We value your privacy while trying to provide the best possible support for the RxInfer community.
 
 ## How to contribute
 

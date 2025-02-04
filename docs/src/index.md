@@ -48,6 +48,11 @@ RxInfer aims to remedy these issues by running efficient Bayesian inference in s
   - High performance.
   - Inference procedure is differentiable.
   - Easy to extend with custom nodes and message update rules.
+- Community-driven development and support
+  - Regular public meetings to discuss usage patterns and improvements
+  - Optional telemetry to help guide development (see [Usage Telemetry](@ref manual-usage-telemetry))
+  - Active community support through GitHub discussions
+  - Session sharing for better debugging support (see [Session Sharing](@ref manual-session-sharing))
 
 **Curious about how RxInfer compares to other tools you might be considering?** We invite you to view a detailed [comparison](@ref comparison), where we put RxInfer head-to-head with other popular packages in the field.
 
