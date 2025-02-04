@@ -229,14 +229,14 @@ end
     invoke = RxInfer.create_invoke()
     invoke.status = :success
     invoke.execution_end = invoke.execution_start + Millisecond(123)
-    
+
     output = sprint(show, invoke)
     @test occursin("SessionInvoke(id=$(invoke.id), status=success, duration=123.0ms", output)
 
     # Test SessionStats show
     stats = RxInfer.SessionStats(:test)
     RxInfer.update_stats!(stats, invoke)
-    
+
     output = sprint(show, stats)
     @test occursin("SessionStats(id=$(stats.id), label=:test, total=1, success_rate=100.0%, invokes=1/$(RxInfer.DEFAULT_SESSION_STATS_CAPACITY))", output)
 
@@ -244,7 +244,7 @@ end
     session = RxInfer.create_session()
     RxInfer.update_session!(session, :test, invoke)
     RxInfer.update_session!(session, :other, invoke)
-    
+
     output = sprint(show, session)
     @test occursin("Session(id=$(session.id), labels=", output)
     @test occursin("test", output)

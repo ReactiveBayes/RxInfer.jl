@@ -135,9 +135,9 @@ function __add_document(id, collection, payload)
             # send a PATCH request to update the existing document with new data
             if collection_allow_patch[collection]
                 HTTP.patch(endpoint, headers, JSON.json(payload))
-            # For collections that don't allow patching (like invokes),
-            # return a fake successful response without making a request,
-            # since we don't want to update existing documents in these collections
+                # For collections that don't allow patching (like invokes),
+                # return a fake successful response without making a request,
+                # since we don't want to update existing documents in these collections
             else
                 (body = """{"name": "$name"}""", status = 200)
             end
@@ -317,6 +317,19 @@ function share_session_data(session::Union{Session, Nothing} = RxInfer.default_s
 
     @info "Starting to share session data to help improve RxInfer.jl" session_id = session.id num_stats = length(session.stats)
 
+    if !preference_automatic_session_sharing
+        @info """
+        The data collection is disabled by default. 
+        If you would like to opt in to sharing your session data automatically, 
+        call `RxInfer.enable_automatic_session_sharing!()`.
+        """
+    else
+        @info """
+        You have opted in to sharing your session data automatically.
+        If you would like to opt out, call `RxInfer.disable_automatic_session_sharing!()`.
+        """
+    end
+
     # Share session information
     session_name = __add_document(string(session.id), "sessions", to_firestore_session(session))
     if isnothing(session_name)
@@ -334,34 +347,10 @@ function share_session_data(session::Union{Session, Nothing} = RxInfer.default_s
     stats_progress = show_progress ? ProgressMeter.Progress(total_stats; desc = "Sharing statistics: ", color = :blue) : nothing
 
     # Share session statistics
-    for (label, stats) in session.stats
-        stats_name = __add_document(string(stats.id), "session_stats", to_firestore_session_stats(stats, session.id))
-        if isnothing(stats_name)
-            @warn "Unable to share statistics data" stats_id = stats.id label = label session_id = session.id
-            continue
-        end
+    for (_, stats) in session.stats
+        shared_invokes += share_session_data(session, stats; show_progress = show_progress)
         shared_stats += 1
         show_progress && ProgressMeter.next!(stats_progress)
-
-        # Create progress meter for invokes within this stats if requested
-        invokes_progress = show_progress ? ProgressMeter.Progress(length(stats.invokes); desc = "Sharing runs for $(label): ", color = :green) : nothing
-
-        # Share labeled runs
-        invokes_shared = 0
-        for invoke in stats.invokes
-            invoke_name = __add_document(string(invoke.id), "invokes", to_firestore_invoke(invoke, stats.id))
-            if isnothing(invoke_name)
-                @warn "Unable to share run data" invoke_id = invoke.id stats_id = stats.id session_id = session.id
-                continue
-            end
-            invokes_shared += 1
-            shared_invokes += 1
-            show_progress && ProgressMeter.next!(invokes_progress)
-        end
-
-        if invokes_shared < length(stats.invokes)
-            @warn "Some runs could not be shared" stats_id = stats.id label = label shared = invokes_shared total = length(stats.invokes) session_id = session.id
-        end
     end
 
     # Final summary
@@ -389,4 +378,38 @@ function share_session_data(session::Union{Session, Nothing} = RxInfer.default_s
     end
 
     return nothing
+end
+
+function share_session_data(session::Session, stats::SessionStats; show_progress::Bool = true)
+    return share_session_data(session, stats, stats.invokes; show_progress = show_progress)
+end
+
+function share_session_data(session::Session, stats::SessionStats, invokes; show_progress::Bool = true)
+    label = stats.label
+    stats_name = __add_document(string(stats.id), "session_stats", to_firestore_session_stats(stats, session.id))
+    if isnothing(stats_name)
+        @warn "Unable to share statistics data" stats_id = stats.id label = label session_id = session.id
+        return nothing
+    end
+
+    # Create progress meter for invokes within this stats if requested
+    invokes_progress = show_progress ? ProgressMeter.Progress(length(invokes); desc = "Sharing runs for $(label): ", color = :green) : nothing
+
+    # Share labeled runs
+    invokes_shared = 0
+    for invoke in invokes
+        invoke_name = __add_document(string(invoke.id), "invokes", to_firestore_invoke(invoke, stats.id))
+        if isnothing(invoke_name)
+            @warn "Unable to share run data" invoke_id = invoke.id stats_id = stats.id session_id = session.id
+            continue
+        end
+        invokes_shared += 1
+        show_progress && ProgressMeter.next!(invokes_progress)
+    end
+
+    if invokes_shared < length(invokes)
+        @warn "Some runs could not be shared" stats_id = stats.id label = label shared = invokes_shared total = length(stats.invokes) session_id = session.id
+    end
+
+    return invokes_shared
 end

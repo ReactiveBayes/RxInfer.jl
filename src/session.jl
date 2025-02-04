@@ -1,8 +1,9 @@
-using Dates, UUIDs, Preferences
+using Dates, UUIDs, Preferences, Logging
 
 import DataStructures: CircularBuffer, capacity
 
 preference_enable_session_logging = @load_preference("enable_session_logging", true)
+const preference_automatic_session_sharing = @load_preference("automatic_session_sharing", false)
 
 """
     SessionInvoke
@@ -222,6 +223,17 @@ function update_session!(session::Session, label::Symbol, invoke::SessionInvoke)
 
         # Update stats with new invoke
         update_stats!(stats, invoke)
+
+        # Share session data automatically if enabled and invoke was successful
+        if preference_automatic_session_sharing
+            Base.Threads.@spawn try
+                Logging.with_logger(Logging.NullLogger()) do
+                    share_session_data(session, stats, [invoke], show_progress = false)
+                end
+            catch e
+                nothing
+            end
+        end
     end
 end
 
@@ -343,9 +355,9 @@ function summarize_session(io::IO, session::Union{Session, Nothing} = RxInfer.de
     println(io, "Success rate: $(round(stats.success_rate * 100, digits=1))%")
     println(io, "Failed invokes: $(stats.failed_count)")
 
-    mean_execution = round(stats.total_duration_ms / max(1, stats.total_invokes), digits=2)
-    min_execution = stats.min_duration_ms == Inf ? 0.0 : round(stats.min_duration_ms, digits=2)
-    max_execution = stats.max_duration_ms == -Inf ? 0.0 : round(stats.max_duration_ms, digits=2)
+    mean_execution = round(stats.total_duration_ms / max(1, stats.total_invokes), digits = 2)
+    min_execution = stats.min_duration_ms == Inf ? 0.0 : round(stats.min_duration_ms, digits = 2)
+    max_execution = stats.max_duration_ms == -Inf ? 0.0 : round(stats.max_duration_ms, digits = 2)
 
     println(io, "Average execution time ", mean_execution, "ms (min: ", min_execution, "ms, max: ", max_execution, "ms)")
     println(io, "Context keys: $(join(collect(stats.context_keys), ", "))")
@@ -386,14 +398,43 @@ end
 
 # Show methods for nice printing
 function Base.show(io::IO, invoke::SessionInvoke)
-    duration_ms = round(Dates.value(Dates.Millisecond(invoke.execution_end - invoke.execution_start)), digits=2)
+    duration_ms = round(Dates.value(Dates.Millisecond(invoke.execution_end - invoke.execution_start)), digits = 2)
     print(io, "SessionInvoke(id=$(invoke.id), status=$(invoke.status), duration=$(duration_ms)ms, context_keys=[$(join(keys(invoke.context), ", "))])")
 end
 
 function Base.show(io::IO, stats::SessionStats)
-    print(io, "SessionStats(id=$(stats.id), label=:$(stats.label), total=$(stats.total_invokes), success_rate=$(round(stats.success_rate * 100, digits=1))%, invokes=$(length(stats.invokes))/$(capacity(stats.invokes)))")
+    print(
+        io,
+        "SessionStats(id=$(stats.id), label=:$(stats.label), total=$(stats.total_invokes), success_rate=$(round(stats.success_rate * 100, digits=1))%, invokes=$(length(stats.invokes))/$(capacity(stats.invokes)))"
+    )
 end
 
 function Base.show(io::IO, session::Session)
     print(io, "Session(id=$(session.id), labels=[$(join(keys(session.stats), ", "))])")
+end
+
+"""
+    enable_automatic_session_sharing!()
+
+Enable automatic session sharing after each inference call. The change requires a Julia session restart to take effect.
+When enabled, session data will be automatically shared after each successful inference call.
+This helps improve RxInfer by providing usage patterns and helps with debugging issues.
+
+See also: [`disable_automatic_session_sharing!`](@ref), [`share_session_data`](@ref)
+"""
+function enable_automatic_session_sharing!()
+    @set_preferences!("automatic_session_sharing" => true)
+    @info "Automatic session sharing enabled. Restart Julia for the change to take effect."
+end
+
+"""
+    disable_automatic_session_sharing!()
+
+Disable automatic session sharing after inference calls. The change requires a Julia session restart to take effect.
+
+See also: [`enable_automatic_session_sharing!`](@ref), [`share_session_data`](@ref)
+"""
+function disable_automatic_session_sharing!()
+    @set_preferences!("automatic_session_sharing" => false)
+    @info "Automatic session sharing disabled. Restart Julia for the change to take effect."
 end

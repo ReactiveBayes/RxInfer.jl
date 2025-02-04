@@ -2,22 +2,22 @@
 
 ## [Usage Telemetry](@id manual-usage-telemetry)
 
-RxInfer includes an optional telemetry system that can help us understand how the package is used and guide our improvements. 
-
-```@docs
-RxInfer.log_using_rxinfer
-```
+RxInfer includes an optional telemetry system that can help us understand how the package is used and guide our improvements. By default, telemetry is disabled. If you'd like to help improve RxInfer by enabling telemetry, here's what you need to know:
 
 ### What We Collect
 
-We collect minimal anonymous usage statistics:
+When telemetry is enabled, we collect minimal anonymous usage statistics:
 - A timestamp of when the package is loaded
 - A random UUID for deduplication
+- No personal information
+- No code from your sessions
+- No actual data or model parameters
 
 ### How This Helps
 
 This anonymous data helps us:
 - Understand how RxInfer is used in practice
+- Identify areas that need improvement
 - Make informed decisions about future development
 - Share aggregate usage patterns in our community meetings
 
@@ -31,7 +31,7 @@ We believe in full transparency about how we use this data:
 
 ### How to Enable/Disable Telemetry
 
-You can interact with telemetry in several ways:
+By default, telemetry is disabled. You can enable it in several ways:
 
 1. Using Julia functions:
    ```julia
@@ -82,11 +82,30 @@ When you share a session, it includes:
 
 ### How to Share Sessions
 
-You can share your session data using the `share_session_data` function:
+You can share your session data either manually or automatically.
+
+#### Manual Sharing
+
+Use the `share_session_data` function to manually share your session:
 
 ```@docs
 RxInfer.share_session_data
 ```
+
+#### Automatic Sharing
+
+You can enable automatic session sharing after each inference call:
+
+```@docs
+RxInfer.enable_automatic_session_sharing!
+RxInfer.disable_automatic_session_sharing!
+```
+
+When automatic sharing is enabled:
+- Session data is shared after each inference call
+- Sharing is done asynchronously (won't block your code)
+- No progress bars or messages are shown
+- Failed sharing attempts are silently ignored
 
 ### Using Session IDs in Issues
 
