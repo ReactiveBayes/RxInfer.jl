@@ -2,22 +2,22 @@
 
 ## [Usage Telemetry](@id manual-usage-telemetry)
 
-RxInfer includes an optional telemetry system that can help us understand how the package is used and guide our improvements. By default, telemetry is disabled. If you'd like to help improve RxInfer by enabling telemetry, here's what you need to know:
+RxInfer includes an optional telemetry system that can help us understand how the package is used and guide our improvements. 
+
+```@docs
+RxInfer.log_using_rxinfer
+```
 
 ### What We Collect
 
-When telemetry is enabled, we collect minimal anonymous usage statistics:
+We collect minimal anonymous usage statistics:
 - A timestamp of when the package is loaded
 - A random UUID for deduplication
-- No personal information
-- No code from your sessions
-- No actual data or model parameters
 
 ### How This Helps
 
 This anonymous data helps us:
 - Understand how RxInfer is used in practice
-- Identify areas that need improvement
 - Make informed decisions about future development
 - Share aggregate usage patterns in our community meetings
 
@@ -31,7 +31,7 @@ We believe in full transparency about how we use this data:
 
 ### How to Enable/Disable Telemetry
 
-By default, telemetry is disabled. You can enable it in several ways:
+You can interact with telemetry in several ways:
 
 1. Using Julia functions:
    ```julia
@@ -105,3 +105,13 @@ Remember:
 - We only use this data to help improve RxInfer and provide better support
 
 We appreciate your help in making RxInfer better! Whether you choose to enable telemetry or share sessions, your contribution helps us improve the package for everyone.
+
+## Developers Reference 
+
+```@docs
+RxInfer.to_firestore_invoke
+RxInfer.to_firestore_value
+RxInfer.to_firestore_session
+RxInfer.to_firestore_document
+RxInfer.to_firestore_session_stats
+```

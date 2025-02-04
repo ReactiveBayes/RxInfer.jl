@@ -358,6 +358,9 @@ function summarize_session(io::IO, session::Union{Session, Nothing} = RxInfer.de
     # Call label-specific summary with n_last parameter
     summarize_invokes(io, Val(label), invokes; n_last = n_last)
 
+    println(io, "\nTip: Share this session with `RxInfer.share_session_data()` to help improve RxInfer")
+    println(io, "     and get better support when reporting issues.")
+
     return nothing
 end
 

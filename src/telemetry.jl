@@ -279,7 +279,7 @@ end
 import ProgressMeter
 
 """
-    share_session_data(session::Session; show_progress::Bool = true)
+    share_session_data(session = RxInfer.default_session(); show_progress::Bool = true)
 
 Share your session data to help improve RxInfer.jl and its community. This data helps us:
 - Understand how the package is used in practice
@@ -304,9 +304,14 @@ When `show_progress` is true (default), the function displays:
 - A blue progress bar for sharing session statistics
 - A green progress bar for sharing labeled runs
 """
-function share_session_data(session::Session; show_progress::Bool = true)
+function share_session_data(session::Union{Session, Nothing} = RxInfer.default_session(); show_progress::Bool = true)
     if isnothing(preference_telemetry_endpoint)
-        @warn "Cannot share session data: telemetry endpoint is not set"
+        @warn "Cannot share session data: telemetry endpoint is not set. See `RxInfer.set_telemetry_endpoint!()`"
+        return nothing
+    end
+
+    if isnothing(session)
+        @warn "Cannot share session data: session logging is not enabled. See `RxInfer.enable_session_logging!()`"
         return nothing
     end
 
@@ -374,7 +379,10 @@ function share_session_data(session::Session; show_progress::Bool = true)
         the development process transparent and collaborative.
 
         When opening issues on GitHub at https://github.com/reactivebayes/RxInfer.jl/issues/new, 
-        please include this session ID `$(session.id)` and session name: `$(session_name)`
+        please include this session ID `$(session.id)` and session name: `$(session_name)`.
+
+        Optionally, provide IDs of individual runs that you are interested in.
+        Call `RxInfer.summarize_session()` to get the list of run IDs.
 
         This helps us provide better support by understanding your usage context.
         """ session_id = session.id session_name = session_name stats_count = shared_stats invokes_count = shared_invokes

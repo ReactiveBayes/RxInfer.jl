@@ -137,7 +137,7 @@ function summarize_invokes(io::IO, ::Val{:inference}, invokes; n_last = 5)
 
         # Prepare data for the table
         last_invokes = collect(Iterators.take(Iterators.reverse(invokes), n_last))
-        data = Matrix{String}(undef, length(last_invokes), 5)
+        data = Matrix{String}(undef, length(last_invokes), 6)
 
         for (i, invoke) in enumerate(last_invokes)
             status = string(invoke.status)
@@ -155,16 +155,18 @@ function summarize_invokes(io::IO, ::Val{:inference}, invokes; n_last = 5)
             end
 
             error_str = string(get(invoke.context, :error, ""))
+            invoke_id = string(invoke.id)[1:8] * "..."
 
-            data[i, 1] = status
-            data[i, 2] = "$(duration)ms"
-            data[i, 3] = model
-            data[i, 4] = data_str
-            data[i, 5] = error_str
+            data[i, 1] = invoke_id
+            data[i, 2] = status
+            data[i, 3] = "$(duration)ms"
+            data[i, 4] = model
+            data[i, 5] = data_str
+            data[i, 6] = error_str
         end
 
-        header = (["Status", "Duration", "Model", "Data", "Error"],)
-        pretty_table(io, data; header = header, tf = tf_unicode_rounded, maximum_columns_width = [8, 10, 35, 25, 25], autowrap = true, linebreaks = true)
+        header = (["ID", "Status", "Duration", "Model", "Data", "Error"],)
+        pretty_table(io, data; header = header, tf = tf_unicode_rounded, maximum_columns_width = [12, 8, 10, 35, 25, 25], autowrap = true, linebreaks = true)
     end
 end
 
@@ -240,6 +242,8 @@ function inference_process_error(error, rethrow)
         https://github.com/ReactiveBayes/RxInfer.jl/discussions
         - Report a bug or request a feature:
         https://github.com/ReactiveBayes/RxInfer.jl/issues
+        - (Optional) Share your session data with `RxInfer.share_session_data()` to help us better understand the issue
+        https://reactivebayes.github.io/RxInfer.jl/stable/manuals/telemetry/
 
         Note that we use GitHub discussions not just for technical questions! We welcome all kinds of discussions,
         whether you're new to Bayesian inference, have questions about use cases, or just want to share your experience.
@@ -247,6 +251,7 @@ function inference_process_error(error, rethrow)
         To help us help you, please include:
         - A minimal example that reproduces the issue
         - The complete error message and stack trace
+        - (Optional) If you shared your session data, please include the session ID in the issue
 
         Use `RxInfer.disable_inference_error_hint!()` to disable this message. 
         """
