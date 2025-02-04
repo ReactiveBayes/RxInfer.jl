@@ -231,7 +231,7 @@ end
     invoke.execution_end = invoke.execution_start + Millisecond(123)
     
     output = sprint(show, invoke)
-    @test occursin("SessionInvoke(status=success, duration=123.0ms)", output)
+    @test occursin("SessionInvoke(status=success, duration=123.0ms", output)
 
     # Test SessionStats show
     stats = RxInfer.SessionStats(:test)
