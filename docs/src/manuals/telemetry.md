@@ -94,7 +94,7 @@ RxInfer.share_session_data
 
 #### Automatic Sharing
 
-You can enable automatic session sharing after each inference call:
+You can enable automatic session sharing:
 
 ```@docs
 RxInfer.enable_automatic_session_sharing!
@@ -102,10 +102,12 @@ RxInfer.disable_automatic_session_sharing!
 ```
 
 When automatic sharing is enabled:
-- Session data is shared after each inference call
+- Session is shared automatically
 - Sharing is done asynchronously (won't block your code)
 - No progress bars or messages are shown
 - Failed sharing attempts are silently ignored
+
+To check your preference, inspect the `RxInfer.preference_automatic_session_sharing` variable or your `LocalPreferences.toml` file. Note that automatic sharing is disabled by default.
 
 ### Using Session IDs in Issues
 
