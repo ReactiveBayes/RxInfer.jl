@@ -2,6 +2,9 @@
 
 This page serves as a collection of sharp bits - potential pitfalls and common issues you might encounter while using RxInfer. While RxInfer is designed to be user-friendly, there are certain scenarios where you might encounter unexpected behavior or errors. Understanding these can help you avoid common problems and debug your code more effectively.
 
+!!! note 
+    See [Session Data and Telemetry](@ref sharpbits-telemetry-note) for more information on how to share sessions for better support.
+
 - [Rule Not Found Error](@ref rule-not-found)
     - What causes it
     - How to diagnose and fix it
@@ -14,11 +17,6 @@ This page serves as a collection of sharp bits - potential pitfalls and common i
 - [Using `=` instead of `:=` for deterministic nodes](@ref usage-colon-equality)
     - Why not `=`?
 
-- [Getting Help with Issues](@ref getting-help)
-    - Using session IDs for better support
-    - Understanding telemetry benefits
-    - Sharing sessions for debugging
-
 !!! note
     This is a community document that will be updated as we identify more common issues and their solutions. If you encounter a problem that isn't covered here, please consider opening an [issue/discussion](https://github.com/rxinfer/rxinfer/discussions) or contributing to this guide.
 
@@ -26,7 +24,7 @@ This page serves as a collection of sharp bits - potential pitfalls and common i
 
 When you encounter issues with RxInfer, we want to help you as effectively as possible. Here's how you can help us help you:
 
-### Session Data and Telemetry
+### [Session Data and Telemetry](@id sharpbits-telemetry-note)
 
 RxInfer includes optional telemetry and session sharing features to help us provide better support and improve the package. When enabled, these features help us:
 

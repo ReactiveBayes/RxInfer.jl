@@ -1,4 +1,4 @@
-# RxInfer Usage Telemetry
+# [RxInfer Usage Telemetry](@id manual-usage-telemetry)
 
 RxInfer has two separate telemetry features:
 1. A minimal package usage counter (enabled by default)
