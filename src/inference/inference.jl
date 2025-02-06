@@ -120,6 +120,10 @@ log_data_entries(data) = :unknown
 log_data_entries(data::Union{NamedTuple, Dict}) = log_data_entries_from_pairs(pairs(data))
 log_data_entries_from_pairs(pairs) = collect(Iterators.map(log_data_entry, pairs))
 
+function Base.show(io::IO, entry::InferenceLoggedDataEntry)
+    print(io, "data: ", entry.name, " (type=", entry.type, ", size=", entry.size, ", elsize=", entry.elsize, ")")
+end
+
 using PrettyTables
 
 function summarize_invokes(io::IO, ::Val{:inference}, invokes; n_last = 5)

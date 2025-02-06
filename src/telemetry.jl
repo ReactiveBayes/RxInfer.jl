@@ -220,7 +220,7 @@ end
 
 function to_firestore_value(value::Any)
     # For any other type, convert to string but include the type information
-    return (stringValue = string("$(typeof(value)): ", value),)
+    return (stringValue = repr(value),)
 end
 
 """

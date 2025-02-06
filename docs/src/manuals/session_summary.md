@@ -2,6 +2,9 @@
 
 RxInfer provides a built-in session logging system that helps track and analyze various aspects of RxInfer usages. This feature is particularly useful for debugging, performance monitoring, and understanding the behavior of your inference models.
 
+!!! note
+    Sessions are **not** shared and are intended for your personal use. However, you can opt-in to share your session data with the RxInfer team. See [RxInfer Usage Telemetry](@ref manual-usage-telemetry) for more details.
+
 ## Overview
 
 Session logging in RxInfer automatically captures and maintains statistics for:
