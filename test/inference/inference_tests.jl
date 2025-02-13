@@ -245,7 +245,7 @@ end
     @testset "repr formatting" begin
         @test repr(log_data_entry(:x => 1.5)) == "data: x (type=Float64, size=(), elsize=())"
         @test repr(log_data_entry(:y => [1.0, 2.0, 3.0])) == "data: y (type=Vector{Float64}, size=(3,), elsize=())"
-        @test repr(log_data_entry(:z => [[1,2], [3,4]])) == "data: z (type=Vector{Vector{Int64}}, size=(2,), elsize=(2,))"
+        @test repr(log_data_entry(:z => [[1, 2], [3, 4]])) == "data: z (type=Vector{Vector{Int64}}, size=(2,), elsize=(2,))"
         @test repr(log_data_entry(:w => missing)) == "data: w (type=Missing, size=unknown, elsize=unknown)"
     end
 end
