@@ -4,9 +4,33 @@ RxInfer has two separate telemetry features:
 1. A minimal package usage counter (enabled by default)
 2. Optional session sharing for better support and development insights
 
+!!! note
+    The telemetry implementation in RxInfer has been designed with careful consideration of the community discussion about telemetry in Julia packages, particularly the discourse thread ["Pkg.jl telemetry should be opt-in"](https://discourse.julialang.org/t/pkg-jl-telemetry-should-be-opt-in/42209). We've aimed to strike a balance between gathering useful information for package development while respecting user privacy and control.
+
+The following table compares the key properties of RxInfer's two telemetry features.
+
+| Property                             | Package Usage Counter             | Session Sharing                    |
+|--------------------------------------|-----------------------------------|-----------------------------------|
+| Entirely Anonymous                   | Yes                              | Yes                               |
+| Shared Across Julia Sessions         | No                               | No                                |
+| Enabled by default                   | Yes (opt-out)                    | No (opt-in)                       |
+| Deletion Request Support             | No (UUIDs not persistent, we cannot backtrace the session to a specific user) | Yes* (only if users save their session ID and share it with us anonymously with the form below, otherwise we cannot backtrace the session to a specific user) |
+| Can Be Disabled for a Specific Julia Session | Yes                      | Yes (disabled by default)                               |
+| Can Be Disabled for All Julia Sessions | Yes                           | Yes (disabled by default)                               |
+| Can Be Disabled with Environment Variable | Yes                        | Yes (disabled by default)                               |
+| Customizable Behavior               | Yes (with Preferences.jl, see [Package Usage Counter](@ref manual-package-usage-counter) manual) | Yes (with Preferences.jl, see [Session Sharing](@ref manual-session-sharing) manual) |
+| Can Be Enabled for a Specific Julia Session | Yes                      | Yes                             |
+| Can Be Enabled for All Julia Sessions | Yes                           | Yes                             |
+| What Is Being Recorded               | Only timestamp and random UUID   | Session metadata & errors, no actual data |
+| Real-Time Sharing of Recorded Data   | Yes (on package load)           | Optional (manual/automatic)        |
+| Local Access to Recorded Data       | N/A (No data is collected)      | Yes (via session inspection, see [Session Summary](@ref manual-session-summary) manual) |
+| Enables Extra Support from Core Developers | No                        | Yes* (if users are willing to share their session ID when opening a GitHub issue or a discussion on the GitHub repository, otherwise we cannot backtrace the session to a specific user) |
+| Performance Impact                   | Negligible (only on package load)| Minimal (async sharing)           |
+| CI Environment Behavior              | Automatically disabled           | Automatically disabled            |
+
 Users are welcome to join our regular online meetings where we analyze the collected data and discuss how it helps shape RxInfer's development.
 
-## Package Usage Counter
+## [Package Usage Counter](@id manual-package-usage-counter)
 
 By default, RxInfer counts how many times the package is loaded via `using RxInfer`. This counter:
 - Only records a timestamp and a random UUID for deduplication
@@ -15,7 +39,7 @@ By default, RxInfer counts how many times the package is loaded via `using RxInf
 - Is completely anonymous
 - Helps us understand how widely RxInfer is used
 
-### Disabling Package Usage Counter
+### [Disabling Package Usage Counter
 
 You can disable the counter in several ways:
 
