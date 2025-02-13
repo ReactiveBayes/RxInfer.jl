@@ -12,7 +12,7 @@ The most notable change in the model specification is the removal of the `random
 Now, the `@model` macro automatically determines whether to use `randomvar` or `constvar` based on their usage.
 Previously declared `datavar` variables must now be listed in the argument list of the model.
 
-The following example is a simple model definition in version 3:
+The following example is a simple model definition in previous version:
 ```julia
 @model function SSM(n, x0, A, B, Q, P) 
     x = randomvar(n) 
@@ -27,7 +27,7 @@ The following example is a simple model definition in version 3:
 end 
 ```
 
-The equivalent model definition in version 4 is as follows:
+The equivalent model definition in the new version is as follows:
 ```julia
 @model function SSM(y, prior_x, A, B, Q, P) 
     x_prev ~ prior_x

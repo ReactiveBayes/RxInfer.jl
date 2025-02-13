@@ -1,6 +1,8 @@
 import Dates: format, now
 using MacroTools
 
+ENV["LOG_USING_RXINFER"] = "false"
+
 # Some tests use plotting, this part contains helper functions to simplify executing plots
 
 """

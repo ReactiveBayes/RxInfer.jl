@@ -2,6 +2,9 @@
 
 This page serves as a collection of sharp bits - potential pitfalls and common issues you might encounter while using RxInfer. While RxInfer is designed to be user-friendly, there are certain scenarios where you might encounter unexpected behavior or errors. Understanding these can help you avoid common problems and debug your code more effectively.
 
+!!! note 
+    See [Session Data and Telemetry](@ref sharpbits-telemetry-note) for more information on how to share sessions for better support.
+
 - [Rule Not Found Error](@ref rule-not-found)
     - What causes it
     - How to diagnose and fix it
@@ -16,6 +19,25 @@ This page serves as a collection of sharp bits - potential pitfalls and common i
 
 !!! note
     This is a community document that will be updated as we identify more common issues and their solutions. If you encounter a problem that isn't covered here, please consider opening an [issue/discussion](https://github.com/rxinfer/rxinfer/discussions) or contributing to this guide.
+
+## [Getting Help with Issues](@id getting-help)
+
+When you encounter issues with RxInfer, we want to help you as effectively as possible. Here's how you can help us help you:
+
+### [Session Data and Telemetry](@id sharpbits-telemetry-note)
+
+RxInfer includes optional telemetry and session sharing features to help us provide better support and improve the package. When enabled, these features help us:
+
+- Understand how the package is used in practice
+- Identify and debug issues more effectively 
+- Make informed decisions about improvements
+- Share aggregate usage patterns in community meetings
+
+For details on enabling telemetry and sharing session data, see:
+- [Usage Telemetry](@ref manual-usage-telemetry) - Learn about anonymous usage statistics
+- [Session Sharing](@ref manual-session-sharing) - Share session data for debugging
+
+All data sharing is optional and privacy-focused. When opening issues, including your session ID helps us provide more targeted support by understanding your usage context.
 
 ## How to contribute
 

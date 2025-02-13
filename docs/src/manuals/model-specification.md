@@ -383,15 +383,19 @@ We can also verify that node contraction indeed improves the performance of the 
 ```@example node-contraction
 using BenchmarkTools
 
+benchmark_session = nothing #hide
+
 benchmark_without_contraction = @benchmark infer(
     model = Model(precision = 1.0, shift = 1.0),
-    data  = (data = 10.0, )
+    data  = (data = 10.0, ),
+    session = benchmark_session #hide
 )
 
 benchmark_with_contraction = @benchmark infer(
     model = Model(precision = 1.0, shift = 1.0),
     data  = (data = 10.0, ),
-    allow_node_contraction = true
+    allow_node_contraction = true,
+    session = benchmark_session #hide
 )
 
 using Test #hide
