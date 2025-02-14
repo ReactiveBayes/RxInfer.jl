@@ -275,7 +275,15 @@ If `invoke` is `nothing`, does nothing.
 function append_invoke_context end
 
 append_invoke_context(f::F, ::Nothing) where {F} = nothing
-append_invoke_context(f::F, invoke::SessionInvoke) where {F} = f(invoke.context)
+
+function append_invoke_context(f::F, invoke::SessionInvoke) where {F}
+    try
+        f(invoke.context)
+    catch e
+        invoke.context[:__append_invoke_context_error] = string(e)
+    end
+    nothing
+end
 
 const default_session_sem = Base.Semaphore(1)
 # The `Ref` is initialized in the __init__ function based on user preferences

@@ -250,3 +250,29 @@ end
     @test occursin("test", output)
     @test occursin("other", output)
 end
+
+@testitem "append_invoke_context should suppress and log errors if any" begin
+    session = RxInfer.create_session()
+
+    RxInfer.with_session(session, :test_1) do invoke
+        RxInfer.append_invoke_context(invoke) do ctx
+            error("I'm an error")
+        end
+    end
+
+    stats = RxInfer.get_session_stats(session, :test_1)
+    @test length(stats.invokes) === 1
+    last_invoke = stats.invokes[end]
+    @test last_invoke.context[:__append_invoke_context_error] == "ErrorException(\"I'm an error\")"
+
+    RxInfer.with_session(session, :test_2) do invoke
+        RxInfer.append_invoke_context(invoke) do ctx
+            ctx[:a] = 1
+        end
+    end
+
+    stats = RxInfer.get_session_stats(session, :test_2)
+    @test length(stats.invokes) === 1
+    last_invoke = stats.invokes[end]
+    @test last_invoke.context[:a] === 1
+end

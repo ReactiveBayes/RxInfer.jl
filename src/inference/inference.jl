@@ -488,32 +488,28 @@ function infer(;
 
     return with_session(session, :inference) do invoke
         append_invoke_context(invoke) do ctx
-            try
-                ctx[:model_name] = string(GraphPPL.getmodel(model))
-                ctx[:model] = GraphPPL.getsource(model)
-                ctx[:data] = log_data_entries(data)
+            ctx[:model_name] = string(GraphPPL.getmodel(model))
+            ctx[:model] = GraphPPL.getsource(model)
+            ctx[:data] = log_data_entries(data)
 
-                !isnothing(datastream) && (ctx[:datastream_type] = eltype(datastream))
-                !isnothing(constraints) && (ctx[:constraints] = GraphPPL.source_code(constraints))
-                !isnothing(meta) && (ctx[:meta] = GraphPPL.source_code(meta))
+            !isnothing(datastream) && (ctx[:datastream_type] = eltype(datastream))
+            !isnothing(constraints) && (ctx[:constraints] = GraphPPL.source_code(constraints))
+            !isnothing(meta) && (ctx[:meta] = GraphPPL.source_code(meta))
 
-                ctx[:returnvars] = log_dictnt_entries(returnvars)
-                ctx[:predictvars] = log_dictnt_entries(predictvars)
-                ctx[:historyvars] = log_dictnt_entries(historyvars)
-                !isnothing(keephistory) && (ctx[:keephistory] = keephistory)
+            ctx[:returnvars] = log_dictnt_entries(returnvars)
+            ctx[:predictvars] = log_dictnt_entries(predictvars)
+            ctx[:historyvars] = log_dictnt_entries(historyvars)
+            !isnothing(keephistory) && (ctx[:keephistory] = keephistory)
 
-                ctx[:iterations] = iterations
-                ctx[:free_energy] = free_energy
-                ctx[:allow_node_contraction] = allow_node_contraction
-                ctx[:showprogress] = showprogress
-                ctx[:catch_exception] = catch_exception
+            ctx[:iterations] = iterations
+            ctx[:free_energy] = free_energy
+            ctx[:allow_node_contraction] = allow_node_contraction
+            ctx[:showprogress] = showprogress
+            ctx[:catch_exception] = catch_exception
 
-                ctx[:callbacks] = log_dictnt_entries(callbacks)
-                ctx[:addons] = log_dictnt_entries(addons)
-                ctx[:options] = log_dictnt_entries(options)
-            catch
-                # suppress any errors here, we don't want to crash the inference over logging issues
-            end
+            ctx[:callbacks] = log_dictnt_entries(callbacks)
+            ctx[:addons] = log_dictnt_entries(addons)
+            ctx[:options] = log_dictnt_entries(options)
         end
 
         if isnothing(autoupdates)
