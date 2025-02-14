@@ -154,7 +154,7 @@ function inference_check_itertype(keyword::Symbol, ::T) where {T}
           """)
 end
 
-function infer_check_dicttype(::Symbol, ::Union{Nothing, NamedTuple, Dict, GraphPPL.VarDict})
+function infer_check_dicttype(::Symbol, ::Union{Nothing, NamedTuple, Dict, GraphPPL.VarDict, RxInferBenchmarkCallbacks})
     # This function check is the second argument is of type `Nothing`, `NamedTuple`, `Dict` or `VarDict`. 
     # Does nothing is true, throws an error otherwise (see the second method below)
     nothing
