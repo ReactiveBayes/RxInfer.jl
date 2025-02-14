@@ -35,9 +35,9 @@ DataStructures = "0.18"
 Distributions = "0.25"
 DomainSets = "0.5.2, 0.6, 0.7"
 ExponentialFamily = "1.5"
-ExponentialFamilyProjection = "1.1"
+ExponentialFamilyProjection = "1.3.1"
 FastCholesky = "1.3.0"
-GraphPPL = "~4.5.0"
+GraphPPL = "~4.6.0"
 LinearAlgebra = "1.9"
 MacroTools = "0.5.6"
 Optim = "1.0.0"
@@ -53,7 +53,6 @@ julia = "1.10"
 
 [extras]
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
-BenchmarkCI = "20533458-34a3-403d-a444-e18f38190b5b"
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 Coverage = "a2441757-f6aa-5fb2-8edb-039e3f45d037"
 CpuId = "adafc99b-e345-5852-983c-f28acb93d879"
@@ -74,4 +73,4 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 TestSetExtensions = "98d24dd4-01ad-11ea-1b02-c9a08f80db04"
 
 [targets]
-test = ["Test", "Pkg", "Logging", "InteractiveUtils", "TestSetExtensions", "Coverage", "CpuId", "Dates", "Distributed", "Documenter", "ExponentialFamilyProjection", "Plots", "BenchmarkCI", "BenchmarkTools", "PkgBenchmark", "Aqua", "StableRNGs", "StatsFuns", "Optimisers", "ReTestItems"]
+test = ["Test", "Pkg", "Logging", "InteractiveUtils", "TestSetExtensions", "Coverage", "CpuId", "Dates", "Distributed", "Documenter", "ExponentialFamilyProjection", "Plots", "BenchmarkTools", "PkgBenchmark", "Aqua", "StableRNGs", "StatsFuns", "Optimisers", "ReTestItems"]
