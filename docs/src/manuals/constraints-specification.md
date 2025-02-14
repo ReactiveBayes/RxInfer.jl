@@ -100,6 +100,10 @@ end
 myconstraints = make_constraints(true)
 ```
 
+!!! note
+    `RxInfer` exports `MeanField` and other prespecified constraints as convenient aliases that can be used directly in the `constraints` argument of [`infer`](@ref). See [Prespecified constraints](@ref prespecified-constraints) below for more details.
+
+
 ## Marginal and messages form constraints
 
 To specify marginal or messages form constraints `@constraints` macro uses `::` operator (in somewhat similar way as Julia uses it for multiple dispatch type specification).
@@ -272,7 +276,8 @@ result = infer(
 )
 ```
 
-## Prespecified constraints
+## [Prespecified constraints](@id prespecified-constraints)
+
 `GraphPPL` exports some [prespecified constraints](https://reactivebayes.github.io/GraphPPL.jl/stable/plugins/constraint_specification/#Prespecified-constraints) that can be used in the `@constraints` macro, but these constraints can also be passed as top-level constraints in the `infer` function. For example, to specify a mean-field assumption on all variables in the model, we can use the `MeanField` constraint:
 
 

@@ -263,7 +263,7 @@ Check the official documentation for more information about some of the argument
 - `datastream`: A stream of `NamedTuple` with data, required (or `data`)
 - `autoupdates = nothing`: auto-updates specification, required for streamline inference, see [`@autoupdates`](@ref)
 - `initialization = nothing`: initialization specification object, optional, see [`@initialization`](@ref)
-- `constraints = nothing`: constraints specification object, optional, see `@constraints`
+- `constraints = nothing`: constraints specification object, or an alias such as `MeanField`, optional, see `@constraints`
 - `meta  = nothing`: meta specification object, optional, may be required for some models, see `@meta`
 - `options = nothing`: model creation options, optional, see [`ReactiveMPInferenceOptions`](@ref)
 - `returnvars = nothing`: return structure info, optional, defaults to return everything at each iteration
