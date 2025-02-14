@@ -223,4 +223,56 @@ nothing #hide
 
 We can see the order of message update events. Note that `ReactiveMP` may decide to compute messages lazily, in which case the actual computation of the value of a message will be deffered until later moment. In this case, `LoggerPipelineStage` will report _DefferedMessage_.
 
+## [Using `RxInferBenchmarkCallbacks` for Performance Analysis](@id user-guide-debugging-benchmark-callbacks)
+
+`RxInfer` provides a built-in benchmarking callback structure called [`RxInferBenchmarkCallbacks`](@ref) that helps collect timing information during the inference procedure. This structure aggregates timing information across multiple runs, allowing you to track performance statistics (min/max/average/etc.) of your model's creation and inference procedure.
+
+Here's how to use it:
+
+```@example debugging-with-callbacks
+using RxInfer
+
+# Create a benchmark callbacks instance to track performance
+benchmark_callbacks = RxInferBenchmarkCallbacks()
+
+# Run inference multiple times to gather statistics
+for i in 1:3  # Usually you'd want more runs for better statistics
+    result = infer(
+        model = iid_normal(),
+        data = (y = dataset, ),
+        constraints = MeanField(),
+        iterations = 5,
+        initialization = init,
+        callbacks = benchmark_callbacks
+    )
+end
+```
+
+```@example debugging-with-callbacks
+# Display the benchmark statistics
+benchmark_callbacks
+```
+
+The `RxInferBenchmarkCallbacks` structure collects timestamps at various stages of the inference process:
+
+- Before and after model creation
+- Before and after inference starts/ends
+- Before and after each iteration
+- Before and after autostart (for streaming inference)
+
+```@docs
+RxInferBenchmarkCallbacks
+```
+
+This information can be used to:
+- Track performance statistics (min/max/average) of your inference procedure
+- Identify performance variability across runs
+- Monitor the time spent in different stages of inference
+- Establish performance baselines for your models
+- Detect performance regressions
+
+The timestamps are collected using `time_ns()` for high precision timing measurements and are automatically formatted into human-readable durations when displayed.
+
+!!! note
+    The timing measurements include all overhead from the Julia runtime and may vary between runs. For more precise benchmarking of specific code sections, consider using the `BenchmarkTools.jl` package. When gathering performance statistics, consider running multiple iterations to get more reliable metrics.
 

@@ -3,6 +3,42 @@ using PrettyTables.Printf
 
 export RxInferBenchmarkCallbacks
 
+"""
+    RxInferBenchmarkCallbacks
+
+A callback structure for collecting timing information during the inference procedure.
+This structure collects timestamps for various stages of the inference process and aggregates
+them across multiple runs, allowing you to track performance statistics (min/max/average/etc.)
+of your model's inference procedure.
+
+# Fields
+- `before_model_creation_ts`: Vector of timestamps before model creation
+- `after_model_creation_ts`: Vector of timestamps after model creation
+- `before_inference_ts`: Vector of timestamps before inference starts
+- `after_inference_ts`: Vector of timestamps after inference ends
+- `before_iteration_ts`: Vector of vectors of timestamps before each iteration
+- `after_iteration_ts`: Vector of vectors of timestamps after each iteration
+- `before_autostart_ts`: Vector of timestamps before autostart
+- `after_autostart_ts`: Vector of timestamps after autostart
+
+# Example
+```julia
+# Create a callbacks instance to track performance
+callbacks = RxInferBenchmarkCallbacks()
+
+# Run inference multiple times to gather statistics
+for _ in 1:10
+    result = infer(
+        model = my_model(),
+        data = my_data,
+        callbacks = callbacks
+    )
+end
+
+# The callbacks object now contains timing information from all runs,
+# allowing you to compute min/max/average performance metrics
+```
+"""
 struct RxInferBenchmarkCallbacks
     before_model_creation_ts::Vector{UInt64}
     after_model_creation_ts::Vector{UInt64}
