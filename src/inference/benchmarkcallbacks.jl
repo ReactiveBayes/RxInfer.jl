@@ -9,7 +9,8 @@ export RxInferBenchmarkCallbacks
 A callback structure for collecting timing information during the inference procedure.
 This structure collects timestamps for various stages of the inference process and aggregates
 them across multiple runs, allowing you to track performance statistics (min/max/average/etc.)
-of your model's inference procedure.
+of your model's creation and inference procedure. The structure supports pretty printing by default,
+displaying timing statistics in a human-readable format.
 
 # Fields
 - `before_model_creation_ts`: Vector of timestamps before model creation
@@ -28,15 +29,15 @@ callbacks = RxInferBenchmarkCallbacks()
 
 # Run inference multiple times to gather statistics
 for _ in 1:10
-    result = infer(
+    infer(
         model = my_model(),
         data = my_data,
         callbacks = callbacks
     )
 end
 
-# The callbacks object now contains timing information from all runs,
-# allowing you to compute min/max/average performance metrics
+# Display the timing statistics (uses pretty printing by default)
+callbacks
 ```
 """
 struct RxInferBenchmarkCallbacks

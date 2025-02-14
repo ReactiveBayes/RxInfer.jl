@@ -232,12 +232,14 @@ Here's how to use it:
 ```@example debugging-with-callbacks
 using RxInfer
 
+infer(model = iid_normal(), data = (y = dataset, ), constraints = MeanField(), iterations = 5, initialization = init, callbacks = RxInferBenchmarkCallbacks()) #hide
+
 # Create a benchmark callbacks instance to track performance
 benchmark_callbacks = RxInferBenchmarkCallbacks()
 
 # Run inference multiple times to gather statistics
 for i in 1:3  # Usually you'd want more runs for better statistics
-    result = infer(
+    infer(
         model = iid_normal(),
         data = (y = dataset, ),
         constraints = MeanField(),
