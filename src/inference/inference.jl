@@ -124,6 +124,22 @@ function Base.show(io::IO, entry::InferenceLoggedDataEntry)
     print(io, "data: ", entry.name, " (type=", entry.type, ", size=", entry.size, ", elsize=", entry.elsize, ")")
 end
 
+struct InferenceLoggedDictNTEntries
+    base_type::Symbol
+    entries::Vector{InferenceLoggedDataEntry}
+end
+
+# Very safe by default, logging should not crash if we don't know how to parse the dict/nt entry
+log_dictnt_entries(data) = string(typeof(data))
+
+log_dictnt_entries(data::Dict) = InferenceLoggedDictNTEntries(:Dict, log_data_entries(data))
+log_dictnt_entries(data::NamedTuple) = InferenceLoggedDictNTEntries(:NamedTuple, log_data_entries(data))
+
+function Base.show(io::IO, entry::InferenceLoggedDictNTEntries)
+    entries_str = join(map(e -> "$(e.name)::$(e.type)", entry.entries), ", ")
+    print(io, entry.base_type, ": ", entries_str)
+end
+
 using PrettyTables
 
 function summarize_invokes(io::IO, ::Val{:inference}, invokes; n_last = 5)
@@ -472,16 +488,32 @@ function infer(;
 
     return with_session(session, :inference) do invoke
         append_invoke_context(invoke) do ctx
-            ctx[:model_name] = string(GraphPPL.getmodel(model))
-            ctx[:model] = GraphPPL.getsource(model)
-            ctx[:data] = log_data_entries(data)
+            try
+                ctx[:model_name] = string(GraphPPL.getmodel(model))
+                ctx[:model] = GraphPPL.getsource(model)
+                ctx[:data] = log_data_entries(data)
 
-            !isnothing(datastream) && (ctx[:datastream_type] = eltype(datastream))
-            !isnothing(constraints) && (ctx[:constraints] = GraphPPL.source_code(constraints))
-            !isnothing(meta) && (ctx[:meta] = GraphPPL.source_code(meta))
+                !isnothing(datastream) && (ctx[:datastream_type] = eltype(datastream))
+                !isnothing(constraints) && (ctx[:constraints] = GraphPPL.source_code(constraints))
+                !isnothing(meta) && (ctx[:meta] = GraphPPL.source_code(meta))
 
-            ctx[:iterations] = iterations
-            ctx[:free_energy] = free_energy
+                ctx[:returnvars] = log_dictnt_entries(returnvars)
+                ctx[:predictvars] = log_dictnt_entries(predictvars)
+                ctx[:historyvars] = log_dictnt_entries(historyvars)
+                !isnothing(keephistory) && (ctx[:keephistory] = keephistory)
+
+                ctx[:iterations] = iterations
+                ctx[:free_energy] = free_energy
+                ctx[:allow_node_contraction] = allow_node_contraction
+                ctx[:showprogress] = showprogress
+                ctx[:catch_exception] = catch_exception
+
+                ctx[:callbacks] = log_dictnt_entries(callbacks)
+                ctx[:addons] = log_dictnt_entries(addons)
+                ctx[:options] = log_dictnt_entries(options)
+            catch
+                # suppress any errors here, we don't want to crash the inference over logging issues
+            end
         end
 
         if isnothing(autoupdates)

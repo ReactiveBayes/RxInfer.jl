@@ -250,6 +250,64 @@ end
     end
 end
 
+@testitem "session context log_dictnt_entries" begin
+    import RxInfer: log_dictnt_entries
+
+    struct UnknownArbitraryType end
+
+    @test occursin("UnknownArbitraryType", log_dictnt_entries(UnknownArbitraryType()))
+    @test occursin("Nothing", log_dictnt_entries(nothing))
+
+    @testset let entry = log_dictnt_entries(Dict(:x => 1.5))
+        @test length(entry.entries) === 1
+        @test entry.base_type === :Dict
+        @test entry.entries[1].name === :x
+        @test entry.entries[1].type === Float64
+    end
+
+    @testset let entry = log_dictnt_entries(Dict(:y => [1.0, 2.0, 3.0], :a => 1))
+        @test length(entry.entries) === 2
+        @test entry.base_type === :Dict
+
+        # Find entries by name since Dict order is not guaranteed
+        y_entry = first(filter(e -> e.name === :y, entry.entries))
+        a_entry = first(filter(e -> e.name === :a, entry.entries))
+
+        @test y_entry.type === Vector{Float64}
+        @test a_entry.type === Int64
+    end
+
+    @testset let entry = log_dictnt_entries((y = [1.0, 2.0, 3.0], a = 1))
+        @test length(entry.entries) === 2
+        @test entry.base_type === :NamedTuple
+        @test entry.entries[1].name === :y
+        @test entry.entries[1].type === Vector{Float64}
+        @test entry.entries[2].name === :a
+        @test entry.entries[2].type === Int64
+    end
+
+    @testset let entry = log_dictnt_entries((x = 1.5,))
+        @test length(entry.entries) === 1
+        @test entry.base_type === :NamedTuple
+        @test entry.entries[1].name === :x
+        @test entry.entries[1].type === Float64
+    end
+end
+
+@testitem "session context log_dictnt_entries string representation" begin
+    import RxInfer: log_dictnt_entries
+
+    struct UnknownArbitraryType2 end
+
+    @testset "repr formatting" begin
+        @test occursin("Nothing", repr(log_dictnt_entries(nothing)))
+        @test occursin("UnknownArbitraryType2", repr(log_dictnt_entries(UnknownArbitraryType2())))
+        @test occursin("Dict: x::Float64", repr(log_dictnt_entries(Dict(:x => 1.5))))
+        @test occursin("NamedTuple: y::Vector{Float64}, a::Int64", repr(log_dictnt_entries((y = [1.0, 2.0], a = 1))))
+        @test occursin("NamedTuple: x::Missing", repr(log_dictnt_entries((x = missing,))))
+    end
+end
+
 @testitem "Static inference with `inference`" begin
 
     # A simple model for testing that resembles a simple kalman filter with
