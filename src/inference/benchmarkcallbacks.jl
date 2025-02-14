@@ -92,5 +92,5 @@ function Base.show(io::IO, callbacks::RxInferBenchmarkCallbacks)
         data[i, 6] = convert(Float64, std(time))
     end
     hl_v = Highlighter((data, i, j) -> (j == 3) && (data[i, j] > 10 * data[i, j - 1]), crayon"red bold")
-    pretty_table(data; formatters = (s, i, j) -> prettytime(s), header = header, header_crayon = crayon"yellow bold", tf = tf_unicode_rounded, highlighters = hl_v)
+    pretty_table(io, data; formatters = (s, i, j) -> prettytime(s), header = header, header_crayon = crayon"yellow bold", tf = tf_unicode_rounded, highlighters = hl_v)
 end
