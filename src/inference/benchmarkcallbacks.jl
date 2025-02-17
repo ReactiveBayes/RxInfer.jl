@@ -96,7 +96,22 @@ end
 
 prettytime(s) = s
 
-function __get_benchmark_stats(callbacks::RxInferBenchmarkCallbacks)
+"""
+    get_benchmark_stats(callbacks::RxInferBenchmarkCallbacks)
+
+Returns a matrix containing benchmark statistics for different operations in the inference process.
+The matrix contains the following columns:
+1. Operation name (String)
+2. Minimum time (Float64)
+3. Maximum time (Float64)
+4. Mean time (Float64)
+5. Median time (Float64)
+6. Standard deviation (Float64)
+
+Each row represents a different operation (model creation, inference, iteration, autostart).
+Times are in nanoseconds.
+"""
+function get_benchmark_stats(callbacks::RxInferBenchmarkCallbacks)
     model_creation_time = callbacks.after_model_creation_ts .- callbacks.before_model_creation_ts
     stats_to_show = [("Model creation", model_creation_time)]
     inference_time = callbacks.after_inference_ts .- callbacks.before_inference_ts
@@ -132,7 +147,7 @@ function Base.show(io::IO, callbacks::RxInferBenchmarkCallbacks)
 
     print(io, "RxInfer inference benchmark statistics: $(length(callbacks.before_model_creation_ts)) evaluations \n")
 
-    data = __get_benchmark_stats(callbacks)
+    data = get_benchmark_stats(callbacks)
     hl_v = Highlighter((data, i, j) -> (j == 3) && (data[i, j] > 10 * data[i, j - 1]), crayon"red bold")
     pretty_table(io, data; formatters = (s, i, j) -> prettytime(s), header = header, header_crayon = crayon"yellow bold", tf = tf_unicode_rounded, highlighters = hl_v)
 end

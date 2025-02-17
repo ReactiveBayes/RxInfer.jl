@@ -264,6 +264,7 @@ The `RxInferBenchmarkCallbacks` structure collects timestamps at various stages 
 
 ```@docs
 RxInferBenchmarkCallbacks
+RxInfer.get_benchmark_stats
 ```
 
 This information can be used to:

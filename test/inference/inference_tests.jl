@@ -1076,7 +1076,7 @@ end
         @test length(last(callbacks.after_iteration_ts)) == 10
     end
 
-    stats = RxInfer.__get_benchmark_stats(callbacks)
+    stats = RxInfer.get_benchmark_stats(callbacks)
     for line in eachrow(stats)
         @test line[2] > 0.0
         @test line[3] > line[2]
