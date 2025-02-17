@@ -59,7 +59,7 @@
         )
     end
 
-    seed = 123
+    seed = 42
     rng = StableRNG(seed)
     T = 50
 
