@@ -791,3 +791,12 @@ end
         )
     )
 end
+
+@testitem "@autoupdates should save have nice pretty printing" begin
+    autoupdates_object = @autoupdates begin
+        a, b = params(q(x))
+    end
+    @test occursin("a, b", repr(autoupdates_object))
+    @test occursin("params(q(x))", repr(autoupdates_object))
+    @test occursin("@autoupdates", repr(autoupdates_object))
+end

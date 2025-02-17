@@ -1,10 +1,9 @@
-
 ![](docs/src/assets/biglogo-blacktheme.svg?raw=true&sanitize=true)
 
 [![Official page](https://img.shields.io/badge/official%20page%20-RxInfer-blue)](https://reactivebayes.github.io/rxinfer-website/)
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://reactivebayes.github.io/RxInfer.jl/stable/)
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://reactivebayes.github.io/RxInfer.jl/dev/)
-[![Examples](https://img.shields.io/badge/examples-RxInfer-brightgreen)](https://reactivebayes.github.io/RxInfer.jl/stable/examples/overview/)
+[![Examples](https://img.shields.io/badge/examples-RxInfer-brightgreen)](https://reactivebayes.github.io/RxInferExamples.jl/)
 [![Q&A](https://img.shields.io/badge/Q&A-RxInfer-orange)](https://github.com/reactivebayes/RxInfer.jl/discussions)
 [![Roadmap](https://img.shields.io/badge/roadmap-RxInfer-yellow)](#roadmap)
 [![Build Status](https://github.com/reactivebayes/RxInfer.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/reactivebayes/RxInfer.jl/actions/workflows/CI.yml?query=branch%3Amain)
@@ -26,6 +25,9 @@ RxInfer.jl has been designed with a focus on efficiency, scalability and maximum
 Turing comparison             |  Scalability performance
 :-------------------------:|:-------------------------:
 ![](benchmarks/plots/lgssm_comparison.svg?raw=true&sanitize=true)  |  ![](benchmarks/plots/lgssm_scaling.svg?raw=true&sanitize=true)
+
+> [!NOTE]
+> See many more examples in the [RxInferExamples.jl](https://reactivebayes.github.io/RxInferExamples.jl/) repository.
 
 ### Faster inference with better results
 
@@ -61,12 +63,10 @@ Optionally, use `] test RxInfer` to validate the installation by running the tes
 
 For more information about `RxInfer.jl` please refer to the [documentation](https://reactivebayes.github.io/RxInfer.jl/stable/).
 
-> [!NOTE]
-> `RxInfer.jl` API has been changed in version `3.0.0`. See [Migration Guide](https://reactivebayes.github.io/RxInfer.jl/stable/manuals/migration-guide-v2-v3) for more details.
-
 # Getting Started
 
-There are examples available to get you started in the `examples/` folder. Alternatively, preview the same examples in the [documentation](https://reactivebayes.github.io/RxInfer.jl/stable/examples/overview/).
+> [!NOTE]
+> There are examples available to get you started in the [RxInferExamples.jl](https://reactivebayes.github.io/RxInferExamples.jl/) repository.
 
 ### Coin flip simulation
 
@@ -144,9 +144,6 @@ end
 
 As you can see, `RxInfer` in combination with `GraphPPL` offers a model specification syntax that resembles closely to the mathematical equations defined above. 
 
-> [!NOTE]
-> `GraphPPL.jl` API has been changed in version `4.0.0`. See [Migration Guide](https://reactivebayes.github.io/GraphPPL.jl/stable/) for more details.
-
 ### Inference specification
 
 Once we have defined our model, the next step is to use `RxInfer` API to infer quantities of interests. To do this we can use a generic `infer` function from `RxInfer.jl` that supports static datasets.
@@ -166,40 +163,50 @@ Our high-level project roadmap outlines the key milestones and focus areas for t
 
 | Q1/Q2 2024          | Q3/Q4 2024                | 2025                | 
 |---------------------|---------------------------|--------------------|
-| 🧩 **Nested models with [GraphPPL.jl](https://github.com/reactivebayes/GraphPPL.jl)** ✅    | 🌐 **Graph structure visualization** | 🔀 **Stochastic Processes** |
-| 🔄 **Development of [ExponentialFamilyProjection.jl]()** ✅                | 🧠 **Automated inference with [ExponentialFamilyProjection.jl](https://github.com/reactivebayes/ExponentialFamilyProjection.jl)** | 🚀 **Robustness & Memory-efficiency** |
+| 🧩 **Nested models with [GraphPPL.jl](https://github.com/reactivebayes/GraphPPL.jl)** ✅    | 🌐 **Graph structure visualization** ✅ | 🧠🧠 **Automated Inference** |
+| 🔄 **Development of [ExponentialFamilyProjection.jl]()** ✅                | 🧠 **Semi-automated inference with [ExponentialFamilyProjection.jl](https://github.com/reactivebayes/ExponentialFamilyProjection.jl)** ✅| 🚀 **Stochastic Processes** |
 
 For a more granular view of our progress and ongoing tasks, check out our [project board](https://github.com/orgs/reactivebayes/projects/2/views/4) or join our 4-weekly [public meetings](https://dynalist.io/d/F4aA-Z2c8X-M1iWTn9hY_ndN).
 
-# External Contributors
-
-RxInfer has benefited from the contributions and development efforts of external collaborators and organizations. We're grateful for their involvement in advancing the project.
-
-## Active Inference Institute
-
-Members of the [Active Inference Institute](https://www.activeinference.org/) have been working on improving the visualization capabilities of RxInfer/GraphPPL. Their efforts focus on developing better model visualization capabilities, creating various summary/subgraph visualization modalities, implementing different graph layout algorithms, and improving the ability to inspect and understand models.
-
-For more details on their ongoing work, see the [RxInfer development project board](https://coda.io/d/RxInfer-2024-Active-Inference-Institute_ddtS-XZ4BJb/Developing-RxInfer-jl_sufeCeIa#_lutfq_7F).
-
-## Educational Content
-
-Educational content and tutorials related to RxInfer are being developed and can be found on [Learnable Loop](https://learnableloop.com/#category=RxInfer). These resources cover a range of topics including visualizing Forney Factor Graphs, sales forecasting with time-varying autoregressive models, hidden Markov models with control, and various applications of Active Inference across different domains.
-
-# Contributing
-
-We welcome contributions from the community. If you are interested in contributing to the development of `RxInfer.jl`, please check out our [contributing guide](https://reactivebayes.github.io/RxInfer.jl/stable/contributing/guide), the [contributing guidelines](https://reactivebayes.github.io/RxInfer.jl/stable/contributing/guidelines), or look at the [issues linked with the `good first issue` label](https://github.com/ReactiveBayes/RxInfer.jl/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22) to get started.
-
-# Where to go next?
-
-There are a set of [examples](https://reactivebayes.github.io/RxInfer.jl/stable/examples/overview/) available in `RxInfer` repository that demonstrate the more advanced features of the package. Alternatively, you can head to the [documentation](https://reactivebayes.github.io/RxInfer.jl/stable/) that provides more detailed information of how to use `RxInfer` to specify more complex probabilistic models.
 
 ## Ecosystem
 
-The `RxInfer` framework consists of three *core* packages developed by [ReactiveBayes](https://github.com/reactivebayes/):
+The `RxInfer` framework consists of four *core* packages developed by [ReactiveBayes](https://github.com/reactivebayes/):
 
 - [`ReactiveMP.jl`](https://github.com/reactivebayes/ReactiveMP.jl) - the underlying message passing-based inference engine
 - [`GraphPPL.jl`](https://github.com/reactivebayes/GraphPPL.jl) - model and constraints specification package
+- [`ExponentialFamily.jl`](https://github.com/reactivebayes/ExponentialFamily.jl) - package for exponential family distributions
 - [`Rocket.jl`](https://github.com/reactivebayes/Rocket.jl) - reactive extensions package for Julia 
+
+# Where to go next?
+
+There are a set of [examples](https://reactivebayes.github.io/RxInferExamples.jl/) available in the `RxInferExamples.jl` repository that demonstrate the more advanced features of the package. Alternatively, you can head to the [documentation](https://reactivebayes.github.io/RxInfer.jl/stable/) that provides more detailed information of how to use `RxInfer` to specify more complex probabilistic models.
+
+
+# Join Our Community and Contribute to RxInfer
+
+RxInfer is a community-driven project and we welcome all contributions! To get started:
+- Check out our [contributing guide](https://reactivebayes.github.io/RxInfer.jl/stable/contributing/guide)
+- Review the [contributing guidelines](https://reactivebayes.github.io/RxInfer.jl/stable/contributing/guidelines)
+- Browse [beginner-friendly issues](https://github.com/ReactiveBayes/RxInfer.jl/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22) to find something that interests you
+
+## Active Inference Institute Collaboration
+
+The [Active Inference Institute](https://www.activeinference.org/) community members are enhancing RxInfer/GraphPPL's visualization capabilities. Their work includes:
+- Developing advanced model visualization features ✅ ([PR](https://github.com/ReactiveBayes/GraphPPL.jl/pull/251))
+- Creating summary and subgraph visualization modalities
+- Implementing various graph layout algorithms
+- Improving model inspection and understanding tools
+
+For more details on ongoing work, see the [RxInfer development project board](https://coda.io/d/RxInfer-2024-Active-Inference-Institute_ddtS-XZ4BJb/Developing-RxInfer-jl_sufeCeIa#_lutfq_7F).
+
+## Learning Resources
+
+The community maintains educational content and tutorials on [Learnable Loop](https://learnableloop.com/#category=RxInfer), covering topics such as:
+- Visualizing Forney Factor Graphs
+- Sales forecasting with time-varying autoregressive models
+- Hidden Markov models with control
+- Applications of Active Inference across different domains
 
 ## JuliaCon 2023 presentation
 
@@ -216,6 +223,33 @@ Also check out the recorded presentation at the Julia User Group Munich meetup f
 <p align="center">
     <a href="https://www.youtube.com/watch?v=KuluqEzFtm8"><img style="width: 100%" src="https://img.youtube.com/vi/KuluqEzFtm8/0.jpg"></a>
 </p>
+
+
+# Telemetry
+
+RxInfer collects completely anonymous telemetry data regarding package usage. This information helps us understand how RxInfer is used and shapes our roadmap to prioritize features and improvements. The telemetry:
+- Does not collect any code, data, or environment information, only the fact of `using RxInfer` once per Julia session
+- Entirely anonymous
+- (Opt-out) Can be disabled for a single Julia session or permanently
+
+You can learn more about it and how to opt-out by visiting our [documentation](https://reactivebayes.github.io/RxInfer.jl/stable/).
+
+## Session Sharing
+
+RxInfer includes an optional session sharing feature that can help us provide better support and improve the package. When you encounter an issue, you can share your session data with us, which includes:
+- Model source code and metadata
+- Input data characteristics (no actual data)
+- Execution timing and success rates
+- Error information (if any)
+- Environment information (Julia version, OS, etc.)
+
+This information is invaluable for debugging issues and improving RxInfer. Session sharing is:
+- Completely optional and disabled by default
+- Entirely anonymous
+- Only shared when you explicitly choose to do so
+- (Opt-in) Can be enabled to send reports automatically when an error occurs. When enabled, still entirely anonymous.
+
+If you're opening a GitHub issue, we encourage you to share your session ID with us - it helps us understand your use case better and provide more accurate support. Learn more about session sharing and how to opt-in in our [documentation](https://reactivebayes.github.io/RxInfer.jl/stable/).
 
 # License
 

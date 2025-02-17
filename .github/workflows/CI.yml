@@ -1,4 +1,5 @@
 name: CI
+
 on:
   workflow_dispatch:
   pull_request:
@@ -16,15 +17,12 @@ concurrency:
   # Cancel intermediate builds: only if it is a pull request build.
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+
+permissions:
+  actions: write
+  contents: read
+
 jobs:
-  format: 
-    name: Julia Formatter
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: julia-actions/setup-julia@v2
-      - uses: julia-actions/cache@v1         
-      - run: make lint
   paper:
     name: Paper Preview
     runs-on: ubuntu-latest
@@ -42,15 +40,20 @@ jobs:
           # PDF. Note, this should be the same directory as the input
           # paper.md
           path: paper/paper.pdf
+  code-style:
+    name: Code Style Suggestions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: julia-actions/julia-format@v3
   test:
-    name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
+    name: Tests ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ contains(matrix.version, 'nightly') }}
-    needs: format
     strategy:
       fail-fast: false
       matrix:
         version:
+          - '1.10'
           - '1.11'
         os:
           - ubuntu-latest
@@ -59,11 +62,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: julia-actions/setup-julia@v2
-      - uses: julia-actions/cache@v1
+        with:
+          version: ${{ matrix.version }}
+      - uses: julia-actions/cache@v2
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
         env:
           USE_DEV: "false"
+          LOG_USING_RXINFER: "false"
       - uses: julia-actions/julia-processcoverage@v1
       - uses: codecov/codecov-action@v4
         with:
@@ -73,49 +79,45 @@ jobs:
       - name: Archive test artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: test-output
+          name: test-output-${{ matrix.version }}-${{ matrix.os }}-${{ matrix.arch }}
           path: test/_output
-  examples:
+  test-examples:
     name: Examples
     runs-on: ubuntu-latest
-    needs: format
-    permissions:
-      contents: write
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout RxInfer
+        uses: actions/checkout@v4
+        with:
+          path: RxInfer.jl
+      - name: Checkout Examples
+        uses: actions/checkout@v4
+        with:
+          repository: ReactiveBayes/RxInferExamples.jl
+          path: RxInferExamples.jl
       - uses: julia-actions/setup-julia@v2
       - uses: julia-actions/cache@v1
-      - uses: julia-actions/julia-buildpkg@v1
-      - uses: actions/cache@v3
-        id: examples
-        with:
-          path: |
-            docs/src/examples
-            docs/src/assets/examples
-          key: ${{ github.sha }}
-      - run: make examples
+      - name: Build and test examples
+        env:
+          LOG_USING_RXINFER: "false"
+        run: |
+          julia -e 'using Pkg; Pkg.add("Weave"); Pkg.develop(path="RxInfer.jl"); Pkg.precompile()'
+          cd RxInferExamples.jl
+          make examples-dev RXINFER=../RxInfer.jl
   docs:
     name: Documentation
     runs-on: ubuntu-latest
     needs: 
       - test
-      - format
-      - examples
+      - test-examples
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v2
       - uses: julia-actions/setup-julia@v2
-      - uses: actions/cache@v3
-        id: examples
-        with:
-          path: |
-            docs/src/examples
-            docs/src/assets/examples
-          key: ${{ github.sha }}
-      - uses: julia-actions/cache@v1
+      - uses: julia-actions/cache@v2
       - uses: julia-actions/julia-buildpkg@v1
       - run: make docs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LOG_USING_RXINFER: "false"
       

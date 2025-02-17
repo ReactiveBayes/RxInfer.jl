@@ -327,7 +327,7 @@ plot(results.free_energy, label = "Bethe Free Energy")
 
 ## [Callbacks](@id manual-static-inference-callbacks)
 
-The [`infer`](@ref) function has its own lifecycle, consisting of multiple steps. A user is free to inject some extra logic during the inference procedure, e.g. for [debugging purposes](@ref user-guide-debugging-callbacks). By supplying callbacks, users can inject custom logic on specific moments during the inference procedure. Here are available callbacks that can be used together with the static datasets:
+The [`infer`](@ref) function has its own lifecycle, consisting of multiple steps. A user is free to inject some extra logic during the inference procedure, e.g. for [debugging purposes](@ref user-guide-debugging-callbacks) or [performance analysis](@ref user-guide-debugging-benchmark-callbacks). By supplying callbacks, users can inject custom logic on specific moments during the inference procedure. Here are available callbacks that can be used together with the static datasets:
 ```@eval
 using RxInfer, Test, Markdown
 # Update the documentation below if this test does not pass

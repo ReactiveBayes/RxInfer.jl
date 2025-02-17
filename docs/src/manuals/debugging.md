@@ -2,6 +2,14 @@
 
 Debugging inference in `RxInfer` can be quite challenging, mostly due to the reactive nature of the inference, undefined order of computations, the use of observables, and generally hard-to-read stack traces in Julia. Below we discuss ways to help you find problems in your model that prevents you from getting the results you want. 
 
+## Getting Help from the Community
+
+When you encounter issues that are difficult to debug, the RxInfer community is here to help. To get the most effective support:
+
+1. **Share Session Data**: For complex issues, you can share your session data to help us understand exactly what's happening in your model. See [Session Sharing](@ref manual-session-sharing) to learn how.
+
+2. **Join Community Meetings**: We discuss common issues and solutions in our regular community meetings. See [Getting Help with Issues](@ref getting-help) for more information.
+
 ## Requesting a trace of messages
 
 `RxInfer` provides a way that allows to save the history of the computations leading up to the computed messages and marginals in the inference procedure. This history is added on top of messages and marginals and is referred to as a _Memory Addon_. Below is an example explaining how you can extract this history and use it to fix a bug.
@@ -223,4 +231,63 @@ nothing #hide
 
 We can see the order of message update events. Note that `ReactiveMP` may decide to compute messages lazily, in which case the actual computation of the value of a message will be deffered until later moment. In this case, `LoggerPipelineStage` will report _DefferedMessage_.
 
+## [Using `RxInferBenchmarkCallbacks` for Performance Analysis](@id user-guide-debugging-benchmark-callbacks)
+
+`RxInfer` provides a built-in benchmarking callback structure called [`RxInferBenchmarkCallbacks`](@ref) that helps collect timing information during the inference procedure. This structure aggregates timing information across multiple runs, allowing you to track performance statistics (min/max/average/etc.) of your model's creation and inference procedure.
+
+Here's how to use it:
+
+```@example debugging-with-callbacks
+using RxInfer
+
+infer(model = iid_normal(), data = (y = dataset, ), constraints = MeanField(), iterations = 5, initialization = init, callbacks = RxInferBenchmarkCallbacks()) #hide
+
+# Create a benchmark callbacks instance to track performance
+benchmark_callbacks = RxInferBenchmarkCallbacks()
+
+# Run inference multiple times to gather statistics
+for i in 1:3  # Usually you'd want more runs for better statistics
+    infer(
+        model = iid_normal(),
+        data = (y = dataset, ),
+        constraints = MeanField(),
+        iterations = 5,
+        initialization = init,
+        callbacks = benchmark_callbacks
+    )
+end
+```
+
+```@example debugging-with-callbacks
+# Display the benchmark statistics
+benchmark_callbacks
+```
+
+The `RxInferBenchmarkCallbacks` structure collects timestamps at various stages of the inference process:
+
+- Before and after model creation
+- Before and after inference starts/ends
+- Before and after each iteration
+- Before and after autostart (for streaming inference)
+
+```@docs
+RxInferBenchmarkCallbacks
+RxInfer.get_benchmark_stats
+RxInfer.DEFAULT_BENCHMARK_CALLBACKS_BUFFER_CAPACITY
+```
+
+!!! note
+    By default, the `RxInferBenchmarkCallbacks` structure uses a circular buffer with a limited capacity to store timestamps. This helps limit memory usage in long-running applications. You can change the buffer capacity by passing a different value to the `capacity` keyword argument of the `RxInferBenchmarkCallbacks` constructor.
+
+This information can be used to:
+- Track performance statistics (min/max/average) of your inference procedure
+- Identify performance variability across runs
+- Monitor the time spent in different stages of inference
+- Establish performance baselines for your models
+- Detect performance regressions
+
+The timestamps are collected using `time_ns()` for high precision timing measurements and are automatically formatted into human-readable durations when displayed.
+
+!!! note
+    The timing measurements include all overhead from the Julia runtime and may vary between runs. For more precise benchmarking of specific code sections, consider using the `BenchmarkTools.jl` package. When gathering performance statistics, consider running multiple iterations to get more reliable metrics.
 

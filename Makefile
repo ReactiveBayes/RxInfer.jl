@@ -11,16 +11,12 @@ else
     PATH_SEP = /
 endif
 
-# Includes `examples/Manifest.toml`
-EXAMPLES_MANIFEST_FILE = examples$(PATH_SEP)Manifest.toml 
-# Includes `examples/Manifest.toml`, `docs/src/examples`, `docs/src/assets/examples`
-EXAMPLES_FILES = $(EXAMPLES_MANIFEST_FILE) docs$(PATH_SEP)src$(PATH_SEP)examples docs$(PATH_SEP)src$(PATH_SEP)assets$(PATH_SEP)examples
 # Includes `docs/build`
 DOCS_BUILD_FILES = docs$(PATH_SEP)build
 # Includes `_output`, `test/_output`
 TEST_OUTPUT_FILES = _output test$(PATH_SEP)_output
 # Includes all the above
-ALL_TMP_FILES = $(EXAMPLES_FILES) $(DOCS_BUILD_FILES) $(TEST_OUTPUT_FILES)
+ALL_TMP_FILES = $(DOCS_BUILD_FILES) $(TEST_OUTPUT_FILES)
 
 .PHONY: lint format
 
@@ -33,36 +29,12 @@ lint: scripts_init ## Code formating check
 format: scripts_init ## Code formating run
 	julia --startup-file=no --project=scripts/ scripts/format.jl --overwrite
 
-.PHONY: examples
-
-examples_init:
-	$(RM) $(EXAMPLES_MANIFEST_FILE)
-	julia --startup-file=no --project=examples/ -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate(); Pkg.build(); Pkg.precompile();'
-
-dev_examples_init:
-	$(RM) $(EXAMPLES_MANIFEST_FILE)
-	julia --startup-file=no --project=examples -e 'using Pkg; Pkg.rm([ "RxInfer", "BayesBase", "ExponentialFamily", "ReactiveMP", "GraphPPL", "Rocket" ])'
-	julia --startup-file=no --project=examples -e 'using Pkg; Pkg.develop(PackageSpec(path=joinpath(Pkg.devdir(), "BayesBase.jl")));'
-	julia --startup-file=no --project=examples -e 'using Pkg; Pkg.develop(PackageSpec(path=joinpath(Pkg.devdir(), "ExponentialFamily.jl")));'
-	julia --startup-file=no --project=examples -e 'using Pkg; Pkg.develop(PackageSpec(path=joinpath(Pkg.devdir(), "ReactiveMP.jl")));'
-	julia --startup-file=no --project=examples -e 'using Pkg; Pkg.develop(PackageSpec(path=joinpath(Pkg.devdir(), "GraphPPL.jl")));'
-	julia --startup-file=no --project=examples -e 'using Pkg; Pkg.develop(PackageSpec(path=joinpath(Pkg.devdir(), "Rocket.jl")));' 
-	julia --startup-file=no --project=examples/ -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate(); Pkg.precompile();'
-
-examples: scripts_init examples_init ## Precompile examples and put them in the `docs/src/examples` folder (use specific="<pattern>" to compile a specific example)
-	julia --startup-file=no --project=scripts/ scripts/examples.jl $(specific)
-
-devexamples: scripts_init dev_examples_init ## Same as `make examples` but uses `dev-ed` versions of core packages
-	julia --startup-file=no --project=scripts/ scripts/examples.jl $(specific)
-
 .PHONY: docs
 
 doc_init:
-	$(RM) $(EXAMPLES_MANIFEST_FILE)
 	julia --project=docs -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate(); Pkg.precompile();'
 
 dev_doc_init:
-	$(RM) $(EXAMPLES_MANIFEST_FILE)
 	julia --startup-file=no --project=docs -e 'using Pkg; Pkg.rm([ "RxInfer", "BayesBase", "ExponentialFamily", "ReactiveMP", "GraphPPL", "Rocket" ])'
 	julia --startup-file=no --project=docs -e 'using Pkg; Pkg.develop(PackageSpec(path=joinpath(Pkg.devdir(), "BayesBase.jl")));'
 	julia --startup-file=no --project=docs -e 'using Pkg; Pkg.develop(PackageSpec(path=joinpath(Pkg.devdir(), "ExponentialFamily.jl")));'
@@ -85,7 +57,7 @@ test: ## Run tests, use dev=true to use `dev-ed` version of core packages
 devtest: ## Alias for the `make test dev=true ...`
 	julia -e 'ENV["USE_DEV"]="true"; import Pkg; Pkg.activate("."); Pkg.test()'	
 
-clean: ## Clean documentation build, precompiled examples, benchmark output from tests
+clean: ## Clean documentation build, benchmark output from tests
 	$(foreach file, $(ALL_TMP_FILES), $(RM) $(file))
 	
 help:  ## Display this help

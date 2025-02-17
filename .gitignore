@@ -5,13 +5,6 @@ docs/Manifest.toml
 
 scripts/Manifest.toml
 
-examples/.ipynb_checkpoints
-examples/*incomplete.ipynb
-examples/*.jl
-examples/*WIP*
-examples/*gif
-!examples/.meta.jl
-
 _output
 test/_output
 
@@ -28,8 +21,6 @@ test/_output
 Coverage.ipynb
 
 **/.DS_Store
-
-examples/*Compiled
 
 **/Manifest.toml
 **/LocalPreferences.toml

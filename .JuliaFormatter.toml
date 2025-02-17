@@ -24,3 +24,4 @@ align_matrix = false
 join_lines_based_on_source = false
 separate_kwargs_with_semicolon = false
 surround_whereop_typeparameters = true
+ignore = [ "docs" ]
