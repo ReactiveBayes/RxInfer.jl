@@ -62,6 +62,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: julia-actions/setup-julia@v2
+        with:
+          version: ${{ matrix.version }}
       - uses: julia-actions/cache@v2
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
@@ -92,8 +94,6 @@ jobs:
           repository: ReactiveBayes/RxInferExamples.jl
           path: RxInferExamples.jl
       - uses: julia-actions/setup-julia@v2
-        with:
-          version: '1.11'
       - uses: julia-actions/cache@v1
       - name: Build and test examples
         run: |
