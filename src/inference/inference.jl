@@ -154,7 +154,7 @@ function inference_check_itertype(keyword::Symbol, ::T) where {T}
           """)
 end
 
-function infer_check_dicttype(::Symbol, ::Union{Nothing, NamedTuple, Dict, GraphPPL.VarDict})
+function infer_check_dicttype(::Symbol, ::Union{Nothing, NamedTuple, Dict, GraphPPL.VarDict, RxInferBenchmarkCallbacks})
     # This function check is the second argument is of type `Nothing`, `NamedTuple`, `Dict` or `VarDict`. 
     # Does nothing is true, throws an error otherwise (see the second method below)
     nothing
@@ -263,7 +263,7 @@ Check the official documentation for more information about some of the argument
 - `datastream`: A stream of `NamedTuple` with data, required (or `data`)
 - `autoupdates = nothing`: auto-updates specification, required for streamline inference, see [`@autoupdates`](@ref)
 - `initialization = nothing`: initialization specification object, optional, see [`@initialization`](@ref)
-- `constraints = nothing`: constraints specification object, optional, see `@constraints`
+- `constraints = nothing`: constraints specification object, or an alias such as `MeanField`, optional, see `@constraints`
 - `meta  = nothing`: meta specification object, optional, may be required for some models, see `@meta`
 - `options = nothing`: model creation options, optional, see [`ReactiveMPInferenceOptions`](@ref)
 - `returnvars = nothing`: return structure info, optional, defaults to return everything at each iteration
