@@ -707,3 +707,12 @@ end
         μ(u) = NormalMeanVariance(0, 1)
     end
 end
+
+@testitem "initialization should have nice pretty printing" begin
+    init = @initialization begin
+        q(x) = vague(NormalMeanVariance)
+    end
+    @test occursin("Initial state", repr(init))
+    @test occursin("q(x)", repr(init))
+    @test occursin("NormalMeanVariance", repr(init))
+end

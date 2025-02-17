@@ -2,6 +2,14 @@
 
 Debugging inference in `RxInfer` can be quite challenging, mostly due to the reactive nature of the inference, undefined order of computations, the use of observables, and generally hard-to-read stack traces in Julia. Below we discuss ways to help you find problems in your model that prevents you from getting the results you want. 
 
+## Getting Help from the Community
+
+When you encounter issues that are difficult to debug, the RxInfer community is here to help. To get the most effective support:
+
+1. **Share Session Data**: For complex issues, you can share your session data to help us understand exactly what's happening in your model. See [Session Sharing](@ref manual-session-sharing) to learn how.
+
+2. **Join Community Meetings**: We discuss common issues and solutions in our regular community meetings. See [Getting Help with Issues](@ref getting-help) for more information.
+
 ## Requesting a trace of messages
 
 `RxInfer` provides a way that allows to save the history of the computations leading up to the computed messages and marginals in the inference procedure. This history is added on top of messages and marginals and is referred to as a _Memory Addon_. Below is an example explaining how you can extract this history and use it to fix a bug.
