@@ -1609,6 +1609,15 @@ end
         @test length(last(callbacks.after_iteration_ts)) == 10
     end
 
+    stats = RxInfer.get_benchmark_stats(callbacks)
+    for line in eachrow(stats)
+        @test line[2] > 0.0
+        @test line[3] > line[2]
+        @test line[2] < line[4] < line[3]
+        @test line[2] < line[5] < line[3]
+        @test !isnan(line[6])
+    end
+
     @model function kalman_filter(x_prev_mean, x_prev_var, τ_shape, τ_rate, y)
         x_prev ~ Normal(mean = x_prev_mean, variance = x_prev_var)
         τ ~ Gamma(shape = τ_shape, rate = τ_rate)

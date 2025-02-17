@@ -1,10 +1,18 @@
 using PrettyTables
 using PrettyTables.Printf
+using DataStructures: CircularBuffer
 
 export RxInferBenchmarkCallbacks
 
 """
-    RxInferBenchmarkCallbacks
+    DEFAULT_BENCHMARK_CALLBACKS_BUFFER_CAPACITY
+
+The default capacity of the circular buffers used to store timestamps in the `RxInferBenchmarkCallbacks` structure.
+"""
+const DEFAULT_BENCHMARK_CALLBACKS_BUFFER_CAPACITY = 1000
+
+"""
+    RxInferBenchmarkCallbacks(; capacity = RxInfer.DEFAULT_BENCHMARK_CALLBACKS_BUFFER_CAPACITY)
 
 A callback structure for collecting timing information during the inference procedure.
 This structure collects timestamps for various stages of the inference process and aggregates
@@ -12,15 +20,19 @@ them across multiple runs, allowing you to track performance statistics (min/max
 of your model's creation and inference procedure. The structure supports pretty printing by default,
 displaying timing statistics in a human-readable format.
 
+The structure uses circular buffers with a default capacity of $(DEFAULT_BENCHMARK_CALLBACKS_BUFFER_CAPACITY) entries to store timestamps,
+which helps to limit memory usage in long-running applications. Use `RxInferBenchmarkCallbacks(; capacity = N)` to change the buffer capacity.
+See also [`RxInfer.get_benchmark_stats(callbacks)`](@ref).
+
 # Fields
-- `before_model_creation_ts`: Vector of timestamps before model creation
-- `after_model_creation_ts`: Vector of timestamps after model creation
-- `before_inference_ts`: Vector of timestamps before inference starts
-- `after_inference_ts`: Vector of timestamps after inference ends
-- `before_iteration_ts`: Vector of vectors of timestamps before each iteration
-- `after_iteration_ts`: Vector of vectors of timestamps after each iteration
-- `before_autostart_ts`: Vector of timestamps before autostart
-- `after_autostart_ts`: Vector of timestamps after autostart
+- `before_model_creation_ts`: CircularBuffer of timestamps before model creation
+- `after_model_creation_ts`: CircularBuffer of timestamps after model creation
+- `before_inference_ts`: CircularBuffer of timestamps before inference starts
+- `after_inference_ts`: CircularBuffer of timestamps after inference ends
+- `before_iteration_ts`: CircularBuffer of vectors of timestamps before each iteration
+- `after_iteration_ts`: CircularBuffer of vectors of timestamps after each iteration
+- `before_autostart_ts`: CircularBuffer of timestamps before autostart
+- `after_autostart_ts`: CircularBuffer of timestamps after autostart
 
 # Example
 ```julia
@@ -41,19 +53,31 @@ callbacks
 ```
 """
 struct RxInferBenchmarkCallbacks
-    before_model_creation_ts::Vector{UInt64}
-    after_model_creation_ts::Vector{UInt64}
-    before_inference_ts::Vector{UInt64}
-    after_inference_ts::Vector{UInt64}
-    before_iteration_ts::Vector{Vector{UInt64}}
-    after_iteration_ts::Vector{Vector{UInt64}}
-    before_autostart_ts::Vector{UInt64}
-    after_autostart_ts::Vector{UInt64}
+    before_model_creation_ts::CircularBuffer{UInt64}
+    after_model_creation_ts::CircularBuffer{UInt64}
+    before_inference_ts::CircularBuffer{UInt64}
+    after_inference_ts::CircularBuffer{UInt64}
+    before_iteration_ts::CircularBuffer{Vector{UInt64}}
+    after_iteration_ts::CircularBuffer{Vector{UInt64}}
+    before_autostart_ts::CircularBuffer{UInt64}
+    after_autostart_ts::CircularBuffer{UInt64}
 end
 
-RxInferBenchmarkCallbacks() = RxInferBenchmarkCallbacks(UInt64[], UInt64[], UInt64[], UInt64[], Vector{UInt64}[], Vector{UInt64}[], UInt64[], UInt64[])
+function RxInferBenchmarkCallbacks(; capacity = DEFAULT_BENCHMARK_CALLBACKS_BUFFER_CAPACITY)
+    RxInferBenchmarkCallbacks(
+        CircularBuffer{UInt64}(capacity),
+        CircularBuffer{UInt64}(capacity),
+        CircularBuffer{UInt64}(capacity),
+        CircularBuffer{UInt64}(capacity),
+        CircularBuffer{Vector{UInt64}}(capacity),
+        CircularBuffer{Vector{UInt64}}(capacity),
+        CircularBuffer{UInt64}(capacity),
+        CircularBuffer{UInt64}(capacity)
+    )
+end
 
 check_available_callbacks(warn, callbacks::RxInferBenchmarkCallbacks, ::Val{AvailableCallbacks}) where {AvailableCallbacks} = nothing
+inference_get_callback(callbacks::RxInferBenchmarkCallbacks, name::Symbol) = nothing
 
 Base.isempty(callbacks::RxInferBenchmarkCallbacks) = isempty(callbacks.before_model_creation_ts)
 
@@ -79,8 +103,6 @@ function inference_invoke_callback(callbacks::RxInferBenchmarkCallbacks, name::S
     end
 end
 
-inference_get_callback(callbacks::RxInferBenchmarkCallbacks, name::Symbol) = nothing
-
 function prettytime(t::Union{UInt64, Float64})
     if t < 1e3
         value, units = t, "ns"
@@ -96,24 +118,31 @@ end
 
 prettytime(s) = s
 
-function Base.show(io::IO, callbacks::RxInferBenchmarkCallbacks)
-    if isempty(callbacks)
-        return nothing
-    end
+"""
+    get_benchmark_stats(callbacks::RxInferBenchmarkCallbacks)
 
-    header = (["Operation", "Min", "Max", "Mean", "Median", "Std"],)
+Returns a matrix containing benchmark statistics for different operations in the inference process.
+The matrix contains the following columns:
+1. Operation name (String)
+2. Minimum time (Float64)
+3. Maximum time (Float64)
+4. Mean time (Float64)
+5. Median time (Float64)
+6. Standard deviation (Float64)
 
-    print(io, "RxInfer inference benchmark statistics: $(length(callbacks.before_model_creation_ts)) evaluations \n")
-
-    model_creation_time = callbacks.after_model_creation_ts .- callbacks.before_model_creation_ts
+Each row represents a different operation (model creation, inference, iteration, autostart).
+Times are in nanoseconds.
+"""
+function get_benchmark_stats(callbacks::RxInferBenchmarkCallbacks)
+    model_creation_time = collect(callbacks.after_model_creation_ts) .- collect(callbacks.before_model_creation_ts)
     stats_to_show = [("Model creation", model_creation_time)]
-    inference_time = callbacks.after_inference_ts .- callbacks.before_inference_ts
-    iteration_time = [callbacks.after_iteration_ts[i] .- callbacks.before_iteration_ts[i] for i in 1:length(callbacks.before_iteration_ts)]
+    inference_time = collect(callbacks.after_inference_ts) .- collect(callbacks.before_inference_ts)
+    iteration_time = [collect(callbacks.after_iteration_ts[i]) .- collect(callbacks.before_iteration_ts[i]) for i in 1:length(callbacks.before_iteration_ts)]
     if length(inference_time) > 0
         push!(stats_to_show, ("Inference", inference_time))
         push!(stats_to_show, ("Iteration", reshape(stack(iteration_time), :)))
     end
-    autostart_time = callbacks.after_autostart_ts .- callbacks.before_autostart_ts
+    autostart_time = collect(callbacks.after_autostart_ts) .- collect(callbacks.before_autostart_ts)
     if length(autostart_time) > 0
         push!(stats_to_show, ("Autostart", autostart_time))
     end
@@ -128,6 +157,19 @@ function Base.show(io::IO, callbacks::RxInferBenchmarkCallbacks)
         data[i, 5] = convert(Float64, median(time))
         data[i, 6] = convert(Float64, std(time))
     end
+    return data
+end
+
+function Base.show(io::IO, callbacks::RxInferBenchmarkCallbacks)
+    if isempty(callbacks)
+        return nothing
+    end
+
+    header = (["Operation", "Min", "Max", "Mean", "Median", "Std"],)
+
+    print(io, "RxInfer inference benchmark statistics: $(length(callbacks.before_model_creation_ts)) evaluations \n")
+
+    data = get_benchmark_stats(callbacks)
     hl_v = Highlighter((data, i, j) -> (j == 3) && (data[i, j] > 10 * data[i, j - 1]), crayon"red bold")
     pretty_table(io, data; formatters = (s, i, j) -> prettytime(s), header = header, header_crayon = crayon"yellow bold", tf = tf_unicode_rounded, highlighters = hl_v)
 end

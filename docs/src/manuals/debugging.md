@@ -272,7 +272,12 @@ The `RxInferBenchmarkCallbacks` structure collects timestamps at various stages 
 
 ```@docs
 RxInferBenchmarkCallbacks
+RxInfer.get_benchmark_stats
+RxInfer.DEFAULT_BENCHMARK_CALLBACKS_BUFFER_CAPACITY
 ```
+
+!!! note
+    By default, the `RxInferBenchmarkCallbacks` structure uses a circular buffer with a limited capacity to store timestamps. This helps limit memory usage in long-running applications. You can change the buffer capacity by passing a different value to the `capacity` keyword argument of the `RxInferBenchmarkCallbacks` constructor.
 
 This information can be used to:
 - Track performance statistics (min/max/average) of your inference procedure
