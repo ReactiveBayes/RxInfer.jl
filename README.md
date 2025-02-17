@@ -28,6 +28,7 @@ Turing comparison             |  Scalability performance
 
 > [!NOTE]
 > See many more examples in the [RxInferExamples.jl](https://reactivebayes.github.io/RxInferExamples.jl/) repository.
+
 ### Faster inference with better results
 
 RxInfer.jl not only beats generic-purpose Bayesian inference methods in conjugate models, executes faster, and scales better, but also provides more accurate results. Check out the [documentation](https://reactivebayes.github.io/RxInfer.jl/stable/examples/overview/) for more examples!
@@ -61,9 +62,6 @@ Optionally, use `] test RxInfer` to validate the installation by running the tes
 # Documentation
 
 For more information about `RxInfer.jl` please refer to the [documentation](https://reactivebayes.github.io/RxInfer.jl/stable/).
-
-> [!NOTE]
-> `RxInfer.jl` API has been changed in version `3.0.0`. See [Migration Guide](https://reactivebayes.github.io/RxInfer.jl/stable/manuals/migration-guide-v2-v3) for more details.
 
 # Getting Started
 
