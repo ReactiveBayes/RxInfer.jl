@@ -96,15 +96,7 @@ end
 
 prettytime(s) = s
 
-function Base.show(io::IO, callbacks::RxInferBenchmarkCallbacks)
-    if isempty(callbacks)
-        return nothing
-    end
-
-    header = (["Operation", "Min", "Max", "Mean", "Median", "Std"],)
-
-    print(io, "RxInfer inference benchmark statistics: $(length(callbacks.before_model_creation_ts)) evaluations \n")
-
+function __get_benchmark_stats(callbacks::RxInferBenchmarkCallbacks)
     model_creation_time = callbacks.after_model_creation_ts .- callbacks.before_model_creation_ts
     stats_to_show = [("Model creation", model_creation_time)]
     inference_time = callbacks.after_inference_ts .- callbacks.before_inference_ts
@@ -128,6 +120,19 @@ function Base.show(io::IO, callbacks::RxInferBenchmarkCallbacks)
         data[i, 5] = convert(Float64, median(time))
         data[i, 6] = convert(Float64, std(time))
     end
+    return data
+end
+
+function Base.show(io::IO, callbacks::RxInferBenchmarkCallbacks)
+    if isempty(callbacks)
+        return nothing
+    end
+
+    header = (["Operation", "Min", "Max", "Mean", "Median", "Std"],)
+
+    print(io, "RxInfer inference benchmark statistics: $(length(callbacks.before_model_creation_ts)) evaluations \n")
+
+    data = __get_benchmark_stats(callbacks)
     hl_v = Highlighter((data, i, j) -> (j == 3) && (data[i, j] > 10 * data[i, j - 1]), crayon"red bold")
     pretty_table(io, data; formatters = (s, i, j) -> prettytime(s), header = header, header_crayon = crayon"yellow bold", tf = tf_unicode_rounded, highlighters = hl_v)
 end
