@@ -78,7 +78,7 @@ jobs:
       - name: Archive test artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: test-output
+          name: test-output-${{ matrix.version }}-${{ matrix.os }}-${{ matrix.arch }}
           path: test/_output
   test-examples:
     name: Examples
