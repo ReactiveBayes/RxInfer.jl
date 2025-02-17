@@ -230,6 +230,32 @@ Also check out the recorded presentation at the Julia User Group Munich meetup f
 </p>
 
 
+# Telemetry
+
+RxInfer collects completely anonymous telemetry data regarding package usage. This information helps us understand how RxInfer is used and shapes our roadmap to prioritize features and improvements. The telemetry:
+- Does not collect any code, data, or environment information, only the fact of `using RxInfer` once per Julia session
+- Entirely anonymous
+- (Opt-out) Can be disabled for a single Julia session or permanently
+
+You can learn more about it and how to opt-out by visiting our [documentation](https://reactivebayes.github.io/RxInfer.jl/stable/).
+
+## Session Sharing
+
+RxInfer includes an optional session sharing feature that can help us provide better support and improve the package. When you encounter an issue, you can share your session data with us, which includes:
+- Model source code and metadata
+- Input data characteristics (no actual data)
+- Execution timing and success rates
+- Error information (if any)
+- Environment information (Julia version, OS, etc.)
+
+This information is invaluable for debugging issues and improving RxInfer. Session sharing is:
+- Completely optional and disabled by default
+- Entirely anonymous
+- Only shared when you explicitly choose to do so
+- (Opt-in) Can be enabled to send reports automatically when an error occurs. When enabled, still entirely anonymous.
+
+If you're opening a GitHub issue, we encourage you to share your session ID with us - it helps us understand your use case better and provide more accurate support. Learn more about session sharing and how to opt-in in our [documentation](https://reactivebayes.github.io/RxInfer.jl/stable/).
+
 # License
 
 [MIT License](LICENSE) Copyright (c) 2021-2024 BIASlab, 2024-present ReactiveBayes
