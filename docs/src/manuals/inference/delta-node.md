@@ -23,7 +23,7 @@ The table below summarizes the features of the delta node in RxInfer.jl, categor
 
 ## Gaussian Case
 
-In the context of Gaussian distributions, we recommend either the `Linearization` or `Unscented` method for delta node approximation. The `Linearization` method provides a first-order approximation, while the `Unscented` method delivers a more precise second-order approximation. It's worth noting that while the `Unscented` method is more accurate, it may require hyperparameters tuning.
+In the context of Gaussian distributions, we recommend either the `Linearization` or `Unscented` method for delta node approximation. The `Linearization` method provides a first-order approximation, while the `Unscented` method delivers a more precise second-order approximation. It's worth noting that while the `Unscented` method is more accurate, it may require hyperparameters tuning. In addition, both methods are working well when the function is differentiable. The results may not be accurate if the function is not differentiable.
 
 
 For clarity, consider the following example:

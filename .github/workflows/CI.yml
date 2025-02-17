@@ -1,4 +1,5 @@
 name: CI
+
 on:
   workflow_dispatch:
   pull_request:
@@ -16,6 +17,11 @@ concurrency:
   # Cancel intermediate builds: only if it is a pull request build.
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+
+permissions:
+  actions: write
+  contents: read
+
 jobs:
   paper:
     name: Paper Preview
@@ -47,6 +53,7 @@ jobs:
       fail-fast: false
       matrix:
         version:
+          - '1.10'
           - '1.11'
         os:
           - ubuntu-latest
@@ -55,7 +62,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: julia-actions/setup-julia@v2
-      - uses: julia-actions/cache@v1
+      - uses: julia-actions/cache@v2
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
         env:
@@ -107,9 +114,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: julia-actions/setup-julia@v2
-        with:
-          version: '1.10' # 1.11 is not supported by Cairo/GraphViz
-      - uses: julia-actions/cache@v1
+      - uses: julia-actions/cache@v2
       - uses: julia-actions/julia-buildpkg@v1
       - run: make docs
         env:

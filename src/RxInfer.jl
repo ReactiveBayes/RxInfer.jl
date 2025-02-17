@@ -24,6 +24,7 @@ include("constraints/form/form_point_mass.jl")
 include("constraints/form/form_sample_list.jl")
 
 include("inference/postprocess.jl")
+include("inference/benchmarkcallbacks.jl")
 include("inference/inference.jl")
 
 _isprecompiling() = ccall(:jl_generating_output, Cint, ()) == 1
