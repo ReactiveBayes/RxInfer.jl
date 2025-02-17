@@ -60,7 +60,7 @@
     end
 
     seed = 123
-    rng = MersenneTwister(seed)
+    rng = StableRNG(seed)
     T = 50
 
     sensor_location = 53
