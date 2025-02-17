@@ -981,10 +981,10 @@ end
     @model function pred_model(p_s_t, y, goal, p_B, A)
         s[1] ~ p_s_t
         B ~ p_B
-        y[1] ~ Transition(s[1], A)
+        y[1] ~ DiscreteTransition(s[1], A)
         for i in 2:3
-            s[i] ~ Transition(s[i - 1], B)
-            y[i] ~ Transition(s[i], A)
+            s[i] ~ DiscreteTransition(s[i - 1], B)
+            y[i] ~ DiscreteTransition(s[i], A)
         end
         s[3] ~ Categorical(goal)
     end
@@ -998,9 +998,9 @@ end
     end
 
     result = infer(
-        model = pred_model(A = diageye(4), goal = [0, 1, 0, 0], p_B = MatrixDirichlet(ones(4, 4)), p_s_t = Categorical([0.7, 0.3, 0, 0])),
+        model = pred_model(A = diageye(4), goal = [0, 1, 0, 0], p_B = DirichletCollection(ones(4, 4)), p_s_t = Categorical([0.7, 0.3, 0, 0])),
         data = (y = [[1, 0, 0, 0], missing, missing],),
-        initialization = pred_model_init(MatrixDirichlet(ones(4, 4))),
+        initialization = pred_model_init(DirichletCollection(ones(4, 4))),
         constraints = pred_model_constraints,
         iterations = 10
     )
@@ -1011,9 +1011,9 @@ end
         q(y[1], s) = q(y[1])q(s)
     end
     result = infer(
-        model = pred_model(A = diageye(4), goal = [0, 0, 1, 0], p_B = MatrixDirichlet(ones(4, 4)), p_s_t = Categorical([0.7, 0.3, 0, 0])),
+        model = pred_model(A = diageye(4), goal = [0, 0, 1, 0], p_B = DirichletCollection(ones(4, 4)), p_s_t = Categorical([0.7, 0.3, 0, 0])),
         data = (y = UnfactorizedData([[1, 0, 0, 0], missing, missing]),),
-        initialization = pred_model_init(MatrixDirichlet(ones(4, 4))),
+        initialization = pred_model_init(DirichletCollection(ones(4, 4))),
         constraints = pred_model_constraints,
         iterations = 10
     )
