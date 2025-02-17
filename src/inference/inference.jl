@@ -495,7 +495,8 @@ function infer(;
             !isnothing(datastream) && (ctx[:datastream_type] = eltype(datastream))
             !isnothing(constraints) && (ctx[:constraints] = GraphPPL.source_code(constraints))
             !isnothing(meta) && (ctx[:meta] = GraphPPL.source_code(meta))
-
+            !isnothing(autoupdates) && (ctx[:autoupdates] = repr(autoupdates))
+            !isnothing(initialization) && (ctx[:initialization] = repr(initialization))
             ctx[:returnvars] = log_dictnt_entries(returnvars)
             ctx[:predictvars] = log_dictnt_entries(predictvars)
             ctx[:historyvars] = log_dictnt_entries(historyvars)

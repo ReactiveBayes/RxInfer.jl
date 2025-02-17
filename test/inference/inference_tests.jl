@@ -1514,6 +1514,45 @@ end
     @test occursin("Linearization()", last_invoke.context[:meta])
 end
 
+@testitem "Session statistics should save initialization" begin
+    @model function simple_model(y)
+        x ~ Normal(mean = 0.0, var = 1.0)
+        y ~ Normal(mean = x, var = 1.0)
+    end
+
+    initialization = @initialization begin
+        q(x) = vague(NormalMeanVariance)
+    end
+    session = RxInfer.create_session()
+    result = infer(model = simple_model(), data = (y = 1.0,), initialization = initialization, session = session)
+    stats = RxInfer.get_session_stats(session, :inference)
+    last_invoke = stats.invokes[end]
+    @test haskey(last_invoke.context, :initialization)
+    @test occursin("q(x)", last_invoke.context[:initialization])
+    @test occursin("NormalMeanVariance", last_invoke.context[:initialization])
+end
+
+@testitem "Session statistics should save @autoupdates" begin
+    @model function simple_model(y, x_mean, x_var)
+        x ~ Normal(mean = x_mean, var = x_var)
+        y ~ Normal(mean = x, var = 1.0)
+    end
+
+    initialization = @initialization begin
+        q(x) = vague(NormalMeanVariance)
+    end
+    autoupdates = @autoupdates begin
+        x_mean, x_var = mean_var(q(x))
+    end
+    session = RxInfer.create_session()
+    result = infer(model = simple_model(), data = (y = 1.0,), autoupdates = autoupdates, initialization = initialization, session = session)
+    stats = RxInfer.get_session_stats(session, :inference)
+    last_invoke = stats.invokes[end]
+    @test haskey(last_invoke.context, :autoupdates)
+    @test occursin("x_mean, x_var", last_invoke.context[:autoupdates])
+    @test occursin("mean_var(q(x))", last_invoke.context[:autoupdates])
+end
+
 @testitem "Test inference benchmark statistics" begin
     using RxInfer
 
