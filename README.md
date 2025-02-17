@@ -26,6 +26,8 @@ Turing comparison             |  Scalability performance
 :-------------------------:|:-------------------------:
 ![](benchmarks/plots/lgssm_comparison.svg?raw=true&sanitize=true)  |  ![](benchmarks/plots/lgssm_scaling.svg?raw=true&sanitize=true)
 
+> [!NOTE]
+> See many more examples in the [RxInferExamples.jl](https://reactivebayes.github.io/RxInferExamples.jl/) repository.
 ### Faster inference with better results
 
 RxInfer.jl not only beats generic-purpose Bayesian inference methods in conjugate models, executes faster, and scales better, but also provides more accurate results. Check out the [documentation](https://reactivebayes.github.io/RxInfer.jl/stable/examples/overview/) for more examples!
@@ -174,10 +176,11 @@ For a more granular view of our progress and ongoing tasks, check out our [proje
 
 ## Ecosystem
 
-The `RxInfer` framework consists of three *core* packages developed by [ReactiveBayes](https://github.com/reactivebayes/):
+The `RxInfer` framework consists of four *core* packages developed by [ReactiveBayes](https://github.com/reactivebayes/):
 
 - [`ReactiveMP.jl`](https://github.com/reactivebayes/ReactiveMP.jl) - the underlying message passing-based inference engine
 - [`GraphPPL.jl`](https://github.com/reactivebayes/GraphPPL.jl) - model and constraints specification package
+- [`ExponentialFamily.jl`](https://github.com/reactivebayes/ExponentialFamily.jl) - package for exponential family distributions
 - [`Rocket.jl`](https://github.com/reactivebayes/Rocket.jl) - reactive extensions package for Julia 
 
 # Where to go next?
