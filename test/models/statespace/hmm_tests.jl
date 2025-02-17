@@ -6,15 +6,15 @@
 
     ## Model definition
     @model function hidden_markov_model(x)
-        A ~ MatrixDirichlet(ones(3, 3))
-        B ~ MatrixDirichlet([10.0 1.0 1.0; 1.0 10.0 1.0; 1.0 1.0 10.0])
+        A ~ DirichletCollection(ones(3, 3))
+        B ~ DirichletCollection([10.0 1.0 1.0; 1.0 10.0 1.0; 1.0 1.0 10.0])
 
         s_0 ~ Categorical(fill(1.0 / 3.0, 3))
         s_prev = s_0
 
         for t in eachindex(x)
-            s[t] ~ Transition(s_prev, A)
-            x[t] ~ Transition(s[t], B)
+            s[t] ~ DiscreteTransition(s_prev, A)
+            x[t] ~ DiscreteTransition(s[t], B)
             s_prev = s[t]
         end
     end
@@ -24,8 +24,8 @@
     end
 
     init = @initialization begin
-        q(A) = vague(MatrixDirichlet, 3, 3)
-        q(B) = vague(MatrixDirichlet, 3, 3)
+        q(A) = vague(DirichletCollection, (3, 3))
+        q(B) = vague(DirichletCollection, (3, 3))
         q(s) = vague(Categorical, 3)
     end
 

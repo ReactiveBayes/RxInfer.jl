@@ -3,6 +3,8 @@ export infer
 export InferenceResult
 export RxInferenceEngine, RxInferenceEvent
 
+using Preferences
+
 import DataStructures: CircularBuffer
 import GraphPPL: ModelGenerator, create_model
 
@@ -84,11 +86,162 @@ function check_and_reset_updated!(updates)
     end
 end
 
+## Logging utilities 
+
+struct InferenceLoggedDataEntry
+    name
+    type
+    size
+    elsize
+end
+
+# Very safe by default, logging should not crash if we don't know how to parse the data entry
+log_data_entry(data) = InferenceLoggedDataEntry(:unknown, :unknown, :unknown, :unknown)
+log_data_entry(data::Pair) = log_data_entry(first(data), last(data))
+
+log_data_entry(name::Union{Symbol, String}, data) = log_data_entry(name, Base.IteratorSize(data), data)
+log_data_entry(name::Union{Symbol, String}, _, data) = InferenceLoggedDataEntry(name, typeof(data), :unknown, :unknown)
+log_data_entry(name::Union{Symbol, String}, ::Base.HasShape{0}, data) = InferenceLoggedDataEntry(name, typeof(data), (), ())
+log_data_entry(name::Union{Symbol, String}, ::Base.HasShape, data) =
+    InferenceLoggedDataEntry(name, typeof(data), log_data_entry_size(data), isempty(data) ? () : log_data_entry_size(first(data)))
+
+log_data_entry_size(data) = log_data_entry_size(Base.IteratorSize(data), data)
+log_data_entry_size(::Base.HasShape, data) = size(data)
+log_data_entry_size(_, data) = ()
+
+# Julia has `Base.HasLength` by default, which is quite bad because it fallbacks here 
+# for structures that has nothing to do with being iterators nor implement `length`, 
+# Better to be safe here and simply return :unknown
+log_data_entry(name::Union{Symbol, String}, ::Base.HasLength, data) = InferenceLoggedDataEntry(name, typeof(data), :unknown, :unknown)
+
+# Very safe by default, logging should not crash if we don't know how to parse the data entry
+log_data_entries(data) = :unknown
+
+log_data_entries(data::Union{NamedTuple, Dict}) = log_data_entries_from_pairs(pairs(data))
+log_data_entries_from_pairs(pairs) = collect(Iterators.map(log_data_entry, pairs))
+
+function Base.show(io::IO, entry::InferenceLoggedDataEntry)
+    print(io, "data: ", entry.name, " (type=", entry.type, ", size=", entry.size, ", elsize=", entry.elsize, ")")
+end
+
+struct InferenceLoggedDictNTEntries
+    base_type::Symbol
+    entries::Vector{InferenceLoggedDataEntry}
+end
+
+# Very safe by default, logging should not crash if we don't know how to parse the dict/nt entry
+log_dictnt_entries(data) = string(typeof(data))
+
+log_dictnt_entries(data::Dict) = InferenceLoggedDictNTEntries(:Dict, log_data_entries(data))
+log_dictnt_entries(data::NamedTuple) = InferenceLoggedDictNTEntries(:NamedTuple, log_data_entries(data))
+
+function Base.show(io::IO, entry::InferenceLoggedDictNTEntries)
+    entries_str = join(map(e -> "$(e.name)::$(e.type)", entry.entries), ", ")
+    print(io, entry.base_type, ": ", entries_str)
+end
+
+using PrettyTables
+
+function summarize_invokes(io::IO, ::Val{:inference}, invokes; n_last = 5)
+    # Count unique models
+    unique_models = length(unique(get(i.context, :model_name, nothing) for i in invokes))
+
+    println(io, "\nInference specific:")
+    println(io, "  Unique models: $unique_models")
+
+    # Show last N invokes in a table format
+    if !isempty(invokes)
+        println(io, "\nLast $n_last invokes, use `n_last` keyword argument to see more or less.")
+        println(io, "*  Note that benchmarking with `BenchmarkTools` or similar will pollute the session with test invokes.")
+        println(io, "   It is advised to explicitly pass `session = nothing` when benchmarking code involving the `infer` function.")
+
+        println(io, "\nLegend:")
+        println(io, "  ✓ - Present/Success   ✗ - Absent/Failure   ⚠ - Error")
+
+        # Prepare data for the table
+        last_invokes = collect(Iterators.take(Iterators.reverse(invokes), n_last))
+        data = Matrix{String}(undef, length(last_invokes), 9)
+
+        for (i, invoke) in enumerate(last_invokes)
+            # Basic info
+            invoke_id = string(invoke.id)[1:8] * "..."
+            status = invoke.status === :success ? "✓" : "✗"
+            duration = round(Dates.value(Dates.Millisecond(invoke.execution_end - invoke.execution_start)), digits = 2)
+            model = get(invoke.context, :model_name, nothing)
+            model = model === nothing ? "N/A" : string(model)
+
+            # Features present
+            has_constraints = haskey(invoke.context, :constraints) ? "✓" : "✗"
+            has_meta = haskey(invoke.context, :meta) ? "✓" : "✗"
+            has_init = haskey(invoke.context, :initialization) ? "✓" : "✗"
+
+            # Data info
+            data_entries = get(invoke.context, :data, nothing)
+            data_str = if data_entries isa Vector{InferenceLoggedDataEntry} && !isempty(data_entries)
+                join(map(e -> string(e.name), data_entries), ",")
+            else
+                "N/A"
+            end
+
+            # Error info if present
+            error_str = get(invoke.context, :error, "")
+            error_str = isempty(error_str) ? "" : "⚠"
+
+            data[i, 1] = invoke_id
+            data[i, 2] = status
+            data[i, 3] = "$(duration)ms"
+            data[i, 4] = model
+            data[i, 5] = has_constraints
+            data[i, 6] = has_meta
+            data[i, 7] = has_init
+            data[i, 8] = data_str
+            data[i, 9] = error_str
+        end
+
+        header = (["ID", "Status", "Duration", "Model", "Cstr", "Meta", "Init", "Data", "Error"],)
+        pretty_table(io, data; header = header, tf = tf_unicode_rounded, maximum_columns_width = [12, 6, 10, 25, 6, 6, 6, 20, 6], autowrap = true, linebreaks = true)
+    end
+end
+
 ## Extra error handling
 
 function inference_process_error(error)
     # By default, rethrow the error
     return inference_process_error(error, true)
+end
+
+const preference_inference_error_hint = @load_preference("inference_error_hint", true)
+
+"""
+    disable_inference_error_hint!()
+
+Disable error hints that are shown when an error occurs during inference.
+
+The change requires a Julia session restart to take effect. When disabled, only the raw error will be shown
+without additional context or suggestions.
+
+See also: [`enable_inference_error_hint!`](@ref), [`infer`](@ref)
+"""
+function disable_inference_error_hint!()
+    @set_preferences!("inference_error_hint" => false)
+    @info "Inference error hints are disabled. Restart Julia session for the change to take effect."
+end
+
+"""
+    enable_inference_error_hint!()
+
+Enable error hints that are shown when an error occurs during inference.
+
+The change requires a Julia session restart to take effect. When enabled, errors during the inference call will include:
+- Links to relevant documentation
+- Common solutions and troubleshooting steps  
+- Information about where to get help
+
+See also: [`disable_inference_error_hint!`](@ref), [`infer`](@ref)
+"""
+function enable_inference_error_hint!()
+    @set_preferences!("inference_error_hint" => true)
+    @info "Inference error hints are enabled. Restart Julia session for the change to take effect."
 end
 
 function inference_process_error(error, rethrow)
@@ -106,32 +259,36 @@ function inference_process_error(error, rethrow)
         • See `infer` function docs for options
         """
     end
-    @error """
-    We encountered an error during inference, but don't worry - we're here to help! 🤝
+    @static if preference_inference_error_hint
+        @error """
+        We encountered an error during inference, here are some helpful resources to get you back on track:
 
-    Here are some helpful resources to get you back on track:
+        1. Check our Sharp bits documentation which covers common issues:
+        https://reactivebayes.github.io/RxInfer.jl/stable/manuals/sharpbits/overview/
+        2. Browse our existing discussions - your question may already be answered:
+        https://github.com/ReactiveBayes/RxInfer.jl/discussions
+        3. Take inspiration from our set of examples:
+        https://reactivebayes.github.io/RxInferExamples.jl/
 
-    1. Check our Sharp bits documentation which covers common issues:
-       https://reactivebayes.github.io/RxInfer.jl/stable/manuals/sharpbits/overview/
+        Still stuck? We'd love to help! You can:
+        - Start a discussion for questions and help. Feedback and questions from new users is also welcome! If you are stuck, please reach out and we will solve it together.
+        https://github.com/ReactiveBayes/RxInfer.jl/discussions
+        - Report a bug or request a feature:
+        https://github.com/ReactiveBayes/RxInfer.jl/issues
+        - (Optional) Share your session data with `RxInfer.share_session_data()` to help us better understand the issue
+        https://reactivebayes.github.io/RxInfer.jl/stable/manuals/telemetry/
 
-    2. Browse our existing issues - your question may already be answered:
-       https://github.com/ReactiveBayes/RxInfer.jl/issues
+        Note that we use GitHub discussions not just for technical questions! We welcome all kinds of discussions,
+        whether you're new to Bayesian inference, have questions about use cases, or just want to share your experience.
 
-    Still stuck? We'd love to help! You can:
-    - Start a discussion for questions and help. Feedback and questions from new users is also welcome! If you are stuck, please reach out and we will solve it together.
-      https://github.com/ReactiveBayes/RxInfer.jl/discussions
-    - Report a bug or request a feature:
-      https://github.com/ReactiveBayes/RxInfer.jl/issues
+        To help us help you, please include:
+        - A minimal example that reproduces the issue
+        - The complete error message and stack trace
+        - (Optional) If you shared your session data, please include the session ID in the issue
 
-    Note that we use GitHub discussions not just for technical questions! We welcome all kinds of discussions,
-    whether you're new to Bayesian inference, have questions about use cases, or just want to share your experience.
-
-    To help us help you, please include:
-    - A minimal example that reproduces the issue
-    - The complete error message and stack trace
-
-    Together we'll get your inference working! 💪
-    """
+        Use `RxInfer.disable_inference_error_hint!()` to disable this message. 
+        """
+    end
     if rethrow
         Base.rethrow(error)
     end
@@ -245,7 +402,8 @@ include("streaming.jl")
         events = nothing,
         uselock = false,
         autostart = true,
-        catch_exception = false
+        catch_exception = false,
+        session = RxInfer.default_session()
     )
 
 This function provides a generic way to perform probabilistic inference for batch/static and streamline/online scenarios.
@@ -282,6 +440,16 @@ Check the official documentation for more information about some of the argument
 - `uselock = false`: specifies either to use the lock structure for the inference or not, if set to true uses `Base.Threads.SpinLock`. Accepts custom `AbstractLock`. (exclusive for streamline inference)
 - `autostart = true`: specifies whether to call `RxInfer.start` on the created engine automatically or not (exclusive for streamline inference)
 - `warn = true`: enables/disables warnings
+- `session = RxInfer.default_session()`: current logging session for the RxInfer invokes, see `Session` for more details, pass `nothing` to disable logging
+
+## Error hints
+
+By default, RxInfer provides helpful error hints with documentation links, solutions, and troubleshooting guidance.
+
+Use `RxInfer.disable_inference_error_hint!()` to disable error hints or `RxInfer.enable_inference_error_hint!()` to enable them.
+Note that changes to error hint settings require a Julia session restart to take effect.
+
+See also: [`RxInfer.disable_inference_error_hint!`](@ref), [`RxInfer.enable_inference_error_hint!`](@ref)
 
 """
 function infer(;
@@ -311,7 +479,8 @@ function infer(;
     events = nothing, # streamline specific
     uselock = false, # streamline  specific
     autostart = true, # streamline specific
-    warn = true
+    warn = true,
+    session = RxInfer.default_session()
 )
     if isnothing(model)
         error("The `model` keyword argument is required for the `infer` function.")
@@ -330,55 +499,83 @@ function infer(;
     infer_check_dicttype(:callbacks, callbacks)
     infer_check_dicttype(:data, data)
 
-    if isnothing(autoupdates)
-        check_available_callbacks(warn, callbacks, available_callbacks(batch_inference))
-        check_available_events(warn, events, available_events(batch_inference))
-        batch_inference(
-            model = model,
-            data = data,
-            initialization = initialization,
-            constraints = constraints,
-            meta = meta,
-            options = options,
-            returnvars = returnvars,
-            predictvars = predictvars,
-            iterations = iterations,
-            free_energy = free_energy,
-            free_energy_diagnostics = free_energy_diagnostics,
-            allow_node_contraction = allow_node_contraction,
-            showprogress = showprogress,
-            callbacks = callbacks,
-            addons = addons,
-            postprocess = postprocess,
-            warn = warn,
-            catch_exception = catch_exception
-        )
-    else
-        check_available_callbacks(warn, callbacks, available_callbacks(streaming_inference))
-        check_available_events(warn, events, available_events(streaming_inference))
-        streaming_inference(
-            model = model,
-            data = data,
-            datastream = datastream,
-            autoupdates = autoupdates,
-            initialization = initialization,
-            constraints = constraints,
-            meta = meta,
-            options = options,
-            returnvars = returnvars,
-            historyvars = historyvars,
-            keephistory = keephistory,
-            iterations = iterations,
-            free_energy = free_energy,
-            free_energy_diagnostics = free_energy_diagnostics,
-            allow_node_contraction = allow_node_contraction,
-            autostart = autostart,
-            callbacks = callbacks,
-            addons = addons,
-            postprocess = postprocess,
-            warn = warn,
-            events = events,
-            uselock = uselock
-        )
+    return with_session(session, :inference) do invoke
+        append_invoke_context(invoke) do ctx
+            ctx[:model_name] = string(GraphPPL.getmodel(model))
+            ctx[:model] = GraphPPL.getsource(model)
+            ctx[:data] = log_data_entries(data)
+
+            !isnothing(datastream) && (ctx[:datastream_type] = eltype(datastream))
+            !isnothing(constraints) && (ctx[:constraints] = GraphPPL.source_code(constraints))
+            !isnothing(meta) && (ctx[:meta] = GraphPPL.source_code(meta))
+            !isnothing(autoupdates) && (ctx[:autoupdates] = repr(autoupdates))
+            !isnothing(initialization) && (ctx[:initialization] = repr(initialization))
+            ctx[:returnvars] = log_dictnt_entries(returnvars)
+            ctx[:predictvars] = log_dictnt_entries(predictvars)
+            ctx[:historyvars] = log_dictnt_entries(historyvars)
+            !isnothing(keephistory) && (ctx[:keephistory] = keephistory)
+
+            ctx[:iterations] = iterations
+            ctx[:free_energy] = free_energy
+            ctx[:allow_node_contraction] = allow_node_contraction
+            ctx[:showprogress] = showprogress
+            ctx[:catch_exception] = catch_exception
+
+            ctx[:callbacks] = log_dictnt_entries(callbacks)
+            ctx[:addons] = log_dictnt_entries(addons)
+            ctx[:options] = log_dictnt_entries(options)
+        end
+
+        if isnothing(autoupdates)
+            check_available_callbacks(warn, callbacks, available_callbacks(batch_inference))
+            check_available_events(warn, events, available_events(batch_inference))
+            batch_inference(
+                model = model,
+                data = data,
+                initialization = initialization,
+                constraints = constraints,
+                meta = meta,
+                options = options,
+                returnvars = returnvars,
+                predictvars = predictvars,
+                iterations = iterations,
+                free_energy = free_energy,
+                free_energy_diagnostics = free_energy_diagnostics,
+                allow_node_contraction = allow_node_contraction,
+                showprogress = showprogress,
+                callbacks = callbacks,
+                addons = addons,
+                postprocess = postprocess,
+                warn = warn,
+                catch_exception = catch_exception
+            )
+        else
+            check_available_callbacks(warn, callbacks, available_callbacks(streaming_inference))
+            check_available_events(warn, events, available_events(streaming_inference))
+            streaming_inference(
+                model = model,
+                data = data,
+                datastream = datastream,
+                autoupdates = autoupdates,
+                initialization = initialization,
+                constraints = constraints,
+                meta = meta,
+                options = options,
+                returnvars = returnvars,
+                historyvars = historyvars,
+                keephistory = keephistory,
+                iterations = iterations,
+                free_energy = free_energy,
+                free_energy_diagnostics = free_energy_diagnostics,
+                allow_node_contraction = allow_node_contraction,
+                autostart = autostart,
+                callbacks = callbacks,
+                addons = addons,
+                postprocess = postprocess,
+                warn = warn,
+                events = events,
+                uselock = uselock
+            )
+        end
     end
 end

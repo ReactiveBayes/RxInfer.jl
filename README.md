@@ -26,6 +26,9 @@ Turing comparison             |  Scalability performance
 :-------------------------:|:-------------------------:
 ![](benchmarks/plots/lgssm_comparison.svg?raw=true&sanitize=true)  |  ![](benchmarks/plots/lgssm_scaling.svg?raw=true&sanitize=true)
 
+> [!NOTE]
+> See many more examples in the [RxInferExamples.jl](https://reactivebayes.github.io/RxInferExamples.jl/) repository.
+
 ### Faster inference with better results
 
 RxInfer.jl not only beats generic-purpose Bayesian inference methods in conjugate models, executes faster, and scales better, but also provides more accurate results. Check out the [documentation](https://reactivebayes.github.io/RxInfer.jl/stable/examples/overview/) for more examples!
@@ -59,9 +62,6 @@ Optionally, use `] test RxInfer` to validate the installation by running the tes
 # Documentation
 
 For more information about `RxInfer.jl` please refer to the [documentation](https://reactivebayes.github.io/RxInfer.jl/stable/).
-
-> [!NOTE]
-> `RxInfer.jl` API has been changed in version `3.0.0`. See [Migration Guide](https://reactivebayes.github.io/RxInfer.jl/stable/manuals/migration-guide-v2-v3) for more details.
 
 # Getting Started
 
@@ -144,9 +144,6 @@ end
 
 As you can see, `RxInfer` in combination with `GraphPPL` offers a model specification syntax that resembles closely to the mathematical equations defined above. 
 
-> [!NOTE]
-> `GraphPPL.jl` API has been changed in version `4.0.0`. See [Migration Guide](https://reactivebayes.github.io/GraphPPL.jl/stable/) for more details.
-
 ### Inference specification
 
 Once we have defined our model, the next step is to use `RxInfer` API to infer quantities of interests. To do this we can use a generic `infer` function from `RxInfer.jl` that supports static datasets.
@@ -174,10 +171,11 @@ For a more granular view of our progress and ongoing tasks, check out our [proje
 
 ## Ecosystem
 
-The `RxInfer` framework consists of three *core* packages developed by [ReactiveBayes](https://github.com/reactivebayes/):
+The `RxInfer` framework consists of four *core* packages developed by [ReactiveBayes](https://github.com/reactivebayes/):
 
 - [`ReactiveMP.jl`](https://github.com/reactivebayes/ReactiveMP.jl) - the underlying message passing-based inference engine
 - [`GraphPPL.jl`](https://github.com/reactivebayes/GraphPPL.jl) - model and constraints specification package
+- [`ExponentialFamily.jl`](https://github.com/reactivebayes/ExponentialFamily.jl) - package for exponential family distributions
 - [`Rocket.jl`](https://github.com/reactivebayes/Rocket.jl) - reactive extensions package for Julia 
 
 # Where to go next?
@@ -226,6 +224,32 @@ Also check out the recorded presentation at the Julia User Group Munich meetup f
     <a href="https://www.youtube.com/watch?v=KuluqEzFtm8"><img style="width: 100%" src="https://img.youtube.com/vi/KuluqEzFtm8/0.jpg"></a>
 </p>
 
+
+# Telemetry
+
+RxInfer collects completely anonymous telemetry data regarding package usage. This information helps us understand how RxInfer is used and shapes our roadmap to prioritize features and improvements. The telemetry:
+- Does not collect any code, data, or environment information, only the fact of `using RxInfer` once per Julia session
+- Entirely anonymous
+- (Opt-out) Can be disabled for a single Julia session or permanently
+
+You can learn more about it and how to opt-out by visiting our [documentation](https://reactivebayes.github.io/RxInfer.jl/stable/).
+
+## Session Sharing
+
+RxInfer includes an optional session sharing feature that can help us provide better support and improve the package. When you encounter an issue, you can share your session data with us, which includes:
+- Model source code and metadata
+- Input data characteristics (no actual data)
+- Execution timing and success rates
+- Error information (if any)
+- Environment information (Julia version, OS, etc.)
+
+This information is invaluable for debugging issues and improving RxInfer. Session sharing is:
+- Completely optional and disabled by default
+- Entirely anonymous
+- Only shared when you explicitly choose to do so
+- (Opt-in) Can be enabled to send reports automatically when an error occurs. When enabled, still entirely anonymous.
+
+If you're opening a GitHub issue, we encourage you to share your session ID with us - it helps us understand your use case better and provide more accurate support. Learn more about session sharing and how to opt-in in our [documentation](https://reactivebayes.github.io/RxInfer.jl/stable/).
 
 # License
 

@@ -53,6 +53,7 @@ jobs:
       fail-fast: false
       matrix:
         version:
+          - '1.10'
           - '1.11'
         os:
           - ubuntu-latest
@@ -61,11 +62,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: julia-actions/setup-julia@v2
+        with:
+          version: ${{ matrix.version }}
       - uses: julia-actions/cache@v2
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
         env:
           USE_DEV: "false"
+          LOG_USING_RXINFER: "false"
       - uses: julia-actions/julia-processcoverage@v1
       - uses: codecov/codecov-action@v4
         with:
@@ -75,7 +79,7 @@ jobs:
       - name: Archive test artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: test-output
+          name: test-output-${{ matrix.version }}-${{ matrix.os }}-${{ matrix.arch }}
           path: test/_output
   test-examples:
     name: Examples
@@ -91,10 +95,10 @@ jobs:
           repository: ReactiveBayes/RxInferExamples.jl
           path: RxInferExamples.jl
       - uses: julia-actions/setup-julia@v2
-        with:
-          version: '1.11'
       - uses: julia-actions/cache@v1
       - name: Build and test examples
+        env:
+          LOG_USING_RXINFER: "false"
         run: |
           julia -e 'using Pkg; Pkg.add("Weave"); Pkg.develop(path="RxInfer.jl"); Pkg.precompile()'
           cd RxInferExamples.jl
@@ -115,4 +119,5 @@ jobs:
       - run: make docs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LOG_USING_RXINFER: "false"
       
