@@ -155,38 +155,51 @@ function summarize_invokes(io::IO, ::Val{:inference}, invokes; n_last = 5)
         println(io, "*  Note that benchmarking with `BenchmarkTools` or similar will pollute the session with test invokes.")
         println(io, "   It is advised to explicitly pass `session = nothing` when benchmarking code involving the `infer` function.")
 
+        println(io, "\nLegend:")
+        println(io, "  ✓ - Present/Success   ✗ - Absent/Failure   ⚠ - Error")
+
         # Prepare data for the table
         last_invokes = collect(Iterators.take(Iterators.reverse(invokes), n_last))
-        data = Matrix{String}(undef, length(last_invokes), 6)
+        data = Matrix{String}(undef, length(last_invokes), 9)
 
         for (i, invoke) in enumerate(last_invokes)
-            status = string(invoke.status)
+            # Basic info
+            invoke_id = string(invoke.id)[1:8] * "..."
+            status = invoke.status === :success ? "✓" : "✗"
             duration = round(Dates.value(Dates.Millisecond(invoke.execution_end - invoke.execution_start)), digits = 2)
             model = get(invoke.context, :model_name, nothing)
             model = model === nothing ? "N/A" : string(model)
 
+            # Features present
+            has_constraints = haskey(invoke.context, :constraints) ? "✓" : "✗"
+            has_meta = haskey(invoke.context, :meta) ? "✓" : "✗"
+            has_init = haskey(invoke.context, :initialization) ? "✓" : "✗"
+
+            # Data info
             data_entries = get(invoke.context, :data, nothing)
-            data_str = if data_entries isa Symbol
-                string(data_entries)
-            elseif isnothing(data_entries) || ismissing(data_entries) || isempty(data_entries)
-                "N/A"
+            data_str = if data_entries isa Vector{InferenceLoggedDataEntry} && !isempty(data_entries)
+                join(map(e -> string(e.name), data_entries), ",")
             else
-                join(map(e -> string(e.name, " isa ", e.type), data_entries), ",")
+                "N/A"
             end
 
-            error_str = string(get(invoke.context, :error, ""))
-            invoke_id = string(invoke.id)[1:8] * "..."
+            # Error info if present
+            error_str = get(invoke.context, :error, "")
+            error_str = isempty(error_str) ? "" : "⚠"
 
             data[i, 1] = invoke_id
             data[i, 2] = status
             data[i, 3] = "$(duration)ms"
             data[i, 4] = model
-            data[i, 5] = data_str
-            data[i, 6] = error_str
+            data[i, 5] = has_constraints
+            data[i, 6] = has_meta
+            data[i, 7] = has_init
+            data[i, 8] = data_str
+            data[i, 9] = error_str
         end
 
-        header = (["ID", "Status", "Duration", "Model", "Data", "Error"],)
-        pretty_table(io, data; header = header, tf = tf_unicode_rounded, maximum_columns_width = [12, 8, 10, 35, 25, 25], autowrap = true, linebreaks = true)
+        header = (["ID", "Status", "Duration", "Model", "Cstr", "Meta", "Init", "Data", "Error"],)
+        pretty_table(io, data; header = header, tf = tf_unicode_rounded, maximum_columns_width = [12, 6, 10, 25, 6, 6, 6, 20, 6], autowrap = true, linebreaks = true)
     end
 end
 

@@ -125,14 +125,29 @@ For the `:inference` label, each invocation records:
   - Status (`:success` or `:error`)
   - Execution start and end timestamps
 - **Model Information**:
-  - Model source code
-  - Model name
-  - Inference parameters (e.g. number of iterations, free energy)
+  - Model source code (via `GraphPPL.getsource`)
+  - Model name (via `GraphPPL.getmodel`)
+  - Model constraints (if specified)
+  - Model meta information (if specified)
+  - Model autoupdates specification (if specified)
+  - Model initialization specification (if specified)
 - **Data Information**:
-  - Input variable names and types
-  - Data characteristics
-- **Error Information** (if any):
-  - Error message and type
+  - Input data characteristics (names, types, sizes) - **no actual data is collected**`
+  - Datastream type (for streaming inference)
+  - Return variables structure
+  - Predict variables structure (for batch inference)
+  - History variables structure (for streaming inference)
+  - History buffer size (if specified)
+- **Inference Parameters**:
+  - Number of iterations
+  - Free energy computation flag
+  - Node contraction settings
+  - Progress display settings
+  - Exception catching settings
+- **Additional Settings**:
+  - Callbacks configuration
+  - Addons configuration
+  - Options configuration
 
 !!! note
     No actual data is collected for the `:inference` label. Only metadata such as size and type is recorded.
