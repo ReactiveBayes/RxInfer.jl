@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url>
+    <loc>https://reactivebayes.github.io/RxInfer.jl/index</loc>
+    <lastmod>2025-02-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://reactivebayes.github.io/RxInfer.jl/contributing/examples/</loc>
+    <lastmod>2025-02-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://reactivebayes.github.io/RxInfer.jl/contributing/guide/</loc>
+    <lastmod>2025-02-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://reactivebayes.github.io/RxInfer.jl/contributing/guidelines/</loc>
+    <lastmod>2025-02-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://reactivebayes.github.io/RxInfer.jl/contributing/new-documentation/</loc>
+    <lastmod>2025-02-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://reactivebayes.github.io/RxInfer.jl/contributing/new-example/</loc>
+    <lastmod>2025-02-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://reactivebayes.github.io/RxInfer.jl/contributing/new-release/</loc>
+    <lastmod>2025-02-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://reactivebayes.github.io/RxInfer.jl/examples/overview/</loc>
+    <lastmod>2025-02-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://reactivebayes.github.io/RxInfer.jl/library/bethe-free-energy/</loc>
+    <lastmod>2025-02-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://reactivebayes.github.io/RxInfer.jl/library/exported-methods/</loc>
+    <lastmod>2025-02-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://reactivebayes.github.io/RxInfer.jl/library/functional-forms/</loc>
+    <lastmod>2025-02-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://reactivebayes.github.io/RxInfer.jl/library/model-construction/</loc>
+    <lastmod>2025-02-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://reactivebayes.github.io/RxInfer.jl/manuals/comparison/</loc>
+    <lastmod>2025-02-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://reactivebayes.github.io/RxInfer.jl/manuals/constraints-specification/</loc>
+    <lastmod>2025-02-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://reactivebayes.github.io/RxInfer.jl/manuals/customization/custom-node/</loc>
+    <lastmod>2025-02-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://reactivebayes.github.io/RxInfer.jl/manuals/customization/postprocess/</loc>
+    <lastmod>2025-02-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://reactivebayes.github.io/RxInfer.jl/manuals/debugging/</loc>
+    <lastmod>2025-02-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://reactivebayes.github.io/RxInfer.jl/manuals/getting-started/</loc>
+    <lastmod>2025-02-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://reactivebayes.github.io/RxInfer.jl/manuals/inference/autoupdates/</loc>
+    <lastmod>2025-02-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://reactivebayes.github.io/RxInfer.jl/manuals/inference/delta-node/</loc>
+    <lastmod>2025-02-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://reactivebayes.github.io/RxInfer.jl/manuals/inference/initialization/</loc>
+    <lastmod>2025-02-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://reactivebayes.github.io/RxInfer.jl/manuals/inference/nonconjugate/</loc>
+    <lastmod>2025-02-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://reactivebayes.github.io/RxInfer.jl/manuals/inference/overview/</loc>
+    <lastmod>2025-02-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://reactivebayes.github.io/RxInfer.jl/manuals/inference/static/</loc>
+    <lastmod>2025-02-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://reactivebayes.github.io/RxInfer.jl/manuals/inference/streamlined/</loc>
+    <lastmod>2025-02-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://reactivebayes.github.io/RxInfer.jl/manuals/inference/undefinedrules/</loc>
+    <lastmod>2025-02-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://reactivebayes.github.io/RxInfer.jl/manuals/meta-specification/</loc>
+    <lastmod>2025-02-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://reactivebayes.github.io/RxInfer.jl/manuals/migration-guide-v2-v3/</loc>
+    <lastmod>2025-02-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://reactivebayes.github.io/RxInfer.jl/manuals/model-specification/</loc>
+    <lastmod>2025-02-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://reactivebayes.github.io/RxInfer.jl/manuals/session_summary/</loc>
+    <lastmod>2025-02-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://reactivebayes.github.io/RxInfer.jl/manuals/sharpbits/overview/</loc>
+    <lastmod>2025-02-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://reactivebayes.github.io/RxInfer.jl/manuals/sharpbits/rule-not-found/</loc>
+    <lastmod>2025-02-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://reactivebayes.github.io/RxInfer.jl/manuals/sharpbits/stack-overflow-inference/</loc>
+    <lastmod>2025-02-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://reactivebayes.github.io/RxInfer.jl/manuals/sharpbits/usage-colon-equality/</loc>
+    <lastmod>2025-02-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://reactivebayes.github.io/RxInfer.jl/manuals/telemetry/</loc>
+    <lastmod>2025-02-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url>
+</urlset>

@@ -1,5 +1,10 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Model specification · RxInfer.jl</title><meta name="title" content="Model specification · RxInfer.jl"/><meta property="og:title" content="Model specification · RxInfer.jl"/><meta property="twitter:title" content="Model specification · RxInfer.jl"/><meta name="description" content="Julia package for automated Bayesian inference on a factor graph with reactive message passing"/><meta property="og:description" content="Julia package for automated Bayesian inference on a factor graph with reactive message passing"/><meta property="twitter:description" content="Julia package for automated Bayesian inference on a factor graph with reactive message passing"/><meta property="og:url" content="https://reactivebayes.github.io/RxInfer.jl/manuals/model-specification/"/><meta property="twitter:url" content="https://reactivebayes.github.io/RxInfer.jl/manuals/model-specification/"/><link rel="canonical" href="https://reactivebayes.github.io/RxInfer.jl/manuals/model-specification/"/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script><link href="../../assets/theme.css" rel="stylesheet" type="text/css"/><link href="../../assets/header.css" rel="stylesheet" type="text/css"/><script src="../../assets/header.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../"><img class="docs-light-only" src="../../assets/logo.svg" alt="RxInfer.jl logo"/><img class="docs-dark-only" src="../../assets/logo-dark.svg" alt="RxInfer.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../../">RxInfer.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">User guide</span><ul><li><a class="tocitem" href="../getting-started/">Getting started</a></li><li><a class="tocitem" href="../comparison/">RxInfer.jl vs. Others</a></li><li class="is-active"><a class="tocitem" href>Model specification</a><ul class="internal"><li><a class="tocitem" href="#@model-macro"><span><code>@model</code> macro</span></a></li><li><a class="tocitem" href="#A-state-space-model-example"><span>A state space model example</span></a></li><li><a class="tocitem" href="#user-guide-model-specification-node-creation"><span>Relationships between variables</span></a></li><li><a class="tocitem" href="#user-guide-model-specification-visualization"><span>Model structure visualisation</span></a></li><li><a class="tocitem" href="#Node-Contraction"><span>Node Contraction</span></a></li><li><a class="tocitem" href="#Read-also"><span>Read also</span></a></li></ul></li><li><a class="tocitem" href="../constraints-specification/">Constraints specification</a></li><li><a class="tocitem" href="../meta-specification/">Meta specification</a></li><li><input class="collapse-toggle" id="menuitem-2-6" type="checkbox"/><label class="tocitem" for="menuitem-2-6"><span class="docs-label">Inference specification</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../inference/overview/">Overview</a></li><li><a class="tocitem" href="../inference/static/">Static inference</a></li><li><a class="tocitem" href="../inference/streamlined/">Streamline inference</a></li><li><a class="tocitem" href="../inference/initialization/">Initialization</a></li><li><a class="tocitem" href="../inference/autoupdates/">Auto-updates</a></li><li><a class="tocitem" href="../inference/delta-node/">Deterministic nodes</a></li><li><a class="tocitem" href="../inference/nonconjugate/">Non-conjugate inference</a></li><li><a class="tocitem" href="../inference/undefinedrules/">Undefined message update rules</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-7" type="checkbox"/><label class="tocitem" for="menuitem-2-7"><span class="docs-label">Inference customization</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../customization/custom-node/">Defining a custom node and rules</a></li><li><a class="tocitem" href="../customization/postprocess/">Inference results postprocessing</a></li></ul></li><li><a class="tocitem" href="../debugging/">Debugging</a></li><li><a class="tocitem" href="../migration-guide-v2-v3/">Migration from v2 to v3</a></li><li><input class="collapse-toggle" id="menuitem-2-10" type="checkbox"/><label class="tocitem" for="menuitem-2-10"><span class="docs-label">Sharp bits of RxInfer</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../sharpbits/overview/">Overview</a></li><li><a class="tocitem" href="../sharpbits/rule-not-found/">Rule Not Found Error</a></li><li><a class="tocitem" href="../sharpbits/stack-overflow-inference/">Stack Overflow in Message Computations</a></li><li><a class="tocitem" href="../sharpbits/usage-colon-equality/">Using <code>=</code> instead of <code>:=</code> for deterministic nodes</a></li></ul></li></ul></li><li><span class="tocitem">Library</span><ul><li><a class="tocitem" href="../../library/model-construction/">Model construction</a></li><li><a class="tocitem" href="../../library/bethe-free-energy/">Bethe Free Energy</a></li><li><a class="tocitem" href="../../library/functional-forms/">Functional form constraints</a></li><li><a class="tocitem" href="../../library/exported-methods/">Exported methods</a></li></ul></li><li><a class="tocitem" href="../../examples/overview/">Examples</a></li><li><span class="tocitem">Contributing</span><ul><li><a class="tocitem" href="../../contributing/guide/">Contribution guide</a></li><li><a class="tocitem" href="../../contributing/guidelines/">Contribution guidelines</a></li><li><a class="tocitem" href="../../contributing/new-documentation/">Contributing to the documentation</a></li><li><a class="tocitem" href="../../contributing/new-example/">Contributing to the examples</a></li><li><a class="tocitem" href="../../contributing/new-release/">Publishing a new release</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">User guide</a></li><li class="is-active"><a href>Model specification</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Model specification</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/ReactiveBayes/RxInfer.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/ReactiveBayes/RxInfer.jl/blob/main/docs/src/manuals/model-specification.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="user-guide-model-specification"><a class="docs-heading-anchor" href="#user-guide-model-specification">Model Specification</a><a id="user-guide-model-specification-1"></a><a class="docs-heading-anchor-permalink" href="#user-guide-model-specification" title="Permalink"></a></h1><p><code>RxInfer</code> largely depends on <code>GraphPPL</code> for model specification. Read extensive documentation regarding the model specification in the corresponding section of <a href="https://reactivebayes.github.io/GraphPPL.jl/stable/"><code>GraphPPL</code> documentation</a>. Here we outline only a small portion of model specification capabilities for beginners.</p><h2 id="@model-macro"><a class="docs-heading-anchor" href="#@model-macro"><code>@model</code> macro</a><a id="@model-macro-1"></a><a class="docs-heading-anchor-permalink" href="#@model-macro" title="Permalink"></a></h2><p>The <code>RxInfer.jl</code> package exports the <code>@model</code> macro for model specification. This <code>@model</code> macro accepts the model specification itself in a form of regular Julia function. </p><p>For example: </p><pre><code class="language-julia hljs">@model function model_name(model_arguments...)
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Model specification · RxInfer.jl</title><meta name="title" content="Model specification · RxInfer.jl"/><meta property="og:title" content="Model specification · RxInfer.jl"/><meta property="twitter:title" content="Model specification · RxInfer.jl"/><meta name="description" content="Julia package for automated Bayesian inference on a factor graph with reactive message passing"/><meta property="og:description" content="Julia package for automated Bayesian inference on a factor graph with reactive message passing"/><meta property="twitter:description" content="Julia package for automated Bayesian inference on a factor graph with reactive message passing"/><meta property="og:url" content="https://reactivebayes.github.io/RxInfer.jl/manuals/model-specification/"/><meta property="twitter:url" content="https://reactivebayes.github.io/RxInfer.jl/manuals/model-specification/"/><link rel="canonical" href="https://reactivebayes.github.io/RxInfer.jl/manuals/model-specification/"/><script async src="https://www.googletagmanager.com/gtag/js?id=G-X4PH160GMF"></script><script>  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-X4PH160GMF', {'page_path': location.pathname + location.search + location.hash});
+</script><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script><link href="../../assets/theme.css" rel="stylesheet" type="text/css"/><link href="../../assets/header.css" rel="stylesheet" type="text/css"/><script src="../../assets/header.js"></script><script src="../../assets/chat.js"></script><link href="../../assets/favicon.ico" rel="icon" type="image/x-icon"/><meta name="keywords" content="Julia, Bayesian inference, factor graph, message passing, probabilistic programming, reactive programming, RxInfer">
+<link rel="sitemap" type="application/xml" title="Sitemap" href="https://reactivebayes.github.io/RxInfer.jl/stable/sitemap.xml"></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../"><img class="docs-light-only" src="../../assets/logo.svg" alt="RxInfer.jl logo"/><img class="docs-dark-only" src="../../assets/logo-dark.svg" alt="RxInfer.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../../">RxInfer.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">User guide</span><ul><li><a class="tocitem" href="../getting-started/">Getting started</a></li><li><a class="tocitem" href="../comparison/">RxInfer.jl vs. Others</a></li><li class="is-active"><a class="tocitem" href>Model specification</a><ul class="internal"><li><a class="tocitem" href="#@model-macro"><span><code>@model</code> macro</span></a></li><li><a class="tocitem" href="#A-state-space-model-example"><span>A state space model example</span></a></li><li><a class="tocitem" href="#user-guide-model-specification-node-creation"><span>Relationships between variables</span></a></li><li><a class="tocitem" href="#user-guide-model-specification-visualization"><span>Model structure visualisation</span></a></li><li><a class="tocitem" href="#Node-Contraction"><span>Node Contraction</span></a></li><li><a class="tocitem" href="#Read-also"><span>Read also</span></a></li></ul></li><li><a class="tocitem" href="../constraints-specification/">Constraints specification</a></li><li><a class="tocitem" href="../meta-specification/">Meta specification</a></li><li><input class="collapse-toggle" id="menuitem-2-6" type="checkbox"/><label class="tocitem" for="menuitem-2-6"><span class="docs-label">Inference specification</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../inference/overview/">Overview</a></li><li><a class="tocitem" href="../inference/static/">Static inference</a></li><li><a class="tocitem" href="../inference/streamlined/">Streamline inference</a></li><li><a class="tocitem" href="../inference/initialization/">Initialization</a></li><li><a class="tocitem" href="../inference/autoupdates/">Auto-updates</a></li><li><a class="tocitem" href="../inference/delta-node/">Deterministic nodes</a></li><li><a class="tocitem" href="../inference/nonconjugate/">Non-conjugate inference</a></li><li><a class="tocitem" href="../inference/undefinedrules/">Undefined message update rules</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-7" type="checkbox"/><label class="tocitem" for="menuitem-2-7"><span class="docs-label">Inference customization</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../customization/custom-node/">Defining a custom node and rules</a></li><li><a class="tocitem" href="../customization/postprocess/">Inference results postprocessing</a></li></ul></li><li><a class="tocitem" href="../debugging/">Debugging</a></li><li><a class="tocitem" href="../session_summary/">Session summary</a></li><li><a class="tocitem" href="../telemetry/">Sharing sessions &amp; telemetry</a></li><li><a class="tocitem" href="../migration-guide-v2-v3/">Migration from v2 to v3</a></li><li><input class="collapse-toggle" id="menuitem-2-12" type="checkbox"/><label class="tocitem" for="menuitem-2-12"><span class="docs-label">Sharp bits of RxInfer</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../sharpbits/overview/">Overview</a></li><li><a class="tocitem" href="../sharpbits/rule-not-found/">Rule Not Found Error</a></li><li><a class="tocitem" href="../sharpbits/stack-overflow-inference/">Stack Overflow in Message Computations</a></li><li><a class="tocitem" href="../sharpbits/usage-colon-equality/">Using <code>=</code> instead of <code>:=</code> for deterministic nodes</a></li></ul></li></ul></li><li><span class="tocitem">Library</span><ul><li><a class="tocitem" href="../../library/model-construction/">Model construction</a></li><li><a class="tocitem" href="../../library/bethe-free-energy/">Bethe Free Energy</a></li><li><a class="tocitem" href="../../library/functional-forms/">Functional form constraints</a></li><li><a class="tocitem" href="../../library/exported-methods/">Exported methods</a></li></ul></li><li><a class="tocitem" href="../../examples/overview/">Examples</a></li><li><span class="tocitem">Contributing</span><ul><li><a class="tocitem" href="../../contributing/guide/">Contribution guide</a></li><li><a class="tocitem" href="../../contributing/guidelines/">Contribution guidelines</a></li><li><a class="tocitem" href="../../contributing/new-documentation/">Contributing to the documentation</a></li><li><a class="tocitem" href="../../contributing/new-example/">Contributing to the examples</a></li><li><a class="tocitem" href="../../contributing/new-release/">Publishing a new release</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">User guide</a></li><li class="is-active"><a href>Model specification</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Model specification</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/ReactiveBayes/RxInfer.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/ReactiveBayes/RxInfer.jl/blob/main/docs/src/manuals/model-specification.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="user-guide-model-specification"><a class="docs-heading-anchor" href="#user-guide-model-specification">Model Specification</a><a id="user-guide-model-specification-1"></a><a class="docs-heading-anchor-permalink" href="#user-guide-model-specification" title="Permalink"></a></h1><p><code>RxInfer</code> largely depends on <code>GraphPPL</code> for model specification. Read extensive documentation regarding the model specification in the corresponding section of <a href="https://reactivebayes.github.io/GraphPPL.jl/stable/"><code>GraphPPL</code> documentation</a>. Here we outline only a small portion of model specification capabilities for beginners.</p><h2 id="@model-macro"><a class="docs-heading-anchor" href="#@model-macro"><code>@model</code> macro</a><a id="@model-macro-1"></a><a class="docs-heading-anchor-permalink" href="#@model-macro" title="Permalink"></a></h2><p>The <code>RxInfer.jl</code> package exports the <code>@model</code> macro for model specification. This <code>@model</code> macro accepts the model specification itself in a form of regular Julia function. </p><p>For example: </p><pre><code class="language-julia hljs">@model function model_name(model_arguments...)
     # model specification here
 end</code></pre><p>where <code>model_arguments...</code> may include both hypeparameters and data. </p><div class="admonition is-info"><header class="admonition-header">Note</header><div class="admonition-body"><p><code>model_arguments</code> are converted to keyword arguments. Positional arguments in the model specification are not supported.  Thus it is not possible to use Julia&#39;s multiple dispatch for the model arguments.</p></div></div><p>The <code>@model</code> macro returns a regular Julia function (in this example <code>model_name()</code>) which can be executed as usual. The only difference here is that all arguments of the model function are treated as keyword arguments. Upon calling, the model function returns a so-called model generator object, e.g:</p><pre><code class="language-julia hljs">@model function my_model(observation, hyperparameter)
     observations ~ Normal(mean = 0.0, var = hyperparameter)
@@ -194,133 +199,133 @@ GraphPlot.gplot(model_to_plot)</code></pre><img src='data:image/svg+xml;utf-8,<?
     <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
   </marker>
 </defs>
-<g fill="%23000000" fill-opacity="0.000" id="img-acdea1b6-1">
+<g fill="%23000000" fill-opacity="0.000" id="img-521eaf63-1">
   <g transform="translate(50,50)">
     <path d="M-50,-50 L50,-50 50,50 -50,50  z" class="primitive"/>
   </g>
 </g>
-<g stroke-width="0.95" stroke="%23D3D3D3" id="img-acdea1b6-2">
+<g stroke-width="0.95" stroke="%23D3D3D3" id="img-521eaf63-2">
 </g>
-<g stroke-width="0.95" stroke="%23D3D3D3" id="img-acdea1b6-3">
-  <g transform="translate(59.7,41.33)">
-    <path fill="none" d="M-8.21,8.78 L8.21,-8.78 " class="primitive"/>
+<g stroke-width="0.95" stroke="%23D3D3D3" id="img-521eaf63-3">
+  <g transform="translate(39.89,51.76)">
+    <path fill="none" d="M8.24,-3.53 L-8.24,3.53 " class="primitive"/>
   </g>
-  <g transform="translate(39.72,62.4)">
-    <path fill="none" d="M7.24,-7.52 L-7.24,7.52 " class="primitive"/>
+  <g transform="translate(54.01,59.52)">
+    <path fill="none" d="M-2.12,-9.37 L2.12,9.37 " class="primitive"/>
   </g>
-  <g transform="translate(37.84,44.67)">
-    <path fill="none" d="M8.69,5.97 L-8.69,-5.97 " class="primitive"/>
+  <g transform="translate(62.58,41.5)">
+    <path fill="none" d="M-8.45,4.02 L8.45,-4.02 " class="primitive"/>
   </g>
-  <g transform="translate(57.6,63.26)">
-    <path fill="none" d="M-6.34,-8.15 L6.34,8.15 " class="primitive"/>
+  <g transform="translate(45.73,36.09)">
+    <path fill="none" d="M3.96,7.9 L-3.96,-7.9 " class="primitive"/>
   </g>
-  <g transform="translate(80.91,27.22)">
-    <path fill="none" d="M7.58,-2.06 L-7.58,2.06 " class="primitive"/>
+  <g transform="translate(18.48,59.35)">
+    <path fill="none" d="M-6.97,1.9 L6.97,-1.9 " class="primitive"/>
   </g>
-  <g transform="translate(72.6,19.24)">
-    <path fill="none" d="M1.72,-7.69 L-1.72,7.69 " class="primitive"/>
+  <g transform="translate(35.36,60.2)">
+    <path fill="none" d="M3.83,2.05 L-3.83,-2.05 " class="primitive"/>
   </g>
-  <g transform="translate(22.7,80.13)">
-    <path fill="none" d="M-5.22,5.45 L5.22,-5.45 " class="primitive"/>
+  <g transform="translate(57.45,81.88)">
+    <path fill="none" d="M0.39,6.5 L-0.39,-6.5 " class="primitive"/>
   </g>
-  <g transform="translate(17.39,30.75)">
-    <path fill="none" d="M-6.32,-4.25 L6.32,4.25 " class="primitive"/>
+  <g transform="translate(82.83,31.39)">
+    <path fill="none" d="M5.92,-3.13 L-5.92,3.13 " class="primitive"/>
   </g>
-  <g transform="translate(72.69,82.83)">
-    <path fill="none" d="M4.72,6.21 L-4.72,-6.21 " class="primitive"/>
-  </g>
-</g>
-<g fill="%23D3D3D3" id="img-acdea1b6-4">
-</g>
-<g fill="%23D3D3D3" id="img-acdea1b6-5">
-</g>
-<g font-size="4" fill="%23000000" id="img-acdea1b6-6">
-</g>
-<g stroke-width="0" stroke="%23000000" stroke-opacity="0.000" fill="%2340E0D0" id="img-acdea1b6-7">
-  <g transform="translate(49.24,52.51)">
-    <circle cx="0" cy="0" r="3.16" class="primitive"/>
-  </g>
-  <g transform="translate(91.67,24.29)">
-    <circle cx="0" cy="0" r="3.16" class="primitive"/>
-  </g>
-  <g transform="translate(75.04,8.33)">
-    <circle cx="0" cy="0" r="3.16" class="primitive"/>
-  </g>
-  <g transform="translate(70.16,30.14)">
-    <circle cx="0" cy="0" r="3.16" class="primitive"/>
-  </g>
-  <g transform="translate(15.2,87.96)">
-    <circle cx="0" cy="0" r="3.16" class="primitive"/>
-  </g>
-  <g transform="translate(30.19,72.29)">
-    <circle cx="0" cy="0" r="3.16" class="primitive"/>
-  </g>
-  <g transform="translate(8.33,24.67)">
-    <circle cx="0" cy="0" r="3.16" class="primitive"/>
-  </g>
-  <g transform="translate(26.44,36.83)">
-    <circle cx="0" cy="0" r="3.16" class="primitive"/>
-  </g>
-  <g transform="translate(79.4,91.67)">
-    <circle cx="0" cy="0" r="3.16" class="primitive"/>
-  </g>
-  <g transform="translate(65.97,74)">
-    <circle cx="0" cy="0" r="3.16" class="primitive"/>
+  <g transform="translate(35.65,16.79)">
+    <path fill="none" d="M-3.06,-5.57 L3.06,5.57 " class="primitive"/>
   </g>
 </g>
-<g font-family="Helvetica" font-size="4" fill="%23000000" id="img-acdea1b6-8">
-  <g transform="translate(49.24,52.51)">
+<g fill="%23D3D3D3" id="img-521eaf63-4">
+</g>
+<g fill="%23D3D3D3" id="img-521eaf63-5">
+</g>
+<g font-size="4" fill="%23000000" id="img-521eaf63-6">
+</g>
+<g stroke-width="0" stroke="%23000000" stroke-opacity="0.000" fill="%2340E0D0" id="img-521eaf63-7">
+  <g transform="translate(51.16,46.94)">
+    <circle cx="0" cy="0" r="3.16" class="primitive"/>
+  </g>
+  <g transform="translate(8.33,62.11)">
+    <circle cx="0" cy="0" r="3.16" class="primitive"/>
+  </g>
+  <g transform="translate(42.09,63.81)">
+    <circle cx="0" cy="0" r="3.16" class="primitive"/>
+  </g>
+  <g transform="translate(28.63,56.59)">
+    <circle cx="0" cy="0" r="3.16" class="primitive"/>
+  </g>
+  <g transform="translate(58.04,91.67)">
+    <circle cx="0" cy="0" r="3.16" class="primitive"/>
+  </g>
+  <g transform="translate(56.86,72.09)">
+    <circle cx="0" cy="0" r="3.16" class="primitive"/>
+  </g>
+  <g transform="translate(91.67,26.73)">
+    <circle cx="0" cy="0" r="3.16" class="primitive"/>
+  </g>
+  <g transform="translate(74,36.06)">
+    <circle cx="0" cy="0" r="3.16" class="primitive"/>
+  </g>
+  <g transform="translate(31,8.33)">
+    <circle cx="0" cy="0" r="3.16" class="primitive"/>
+  </g>
+  <g transform="translate(40.3,25.25)">
+    <circle cx="0" cy="0" r="3.16" class="primitive"/>
+  </g>
+</g>
+<g font-family="Helvetica" font-size="4" fill="%23000000" id="img-521eaf63-8">
+  <g transform="translate(51.16,46.94)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">t</text>
     </g>
   </g>
-  <g transform="translate(91.67,24.29)">
+  <g transform="translate(8.33,62.11)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">constvar</text>
     </g>
   </g>
-  <g transform="translate(75.04,8.33)">
+  <g transform="translate(42.09,63.81)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">constvar</text>
     </g>
   </g>
-  <g transform="translate(70.16,30.14)">
+  <g transform="translate(28.63,56.59)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">Beta</text>
     </g>
   </g>
-  <g transform="translate(15.2,87.96)">
+  <g transform="translate(58.04,91.67)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">y</text>
     </g>
   </g>
-  <g transform="translate(30.19,72.29)">
+  <g transform="translate(56.86,72.09)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">Bernoulli</text>
     </g>
   </g>
-  <g transform="translate(8.33,24.67)">
+  <g transform="translate(91.67,26.73)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">y</text>
     </g>
   </g>
-  <g transform="translate(26.44,36.83)">
+  <g transform="translate(74,36.06)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">Bernoulli</text>
     </g>
   </g>
-  <g transform="translate(79.4,91.67)">
+  <g transform="translate(31,8.33)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">y</text>
     </g>
   </g>
-  <g transform="translate(65.97,74)">
+  <g transform="translate(40.3,25.25)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">Bernoulli</text>
     </g>
   </g>
 </g>
-<g font-family="Helvetica" font-size="4" fill="%23000000" id="img-acdea1b6-9">
+<g font-family="Helvetica" font-size="4" fill="%23000000" id="img-521eaf63-9">
   <g transform="translate(50,0)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em"></text>
@@ -348,7 +353,7 @@ result = infer(
 plot(title = &quot;Inference results over `mean`&quot;)
 plot!(0:0.1:20.0, (x) -&gt; pdf(NormalMeanVariance(15.0, 1.0), x), label = &quot;prior&quot;, fill = 0, fillalpha = 0.2)
 plot!(0:0.1:20.0, (x) -&gt; pdf(result.posteriors[:mean], x), label = &quot;posterior&quot;, fill = 0, fillalpha = 0.2)
-vline!([ 10.0 ], label = &quot;data point&quot;)</code></pre><img src="3ce34d6b.svg" alt="Example block output"/><p>As we can see, we can run inference on this model. We can also visualize the model&#39;s structure, as shown in the <a href="#user-guide-model-specification-visualization">Model structure visualisation</a> section.</p><pre><code class="language-julia hljs">using Cairo, GraphPlot
+vline!([ 10.0 ], label = &quot;data point&quot;)</code></pre><img src="4990876c.svg" alt="Example block output"/><p>As we can see, we can run inference on this model. We can also visualize the model&#39;s structure, as shown in the <a href="#user-guide-model-specification-visualization">Model structure visualisation</a> section.</p><pre><code class="language-julia hljs">using Cairo, GraphPlot
 
 GraphPlot.gplot(getmodel(result.model))</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg"
@@ -365,133 +370,133 @@ GraphPlot.gplot(getmodel(result.model))</code></pre><img src='data:image/svg+xml
     <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
   </marker>
 </defs>
-<g fill="%23000000" fill-opacity="0.000" id="img-d68677d7-1">
+<g fill="%23000000" fill-opacity="0.000" id="img-0fd79671-1">
   <g transform="translate(50,50)">
     <path d="M-50,-50 L50,-50 50,50 -50,50  z" class="primitive"/>
   </g>
 </g>
-<g stroke-width="0.95" stroke="%23D3D3D3" id="img-d68677d7-2">
+<g stroke-width="0.95" stroke="%23D3D3D3" id="img-0fd79671-2">
 </g>
-<g stroke-width="0.95" stroke="%23D3D3D3" id="img-d68677d7-3">
-  <g transform="translate(43.43,27.65)">
-    <path fill="none" d="M5.45,4.84 L-5.45,-4.84 " class="primitive"/>
+<g stroke-width="0.95" stroke="%23D3D3D3" id="img-0fd79671-3">
+  <g transform="translate(72.83,63.87)">
+    <path fill="none" d="M-4.63,0.84 L4.63,-0.84 " class="primitive"/>
   </g>
-  <g transform="translate(57.26,42.35)">
-    <path fill="none" d="M-3.9,-5.07 L3.9,5.07 " class="primitive"/>
+  <g transform="translate(56.65,66.34)">
+    <path fill="none" d="M5.04,-0.63 L-5.04,0.63 " class="primitive"/>
   </g>
-  <g transform="translate(37.41,14.48)">
-    <path fill="none" d="M0.92,-2.99 L-0.92,2.99 " class="primitive"/>
+  <g transform="translate(86.18,55.64)">
+    <path fill="none" d="M3.42,-4.23 L-3.42,4.23 " class="primitive"/>
   </g>
-  <g transform="translate(21.92,20.22)">
-    <path fill="none" d="M-10.3,-0.3 L10.3,0.3 " class="primitive"/>
+  <g transform="translate(84.71,69.96)">
+    <path fill="none" d="M2.46,4.62 L-2.46,-4.62 " class="primitive"/>
   </g>
-  <g transform="translate(57.37,57.66)">
-    <path fill="none" d="M-3.81,5.01 L3.81,-5.01 " class="primitive"/>
+  <g transform="translate(41.22,58.89)">
+    <path fill="none" d="M-5.01,-5.97 L5.01,5.97 " class="primitive"/>
   </g>
-  <g transform="translate(43.8,72.35)">
-    <path fill="none" d="M5.32,-4.84 L-5.32,4.84 " class="primitive"/>
+  <g transform="translate(27.53,41.18)">
+    <path fill="none" d="M4.65,6.53 L-4.65,-6.53 " class="primitive"/>
   </g>
-  <g transform="translate(77.42,50)">
-    <path fill="none" d="M10.95,-0.02 L-10.95,0.02 " class="primitive"/>
+  <g transform="translate(47.09,79.53)">
+    <path fill="none" d="M-0.91,8.86 L0.91,-8.86 " class="primitive"/>
   </g>
-  <g transform="translate(37.72,85.54)">
-    <path fill="none" d="M0.81,2.95 L-0.81,-2.95 " class="primitive"/>
+  <g transform="translate(14.65,31.18)">
+    <path fill="none" d="M-3.05,-0.38 L3.05,0.38 " class="primitive"/>
   </g>
-  <g transform="translate(22.44,79.8)">
-    <path fill="none" d="M-10.31,0.3 L10.31,-0.3 " class="primitive"/>
-  </g>
-</g>
-<g fill="%23D3D3D3" id="img-d68677d7-4">
-</g>
-<g fill="%23D3D3D3" id="img-d68677d7-5">
-</g>
-<g font-size="4" fill="%23000000" id="img-d68677d7-6">
-</g>
-<g stroke-width="0" stroke="%23000000" stroke-opacity="0.000" fill="%2340E0D0" id="img-d68677d7-7">
-  <g transform="translate(51.35,34.68)">
-    <circle cx="0" cy="0" r="3.16" class="primitive"/>
-  </g>
-  <g transform="translate(39.31,8.33)">
-    <circle cx="0" cy="0" r="3.16" class="primitive"/>
-  </g>
-  <g transform="translate(8.33,19.82)">
-    <circle cx="0" cy="0" r="3.16" class="primitive"/>
-  </g>
-  <g transform="translate(35.51,20.62)">
-    <circle cx="0" cy="0" r="3.16" class="primitive"/>
-  </g>
-  <g transform="translate(51.56,65.29)">
-    <circle cx="0" cy="0" r="3.16" class="primitive"/>
-  </g>
-  <g transform="translate(91.67,49.97)">
-    <circle cx="0" cy="0" r="3.16" class="primitive"/>
-  </g>
-  <g transform="translate(63.18,50.03)">
-    <circle cx="0" cy="0" r="3.16" class="primitive"/>
-  </g>
-  <g transform="translate(39.4,91.67)">
-    <circle cx="0" cy="0" r="3.16" class="primitive"/>
-  </g>
-  <g transform="translate(8.84,80.19)">
-    <circle cx="0" cy="0" r="3.16" class="primitive"/>
-  </g>
-  <g transform="translate(36.04,79.4)">
-    <circle cx="0" cy="0" r="3.16" class="primitive"/>
+  <g transform="translate(21.11,20.15)">
+    <path fill="none" d="M0.11,-8.52 L-0.11,8.52 " class="primitive"/>
   </g>
 </g>
-<g font-family="Helvetica" font-size="4" fill="%23000000" id="img-d68677d7-8">
-  <g transform="translate(51.35,34.68)">
+<g fill="%23D3D3D3" id="img-0fd79671-4">
+</g>
+<g fill="%23D3D3D3" id="img-0fd79671-5">
+</g>
+<g font-size="4" fill="%23000000" id="img-0fd79671-6">
+</g>
+<g stroke-width="0" stroke="%23000000" stroke-opacity="0.000" fill="%2340E0D0" id="img-0fd79671-7">
+  <g transform="translate(64.96,65.3)">
+    <circle cx="0" cy="0" r="3.16" class="primitive"/>
+  </g>
+  <g transform="translate(91.67,48.85)">
+    <circle cx="0" cy="0" r="3.16" class="primitive"/>
+  </g>
+  <g transform="translate(88.72,77.49)">
+    <circle cx="0" cy="0" r="3.16" class="primitive"/>
+  </g>
+  <g transform="translate(80.7,62.43)">
+    <circle cx="0" cy="0" r="3.16" class="primitive"/>
+  </g>
+  <g transform="translate(34.1,50.4)">
+    <circle cx="0" cy="0" r="3.16" class="primitive"/>
+  </g>
+  <g transform="translate(45.84,91.67)">
+    <circle cx="0" cy="0" r="3.16" class="primitive"/>
+  </g>
+  <g transform="translate(48.35,67.38)">
+    <circle cx="0" cy="0" r="3.16" class="primitive"/>
+  </g>
+  <g transform="translate(8.33,30.4)">
+    <circle cx="0" cy="0" r="3.16" class="primitive"/>
+  </g>
+  <g transform="translate(21.26,8.33)">
+    <circle cx="0" cy="0" r="3.16" class="primitive"/>
+  </g>
+  <g transform="translate(20.96,31.97)">
+    <circle cx="0" cy="0" r="3.16" class="primitive"/>
+  </g>
+</g>
+<g font-family="Helvetica" font-size="4" fill="%23000000" id="img-0fd79671-8">
+  <g transform="translate(64.96,65.3)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">mean</text>
     </g>
   </g>
-  <g transform="translate(39.31,8.33)">
+  <g transform="translate(91.67,48.85)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">constvar</text>
     </g>
   </g>
-  <g transform="translate(8.33,19.82)">
+  <g transform="translate(88.72,77.49)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">constvar</text>
     </g>
   </g>
-  <g transform="translate(35.51,20.62)">
+  <g transform="translate(80.7,62.43)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">NormalMeanVariance</text>
     </g>
   </g>
-  <g transform="translate(51.56,65.29)">
+  <g transform="translate(34.1,50.4)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">shifted_mean</text>
     </g>
   </g>
-  <g transform="translate(91.67,49.97)">
+  <g transform="translate(45.84,91.67)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">constvar</text>
     </g>
   </g>
-  <g transform="translate(63.18,50.03)">
+  <g transform="translate(48.35,67.38)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">+</text>
     </g>
   </g>
-  <g transform="translate(39.4,91.67)">
+  <g transform="translate(8.33,30.4)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">data</text>
     </g>
   </g>
-  <g transform="translate(8.84,80.19)">
+  <g transform="translate(21.26,8.33)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">constvar</text>
     </g>
   </g>
-  <g transform="translate(36.04,79.4)">
+  <g transform="translate(20.96,31.97)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">NormalMeanPrecision</text>
     </g>
   </g>
 </g>
-<g font-family="Helvetica" font-size="4" fill="%23000000" id="img-d68677d7-9">
+<g font-family="Helvetica" font-size="4" fill="%23000000" id="img-0fd79671-9">
   <g transform="translate(50,0)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em"></text>
@@ -514,7 +519,7 @@ result_with_contraction = infer(
 plot(title = &quot;Inference results over `mean` with node contraction&quot;)
 plot!(0:0.1:20.0, (x) -&gt; pdf(NormalMeanVariance(15.0, 1.0), x), label = &quot;prior&quot;, fill = 0, fillalpha = 0.2)
 plot!(0:0.1:20.0, (x) -&gt; pdf(result_with_contraction.posteriors[:mean], x), label = &quot;posterior&quot;, fill = 0, fillalpha = 0.2)
-vline!([ 10.0 ], label = &quot;data point&quot;)</code></pre><img src="9af0c3ab.svg" alt="Example block output"/><p>As you can see, the inference result is identical to the previous case. However, the structure of the model is different:</p><pre><code class="language-julia hljs">GraphPlot.gplot(getmodel(result_with_contraction.model))</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8"?>
+vline!([ 10.0 ], label = &quot;data point&quot;)</code></pre><img src="00f5df04.svg" alt="Example block output"/><p>As you can see, the inference result is identical to the previous case. However, the structure of the model is different:</p><pre><code class="language-julia hljs">GraphPlot.gplot(getmodel(result_with_contraction.model))</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg"
      xmlns:xlink="http://www.w3.org/1999/xlink"
      version="1.2"
@@ -529,111 +534,111 @@ vline!([ 10.0 ], label = &quot;data point&quot;)</code></pre><img src="9af0c3ab.
     <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
   </marker>
 </defs>
-<g fill="%23000000" fill-opacity="0.000" id="img-fa6c56e1-1">
+<g fill="%23000000" fill-opacity="0.000" id="img-65dfeef0-1">
   <g transform="translate(50,50)">
     <path d="M-50,-50 L50,-50 50,50 -50,50  z" class="primitive"/>
   </g>
 </g>
-<g stroke-width="1.06" stroke="%23D3D3D3" id="img-fa6c56e1-2">
+<g stroke-width="1.06" stroke="%23D3D3D3" id="img-65dfeef0-2">
 </g>
-<g stroke-width="1.06" stroke="%23D3D3D3" id="img-fa6c56e1-3">
-  <g transform="translate(40.4,38.3)">
-    <path fill="none" d="M5.67,8.32 L-5.67,-8.32 " class="primitive"/>
+<g stroke-width="1.06" stroke="%23D3D3D3" id="img-65dfeef0-3">
+  <g transform="translate(60.08,39.99)">
+    <path fill="none" d="M-8.16,6.75 L8.16,-6.75 " class="primitive"/>
   </g>
-  <g transform="translate(56.17,61.44)">
-    <path fill="none" d="M-5.95,-8.74 L5.95,8.74 " class="primitive"/>
+  <g transform="translate(37.67,58.48)">
+    <path fill="none" d="M8.56,-7.05 L-8.56,7.05 " class="primitive"/>
   </g>
-  <g transform="translate(20.49,22.66)">
-    <path fill="none" d="M-8.68,-3.05 L8.68,3.05 " class="primitive"/>
+  <g transform="translate(81.37,31.31)">
+    <path fill="none" d="M6.61,0.26 L-6.61,-0.26 " class="primitive"/>
   </g>
-  <g transform="translate(35.56,17.64)">
-    <path fill="none" d="M1.81,-5.79 L-1.81,5.79 " class="primitive"/>
+  <g transform="translate(73.96,19.62)">
+    <path fill="none" d="M1.97,-7.71 L-1.97,7.71 " class="primitive"/>
   </g>
-  <g transform="translate(54.94,80.58)">
-    <path fill="none" d="M-6.38,5.07 L6.38,-5.07 " class="primitive"/>
+  <g transform="translate(17.3,61.82)">
+    <path fill="none" d="M-5.91,-3.99 L5.91,3.99 " class="primitive"/>
   </g>
-  <g transform="translate(77.93,72.9)">
-    <path fill="none" d="M10.05,-0.23 L-10.05,0.23 " class="primitive"/>
+  <g transform="translate(28.58,79.77)">
+    <path fill="none" d="M1.61,8.28 L-1.61,-8.28 " class="primitive"/>
   </g>
-  <g transform="translate(70.41,82.44)">
-    <path fill="none" d="M4.15,6.17 L-4.15,-6.17 " class="primitive"/>
-  </g>
-</g>
-<g fill="%23D3D3D3" id="img-fa6c56e1-4">
-</g>
-<g fill="%23D3D3D3" id="img-fa6c56e1-5">
-</g>
-<g font-size="4" fill="%23000000" id="img-fa6c56e1-6">
-</g>
-<g stroke-width="0" stroke="%23000000" stroke-opacity="0.000" fill="%2340E0D0" id="img-fa6c56e1-7">
-  <g transform="translate(48.14,49.66)">
-    <circle cx="0" cy="0" r="3.54" class="primitive"/>
-  </g>
-  <g transform="translate(8.33,18.39)">
-    <circle cx="0" cy="0" r="3.54" class="primitive"/>
-  </g>
-  <g transform="translate(38.47,8.33)">
-    <circle cx="0" cy="0" r="3.54" class="primitive"/>
-  </g>
-  <g transform="translate(32.65,26.94)">
-    <circle cx="0" cy="0" r="3.54" class="primitive"/>
-  </g>
-  <g transform="translate(45.68,87.95)">
-    <circle cx="0" cy="0" r="3.54" class="primitive"/>
-  </g>
-  <g transform="translate(91.67,72.58)">
-    <circle cx="0" cy="0" r="3.54" class="primitive"/>
-  </g>
-  <g transform="translate(76.62,91.67)">
-    <circle cx="0" cy="0" r="3.54" class="primitive"/>
-  </g>
-  <g transform="translate(64.2,73.22)">
-    <circle cx="0" cy="0" r="3.54" class="primitive"/>
+  <g transform="translate(17.37,75.25)">
+    <path fill="none" d="M-6.06,5.02 L6.06,-5.02 " class="primitive"/>
   </g>
 </g>
-<g font-family="Helvetica" font-size="4" fill="%23000000" id="img-fa6c56e1-8">
-  <g transform="translate(48.14,49.66)">
+<g fill="%23D3D3D3" id="img-65dfeef0-4">
+</g>
+<g fill="%23D3D3D3" id="img-65dfeef0-5">
+</g>
+<g font-size="4" fill="%23000000" id="img-65dfeef0-6">
+</g>
+<g stroke-width="0" stroke="%23000000" stroke-opacity="0.000" fill="%2340E0D0" id="img-65dfeef0-7">
+  <g transform="translate(49.07,49.09)">
+    <circle cx="0" cy="0" r="3.54" class="primitive"/>
+  </g>
+  <g transform="translate(91.67,31.72)">
+    <circle cx="0" cy="0" r="3.54" class="primitive"/>
+  </g>
+  <g transform="translate(76.84,8.33)">
+    <circle cx="0" cy="0" r="3.54" class="primitive"/>
+  </g>
+  <g transform="translate(71.08,30.9)">
+    <circle cx="0" cy="0" r="3.54" class="primitive"/>
+  </g>
+  <g transform="translate(8.33,55.77)">
+    <circle cx="0" cy="0" r="3.54" class="primitive"/>
+  </g>
+  <g transform="translate(30.89,91.67)">
+    <circle cx="0" cy="0" r="3.54" class="primitive"/>
+  </g>
+  <g transform="translate(8.48,82.62)">
+    <circle cx="0" cy="0" r="3.54" class="primitive"/>
+  </g>
+  <g transform="translate(26.26,67.88)">
+    <circle cx="0" cy="0" r="3.54" class="primitive"/>
+  </g>
+</g>
+<g font-family="Helvetica" font-size="4" fill="%23000000" id="img-65dfeef0-8">
+  <g transform="translate(49.07,49.09)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">mean</text>
     </g>
   </g>
-  <g transform="translate(8.33,18.39)">
+  <g transform="translate(91.67,31.72)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">constvar</text>
     </g>
   </g>
-  <g transform="translate(38.47,8.33)">
+  <g transform="translate(76.84,8.33)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">constvar</text>
     </g>
   </g>
-  <g transform="translate(32.65,26.94)">
+  <g transform="translate(71.08,30.9)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">NormalMeanVariance</text>
     </g>
   </g>
-  <g transform="translate(45.68,87.95)">
+  <g transform="translate(8.33,55.77)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">data</text>
     </g>
   </g>
-  <g transform="translate(91.67,72.58)">
+  <g transform="translate(30.89,91.67)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">constvar</text>
     </g>
   </g>
-  <g transform="translate(76.62,91.67)">
+  <g transform="translate(8.48,82.62)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">constvar</text>
     </g>
   </g>
-  <g transform="translate(64.2,73.22)">
+  <g transform="translate(26.26,67.88)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">ShiftedNormal</text>
     </g>
   </g>
 </g>
-<g font-family="Helvetica" font-size="4" fill="%23000000" id="img-fa6c56e1-9">
+<g font-family="Helvetica" font-size="4" fill="%23000000" id="img-65dfeef0-9">
   <g transform="translate(50,0)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em"></text>
@@ -643,34 +648,35 @@ vline!([ 10.0 ], label = &quot;data point&quot;)</code></pre><img src="9af0c3ab.
 </svg>
 '/><p>With node contraction, we no longer have access to the variables defined inside the <code>ShiftedNormal</code> submodel, as it has been contracted to a single factor node. It&#39;s worth noting that this feature heavily relies on existing message passing update rules for the submodel. However, it can also be combined with another useful inference technique <a href="../inference/undefinedrules/#inference-undefinedrules">where no explicit message passing update rules are required</a>.</p><p>We can also verify that node contraction indeed improves the performance of the inference:</p><pre><code class="language-julia hljs">using BenchmarkTools
 
+
 benchmark_without_contraction = @benchmark infer(
     model = Model(precision = 1.0, shift = 1.0),
-    data  = (data = 10.0, )
+    data  = (data = 10.0, ),
 )
 
 benchmark_with_contraction = @benchmark infer(
     model = Model(precision = 1.0, shift = 1.0),
     data  = (data = 10.0, ),
-    allow_node_contraction = true
+    allow_node_contraction = true,
 )</code></pre><p>Let&#39;s examine the benchmark results:</p><pre><code class="language-julia hljs">benchmark_without_contraction</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">BenchmarkTools.Trial: 10000 samples with 1 evaluation per sample.
- Range <span class="sgr90">(</span><span class="sgr36"><span class="sgr1">min</span></span> … <span class="sgr35">max</span><span class="sgr90">):  </span><span class="sgr36"><span class="sgr1">179.075 μs</span></span> … <span class="sgr35"> 21.866 ms</span>  <span class="sgr90">┊</span> GC <span class="sgr90">(</span>min … max<span class="sgr90">): </span>0.00% … 98.39%
- Time  <span class="sgr90">(</span><span class="sgr34"><span class="sgr1">median</span></span><span class="sgr90">):     </span><span class="sgr34"><span class="sgr1">191.984 μs               </span></span><span class="sgr90">┊</span> GC <span class="sgr90">(</span>median<span class="sgr90">):    </span>0.00%
- Time  <span class="sgr90">(</span><span class="sgr32"><span class="sgr1">mean</span></span> ± <span class="sgr32">σ</span><span class="sgr90">):   </span><span class="sgr32"><span class="sgr1">203.142 μs</span></span> ± <span class="sgr32">365.945 μs</span>  <span class="sgr90">┊</span> GC <span class="sgr90">(</span>mean ± σ<span class="sgr90">):  </span>3.53% ±  1.95%
+ Range <span class="sgr90">(</span><span class="sgr36"><span class="sgr1">min</span></span> … <span class="sgr35">max</span><span class="sgr90">):  </span><span class="sgr36"><span class="sgr1">161.662 μs</span></span> … <span class="sgr35"> 78.923 ms</span>  <span class="sgr90">┊</span> GC <span class="sgr90">(</span>min … max<span class="sgr90">): </span>0.00% … 99.57%
+ Time  <span class="sgr90">(</span><span class="sgr34"><span class="sgr1">median</span></span><span class="sgr90">):     </span><span class="sgr34"><span class="sgr1">191.569 μs               </span></span><span class="sgr90">┊</span> GC <span class="sgr90">(</span>median<span class="sgr90">):    </span>0.00%
+ Time  <span class="sgr90">(</span><span class="sgr32"><span class="sgr1">mean</span></span> ± <span class="sgr32">σ</span><span class="sgr90">):   </span><span class="sgr32"><span class="sgr1">204.537 μs</span></span> ± <span class="sgr32">916.754 μs</span>  <span class="sgr90">┊</span> GC <span class="sgr90">(</span>mean ± σ<span class="sgr90">):  </span>6.13% ±  1.41%
 
-      ▁▅▆██▅▅▄▂<span class="sgr34">▁</span>▁         <span class="sgr32"> </span>                                      
-  ▁▁▃▆█████████<span class="sgr34">█</span>██▇▆▆▅▅▅▅▅<span class="sgr32">▅</span>▅▆▅▅▅▄▄▄▃▃▃▃▂▂▂▂▂▂▂▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁ ▃
-  179 μs<span class="sgr90">           Histogram: frequency by time</span>          239 μs <span class="sgr1">&lt;</span>
+     ▁▆█▆▂         ▁▂▄▆<span class="sgr34">▅</span>▄▃▂▂▁▁  <span class="sgr32"> </span>                                
+  ▁▁▃█████▇▅▅▃▃▃▃▄▆████<span class="sgr34">█</span>████████<span class="sgr32">▇</span>▆▆▅▅▄▄▄▄▃▃▃▃▃▂▂▂▂▂▁▁▁▁▁▁▁▁▁▁▁▁ ▄
+  162 μs<span class="sgr90">           Histogram: frequency by time</span>          247 μs <span class="sgr1">&lt;</span>
 
- Memory estimate<span class="sgr90">: </span><span class="sgr33">93.66 KiB</span>, allocs estimate<span class="sgr90">: </span><span class="sgr33">1433</span>.</code></pre><pre><code class="language-julia hljs">benchmark_with_contraction</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">BenchmarkTools.Trial: 10000 samples with 1 evaluation per sample.
- Range <span class="sgr90">(</span><span class="sgr36"><span class="sgr1">min</span></span> … <span class="sgr35">max</span><span class="sgr90">):  </span><span class="sgr36"><span class="sgr1">110.096 μs</span></span> … <span class="sgr35"> 17.271 ms</span>  <span class="sgr90">┊</span> GC <span class="sgr90">(</span>min … max<span class="sgr90">): </span>0.00% … 98.78%
- Time  <span class="sgr90">(</span><span class="sgr34"><span class="sgr1">median</span></span><span class="sgr90">):     </span><span class="sgr34"><span class="sgr1">119.519 μs               </span></span><span class="sgr90">┊</span> GC <span class="sgr90">(</span>median<span class="sgr90">):    </span>0.00%
- Time  <span class="sgr90">(</span><span class="sgr32"><span class="sgr1">mean</span></span> ± <span class="sgr32">σ</span><span class="sgr90">):   </span><span class="sgr32"><span class="sgr1">129.852 μs</span></span> ± <span class="sgr32">320.020 μs</span>  <span class="sgr90">┊</span> GC <span class="sgr90">(</span>mean ± σ<span class="sgr90">):  </span>4.89% ±  1.97%
+ Memory estimate<span class="sgr90">: </span><span class="sgr33">88.45 KiB</span>, allocs estimate<span class="sgr90">: </span><span class="sgr33">1568</span>.</code></pre><pre><code class="language-julia hljs">benchmark_with_contraction</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">BenchmarkTools.Trial: 10000 samples with 1 evaluation per sample.
+ Range <span class="sgr90">(</span><span class="sgr36"><span class="sgr1">min</span></span> … <span class="sgr35">max</span><span class="sgr90">):  </span><span class="sgr36"><span class="sgr1">103.984 μs</span></span> … <span class="sgr35"> 70.985 ms</span>  <span class="sgr90">┊</span> GC <span class="sgr90">(</span>min … max<span class="sgr90">): </span>0.00% … 99.39%
+ Time  <span class="sgr90">(</span><span class="sgr34"><span class="sgr1">median</span></span><span class="sgr90">):     </span><span class="sgr34"><span class="sgr1">124.272 μs               </span></span><span class="sgr90">┊</span> GC <span class="sgr90">(</span>median<span class="sgr90">):    </span>0.00%
+ Time  <span class="sgr90">(</span><span class="sgr32"><span class="sgr1">mean</span></span> ± <span class="sgr32">σ</span><span class="sgr90">):   </span><span class="sgr32"><span class="sgr1">131.985 μs</span></span> ± <span class="sgr32">708.867 μs</span>  <span class="sgr90">┊</span> GC <span class="sgr90">(</span>mean ± σ<span class="sgr90">):  </span>5.35% ±  0.99%
 
-       ▅█▇▅▄▃<span class="sgr34"> </span>            <span class="sgr32"> </span>                                      
-  ▁▁▂▄███████<span class="sgr34">█</span>█▇▆▅▅▅▄▄▄▄▃▄<span class="sgr32">▄</span>▃▃▃▃▃▃▃▃▃▃▂▂▂▂▂▂▂▂▂▁▂▁▁▂▁▁▁▁▁▁▁▁▁▁▁▁ ▃
-  110 μs<span class="sgr90">           Histogram: frequency by time</span>          161 μs <span class="sgr1">&lt;</span>
+     ▁▄▇█▃▁      ▂▃▄▅▅▇<span class="sgr34">▆</span>▆▅▆▅▅▃▂<span class="sgr32"> </span>                                 
+  ▂▃▅██████▆▅▅▅▆▇██████<span class="sgr34">█</span>███████<span class="sgr32">█</span>█▇▆▆▅▅▄▄▄▃▃▃▄▃▃▃▃▃▂▂▂▂▂▂▁▁▁▁▁▁▁ ▄
+  104 μs<span class="sgr90">           Histogram: frequency by time</span>          163 μs <span class="sgr1">&lt;</span>
 
- Memory estimate<span class="sgr90">: </span><span class="sgr33">68.27 KiB</span>, allocs estimate<span class="sgr90">: </span><span class="sgr33">977</span>.</code></pre><p>As we can see, the inference with node contraction runs faster due to the simplified model structure and optimized message update rules.  This performance improvement is reflected in reduced execution time and fewer memory allocations.</p><h3 id="user-guide-model-specification-node-creation-options"><a class="docs-heading-anchor" href="#user-guide-model-specification-node-creation-options">Node creation options</a><a id="user-guide-model-specification-node-creation-options-1"></a><a class="docs-heading-anchor-permalink" href="#user-guide-model-specification-node-creation-options" title="Permalink"></a></h3><p><code>GraphPPL</code> allows to pass optional arguments to the node creation constructor with the <code>where { options...  }</code> options specification syntax.</p><p>Example:</p><pre><code class="language-julia hljs">y ~ Normal(mean = y_mean, var = y_var) where { meta = ... }</code></pre><p>A list of the available options specific to the <code>ReactiveMP</code> inference engine is presented below.</p><h4 id="Metadata-option"><a class="docs-heading-anchor" href="#Metadata-option">Metadata option</a><a id="Metadata-option-1"></a><a class="docs-heading-anchor-permalink" href="#Metadata-option" title="Permalink"></a></h4><p>Is is possible to pass any extra metadata to a factor node with the <code>meta</code> option. Metadata can be later accessed in message computation rules.</p><pre><code class="language-julia hljs">z ~ f(x, y) where { meta = Linearization() }
+ Memory estimate<span class="sgr90">: </span><span class="sgr33">63.06 KiB</span>, allocs estimate<span class="sgr90">: </span><span class="sgr33">1056</span>.</code></pre><p>As we can see, the inference with node contraction runs faster due to the simplified model structure and optimized message update rules.  This performance improvement is reflected in reduced execution time and fewer memory allocations.</p><h3 id="user-guide-model-specification-node-creation-options"><a class="docs-heading-anchor" href="#user-guide-model-specification-node-creation-options">Node creation options</a><a id="user-guide-model-specification-node-creation-options-1"></a><a class="docs-heading-anchor-permalink" href="#user-guide-model-specification-node-creation-options" title="Permalink"></a></h3><p><code>GraphPPL</code> allows to pass optional arguments to the node creation constructor with the <code>where { options...  }</code> options specification syntax.</p><p>Example:</p><pre><code class="language-julia hljs">y ~ Normal(mean = y_mean, var = y_var) where { meta = ... }</code></pre><p>A list of the available options specific to the <code>ReactiveMP</code> inference engine is presented below.</p><h4 id="Metadata-option"><a class="docs-heading-anchor" href="#Metadata-option">Metadata option</a><a id="Metadata-option-1"></a><a class="docs-heading-anchor-permalink" href="#Metadata-option" title="Permalink"></a></h4><p>Is is possible to pass any extra metadata to a factor node with the <code>meta</code> option. Metadata can be later accessed in message computation rules.</p><pre><code class="language-julia hljs">z ~ f(x, y) where { meta = Linearization() }
 d ~ g(a, b) where { meta = Unscented() }</code></pre><p>This option might be useful to change message passing rules around a specific factor node. Read more about this feature in <a href="../meta-specification/#user-guide-meta-specification">Meta Specification</a> section.</p><h4 id="Dependencies-option"><a class="docs-heading-anchor" href="#Dependencies-option">Dependencies option</a><a id="Dependencies-option-1"></a><a class="docs-heading-anchor-permalink" href="#Dependencies-option" title="Permalink"></a></h4><p>A user can modify default computational pipeline of a node with the <code>dependencies</code> options.  Read more about different options in the <a href="https://reactivebayes.github.io/ReactiveMP.jl/stable/"><code>ReactiveMP.jl</code> documentation</a>.</p><pre><code class="language-julia hljs">y[k - 1] ~ Probit(x[k]) where {
     # This specification indicates that in order to compute an outbound message from the `in` interface
     # We need an inbound message from the same edge initialized to `NormalMeanPrecision(0.0, 1.0)`
@@ -680,4 +686,4 @@ mermaid.initialize({
     startOnLoad: true,
     theme: "neutral"
 });
-</script></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../comparison/">« RxInfer.jl vs. Others</a><a class="docs-footer-nextpage" href="../constraints-specification/">Constraints specification »</a><div class="flexbox-break"></div><p class="footer-message">Created in <a href="https://biaslab.github.io/">BIASlab</a>, maintained by <a href="https://github.com/ReactiveBayes">ReactiveBayes</a>, powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.8.0 on <span class="colophon-date" title="Tuesday 14 January 2025 14:49">Tuesday 14 January 2025</span>. Using Julia version 1.10.7.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+</script></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../comparison/">« RxInfer.jl vs. Others</a><a class="docs-footer-nextpage" href="../constraints-specification/">Constraints specification »</a><div class="flexbox-break"></div><p class="footer-message">Created in <a href="https://biaslab.github.io/">BIASlab</a>, maintained by <a href="https://github.com/ReactiveBayes">ReactiveBayes</a>, powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.8.1 on <span class="colophon-date" title="Wednesday 19 February 2025 14:14">Wednesday 19 February 2025</span>. Using Julia version 1.11.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
