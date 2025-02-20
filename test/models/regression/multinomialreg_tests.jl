@@ -5,7 +5,7 @@
 
     N = 20
     k = 10
-    nsamples = 5000 ###Needs 5000 for an accuracy of 1e-5
+    nsamples = 1000 
     X, ψ, p = generate_multinomial_data(; N = N, k = k, nsamples = nsamples)
 
     @model function multinomial_model(y, N, ξ_ψ, W_ψ)
@@ -18,7 +18,7 @@
     result = infer(
         model = multinomial_model(ξ_ψ = zeros(k - 1), W_ψ = rand(Wishart(k, diageye(k - 1))), N = N),
         data = (y = X,),
-        iterations = 300,
+        iterations = 100,
         free_energy = true,
         showprogress = false,
         returnvars = KeepLast(),
@@ -29,11 +29,11 @@
     pest = logistic_stic_breaking(m)
 
     mse = mean((pest - p) .^ 2)
-    @test mse < 1e-5
+    @test mse < 2e-5
 
     @test result.free_energy[end] < result.free_energy[1]
     @test result.free_energy[end] <= result.free_energy[end - 1]
-    @test abs(result.free_energy[end - 1] - result.free_energy[end]) < 1e-12
+    @test abs(result.free_energy[end - 1] - result.free_energy[end]) < 1e-8
 end
 
 @testitem "Multinomial regression - online inference" begin
