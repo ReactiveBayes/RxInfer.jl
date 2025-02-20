@@ -2,9 +2,6 @@
 CurrentModule = RxInfer
 ```
 
-RxInfer
-=======
-
 ```@raw html
 <div class="light-biglogo">
 ```
