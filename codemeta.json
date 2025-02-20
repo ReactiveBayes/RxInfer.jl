@@ -13,7 +13,7 @@
     "description": "Julia package for automated, scalable and efficient Bayesian inference on factor graphs with reactive message passing. ",
     "applicationCategory": "Statistics",
     "developmentStatus": "active",
-    "readme": "https://reactivebayes.github.io/RxInfer.jl/stable/",
+    "readme": "https://rxinfer.ml",
     "softwareVersion": "4.0.1",
     "keywords": [
         "Bayesian inference",
@@ -36,8 +36,10 @@
         "MacOS"
     ],
     "relatedLink": [
-        "https://reactivebayes.github.io/rxinfer-website/",
-        "https://reactivebayes.github.io/RxInfer.jl/stable/",
+        "https://rxinfer.ml",
+        "https://docs.rxinfer.ml",
+        "https://examples.rxinfer.ml",
+        "https://github.com/ReactiveBayes/RxInfer.jl",
         "https://app.codecov.io/gh/reactivebayes/RxInfer.jl"
     ],
     "author": [

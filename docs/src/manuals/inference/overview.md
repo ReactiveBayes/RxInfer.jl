@@ -336,4 +336,4 @@ RxInfer.enable_inference_error_hint!
 
 ## Where to go next?
 
-Read more explanation about the other keyword arguments in the [Streamlined (online) inference](@ref manual-online-inference)section or check out the [Static Inference](@ref manual-static-inference) section or check some more advanced [examples](https://reactivebayes.github.io/RxInfer.jl/stable/examples/overview/).
+Read more explanation about the other keyword arguments in the [Streamlined (online) inference](@ref manual-online-inference)section or check out the [Static Inference](@ref manual-static-inference) section or check some more advanced [examples](https://examples.rxinfer.ml/).

@@ -255,7 +255,7 @@ function inference_process_error(error, rethrow)
         please open a GitHub issue at https://github.com/ReactiveBayes/RxInfer.jl/issues and we'll help investigate.
 
         For more details:
-        • Stack overflow guide: https://reactivebayes.github.io/RxInfer.jl/stable/manuals/sharpbits/stack-overflow-inference/
+        • Stack overflow guide: https://docs.rxinfer.ml/stable/manuals/sharpbits/stack-overflow-inference/
         • See `infer` function docs for options
         """
     end
@@ -264,11 +264,11 @@ function inference_process_error(error, rethrow)
         We encountered an error during inference, here are some helpful resources to get you back on track:
 
         1. Check our Sharp bits documentation which covers common issues:
-        https://reactivebayes.github.io/RxInfer.jl/stable/manuals/sharpbits/overview/
+        https://docs.rxinfer.ml/stable/manuals/sharpbits/overview/
         2. Browse our existing discussions - your question may already be answered:
         https://github.com/ReactiveBayes/RxInfer.jl/discussions
         3. Take inspiration from our set of examples:
-        https://reactivebayes.github.io/RxInferExamples.jl/
+        https://examples.rxinfer.ml/
 
         Still stuck? We'd love to help! You can:
         - Start a discussion for questions and help. Feedback and questions from new users is also welcome! If you are stuck, please reach out and we will solve it together.
@@ -276,7 +276,7 @@ function inference_process_error(error, rethrow)
         - Report a bug or request a feature:
         https://github.com/ReactiveBayes/RxInfer.jl/issues
         - (Optional) Share your session data with `RxInfer.share_session_data()` to help us better understand the issue
-        https://reactivebayes.github.io/RxInfer.jl/stable/manuals/telemetry/
+        https://docs.rxinfer.ml/stable/manuals/telemetry/
 
         Note that we use GitHub discussions not just for technical questions! We welcome all kinds of discussions,
         whether you're new to Bayesian inference, have questions about use cases, or just want to share your experience.
