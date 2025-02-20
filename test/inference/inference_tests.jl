@@ -47,6 +47,267 @@ end
     end
 end
 
+@testitem "session context log_data_entry" begin
+    import RxInfer: log_data_entry
+
+    @testset "Scalar values" begin
+        let entry = log_data_entry(:y => 1)
+            @test entry.name === :y
+            @test entry.type === Int
+            @test entry.size === ()
+            @test entry.elsize === ()
+        end
+
+        let entry = log_data_entry(:x => 3.14)
+            @test entry.name === :x
+            @test entry.type === Float64
+            @test entry.size === ()
+            @test entry.elsize === ()
+        end
+
+        let entry = log_data_entry(:x => missing)
+            @test entry.name === :x
+            @test entry.type === Missing
+            @test entry.size === :unknown
+            @test entry.elsize === :unknown
+        end
+    end
+
+    @testset "Vectors" begin
+        let entry = log_data_entry(:x => [1])
+            @test entry.name === :x
+            @test entry.type === Vector{Int}
+            @test entry.size === (1,)
+            @test entry.elsize === ()
+        end
+
+        let entry = log_data_entry(:x => [1.0, 2.0, 3.0])
+            @test entry.name === :x
+            @test entry.type === Vector{Float64}
+            @test entry.size === (3,)
+            @test entry.elsize === ()
+        end
+
+        let entry = log_data_entry(:x => [[1, 2], [3, 4]])
+            @test entry.name === :x
+            @test entry.type === Vector{Vector{Int}}
+            @test entry.size === (2,)
+            @test entry.elsize === (2,)
+        end
+
+        let entry = log_data_entry(:x => [missing])
+            @test entry.name === :x
+            @test entry.type === Vector{Missing}
+            @test entry.size === (1,)
+            @test entry.elsize === ()
+        end
+
+        let entry = log_data_entry(:x => [1.0, missing])
+            @test entry.name === :x
+            @test entry.type === Vector{Union{Float64, Missing}}
+            @test entry.size === (2,)
+            @test entry.elsize === ()
+        end
+    end
+
+    @testset "Matrices" begin
+        let entry = log_data_entry(:x => ones(2, 3))
+            @test entry.name === :x
+            @test entry.type === Matrix{Float64}
+            @test entry.size === (2, 3)
+            @test entry.elsize === ()
+        end
+
+        let entry = log_data_entry(:x => reshape([1, 2, 3, 4], 2, 2))
+            @test entry.name === :x
+            @test entry.type === Matrix{Int}
+            @test entry.size === (2, 2)
+            @test entry.elsize === ()
+        end
+    end
+
+    @testset "Matrix of vectors" begin
+        let data = Matrix{Vector{Float64}}(undef, 2, 2)
+            data[1, 1] = [1.0, 2.0]
+            data[1, 2] = [3.0, 4.0]
+            data[2, 1] = [5.0, 6.0]
+            data[2, 2] = [7.0, 8.0]
+            entry = log_data_entry(:x => data)
+            @test entry.name === :x
+            @test entry.type === Matrix{Vector{Float64}}
+            @test entry.size === (2, 2)
+            @test entry.elsize === (2,)
+        end
+    end
+
+    struct StrangeDataEntry end
+
+    @testset let entry = log_data_entry(StrangeDataEntry)
+        @test entry.name === :unknown
+        @test entry.type === :unknown
+        @test entry.size === :unknown
+        @test entry.elsize === :unknown
+    end
+end
+
+@testitem "session context log_data_entries" begin
+    import RxInfer: log_data_entry, log_data_entries
+
+    @testset "Named tuple entries" begin
+        data = (y = 1, x = [2.0, 3.0], z = [[1.0, 2.0], [3.0]])
+        entries = log_data_entries(data)
+
+        @test length(entries) === 3
+
+        # Check y entry
+        y_entry = entries[1]
+        @test y_entry.name === :y
+        @test y_entry.type === Int
+        @test y_entry.size === ()
+        @test y_entry.elsize === ()
+
+        # Check x entry
+        x_entry = entries[2]
+        @test x_entry.name === :x
+        @test x_entry.type === Vector{Float64}
+        @test x_entry.size === (2,)
+        @test x_entry.elsize === ()
+
+        # Check z entry
+        z_entry = entries[3]
+        @test z_entry.name === :z
+        @test z_entry.type === Vector{Vector{Float64}}
+        @test z_entry.size === (2,)
+        @test z_entry.elsize === (2,)
+    end
+
+    @testset "Dictionary entries" begin
+        data = Dict(:y => 1, :x => [2.0, 3.0], :z => [[1.0, 2.0], [3.0]])
+        entries = log_data_entries(data)
+
+        @test length(entries) === 3
+        @test Set(entry.name for entry in entries) == Set([:x, :y, :z])
+
+        # Find and check y entry
+        y_entry = findfirst(e -> e.name === :y, entries)
+        @test !isnothing(y_entry)
+        y_entry = entries[y_entry]
+        @test y_entry.type === Int
+        @test y_entry.size === ()
+        @test y_entry.elsize === ()
+
+        # Find and check x entry
+        x_entry = findfirst(e -> e.name === :x, entries)
+        @test !isnothing(x_entry)
+        x_entry = entries[x_entry]
+        @test x_entry.type === Vector{Float64}
+        @test x_entry.size === (2,)
+        @test x_entry.elsize === ()
+
+        # Find and check z entry
+        z_entry = findfirst(e -> e.name === :z, entries)
+        @test !isnothing(z_entry)
+        z_entry = entries[z_entry]
+        @test z_entry.type === Vector{Vector{Float64}}
+        @test z_entry.size === (2,)
+        @test z_entry.elsize === (2,)
+    end
+
+    struct UnknownStruct end
+    @test log_data_entries(UnknownStruct()) == :unknown # be safe on something we don't know how to parse
+
+    @testset "data with UnknownStructs as elements" begin
+        data = (y = UnknownStruct(), x = UnknownStruct())
+
+        entries = log_data_entries(data)
+
+        @test length(entries) === 2
+
+        # Check y entry
+        y_entry = entries[1]
+        @test y_entry.name === :y
+        @test y_entry.type === UnknownStruct
+        @test y_entry.size === :unknown
+        @test y_entry.elsize === :unknown
+
+        # Check x entry
+        x_entry = entries[2]
+        @test x_entry.name === :x
+        @test x_entry.type === UnknownStruct
+        @test x_entry.size === :unknown
+        @test x_entry.elsize === :unknown
+    end
+end
+
+@testitem "session context log_data_entry string representation" begin
+    import RxInfer: log_data_entry
+
+    @testset "repr formatting" begin
+        @test repr(log_data_entry(:x => 1.5)) == "data: x (type=Float64, size=(), elsize=())"
+        @test repr(log_data_entry(:y => [1.0, 2.0, 3.0])) == "data: y (type=Vector{Float64}, size=(3,), elsize=())"
+        @test repr(log_data_entry(:z => [[1, 2], [3, 4]])) == "data: z (type=Vector{Vector{Int64}}, size=(2,), elsize=(2,))"
+        @test repr(log_data_entry(:w => missing)) == "data: w (type=Missing, size=unknown, elsize=unknown)"
+    end
+end
+
+@testitem "session context log_dictnt_entries" begin
+    import RxInfer: log_dictnt_entries
+
+    struct UnknownArbitraryType end
+
+    @test occursin("UnknownArbitraryType", log_dictnt_entries(UnknownArbitraryType()))
+    @test occursin("Nothing", log_dictnt_entries(nothing))
+
+    @testset let entry = log_dictnt_entries(Dict(:x => 1.5))
+        @test length(entry.entries) === 1
+        @test entry.base_type === :Dict
+        @test entry.entries[1].name === :x
+        @test entry.entries[1].type === Float64
+    end
+
+    @testset let entry = log_dictnt_entries(Dict(:y => [1.0, 2.0, 3.0], :a => 1))
+        @test length(entry.entries) === 2
+        @test entry.base_type === :Dict
+
+        # Find entries by name since Dict order is not guaranteed
+        y_entry = first(filter(e -> e.name === :y, entry.entries))
+        a_entry = first(filter(e -> e.name === :a, entry.entries))
+
+        @test y_entry.type === Vector{Float64}
+        @test a_entry.type === Int64
+    end
+
+    @testset let entry = log_dictnt_entries((y = [1.0, 2.0, 3.0], a = 1))
+        @test length(entry.entries) === 2
+        @test entry.base_type === :NamedTuple
+        @test entry.entries[1].name === :y
+        @test entry.entries[1].type === Vector{Float64}
+        @test entry.entries[2].name === :a
+        @test entry.entries[2].type === Int64
+    end
+
+    @testset let entry = log_dictnt_entries((x = 1.5,))
+        @test length(entry.entries) === 1
+        @test entry.base_type === :NamedTuple
+        @test entry.entries[1].name === :x
+        @test entry.entries[1].type === Float64
+    end
+end
+
+@testitem "session context log_dictnt_entries string representation" begin
+    import RxInfer: log_dictnt_entries
+
+    struct UnknownArbitraryType2 end
+
+    @testset "repr formatting" begin
+        @test occursin("Nothing", repr(log_dictnt_entries(nothing)))
+        @test occursin("UnknownArbitraryType2", repr(log_dictnt_entries(UnknownArbitraryType2())))
+        @test occursin("Dict: x::Float64", repr(log_dictnt_entries(Dict(:x => 1.5))))
+        @test occursin("NamedTuple: y::Vector{Float64}, a::Int64", repr(log_dictnt_entries((y = [1.0, 2.0], a = 1))))
+        @test occursin("NamedTuple: x::Missing", repr(log_dictnt_entries((x = missing,))))
+    end
+end
+
 @testitem "Static inference with `inference`" begin
 
     # A simple model for testing that resembles a simple kalman filter with
@@ -981,10 +1242,10 @@ end
     @model function pred_model(p_s_t, y, goal, p_B, A)
         s[1] ~ p_s_t
         B ~ p_B
-        y[1] ~ Transition(s[1], A)
+        y[1] ~ DiscreteTransition(s[1], A)
         for i in 2:3
-            s[i] ~ Transition(s[i - 1], B)
-            y[i] ~ Transition(s[i], A)
+            s[i] ~ DiscreteTransition(s[i - 1], B)
+            y[i] ~ DiscreteTransition(s[i], A)
         end
         s[3] ~ Categorical(goal)
     end
@@ -998,9 +1259,9 @@ end
     end
 
     result = infer(
-        model = pred_model(A = diageye(4), goal = [0, 1, 0, 0], p_B = MatrixDirichlet(ones(4, 4)), p_s_t = Categorical([0.7, 0.3, 0, 0])),
+        model = pred_model(A = diageye(4), goal = [0, 1, 0, 0], p_B = DirichletCollection(ones(4, 4)), p_s_t = Categorical([0.7, 0.3, 0, 0])),
         data = (y = [[1, 0, 0, 0], missing, missing],),
-        initialization = pred_model_init(MatrixDirichlet(ones(4, 4))),
+        initialization = pred_model_init(DirichletCollection(ones(4, 4))),
         constraints = pred_model_constraints,
         iterations = 10
     )
@@ -1011,11 +1272,397 @@ end
         q(y[1], s) = q(y[1])q(s)
     end
     result = infer(
-        model = pred_model(A = diageye(4), goal = [0, 0, 1, 0], p_B = MatrixDirichlet(ones(4, 4)), p_s_t = Categorical([0.7, 0.3, 0, 0])),
+        model = pred_model(A = diageye(4), goal = [0, 0, 1, 0], p_B = DirichletCollection(ones(4, 4)), p_s_t = Categorical([0.7, 0.3, 0, 0])),
         data = (y = UnfactorizedData([[1, 0, 0, 0], missing, missing]),),
-        initialization = pred_model_init(MatrixDirichlet(ones(4, 4))),
+        initialization = pred_model_init(DirichletCollection(ones(4, 4))),
         constraints = pred_model_constraints,
         iterations = 10
     )
     @test probvec(last(last(result.predictions[:y]))) ≈ [0, 0, 1, 0]
+end
+
+@testitem "Session Logging basic execution" begin
+
+    # Create a simple model for testing
+    @model function simple_model(y)
+        x ~ Normal(mean = 0.0, var = 1.0)
+        y ~ Normal(mean = x, var = 1.0)
+    end
+
+    # Create test data
+    test_data = (y = 1.0,)
+
+    # Run inference inside session `session`
+    result = infer(model = simple_model(), data = test_data)
+
+    session = RxInfer.default_session()
+
+    stats = RxInfer.get_session_stats(session, :inference)
+
+    # Basic checks, other tests may have produced more invokes here
+    @test length(stats.invokes) >= 1
+
+    # Check the latest invoke
+    latest_invoke = stats.invokes[end]
+    @test hasproperty(latest_invoke, :id)
+    @test latest_invoke.status == :success
+    @test latest_invoke.execution_end > latest_invoke.execution_start
+    @test haskey(latest_invoke.context, :model_name)
+    @test haskey(latest_invoke.context, :model)
+    @test haskey(latest_invoke.context, :data)
+    @test !isnothing(latest_invoke.context[:data])
+    @test occursin(latest_invoke.context[:model_name], "simple_model")
+    @test occursin("function simple_model", latest_invoke.context[:model])
+    @test occursin("Normal(mean = 0.0, var = 1.0)", latest_invoke.context[:model])
+    @test occursin("Normal(mean = x, var = 1.0)", latest_invoke.context[:model])
+    @test length(latest_invoke.context[:data]) === 1
+
+    # Check saved properties of the passed data `y`
+    saved_data_properties = latest_invoke.context[:data][end]
+    @test saved_data_properties.name === :y
+    @test saved_data_properties.type === Float64
+
+    custom_session = RxInfer.create_session()
+    result = infer(model = simple_model(), data = test_data, session = custom_session)
+    custom_stats = RxInfer.get_session_stats(custom_session, :inference)
+
+    @test length(custom_stats.invokes) === 1
+    @test latest_invoke.id != custom_stats.invokes[1].id
+    @test latest_invoke.context == custom_stats.invokes[1].context
+end
+
+@testitem "Session statistics for a simple model" begin
+    using Statistics
+
+    session = RxInfer.create_session()
+
+    # Test empty session
+    empty_stats = RxInfer.get_session_stats(session, :inference)
+    @test empty_stats.total_invokes == 0
+    @test empty_stats.success_rate == 0.0
+    @test empty_stats.failed_count == 0
+    @test isempty(empty_stats.context_keys)
+    @test empty_stats.label === :inference
+
+    # Create a simple model for testing
+    @model function simple_model(y)
+        x ~ Normal(mean = 0.0, var = 1.0)
+        y ~ Normal(mean = x, var = 1.0)
+    end
+
+    # Create test data
+    test_data = (y = 1.0,)
+
+    # Run inference inside session `session`
+    result = infer(model = simple_model(), data = test_data, iterations = 10, free_energy = true, session = session)
+
+    stats = RxInfer.get_session_stats(session, :inference)
+    last_invoke = last(stats.invokes)
+    @test last_invoke.context[:model_name] == "simple_model"
+    @test last_invoke.context[:iterations] == 10
+    @test last_invoke.context[:free_energy] == true
+    @test last_invoke.context[:data][begin].name == :y
+
+    @test stats.total_invokes == 1
+    @test stats.success_rate == 1
+    @test stats.failed_count == 0
+    @test :model_name ∈ Set(stats.context_keys)
+    @test :model ∈ Set(stats.context_keys)
+    @test :data ∈ Set(stats.context_keys)
+    @test :iterations ∈ Set(stats.context_keys)
+    @test :free_energy ∈ Set(stats.context_keys)
+    @test stats.min_duration_ms <= stats.total_duration_ms
+    @test stats.max_duration_ms <= stats.total_duration_ms
+    @test stats.label === :inference
+
+    # Test get_session_stats for other invokes
+    other_stats = RxInfer.get_session_stats(session, :other)
+    @test other_stats.total_invokes == 0
+    @test other_stats.success_rate == 0.0
+    @test other_stats.failed_count == 0
+    @test Set(other_stats.context_keys) == Set([])
+
+    # Test summarize_session output format for inference invokes with default n_last
+    output = IOBuffer()
+    RxInfer.summarize_session(output, session, :inference; n_last = 3)
+    output_str = String(take!(output))
+
+    @test contains(output_str, "Session Summary (label: inference)")
+    @test contains(output_str, "Total invokes: 1")
+    @test contains(output_str, "Success rate: 100.0%")
+    @test contains(output_str, "Failed invokes: 0")
+    @test contains(output_str, "Average execution time")
+    @test contains(output_str, "Context keys: ")
+    @test contains(output_str, "Inference specific:")
+    @test contains(output_str, "Unique models: 1")
+    @test contains(output_str, "Last 3 invokes")
+    @test contains(output_str, "Status")
+    @test contains(output_str, "Duration")
+    @test contains(output_str, "Model")
+    @test contains(output_str, "simple_model")
+end
+
+@testitem "Session statistics should be robust with models which have no data" begin
+    f(a, M) = a * M
+
+    @model function simple_model_missing_data(y)
+        a ~ Normal(mean = 0.0, variance = 1.0)
+        M ~ Normal(mean = 0.0, variance = 1.0)
+        y := f(a, M)
+    end
+
+    meta = @meta begin
+        f() -> Linearization()
+    end
+
+    result = infer(model = simple_model_missing_data(), predictvars = (y = KeepEach(),), meta = meta)
+
+    # Test summarize_session output format for inference invokes with default n_last
+    output = IOBuffer()
+    RxInfer.summarize_session(output; n_last = 1)
+    output_str = String(take!(output))
+
+    @test contains(output_str, "Status")
+    @test contains(output_str, "Duration")
+    @test contains(output_str, "Model")
+    @test contains(output_str, "simple_model_missing_data")
+end
+
+@testitem "Session should save the error message" begin
+    @model function simple_errored_model(y)
+        error("Oops")
+    end
+
+    session = RxInfer.create_session()
+
+    @test_throws "Oops" infer(model = simple_errored_model(), data = (y = 1,), session = session)
+
+    stats = RxInfer.get_session_stats(session, :inference)
+    last_invoke = last(stats.invokes)
+
+    @test last_invoke.status === :error
+    @test last_invoke.context[:error] === "ErrorException(\"Oops\")"
+end
+
+@testitem "Session statistics should be able to handle reactive infer call" begin
+    @model function state_space_model_one_time_step(y, x_prev_mean, x_prev_var)
+        x_prev ~ Normal(mean = x_prev_mean, var = x_prev_var)
+        x_next ~ Normal(mean = x_prev, var = 1.0)
+        y ~ Normal(mean = x_next, var = 1.0)
+    end
+
+    datastream = from([(y = 1,), (y = 2,), (y = 3,)])
+
+    autoupdates = @autoupdates begin
+        x_prev_mean, x_prev_var = mean_var(q(x_next))
+    end
+
+    initialization = @initialization begin
+        q(x_next) = vague(NormalMeanVariance)
+    end
+
+    session = RxInfer.create_session()
+
+    engine = infer(model = state_space_model_one_time_step(), datastream = datastream, autoupdates = autoupdates, initialization = initialization, session = session)
+    stats = RxInfer.get_session_stats(session, :inference)
+
+    @test length(stats.invokes) === 1
+    @test haskey(stats.invokes[end].context, :datastream_type)
+    @test stats.invokes[end].context[:datastream_type] == @NamedTuple{y::Int64}
+end
+
+@testitem "Session statistics should save constraints" begin
+    @model function iid(y)
+        m ~ Normal(mean = 0.0, var = 1.0)
+        t ~ Gamma(shape = 1.0, rate = 1.0)
+        y ~ Normal(mean = m, prec = t)
+    end
+    @constraints function iidconstraints()
+        q(m, t) = q(m) * q(t)
+    end
+    @initialization function iidinit()
+        q(t) = vague(Gamma)
+    end
+    session = RxInfer.create_session()
+    result = infer(model = iid(), data = (y = 1.0,), constraints = iidconstraints(), initialization = iidinit(), session = session)
+    stats = RxInfer.get_session_stats(session, :inference)
+    last_invoke = stats.invokes[end]
+    @test haskey(last_invoke.context, :constraints)
+    @test occursin("function iidconstraints()", last_invoke.context[:constraints])
+    @test occursin("q(m, t)", last_invoke.context[:constraints])
+    @test occursin("q(m)", last_invoke.context[:constraints])
+    @test occursin("q(t)", last_invoke.context[:constraints])
+end
+
+@testitem "Session statistics should save meta" begin
+    f(a) = a + 1
+    @model function simple_nonlinear_model(y)
+        m ~ Normal(mean = 0.0, var = 1.0)
+        y ~ Normal(mean = f(m), prec = 1.0)
+    end
+    @meta function model_meta()
+        f() -> Linearization()
+    end
+    session = RxInfer.create_session()
+    result = infer(model = simple_nonlinear_model(), data = (y = 1.0,), meta = model_meta(), session = session)
+    stats = RxInfer.get_session_stats(session, :inference)
+    last_invoke = stats.invokes[end]
+    @test haskey(last_invoke.context, :meta)
+    @test occursin("function model_meta()", last_invoke.context[:meta])
+    @test occursin("f()", last_invoke.context[:meta])
+    @test occursin("->", last_invoke.context[:meta])
+    @test occursin("Linearization()", last_invoke.context[:meta])
+end
+
+@testitem "Session statistics should save initialization" begin
+    @model function simple_model(y)
+        x ~ Normal(mean = 0.0, var = 1.0)
+        y ~ Normal(mean = x, var = 1.0)
+    end
+
+    initialization = @initialization begin
+        q(x) = vague(NormalMeanVariance)
+    end
+    session = RxInfer.create_session()
+    result = infer(model = simple_model(), data = (y = 1.0,), initialization = initialization, session = session)
+    stats = RxInfer.get_session_stats(session, :inference)
+    last_invoke = stats.invokes[end]
+    @test haskey(last_invoke.context, :initialization)
+    @test occursin("q(x)", last_invoke.context[:initialization])
+    @test occursin("NormalMeanVariance", last_invoke.context[:initialization])
+end
+
+@testitem "Session statistics should save @autoupdates" begin
+    @model function simple_model(y, x_mean, x_var)
+        x ~ Normal(mean = x_mean, var = x_var)
+        y ~ Normal(mean = x, var = 1.0)
+    end
+
+    initialization = @initialization begin
+        q(x) = vague(NormalMeanVariance)
+    end
+    autoupdates = @autoupdates begin
+        x_mean, x_var = mean_var(q(x))
+    end
+    session = RxInfer.create_session()
+    result = infer(model = simple_model(), data = (y = 1.0,), autoupdates = autoupdates, initialization = initialization, session = session)
+    stats = RxInfer.get_session_stats(session, :inference)
+    last_invoke = stats.invokes[end]
+    @test haskey(last_invoke.context, :autoupdates)
+    @test occursin("x_mean, x_var", last_invoke.context[:autoupdates])
+    @test occursin("mean_var(q(x))", last_invoke.context[:autoupdates])
+end
+
+@testitem "Test inference benchmark statistics" begin
+    using RxInfer
+
+    callbacks = RxInferBenchmarkCallbacks()
+
+    # A simple model for testing that resembles a simple kalman filter with
+    # random walk state transition and unknown observational noise
+    @model function test_model1(y)
+        τ ~ Gamma(shape = 1.0, rate = 1.0)
+
+        x[1] ~ Normal(mean = 0.0, variance = 1.0)
+        y[1] ~ Normal(mean = x[1], precision = τ)
+
+        for i in 2:length(y)
+            x[i] ~ Normal(mean = x[i - 1], variance = 1.0)
+            y[i] ~ Normal(mean = x[i], precision = τ)
+        end
+
+        return length(y), 2, 3.0, "hello world" # test returnval
+    end
+
+    @constraints function test_model1_constraints()
+        q(x, τ) = q(x)q(τ)
+    end
+
+    init = @initialization begin
+        q(τ) = Gamma(1.0, 1.0)
+    end
+
+    infer(model = test_model1(), data = (y = [1.0, 2.0, 3.0],), callbacks = callbacks, iterations = 10, initialization = init, constraints = test_model1_constraints())
+    @test length(callbacks.before_model_creation_ts) == 1
+    @test length(callbacks.after_model_creation_ts) == 1
+    @test first(callbacks.before_model_creation_ts) < first(callbacks.after_model_creation_ts)
+    @test length(callbacks.before_inference_ts) == 1
+    @test length(callbacks.after_inference_ts) == 1
+    @test first(callbacks.before_inference_ts) < first(callbacks.after_inference_ts)
+    @test length(callbacks.before_iteration_ts) == 1
+    @test length(callbacks.after_iteration_ts) == 1
+    @test length(last(callbacks.before_iteration_ts)) == 10
+    @test length(last(callbacks.after_iteration_ts)) == 10
+
+    callbacks = RxInferBenchmarkCallbacks()
+    for i in 1:10
+        infer(model = test_model1(), data = (y = [1.0, 2.0, 3.0],), callbacks = callbacks, iterations = 10, initialization = init, constraints = test_model1_constraints())
+        @test length(callbacks.before_model_creation_ts) == i
+        @test length(callbacks.after_model_creation_ts) == i
+        @test last(callbacks.before_model_creation_ts) < last(callbacks.after_model_creation_ts)
+        @test length(callbacks.before_inference_ts) == i
+        @test length(callbacks.after_inference_ts) == i
+        @test last(callbacks.before_inference_ts) < last(callbacks.after_inference_ts)
+        @test length(callbacks.before_iteration_ts) == i
+        @test length(callbacks.after_iteration_ts) == i
+        length(last(callbacks.before_iteration_ts)) == 10
+        @test length(last(callbacks.after_iteration_ts)) == 10
+    end
+
+    stats = RxInfer.get_benchmark_stats(callbacks)
+    for line in eachrow(stats)
+        @test line[2] > 0.0
+        @test line[3] > line[2]
+        @test line[2] < line[4] < line[3]
+        @test line[2] < line[5] < line[3]
+        @test !isnan(line[6])
+    end
+
+    @model function kalman_filter(x_prev_mean, x_prev_var, τ_shape, τ_rate, y)
+        x_prev ~ Normal(mean = x_prev_mean, variance = x_prev_var)
+        τ ~ Gamma(shape = τ_shape, rate = τ_rate)
+
+        # Random walk with fixed precision
+        x_current ~ Normal(mean = x_prev, precision = 1.0)
+        y ~ Normal(mean = x_current, precision = τ)
+    end
+
+    # We assume the following factorisation between variables 
+    # in the variational distribution
+    @constraints function filter_constraints()
+        q(x_prev, x_current, τ) = q(x_prev, x_current)q(τ)
+    end
+    static_observations = rand(300)
+    callbacks           = RxInferBenchmarkCallbacks()
+    datastream          = from(static_observations) |> map(NamedTuple{(:y,), Tuple{Float64}}, (d) -> (y = d,))
+    autoupdates         = @autoupdates begin
+        x_prev_mean, x_prev_var = mean_var(q(x_current))
+        τ_shape = shape(q(τ))
+        τ_rate = rate(q(τ))
+    end
+
+    init = @initialization begin
+        q(x_current) = NormalMeanVariance(0.0, 1e3)
+        q(τ) = GammaShapeRate(1.0, 1.0)
+    end
+
+    engine = infer(
+        model          = kalman_filter(),
+        constraints    = filter_constraints(),
+        datastream     = datastream,
+        autoupdates    = autoupdates,
+        returnvars     = (:x_current,),
+        keephistory    = 10_000,
+        historyvars    = (x_current = KeepLast(), τ = KeepLast()),
+        initialization = init,
+        iterations     = 10,
+        free_energy    = true,
+        autostart      = true,
+        callbacks      = callbacks
+    )
+
+    @test length(callbacks.before_model_creation_ts) == 1
+    @test length(callbacks.after_model_creation_ts) == 1
+    @test length(callbacks.before_autostart_ts) == 1
+    @test length(callbacks.after_autostart_ts) == 1
 end

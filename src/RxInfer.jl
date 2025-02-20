@@ -6,6 +6,8 @@ using Reexport
 
 include("helpers.jl")
 include("rocket.jl")
+include("session.jl")
+include("telemetry.jl")
 
 include("score/actor.jl")
 include("score/diagnostics.jl")
@@ -22,6 +24,22 @@ include("constraints/form/form_point_mass.jl")
 include("constraints/form/form_sample_list.jl")
 
 include("inference/postprocess.jl")
+include("inference/benchmarkcallbacks.jl")
 include("inference/inference.jl")
+
+_isprecompiling() = ccall(:jl_generating_output, Cint, ()) == 1
+
+function __init__()
+    if !_isprecompiling()
+        if RxInfer.preference_enable_session_logging
+            default_session = create_session()
+            RxInfer.set_default_session!(default_session)
+        end
+
+        if RxInfer.preference_enable_using_rxinfer_telemetry
+            log_using_rxinfer()
+        end
+    end
+end
 
 end

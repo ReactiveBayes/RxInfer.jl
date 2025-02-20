@@ -9,12 +9,12 @@
     "downloadUrl": "https://github.com/reactivebayes/RxInfer.jl/releases",
     "issueTracker": "https://github.com/reactivebayes/RxInfer.jl/issues",
     "name": "RxInfer.jl",
-    "version": "3.9.1",
+    "version": "4.0.1",
     "description": "Julia package for automated, scalable and efficient Bayesian inference on factor graphs with reactive message passing. ",
     "applicationCategory": "Statistics",
     "developmentStatus": "active",
-    "readme": "https://reactivebayes.github.io/RxInfer.jl/stable/",
-    "softwareVersion": "3.9.1",
+    "readme": "https://rxinfer.ml",
+    "softwareVersion": "4.0.1",
     "keywords": [
         "Bayesian inference",
         "message passing",
@@ -36,8 +36,10 @@
         "MacOS"
     ],
     "relatedLink": [
-        "https://reactivebayes.github.io/rxinfer-website/",
-        "https://reactivebayes.github.io/RxInfer.jl/stable/",
+        "https://rxinfer.ml",
+        "https://docs.rxinfer.ml",
+        "https://examples.rxinfer.ml",
+        "https://github.com/ReactiveBayes/RxInfer.jl",
         "https://app.codecov.io/gh/reactivebayes/RxInfer.jl"
     ],
     "author": [

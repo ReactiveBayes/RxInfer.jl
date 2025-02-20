@@ -31,9 +31,9 @@ window.onload = function() {
 
                 const items = [
                     { title: "Home", link: "http://www.rxinfer.ml", icon: [ "fas", "fa-diagram-project" ] },
-                    { title: "Get Started", link: "https://reactivebayes.github.io/RxInfer.jl/stable/manuals/getting-started/", icon: [ "fas", "fa-person-chalkboard" ] },
-                    { title: "Documentation", link: "https://reactivebayes.github.io/RxInfer.jl/stable/", icon: [ "fas", "fa-book" ] },
-                    { title: "Examples", link: "https://reactivebayes.github.io/RxInferExamples.jl/", icon: [ "fas", "fa-laptop-code" ] },
+                    { title: "Get Started", link: "https://docs.rxinfer.ml/stable/manuals/getting-started/", icon: [ "fas", "fa-person-chalkboard" ] },
+                    { title: "Documentation", link: "https://docs.rxinfer.ml/stable/", icon: [ "fas", "fa-book" ] },
+                    { title: "Examples", link: "https://examples.rxinfer.ml/", icon: [ "fas", "fa-laptop-code" ] },
                     { title: "Papers", link: "https://biaslab.github.io/publication/", icon: [ "far", "fa-book-open" ] },
                     { title: "Team", link: "https://github.com/orgs/ReactiveBayes/people", icon: [ "fas", "fa-people-group" ] },
                     { title: "Discussions", link: "https://github.com/orgs/ReactiveBayes/discussions", icon: [ "far", "fa-comment" ] },

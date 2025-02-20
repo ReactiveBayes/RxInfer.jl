@@ -283,7 +283,6 @@ result = infer(
 )
 ```
 
-
 The `callbacks` keyword argument accepts a named-tuple of 'name = callback' pairs. 
 The list of all possible callbacks for different inference setting (batch or streamline) and their arguments is present below:
 
@@ -323,6 +322,18 @@ By default, the inference function uses the `DefaultPostprocess` strategy, which
 Change this setting to `NoopPostprocess` if you would like to keep the `Marginal` wrapper type, which might be useful in the combination with the `addons` argument.
 If the `addons` argument has been used, automatically changes the default strategy value to `NoopPostprocess`.
 
+- ### Error hints
+
+By default, RxInfer provides helpful error hints when an error occurs during inference.
+This, for example, includes links to relevant documentation, common solutions and troubleshooting steps, information about where to get help, and suggestions for providing good bug reports.
+
+Use [`RxInfer.disable_inference_error_hint!`](@ref) to disable error hints or [`RxInfer.enable_inference_error_hint!`](@ref) to enable them. Note that the change requires a Julia session restart to take effect.
+
+```@docs
+RxInfer.disable_inference_error_hint!
+RxInfer.enable_inference_error_hint!
+```
+
 ## Where to go next?
 
-Read more explanation about the other keyword arguments in the [Streamlined (online) inference](@ref manual-online-inference)section or check out the [Static Inference](@ref manual-static-inference) section or check some more advanced [examples](https://reactivebayes.github.io/RxInfer.jl/stable/examples/overview/).
+Read more explanation about the other keyword arguments in the [Streamlined (online) inference](@ref manual-online-inference)section or check out the [Static Inference](@ref manual-static-inference) section or check some more advanced [examples](https://examples.rxinfer.ml/).

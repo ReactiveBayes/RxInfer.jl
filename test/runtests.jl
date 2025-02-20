@@ -3,6 +3,8 @@ using Aqua, CpuId, ReTestItems, RxInfer
 const IS_USE_DEV = get(ENV, "USE_DEV", "false") == "true"
 const IS_BENCHMARK = get(ENV, "BENCHMARK", "false") == "true"
 
+ENV["LOG_USING_RXINFER"] = "false"
+
 import Pkg
 
 if IS_USE_DEV
