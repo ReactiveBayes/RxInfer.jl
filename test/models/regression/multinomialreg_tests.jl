@@ -5,7 +5,7 @@
 
     N = 20
     k = 10
-    nsamples = 1000 
+    nsamples = 1000
     X, ψ, p = generate_multinomial_data(; N = N, k = k, nsamples = nsamples)
 
     @model function multinomial_model(y, N, ξ_ψ, W_ψ)
