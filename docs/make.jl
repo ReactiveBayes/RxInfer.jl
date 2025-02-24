@@ -19,7 +19,7 @@ makedocs(;
     sitename = "RxInfer.jl",
     format = Documenter.HTML(;
         prettyurls = get(ENV, "CI", "false") == "true",
-        canonical = "https://docs.rxinfer.ml",
+        canonical = "https://docs.rxinfer.ml/stable",
         edit_link = "main",
         warn_outdated = true,
         assets = ["assets/theme.css", "assets/header.css", "assets/header.js", "assets/chat.js", "assets/favicon.ico"],
