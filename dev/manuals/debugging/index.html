@@ -23,7 +23,7 @@ result = infer(
 </code></pre><p>The model will run without errors. But when we plot the posterior distribution for <span>$\theta$</span>, something&#39;s wrong. The posterior seems to be a flat distribution:</p><pre><code class="language-julia hljs">rθ = range(0, 1, length = 1000)
 
 plot(rθ, (rvar) -&gt; pdf(result.posteriors[:θ], rvar), label=&quot;Infered posterior&quot;)
-vline!([θ_real], label=&quot;Real θ&quot;, title = &quot;Inference results&quot;)</code></pre><img src="dddefdd5.svg" alt="Example block output"/><p>We can figure out what&#39;s wrong by tracing the computation of the posterior with the Memory Addon.  To obtain the trace, we have to add <code>addons = (AddonMemory(),)</code> as an argument to the inference function.  Note, that the argument to the <code>addons</code> keyword argument must be a tuple, because multiple addons can be activated  at the same time. Here, we create a tuple with a single element however.</p><pre><code class="language-julia hljs">result = infer(
+vline!([θ_real], label=&quot;Real θ&quot;, title = &quot;Inference results&quot;)</code></pre><img src="781b70e2.svg" alt="Example block output"/><p>We can figure out what&#39;s wrong by tracing the computation of the posterior with the Memory Addon.  To obtain the trace, we have to add <code>addons = (AddonMemory(),)</code> as an argument to the inference function.  Note, that the argument to the <code>addons</code> keyword argument must be a tuple, because multiple addons can be activated  at the same time. Here, we create a tuple with a single element however.</p><pre><code class="language-julia hljs">result = infer(
     model = coin_model(),
     data  = (x = dataset, ),
     addons = (AddonMemory(),)
@@ -56,15 +56,15 @@ vline!([θ_real], label=&quot;Real θ&quot;, title = &quot;Inference results&quo
     Towards interface: Val{:p}()
     With local constraint: Marginalisation()
     With addons: (AddonMemory(nothing),)
-    With input marginals on Val{(:out,)}() edges: (PointMass{Float64}(1.0),)
-    With the result: Beta{Float64}(α=2.0, β=1.0)
+    With input marginals on Val{(:out,)}() edges: (PointMass{Float64}(0.0),)
+    With the result: Beta{Float64}(α=1.0, β=2.0)
  Message mapping memory:
     At the node: Bernoulli
     Towards interface: Val{:p}()
     With local constraint: Marginalisation()
     With addons: (AddonMemory(nothing),)
-    With input marginals on Val{(:out,)}() edges: (PointMass{Float64}(1.0),)
-    With the result: Beta{Float64}(α=2.0, β=1.0)
+    With input marginals on Val{(:out,)}() edges: (PointMass{Float64}(0.0),)
+    With the result: Beta{Float64}(α=1.0, β=2.0)
 ),)</code></pre><p><img src="../../assets/img/debugging_messages.png" alt="Addons_messages"/></p><p>The messages in the factor graph are marked in color. If you&#39;re interested in the mathematics behind these results, consider verifying them manually using the general equation for sum-product messages:</p><p class="math-container">\[\underbrace{\overrightarrow{\mu}_{θ}(θ)}_{\substack{ \text{outgoing}\\ \text{message}}} = \sum_{x_1,\ldots,x_n} \underbrace{\overrightarrow{\mu}_{X_1}(x_1)\cdots \overrightarrow{\mu}_{X_n}(x_n)}_{\substack{\text{incoming} \\ \text{messages}}} \cdot \underbrace{f(θ,x_1,\ldots,x_n)}_{\substack{\text{node}\\ \text{function}}}\]</p><p><img src="../../assets/img/debugging_graph.png" alt="Graph"/></p><p>Note that the posterior (yellow) has a rate parameter on the order of <code>1e12</code>. Our plot failed because a Beta distribution with such a rate parameter cannot be accurately depicted using the range of <span>$\theta$</span> we used in the code block above. So why does the posterior have this rate parameter?</p><p>All the observations (purple, green, pink, blue) have much smaller rate parameters. It seems the prior distribution (red) has an unusual rate parameter, namely <code>1e12</code>. If we look back at the model, the parameter was set to <code>huge</code> (which is a reserved keyword meaning <code>1e12</code>). Reducing the prior rate parameter will ensure the posterior has a reasonable rate parameter as well.</p><pre><code class="language-julia hljs">@model function coin_model(x)
     θ  ~ Beta(4, 100)
     x .~ Bernoulli(θ)
@@ -78,14 +78,14 @@ result = infer(
 </code></pre><pre><code class="language-julia hljs">rθ = range(0, 1, length = 1000)
 
 plot(rθ, (rvar) -&gt; pdf(result.posteriors[:θ], rvar), fillalpha = 0.4, fill = 0, label=&quot;Infered posterior&quot;)
-vline!([θ_real], label=&quot;Real θ&quot;, title = &quot;Inference results&quot;)</code></pre><img src="9c0d2f0d.svg" alt="Example block output"/><p>Now the posterior has much more sensible shape thus confirming that we have identified the original issue correctly.  We can run the model with more observations, to get an even better posterior:</p><pre><code class="language-julia hljs">result = infer(
+vline!([θ_real], label=&quot;Real θ&quot;, title = &quot;Inference results&quot;)</code></pre><img src="d67de2d1.svg" alt="Example block output"/><p>Now the posterior has much more sensible shape thus confirming that we have identified the original issue correctly.  We can run the model with more observations, to get an even better posterior:</p><pre><code class="language-julia hljs">result = infer(
     model = coin_model(),
     data  = (x = float.(rand(Bernoulli(θ_real), 1000)), ),
 )
 
 rθ = range(0, 1, length = 1000)
 plot(rθ, (rvar) -&gt; pdf(result.posteriors[:θ], rvar), fillalpha = 0.4, fill = 0, label=&quot;Infered posterior (1000 observations)&quot;)
-vline!([θ_real], label=&quot;Real θ&quot;, title = &quot;Inference results&quot;)</code></pre><img src="177dba3f.svg" alt="Example block output"/><h2 id="user-guide-debugging-callbacks"><a class="docs-heading-anchor" href="#user-guide-debugging-callbacks">Using <code>callbacks</code> in the <code>infer</code> function</a><a id="user-guide-debugging-callbacks-1"></a><a class="docs-heading-anchor-permalink" href="#user-guide-debugging-callbacks" title="Permalink"></a></h2><p>Another way to inspect the inference procedure is to use the <code>callbacks</code> or <code>events</code> from the <a href="../inference/overview/#RxInfer.infer"><code>infer</code></a> function. Read more about callbacks in the documentation to the <a href="../inference/overview/#RxInfer.infer"><code>infer</code></a> function. Here, we show a simple application of callbacks to a simple IID inference problem. We start with model specification:</p><pre><code class="language-julia hljs">using RxInfer
+vline!([θ_real], label=&quot;Real θ&quot;, title = &quot;Inference results&quot;)</code></pre><img src="15b03d14.svg" alt="Example block output"/><h2 id="user-guide-debugging-callbacks"><a class="docs-heading-anchor" href="#user-guide-debugging-callbacks">Using <code>callbacks</code> in the <code>infer</code> function</a><a id="user-guide-debugging-callbacks-1"></a><a class="docs-heading-anchor-permalink" href="#user-guide-debugging-callbacks" title="Permalink"></a></h2><p>Another way to inspect the inference procedure is to use the <code>callbacks</code> or <code>events</code> from the <a href="../inference/overview/#RxInfer.infer"><code>infer</code></a> function. Read more about callbacks in the documentation to the <a href="../inference/overview/#RxInfer.infer"><code>infer</code></a> function. Here, we show a simple application of callbacks to a simple IID inference problem. We start with model specification:</p><pre><code class="language-julia hljs">using RxInfer
 
 @model function iid_normal(y)
     μ  ~ Normal(mean = 0.0, variance = 100.0)
@@ -121,27 +121,27 @@ result = infer(
         after_iteration    = after_iteration_callback
     )
 )</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Starting iteration 1
-Latent variable γ has been updated. Estimated mean is 1.0199999999897567e-12 with standard deviation 1.4282856856942264e-13
-Latent variable μ has been updated. Estimated mean is 3.2235670165004777e-8 with standard deviation 9.999999948999998
+Latent variable γ has been updated. Estimated mean is 1.0199999999900592e-12 with standard deviation 1.42828568569465e-13
+Latent variable μ has been updated. Estimated mean is 3.175762468718455e-8 with standard deviation 9.999999948999998
 Iteration 1 has been finished
 Starting iteration 2
-Latent variable γ has been updated. Estimated mean is 0.009269193347094853 with standard deviation 0.0012979466838941851
-Latent variable μ has been updated. Estimated mean is 3.1266284548454877 with standard deviation 1.0331155521945719
+Latent variable γ has been updated. Estimated mean is 0.009294227066809487 with standard deviation 0.0013014521058087392
+Latent variable μ has been updated. Estimated mean is 3.0803500316968493 with standard deviation 1.0317381116817068
 Iteration 2 has been finished
 Starting iteration 3
-Latent variable γ has been updated. Estimated mean is 0.9086613433802372 with standard deviation 0.1272380382261483
-Latent variable μ has been updated. Estimated mean is 3.160012086709358 with standard deviation 0.10489990081630136
+Latent variable γ has been updated. Estimated mean is 0.9129231365420715 with standard deviation 0.1278348086348246
+Latent variable μ has been updated. Estimated mean is 3.113151639005503 with standard deviation 0.10465478950430418
 Iteration 3 has been finished
 Starting iteration 4
-Latent variable γ has been updated. Estimated mean is 15.675672330495129 with standard deviation 2.1950331768141265
-Latent variable μ has been updated. Estimated mean is 3.160339691573923 with standard deviation 0.025257218791487998
+Latent variable γ has been updated. Estimated mean is 16.27809464265106 with standard deviation 2.2793891734027323
+Latent variable μ has been updated. Estimated mean is 3.1134735214098535 with standard deviation 0.024785454174315876
 Iteration 4 has been finished
 Starting iteration 5
-Latent variable γ has been updated. Estimated mean is 18.646212992270506 with standard deviation 2.6109920695620707
-Latent variable μ has been updated. Estimated mean is 3.1603429033859607 with standard deviation 0.023158131466426427
+Latent variable γ has been updated. Estimated mean is 19.49449098092861 with standard deviation 2.7297747468857994
+Latent variable μ has been updated. Estimated mean is 3.113476677119516 with standard deviation 0.022648682109817127
 Iteration 5 has been finished</code></pre><p>We can see that the callback has been correctly executed for each intermediate variational iteration.</p><pre><code class="language-julia hljs">println(&quot;Estimated mean: &quot;, mean(result.posteriors[:μ]))
-println(&quot;Estimated precision: &quot;, mean(result.posteriors[:γ]))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Estimated mean: 3.1603429033859607
-Estimated precision: 18.646212992270506</code></pre><h2 id="Using-LoggerPipelineStage"><a class="docs-heading-anchor" href="#Using-LoggerPipelineStage">Using <code>LoggerPipelineStage</code></a><a id="Using-LoggerPipelineStage-1"></a><a class="docs-heading-anchor-permalink" href="#Using-LoggerPipelineStage" title="Permalink"></a></h2><p><code>ReactiveMP</code> inference engine allows attaching extra computations to the default computational pipeline of message passing.  Read more about pipelines in the corresponding section of <code>ReactiveMP</code>. Here we show how to use <code>LoggerPipelineStage</code> to trace the order of message passing updates for debugging purposes. We start with model specification:</p><pre><code class="language-julia hljs">using RxInfer
+println(&quot;Estimated precision: &quot;, mean(result.posteriors[:γ]))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Estimated mean: 3.113476677119516
+Estimated precision: 19.49449098092861</code></pre><h2 id="Using-LoggerPipelineStage"><a class="docs-heading-anchor" href="#Using-LoggerPipelineStage">Using <code>LoggerPipelineStage</code></a><a id="Using-LoggerPipelineStage-1"></a><a class="docs-heading-anchor-permalink" href="#Using-LoggerPipelineStage" title="Permalink"></a></h2><p><code>ReactiveMP</code> inference engine allows attaching extra computations to the default computational pipeline of message passing.  Read more about pipelines in the corresponding section of <code>ReactiveMP</code>. Here we show how to use <code>LoggerPipelineStage</code> to trace the order of message passing updates for debugging purposes. We start with model specification:</p><pre><code class="language-julia hljs">using RxInfer
 
 @model function iid_normal_with_pipeline(y)
     μ  ~ Normal(mean = 0.0, variance = 100.0)
@@ -167,13 +167,13 @@ dataset = rand(NormalMeanPrecision(3.1415, 30.0), 5)</code></pre><p>Now, we can 
 [Log][NormalMeanPrecision][τ]: DeferredMessage([ use `as_message` to compute the message ])
 [Log][NormalMeanPrecision][τ]: DeferredMessage([ use `as_message` to compute the message ])
 [Log][NormalMeanPrecision][τ]: DeferredMessage([ use `as_message` to compute the message ])
-Latent variable γ has been updated. Estimated mean is 1.3999999999867624e-12 with standard deviation 7.483314773477124e-13
+Latent variable γ has been updated. Estimated mean is 1.3999999999855226e-12 with standard deviation 7.483314773470498e-13
 [Log][NormalMeanPrecision][μ]: DeferredMessage([ use `as_message` to compute the message ])
 [Log][NormalMeanPrecision][μ]: DeferredMessage([ use `as_message` to compute the message ])
 [Log][NormalMeanPrecision][μ]: DeferredMessage([ use `as_message` to compute the message ])
 [Log][NormalMeanPrecision][μ]: DeferredMessage([ use `as_message` to compute the message ])
 [Log][NormalMeanPrecision][μ]: DeferredMessage([ use `as_message` to compute the message ])
-Latent variable μ has been updated. Estimated mean is 2.1052683467521436e-9 with standard deviation 9.9999999965
+Latent variable μ has been updated. Estimated mean is 2.206472558553252e-9 with standard deviation 9.9999999965
 Iteration 1 has been finished
 Starting iteration 2
 [Log][NormalMeanPrecision][τ]: DeferredMessage([ use `as_message` to compute the message ])
@@ -181,13 +181,13 @@ Starting iteration 2
 [Log][NormalMeanPrecision][τ]: DeferredMessage([ use `as_message` to compute the message ])
 [Log][NormalMeanPrecision][τ]: DeferredMessage([ use `as_message` to compute the message ])
 [Log][NormalMeanPrecision][τ]: DeferredMessage([ use `as_message` to compute the message ])
-Latent variable γ has been updated. Estimated mean is 0.012790596977161674 with standard deviation 0.0068368616658350595
+Latent variable γ has been updated. Estimated mean is 0.01268794487586783 with standard deviation 0.0067819918096816345
 [Log][NormalMeanPrecision][μ]: DeferredMessage([ use `as_message` to compute the message ])
 [Log][NormalMeanPrecision][μ]: DeferredMessage([ use `as_message` to compute the message ])
 [Log][NormalMeanPrecision][μ]: DeferredMessage([ use `as_message` to compute the message ])
 [Log][NormalMeanPrecision][μ]: DeferredMessage([ use `as_message` to compute the message ])
 [Log][NormalMeanPrecision][μ]: DeferredMessage([ use `as_message` to compute the message ])
-Latent variable μ has been updated. Estimated mean is 2.600845370374295 with standard deviation 3.677241444222055
+Latent variable μ has been updated. Estimated mean is 2.7228940321491297 with standard deviation 3.6900689475131703
 Iteration 2 has been finished
 Starting iteration 3
 [Log][NormalMeanPrecision][τ]: DeferredMessage([ use `as_message` to compute the message ])
@@ -195,13 +195,13 @@ Starting iteration 3
 [Log][NormalMeanPrecision][τ]: DeferredMessage([ use `as_message` to compute the message ])
 [Log][NormalMeanPrecision][τ]: DeferredMessage([ use `as_message` to compute the message ])
 [Log][NormalMeanPrecision][τ]: DeferredMessage([ use `as_message` to compute the message ])
-Latent variable γ has been updated. Estimated mean is 0.09930706877226678 with standard deviation 0.05308186106151711
+Latent variable γ has been updated. Estimated mean is 0.09854969387964486 with standard deviation 0.05267702715272627
 [Log][NormalMeanPrecision][μ]: DeferredMessage([ use `as_message` to compute the message ])
 [Log][NormalMeanPrecision][μ]: DeferredMessage([ use `as_message` to compute the message ])
 [Log][NormalMeanPrecision][μ]: DeferredMessage([ use `as_message` to compute the message ])
 [Log][NormalMeanPrecision][μ]: DeferredMessage([ use `as_message` to compute the message ])
 [Log][NormalMeanPrecision][μ]: DeferredMessage([ use `as_message` to compute the message ])
-Latent variable μ has been updated. Estimated mean is 2.948151752559206 with standard deviation 1.4050608178521573
+Latent variable μ has been updated. Estimated mean is 3.0894062280999304 with standard deviation 1.4103425912524719
 Iteration 3 has been finished
 Starting iteration 4
 [Log][NormalMeanPrecision][τ]: DeferredMessage([ use `as_message` to compute the message ])
@@ -209,13 +209,13 @@ Starting iteration 4
 [Log][NormalMeanPrecision][τ]: DeferredMessage([ use `as_message` to compute the message ])
 [Log][NormalMeanPrecision][τ]: DeferredMessage([ use `as_message` to compute the message ])
 [Log][NormalMeanPrecision][τ]: DeferredMessage([ use `as_message` to compute the message ])
-Latent variable γ has been updated. Estimated mean is 0.5862856332842158 with standard deviation 0.3133828529339034
+Latent variable γ has been updated. Estimated mean is 0.5837715539232922 with standard deviation 0.31203902098936975
 [Log][NormalMeanPrecision][μ]: DeferredMessage([ use `as_message` to compute the message ])
 [Log][NormalMeanPrecision][μ]: DeferredMessage([ use `as_message` to compute the message ])
 [Log][NormalMeanPrecision][μ]: DeferredMessage([ use `as_message` to compute the message ])
 [Log][NormalMeanPrecision][μ]: DeferredMessage([ use `as_message` to compute the message ])
 [Log][NormalMeanPrecision][μ]: DeferredMessage([ use `as_message` to compute the message ])
-Latent variable μ has been updated. Estimated mean is 2.9973014976556733 with standard deviation 0.5830702414387564
+Latent variable μ has been updated. Estimated mean is 3.141341428810861 with standard deviation 0.5843201445405694
 Iteration 4 has been finished
 Starting iteration 5
 [Log][NormalMeanPrecision][τ]: DeferredMessage([ use `as_message` to compute the message ])
@@ -223,13 +223,13 @@ Starting iteration 5
 [Log][NormalMeanPrecision][τ]: DeferredMessage([ use `as_message` to compute the message ])
 [Log][NormalMeanPrecision][τ]: DeferredMessage([ use `as_message` to compute the message ])
 [Log][NormalMeanPrecision][τ]: DeferredMessage([ use `as_message` to compute the message ])
-Latent variable γ has been updated. Estimated mean is 1.8659979355659404 with standard deviation 0.9974178513307466
+Latent variable γ has been updated. Estimated mean is 1.8747981580542845 with standard deviation 1.0021217681134276
 [Log][NormalMeanPrecision][μ]: DeferredMessage([ use `as_message` to compute the message ])
 [Log][NormalMeanPrecision][μ]: DeferredMessage([ use `as_message` to compute the message ])
 [Log][NormalMeanPrecision][μ]: DeferredMessage([ use `as_message` to compute the message ])
 [Log][NormalMeanPrecision][μ]: DeferredMessage([ use `as_message` to compute the message ])
 [Log][NormalMeanPrecision][μ]: DeferredMessage([ use `as_message` to compute the message ])
-Latent variable μ has been updated. Estimated mean is 3.0043061587436797 with standard deviation 0.3272101763112712
+Latent variable μ has been updated. Estimated mean is 3.1487446347758374 with standard deviation 0.3264421379997271
 Iteration 5 has been finished</code></pre><p>We can see the order of message update events. Note that <code>ReactiveMP</code> may decide to compute messages lazily, in which case the actual computation of the value of a message will be deffered until later moment. In this case, <code>LoggerPipelineStage</code> will report <em>DefferedMessage</em>.</p><h2 id="user-guide-debugging-benchmark-callbacks"><a class="docs-heading-anchor" href="#user-guide-debugging-benchmark-callbacks">Using <code>RxInferBenchmarkCallbacks</code> for Performance Analysis</a><a id="user-guide-debugging-benchmark-callbacks-1"></a><a class="docs-heading-anchor-permalink" href="#user-guide-debugging-benchmark-callbacks" title="Permalink"></a></h2><p><code>RxInfer</code> provides a built-in benchmarking callback structure called <a href="#RxInfer.RxInferBenchmarkCallbacks"><code>RxInferBenchmarkCallbacks</code></a> that helps collect timing information during the inference procedure. This structure aggregates timing information across multiple runs, allowing you to track performance statistics (min/max/average/etc.) of your model&#39;s creation and inference procedure.</p><p>Here&#39;s how to use it:</p><pre><code class="language-julia hljs">using RxInfer
 
 
@@ -249,11 +249,11 @@ for i in 1:3  # Usually you&#39;d want more runs for better statistics
 end</code></pre><pre><code class="language-julia hljs"># Display the benchmark statistics
 benchmark_callbacks</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">RxInfer inference benchmark statistics: 3 evaluations 
 ╭────────────────┬────────────┬────────────┬────────────┬────────────┬──────────
-│<span class="sgr33"><span class="sgr1">      Operation │        Min │        Max │       Mean │     Median │         ⋯
+│<span class="sgr33"><span class="sgr1">      Operation │        Min │        Max │       Mean │     Median │       S ⋯
 ├────────────────┼────────────┼────────────┼────────────┼────────────┼──────────
-│ Model creation │ 181.982 μs │ 429.957 μs │ 270.755 μs │ 200.326 μs │ 138.178 ⋯
-│      Inference │  39.815 μs │  92.503 μs │  60.223 μs │  48.351 μs │  28.279 ⋯
-│      Iteration │   3.186 μs │</span></span><span class="sgr1"><span class="sgr31">  38.642 μs │   7.525 μs │   4.028 μs │   9.249 ⋯
+│ Model creation │ 208.259 μs │ 377.334 μs │ 274.128 μs │ 236.792 μs │ 90.510  ⋯
+│      Inference │  45.825 μs │  88.645 μs │  61.965 μs │  51.426 μs │ 23.274  ⋯
+│      Iteration │   3.046 μs │</span></span><span class="sgr1"><span class="sgr31">  36.318 μs │   7.521 μs │   3.667 μs │  8.901  ⋯
 ╰────────────────┴────────────┴────────────┴────────────┴────────────┴──────────
 </span><span class="sgr36">                                                                1 column omitted
 </span></span></code></pre><p>The <code>RxInferBenchmarkCallbacks</code> structure collects timestamps at various stages of the inference process:</p><ul><li>Before and after model creation</li><li>Before and after inference starts/ends</li><li>Before and after each iteration</li><li>Before and after autostart (for streaming inference)</li></ul><article class="docstring"><header><a class="docstring-article-toggle-button fa-solid fa-chevron-down" href="javascript:;" title="Collapse docstring"></a><a class="docstring-binding" id="RxInfer.RxInferBenchmarkCallbacks" href="#RxInfer.RxInferBenchmarkCallbacks"><code>RxInfer.RxInferBenchmarkCallbacks</code></a> — <span class="docstring-category">Type</span><span class="is-flex-grow-1 docstring-article-toggle-button" title="Collapse docstring"></span></header><section><div><pre><code class="language-julia hljs">RxInferBenchmarkCallbacks(; capacity = RxInfer.DEFAULT_BENCHMARK_CALLBACKS_BUFFER_CAPACITY)</code></pre><p>A callback structure for collecting timing information during the inference procedure. This structure collects timestamps for various stages of the inference process and aggregates them across multiple runs, allowing you to track performance statistics (min/max/average/etc.) of your model&#39;s creation and inference procedure. The structure supports pretty printing by default, displaying timing statistics in a human-readable format.</p><p>The structure uses circular buffers with a default capacity of 1000 entries to store timestamps, which helps to limit memory usage in long-running applications. Use <code>RxInferBenchmarkCallbacks(; capacity = N)</code> to change the buffer capacity. See also <a href="#RxInfer.get_benchmark_stats"><code>RxInfer.get_benchmark_stats(callbacks)</code></a>.</p><p><strong>Fields</strong></p><ul><li><code>before_model_creation_ts</code>: CircularBuffer of timestamps before model creation</li><li><code>after_model_creation_ts</code>: CircularBuffer of timestamps after model creation</li><li><code>before_inference_ts</code>: CircularBuffer of timestamps before inference starts</li><li><code>after_inference_ts</code>: CircularBuffer of timestamps after inference ends</li><li><code>before_iteration_ts</code>: CircularBuffer of vectors of timestamps before each iteration</li><li><code>after_iteration_ts</code>: CircularBuffer of vectors of timestamps after each iteration</li><li><code>before_autostart_ts</code>: CircularBuffer of timestamps before autostart</li><li><code>after_autostart_ts</code>: CircularBuffer of timestamps after autostart</li></ul><p><strong>Example</strong></p><pre><code class="language-julia hljs"># Create a callbacks instance to track performance
@@ -274,4 +274,4 @@ mermaid.initialize({
     startOnLoad: true,
     theme: "neutral"
 });
-</script></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../customization/postprocess/">« Inference results postprocessing</a><a class="docs-footer-nextpage" href="../session_summary/">Session summary »</a><div class="flexbox-break"></div><p class="footer-message">Created in <a href="https://biaslab.github.io/">BIASlab</a>, maintained by <a href="https://github.com/ReactiveBayes">ReactiveBayes</a>, powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.8.1 on <span class="colophon-date" title="Thursday 20 February 2025 18:00">Thursday 20 February 2025</span>. Using Julia version 1.11.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+</script></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../customization/postprocess/">« Inference results postprocessing</a><a class="docs-footer-nextpage" href="../session_summary/">Session summary »</a><div class="flexbox-break"></div><p class="footer-message">Created in <a href="https://biaslab.github.io/">BIASlab</a>, maintained by <a href="https://github.com/ReactiveBayes">ReactiveBayes</a>, powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.8.1 on <span class="colophon-date" title="Monday 24 February 2025 08:39">Monday 24 February 2025</span>. Using Julia version 1.11.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
