@@ -412,10 +412,10 @@ end
     )
 
     conf_bound_a = 3 * std(result.posteriors[:a][end])
-    @test mean(result.posteriors[:a][end]) -  conf_bound_a < a < mean(result.posteriors[:a][end]) + conf_bound_a
+    @test mean(result.posteriors[:a][end]) - conf_bound_a < a < mean(result.posteriors[:a][end]) + conf_bound_a
 
     conf_bound_b = 3 * std(result.posteriors[:b][end])
-    @test mean(result.posteriors[:b][end]) -  conf_bound_b< b < mean(result.posteriors[:b][end]) + conf_bound_b
+    @test mean(result.posteriors[:b][end]) - conf_bound_b < b < mean(result.posteriors[:b][end]) + conf_bound_b
 
     @test mean(result.posteriors[:a][end]) ≈ a atol = 1e-2
     @test foo(mean(result.posteriors[:a][end]), mean(result.posteriors[:b][end])) ≈ foo(a, b) atol = 1e-2
