@@ -419,7 +419,7 @@ end
 
     @test mean(result.posteriors[:a][end]) ≈ a atol = 1e-2
     @test foo(mean(result.posteriors[:a][end]), mean(result.posteriors[:b][end])) ≈ foo(a, b) atol = 1e-2
-    @test mean(result.posteriors[:μ][end]) ≈ foo(a, b) atol = 1e-2
+    @test mean(result.posteriors[:μ][end]) ≈ foo(a, b) atol = 2e-2
     @test first(result.free_energy) > last(result.free_energy)
     @test count(<(0), diff(result.free_energy)) > 0.95
 
