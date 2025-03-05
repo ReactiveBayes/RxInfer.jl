@@ -411,9 +411,15 @@ end
         model = mymodel(C = C), data = (y = y,), meta = mymeta(), constraints = myconstraints(), initialization = myinitialization(), free_energy = true, iterations = 40
     )
 
-    @test mean(result.posteriors[:a][end]) ≈ a atol = 3e-2
-    @test foo(mean(result.posteriors[:a][end]), mean(result.posteriors[:b][end])) ≈ foo(a, b) atol = 3e-2
-    @test mean(result.posteriors[:μ][end]) ≈ foo(a, b) atol = 3e-2
+    conf_bound_a = 3 * std(result.posteriors[:a][end])
+    @test mean(result.posteriors[:a][end]) - conf_bound_a < a < mean(result.posteriors[:a][end]) + conf_bound_a
+
+    conf_bound_b = 3 * std(result.posteriors[:b][end])
+    @test mean(result.posteriors[:b][end]) - conf_bound_b < b < mean(result.posteriors[:b][end]) + conf_bound_b
+
+    @test mean(result.posteriors[:a][end]) ≈ a atol = 1e-2
+    @test foo(mean(result.posteriors[:a][end]), mean(result.posteriors[:b][end])) ≈ foo(a, b) atol = 1e-2
+    @test mean(result.posteriors[:μ][end]) ≈ foo(a, b) atol = 2e-2
     @test first(result.free_energy) > last(result.free_energy)
     @test count(<(0), diff(result.free_energy)) > 0.95
 
@@ -469,7 +475,7 @@ end
     end
 
     @meta function mymeta()
-        foo() -> CVIProjection(rng = StableRNG(42), marginalsamples = 20, outsamples = 5)
+        foo() -> CVIProjection(rng = StableRNG(42), sampling_strategy = FullSampling(10), outsamples = 5)
     end
 
     result = infer(
