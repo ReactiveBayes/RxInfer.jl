@@ -22,6 +22,7 @@ makedocs(;
         canonical = "https://docs.rxinfer.ml/stable",
         edit_link = "main",
         warn_outdated = true,
+        sidebar_sitename = false,
         assets = ["assets/theme.css", "assets/header.css", "assets/header.js", "assets/chat.js", "assets/favicon.ico"],
         analytics = "G-X4PH160GMF",
         description = "Julia package for automated Bayesian inference on a factor graph with reactive message passing",

@@ -136,3 +136,7 @@ header.navigation div.container nav.navbar ul.navbar-nav li.small-item {
     visibility: hidden;
     display: none;
 }
+
+.docs-logo {
+    margin-bottom: 0.5rem;
+}
