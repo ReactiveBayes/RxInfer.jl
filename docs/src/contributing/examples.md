@@ -1,6 +1,6 @@
 # [Contribute with examples](@id examples)
 
-The examples for RxInfer.jl are now maintained in a dedicated repository at [RxInferExamples.jl](https://examples.rxinfer.ml/). Please visit the examples repository to:
+The examples for RxInfer.jl are now maintained in a dedicated repository at [RxInferExamples.jl](https://examples.rxinfer.com/). Please visit the examples repository to:
 - Browse existing examples
 - Learn how to contribute your own examples
 - Get started with RxInfer.jl
@@ -11,4 +11,4 @@ The examples for RxInfer.jl are now maintained in a dedicated repository at [RxI
 - **Tutorial Series on RxInfer.jl** - Explore a series of engaging tutorial videos on RxInfer.jl's functionalities, presented by [@doggotodjl](https://www.youtube.com/@doggodotjl/search?query=RxInfer).
 
 !!! note
-    If you're interested in contributing an example, please visit the [RxInferExamples.jl](https://examples.rxinfer.ml/) repository. We welcome all contributions that help demonstrate the capabilities of RxInfer.jl!
+    If you're interested in contributing an example, please visit the [RxInferExamples.jl](https://examples.rxinfer.com/) repository. We welcome all contributions that help demonstrate the capabilities of RxInfer.jl!

@@ -3,7 +3,7 @@
 This guide explains how to use the [`infer`](@ref) function for dynamic datasets. We show how `RxInfer` can continuously update beliefs asynchronously whenever a new observation arrives. We use a simple Beta-Bernoulli model as an example, which has been covered in the [Getting Started](@ref user-guide-getting-started) section, 
 however, these techniques can be applied to any model
 
-Also read about [Static Inference](@ref manual-static-inference) or checkout more complex [examples](https://examples.rxinfer.ml/).
+Also read about [Static Inference](@ref manual-static-inference) or checkout more complex [examples](https://examples.rxinfer.com/).
 
 ## [Model specification](@id manual-online-inference-model-spec)
 
@@ -919,4 +919,4 @@ end
 This guide covered some fundamental usages of the [`infer`](@ref) function in the context of streamline inference, 
 but did not cover all the available keyword arguments of the function. Read more explanation about the other keyword arguments 
 in the [Overview](@ref user-guide-inference-execution) section or check out the [Static Inference](@ref manual-static-inference) section.
-Also check out more complex [examples](https://examples.rxinfer.ml/).
+Also check out more complex [examples](https://examples.rxinfer.com/).

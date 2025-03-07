@@ -19,7 +19,7 @@ makedocs(;
     sitename = "RxInfer.jl",
     format = Documenter.HTML(;
         prettyurls = get(ENV, "CI", "false") == "true",
-        canonical = "https://docs.rxinfer.ml/stable",
+        canonical = "https://docs.rxinfer.com/stable",
         edit_link = "main",
         warn_outdated = true,
         sidebar_sitename = false,
@@ -80,7 +80,7 @@ makedocs(;
 function inject_keywords_meta()
     # Define keywords for the documentation
     keywords = "Julia, Bayesian inference, factor graph, message passing, probabilistic programming, reactive programming, RxInfer"
-    base_url = "https://docs.rxinfer.ml/stable"
+    base_url = "https://docs.rxinfer.com/stable"
 
     # Meta tags to inject
     meta_tags = """
@@ -109,7 +109,7 @@ end
 
 # Function to generate sitemap.xml
 function generate_sitemap()
-    base_url = "https://docs.rxinfer.ml/stable"
+    base_url = "https://docs.rxinfer.com/stable"
     sitemap_content = """<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">"""
 
@@ -157,4 +157,4 @@ end
 inject_keywords_meta()
 generate_sitemap()
 
-deploydocs(; repo = "github.com/ReactiveBayes/RxInfer.jl", devbranch = "main", forcepush = true, cname = "docs.rxinfer.ml")
+deploydocs(; repo = "github.com/ReactiveBayes/RxInfer.jl", devbranch = "main", forcepush = true, cname = "docs.rxinfer.com")

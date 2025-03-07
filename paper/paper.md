@@ -137,7 +137,7 @@ We present **RxInfer.jl**, a package for processing infinite data streams by rea
     or **ReverseDiff.jl**.
 - The inference engine supports different types of floating-point numbers, such as `Float32`, `Float64`, and `BigFloat`.
 
-A large collection of examples is available at [https://examples.rxinfer.ml/](https://examples.rxinfer.ml/).
+A large collection of examples is available at [https://examples.rxinfer.com/](https://examples.rxinfer.com/).
 
 # Example usage
 

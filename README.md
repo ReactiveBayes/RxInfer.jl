@@ -1,9 +1,9 @@
 ![](docs/src/assets/biglogo-blacktheme.svg?raw=true&sanitize=true)
 
-[![Official page](https://img.shields.io/badge/official%20page%20-RxInfer-blue)](https://rxinfer.ml)
-[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://docs.rxinfer.ml/stable/)
-[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://docs.rxinfer.ml/dev/)
-[![Examples](https://img.shields.io/badge/examples-RxInfer-brightgreen)](https://examples.rxinfer.ml/)
+[![Official page](https://img.shields.io/badge/official%20page%20-RxInfer-blue)](https://rxinfer.com)
+[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://docs.rxinfer.com/stable/)
+[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://docs.rxinfer.com/dev/)
+[![Examples](https://img.shields.io/badge/examples-RxInfer-brightgreen)](https://examples.rxinfer.com/)
 [![Q&A](https://img.shields.io/badge/Q&A-RxInfer-orange)](https://github.com/reactivebayes/RxInfer.jl/discussions)
 [![Roadmap](https://img.shields.io/badge/roadmap-RxInfer-yellow)](#roadmap)
 [![Build Status](https://github.com/reactivebayes/RxInfer.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/reactivebayes/RxInfer.jl/actions/workflows/CI.yml?query=branch%3Amain)
@@ -20,18 +20,18 @@ Given a probabilistic model, RxInfer allows for an efficient message-passing bas
 
 ### Performance and scalability
 
-RxInfer.jl has been designed with a focus on efficiency, scalability and maximum performance for running Bayesian inference with message passing. Below is a comparison between RxInfer.jl and Turing.jl on latent state estimation in a linear multi-variate Gaussian state-space model. [Turing.jl](https://github.com/TuringLang/Turing.jl) is a state-of-the-art Julia-based general-purpose probabilistic programming package and is capable of running inference in a broader class of models. Still, RxInfer.jl executes the inference task in [various models](https://examples.rxinfer.ml) faster and more accurately. RxInfer.jl accomplishes this by taking advantage of any conjugate likelihood-prior pairings in the model, which have analytical posteriors that are known by RxInfer.jl. As a result, in models with conjugate pairings, RxInfer.jl often beats general-purpose probabilistic programming packages in terms of computational load, speed, memory and accuracy. Note, however, that RxInfer.jl also supports non-conjugate inference and is continually improving in order to support a larger class of models.
+RxInfer.jl has been designed with a focus on efficiency, scalability and maximum performance for running Bayesian inference with message passing. Below is a comparison between RxInfer.jl and Turing.jl on latent state estimation in a linear multi-variate Gaussian state-space model. [Turing.jl](https://github.com/TuringLang/Turing.jl) is a state-of-the-art Julia-based general-purpose probabilistic programming package and is capable of running inference in a broader class of models. Still, RxInfer.jl executes the inference task in [various models](https://examples.rxinfer.com) faster and more accurately. RxInfer.jl accomplishes this by taking advantage of any conjugate likelihood-prior pairings in the model, which have analytical posteriors that are known by RxInfer.jl. As a result, in models with conjugate pairings, RxInfer.jl often beats general-purpose probabilistic programming packages in terms of computational load, speed, memory and accuracy. Note, however, that RxInfer.jl also supports non-conjugate inference and is continually improving in order to support a larger class of models.
 
 Turing comparison             |  Scalability performance
 :-------------------------:|:-------------------------:
 ![](benchmarks/plots/lgssm_comparison.svg?raw=true&sanitize=true)  |  ![](benchmarks/plots/lgssm_scaling.svg?raw=true&sanitize=true)
 
 > [!NOTE]
-> See many more examples in the [RxInferExamples.jl](https://examples.rxinfer.ml/) repository.
+> See many more examples in the [RxInferExamples.jl](https://examples.rxinfer.com/) repository.
 
 ### Faster inference with better results
 
-RxInfer.jl not only beats generic-purpose Bayesian inference methods in conjugate models, executes faster, and scales better, but also provides more accurate results. Check out more examples [here](https://examples.rxinfer.ml)!
+RxInfer.jl not only beats generic-purpose Bayesian inference methods in conjugate models, executes faster, and scales better, but also provides more accurate results. Check out more examples [here](https://examples.rxinfer.com)!
 
 Inference with RxInfer             |  Inference with HMC
 :-------------------------:|:-------------------------:
@@ -61,12 +61,12 @@ Optionally, use `] test RxInfer` to validate the installation by running the tes
 
 # Documentation
 
-For more information about `RxInfer.jl` please refer to the [documentation](https://docs.rxinfer.ml).
+For more information about `RxInfer.jl` please refer to the [documentation](https://docs.rxinfer.com).
 
 # Getting Started
 
 > [!NOTE]
-> There are examples available to get you started in the [RxInferExamples.jl](https://examples.rxinfer.ml/) repository.
+> There are examples available to get you started in the [RxInferExamples.jl](https://examples.rxinfer.com/) repository.
 
 ### Coin flip simulation
 
@@ -180,14 +180,14 @@ The `RxInfer` framework consists of four *core* packages developed by [ReactiveB
 
 # Where to go next?
 
-There are a set of [examples](https://examples.rxinfer.ml/) available in the `RxInferExamples.jl` repository that demonstrate the more advanced features of the package. Alternatively, you can head to the [documentation](https://docs.rxinfer.ml) that provides more detailed information of how to use `RxInfer` to specify more complex probabilistic models.
+There are a set of [examples](https://examples.rxinfer.com/) available in the `RxInferExamples.jl` repository that demonstrate the more advanced features of the package. Alternatively, you can head to the [documentation](https://docs.rxinfer.com) that provides more detailed information of how to use `RxInfer` to specify more complex probabilistic models.
 
 
 # Join Our Community and Contribute to RxInfer
 
 RxInfer is a community-driven project and we welcome all contributions! To get started:
-- Check out our [contributing guide](https://docs.rxinfer.ml/stable/contributing/guide)
-- Review the [contributing guidelines](https://docs.rxinfer.ml/stable/contributing/guidelines)
+- Check out our [contributing guide](https://docs.rxinfer.com/stable/contributing/guide)
+- Review the [contributing guidelines](https://docs.rxinfer.com/stable/contributing/guidelines)
 - Browse [beginner-friendly issues](https://github.com/ReactiveBayes/RxInfer.jl/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22) to find something that interests you
 
 ## Active Inference Institute Collaboration
@@ -232,7 +232,7 @@ RxInfer collects completely anonymous telemetry data regarding package usage. Th
 - Entirely anonymous
 - (Opt-out) Can be disabled for a single Julia session or permanently
 
-You can learn more about it and how to opt-out by visiting our [documentation](https://docs.rxinfer.ml).
+You can learn more about it and how to opt-out by visiting our [documentation](https://docs.rxinfer.com).
 
 ## Session Sharing
 
@@ -249,7 +249,7 @@ This information is invaluable for debugging issues and improving RxInfer. Sessi
 - Only shared when you explicitly choose to do so
 - (Opt-in) Can be enabled to send reports automatically when an error occurs. When enabled, still entirely anonymous.
 
-If you're opening a GitHub issue, we encourage you to share your session ID with us - it helps us understand your use case better and provide more accurate support. Learn more about session sharing and how to opt-in in our [documentation](https://docs.rxinfer.ml).
+If you're opening a GitHub issue, we encourage you to share your session ID with us - it helps us understand your use case better and provide more accurate support. Learn more about session sharing and how to opt-in in our [documentation](https://docs.rxinfer.com).
 
 # License
 

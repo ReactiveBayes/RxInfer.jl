@@ -2,7 +2,7 @@
 
 This guide explains how to use the [`infer`](@ref) function for static datasets. We'll show how `RxInfer` can estimate posterior beliefs given a set of observations. We'll use a simple Beta-Bernoulli model as an example, which has been covered in the [Getting Started](@ref user-guide-getting-started) section, but keep in mind that these techniques can apply to any model.
 
-Also read about [Streaming Inference](@ref manual-online-inference) or checkout more complex [examples](https://examples.rxinfer.ml/).
+Also read about [Streaming Inference](@ref manual-online-inference) or checkout more complex [examples](https://examples.rxinfer.com/).
 
 ## [Model specification](@id manual-static-inference-model-spec)
 
@@ -496,4 +496,4 @@ nothing #hide
 This guide covered some fundamental usages of the [`infer`](@ref) function in the context of inference with static datasets, 
 but did not cover all the available keyword arguments of the function. Read more explanation about the other keyword arguments 
 in the [Overview](@ref user-guide-inference-execution) section or check out the [Streaming Inference](@ref manual-online-inference) section.
-Also check out more complex [examples](https://examples.rxinfer.ml/).
+Also check out more complex [examples](https://examples.rxinfer.com/).

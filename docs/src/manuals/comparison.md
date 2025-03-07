@@ -10,7 +10,7 @@ Nowadays there's plenty of probabilistic programming languages and packages avai
 
 | Toolbox                                                              | Universality | Efficiency | Expressiveness | Debugging & Visualization | Modularity | Inference Engine | Language | Community & Ecosystem |
 | -------------------------------------------------------------------- | ------------ | ---------- | -------------- | ------------------------- | ---------- | ---------------- | -------- | --------------------- |
-| [**RxInfer.jl**](https://rxinfer.ml/)                                | ~            | ✓          | ✓              | ~                         | ✓          | Message-passing  | Julia    | ✗                     |
+| [**RxInfer.jl**](https://rxinfer.com/)                                | ~            | ✓          | ✓              | ~                         | ✓          | Message-passing  | Julia    | ✗                     |
 | [**ForneyLab.jl**](https://github.com/biaslab/ForneyLab.jl)          | ✗            | ~          | ✗              | ~                         | ✗          | Message-passing  | Julia    | ✗                     |
 | [**Infer.net**](https://dotnet.github.io/infer/)                     | ~            | ✓          | ✗              | ✓                         | ✗          | Message-passing  | C#       | ✗                     |
 | [**PGMax**](https://github.com/google-deepmind/PGMax)                | ✗            | ✓          | ✗              | ✓                         | ✗          | Message-passing  | Python   | ✗                     |
