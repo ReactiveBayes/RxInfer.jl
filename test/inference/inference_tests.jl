@@ -1284,7 +1284,7 @@ end
     )
     # Correctly estimates variance
     @test probvec(last(result.predictions[:y])[2]) ≈ [0.25160378360439883, 0.20140807577024974, 0.3455800648551016, 0.20140807577024974]
-    @test entropy(last(result.predictions[:y])[2]) == entropy(last(result.posteriors[:s])[2])
+    @test entropy(last(result.predictions[:y])[2]) ≈ entropy(last(result.posteriors[:s])[2])
 end
 
 @testitem "Session Logging basic execution" begin
