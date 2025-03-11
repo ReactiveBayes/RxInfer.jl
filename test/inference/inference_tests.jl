@@ -1265,7 +1265,11 @@ end
         constraints = pred_model_constraints,
         iterations = 10
     )
-    @test last(result.predictions[:y])[1] == Categorical([0.25, 0.25, 0.25, 0.25])
+    # In this model, since we have no information about the transition tensor, the prediction for the middle state should be close to uniform. Because of our identity likelihood model, the prediction for the middle observation should be close to the posterior for the middle state. If we do VMP it is not.
+
+    # Underestimates variance
+    @test probvec(last(result.predictions[:y])[2]) ≈ [0.0670307763637994, 0.8994760923993603, 0.016746565618420153, 0.016746565618420153]
+    @test entropy(last(result.predictions[:y])[2]) < entropy(last(result.posteriors[:s])[2])
 
     pred_model_constraints = @constraints begin
         q(s, B) = q(s)q(B)
@@ -1278,7 +1282,9 @@ end
         constraints = pred_model_constraints,
         iterations = 10
     )
-    @test probvec(last(last(result.predictions[:y]))) ≈ [0, 0, 1, 0]
+    # Correctly estimates variance
+    @test probvec(last(result.predictions[:y])[2]) ≈ [0.25160378360439883, 0.20140807577024974, 0.3455800648551016, 0.20140807577024974]
+    @test entropy(last(result.predictions[:y])[2]) ≈ entropy(last(result.posteriors[:s])[2])
 end
 
 @testitem "Session Logging basic execution" begin
