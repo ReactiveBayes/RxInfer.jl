@@ -159,6 +159,10 @@ function batch_inference(;
         modelplugins = modelplugins + ReactiveMPFreeEnergyPlugin(fe_objective)
     end
 
+    if getforce_marginal_computation(_options)
+        modelplugins = modelplugins + ReactiveMPForceMarginalComputationPlugin(MarginalComputationOptions())
+    end
+
     # The `_model` here still must be a `ModelGenerator`
     _model = GraphPPL.with_backend(GraphPPL.with_plugins(model, modelplugins), ReactiveMPGraphPPLBackend(Static.static(allow_node_contraction)))
 
@@ -335,6 +339,14 @@ function batch_inference(;
 
     unsubscribe!(fe_subscription)
 
+    if getforce_marginal_computation(_options)
+        factor_nodes(getmodel(fmodel)) do _, node
+            marginal_stream = getextra(node, ReactiveMPExtraMarginalStreamKey, nothing)
+            if !isnothing(marginal_stream)
+                unsubscribe!(marginal_stream)
+            end
+        end
+    end
     posterior_values = Dict(variable => inference_postprocess(postprocess, getvalues(actor)) for (variable, actor) in pairs(actors_rv))
     predicted_values = Dict(variable => inference_postprocess(postprocess, getvalues(actor)) for (variable, actor) in pairs(actors_pr))
     fe_values        = !isnothing(fe_actor) ? score_snapshot_iterations(fe_actor, executed_iterations) : nothing

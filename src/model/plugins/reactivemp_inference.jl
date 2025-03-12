@@ -12,6 +12,7 @@ Creates model inference options object. The list of available options is present
 
 - `limit_stack_depth`: limits the stack depth for computing messages, helps with `StackOverflowError` for some huge models, but reduces the performance of inference backend. Accepts integer as an argument that specifies the maximum number of recursive depth. Lower is better for stack overflow error, but worse for performance.
 - `warn`: (optional) flag to suppress warnings. Warnings are not displayed if set to `false`. Defaults to `true`.
+- `force_marginal_computation`: (optional) flag to force computation of marginals even when not explicitly requested. Defaults to `false`.
 
 ### Advanced options
 
@@ -21,19 +22,26 @@ Creates model inference options object. The list of available options is present
 See also: [`infer`](@ref)
 """
 struct ReactiveMPInferenceOptions{S, A, R}
-    scheduler    :: S
-    addons       :: A
-    warn         :: Bool
-    rulefallback :: R
+    scheduler::S
+    addons::A
+    warn::Bool
+    force_marginal_computation::Bool
+    rulefallback::R
 end
 
-ReactiveMPInferenceOptions(scheduler, addons) = ReactiveMPInferenceOptions(scheduler, addons, true, nothing)
-ReactiveMPInferenceOptions(scheduler, addons, warn) = ReactiveMPInferenceOptions(scheduler, addons, warn, nothing)
+ReactiveMPInferenceOptions(scheduler, addons) = ReactiveMPInferenceOptions(scheduler, addons, true, false, nothing)
+ReactiveMPInferenceOptions(scheduler, addons, warn) = ReactiveMPInferenceOptions(scheduler, addons, warn, false, nothing)
+ReactiveMPInferenceOptions(scheduler, addons, warn, force_marginal_computation) = ReactiveMPInferenceOptions(scheduler, addons, warn, force_marginal_computation, nothing)
 
-setscheduler(options::ReactiveMPInferenceOptions, scheduler) = ReactiveMPInferenceOptions(scheduler, options.addons, options.warn, options.rulefallback)
-setaddons(options::ReactiveMPInferenceOptions, addons) = ReactiveMPInferenceOptions(options.scheduler, addons, options.warn, options.rulefallback)
-setwarn(options::ReactiveMPInferenceOptions, warn) = ReactiveMPInferenceOptions(options.scheduler, options.addons, warn, options.rulefallback)
-setrulefallback(options::ReactiveMPInferenceOptions, rulefallback) = ReactiveMPInferenceOptions(options.scheduler, options.addons, options.warn, rulefallback)
+setscheduler(options::ReactiveMPInferenceOptions, scheduler) =
+    ReactiveMPInferenceOptions(scheduler, options.addons, options.warn, options.force_marginal_computation, options.rulefallback)
+setaddons(options::ReactiveMPInferenceOptions, addons) =
+    ReactiveMPInferenceOptions(options.scheduler, addons, options.warn, options.force_marginal_computation, options.rulefallback)
+setwarn(options::ReactiveMPInferenceOptions, warn) = ReactiveMPInferenceOptions(options.scheduler, options.addons, warn, options.force_marginal_computation, options.rulefallback)
+setforce_marginal_computation(options::ReactiveMPInferenceOptions, force_marginal_computation) =
+    ReactiveMPInferenceOptions(options.scheduler, options.addons, options.warn, force_marginal_computation, options.rulefallback)
+setrulefallback(options::ReactiveMPInferenceOptions, rulefallback) =
+    ReactiveMPInferenceOptions(options.scheduler, options.addons, options.warn, options.force_marginal_computation, rulefallback)
 
 import Base: convert
 
@@ -42,7 +50,7 @@ function Base.convert(::Type{ReactiveMPInferenceOptions}, options::Nothing)
 end
 
 function Base.convert(::Type{ReactiveMPInferenceOptions}, options::NamedTuple{keys}) where {keys}
-    available_options = (:scheduler, :limit_stack_depth, :addons, :warn, :rulefallback)
+    available_options = (:scheduler, :limit_stack_depth, :addons, :warn, :rulefallback, :force_marginal_computation)
 
     for key in keys
         key ∈ available_options || error("Unknown model inference options: $(key).")
@@ -51,6 +59,7 @@ function Base.convert(::Type{ReactiveMPInferenceOptions}, options::NamedTuple{ke
     warn = haskey(options, :warn) ? options.warn : true
     addons = haskey(options, :addons) ? options.addons : nothing
     rulefallback = haskey(options, :rulefallback) ? options.rulefallback : nothing
+    force_marginal_computation = haskey(options, :force_marginal_computation) ? options.force_marginal_computation : false
 
     if warn && haskey(options, :scheduler) && haskey(options, :limit_stack_depth)
         @warn "Inference options have `scheduler` and `limit_stack_depth` options specified together. Ignoring `limit_stack_depth`. Use `warn = false` option in `ModelInferenceOptions` to suppress this warning."
@@ -64,7 +73,7 @@ function Base.convert(::Type{ReactiveMPInferenceOptions}, options::NamedTuple{ke
         nothing
     end
 
-    return ReactiveMPInferenceOptions(scheduler, addons, warn, rulefallback)
+    return ReactiveMPInferenceOptions(scheduler, addons, warn, force_marginal_computation, rulefallback)
 end
 
 Rocket.getscheduler(options::ReactiveMPInferenceOptions) = something(options.scheduler, AsapScheduler())
@@ -76,6 +85,9 @@ ReactiveMP.getaddons(options::ReactiveMPInferenceOptions, addons::ReactiveMP.Abs
 ReactiveMP.getaddons(options::ReactiveMPInferenceOptions, addons::Nothing) = addons                     # Do nothing if addons is `nothing`
 ReactiveMP.getaddons(options::ReactiveMPInferenceOptions, addons::Tuple) = addons                       # Do nothing if addons is a `Tuple`
 ReactiveMP.getrulefallback(options::ReactiveMPInferenceOptions) = options.rulefallback
+
+# Get the force_marginal_computation setting
+getforce_marginal_computation(options::ReactiveMPInferenceOptions) = options.force_marginal_computation
 
 struct ReactiveMPInferencePlugin{Options <: ReactiveMPInferenceOptions}
     options::Options

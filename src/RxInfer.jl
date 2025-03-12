@@ -15,6 +15,7 @@ include("score/diagnostics.jl")
 include("model/model.jl")
 include("model/plugins/reactivemp_inference.jl")
 include("model/plugins/reactivemp_free_energy.jl")
+include("model/plugins/reactivemp_force_marginal_computation_plugin.jl")
 include("model/plugins/initialization_plugin.jl")
 include("model/graphppl.jl")
 
