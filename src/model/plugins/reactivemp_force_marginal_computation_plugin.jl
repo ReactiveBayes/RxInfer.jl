@@ -1,4 +1,5 @@
-import ReactiveMP: getlocalclusters, apply_skip_filter, schedule_on, sdtype, getinterfaces, name
+import ReactiveMP:
+    getlocalclusters, apply_skip_filter, schedule_on, sdtype, getinterfaces, name, messagein, getinboundinterfaces, functionalform, Marginal, marginalrule, clustername
 
 const MarginalComputationDefaultSkipStrategy = IncludeAll()
 
@@ -70,7 +71,8 @@ function create_marginals_stream(::Deterministic, node::ReactiveMP.AbstractFacto
         end
     end
 
-    return stream |> map(Nothing, mapping)
+    s = stream |> map(Nothing, mapping)
+    return subscribe!(s, lambda(Nothing, on_next = (d) -> nothing, on_error = (e) -> error(e), on_complete = () -> println("Completed")))
 end
 
 function create_marginals_stream(::Stochastic, node::ReactiveMP.AbstractFactorNode, meta, skip_strategy, scheduler)

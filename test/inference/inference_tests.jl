@@ -1723,7 +1723,7 @@ end
     @test meta.count == 0
 
     datastream = from(static_observations) |> map(NamedTuple{(:A,), Tuple{Matrix{Float64}}}, (d) -> (A = d,))
-    result = infer(
+    engine = infer(
         model = streaming_test_model(meta = meta),
         datastream = datastream,
         autoupdates = autoupdates,
@@ -1732,4 +1732,14 @@ end
         options = (force_marginal_computation = true,)
     )
     @test meta.count == 10
+    stop(engine)
+
+    # Test deterministic nodes
+    @model function test_model(y)
+        x1 ~ Normal(mean = 0.0, variance = 1.0)
+        x2 ~ Normal(mean = 0.0, variance = 1.0)
+        y ~ Normal(mean = x1 + x2, variance = 1.0)
+    end
+
+    result = infer(model = test_model(), data = (y = 1.0,), options = (force_marginal_computation = true,))
 end
