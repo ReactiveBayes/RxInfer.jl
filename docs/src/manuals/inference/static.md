@@ -498,9 +498,15 @@ nothing #hide
 However, in some cases we may want to explicitly request these marginal distributions to be computed - for example, to analyze intermediate results or debug the inference process. We can force the computation of all marginal distributions by setting `force_marginal_computation=true` in the options when calling the `infer` function:
 
 ```@example manual-static-inference
+@model function force_joint_marginal_computation(y)
+   m ~ NormalMeanVariance(0, 1)
+   x ~ NormalMeanVariance(m, 1) # Joint marginal q(x, m) around this node will be computed, even though it is not necessary for the inference.
+   y ~ NormalMeanVariance(x, 1)
+end
+
 results = infer(
-    model = iid_estimation(),
-    data = (y = dataset, ),
+    model = force_joint_marginal_computation(),
+    data = (y = 1.0, ),
     options = (force_marginal_computation = true,)
 )
 ```
