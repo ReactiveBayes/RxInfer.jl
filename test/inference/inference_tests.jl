@@ -1672,3 +1672,80 @@ end
     @test length(callbacks.before_autostart_ts) == 1
     @test length(callbacks.after_autostart_ts) == 1
 end
+
+@testitem "Test force marginal computation" begin
+    using RxInfer
+
+    mutable struct CountingMeta
+        count::Int
+    end
+
+    @marginalrule DiscreteTransition(:out_in) (m_out::Categorical, m_in::Categorical, q_a::PointMass, meta::CountingMeta) = begin
+        meta.count += 1
+        return @call_marginalrule DiscreteTransition(:out_in) (m_out = m_out, m_in = m_in, q_a = q_a)
+    end
+
+    # Test batch inference
+    @model function test_model(meta, A)
+        in ~ Categorical([0.5, 0.5])
+        out ~ Categorical([0.5, 0.5])
+        out ~ DiscreteTransition(in, A) where {meta = meta}
+    end
+
+    meta = CountingMeta(0)
+
+    result = infer(model = test_model(meta = meta), data = (A = diageye(2),))
+    @test meta.count == 0
+
+    result = infer(model = test_model(meta = meta), data = (A = diageye(2),), options = (force_marginal_computation = true,))
+    @test meta.count == 1
+
+    result = infer(model = test_model(meta = meta), data = (A = diageye(2),), options = (force_marginal_computation = true,), iterations = 10)
+    @test meta.count == 11
+
+    # Test streaming inference
+    @model function streaming_test_model(p_in, p_out, meta, A)
+        in ~ Categorical(p_in)
+        out ~ Categorical(p_out)
+        out ~ DiscreteTransition(in, A) where {meta = meta}
+    end
+
+    init = @initialization begin
+        q(in) = Categorical([0.5, 0.5])
+        q(out) = Categorical([0.5, 0.5])
+    end
+
+    autoupdates = @autoupdates begin
+        p_in = probvec(q(in))
+        p_out = probvec(q(out))
+    end
+
+    meta = CountingMeta(0)
+
+    static_observations = [rand(2, 2) for _ in 1:10]
+    datastream = from(static_observations) |> map(NamedTuple{(:A,), Tuple{Matrix{Float64}}}, (d) -> (A = d,))
+
+    result = infer(model = streaming_test_model(meta = meta), datastream = datastream, autoupdates = autoupdates, initialization = init, autostart = true)
+    @test meta.count == 0
+
+    datastream = from(static_observations) |> map(NamedTuple{(:A,), Tuple{Matrix{Float64}}}, (d) -> (A = d,))
+    engine = infer(
+        model = streaming_test_model(meta = meta),
+        datastream = datastream,
+        autoupdates = autoupdates,
+        initialization = init,
+        autostart = true,
+        options = (force_marginal_computation = true,)
+    )
+    @test meta.count == 10
+    RxInfer.stop(engine)
+
+    # Test deterministic nodes
+    @model function test_model(y)
+        x1 ~ Normal(mean = 0.0, variance = 1.0)
+        x2 ~ Normal(mean = 0.0, variance = 1.0)
+        y ~ Normal(mean = x1 + x2, variance = 1.0)
+    end
+
+    result = infer(model = test_model(), data = (y = 1.0,), options = (force_marginal_computation = true,))
+end

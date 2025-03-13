@@ -255,6 +255,12 @@ function stop(engine::RxInferenceEngine)
         unsubscribe!(engine.historysubscriptions)
         unsubscribe!(engine.updatesubscriptions)
         unsubscribe!(engine.mainsubscription)
+        factor_nodes(getmodel(engine.model)) do _, node
+            marginal_stream = getextra(node, ReactiveMPExtraMarginalStreamKey, nothing)
+            if !isnothing(marginal_stream)
+                unsubscribe!(marginal_stream)
+            end
+        end
 
         engine.is_running = false
 
@@ -510,6 +516,10 @@ function streaming_inference(;
     if is_free_energy
         fe_objective = BetheFreeEnergy(S)
         modelplugins = modelplugins + ReactiveMPFreeEnergyPlugin(fe_objective)
+    end
+
+    if getforce_marginal_computation(_options)
+        modelplugins = modelplugins + ReactiveMPForceMarginalComputationPlugin(MarginalComputationOptions())
     end
 
     # The `_model` here still must be a `ModelGenerator`

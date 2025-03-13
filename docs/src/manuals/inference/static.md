@@ -491,6 +491,30 @@ results = infer(
 nothing #hide
 ```
 
+## [Force marginal computation](@id manual-static-inference-force-marginal-computation)
+
+`RxInfer` uses message passing to perform inference. During this process, joint marginal distributions around nodes are not always necessary for the inference procedure to work correctly. The inference engine optimizes performance by only computing the distributions that are essential for message passing.
+
+However, in some cases we may want to explicitly request these marginal distributions to be computed - for example, to analyze intermediate results or debug the inference process. We can force the computation of all marginal distributions by setting `force_marginal_computation=true` in the options when calling the `infer` function:
+
+```@example manual-static-inference
+@model function force_joint_marginal_computation(y)
+   m ~ NormalMeanVariance(0, 1)
+   x ~ NormalMeanVariance(m, 1) # Joint marginal q(x, m) around this node will be computed, even though it is not necessary for the inference.
+   y ~ NormalMeanVariance(x, 1)
+end
+
+results = infer(
+    model = force_joint_marginal_computation(),
+    data = (y = 1.0, ),
+    options = (force_marginal_computation = true,)
+)
+```
+
+```@docs
+RxInfer.ReactiveMPForceMarginalComputationPlugin
+```
+
 ## [Where to go next?](@id manual-static-inference-where-to-go)
 
 This guide covered some fundamental usages of the [`infer`](@ref) function in the context of inference with static datasets, 
