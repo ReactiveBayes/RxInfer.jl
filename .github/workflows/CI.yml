@@ -91,11 +91,13 @@ jobs:
         with:
           name: test-output-${{ matrix.version }}-${{ matrix.os }}-${{ matrix.arch }}
           path: test/_output
+          retention-days: 30
       - name: Archive compilation trace
         uses: actions/upload-artifact@v4
         with:
           name: server-compilation-trace-${{ matrix.version }}-${{ matrix.os }}-${{ matrix.arch }}.jl
           path: server-compilation-trace.jl
+          retention-days: 30
   test-examples:
     name: Examples
     runs-on: ubuntu-latest

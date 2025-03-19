@@ -57,7 +57,7 @@ makedocs(;
                 "Rule Not Found Error" => "manuals/sharpbits/rule-not-found.md",
                 "Stack Overflow in Message Computations" => "manuals/sharpbits/stack-overflow-inference.md",
                 "Using `=` instead of `:=` for deterministic nodes" => "manuals/sharpbits/usage-colon-equality.md"
-            ]
+            ],
         ],
         "Library" => [
             "Model construction" => "library/model-construction.md",
@@ -71,7 +71,8 @@ makedocs(;
             "Contribution guidelines" => "contributing/guidelines.md",
             "Contributing to the documentation" => "contributing/new-documentation.md",
             "Contributing to the examples" => "contributing/new-example.md",
-            "Publishing a new release" => "contributing/new-release.md"
+            "Publishing a new release" => "contributing/new-release.md",
+            "Developer Notes" => "contributing/developer-notes.md"
         ]
     ]
 )
