@@ -66,10 +66,20 @@ jobs:
           version: ${{ matrix.version }}
       - uses: julia-actions/cache@v2
       - uses: julia-actions/julia-buildpkg@v1
+      - name: Create Julia wrapper that traces compilation
+        run: |
+          mkdir -p ${{ github.workspace }}/julia-wrapper
+          echo '#!/bin/bash' > ${{ github.workspace }}/julia-wrapper/julia
+          echo 'exec $(which julia) --trace-compile=$TRACE_COMPILE_PATH "$@"' >> ${{ github.workspace }}/julia-wrapper/julia
+          chmod +x ${{ github.workspace }}/julia-wrapper/julia
+          echo "${{ github.workspace }}/julia-wrapper" >> $GITHUB_PATH
       - uses: julia-actions/julia-runtest@v1
+        with:
+          annotate: true
         env:
           USE_DEV: "false"
           LOG_USING_RXINFER: "false"
+          TRACE_COMPILE_PATH: ${{ github.workspace }}/server-compilation-trace.jl
       - uses: julia-actions/julia-processcoverage@v1
       - uses: codecov/codecov-action@v4
         with:
@@ -81,6 +91,13 @@ jobs:
         with:
           name: test-output-${{ matrix.version }}-${{ matrix.os }}-${{ matrix.arch }}
           path: test/_output
+          retention-days: 30
+      - name: Archive compilation trace
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-compilation-trace-${{ matrix.version }}-${{ matrix.os }}-${{ matrix.arch }}.jl
+          path: server-compilation-trace.jl
+          retention-days: 30
   test-examples:
     name: Examples
     runs-on: ubuntu-latest
