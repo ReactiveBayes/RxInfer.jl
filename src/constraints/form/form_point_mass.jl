@@ -56,7 +56,7 @@ end
 
 Base.show(io::IO, ::PointMassFormConstraint) = print(io, "PointMassFormConstraint()")
 
-PointMassFormConstraint(; optimizer      = default_point_mass_form_constraint_optimizer, starting_point = default_point_mass_form_constraint_starting_point, boundaries     = default_point_mass_form_constraint_boundaries) = PointMassFormConstraint(
+PointMassFormConstraint(; optimizer = default_point_mass_form_constraint_optimizer, starting_point = default_point_mass_form_constraint_starting_point, boundaries = default_point_mass_form_constraint_boundaries) = PointMassFormConstraint(
     optimizer, starting_point, boundaries
 )
 
