@@ -40,11 +40,6 @@ jobs:
           # PDF. Note, this should be the same directory as the input
           # paper.md
           path: paper/paper.pdf
-  code-style:
-    name: Code Style Suggestions
-    runs-on: ubuntu-latest
-    steps:
-      - uses: julia-actions/julia-format@v3
   test:
     name: Tests ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
     runs-on: ${{ matrix.os }}
@@ -120,4 +115,169 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           LOG_USING_RXINFER: "false"
+  format-check:
+    name: Code Format Check
+    runs-on: ubuntu-latest
+    # Don't run on PRs that come from forks as they won't have permission to create PRs
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: write    # Needed to push commits
+      pull-requests: write  # Needed to create PRs and write comments
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: julia-actions/setup-julia@v2
+      - uses: julia-actions/cache@v2
+      
+      # Find existing format PR if any
+      - name: Find existing format PR
+        id: find_pr
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const prNumber = ${{ github.event.pull_request.number }};
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            
+            // Look for open PRs with our auto-format branch pattern that targets this PR's branch
+            const prs = await github.rest.pulls.list({
+              owner,
+              repo,
+              state: 'open',
+              base: '${{ github.head_ref }}'
+            });
+            
+            const formatPr = prs.data.find(pr => pr.head.ref.startsWith('auto-format-') && 
+                                             pr.title === "🤖 Auto-format Julia code");
+            
+            if (formatPr) {
+              console.log(`Found existing format PR: #${formatPr.number}`);
+              return formatPr.number;
+            }
+            
+            return '';
+      
+      - name: Run formatter check
+        id: format_check
+        run: |
+          if ! make lint; then
+            echo "format_needs_fix=true" >> $GITHUB_OUTPUT
+          else
+            echo "format_needs_fix=false" >> $GITHUB_OUTPUT
+          fi
+      
+      # Close any existing formatting PR if the check now passes
+      - name: Close existing format PR if check passes
+        if: steps.format_check.outputs.format_needs_fix == 'false' && steps.find_pr.outputs.result != ''
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const formatPrNumber = Number(${{ steps.find_pr.outputs.result }});
+
+            if (formatPrNumber === 0) {
+              return;
+            }
+
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            
+            // Close the PR with a comment
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number: formatPrNumber,
+              body: `Closing this PR as the code formatting issues in the original PR have been resolved.`
+            });
+            
+            await github.rest.pulls.update({
+              owner,
+              repo,
+              pull_number: formatPrNumber,
+              state: 'closed'
+            });
+            
+            console.log(`Closed format PR #${formatPrNumber} as the original PR now passes formatting checks.`);
+      
+      - name: Apply formatter if needed
+        if: steps.format_check.outputs.format_needs_fix == 'true'
+        run: |
+          make format
+      
+      - name: Commit changes and create/update PR
+        if: steps.format_check.outputs.format_needs_fix == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "🤖 Auto-format Julia code"
+          title: "🤖 Auto-format Julia code"
+          body: |
+            This PR was automatically created to fix Julia code formatting issues.
+            
+            The formatting was applied using JuliaFormatter according to the project's style guidelines.
+            
+            Please review the changes and merge if appropriate.
+          branch: auto-format-${{ github.event.pull_request.number }}
+          base: ${{ github.head_ref }}
+          delete-branch: true
+          labels: |
+            automated pr
+            code style
+        id: create-pr
+      
+      - name: Comment on original PR
+        if: steps.format_check.outputs.format_needs_fix == 'true' && steps.create-pr.outputs.pull-request-number && steps.find_pr.outputs.result == ''
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const prNumber = ${{ github.event.pull_request.number }};
+            const formatPrNumber = ${{ steps.create-pr.outputs.pull-request-number }};
+            const formatPrUrl = `https://github.com/${{ github.repository }}/pull/${formatPrNumber}`;
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: `## 🤖 Code Formatting
+              
+              This PR has some code formatting issues. I've created [PR #${formatPrNumber}](${formatPrUrl}) with the necessary formatting changes.
+              
+              You can merge that PR into this branch to fix the code style check.
+              
+              Alternatively, you can run \`make format\` locally and push the changes yourself.`
+            });
+      
+      - name: Comment on original PR for updated formatting PR
+        if: steps.format_check.outputs.format_needs_fix == 'true' && steps.create-pr.outputs.pull-request-number && steps.find_pr.outputs.result != ''
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const prNumber = ${{ github.event.pull_request.number }};
+            const formatPrNumber = ${{ steps.create-pr.outputs.pull-request-number }};
+            const formatPrUrl = `https://github.com/${{ github.repository }}/pull/${formatPrNumber}`;
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: `## 🤖 Code Formatting
+              
+              Your PR still has some code formatting issues. I've updated [PR #${formatPrNumber}](${formatPrUrl}) with the necessary formatting changes.
+              
+              You can merge that PR into this branch to fix the code style check.
+              
+              Alternatively, you can run \`make format\` locally and push the changes yourself.`
+            });
+      
+      # Fail the job if formatting was needed and applied
+      - name: Fail if formatting was needed
+        if: steps.format_check.outputs.format_needs_fix == 'true'
+        run: |
+          echo "::error::Code formatting issues detected. A PR with fixes has been created, but this check is failing to indicate that formatting needs to be fixed."
+          exit 1
       
