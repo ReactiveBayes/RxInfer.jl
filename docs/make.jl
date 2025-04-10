@@ -33,6 +33,7 @@ makedocs(;
         "User guide" => [
             "Getting started" => "manuals/getting-started.md",
             "RxInfer.jl vs. Others" => "manuals/comparison.md",
+            "Using RxInfer from Python" => "manuals/how-to-use-rxinfer-from-python.md",
             "Model specification" => "manuals/model-specification.md",
             "Constraints specification" => "manuals/constraints-specification.md",
             "Meta specification" => "manuals/meta-specification.md",

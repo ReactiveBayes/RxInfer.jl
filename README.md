@@ -19,6 +19,9 @@
 
 Given a probabilistic model, RxInfer allows for an efficient message-passing based Bayesian inference. It uses the model structure to generate an algorithm that consists of a sequence of local computations on a factor graph representation of the model.
 
+> [!NOTE]
+> RxInfer can also be used from Python through our [client-server infrastructure](#client-server-infrastructure) and [Python SDK](https://github.com/lazydynamics/RxInferClient.py).
+
 ### Performance and scalability
 
 RxInfer.jl has been designed with a focus on efficiency, scalability and maximum performance for running Bayesian inference with message passing. Below is a comparison between RxInfer.jl and Turing.jl on latent state estimation in a linear multi-variate Gaussian state-space model. [Turing.jl](https://github.com/TuringLang/Turing.jl) is a state-of-the-art Julia-based general-purpose probabilistic programming package and is capable of running inference in a broader class of models. Still, RxInfer.jl executes the inference task in [various models](https://examples.rxinfer.com) faster and more accurately. RxInfer.jl accomplishes this by taking advantage of any conjugate likelihood-prior pairings in the model, which have analytical posteriors that are known by RxInfer.jl. As a result, in models with conjugate pairings, RxInfer.jl often beats general-purpose probabilistic programming packages in terms of computational load, speed, memory and accuracy. Note, however, that RxInfer.jl also supports non-conjugate inference and is continually improving in order to support a larger class of models.
@@ -178,6 +181,29 @@ The `RxInfer` framework consists of four *core* packages developed by [ReactiveB
 - [`GraphPPL.jl`](https://github.com/reactivebayes/GraphPPL.jl) - model and constraints specification package
 - [`ExponentialFamily.jl`](https://github.com/reactivebayes/ExponentialFamily.jl) - package for exponential family distributions
 - [`Rocket.jl`](https://github.com/reactivebayes/Rocket.jl) - reactive extensions package for Julia 
+
+## Client-Server Infrastructure
+
+RxInfer can be deployed as a RESTful API service using [`RxInferServer.jl`](https://github.com/lazydynamics/RxInferServer), which provides:
+
+- OpenAPI-compliant RESTful API endpoints for RxInfer models
+- Support for model instance management and inference execution
+- Real-time inference capabilities
+- Comprehensive API documentation at [server.rxinfer.com](https://server.rxinfer.com)
+
+### Client SDKs
+
+To interact with RxInferServer, you can use one of the following SDKs:
+
+- **Python SDK**: [`RxInferClient.py`](https://github.com/lazydynamics/RxInferClient.py) - A Python client for interacting with RxInferServer
+- **Julia SDK**: Included in the RxInferServer repository
+
+Both SDKs provide a convenient interface to:
+- Create and manage model instances
+- Execute inference tasks
+- Monitor inference progress
+- Handle authentication and API keys
+- Process results in a native format
 
 # Where to go next?
 
