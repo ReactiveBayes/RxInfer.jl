@@ -6,7 +6,8 @@
     N = 20
     k = 10
     nsamples = 1000
-    X, ψ, p = generate_multinomial_data(; N = N, k = k, nsamples = nsamples)
+    rng = StableRNG(321)
+    X, ψ, p = generate_multinomial_data(; N = N, k = k, nsamples = nsamples, rng = rng)
 
     @model function multinomial_model(y, N, ξ_ψ, W_ψ)
         ψ ~ MvNormalWeightedMeanPrecision(ξ_ψ, W_ψ)
@@ -16,7 +17,7 @@
     end
 
     result = infer(
-        model = multinomial_model(ξ_ψ = zeros(k - 1), W_ψ = rand(Wishart(k, diageye(k - 1))), N = N),
+        model = multinomial_model(ξ_ψ = zeros(k - 1), W_ψ = rand(rng, Wishart(k, diageye(k - 1))), N = N),
         data = (y = X,),
         iterations = 100,
         free_energy = true,
@@ -44,7 +45,8 @@ end
     N = 50
     k = 40
     nsamples = 5000
-    X, ψ, p = generate_multinomial_data(; N = N, k = k, nsamples = nsamples)
+    rng = StableRNG(321)
+    X, ψ, p = generate_multinomial_data(; N = N, k = k, nsamples = nsamples, rng = rng)
 
     @model function multinomial_model(y, N, ξ_ψ, W_ψ, k)
         ψ ~ MvNormalWeightedMeanPrecision(ξ_ψ, W_ψ)
@@ -55,7 +57,7 @@ end
         ξ_ψ, W_ψ = weightedmean_precision(q(ψ))
     end
     init = @initialization begin
-        q(ψ) = MvNormalWeightedMeanPrecision(zeros(k - 1), rand(Wishart(k, diageye(k - 1))))
+        q(ψ) = MvNormalWeightedMeanPrecision(zeros(k - 1), rand(rng, Wishart(k, diageye(k - 1))))
     end
 
     result = infer(

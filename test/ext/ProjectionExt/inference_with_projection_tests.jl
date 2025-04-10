@@ -208,7 +208,7 @@ end
     ]
 
     @model function gamma_ssm(y)
-        γ  ~ Gamma(α = 100.0, β = 0.1)
+        γ ~ Gamma(α = 100.0, β = 0.1)
         z₀ ~ Gamma(α = 1.0, β = γ)
         for i in eachindex(y)
             z[i] ~ Gamma(α = z₀, β = γ)
@@ -218,9 +218,9 @@ end
     end
 
     init = @initialization begin
-        q(γ)  = GammaShapeRate(1.0, 1.0)
+        q(γ) = GammaShapeRate(1.0, 1.0)
         q(z₀) = GammaShapeRate(1.0, 1.0)
-        q(z)  = GammaShapeRate(1.0, 1.0)
+        q(z) = GammaShapeRate(1.0, 1.0)
     end
 
     gamma_constraints = @constraints begin

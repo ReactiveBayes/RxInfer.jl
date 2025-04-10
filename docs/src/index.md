@@ -50,6 +50,12 @@ RxInfer aims to remedy these issues by running efficient Bayesian inference in s
   - Active community support through GitHub discussions
   - Optional telemetry to help guide development (see [Usage Telemetry](@ref manual-usage-telemetry))
   - Session sharing for better debugging support (see [Session Sharing](@ref manual-session-sharing))
+- Client-Server infrastructure
+  - RESTful API support through [RxInferServer.jl](https://github.com/lazydynamics/RxInferServer)
+  - OpenAPI-compliant endpoints for model management and inference
+  - Python and Julia SDKs for seamless integration
+  - Real-time inference capabilities
+  - Comprehensive API documentation at [server.rxinfer.com](https://server.rxinfer.com)
 
 **Curious about how RxInfer compares to other tools you might be considering?** We invite you to view a detailed [comparison](@ref comparison), where we put RxInfer head-to-head with other popular packages in the field.
 
@@ -70,6 +76,7 @@ Pages = [
   "manuals/custom-node.md",
   "manuals/debugging.md",
   "manuals/delta-node.md",
+  "manuals/how-to-use-rxinfer-from-python.md",
   "examples/overview.md",
   "library/functional-forms.md",
   "library/bethe-free-energy.md",

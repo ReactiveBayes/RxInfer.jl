@@ -102,6 +102,7 @@ end
                     q(μ, τ) = q(μ)q(τ)
                 end
             ))
+
             rng  = StableRNG(seed)
             data = float.(rand(rng, Normal(0.75, 10.0), n))
 

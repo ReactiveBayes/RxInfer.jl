@@ -67,20 +67,18 @@ export @test_expression_generating
 
 macro test_expression_generating(lhs, rhs)
     test_expr_gen = gensym(:text_expr_gen)
-    return esc(
-        quote
-            $test_expr_gen = (prettify($lhs) == prettify($rhs))
-            if !$test_expr_gen
-                println("Expressions do not match: ")
-                println("lhs: ", prettify($lhs))
-                println("rhs: ", prettify($rhs))
-            end
-            @test (prettify($lhs) == prettify($rhs))
+    return esc(quote
+        $test_expr_gen = (prettify($lhs) == prettify($rhs))
+        if !$test_expr_gen
+            println("Expressions do not match: ")
+            println("lhs: ", prettify($lhs))
+            println("rhs: ", prettify($rhs))
         end
-    )
+        @test (prettify($lhs) == prettify($rhs))
+    end)
 end
 
-function generate_multinomial_data(rng = StableRNG(123); N = 3, k = 3, nsamples = 5000)
+function generate_multinomial_data(; rng = StableRNG(123), N = 3, k = 3, nsamples = 5000)
     ψ = randn(rng, k)
     p = ReactiveMP.softmax(ψ)
 

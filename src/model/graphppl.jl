@@ -239,8 +239,9 @@ end
 
 GraphPPL.factor_alias(::ReactiveMPGraphPPLBackend, ::Type{Normal}, ::GraphPPL.StaticInterfaces{(:μ, :v)}) = ExponentialFamily.NormalMeanVariance
 GraphPPL.factor_alias(::ReactiveMPGraphPPLBackend, ::Type{Normal}, ::GraphPPL.StaticInterfaces{(:μ, :τ)}) = ExponentialFamily.NormalMeanPrecision
-GraphPPL.default_parametrization(::ReactiveMPGraphPPLBackend, ::GraphPPL.Atomic, ::Type{Normal}, rhs) =
-    error("`Normal` cannot be constructed without keyword arguments. Use `Normal(mean = ..., var = ...)` or `Normal(mean = ..., precision = ...)`.")
+GraphPPL.default_parametrization(::ReactiveMPGraphPPLBackend, ::GraphPPL.Atomic, ::Type{Normal}, rhs) = error(
+    "`Normal` cannot be constructed without keyword arguments. Use `Normal(mean = ..., var = ...)` or `Normal(mean = ..., precision = ...)`."
+)
 
 # GraphPPL.interfaces(::ReactiveMPGraphPPLBackend, ::Type{<:ExponentialFamily.NormalMeanVariance}, _) = GraphPPL.StaticInterfaces((:out, :μ, :v))
 # GraphPPL.interfaces(::ReactiveMPGraphPPLBackend, ::Type{<:ExponentialFamily.NormalMeanPrecision}, _) = GraphPPL.StaticInterfaces((:out, :μ, :τ))
@@ -251,16 +252,20 @@ GraphPPL.interface_aliases(::ReactiveMPGraphPPLBackend, ::Type{Normal}) = GraphP
 
 GraphPPL.factor_alias(::ReactiveMPGraphPPLBackend, ::Type{MvNormal}, ::GraphPPL.StaticInterfaces{(:μ, :Σ)}) = ExponentialFamily.MvNormalMeanCovariance
 GraphPPL.factor_alias(::ReactiveMPGraphPPLBackend, ::Type{MvNormal}, ::GraphPPL.StaticInterfaces{(:μ, :Λ)}) = ExponentialFamily.MvNormalMeanPrecision
-GraphPPL.default_parametrization(::ReactiveMPGraphPPLBackend, ::GraphPPL.Atomic, ::Type{MvNormal}, rhs) =
-    error("`MvNormal` cannot be constructed without keyword arguments. Use `MvNormal(mean = ..., covariance = ...)` or `MvNormal(mean = ..., precision = ...)`.")
+GraphPPL.default_parametrization(::ReactiveMPGraphPPLBackend, ::GraphPPL.Atomic, ::Type{MvNormal}, rhs) = error(
+    "`MvNormal` cannot be constructed without keyword arguments. Use `MvNormal(mean = ..., covariance = ...)` or `MvNormal(mean = ..., precision = ...)`."
+)
 
-GraphPPL.interface_aliases(::ReactiveMPGraphPPLBackend, ::Type{MvNormal}) =
-    GraphPPL.StaticInterfaceAliases(((:mean, :μ), (:m, :μ), (:covariance, :Σ), (:cov, :Σ), (:Λ⁻¹, :Σ), (:V, :Σ), (:precision, :Λ), (:prec, :Λ), (:W, :Λ), (:Σ⁻¹, :Λ)))
+GraphPPL.interface_aliases(::ReactiveMPGraphPPLBackend, ::Type{MvNormal}) = GraphPPL.StaticInterfaceAliases((
+    (:mean, :μ), (:m, :μ), (:covariance, :Σ), (:cov, :Σ), (:Λ⁻¹, :Σ), (:V, :Σ), (:precision, :Λ), (:prec, :Λ), (:W, :Λ), (:Σ⁻¹, :Λ)
+))
 
 GraphPPL.factor_alias(::ReactiveMPGraphPPLBackend, ::Type{Gamma}, ::GraphPPL.StaticInterfaces{(:α, :θ)}) = ExponentialFamily.GammaShapeScale
 GraphPPL.factor_alias(::ReactiveMPGraphPPLBackend, ::Type{Gamma}, ::GraphPPL.StaticInterfaces{(:α, :β)}) = ExponentialFamily.GammaShapeRate
-GraphPPL.default_parametrization(::ReactiveMPGraphPPLBackend, ::GraphPPL.Atomic, ::Type{Gamma}, rhs) =
-    error("`Gamma` cannot be constructed without keyword arguments. Use `Gamma(shape = ..., rate = ...)` or `Gamma(shape = ..., scale = ...)`.")
+GraphPPL.default_parametrization(::ReactiveMPGraphPPLBackend, ::GraphPPL.Atomic, ::Type{Gamma}, rhs) = error(
+    "`Gamma` cannot be constructed without keyword arguments. Use `Gamma(shape = ..., rate = ...)` or `Gamma(shape = ..., scale = ...)`."
+)
 
-GraphPPL.interface_aliases(::ReactiveMPGraphPPLBackend, ::Type{Gamma}) =
-    GraphPPL.StaticInterfaceAliases(((:a, :α), (:shape, :α), (:β⁻¹, :θ), (:scale, :θ), (:θ⁻¹, :β), (:rate, :β)))
+GraphPPL.interface_aliases(::ReactiveMPGraphPPLBackend, ::Type{Gamma}) = GraphPPL.StaticInterfaceAliases((
+    (:a, :α), (:shape, :α), (:β⁻¹, :θ), (:scale, :θ), (:θ⁻¹, :β), (:rate, :β)
+))
