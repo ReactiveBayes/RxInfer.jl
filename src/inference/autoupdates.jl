@@ -445,8 +445,9 @@ autoupdate_mapping_fetch(mapping::AutoUpdateMapping) = getmappingfn(mapping)(map
 autoupdate_mapping_fetch(any) = any
 autoupdate_mapping_fetch(argument::FetchRecentArgument) = autoupdate_mapping_fetch(argument, Rocket.getrecent(argument))
 autoupdate_mapping_fetch(argument::FetchRecentArgument, something) = something
-autoupdate_mapping_fetch(argument::FetchRecentArgument, ::Nothing) =
-    error("The initial value for `$(getlabel(argument))` has not been specified, but is required in the `@autoupdates`.")
+autoupdate_mapping_fetch(argument::FetchRecentArgument, ::Nothing) = error(
+    "The initial value for `$(getlabel(argument))` has not been specified, but is required in the `@autoupdates`."
+)
 
 function run_autoupdate!(autoupdates::AutoUpdateSpecification)
     return run_autoupdate!(getspecifications(autoupdates), map(fetch, getspecifications(autoupdates)))

@@ -33,15 +33,19 @@ ReactiveMPInferenceOptions(scheduler, addons) = ReactiveMPInferenceOptions(sched
 ReactiveMPInferenceOptions(scheduler, addons, warn) = ReactiveMPInferenceOptions(scheduler, addons, warn, false, nothing)
 ReactiveMPInferenceOptions(scheduler, addons, warn, force_marginal_computation) = ReactiveMPInferenceOptions(scheduler, addons, warn, force_marginal_computation, nothing)
 
-setscheduler(options::ReactiveMPInferenceOptions, scheduler) =
-    ReactiveMPInferenceOptions(scheduler, options.addons, options.warn, options.force_marginal_computation, options.rulefallback)
-setaddons(options::ReactiveMPInferenceOptions, addons) =
-    ReactiveMPInferenceOptions(options.scheduler, addons, options.warn, options.force_marginal_computation, options.rulefallback)
+setscheduler(options::ReactiveMPInferenceOptions, scheduler) = ReactiveMPInferenceOptions(
+    scheduler, options.addons, options.warn, options.force_marginal_computation, options.rulefallback
+)
+setaddons(options::ReactiveMPInferenceOptions, addons) = ReactiveMPInferenceOptions(
+    options.scheduler, addons, options.warn, options.force_marginal_computation, options.rulefallback
+)
 setwarn(options::ReactiveMPInferenceOptions, warn) = ReactiveMPInferenceOptions(options.scheduler, options.addons, warn, options.force_marginal_computation, options.rulefallback)
-setforce_marginal_computation(options::ReactiveMPInferenceOptions, force_marginal_computation) =
-    ReactiveMPInferenceOptions(options.scheduler, options.addons, options.warn, force_marginal_computation, options.rulefallback)
-setrulefallback(options::ReactiveMPInferenceOptions, rulefallback) =
-    ReactiveMPInferenceOptions(options.scheduler, options.addons, options.warn, options.force_marginal_computation, rulefallback)
+setforce_marginal_computation(options::ReactiveMPInferenceOptions, force_marginal_computation) = ReactiveMPInferenceOptions(
+    options.scheduler, options.addons, options.warn, force_marginal_computation, options.rulefallback
+)
+setrulefallback(options::ReactiveMPInferenceOptions, rulefallback) = ReactiveMPInferenceOptions(
+    options.scheduler, options.addons, options.warn, options.force_marginal_computation, rulefallback
+)
 
 import Base: convert
 

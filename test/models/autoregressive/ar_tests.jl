@@ -54,9 +54,9 @@
         for constraints in [ar_constraints(), MeanField()]
             result = ar_inference(inputs, outputs, order, 15, constraints)
 
-            qs     = result.posteriors
+            qs = result.posteriors
             (γ, θ) = (qs[:γ], qs[:θ])
-            fe     = result.free_energy
+            fe = result.free_energy
 
             @test length(γ) === 15
             @test length(θ) === 15
