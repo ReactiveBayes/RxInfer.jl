@@ -125,7 +125,7 @@ function __add_document(id, collection, payload)
     if !isnothing(preference_telemetry_endpoint)
         # Headers required for Firestore REST API
         headers = ["Accept" => "application/json", "Content-Type" => "application/json"]
-        data = Dict("method" => "POST", "payload" => payload, "collection" => collection)
+        data = Dict("payload" => payload, "collection" => collection)
 
         # Example values:
         # id = "550e8400-e29b-41d4-a716-446655440000" (a UUID string)
@@ -138,11 +138,10 @@ function __add_document(id, collection, payload)
         # Firestore document structure
         # See: https://firebase.google.com/docs/firestore/reference/rest/v1/projects.databases.documents
         response = if haskey(id_name_mapping, id)
-            # If document exists, endpoint would be like:
+            # If document exists, endpoint should look like:
             # "https://firestore.../using_rxinfer/abc123def456"
             name = id_name_mapping[id]
             data["name"] = name
-            data["method"] = "PATCH"
             # For collections that allow patching (like using_rxinfer, sessions, session_stats),
             # send a PATCH request to update the existing document with new data
             if collection_allow_patch[collection]
