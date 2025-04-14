@@ -33,13 +33,13 @@ Users are welcome to join our regular online meetings where we analyze the colle
 ## [Package Usage Counter](@id manual-package-usage-counter)
 
 By default, RxInfer counts how many times the package is loaded via `using RxInfer`. This counter:
-- Only records a timestamp and a random UUID for deduplication
+- Only records a timestamp, a random UUID for deduplication, the RxInfer.jl version and the Julia version
 - UUIDs are not persistent and are re-generated for each session
-- Does not collect any code, data, or environment information
+- Does not collect any code or data
 - Is completely anonymous
 - Helps us understand how widely RxInfer is used
 
-### [Disabling Package Usage Counter
+### [Disabling Package Usage Counter](@id manual-disabling-package-usage-counter)
 
 You can disable the counter in several ways:
 

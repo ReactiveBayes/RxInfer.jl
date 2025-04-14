@@ -1,8 +1,7 @@
-const RXINFER_DEFAULT_TELEMETRY_ENDPOINT = "https://firestore.googleapis.com/v1/projects/reactive-bayes/databases/(default)/documents/"
+const RXINFER_DEFAULT_TELEMETRY_ENDPOINT = "https://rxinfer-telemetry-proxy-775335415984.europe-west4.run.app/addDocument"
 
-preference_telemetry_endpoint = @load_preference("telemetry_endpoint", RXINFER_DEFAULT_TELEMETRY_ENDPOINT)
-
-preference_enable_using_rxinfer_telemetry = @load_preference("enable_using_rxinfer_telemetry", true)
+const preference_telemetry_endpoint = @load_preference("telemetry_endpoint", RXINFER_DEFAULT_TELEMETRY_ENDPOINT)
+const preference_enable_using_rxinfer_telemetry = @load_preference("enable_using_rxinfer_telemetry", true)
 
 """
     set_telemetry_endpoint!(endpoint)
@@ -36,7 +35,7 @@ Send an anonymous usage statistics event to the telemetry endpoint on `using RxI
 This function makes an asynchronous HTTP POST request to the configured endpoint.
 See `RxInfer.set_telemetry_endpoint!` to configure the endpoint.
 If the telemetry endpoint is set to `nothing`, this function does nothing.
-The call sends only timestamp and a random UUID. 
+The call sends a timestamp and a random UUID (re-generated for each usage), the RxInfer.jl version and the Julia version.
 The request is made asynchronously to avoid blocking the user's workflow.
 See `RxInfer.disable_rxinfer_using_telemetry!` to disable telemetry on `using RxInfer`.
 Alternatively, set the environment variable `LOG_USING_RXINFER` to `false` to disable logging.
@@ -62,8 +61,20 @@ function log_using_rxinfer()
 
     Base.Threads.@spawn :interactive try
         id = string(uuid4())
-        __add_document(id, "using_rxinfer", (fields = (timestamp = (timestampValue = Dates.format(now(UTC), "yyyy-mm-ddTHH:MM:SS.sssZ"),), id = (stringValue = id,)),))
+        __add_document(
+            id,
+            "using_rxinfer",
+            (
+                fields = (
+                    rxinferVersion = (stringValue = string(pkgversion(@__MODULE__)),),
+                    juliaVersion = (stringValue = string(VERSION),),
+                    timestamp = (timestampValue = Dates.format(now(UTC), "yyyy-mm-ddTHH:MM:SS.sssZ"),),
+                    id = (stringValue = id,)
+                ),
+            )
+        )
     catch e
+        logged_usage[] = false
         nothing # Discard any log errors to avoid disrupting the user
     end
 
@@ -114,6 +125,7 @@ function __add_document(id, collection, payload)
     if !isnothing(preference_telemetry_endpoint)
         # Headers required for Firestore REST API
         headers = ["Accept" => "application/json", "Content-Type" => "application/json"]
+        data = Dict("payload" => payload, "collection" => collection)
 
         # Example values:
         # id = "550e8400-e29b-41d4-a716-446655440000" (a UUID string)
@@ -122,19 +134,18 @@ function __add_document(id, collection, payload)
         #     timestamp = (timestampValue = "2024-01-20T14:30:15.123Z"),
         #     id = (stringValue = "550e8400-e29b-41d4-a716-446655440000")
         # ))
-        # preference_telemetry_endpoint = "https://firestore.googleapis.com/v1/projects/myproject/databases/(default)/documents"
 
         # Firestore document structure
         # See: https://firebase.google.com/docs/firestore/reference/rest/v1/projects.databases.documents
         response = if haskey(id_name_mapping, id)
-            # If document exists, endpoint would be like:
+            # If document exists, endpoint should look like:
             # "https://firestore.../using_rxinfer/abc123def456"
             name = id_name_mapping[id]
-            endpoint = string(rstrip(preference_telemetry_endpoint, '/'), '/', collection, '/', name)
+            data["name"] = name
             # For collections that allow patching (like using_rxinfer, sessions, session_stats),
             # send a PATCH request to update the existing document with new data
             if collection_allow_patch[collection]
-                HTTP.patch(endpoint, headers, JSON.json(payload))
+                HTTP.patch(preference_telemetry_endpoint, headers, JSON.json(data))
                 # For collections that don't allow patching (like invokes),
                 # return a fake successful response without making a request,
                 # since we don't want to update existing documents in these collections
@@ -144,8 +155,7 @@ function __add_document(id, collection, payload)
         else
             # For new documents, endpoint would be like:
             # "https://firestore.../using_rxinfer"
-            endpoint = string(rstrip(preference_telemetry_endpoint, '/'), '/', collection)
-            HTTP.post(endpoint, headers, JSON.json(payload))
+            HTTP.post(preference_telemetry_endpoint, headers, JSON.json(data))
         end
 
         # Parse response if successful

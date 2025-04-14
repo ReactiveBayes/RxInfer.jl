@@ -127,7 +127,7 @@ having its own circular buffer of invokes.
 function create_session()
     environment = Dict{Symbol, Any}(
         :julia_version => string(VERSION),
-        :rxinfer_version => string(pkgversion(RxInfer)),
+        :rxinfer_version => string(pkgversion(@__MODULE__)),
         :os => string(Sys.KERNEL),
         :machine => string(Sys.MACHINE),
         :cpu_threads => Sys.CPU_THREADS,
