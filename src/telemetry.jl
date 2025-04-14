@@ -66,8 +66,8 @@ function log_using_rxinfer()
             "using_rxinfer",
             (
                 fields = (
-                    rxinferVersion = (stringValue = string(pkgversion(@__MODULE__)), ),
-                    juliaVersion = (stringValue = string(VERSION), ),
+                    rxinferVersion = (stringValue = string(pkgversion(@__MODULE__)),),
+                    juliaVersion = (stringValue = string(VERSION),),
                     timestamp = (timestampValue = Dates.format(now(UTC), "yyyy-mm-ddTHH:MM:SS.sssZ"),),
                     id = (stringValue = id,)
                 ),
