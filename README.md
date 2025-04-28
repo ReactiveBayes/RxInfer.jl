@@ -11,6 +11,7 @@
 [![Downloads](https://img.shields.io/badge/dynamic/json?url=http%3A%2F%2Fjuliapkgstats.com%2Fapi%2Fv1%2Fmonthly_downloads%2FRxInfer&query=total_requests&suffix=%2Fmonth&label=Downloads)](https://juliapkgstats.com/pkg/RxInfer)
 [![DOI](https://img.shields.io/badge/Journal%20of%20Open%20Source%20Software-10.21105/joss.05161-critical)](https://doi.org/10.21105/joss.05161)
 [![Zenodo](https://img.shields.io/badge/Zenodo-10.5281/zenodo.7774921-important)](https://zenodo.org/badge/latestdoi/501995296)
+[![NumFocus](https://img.shields.io/badge/supported%20by-NumFocus-green)](#numfocus)
 
 
 # Overview
@@ -163,15 +164,24 @@ result = infer(
 
 # Roadmap
 
-Our high-level project roadmap outlines the key milestones and focus areas for the upcoming years:
+## Current Focus Q1-Q2 2025
 
-| Q1/Q2 2024          | Q3/Q4 2024                | 2025                | 
-|---------------------|---------------------------|--------------------|
-| 🧩 **Nested models with [GraphPPL.jl](https://github.com/reactivebayes/GraphPPL.jl)** ✅    | 🌐 **Graph structure visualization** ✅ | 🧠🧠 **Automated Inference** |
-| 🔄 **Development of [ExponentialFamilyProjection.jl]()** ✅                | 🧠 **Semi-automated inference with [ExponentialFamilyProjection.jl](https://github.com/reactivebayes/ExponentialFamilyProjection.jl)** ✅| 🚀 **Stochastic Processes** |
+- Refactoring of [ReactiveMP.jl](https://github.com/reactivebayes/ReactiveMP.jl) into [Cortex.jl](https://github.com/reactivebayes/Cortex.jl) with improved architecture and performance
+- Performance improvements in [GraphPPL.jl](https://github.com/reactivebayes/GraphPPL.jl) with new graph backend based on [BipartiteFactorGraphs.jl](https://github.com/ReactiveBayes/BipartiteFactorGraphs.jl)
+
+## Future Focus Q3-Q4 2025
+
+- Performance improvements in message passing rule execution (part of Cortex.jl)
+- Native support for Gaussian Processes modelling and inference
+- RxInfer.jl on edge devices (e.g. Raspberry Pi/Audio/Video processing)
+
+## History 
+
+- Q1 2025: Client-server architecture ([RxInferServer.jl](https://github.com/lazydynamics/RxInferServer)) and SDKs ([RxInferClient.py](https://github.com/lazydynamics/RxInferClient.py), [RxInferClient.ts](https://github.com/lazydynamics/RxInferClient.js))
+- Q3/Q4 2024: Graph structure visualization in [GraphPPL.jl](https://github.com/reactivebayes/GraphPPL.jl) and Semi-automated inference with [ExponentialFamilyProjection.jl]()
+- Q1/Q2 2024: Nested models with [GraphPPL.jl](https://github.com/reactivebayes/GraphPPL.jl) and Development of [ExponentialFamilyProjection.jl]()
 
 For a more granular view of our progress and ongoing tasks, check out our [project board](https://github.com/orgs/reactivebayes/projects/2/views/4) or join our 4-weekly [public meetings](https://dynalist.io/d/F4aA-Z2c8X-M1iWTn9hY_ndN).
-
 
 ## Ecosystem
 
@@ -182,9 +192,18 @@ The `RxInfer` framework consists of four *core* packages developed by [ReactiveB
 - [`ExponentialFamily.jl`](https://github.com/reactivebayes/ExponentialFamily.jl) - package for exponential family distributions
 - [`Rocket.jl`](https://github.com/reactivebayes/Rocket.jl) - reactive extensions package for Julia 
 
+## NumFocus
+
+We are very proud to be an affiliated project with [NumFocus](https://numfocus.org/), a non-profit organization that supports the open-source scientific computing community.
+
+![](docs/src/assets/numfocus.png)
+
 ## Client-Server Infrastructure
 
-RxInfer can be deployed as a RESTful API service using [`RxInferServer.jl`](https://github.com/lazydynamics/RxInferServer), which provides:
+> [!NOTE]
+> The development of RxInferServer has been sponsored by [Lazy Dynamics](https://lazydynamics.com/). The repositories are hosted under the [Lazy Dynamics](https://github.com/lazydynamics/) organization.
+
+RxInfer can be deployed as a RESTful API service using [`RxInferServer`](https://github.com/lazydynamics/RxInferServer), which provides:
 
 - OpenAPI-compliant RESTful API endpoints for RxInfer models
 - Support for model instance management and inference execution
@@ -196,9 +215,10 @@ RxInfer can be deployed as a RESTful API service using [`RxInferServer.jl`](http
 To interact with RxInferServer, you can use one of the following SDKs:
 
 - **Python SDK**: [`RxInferClient.py`](https://github.com/lazydynamics/RxInferClient.py) - A Python client for interacting with RxInferServer
+- **TypeScript SDK**: [`RxInferClient.ts`](https://github.com/lazydynamics/RxInferClient.ts) - A TypeScript client for interacting with RxInferServer
 - **Julia SDK**: Included in the RxInferServer repository
 
-Both SDKs provide a convenient interface to:
+SDKs provide a convenient interface to:
 - Create and manage model instances
 - Execute inference tasks
 - Monitor inference progress
@@ -208,7 +228,6 @@ Both SDKs provide a convenient interface to:
 # Where to go next?
 
 There are a set of [examples](https://examples.rxinfer.com/) available in the `RxInferExamples.jl` repository that demonstrate the more advanced features of the package. Alternatively, you can head to the [documentation](https://docs.rxinfer.com) that provides more detailed information of how to use `RxInfer` to specify more complex probabilistic models.
-
 
 # Join Our Community and Contribute to RxInfer
 

@@ -111,6 +111,10 @@ The `RxInfer` is a part of the [`ReactiveBayes`](https://github.com/ReactiveBaye
 While these packages form the core, `RxInfer` relies on numerous other excellent open-source packages. 
 The developers of `RxInfer` express their deep appreciation to the entire open-source community for their tremendous efforts.
 
+We are also very proud to be an affiliated project with [NumFocus](https://numfocus.org/), a non-profit organization that supports the open-source scientific computing community.
+
+![](assets/numfocus.png)
+
 ## Index
 
 ```@index
