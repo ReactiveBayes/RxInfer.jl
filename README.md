@@ -194,7 +194,7 @@ The `RxInfer` framework consists of four *core* packages developed by [ReactiveB
 ## Client-Server Infrastructure
 
 > [!NOTE]
-> The development of RxInferServer has been sponsored by [LazyDynamics](https://lazydynamics.com/). The repositories are hosted under the [LazyDynamics](https://github.com/lazydynamics/) organization.
+> The development of RxInferServer has been sponsored by [Lazy Dynamics](https://lazydynamics.com/). The repositories are hosted under the [Lazy Dynamics](https://github.com/lazydynamics/) organization.
 
 RxInfer can be deployed as a RESTful API service using [`RxInferServer`](https://github.com/lazydynamics/RxInferServer), which provides:
 
