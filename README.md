@@ -208,9 +208,10 @@ RxInfer can be deployed as a RESTful API service using [`RxInferServer`](https:/
 To interact with RxInferServer, you can use one of the following SDKs:
 
 - **Python SDK**: [`RxInferClient.py`](https://github.com/lazydynamics/RxInferClient.py) - A Python client for interacting with RxInferServer
+- **TypeScript SDK**: [`RxInferClient.ts`](https://github.com/lazydynamics/RxInferClient.ts) - A TypeScript client for interacting with RxInferServer
 - **Julia SDK**: Included in the RxInferServer repository
 
-Both SDKs provide a convenient interface to:
+SDKs provide a convenient interface to:
 - Create and manage model instances
 - Execute inference tasks
 - Monitor inference progress
@@ -220,7 +221,6 @@ Both SDKs provide a convenient interface to:
 # Where to go next?
 
 There are a set of [examples](https://examples.rxinfer.com/) available in the `RxInferExamples.jl` repository that demonstrate the more advanced features of the package. Alternatively, you can head to the [documentation](https://docs.rxinfer.com) that provides more detailed information of how to use `RxInfer` to specify more complex probabilistic models.
-
 
 # Join Our Community and Contribute to RxInfer
 
