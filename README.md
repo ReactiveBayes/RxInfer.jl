@@ -11,6 +11,7 @@
 [![Downloads](https://img.shields.io/badge/dynamic/json?url=http%3A%2F%2Fjuliapkgstats.com%2Fapi%2Fv1%2Fmonthly_downloads%2FRxInfer&query=total_requests&suffix=%2Fmonth&label=Downloads)](https://juliapkgstats.com/pkg/RxInfer)
 [![DOI](https://img.shields.io/badge/Journal%20of%20Open%20Source%20Software-10.21105/joss.05161-critical)](https://doi.org/10.21105/joss.05161)
 [![Zenodo](https://img.shields.io/badge/Zenodo-10.5281/zenodo.7774921-important)](https://zenodo.org/badge/latestdoi/501995296)
+[![NumFocus](https://img.shields.io/badge/supported%20by-NumFocus-green)](#numfocus)
 
 
 # Overview
@@ -190,6 +191,12 @@ The `RxInfer` framework consists of four *core* packages developed by [ReactiveB
 - [`GraphPPL.jl`](https://github.com/reactivebayes/GraphPPL.jl) - model and constraints specification package
 - [`ExponentialFamily.jl`](https://github.com/reactivebayes/ExponentialFamily.jl) - package for exponential family distributions
 - [`Rocket.jl`](https://github.com/reactivebayes/Rocket.jl) - reactive extensions package for Julia 
+
+## NumFocus
+
+We are very proud to be an affiliated project with [NumFocus](https://numfocus.org/), a non-profit organization that supports the open-source scientific computing community.
+
+![](docs/src/assets/numfocus.png)
 
 ## Client-Server Infrastructure
 
