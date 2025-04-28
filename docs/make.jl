@@ -33,7 +33,6 @@ makedocs(;
         "User guide" => [
             "Getting started" => "manuals/getting-started.md",
             "RxInfer.jl vs. Others" => "manuals/comparison.md",
-            "Using RxInfer from Python" => "manuals/how-to-use-rxinfer-from-python.md",
             "Model specification" => "manuals/model-specification.md",
             "Constraints specification" => "manuals/constraints-specification.md",
             "Meta specification" => "manuals/meta-specification.md",
@@ -53,6 +52,7 @@ makedocs(;
             "Session summary" => "manuals/session_summary.md",
             "Sharing sessions & telemetry" => "manuals/telemetry.md",
             "Migration from v2 to v3" => "manuals/migration-guide-v2-v3.md",
+            "Performance Tips" => "manuals/performance-tips.md",
             "Sharp bits of RxInfer" => [
                 "Overview" => "manuals/sharpbits/overview.md",
                 "Rule Not Found Error" => "manuals/sharpbits/rule-not-found.md",
