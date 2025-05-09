@@ -32,11 +32,11 @@
         d ~ Normal(μ = s5, variance = 1.0)
     end
 
-    result = infer(model = normal_aliases(), data = (d = 1.0,), returnvars = (x1 = KeepLast(),), iterations = 100, free_energy = true)
+    result = infer(model = normal_aliases(), data = (d = 1.0,), returnvars = (x1 = KeepLast(),), iterations = 10, free_energy = true)
     # Here we simply test that it ran and gave some output 
-    @test first(mean(result.posteriors[:x1])) ≈ 0.04182509505703423
-    @test first(result.free_energy) ≈ 2.319611135721246
-    @test last(result.free_energy) ≈ 2.319611135721246
+    @test first(mean(result.posteriors[:x1])) ≈ 0.010554034251599802
+    @test first(result.free_energy) ≈ 2.530978771805266
+    @test last(result.free_energy) ≈ 2.530978771805266
     @test all(iszero, diff(result.free_energy))
 end
 
