@@ -12,6 +12,7 @@
 [![DOI](https://img.shields.io/badge/Journal%20of%20Open%20Source%20Software-10.21105/joss.05161-critical)](https://doi.org/10.21105/joss.05161)
 [![Zenodo](https://img.shields.io/badge/Zenodo-10.5281/zenodo.7774921-important)](https://zenodo.org/badge/latestdoi/501995296)
 [![NumFocus](https://img.shields.io/badge/supported%20by-NumFocus-green)](#numfocus)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/ReactiveBayes/RxInfer.jl)
 
 
 # Overview
