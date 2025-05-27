@@ -1050,6 +1050,33 @@ end
     end
 end
 
+@testitem "vector of inputs in streaming inference" begin
+    import RxInfer: infer
+    @model function test_model(x, y, mx, vx)
+        for i in 1:3
+            x[i] ~ NormalMeanVariance(mx, vx)
+        end
+        my ~ NormalMeanVariance(0, 1)
+        y ~ NormalMeanVariance(my, 1.0)
+    end
+
+    d = [(x = rand(3), y = rand()) for i in 1:10]
+    datastream = from(d) |> map(NamedTuple{(:x, :y), Tuple{Vector{Float64}, Float64}}, (d) -> d)
+
+    foo(x) = 1.0
+
+    autoupdates = @autoupdates begin
+        mx = foo(q(my))
+        vx = foo(q(my))
+    end
+
+    engine = infer(model = test_model(), datastream = datastream, autoupdates = autoupdates, initialization = @initialization begin
+        q(my) = NormalMeanVariance(1.0, 1.0)
+    end)
+
+    @test engine.history === nothing
+end
+
 @testitem "Test misspecified types in infer function" begin
     @model function rolling_die(y)
         θ ~ Dirichlet(ones(6))

@@ -258,6 +258,8 @@ getlabel(ref::GraphVariableRef) = ref.label
 getvariable(ref::GraphVariableRef) = ref.variable
 getname(ref::GraphVariableRef) = GraphPPL.getname(getlabel(ref))
 
+GraphPPL.is_data(collection::AbstractArray{GraphVariableRef}) = all(GraphPPL.is_data, collection)
+
 GraphPPL.is_data(ref::GraphVariableRef) = GraphPPL.is_data(ref.properties)
 GraphPPL.is_random(ref::GraphVariableRef) = GraphPPL.is_random(ref.properties)
 GraphPPL.is_constant(ref::GraphVariableRef) = GraphPPL.is_constant(ref.properties)
