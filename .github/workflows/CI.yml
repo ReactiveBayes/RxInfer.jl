@@ -51,6 +51,8 @@ jobs:
         version:
           - '1.10'
           - '1.11'
+          - `1.12'
+          - 'nightly'
         os:
           - ubuntu-latest
         arch:
@@ -63,6 +65,8 @@ jobs:
       - uses: julia-actions/cache@v2
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
+        with: 
+          coverage: 'false'
         env:
           USE_DEV: "false"
           LOG_USING_RXINFER: "false"
