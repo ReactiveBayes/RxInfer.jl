@@ -102,9 +102,8 @@ log_data_entry(data::Pair) = log_data_entry(first(data), last(data))
 log_data_entry(name::Union{Symbol, String}, data) = log_data_entry(name, Base.IteratorSize(data), data)
 log_data_entry(name::Union{Symbol, String}, _, data) = InferenceLoggedDataEntry(name, typeof(data), :unknown, :unknown)
 log_data_entry(name::Union{Symbol, String}, ::Base.HasShape{0}, data) = InferenceLoggedDataEntry(name, typeof(data), (), ())
-log_data_entry(name::Union{Symbol, String}, ::Base.HasShape, data) = InferenceLoggedDataEntry(
-    name, typeof(data), log_data_entry_size(data), isempty(data) ? () : log_data_entry_size(first(data))
-)
+log_data_entry(name::Union{Symbol, String}, ::Base.HasShape, data) =
+    InferenceLoggedDataEntry(name, typeof(data), log_data_entry_size(data), isempty(data) ? () : log_data_entry_size(first(data)))
 
 log_data_entry_size(data) = log_data_entry_size(Base.IteratorSize(data), data)
 log_data_entry_size(::Base.HasShape, data) = size(data)
@@ -140,8 +139,6 @@ function Base.show(io::IO, entry::InferenceLoggedDictNTEntries)
     entries_str = join(map(e -> "$(e.name)::$(e.type)", entry.entries), ", ")
     print(io, entry.base_type, ": ", entries_str)
 end
-
-using PrettyTables
 
 function summarize_invokes(io::IO, ::Val{:inference}, invokes; n_last = 5)
     # Count unique models
@@ -200,8 +197,16 @@ function summarize_invokes(io::IO, ::Val{:inference}, invokes; n_last = 5)
         end
 
         header = (["ID", "Status", "Duration", "Model", "Cstr", "Meta", "Init", "Data", "Error"],)
-        pretty_table(io, data; header = header, tf = tf_unicode_rounded, maximum_columns_width = [12, 6, 10, 25, 6, 6, 6, 20, 6], autowrap = true, linebreaks = true)
+        summarize_invokes_pretty_table(summarize_invokes, io, data; header = header, maximum_columns_width = [12, 6, 10, 25, 6, 6, 6, 20, 6], autowrap = true, linebreaks = true)
     end
+end
+
+# This will be overridden in the `PrettyTablesExt.jl` if `PrettyTables.jl` is installed
+function summarize_invokes_pretty_table(f::Any, io::IO, data; kwargs...)
+    print(io, "\n !! PrettyTables.jl is not installed, skipping the pretty table output.       !! \n !! Install the `PrettyTables.jl` package to see the nicely formatted output. !! \n")
+    println(io)
+    print(io, data)
+    println(io)
 end
 
 ## Extra error handling
