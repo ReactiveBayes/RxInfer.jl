@@ -278,8 +278,7 @@ struct RxInferenceEventExecutor{T, E} <: Actor{T}
     RxInferenceEventExecutor(::Type{T}, engine::E) where {T, E} = new{T, E}(engine)
 end
 
-Base.show(io::IO, ::RxInferenceEventExecutor)         = print(io, "RxInferenceEventExecutor")
-Base.show(io::IO, ::Type{<:RxInferenceEventExecutor}) = print(io, "RxInferenceEventExecutor")
+Base.show(io::IO, ::RxInferenceEventExecutor) = print(io, "RxInferenceEventExecutor")
 
 rxexecutorlock(fn::F, ::Nothing) where {F} = fn()
 rxexecutorlock(fn::F, locker) where {F}    = lock(fn, locker)
