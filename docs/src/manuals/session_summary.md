@@ -389,6 +389,10 @@ RxInfer.summarize_session
 
 ```@example session-stats
 using RxInfer #hide
+
+# Additionaly install `PrettyTables.jl` to see the nicely formatted output
+using PrettyTables
+
 RxInfer.summarize_session(; n_last = 25)
 ```
 

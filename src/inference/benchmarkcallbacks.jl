@@ -1,5 +1,4 @@
-using PrettyTables
-using PrettyTables.Printf
+
 using DataStructures: CircularBuffer
 
 export RxInferBenchmarkCallbacks
@@ -48,8 +47,10 @@ for _ in 1:10
     )
 end
 
-# Display the timing statistics (uses pretty printing by default)
-callbacks
+# Display the timing statistics (you need to install `PrettyTables.jl` to use `pretty_table` function)
+using PrettyTables
+
+PrettyTables.pretty_table(callbacks)
 ```
 """
 struct RxInferBenchmarkCallbacks
@@ -103,21 +104,6 @@ function inference_invoke_callback(callbacks::RxInferBenchmarkCallbacks, name::S
     end
 end
 
-function prettytime(t::Union{UInt64, Float64})
-    if t < 1e3
-        value, units = t, "ns"
-    elseif t < 1e6
-        value, units = t / 1e3, "μs"
-    elseif t < 1e9
-        value, units = t / 1e6, "ms"
-    else
-        value, units = t / 1e9, "s"
-    end
-    return string(@sprintf("%.3f", value), " ", units)
-end
-
-prettytime(s) = s
-
 """
     get_benchmark_stats(callbacks::RxInferBenchmarkCallbacks)
 
@@ -162,14 +148,13 @@ end
 
 function Base.show(io::IO, callbacks::RxInferBenchmarkCallbacks)
     if isempty(callbacks)
-        return nothing
+        return print(io, "RxInferBenchmarkCallbacks (empty, use `pretty_table` from `PrettyTables.jl` to display the statistics in a tabular format)")
+    else
+        return print(
+            io,
+            "RxInferBenchmarkCallbacks (",
+            length(callbacks.before_model_creation_ts),
+            "evaluations, use `pretty_table` from `PrettyTables.jl` to display the statistics in a tabular format)"
+        )
     end
-
-    header = (["Operation", "Min", "Max", "Mean", "Median", "Std"],)
-
-    print(io, "RxInfer inference benchmark statistics: $(length(callbacks.before_model_creation_ts)) evaluations \n")
-
-    data = get_benchmark_stats(callbacks)
-    hl_v = Highlighter((data, i, j) -> (j == 3) && (data[i, j] > 10 * data[i, j - 1]), crayon"red bold")
-    pretty_table(io, data; formatters = (s, i, j) -> prettytime(s), header = header, header_crayon = crayon"yellow bold", tf = tf_unicode_rounded, highlighters = hl_v)
 end
