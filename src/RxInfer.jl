@@ -1,8 +1,10 @@
 module RxInfer
 
-using Reexport
+using Reexport, PrecompileTools
 
-@reexport using ReactiveMP, GraphPPL, Rocket, Distributions, ExponentialFamily, BayesBase, FastCholesky
+@recompile_invalidations begin
+    @reexport using ReactiveMP, GraphPPL, Rocket, Distributions, ExponentialFamily, BayesBase, FastCholesky
+end
 
 include("helpers.jl")
 include("rocket.jl")
@@ -27,6 +29,23 @@ include("constraints/form/form_sample_list.jl")
 include("inference/postprocess.jl")
 include("inference/benchmarkcallbacks.jl")
 include("inference/inference.jl")
+
+# A simple precompile workload to trigger compilation of the infer function
+@setup_workload begin
+    distribution = Bernoulli(0.5)
+    dataset      = rand(distribution, 10)
+
+    @model function coin_model(y, a, b)
+        θ ~ Beta(a, b)
+        for i in eachindex(y)
+            y[i] ~ Bernoulli(θ)
+        end
+    end
+
+    @compile_workload begin
+        infer(model = coin_model(a = 2.0, b = 7.0), data = (y = dataset,))
+    end
+end
 
 _isprecompiling() = ccall(:jl_generating_output, Cint, ()) == 1
 
