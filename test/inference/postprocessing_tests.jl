@@ -51,12 +51,7 @@ end
         y ~ Bernoulli(θ)
     end
 
-    result = infer(
-        model = my_model_with_error(),
-        data = (y = 1.0,),
-        postprocess = CustomPostprocessShouldNotBeInvoked(),
-        catch_exception = true,
-    )
+    result = infer(model = my_model_with_error(), data = (y = 1.0,), postprocess = CustomPostprocessShouldNotBeInvoked(), catch_exception = true)
 
     @test result.error[1] isa ErrorException
     @test result.error[1].msg == "This is a test error"
