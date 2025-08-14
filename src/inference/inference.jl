@@ -102,9 +102,8 @@ log_data_entry(data::Pair) = log_data_entry(first(data), last(data))
 log_data_entry(name::Union{Symbol, String}, data) = log_data_entry(name, Base.IteratorSize(data), data)
 log_data_entry(name::Union{Symbol, String}, _, data) = InferenceLoggedDataEntry(name, typeof(data), :unknown, :unknown)
 log_data_entry(name::Union{Symbol, String}, ::Base.HasShape{0}, data) = InferenceLoggedDataEntry(name, typeof(data), (), ())
-log_data_entry(name::Union{Symbol, String}, ::Base.HasShape, data) = InferenceLoggedDataEntry(
-    name, typeof(data), log_data_entry_size(data), isempty(data) ? () : log_data_entry_size(first(data))
-)
+log_data_entry(name::Union{Symbol, String}, ::Base.HasShape, data) =
+    InferenceLoggedDataEntry(name, typeof(data), log_data_entry_size(data), isempty(data) ? () : log_data_entry_size(first(data)))
 
 log_data_entry_size(data) = log_data_entry_size(Base.IteratorSize(data), data)
 log_data_entry_size(::Base.HasShape, data) = size(data)
@@ -209,6 +208,9 @@ function summarize_invokes_pretty_table(f::Any, io::IO, data; kwargs...)
         "\n !! PrettyTables.jl is not installed, skipping the pretty table output.       !! \n !! Install the `PrettyTables.jl` package to see the nicely formatted output. !! \n"
     )
     println(io)
+    if haskey(kwargs, :header)
+        println(io, kwargs[:header])
+    end
     print(io, data)
     println(io)
 end
