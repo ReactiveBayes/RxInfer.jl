@@ -347,8 +347,19 @@ function batch_inference(;
             end
         end
     end
-    posterior_values = Dict(variable => inference_postprocess(postprocess, getvalues(actor)) for (variable, actor) in pairs(actors_rv))
-    predicted_values = Dict(variable => inference_postprocess(postprocess, getvalues(actor)) for (variable, actor) in pairs(actors_pr))
+
+    # If the actor is not updated, we return `missing` instead
+    # this might happen if the inference procedure fails without producing any result 
+    # in combination with the `catch_exception = true` option, 
+    # if catch_exception is true, the code will continue to execute till this point 
+    # but there might be no result to postprocess
+    function inference_postprocess_or_missing(postprocess, actor)
+        values = getvalues(actor)
+        isnothing(values) ? missing : inference_postprocess(postprocess, values)
+    end
+
+    posterior_values = Dict(variable => inference_postprocess_or_missing(postprocess, actor) for (variable, actor) in pairs(actors_rv))
+    predicted_values = Dict(variable => inference_postprocess_or_missing(postprocess, actor) for (variable, actor) in pairs(actors_pr))
     fe_values        = !isnothing(fe_actor) ? score_snapshot_iterations(fe_actor, executed_iterations) : nothing
 
     return InferenceResult(posterior_values, predicted_values, fe_values, fmodel, potential_error)
