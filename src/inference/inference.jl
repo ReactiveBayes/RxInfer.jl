@@ -141,8 +141,6 @@ function Base.show(io::IO, entry::InferenceLoggedDictNTEntries)
     print(io, entry.base_type, ": ", entries_str)
 end
 
-using PrettyTables
-
 function summarize_invokes(io::IO, ::Val{:inference}, invokes; n_last = 5)
     # Count unique models
     unique_models = length(unique(get(i.context, :model_name, nothing) for i in invokes))
@@ -200,8 +198,22 @@ function summarize_invokes(io::IO, ::Val{:inference}, invokes; n_last = 5)
         end
 
         header = (["ID", "Status", "Duration", "Model", "Cstr", "Meta", "Init", "Data", "Error"],)
-        pretty_table(io, data; header = header, tf = tf_unicode_rounded, maximum_columns_width = [12, 6, 10, 25, 6, 6, 6, 20, 6], autowrap = true, linebreaks = true)
+        summarize_invokes_pretty_table(summarize_invokes, io, data; header = header, maximum_columns_width = [12, 6, 10, 25, 6, 6, 6, 20, 6], autowrap = true, linebreaks = true)
     end
+end
+
+# This will be overridden in the `PrettyTablesExt.jl` if `PrettyTables.jl` is installed
+function summarize_invokes_pretty_table(f::Any, io::IO, data; kwargs...)
+    print(
+        io,
+        "\n !! PrettyTables.jl is not installed, skipping the pretty table output.       !! \n !! Install the `PrettyTables.jl` package to see the nicely formatted output. !! \n"
+    )
+    println(io)
+    if haskey(kwargs, :header)
+        println(io, kwargs[:header])
+    end
+    print(io, data)
+    println(io)
 end
 
 ## Extra error handling

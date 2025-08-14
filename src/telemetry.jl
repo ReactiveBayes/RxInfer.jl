@@ -381,7 +381,7 @@ function share_session_data(session::Union{Session, Nothing} = RxInfer.default_s
         please include this session ID `$(session.id)` and session name: `$(session_name)`.
 
         Optionally, provide IDs of individual runs that you are interested in.
-        Call `RxInfer.summarize_session()` to get the list of run IDs.
+        Call `RxInfer.summarize_session()` to get the list of run IDs (you may want to additionally install `PrettyTables.jl` to see the nicely formatted output).
 
         This helps us provide better support by understanding your usage context.
         """ session_id = session.id session_name = session_name stats_count = shared_stats invokes_count = shared_invokes

@@ -258,9 +258,14 @@ for i in 1:3  # Usually you'd want more runs for better statistics
 end
 ```
 
+In order to nicely display the statistics, you may want to install `PrettyTables.jl` package. 
+It is not bundled with `RxInfer` by default, but, if installed manually, it makes the output more readable.
+
 ```@example debugging-with-callbacks
-# Display the benchmark statistics
-benchmark_callbacks
+using PrettyTables
+
+# Display the benchmark statistics in a nicely formatted table
+PrettyTables.pretty_table(benchmark_callbacks)
 ```
 
 The `RxInferBenchmarkCallbacks` structure collects timestamps at various stages of the inference process:

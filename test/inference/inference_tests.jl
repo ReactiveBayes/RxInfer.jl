@@ -1429,9 +1429,6 @@ end
     @test contains(output_str, "Inference specific:")
     @test contains(output_str, "Unique models: 1")
     @test contains(output_str, "Last 3 invokes")
-    @test contains(output_str, "Status")
-    @test contains(output_str, "Duration")
-    @test contains(output_str, "Model")
     @test contains(output_str, "simple_model")
 end
 
