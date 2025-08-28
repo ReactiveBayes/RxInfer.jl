@@ -82,10 +82,10 @@ Yes! RxInfer is designed for real-time inference with reactive message passing. 
 
 ### Where can I get help?
 
-1. **Documentation**: Start with the relevant sections
-2. **GitHub Discussions**: Ask questions and share experiences
-3. **Issues**: Report bugs and request features
-4. **Community Meetings**: Join regular public discussions
+1. **Documentation**: Start with the relevant sections in the [User Guide](@ref user-guide-getting-started)
+2. **GitHub Discussions**: [Ask](https://github.com/ReactiveBayes/RxInfer.jl/discussions) questions and share experiences
+3. **Issues**: [Report](https://github.com/ReactiveBayes/RxInfer.jl/issues) bugs and request features
+4. **Community Meetings**: Join regular public discussions, more info [here](https://dynalist.io/d/F4aA-Z2c8X-M1iWTn9hY_ndN)
 
 ### How can I contribute?
 
