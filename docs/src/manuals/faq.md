@@ -39,8 +39,7 @@ See [Sharp Bits: Using `=` instead of `:=`](@ref usage-colon-equality) for detai
 
 ### How do I handle missing/incomplete data?
 
-RxInfer supports missing data through the `missing` value in Julia. The inference engine will automatically handle missing observations.
-See [Missing Data](@ref manual-static-inference-missing-data) for details.
+RxInfer supports missing data through the `missing` value in Julia. The inference engine will automatically handle missing observations. See [Missing Data](@ref manual-static-inference-missing-data) for details.
 
 ### How do I create custom nodes and message update rules?
 
