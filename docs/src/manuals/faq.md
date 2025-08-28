@@ -6,7 +6,7 @@ This section addresses common questions and issues that users encounter when wor
 
 ### What is RxInfer?
 
-RxInfer is a Julia package for automated Bayesian inference on factor graphs using reactive message passing. It provides an efficient, scalable framework for probabilistic programming with a focus on real-time applications.
+RxInfer is a Julia package for automated Bayesian inference on factor graphs using reactive message passing. It provides an efficient, scalable framework for probabilistic programming with a focus on streaming data.
 
 ### How does RxInfer compare to other probabilistic programming packages?
 
