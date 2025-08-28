@@ -37,7 +37,7 @@ Yes! See our guide on [Using RxInfer from Python](@ref python-usage).
 
 See [Sharp Bits: Using `=` instead of `:=`](@ref usage-colon-equality) for details.
 
-### How do I handle missing data?
+### How do I handle missing/incomplete data?
 
 RxInfer supports missing data through the `missing` value in Julia. The inference engine will automatically handle missing observations.
 See [Missing Data](@ref manual-static-inference-missing-data) for details.
