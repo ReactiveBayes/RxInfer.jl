@@ -69,7 +69,7 @@ Check out the [Debugging](@ref user-guide-debugging) guide.
 ### How large can my models be?
 
 RxInfer can handle models with millions of latent variables. Performance depends on:
-- Model complexity (simple models with conjugate pairs of distributions are the fastest)
+- Model complexity (e.g. simple models with conjugate pairs of distributions are the fastest)
 - Available memory (large models require more memory)
 - Computational resources (more cores, more memory, faster CPU, etc.)
 - Optimization techniques used (see [Performance Tips](@ref user-guide-performance-tips))
