@@ -154,15 +154,9 @@ end
         x ~ NormalMeanVariance(1.0, 1.0)
         u := g(x, z)
         y ~ MvNormalMeanPrecision(u, diageye(2))
-
     end
 
-    results = infer(
-        model = test_model(),
-        data = (z = [1, 2], y = [1, 2]),
-        meta = test_meta(),
-    )
+    results = infer(model = test_model(), data = (z = [1, 2], y = [1, 2]), meta = test_meta())
 
     @test results isa RxInfer.InferenceResult
-
 end
