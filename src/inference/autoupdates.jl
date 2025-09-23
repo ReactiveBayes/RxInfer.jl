@@ -190,6 +190,19 @@ end
 is_autoupdates_warn(specification::AutoUpdateSpecification) = specification.warn
 is_autoupdates_strict(specification::AutoUpdateSpecification) = specification.strict
 
+"""
+    const EmptyAutoUpdateSpecification::AutoUpdateSpecification
+ 
+An `autoupdates` specification that does not update any variables. Use this if you want to do streaming inference without updating the model structure.
+
+```julia
+infer(
+    ...
+    autoupdates = RxInfer.EmptyAutoUpdateSpecification,
+    ...
+)
+```
+"""
 const EmptyAutoUpdateSpecification = AutoUpdateSpecification(true, true, ())
 
 "Returns the number of auto-updates in the specification"
