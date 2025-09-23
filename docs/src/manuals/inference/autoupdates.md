@@ -170,6 +170,12 @@ end
 autoupdates = generate_autoupdates()
 ```
 
+## Empty autoupdates
+To specify empty updates:
+
+```@docs
+RxInfer.EmptyAutoUpdateSpecification
+```
 
 ## Internal data structures
 
