@@ -13,6 +13,7 @@
 [![Zenodo](https://img.shields.io/badge/Zenodo-10.5281/zenodo.7774921-important)](https://zenodo.org/badge/latestdoi/501995296)
 [![NumFocus](https://img.shields.io/badge/supported%20by-NumFocus-green)](#numfocus)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/ReactiveBayes/RxInfer.jl)
+[![Join our Discord](https://img.shields.io/badge/Join%20our-Discord-blue)](https://discord.gg/UvMhrbQh)
 
 
 # Overview
