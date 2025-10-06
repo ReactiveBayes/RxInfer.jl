@@ -349,7 +349,7 @@ function convert_init_node_aliases(e::Expr)
                 # positional path: use GraphPPL.default_parametrization e.g.
                 # Normal(0.0, 1.0) → error: "Normal" needs kwargs
                 nodetype = GraphPPL.NodeType(backend, fform_type)
-                rhs_tuple = tuple((arg isa Expr && arg.head == :kw ? arg.args[2] : arg) for arg in args...)
+                rhs_tuple = Tuple((arg isa Expr && arg.head == :kw ? arg.args[2] : arg) for arg in args)
                 rhs_named = GraphPPL.default_parametrization(backend, nodetype, fform_type, rhs_tuple)
                 # Resolve to backend’s aliased factor form (e.g. throw error if Normal is called without kwargs)
                 aliased_fform = GraphPPL.factor_alias(backend, fform_type, GraphPPL.StaticInterfaces(keys(rhs_named)))
