@@ -490,6 +490,103 @@ end
     @test_expression_generating apply_pipeline(input, convert_init_variables) output
 end
 
+@testitem "convert_init_node_aliases" begin
+    import RxInfer: convert_init_node_aliases
+    import GraphPPL: apply_pipeline
+
+    include("../utiltests.jl")
+
+    # Test 1: convert_init_node_aliases with Normal(mean=..., var=...) -> NormalMeanVariance
+    input = quote
+        μ(x) = Normal(mean = 0.0, var = 1.0)
+    end
+    output = quote
+        μ(x) = ExponentialFamily.NormalMeanVariance(0.0, 1.0)
+    end
+    @test_expression_generating apply_pipeline(input, convert_init_node_aliases) output
+
+    # Test 2: convert_init_node_aliases with Normal(mean=..., precision=...) -> NormalMeanPrecision
+    input = quote
+        q(x) = Normal(mean = 0.0, precision = 1.0)
+    end
+    output = quote
+        q(x) = ExponentialFamily.NormalMeanPrecision(0.0, 1.0)
+    end
+    @test_expression_generating apply_pipeline(input, convert_init_node_aliases) output
+
+    # Test 3: convert_init_node_aliases with Normal(mean=..., variance=...) -> NormalMeanVariance
+    input = quote
+        μ(x) = Normal(mean = 0.0, variance = 1.0)
+    end
+    output = quote
+        μ(x) = ExponentialFamily.NormalMeanVariance(0.0, 1.0)
+    end
+    @test_expression_generating apply_pipeline(input, convert_init_node_aliases) output
+
+    # Test 4: convert_init_node_aliases with Gamma(shape=..., rate=...) -> GammaShapeRate
+    input = quote
+        μ(x) = Gamma(shape = 2.0, rate = 1.0)
+    end
+    output = quote
+        μ(x) = ExponentialFamily.GammaShapeRate(2.0, 1.0)
+    end
+    @test_expression_generating apply_pipeline(input, convert_init_node_aliases) output
+
+    # Test 5: convert_init_node_aliases with Gamma(shape=..., scale=...) -> GammaShapeScale
+    input = quote
+        μ(x) = Gamma(shape = 2.0, scale = 1.0)
+    end
+    output = quote
+        μ(x) = Distributions.Gamma(2.0, 1.0)
+    end
+    @test_expression_generating apply_pipeline(input, convert_init_node_aliases) output
+
+    # Test 6: convert_init_node_aliases with MvNormal(mean=..., covariance=...) -> MvNormalMeanCovariance
+    input = quote
+        μ(x) = MvNormal(mean = [0.0], covariance = [1.0])
+    end
+    output = quote
+        μ(x) = ExponentialFamily.MvNormalMeanCovariance([0.0], [1.0])
+    end
+    @test_expression_generating apply_pipeline(input, convert_init_node_aliases) output
+
+    # Test 7: convert_init_node_aliases with MvNormal(mean=..., precision=...) -> MvNormalMeanPrecision
+    input = quote
+        μ(x) = MvNormal(mean = [0.0], precision = [1.0])
+    end
+    output = quote
+        μ(x) = ExponentialFamily.MvNormalMeanPrecision([0.0], [1.0])
+    end
+    @test_expression_generating apply_pipeline(input, convert_init_node_aliases) output
+
+    # Test 8: Error case - Normal with positional arguments should throw the same error as @model
+    input = quote
+        μ(x) = Normal(0.0, 1.0)
+    end
+    @test_throws ErrorException("`Normal` cannot be constructed without keyword arguments. Use `Normal(mean = ..., var = ...)` or `Normal(mean = ..., precision = ...)`.") apply_pipeline(input, convert_init_node_aliases)
+
+    # Test 9: Error case - Gamma with positional arguments
+    input = quote
+        μ(x) = Gamma(2.0, 1.0)
+    end
+    @test_throws ErrorException("`Gamma` cannot be constructed without keyword arguments. Use `Gamma(shape = ..., rate = ...)` or `Gamma(shape = ..., scale = ...)`.") apply_pipeline(input, convert_init_node_aliases)
+
+    # Test 10: Error case - MvNormal with positional arguments
+    input = quote
+        μ(x) = MvNormal([0.0], [1.0])
+    end
+    @test_throws ErrorException("`MvNormal` cannot be constructed without keyword arguments. Use `MvNormal(mean = ..., covariance = ...)` or `MvNormal(mean = ..., precision = ...)`.") apply_pipeline(input, convert_init_node_aliases)
+
+    # Test 11: Non-matching expression should pass through unchanged
+    input = quote
+        μ(x) = NormalMeanVariance(0, 1)
+    end
+    output = quote
+        μ(x) = NormalMeanVariance(0, 1)
+    end
+    @test_expression_generating apply_pipeline(input, convert_init_node_aliases) output
+end
+
 @testitem "convert_init_object" begin
     import RxInfer: convert_init_object
     import GraphPPL: apply_pipeline
@@ -540,11 +637,11 @@ end
 
     # Test 1: init_macro_interor with one statement
     input = quote
-        q(x) = Normal(0, 1)
+        q(x) = Normal(mean=0, var=1)
     end
     output = quote
         let __init__ = RxInfer.InitSpecification()
-            push!(__init__, RxInfer.InitObject(RxInfer.InitDescriptor(RxInfer.InitMarginal(), GraphPPL.IndexedVariable(:x, nothing)), Normal(0, 1)))
+            push!(__init__, RxInfer.InitObject(RxInfer.InitDescriptor(RxInfer.InitMarginal(), GraphPPL.IndexedVariable(:x, nothing)), ExponentialFamily.NormalMeanVariance(0, 1)))
             __init__
         end
     end
@@ -552,13 +649,13 @@ end
 
     # Test 2: init_macro_interor with multiple statements
     input = quote
-        q(x) = Normal(0, 1)
-        μ(z) = Normal(0, 1)
+        q(x) = Normal(m=0, v=1)
+        μ(z) = Normal(m=0, v=1)
     end
     output = quote
         let __init__ = RxInfer.InitSpecification()
-            push!(__init__, RxInfer.InitObject(RxInfer.InitDescriptor(RxInfer.InitMarginal(), GraphPPL.IndexedVariable(:x, nothing)), Normal(0, 1)))
-            push!(__init__, RxInfer.InitObject(RxInfer.InitDescriptor(RxInfer.InitMessage(), GraphPPL.IndexedVariable(:z, nothing)), Normal(0, 1)))
+            push!(__init__, RxInfer.InitObject(RxInfer.InitDescriptor(RxInfer.InitMarginal(), GraphPPL.IndexedVariable(:x, nothing)), ExponentialFamily.NormalMeanVariance(0, 1)))
+            push!(__init__, RxInfer.InitObject(RxInfer.InitDescriptor(RxInfer.InitMessage(), GraphPPL.IndexedVariable(:z, nothing)), ExponentialFamily.NormalMeanVariance(0, 1)))
             __init__
         end
     end
@@ -566,21 +663,21 @@ end
 
     # Test 3: init_macro_interor with multiple statements and a submodel definition
     input = quote
-        q(x) = Normal(0, 1)
-        μ(z) = Normal(0, 1)
+        q(x) = Normal(m=0, v=1)
+        μ(z) = Normal(m=0, v=1)
         for init in submodel
-            q(x) = Normal(0, 1)
-            μ(z) = Normal(0, 1)
+            q(x) = Normal(m=0, v=1)
+            μ(z) = Normal(m=0, v=1)
         end
     end
     output = quote
         let __init__ = RxInfer.InitSpecification()
-            push!(__init__, RxInfer.InitObject(RxInfer.InitDescriptor(RxInfer.InitMarginal(), GraphPPL.IndexedVariable(:x, nothing)), Normal(0, 1)))
-            push!(__init__, RxInfer.InitObject(RxInfer.InitDescriptor(RxInfer.InitMessage(), GraphPPL.IndexedVariable(:z, nothing)), Normal(0, 1)))
+            push!(__init__, RxInfer.InitObject(RxInfer.InitDescriptor(RxInfer.InitMarginal(), GraphPPL.IndexedVariable(:x, nothing)), ExponentialFamily.NormalMeanVariance(0, 1)))
+            push!(__init__, RxInfer.InitObject(RxInfer.InitDescriptor(RxInfer.InitMessage(), GraphPPL.IndexedVariable(:z, nothing)), ExponentialFamily.NormalMeanVariance(0, 1)))
             let __outer_init__ = __init__
                 let __init__ = RxInfer.GeneralSubModelInit(submodel)
-                    push!(__init__, RxInfer.InitObject(RxInfer.InitDescriptor(RxInfer.InitMarginal(), GraphPPL.IndexedVariable(:x, nothing)), Normal(0, 1)))
-                    push!(__init__, RxInfer.InitObject(RxInfer.InitDescriptor(RxInfer.InitMessage(), GraphPPL.IndexedVariable(:z, nothing)), Normal(0, 1)))
+                    push!(__init__, RxInfer.InitObject(RxInfer.InitDescriptor(RxInfer.InitMarginal(), GraphPPL.IndexedVariable(:x, nothing)), ExponentialFamily.NormalMeanVariance(0, 1)))
+                    push!(__init__, RxInfer.InitObject(RxInfer.InitDescriptor(RxInfer.InitMessage(), GraphPPL.IndexedVariable(:z, nothing)), ExponentialFamily.NormalMeanVariance(0, 1)))
                     push!(__outer_init__, __init__)
                 end
             end
