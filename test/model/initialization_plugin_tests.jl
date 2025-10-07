@@ -716,3 +716,33 @@ end
     @test occursin("q(x)", repr(init))
     @test occursin("NormalMeanVariance", repr(init))
 end
+
+@testitem "gamma pos args warn and construct shape-scale" begin
+    using RxInfer
+    import GraphPPL: create_model, with_plugins
+
+    @model function gamma_only()
+        s ~ Gamma(shape = 2.0, rate = 1.0)
+    end
+
+    # Gamma without kwargs
+    init_gamma = @initialization begin
+        q(s) = Gamma(1, 1)
+    end
+    model = create_model(with_plugins(gamma_only(), GraphPPL.PluginsCollection(RxInfer.InitializationPlugin(init_gamma))))
+    node = GraphPPL.getcontext(model)[:s]
+    @test GraphPPL.hasextra(model[node], RxInfer.InitMarExtraKey)
+    @test GraphPPL.getextra(model[node], RxInfer.InitMarExtraKey) == Distributions.Gamma(1.0, 1.0)
+    @test occursin("Gamma{Float64}(α=1.0, θ=1.0)", repr(GraphPPL.getextra(model[node], RxInfer.InitMarExtraKey)))
+
+    # GammaShapeScale without kwargs
+    init_gss = @initialization begin
+        q(s) = GammaShapeScale(1, 1)
+    end
+
+    model = create_model(with_plugins(gamma_only(), GraphPPL.PluginsCollection(RxInfer.InitializationPlugin(init_gss))))
+    node = GraphPPL.getcontext(model)[:s]
+    @test GraphPPL.hasextra(model[node], RxInfer.InitMarExtraKey)
+    @test GraphPPL.getextra(model[node], RxInfer.InitMarExtraKey) == Distributions.Gamma(1.0, 1.0)
+    @test occursin("Gamma{Float64}(α=1.0, θ=1.0)", repr(GraphPPL.getextra(model[node], RxInfer.InitMarExtraKey)))
+end
