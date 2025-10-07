@@ -73,6 +73,9 @@ ReactiveMP.constrain_form(pmconstraint::PointMassFormConstraint, distribution) =
 # There is no need to call the optimizer on a `Distribution` object since they should have a well defined `mode`
 ReactiveMP.constrain_form(::PointMassFormConstraint, distribution::Distribution) = PointMass(mode(distribution))
 
+# Except for the DirichletCollection. For this one, we will use the mean instead:
+ReactiveMP.constrain_form(::PointMassFormConstraint, distribution::DirichletCollection) = PointMass(mean(distribution))
+
 """
     default_point_mass_form_constraint_optimizer(::Type{<:VariateType}, ::Type{<:ValueSupport}, constraint::PointMassFormConstraint, distribution)
 

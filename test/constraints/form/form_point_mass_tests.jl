@@ -125,4 +125,13 @@
             @test mean(result.posteriors[:θ]) ≈ p atol = 1e-1
         end
     end
+
+    Distributions.mode(d::DirichletCollection) = error("`mode` should not be called on DirichletCollection.")
+
+    @testset "`DirichletCollection` exception (mode is not defined)" begin
+        
+        constraint = PointMassFormConstraint()
+        d = DirichletCollection(ones(3,3))
+        opt = constrain_form(constraint, d)
+    end
 end
