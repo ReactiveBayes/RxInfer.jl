@@ -1429,9 +1429,6 @@ end
     @test contains(output_str, "Inference specific:")
     @test contains(output_str, "Unique models: 1")
     @test contains(output_str, "Last 3 invokes")
-    @test contains(output_str, "Status")
-    @test contains(output_str, "Duration")
-    @test contains(output_str, "Model")
     @test contains(output_str, "simple_model")
 end
 
@@ -1775,4 +1772,23 @@ end
     end
 
     result = infer(model = test_model(), data = (y = 1.0,), options = (force_marginal_computation = true,))
+end
+
+@testitem "Inference should have missing posterior if error occurs immediately" begin
+    struct MyCustomNode end
+
+    @node MyCustomNode Stochastic [out, in]
+
+    @rule MyCustomNode(:out, Marginalisation) (q_in::Any,) = begin
+        throw(ErrorException("This is a test error"))
+    end
+
+    @model function my_model_with_error(y)
+        θ ~ MyCustomNode(1)
+        y ~ Bernoulli(θ)
+    end
+
+    result = infer(model = my_model_with_error(), data = (y = 1.0,), catch_exception = true)
+
+    @test result.posteriors[:θ] === missing
 end

@@ -30,3 +30,30 @@ end
 
     @test occursin("Beta{Float64}(α=2.0, β=1.0)", result.posteriors[:θ])
 end
+
+@testitem "Postprocessing should not be invoked when error occurs immediately" begin
+
+    # We are going to throw in the rule
+    struct MyCustomNode end
+
+    @node MyCustomNode Stochastic [out, in]
+
+    @rule MyCustomNode(:out, Marginalisation) (q_in::Any,) = begin
+        throw(ErrorException("This is a test error"))
+    end
+
+    struct CustomPostprocessShouldNotBeInvoked end
+
+    RxInfer.inference_postprocess(::CustomPostprocessShouldNotBeInvoked, result::Any) = error("This should not be invoked")
+
+    @model function my_model_with_error(y)
+        θ ~ MyCustomNode(1)
+        y ~ Bernoulli(θ)
+    end
+
+    result = infer(model = my_model_with_error(), data = (y = 1.0,), postprocess = CustomPostprocessShouldNotBeInvoked(), catch_exception = true)
+
+    @test result.error[1] isa ErrorException
+    @test result.error[1].msg == "This is a test error"
+    @test result.posteriors[:θ] === missing
+end

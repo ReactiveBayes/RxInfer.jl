@@ -95,7 +95,7 @@ p = plot!(p, rθ, (x) -> pdf(results.posteriors[:θ], x), title="Posterior", fil
 p = vline!(p, [ hidden_θ ], label = "Real (hidden) θ")
 ```
 
-### Missing data points and predictions
+### [Missing data points and predictions](@id manual-static-inference-missing-data)
 
 ```@example manual-static-inference
 result = infer(

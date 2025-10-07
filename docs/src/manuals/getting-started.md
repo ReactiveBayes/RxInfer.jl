@@ -8,7 +8,7 @@ It supports both exact and variational inference algorithms and forms an ecosyst
 
 This page provides the necessary information you need to get started with `Rxinfer`. We will show the general approach to solving inference problems with `RxInfer` by means of a running example: inferring the bias of a coin using a simple Beta-Bernoulli model.
 
-## Installation
+## [Installation](@id user-guide-getting-started-installation)
 
 `RxInfer` is an officially registered Julia package. Install `RxInfer` through the Julia package manager by using the following command from the package manager mode:
 

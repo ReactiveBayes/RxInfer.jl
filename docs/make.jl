@@ -13,7 +13,7 @@ draft = get(ENV, "DOCS_DRAFT", "false") == "true"
 
 makedocs(;
     draft = draft,
-    warnonly = false,
+    warnonly = draft,
     modules = [RxInfer],
     authors = "Bagaev Dmitry <d.v.bagaev@tue.nl> and contributors",
     sitename = "RxInfer.jl",
@@ -41,6 +41,7 @@ makedocs(;
                 "Overview" => "manuals/inference/overview.md",
                 "Static inference" => "manuals/inference/static.md",
                 "Streamline inference" => "manuals/inference/streamlined.md",
+                "Static vs. Streamlined" => "manuals/inference/static-vs-streamlined.md",
                 "Initialization" => "manuals/inference/initialization.md",
                 "Auto-updates" => "manuals/inference/autoupdates.md",
                 "Deterministic nodes" => "manuals/inference/delta-node.md",
@@ -49,6 +50,8 @@ makedocs(;
             ],
             "Inference customization" =>
                 ["Defining a custom node and rules" => "manuals/customization/custom-node.md", "Inference results postprocessing" => "manuals/customization/postprocess.md"],
+            "Performance Tips" => "manuals/performance-tips.md",
+            "FAQ" => "manuals/faq.md",
             "Debugging" => "manuals/debugging.md",
             "Session summary" => "manuals/session_summary.md",
             "Sharing sessions & telemetry" => "manuals/telemetry.md",

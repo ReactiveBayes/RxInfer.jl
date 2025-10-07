@@ -139,3 +139,24 @@ end
     @test all(result -> result isa RxInfer.InferenceResult, results)
     @test all(result -> all(<=(0), diff(result.free_energy)), results)
 end
+
+@testitem "Nonlinear models: single input - multiple output" begin
+    include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
+
+    g(x, z) = x .* z
+
+    @meta function test_meta()
+        g() -> Linearization()
+    end
+
+    # Model Creation
+    @model function test_model(z, y)
+        x ~ NormalMeanVariance(1.0, 1.0)
+        u := g(x, z)
+        y ~ MvNormalMeanPrecision(u, diageye(2))
+    end
+
+    results = infer(model = test_model(), data = (z = [1, 2], y = [1, 2]), meta = test_meta())
+
+    @test results isa RxInfer.InferenceResult
+end

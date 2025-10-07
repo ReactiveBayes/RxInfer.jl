@@ -1,4 +1,4 @@
-# Using RxInfer from Python
+# [Using RxInfer from Python](@id python-usage)
 
 RxInfer can be used from Python through the [`RxInferServer.jl`](https://github.com/lazydynamics/RxInferServer) RESTful API and the [`RxInferClient.py`](https://github.com/lazydynamics/RxInferClient.py) Python SDK.
 

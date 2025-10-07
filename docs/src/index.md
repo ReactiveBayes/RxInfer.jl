@@ -74,6 +74,8 @@ Pages = [
   "manuals/meta-specification.md",
   "manuals/inference-execution.md",
   "manuals/custom-node.md",
+  "manuals/performance-tips.md",
+  "manuals/faq.md",
   "manuals/debugging.md",
   "manuals/delta-node.md",
   "manuals/how-to-use-rxinfer-from-python.md",
