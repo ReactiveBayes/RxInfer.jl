@@ -279,91 +279,116 @@ end
 what_walk(::typeof(convert_init_variables)) = walk_until_occurrence(:(lhs_ -> rhs_))
 
 """
-    convert_init_node_aliases(e::Expr)
+    convert_init_fform(init_obj::Expr)
 
-Converts user written initialization expressions to backend-aware node aliases (if defined),
-with interface_aliases. So `@initialization` behaves consistently with `@model` definitons.
+Converts distribution constructor calls with (kw)args to use RxInfer.convert_fform.
+Skips conversion for special functions like `vague()` and `huge()`.
 """
-function convert_init_node_aliases(e::Expr)
-    if @capture(e, f_(args__))
-        # created backend once for model (outside of function) -> better ideas?
-        backend = INIT_BACKEND
-        # Skip if f not a symbol
-        if !(f isa Symbol)
-            return e
-        end
-        # Skip if symbol cannot be resolved at macro time
-        fform_type = try
-            Base.eval(@__MODULE__, f) # Evaluates in RxInfer module context
-        catch
-            return e
-        end
-        # Skip if not a Distribution subtype (e.g. vague() -> will throw error for <: comparison)
-        if !(fform_type isa Type)
-            return e
-        end
-        # Skip if not with specific declared factor_alias functions in model/graphppl.jl
-        try
-            # get all declared methods for factor_alias
-            # ml = methods(GraphPPL.factor_alias)
-            ml = methods(GraphPPL.factor_alias, (typeof(backend), Type{fform_type}, Any))
-            # Check whether any method's *concrete* 2nd signature parameter is exactly Type{fform_type}
-            has_factor_alias = any(m -> begin
-                sig = Base.unwrap_unionall(m.sig) # remove any UnionAll / where-quantifiers
-                # sig is something like Tuple{factor_alias, ReactiveMPGraphPPLBackend, Type{Normal}, Any}
-                sig.parameters[3] === Type{fform_type} # exact match to Type{<:fform_type}
-            end, ml.ms)
-            # Exit and return original expression if no factor alias is available
-            if !has_factor_alias
-                return e
+function convert_init_fform(e::Expr)
+    if @capture(e, (fform_(var_) = init_obj_))
+        # local helper: convert the RHS init_obj expression if needed
+        function _convert_init_obj(init_obj)
+            # Filter for function call pattern func(args...) e.g. Normal(0,1)
+            if init_obj isa Expr && @capture(init_obj, func_(allargs__))
+                # Skip if already converted (explicitly RxInfer.convert_fform call)
+                if (func isa Expr && @capture(func, (mod_.convert_fform)))
+                    return init_obj
+                end
+
+                # Skip special functions
+                if func in (:vague, :huge, :tiny)
+                    return init_obj
+                end
+
+                # Separate kwargs from positional args
+                kwargs = filter(x -> x isa Expr && x.head == :kw, allargs)
+                args = filter(x -> !(x isa Expr && x.head == :kw), allargs)
+
+                if isempty(args) && !isempty(kwargs)
+                    # All kwargs -> create NamedTuple from kw pairs
+                    names = Tuple(kw.args[1] for kw in kwargs)
+                    vals  = Tuple(kw.args[2] for kw in kwargs)
+                    nt_expr = Expr(:tuple, (Expr(:(=), name, val) for (name, val) in zip(names, vals))...)
+                    return :(RxInfer.convert_fform($func, (;$nt_expr...)))
+                elseif !isempty(allargs)
+                    # Positional or mixed -> forward all args
+                    return :(RxInfer.convert_fform($func, $(allargs...)))
+                end
             end
-        catch err
-            return e
+
+            # nothing to convert
+            return init_obj
         end
-        
-        # split keyword (NamedTuple) vs positional (Tuple) user calls 
-        all_kwargs = all(arg -> arg isa Expr && arg.head == :kw, args)
-        try
-            if all_kwargs
-                # keywords path: build NamedTuple of args, e.g. (mean=0.0, variance=1.0)
-                keys_tuple = Tuple([arg.args[1] for arg in args])
-                vals = Tuple([arg.args[2] for arg in args])
-                rhs_nt = NamedTuple{keys_tuple}(vals)
-               
-                # Apply interface aliasing and map to canonical backend form (as in make_node!)
-                # e.g. (mean=0.0, var=1.0) → (µ=0.0, w=1.0)
-                aliased_nt = convert(
-                    NamedTuple, 
-                    GraphPPL.interface_aliases(GraphPPL.interface_aliases(backend, fform_type), GraphPPL.StaticInterfaces(keys(rhs_nt))),
-                    values(rhs_nt))
-                # Replace distribution constructor with aliased version, e.g.
-                # Normal(mean, variance) → NormalMeanVariance(...)
-                aliased_fform = GraphPPL.factor_alias(backend, fform_type, GraphPPL.StaticInterfaces(keys(aliased_nt)))
-                # change aliased_fform from DataType to Expr - for passing in Expression tree
-                # Expression trees should contain symbols or other expressions — not runtime type objects (like aliased_fform). 
-                mod_sym = Symbol(string(parentmodule(aliased_fform))) # e.g. :ExponentialFamily
-                name_sym = Symbol(string(nameof(aliased_fform))) # :NormalMeanVariance
-                qualified_name = Expr(:., mod_sym, QuoteNode(name_sym)) # e.g. :ExponentialFamily.NormalMeanVariance
-                return Expr(:call, qualified_name, map(identity, values(aliased_nt))...)
-            else
-                # positional path: use GraphPPL.default_parametrization e.g.
-                # Normal(0.0, 1.0) → error: "Normal" needs kwargs
-                nodetype = GraphPPL.NodeType(backend, fform_type)
-                rhs_tuple = Tuple((arg isa Expr && arg.head == :kw ? arg.args[2] : arg) for arg in args)
-                rhs_named = GraphPPL.default_parametrization(backend, nodetype, fform_type, rhs_tuple)
-                # Resolve to backend’s aliased factor form (e.g. throw error if Normal is called without kwargs)
-                aliased_fform = GraphPPL.factor_alias(backend, fform_type, GraphPPL.StaticInterfaces(keys(rhs_named)))
-                return Expr(:call, aliased_fform, map(identity, values(rhs_named))...)
-            end
-        catch err
-            rethrow(err)
+
+        converted_init = _convert_init_obj(init_obj)
+        return quote
+            $fform($(var)) = $converted_init
         end
     end
     return e
 end
 
-what_walk(::typeof(convert_init_node_aliases)) = postwalk
+what_walk(::typeof(convert_init_fform)) = walk_until_occurrence(:(lhs_ -> rhs_))
 const INIT_BACKEND = GraphPPL.instantiate(ReactiveMPGraphPPLBackend)
+
+# convert_fform Kwargs version - all arguments are keyword arguments
+function convert_fform(
+    fform::F,
+    kwargs::NamedTuple;
+    backend = INIT_BACKEND
+) where {F}
+    try
+        # Get interface aliases for this factor form
+        aliases = GraphPPL.interface_aliases(backend, fform)
+        # Convert user-provided kwargs to canonical interface names
+        aliased_kwargs = GraphPPL.convert(
+            NamedTuple, 
+            GraphPPL.interface_aliases(aliases, GraphPPL.StaticInterfaces(keys(kwargs))), 
+            values(kwargs)
+        )
+        # Resolve to backend's aliased factor form (e.g., Normal -> NormalMeanVariance)
+        aliased_fform = GraphPPL.factor_alias(
+            backend, 
+            fform, 
+            GraphPPL.StaticInterfaces(keys(aliased_kwargs))
+        )
+        # Construct the aliased factor with canonical kwargs
+        return GraphPPL.__evaluate_fform(aliased_fform, values(aliased_kwargs))
+        
+    catch err
+        error("Initialization macro returns error for $fform with kwargs $kwargs: $err")
+    end
+end
+
+# Args version - positional or mixed arguments
+function convert_fform(
+    fform::F,
+    args...;
+    backend = INIT_BACKEND
+) where {F}
+    try
+        nodetype = GraphPPL.NodeType(backend, fform)
+        
+        # Extract values from potential :kw expressions
+        rhs_tuple = Tuple((arg isa Expr && arg.head == :kw ? arg.args[2] : arg) for arg in args)
+        
+        # Get default parametrization (may error if kwargs required)
+        rhs_named = GraphPPL.default_parametrization(backend, nodetype, fform, rhs_tuple)
+        
+        # Resolve to backend's aliased factor form
+        aliased_fform = GraphPPL.factor_alias(
+            backend, 
+            fform, 
+            GraphPPL.StaticInterfaces(keys(rhs_named))
+        )
+        
+        # Construct with values in order
+        return aliased_fform(values(rhs_named)...)
+        
+    catch err
+        error("Initialization macro returns error for $fform with args $args: $err")
+    end
+end
 
 """
     convert_init_object(e::Expr)
@@ -400,7 +425,7 @@ function init_macro_interior(init_body::Expr)
     init_body = add_init_construction(init_body)
     init_body = GraphPPL.apply_pipeline(init_body, create_submodel_init)
     init_body = GraphPPL.apply_pipeline(init_body, convert_init_variables)
-    init_body = GraphPPL.apply_pipeline(init_body, convert_init_node_aliases)
+    init_body = GraphPPL.apply_pipeline(init_body, convert_init_fform)
     init_body = GraphPPL.apply_pipeline(init_body, convert_init_object)
     return init_body
 end
