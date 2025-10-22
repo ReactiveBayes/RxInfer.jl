@@ -263,8 +263,8 @@ GraphPPL.interface_aliases(::ReactiveMPGraphPPLBackend, ::Type{MvNormal}) = Grap
 GraphPPL.factor_alias(::ReactiveMPGraphPPLBackend, ::Type{Gamma}, ::GraphPPL.StaticInterfaces{(:α, :θ)}) = ExponentialFamily.GammaShapeScale
 GraphPPL.factor_alias(::ReactiveMPGraphPPLBackend, ::Type{Gamma}, ::GraphPPL.StaticInterfaces{(:α, :β)}) = ExponentialFamily.GammaShapeRate
 GraphPPL.default_parametrization(backend::ReactiveMPGraphPPLBackend, nodetype::GraphPPL.Atomic, factor::Type{Gamma}, rhs) = begin
-     @warn "'Gamma' and 'GammaShapeScale' without keywords are constructed with parameters (Shape, Scale)." maxlog=1
-     return GraphPPL.default_parametrization(backend, nodetype, ReactiveMP.inputinterfaces(factor), factor, rhs) 
+    @warn "'Gamma' and 'GammaShapeScale' without keywords are constructed with parameters (Shape, Scale)." maxlog=1
+    return GraphPPL.default_parametrization(backend, nodetype, ReactiveMP.inputinterfaces(factor), factor, rhs)
 end
 
 GraphPPL.interface_aliases(::ReactiveMPGraphPPLBackend, ::Type{Gamma}) = GraphPPL.StaticInterfaceAliases((
