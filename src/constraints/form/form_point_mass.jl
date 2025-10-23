@@ -5,6 +5,7 @@ import DomainSets: Domain, infimum, supremum
 import Optim
 
 using BayesBase, Distributions, ExponentialFamily
+using SparseArrays
 
 """
     PointMassFormConstraint
@@ -56,9 +57,11 @@ end
 
 Base.show(io::IO, ::PointMassFormConstraint) = print(io, "PointMassFormConstraint()")
 
-PointMassFormConstraint(; optimizer = default_point_mass_form_constraint_optimizer, starting_point = default_point_mass_form_constraint_starting_point, boundaries = default_point_mass_form_constraint_boundaries) = PointMassFormConstraint(
-    optimizer, starting_point, boundaries
-)
+PointMassFormConstraint(;
+    optimizer = default_point_mass_form_constraint_optimizer,
+    starting_point = default_point_mass_form_constraint_starting_point,
+    boundaries = default_point_mass_form_constraint_boundaries
+) = PointMassFormConstraint(optimizer, starting_point, boundaries)
 
 ReactiveMP.default_form_check_strategy(::PointMassFormConstraint) = FormConstraintCheckLast()
 
@@ -72,6 +75,9 @@ ReactiveMP.constrain_form(pmconstraint::PointMassFormConstraint, distribution) =
 
 # There is no need to call the optimizer on a `Distribution` object since they should have a well defined `mode`
 ReactiveMP.constrain_form(::PointMassFormConstraint, distribution::Distribution) = PointMass(mode(distribution))
+
+# Categorical distribution has an exception since `mode` does not return a one-hot vector, which is required for backwards compatibility with `Categorical` marginals
+ReactiveMP.constrain_form(::PointMassFormConstraint, distribution::DiscreteNonParametric) = PointMass(sparsevec([mode(distribution)], 1.0, length(probvec(distribution))))
 
 """
     default_point_mass_form_constraint_optimizer(::Type{<:VariateType}, ::Type{<:ValueSupport}, constraint::PointMassFormConstraint, distribution)

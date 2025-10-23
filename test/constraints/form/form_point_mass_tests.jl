@@ -2,6 +2,7 @@
     using LinearAlgebra
     using Random, StableRNGs, DomainSets, Distributions
     import RxInfer: PointMassFormConstraint, call_boundaries, call_starting_point, call_optimizer
+    using SparseArrays
 
     struct MyDistributionWithMode <: ContinuousUnivariateDistribution
         mode::Float64
@@ -101,6 +102,24 @@
 
             @test isapprox(mode(opt), mode(analytical), atol = 1e-4)
         end
+    end
+
+    @testset "Exception for categoricals" begin
+        constraint = PointMassFormConstraint()
+
+        d1 = Categorical([0.1, 0.8, 0.1])
+        r = constrain_form(constraint, d1)
+
+        expected_result = sparsevec([2], [1.0], 3)
+        @test typeof(r) <: PointMass
+        @test mean(r) == expected_result
+
+        d2 = Categorical([0.5, 0.5])
+        r = constrain_form(constraint, d2)
+
+        expected_result = sparsevec([1], [1.0], 2)
+        @test typeof(r) <: PointMass
+        @test mean(r) == expected_result
     end
 
     @model function beta_bernoulli(y, prior)
