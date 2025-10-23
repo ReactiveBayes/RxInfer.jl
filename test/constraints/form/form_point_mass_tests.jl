@@ -107,19 +107,23 @@
     @testset "Exception for categoricals" begin
         constraint = PointMassFormConstraint()
 
-        d1 = Categorical([0.1, 0.8, 0.1])
-        r = constrain_form(constraint, d1)
+        for T in [Float16, Float32, Float64]
+            d1 = Categorical([T(0.1), T(0.8), T(0.1)])
+            r = constrain_form(constraint, d1)
 
-        expected_result = sparsevec([2], [1.0], 3)
-        @test typeof(r) <: PointMass
-        @test mean(r) == expected_result
+            expected_result = sparsevec(Int[], T[], 3)
+            expected_result[2] = one(T)
+            @test typeof(r) <: PointMass{SparseVector{T, Int64}}
+            @test mean(r) == expected_result
 
-        d2 = Categorical([0.5, 0.5])
-        r = constrain_form(constraint, d2)
+            d2 = Categorical([T(0.5), T(0.5)])
+            r = constrain_form(constraint, d2)
 
-        expected_result = sparsevec([1], [1.0], 2)
-        @test typeof(r) <: PointMass
-        @test mean(r) == expected_result
+            expected_result = sparsevec(Int[], T[], 2)
+            expected_result[1] = one(T)
+            @test typeof(r) <: PointMass{SparseVector{T, Int64}}
+            @test mean(r) == expected_result
+        end
     end
 
     @model function beta_bernoulli(y, prior)

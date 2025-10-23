@@ -77,7 +77,12 @@ ReactiveMP.constrain_form(pmconstraint::PointMassFormConstraint, distribution) =
 ReactiveMP.constrain_form(::PointMassFormConstraint, distribution::Distribution) = PointMass(mode(distribution))
 
 # Categorical distribution has an exception since `mode` does not return a one-hot vector, which is required for backwards compatibility with `Categorical` marginals
-ReactiveMP.constrain_form(::PointMassFormConstraint, distribution::DiscreteNonParametric) = PointMass(sparsevec([mode(distribution)], 1.0, length(probvec(distribution))))
+ReactiveMP.constrain_form(::PointMassFormConstraint, distribution::DiscreteNonParametric{T, P, Ts, Ps}) where {T, P, Ts, Ps} = begin
+    pv = probvec(distribution)
+    result = sparsevec(Int64[], one(P), length(pv))
+    result[argmax(pv)] = one(P)
+    PointMass(result)
+end
 
 """
     default_point_mass_form_constraint_optimizer(::Type{<:VariateType}, ::Type{<:ValueSupport}, constraint::PointMassFormConstraint, distribution)
