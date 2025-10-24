@@ -73,11 +73,11 @@ julia = "1.10"
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 Coverage = "a2441757-f6aa-5fb2-8edb-039e3f45d037"
-CpuId = "adafc99b-e345-5852-983c-f28acb93d879"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 ExponentialFamilyProjection = "17f509fa-9a96-44ba-99b2-1c5f01f0931b"
+Hwloc = "0e44f5e4-bd66-52a0-8798-143a42290a1d"
 InteractiveUtils = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
 Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
 Optimisers = "3bd65402-5787-11e9-1adc-39752487f4e2"
@@ -92,4 +92,4 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 TestSetExtensions = "98d24dd4-01ad-11ea-1b02-c9a08f80db04"
 
 [targets]
-test = ["Test", "Pkg", "Logging", "InteractiveUtils", "TestSetExtensions", "TOML", "Coverage", "CpuId", "Dates", "Distributed", "Documenter", "ExponentialFamilyProjection", "Plots", "BenchmarkTools", "PkgBenchmark", "Aqua", "StableRNGs", "StatsFuns", "Optimisers", "ReTestItems"]
+test = ["Test", "Pkg", "Logging", "InteractiveUtils", "TestSetExtensions", "TOML", "Coverage", "Dates", "Distributed", "Documenter", "ExponentialFamilyProjection", "Hwloc", "Plots", "BenchmarkTools", "PkgBenchmark", "Aqua", "StableRNGs", "StatsFuns", "Optimisers", "ReTestItems"]
