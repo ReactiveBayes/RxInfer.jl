@@ -57,9 +57,11 @@ end
 
 Base.show(io::IO, ::PointMassFormConstraint) = print(io, "PointMassFormConstraint()")
 
-PointMassFormConstraint(; optimizer = default_point_mass_form_constraint_optimizer, starting_point = default_point_mass_form_constraint_starting_point, boundaries = default_point_mass_form_constraint_boundaries) = PointMassFormConstraint(
-    optimizer, starting_point, boundaries
-)
+PointMassFormConstraint(;
+    optimizer = default_point_mass_form_constraint_optimizer,
+    starting_point = default_point_mass_form_constraint_starting_point,
+    boundaries = default_point_mass_form_constraint_boundaries
+) = PointMassFormConstraint(optimizer, starting_point, boundaries)
 
 ReactiveMP.default_form_check_strategy(::PointMassFormConstraint) = FormConstraintCheckLast()
 
@@ -77,7 +79,7 @@ ReactiveMP.constrain_form(::PointMassFormConstraint, distribution::Distribution)
 # Categorical distribution has an exception since `mode` does not return a one-hot vector, which is required for backwards compatibility with `Categorical` marginals
 ReactiveMP.constrain_form(::PointMassFormConstraint, distribution::DiscreteNonParametric{T, P, Ts, Ps}) where {T, P, Ts, Ps} = begin
     pv = probvec(distribution)
-    result = sparsevec(Int64[], one(P), length(pv))
+    result = SparseVector{P, Int64}(undef, 5)
     result[argmax(pv)] = one(P)
     PointMass(result)
 end
