@@ -63,7 +63,7 @@ n_observations = 10
 # The bias of a coin used in the demonstration
 coin_bias      = 0.75
 # We assume that the outcome of each coin flip is 
-# distributed as the `Bernoulli` distrinution
+# distributed as the `Bernoulli` distribution
 distribution   = Bernoulli(coin_bias)
 # Simulated coin flips
 dataset        = rand(rng, distribution, n_observations)
