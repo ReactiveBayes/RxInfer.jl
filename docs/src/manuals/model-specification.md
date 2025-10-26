@@ -12,7 +12,7 @@ For example:
     # model specification here
 end
 ```
-where `model_arguments...` may include both hypeparameters and data. 
+where `model_arguments...` may include both hyperparameters and data. 
 
 !!! note
     `model_arguments` are converted to keyword arguments. Positional arguments in the model specification are not supported. 
@@ -140,7 +140,7 @@ indicates that `x₁` is distributed as [Normal](https://en.wikipedia.org/wiki/N
 
 !!! note
     The `RxInfer.jl` package uses the `~` operator for modelling both stochastic and deterministic relationships between random variables.
-    However, `GraphPPL.jl` also allows to use `:=` operator for deterministic relationships.
+    However, `GraphPPL.jl` also allows to use the `:=` operator for deterministic relationships.
 
 ## [Relationships between variables](@id user-guide-model-specification-node-creation)
 
@@ -161,8 +161,8 @@ not only creates a latent variable `x₁` but also a factor node `Normal`.
 
 ### [Deterministic relationships](@id user-guide-model-specification-node-creation-deterministic)
 
-In contrast to other probabilistic programming languages in Julia, `RxInfer` does not allow use of `=` operator for creating deterministic relationships between (latent)variables. 
-Instead, we can use `:=` operator for this purpose. For example:
+Unlike other probabilistic programming languages in Julia, `RxInfer` does not allow use of the `=` operator for creating deterministic relationships between (latent)variables. 
+Instead, we can use the `:=` operator for this purpose. For example:
 
 ```julia
 t ~ Normal(mean = 0.0, variance = 1.0)
@@ -227,7 +227,7 @@ Technically, in Julia, the `x[i]` call is translated to a function call `getinde
 
 ### [Broadcasting syntax](@id user-guide-model-specification-node-creation-broadcasting)
 
-`GraphPPL` support broadcasting for `~` operator in the exact same way as Julia itself. 
+`GraphPPL` support broadcasting for the `~` operator in the exact same way as Julia itself. 
 A user is free to write an expression of the following form:
 ```julia
 m  ~ Normal(mean = 0.0, precision = 0.0001)
@@ -244,11 +244,11 @@ y        .~ MvNormal(mean = x, precision = w) # <- Observations with unknown pre
 ```
 
 Note, however, that shapes of all variables that take part in the broadcasting operation must be defined in advance. That means that it is not possible to 
-use broadcasting with [deffered data](@ref user-guide-model-specification-conditioning). Read more about how broadcasting machinery works in Julia in [the official documentation](https://docs.julialang.org/en/v1/manual/arrays/#Broadcasting).
+use broadcasting with [deferred data](@ref user-guide-model-specification-conditioning). Read more about how broadcasting machinery works in Julia in [the official documentation](https://docs.julialang.org/en/v1/manual/arrays/#Broadcasting).
 
 ### [`Distributions.jl` compatibility](@id user-guide-model-specification-distributions)
 
-For some factor nodes we rely on the syntax from `Distributions.jl` to make it easy to adopt `RxInfer.jl` for these users. These nodes include for example the [`Beta`](https://en.wikipedia.org/wiki/Beta_distribution) and [`Wishart`](https://en.wikipedia.org/wiki/Wishart_distribution) distributions. These nodes can be created using the `~` syntax with the arguments as specified in `Distributions.jl`. Unfortunately, we `RxInfer.jl` is not yet compatible with all possible distributions to be used as factor nodes. If you feel that you would like to see another node implemented, please file an issue.
+For some factor nodes we rely on the syntax from `Distributions.jl` to make it easy to adopt `RxInfer.jl` for these users. These nodes include for example the [`Beta`](https://en.wikipedia.org/wiki/Beta_distribution) and [`Wishart`](https://en.wikipedia.org/wiki/Wishart_distribution) distributions. These nodes can be created using the `~` syntax with the arguments as specified in `Distributions.jl`. Unfortunately, we `RxInfer.jl` is not yet compatible with all possible distributions that can be used as factor nodes. If you feel that you would like to see another node implemented, please file an issue.
 
 !!! note
     To quickly check the list of all available factor nodes that can be used in the model specification language call `?ReactiveMP.is_predefined_node` or `Base.doc(ReactiveMP.is_predefined_node)`.
@@ -292,7 +292,7 @@ GraphViz.load(model_to_plot, strategy = :simple)
 
 ### [Cairo](@id user-guide-model-specification-visualization-cairo)
 
-There is an alternative way to visuzalise the model structure with `Cairo` and `GraphPlot`
+There is an alternative way to visualize the model structure with `Cairo` and `GraphPlot`
 Note, that those packages are also not included in the `RxInfer` package and must be installed separately.
 
 ```@example model-specification-visualization
@@ -432,7 +432,7 @@ A list of the available options specific to the `ReactiveMP` inference engine is
 
 #### Metadata option
 
-Is is possible to pass any extra metadata to a factor node with the `meta` option. Metadata can be later accessed in message computation rules.
+It is possible to pass any extra metadata to a factor node with the `meta` option. Metadata can be later accessed in message computation rules.
 ```julia
 z ~ f(x, y) where { meta = Linearization() }
 d ~ g(a, b) where { meta = Unscented() }

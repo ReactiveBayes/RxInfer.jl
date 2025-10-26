@@ -1,6 +1,6 @@
 # [Bethe Free Energy implementation in RxInfer](@id lib-bethe-free-energy)
 
-The following text introduces the Bethe Free Energy. We start be defining a factorized model and move from the Variational Free Energy to a definition of the Bethe Free Energy.
+The following text introduces the Bethe Free Energy. We start by defining a factorized model and move from the Variational Free Energy to a definition of the Bethe Free Energy.
 
 ## [Factorized model](@id lib-bethe-factorized-model)
 
@@ -8,7 +8,7 @@ Before we can define a model, we must identify all variables that are relevant t
 $$y = (y_1, \dots, y_j, \dots, y_m)\,,$$
 and variables that can not be observed directly, also known as latent variables,
 $$x = (x_1, \dots, x_i, \dots, x_n)\,.$$
-We then define a model that factorizes over consituent smaller factors (functions), as
+We then define a model that factorizes over constituent smaller factors (functions), as
 $$f(y,x) = \prod_a f_a(y_a,x_a)\,.$$
 
 Individual factors may represent stochastic functions, such as conditional or prior distributions, but also potential functions or deterministic relationships. A factor may depend on multiple observed and/or latent variables (or none).
@@ -24,7 +24,7 @@ The VFE is also a function of the observed data, as indicated by round brackets,
 
 ## [Variational inference](@id lib-bethe-variational-inference)
 
-The goal of variational inference is to find a variational distibution that minimizes the VFE,
+The goal of variational inference is to find a variational distribution that minimizes the VFE,
 $$q^{*}(x) = \arg\min_{q\in\mathcal{Q}} F[q](\hat{y})\,.$$
 This objective can be optimized (under specific constraints) with the use of variational calculus. Constraints are implied by the domain over which the variational distribution is optimized, and can be enforced by Lagrange multipliers.
 
@@ -39,7 +39,7 @@ The numerator iterates over the factors in the model, and carves the joint varia
 
 The denominator of the Bethe approximation iterates over all individual latent variables and discounts them. The discounting factor is chosen as the degree of the variable minus one, where the degree counts the number of factors in which the variable appears.
 
-The Bethe approximation thus constrains the variational distribution to a factorized form. However, the true posterior distribution might not factorize in this way, e.g. if the grapical representation of the model contains cycles. In these cases the Bethe approximation trades the exact solution for computational tractability.
+The Bethe approximation thus constrains the variational distribution to a factorized form. However, the true posterior distribution might not factorize in this way, e.g. if the graphical representation of the model contains cycles. In these cases the Bethe approximation trades the exact solution for computational tractability.
 
 
 ## [Bethe Free Energy](@id lib-bethe-bfe)
@@ -66,7 +66,7 @@ For disambiguation, note that the initialization of the variational distribution
 
 ## Implementation details 
 
-`RxInfer` implements Bethe Free Energy optimization in an implicit way via the mesasge passing technique. That means that the inference engine does not compute BFE values explicitly, 
+`RxInfer` implements Bethe Free Energy optimization in an implicit way via the message passing technique. That means that the inference engine does not compute BFE values explicitly, 
 unless specified explicitly. The [`infer`](@ref) function has `free_energy` flag, which indicates whether BFE values must be computed explicitly or not. Note, however, that due to the reactive nature of the message passing implementation in `RxInfer` the computed BFE value may not represent its actual state. This may happen when updates for certain posteriors arriving more often than updates for other posteriors and usually tend to happen in models with loops in its structure. To circumvent this, instead of checking if BFE value is being minimized it is advised to check if it __converges__.
 
 ```@docs

@@ -178,17 +178,17 @@ For that purpose `RxInfer` uses [`RxInfer.DeferredDataHandler`](@ref) structure.
 ```@example coin
 # The only difference here is that we do not specify `a` and `b` as hyperparameters 
 # But rather indicate that the data for them will be available later during the inference
-conditioned_with_deffered_data = coin_model() | (
+conditioned_with_deferred_data = coin_model() | (
     y = [ true, false, true ], 
     a = RxInfer.DeferredDataHandler(), 
     b = RxInfer.DeferredDataHandler()
 )
 
 # The graph creation API does not change
-model_with_deffered_data = RxInfer.create_model(conditioned_with_deffered_data)
+model_with_deferred_data = RxInfer.create_model(conditioned_with_deferred_data)
 
 # We can visualise the graph with missing data handles as well
-GraphPlot.gplot(RxInfer.getmodel(model_with_deffered_data))
+GraphPlot.gplot(RxInfer.getmodel(model_with_deferred_data))
 ```
 
 From the model structure visualisation we can see now that both `a` and `b` are no longer indicated as constants.
