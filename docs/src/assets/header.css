@@ -140,3 +140,50 @@ header.navigation div.container nav.navbar ul.navbar-nav li.small-item {
 .docs-logo {
     margin-bottom: 0.5rem;
 }
+
+/* === Site context styling for RxInfer Docs === */
+header.navigation .nav-link[href*="docs.rxinfer.com"] i,
+header.navigation .nav-link[href*="docs.rxinfer.com"] span {
+    color: #00b894 !important; /* green accent for docs site */
+}
+
+/* Banner styling */
+/* --- RxInfer Docs: Banner + layout fix --- */
+
+/* Banner always on top */
+#site-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background-color: #e8fdf2;
+    color: #065f46;
+    text-align: center;
+    padding: 0.4rem 0.5rem;
+    font-size: 0.9em;
+    border-bottom: 1px solid #c3f1d0;
+    z-index: 100; /* higher than header/sidebar */
+}
+
+/* Move header down below banner */
+header.navigation {
+    top: 2.4rem !important; /* depends on banner height */
+    z-index: 90; /* still above sidebar */
+}
+
+/* Push Documenter main + sidebar down */
+html body #documenter .docs-main,
+html body #documenter .docs-sidebar {
+    margin-top: 6.4rem !important; /* banner (≈2.4rem) + header (≈4rem) */
+}
+
+/* Sidebar must not override top margin */
+html body #documenter .docs-sidebar.visible {
+    margin-top: 6.4rem !important;
+}
+
+/* === Banner text visibility fix === */
+#site-banner strong {
+    color: #065f46 !important; /* dark green, same as the normal banner text */
+    font-weight: 700;
+}

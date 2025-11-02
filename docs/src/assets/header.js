@@ -79,7 +79,37 @@ window.onload = function() {
     })())
     
     const documenterTarget = document.querySelector('#documenter');
-    
     documenterTarget.parentNode.insertBefore(header, documenterTarget);
 }
 
+
+// === Site context banner for Docs ===
+window.addEventListener("DOMContentLoaded", () => {
+    const banner = document.createElement('div');
+    banner.id = 'site-banner';
+    banner.innerHTML = `
+        📗 You are viewing the <strong>RxInfer.jl Documentation</strong>.
+        Looking for code examples? <a href="https://examples.rxinfer.com/">Go to examples →</a>
+    `;
+
+    // Find the header we just created
+    const header = document.querySelector('header.navigation');
+
+    // Insert the banner BEFORE the header so it stacks on top
+    if (header && header.parentNode) {
+        header.parentNode.insertBefore(banner, header);
+    } else {
+        document.body.prepend(banner);
+    }
+
+    // Add a small inline "— Docs" label next to "RxInfer.jl" link
+    const rxLink = document.querySelector('a.nav-link[href="http://www.rxinfer.com"] span');
+    if (rxLink && !document.querySelector('#site-type-label')) {
+        const label = document.createElement('span');
+        label.id = 'site-type-label';
+        label.textContent = ' — Docs';
+        label.style.color = '#00b894';
+        label.style.fontWeight = '500';
+        rxLink.parentNode.appendChild(label);
+    }
+});
