@@ -61,7 +61,39 @@ RxInfer aims to remedy these issues by running efficient Bayesian inference in s
 
 ## How to get started?
 
-Head to the [Getting started](@ref user-guide-getting-started) section to get up and running with RxInfer. Alternatively, explore various [examples](@ref examples-overview) in the documentation.
+Head to the [Getting started](@ref user-guide-getting-started) section to get up and running with RxInfer. 
+
+
+## Explore examples
+
+The RxInfer ecosystem offers two main documentation websites:
+
+- **Documentation and Manual** (this site): Contains all the guides, tutorials, and API documentation to help you learn and use RxInfer.  
+- **Examples Site**: Features a wide variety of runnable, in-depth example notebooks and code, available at [examples.rxinfer.com](https://examples.rxinfer.com).
+
+Explore different [examples](@ref examples-overview) in this documentation, and visit the [RxInfer Examples Site](https://examples.rxinfer.com) for more hands-on tutorials and code.
+
+```@raw html
+<div style="display: flex; justify-content: center; align-items: center; margin: 2rem 0;">
+  <a href="https://examples.rxinfer.com/" 
+     style="
+         display:inline-block;
+         background:linear-gradient(90deg, #9558b2 0%, #4063d8 100%);
+         color:white;
+         font-weight:700;
+         font-size:1.25rem;
+         padding:1.1em 2.2em;
+         border-radius:0.5em;
+         text-decoration:none;
+         box-shadow:0 2px 8px rgba(0,0,0,0.10);
+         transition:background 0.15s, box-shadow 0.15s;
+         letter-spacing:0.02em;
+     "
+  >
+    🚀 Explore Tutorials
+  </a>
+</div>
+```
 
 ## Table of Contents
 
