@@ -46,7 +46,7 @@ dev_doc_init:
 docs: doc_init ## Generate documentation
 	julia --startup-file=no --project=docs/ docs/make.jl
 
-docs-serve: doc_init ## Serve documentation locally for preview in browser, requires `LiveServer.jl` installed globally
+docs-serve: doc_init ## Serve documentation locally for preview in browser
 	julia --project=docs/ -e 'ENV["DOCS_DRAFT"]="true"; using LiveServer; LiveServer.servedocs(launch_browser=true, port=5678)'
 
 devdocs: dev_doc_init ## Same as `make docs` but uses `dev-ed` versions of core packages

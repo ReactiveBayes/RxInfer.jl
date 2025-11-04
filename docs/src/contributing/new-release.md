@@ -5,7 +5,7 @@ Also, please read the [FAQ](https://github.com/JuliaRegistries/General#faq) sect
 
 ## Start the release process
 
-In order to start the release process a person with the associated permissions should: 
+In order to start the release process a person with the necessary permissions should:
 
 - Open a commit page on GitHub
 - Write the `@JuliaRegistrator register` comment for the commit:

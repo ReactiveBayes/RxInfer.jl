@@ -106,7 +106,7 @@ myconstraints = make_constraints(true)
 
 ## Marginal and messages form constraints
 
-To specify marginal or messages form constraints `@constraints` macro uses `::` operator (in somewhat similar way as Julia uses it for multiple dispatch type specification).
+To specify marginal or messages form constraints `@constraints` macro uses the `::` operator (in somewhat similar way as Julia uses it for multiple dispatch type specification).
 Read more about available functional form constraints in the [Built-In Functional Forms](@ref lib-forms) section.
 
 As an example, the following constraint:
