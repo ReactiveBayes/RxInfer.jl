@@ -287,39 +287,60 @@ Skips conversion for special functions like `vague()` and `huge()`.
 function convert_init_fform(e::Expr)
     if @capture(e, (fform_(var_) = init_obj_))
         # local helper: convert the RHS init_obj expression if needed
-        function _convert_init_obj(init_obj)
-            # Filter for function call pattern func(args...) e.g. Normal(0,1)
-            if init_obj isa Expr && @capture(init_obj, func_(allargs__))
-                # Skip if already converted (explicitly RxInfer.convert_fform call)
-                if (func isa Expr && @capture(func, (mod_.convert_fform)))
-                    return init_obj
+            function _convert_init_obj(init_obj)
+                # Recursively unwrap nested block expressions
+                while init_obj isa Expr && init_obj.head == :block
+                    actual_content = filter(x -> !(x isa LineNumberNode), init_obj.args)
+                    if length(actual_content) == 1
+                        init_obj = actual_content[1]
+                    else
+                        break
+                    end
                 end
+                # Filter for function call pattern func(args...) e.g. Normal(0,1)
+                if init_obj isa Expr && @capture(init_obj, func_(allargs__))
+                    # Skip if already converted (explicitly RxInfer.convert_fform call)
+                    if (func isa Expr && @capture(func, (mod_.convert_fform)))
+                        return init_obj
+                    end
+    
+                    # Skip special functions
+                    if func in (:vague, :huge, :tiny)
+                        return init_obj
+                    end
+    
+                    # For repeat() and similar: recursively convert arguments
+                    if func == :repeat
+                        converted_args = map(_convert_init_obj, allargs)
+                        return Expr(:call, :repeat, converted_args...)
+                    end
+    
+                    # Separate kwargs from positional args
+                    kwargs = filter(x -> x isa Expr && x.head == :kw, allargs)
+                    args = filter(x -> !(x isa Expr && x.head == :kw), allargs)
+    
+                    if isempty(args) && !isempty(kwargs)
+                        # All kwargs -> create NamedTuple from kw pairs
+                        names = Tuple(kw.args[1] for kw in kwargs)
+                        vals  = Tuple(kw.args[2] for kw in kwargs)
+                        nt_expr = Expr(:tuple, (Expr(:(=), name, val) for (name, val) in zip(names, vals))...)
+                        return :(RxInfer.convert_fform($func, (;$nt_expr...)))
+                    elseif !isempty(allargs)
+                        # Positional or mixed -> forward all args
+                        return :(RxInfer.convert_fform($func, $(allargs...)))
+                    end
+            end
 
-                # Skip special functions
-                if func in (:vague, :huge, :tiny)
-                    return init_obj
-                end
-
-                # Separate kwargs from positional args
-                kwargs = filter(x -> x isa Expr && x.head == :kw, allargs)
-                args = filter(x -> !(x isa Expr && x.head == :kw), allargs)
-
-                if isempty(args) && !isempty(kwargs)
-                    # All kwargs -> create NamedTuple from kw pairs
-                    names = Tuple(kw.args[1] for kw in kwargs)
-                    vals  = Tuple(kw.args[2] for kw in kwargs)
-                    nt_expr = Expr(:tuple, (Expr(:(=), name, val) for (name, val) in zip(names, vals))...)
-                    return :(RxInfer.convert_fform($func, (;$nt_expr...)))
-                elseif !isempty(allargs)
-                    # Positional or mixed -> forward all args
-                    return :(RxInfer.convert_fform($func, $(allargs...)))
-                end
+            # Handle vector literals [...]
+            if init_obj isa Expr && init_obj.head == :vect
+                converted_elements = map(_convert_init_obj, init_obj.args)
+                return Expr(:vect, converted_elements...)
             end
 
             # nothing to convert
             return init_obj
         end
-
+            
         converted_init = _convert_init_obj(init_obj)
         return quote
             $fform($(var)) = $converted_init
