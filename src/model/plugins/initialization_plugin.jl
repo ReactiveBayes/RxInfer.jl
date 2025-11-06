@@ -402,10 +402,13 @@ function convert_fform(
             fform, 
             GraphPPL.StaticInterfaces(keys(rhs_named))
         )
-        
         # Construct with values in order
-        return aliased_fform(values(rhs_named)...)
-        
+        rhs_values = values(rhs_named)
+        if length(rhs_values) == 1 && fform == PointMass
+            return aliased_fform(rhs_values[1]...)
+        else
+            return aliased_fform(rhs_values...)
+        end  
     catch err
         error("Initialization macro returns error for $fform with args $args: $err")
     end

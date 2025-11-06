@@ -768,7 +768,7 @@ end
     @test occursin("Initial state", repr(init))
     @test occursin("q(x)", repr(init))
     @test occursin("NormalMeanVariance", repr(init))
-
+end
 
 @testitem "gamma pos args warn and construct shape-scale" begin
     using RxInfer
