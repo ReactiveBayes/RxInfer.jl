@@ -144,3 +144,18 @@ for (name, probe) in node_probes
     @save filename probe
 end
 #getaddons(result.posteriors)
+#
+
+# marginal
+# getdata(result.posteriors[:μ][end])
+# individual messages
+# getaddons(result.posteriors[:μ][end])[1].memory.mappings
+# factornode
+# ReactiveMP.message_mapping_fform(getaddons(result.posteriors[:μ][end])[1].memory.mappings[1].mapping)
+# towards which edge
+# getaddons(result.posteriors[:μ][end])[1].memory.mappings[1].mapping.vtag
+# second mapping getaddons(result.posteriors[:μ][end])[1].memory.mappings[2].mapping.vtag
+#
+# construct_memory push
+# MessageMapping
+# multiply messages
