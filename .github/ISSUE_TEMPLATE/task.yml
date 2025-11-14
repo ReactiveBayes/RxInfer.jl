@@ -1,0 +1,104 @@
+name: Task
+description: Create a task that belongs to a Feature
+title: "Task: "
+labels: ["task"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Tasks are specific, actionable work items that belong to a Feature. Use this template to define a task that contributes to a feature's goals.
+
+  - type: input
+    id: feature-reference
+    attributes:
+      label: Parent Feature
+      description: Link to the Feature this task belongs to (use #issue-number)
+      placeholder: "#123"
+    validations:
+      required: true
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Task Summary
+      description: A clear and concise summary of what this task involves
+      placeholder: Provide a brief overview of what this task aims to accomplish...
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Task Description
+      description: Detailed description of the task, what needs to be done, and how it contributes to the parent Feature
+      placeholder: Describe the task in detail...
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: What conditions must be met for this task to be considered complete?
+      placeholder: |
+        - [ ] Criterion 1
+        - [ ] Criterion 2
+        - [ ] Criterion 3
+    validations:
+      required: true
+
+  - type: textarea
+    id: implementation-notes
+    attributes:
+      label: Implementation Notes
+      description: Any technical notes, approaches, or considerations for implementing this task
+      placeholder: |
+        - Technical approach
+        - Files/modules to modify
+        - Design considerations
+
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: Are there any dependencies on other tasks, issues, PRs, or external factors?
+      placeholder: |
+        - Depends on task #456
+        - Blocks task #789
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: What is the priority of this task?
+      options:
+        - "Low"
+        - "Medium"
+        - "High"
+        - "Critical"
+    validations:
+      required: true
+
+  - type: textarea
+    id: estimated-effort
+    attributes:
+      label: Estimated Effort
+      description: Rough estimate of the effort required (e.g., "2 hours", "1 day", "3 days")
+      placeholder: "e.g., 2 hours, 1 day, 3 days"
+
+  - type: textarea
+    id: related
+    attributes:
+      label: Related Issues / PRs
+      description: Link to any related issues, PRs, or discussions
+      placeholder: |
+        - Related to #123
+        - Blocks #456
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any other relevant information about this task
+      placeholder: Additional context...
+

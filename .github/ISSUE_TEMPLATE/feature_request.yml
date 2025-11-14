@@ -1,0 +1,90 @@
+name: Feature Request
+description: Request a new feature or enhancement for RxInfer
+title: "[Enhancement]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a new feature or enhancement! Please fill out the form below to help us understand your request.
+        
+        > **Note:** This template is for requesting new features/enhancements. If you're working with Scrum terminology (Epic → Feature → Task), use the "Feature" template instead.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Feature/Enhancement Description
+      description: A clear and concise description of the feature or enhancement you'd like to see
+      placeholder: Describe the feature or enhancement...
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation / Use Case
+      description: Why is this feature needed? What problem does it solve or what use case does it enable?
+      placeholder: Describe the motivation and use case...
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed-solution
+    attributes:
+      label: Proposed Solution
+      description: How do you envision this feature working? What would the API or interface look like?
+      placeholder: |
+        Describe your proposed solution or approach...
+        
+        Example:
+        ```julia
+        # How you would like to use it
+        ```
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Have you considered any alternative approaches or workarounds?
+      placeholder: Describe any alternatives you've considered...
+
+  - type: textarea
+    id: examples
+    attributes:
+      label: Example Use Cases
+      description: Provide concrete examples of how this feature would be used
+      placeholder: |
+        Example 1: [Description]
+        Example 2: [Description]
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority (from your perspective)
+      description: How important is this feature to you?
+      options:
+        - "Nice to have"
+        - "Would be helpful"
+        - "Important"
+        - "Critical for my use case"
+    validations:
+      required: true
+
+  - type: textarea
+    id: related
+    attributes:
+      label: Related Issues / Discussions
+      description: Link to any related issues, PRs, or discussions
+      placeholder: |
+        - Related to #123
+        - Discussed in #456
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any other relevant information about this feature request
+      placeholder: Additional context...
+

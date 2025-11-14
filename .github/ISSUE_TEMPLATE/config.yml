@@ -1,0 +1,12 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 💬 Discussions / Q&A
+    url: https://github.com/reactivebayes/RxInfer.jl/discussions
+    about: Ask questions and discuss ideas with the community
+  - name: 📚 Documentation
+    url: https://docs.rxinfer.com
+    about: Check out our documentation for guides and API reference
+  - name: 🎯 Examples
+    url: https://examples.rxinfer.com
+    about: Browse example models and use cases
+
