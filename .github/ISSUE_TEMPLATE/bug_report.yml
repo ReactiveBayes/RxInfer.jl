@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time to report a bug! Please fill out the form below to help us understand and fix the issue.
+        Thanks for taking the time to report a bug! Please fill out the form below to help us understand and fix the issue. Before submitting a bug, please make sure the issue hasn't been already addressed by searching through [the existing and past issues](https://github.com/ReactiveBayes/RxInfer.jl/issues?q=is%3Aissue+sort%3Acreated-desc+). Additionally, make sure that you've searched relevant information in the [documentation](https://docs.rxinfer.com/stable/) and [FAQ](https://docs.rxinfer.com/stable/manuals/faq/).
 
   - type: textarea
     id: description
