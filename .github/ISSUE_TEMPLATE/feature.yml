@@ -1,11 +1,13 @@
 name: Feature
-description: Create a feature that belongs to an Epic and will be broken down into Tasks
+description: Create a Feature that belongs to an Epic and will be broken down into Tasks
 title: "Feature: "
 labels: ["feature"]
 body:
   - type: markdown
     attributes:
       value: |
+        **Note:** This template is for Scrum terminology (Epic → Feature → Task). If you're requesting a new feature or enhancement for RxInfer, please use the "Feature Request" template instead.
+        
         Features are high-level capabilities that belong to an Epic. Use this template to define a feature that will be broken down into specific tasks.
 
   - type: input
