@@ -279,6 +279,142 @@ end
 what_walk(::typeof(convert_init_variables)) = walk_until_occurrence(:(lhs_ -> rhs_))
 
 """
+    convert_init_fform(init_obj::Expr)
+
+Converts distribution constructor calls with (kw)args to use RxInfer.convert_fform.
+Skips conversion for special functions like `vague()` and `huge()`.
+"""
+function convert_init_fform(e::Expr)
+    if @capture(e, (fform_(var_) = init_obj_))
+        # local helper: convert the RHS init_obj expression if needed
+            function _convert_init_obj(init_obj)
+                # Recursively unwrap nested block expressions
+                while init_obj isa Expr && init_obj.head == :block
+                    actual_content = filter(x -> !(x isa LineNumberNode), init_obj.args)
+                    if length(actual_content) == 1
+                        init_obj = actual_content[1]
+                    else
+                        break
+                    end
+                end
+                # Filter for function call pattern func(args...) e.g. Normal(0,1)
+                if init_obj isa Expr && @capture(init_obj, func_(allargs__))
+                    # Skip if already converted (explicitly RxInfer.convert_fform call)
+                    if (func isa Expr && @capture(func, (mod_.convert_fform)))
+                        return init_obj
+                    end
+    
+                    # Skip special functions
+                    if func in (:vague, :huge, :tiny)
+                        return init_obj
+                    end
+    
+                    # For repeat() and similar: recursively convert arguments
+                    if func == :repeat
+                        converted_args = map(_convert_init_obj, allargs)
+                        return Expr(:call, :repeat, converted_args...)
+                    end
+    
+                    # Separate kwargs from positional args
+                    kwargs = filter(x -> x isa Expr && x.head == :kw, allargs)
+                    args = filter(x -> !(x isa Expr && x.head == :kw), allargs)
+    
+                    if isempty(args) && !isempty(kwargs)
+                        # All kwargs -> create NamedTuple from kw pairs
+                        names = Tuple(kw.args[1] for kw in kwargs)
+                        vals  = Tuple(kw.args[2] for kw in kwargs)
+                        nt_expr = Expr(:tuple, (Expr(:(=), name, val) for (name, val) in zip(names, vals))...)
+                        return :(RxInfer.convert_fform($func, (;$nt_expr...)))
+                    elseif !isempty(allargs)
+                        # Positional or mixed -> forward all args
+                        return :(RxInfer.convert_fform($func, $(allargs...)))
+                    end
+            end
+
+            # Handle vector literals [...]
+            if init_obj isa Expr && init_obj.head == :vect
+                converted_elements = map(_convert_init_obj, init_obj.args)
+                return Expr(:vect, converted_elements...)
+            end
+
+            # nothing to convert
+            return init_obj
+        end
+            
+        converted_init = _convert_init_obj(init_obj)
+        return quote
+            $fform($(var)) = $converted_init
+        end
+    end
+    return e
+end
+
+what_walk(::typeof(convert_init_fform)) = walk_until_occurrence(:(lhs_ -> rhs_))
+const INIT_BACKEND = GraphPPL.instantiate(ReactiveMPGraphPPLBackend)
+
+# convert_fform Kwargs version - all arguments are keyword arguments
+function convert_fform(
+    fform::F,
+    kwargs::NamedTuple;
+    backend = INIT_BACKEND
+) where {F}
+    try
+        # Get interface aliases for this factor form
+        aliases = GraphPPL.interface_aliases(backend, fform)
+        # Convert user-provided kwargs to canonical interface names
+        aliased_kwargs = GraphPPL.convert(
+            NamedTuple, 
+            GraphPPL.interface_aliases(aliases, GraphPPL.StaticInterfaces(keys(kwargs))), 
+            values(kwargs)
+        )
+        # Resolve to backend's aliased factor form (e.g., Normal -> NormalMeanVariance)
+        aliased_fform = GraphPPL.factor_alias(
+            backend, 
+            fform, 
+            GraphPPL.StaticInterfaces(keys(aliased_kwargs))
+        )
+        # Construct the aliased factor with canonical kwargs
+        return GraphPPL.__evaluate_fform(aliased_fform, values(aliased_kwargs))
+        
+    catch err
+        error("Initialization macro returns error for $fform with kwargs $kwargs: $err")
+    end
+end
+
+# Args version - positional or mixed arguments
+function convert_fform(
+    fform::F,
+    args...;
+    backend = INIT_BACKEND
+) where {F}
+    try
+        nodetype = GraphPPL.NodeType(backend, fform)
+        
+        # Extract values from potential :kw expressions
+        rhs_tuple = Tuple((arg isa Expr && arg.head == :kw ? arg.args[2] : arg) for arg in args)
+        
+        # Get default parametrization (may error if kwargs required)
+        rhs_named = GraphPPL.default_parametrization(backend, nodetype, fform, rhs_tuple)
+        
+        # Resolve to backend's aliased factor form
+        aliased_fform = GraphPPL.factor_alias(
+            backend, 
+            fform, 
+            GraphPPL.StaticInterfaces(keys(rhs_named))
+        )
+        # Construct with values in order
+        rhs_values = values(rhs_named)
+        if length(rhs_values) == 1 && fform == PointMass
+            return aliased_fform(rhs_values[1]...)
+        else
+            return aliased_fform(rhs_values...)
+        end  
+    catch err
+        error("Initialization macro returns error for $fform with args $args: $err")
+    end
+end
+
+"""
     convert_init_object(e::Expr)
 
 Converts a variable init or a factor init call on the left hand side of a init specification to a `GraphPPL.MetaObject`.
@@ -313,6 +449,7 @@ function init_macro_interior(init_body::Expr)
     init_body = add_init_construction(init_body)
     init_body = GraphPPL.apply_pipeline(init_body, create_submodel_init)
     init_body = GraphPPL.apply_pipeline(init_body, convert_init_variables)
+    init_body = GraphPPL.apply_pipeline(init_body, convert_init_fform)
     init_body = GraphPPL.apply_pipeline(init_body, convert_init_object)
     return init_body
 end

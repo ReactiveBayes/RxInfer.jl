@@ -490,6 +490,59 @@ end
     @test_expression_generating apply_pipeline(input, convert_init_variables) output
 end
 
+@testitem "convert_init_fform" begin
+    import RxInfer: convert_init_fform, convert_fform
+    import GraphPPL: apply_pipeline
+    import LinearAlgebra: I
+
+    include("../utiltests.jl")
+
+    # Test 1: convert_init_fform with Normal(mean=..., var=...) -> call expressions
+    input = quote
+        μ(w) = NormalMeanVariance(0, 1)
+        q(w) = GammaShapeScale(1,1)
+        μ(x) = Normal(mean = 0.0, var = 1.0)
+        q(x) = Normal(mean = 0.0, precision = 1.0)
+        μ(y) = Normal(mean = 0.0, variance = 1.0)
+        q(y) = Gamma(shape = 2.0, rate = 1.0)
+        μ(z) = Gamma(shape = 2.0, scale = 1.0)
+        q(z) = MvNormal(mean = [0, 0], covariance = 2*I)
+    end
+
+    output = quote
+        μ(w) = RxInfer.convert_fform(NormalMeanVariance, 0, 1)
+        q(w) = RxInfer.convert_fform(GammaShapeScale, 1, 1)
+        μ(x) = RxInfer.convert_fform(Normal, (; (mean = 0.0, var = 1.0)...))
+        q(x) = RxInfer.convert_fform(Normal, (; (mean = 0.0, precision = 1.0)...))
+        μ(y) = RxInfer.convert_fform(Normal, (; (mean = 0.0, variance = 1.0)...))
+        q(y) = RxInfer.convert_fform(Gamma, (; (shape = 2.0, rate = 1.0)...))
+        μ(z) = RxInfer.convert_fform(Gamma, (; (shape = 2.0, scale = 1.0)...))
+        q(z) = RxInfer.convert_fform(MvNormal, (; (mean = [0, 0], covariance = 2I)...))
+    end
+    @test_expression_generating apply_pipeline(input, convert_init_fform) output
+
+    # Test 2-9 tests actual conversion, executed after macro expansion
+    @test RxInfer.convert_fform(NormalMeanVariance, 0, 1) == NormalMeanVariance(0, 1)
+    @test RxInfer.convert_fform(GammaShapeScale, 1, 1) == GammaShapeScale(1, 1)
+    @test RxInfer.convert_fform(Normal, (mean = 0.0, var = 1.0)) == NormalMeanVariance(0, 1)
+    @test RxInfer.convert_fform(Normal, (mean = 0.0, precision = 1.0)) == NormalMeanPrecision(0,1)
+    @test RxInfer.convert_fform(Normal, (mean = 0.0, variance = 1.0)) == NormalMeanVariance(0, 1)
+    @test RxInfer.convert_fform(Gamma,  (shape = 2.0, rate = 1.0)) == GammaShapeRate(2,1)
+    @test RxInfer.convert_fform(Gamma, (shape = 2.0, scale = 1.0)) == GammaShapeScale(2,1)
+    @test RxInfer.convert_fform(MvNormal, (;mean = [0, 0], covariance = 2*I)) == MvNormalMeanCovariance([0,0], [2.0 0.0; 0.0 2.0])
+
+    # Test 10: Error case - Normal with positional arguments should throw the same error as @model
+    expected_error_message_Normal = """Initialization macro returns error for Distributions.Normal with args (0, 1): ErrorException("`Normal` cannot be constructed without keyword arguments. Use `Normal(mean = ..., var = ...)` or `Normal(mean = ..., precision = ...)`.")"""
+    @test_throws ErrorException(expected_error_message_Normal) RxInfer.convert_fform(Normal, 0, 1) 
+
+    # Test 11: Error case - MvNormal with positional arguments
+    expected_error_message_MvNormal = """Initialization macro returns error for Distributions.MvNormal with args ([0.0], [1.0]): ErrorException("`MvNormal` cannot be constructed without keyword arguments. Use `MvNormal(mean = ..., covariance = ...)` or `MvNormal(mean = ..., precision = ...)`.")"""
+    @test_throws ErrorException(expected_error_message_MvNormal) RxInfer.convert_fform(MvNormal, [0.0], [1.0]) 
+
+    # Test 12: Positional Gamma should warn and be treated as (shape, scale)
+    @test_logs (:warn, "'Gamma' and 'GammaShapeScale' without keywords are constructed with parameters (Shape, Scale).") RxInfer.convert_fform(Gamma, 2.0, 1.0)
+end
+
 @testitem "convert_init_object" begin
     import RxInfer: convert_init_object
     import GraphPPL: apply_pipeline
@@ -540,11 +593,11 @@ end
 
     # Test 1: init_macro_interor with one statement
     input = quote
-        q(x) = Normal(0, 1)
+        q(x) = Normal(mean=0, var=1)
     end
     output = quote
         let __init__ = RxInfer.InitSpecification()
-            push!(__init__, RxInfer.InitObject(RxInfer.InitDescriptor(RxInfer.InitMarginal(), GraphPPL.IndexedVariable(:x, nothing)), Normal(0, 1)))
+            push!(__init__, RxInfer.InitObject(RxInfer.InitDescriptor(RxInfer.InitMarginal(), GraphPPL.IndexedVariable(:x, nothing)), RxInfer.convert_fform(Normal, (; (mean = 0, var = 1)...))))
             __init__
         end
     end
@@ -552,13 +605,13 @@ end
 
     # Test 2: init_macro_interor with multiple statements
     input = quote
-        q(x) = Normal(0, 1)
-        μ(z) = Normal(0, 1)
+        q(x) = Normal(m=0, v=1)
+        μ(z) = Normal(m=0, v=1)
     end
     output = quote
         let __init__ = RxInfer.InitSpecification()
-            push!(__init__, RxInfer.InitObject(RxInfer.InitDescriptor(RxInfer.InitMarginal(), GraphPPL.IndexedVariable(:x, nothing)), Normal(0, 1)))
-            push!(__init__, RxInfer.InitObject(RxInfer.InitDescriptor(RxInfer.InitMessage(), GraphPPL.IndexedVariable(:z, nothing)), Normal(0, 1)))
+            push!(__init__, RxInfer.InitObject(RxInfer.InitDescriptor(RxInfer.InitMarginal(), GraphPPL.IndexedVariable(:x, nothing)), RxInfer.convert_fform(Normal, (; (m = 0, v = 1)...))))
+            push!(__init__, RxInfer.InitObject(RxInfer.InitDescriptor(RxInfer.InitMessage(), GraphPPL.IndexedVariable(:z, nothing)), RxInfer.convert_fform(Normal, (; (m = 0, v = 1)...))))
             __init__
         end
     end
@@ -566,21 +619,21 @@ end
 
     # Test 3: init_macro_interor with multiple statements and a submodel definition
     input = quote
-        q(x) = Normal(0, 1)
-        μ(z) = Normal(0, 1)
+        q(x) = Normal(m=0, v=1)
+        μ(z) = Normal(m=0, v=1)
         for init in submodel
-            q(x) = Normal(0, 1)
-            μ(z) = Normal(0, 1)
+            q(x) = Normal(m=0, v=1)
+            μ(z) = Normal(m=0, v=1)
         end
     end
     output = quote
         let __init__ = RxInfer.InitSpecification()
-            push!(__init__, RxInfer.InitObject(RxInfer.InitDescriptor(RxInfer.InitMarginal(), GraphPPL.IndexedVariable(:x, nothing)), Normal(0, 1)))
-            push!(__init__, RxInfer.InitObject(RxInfer.InitDescriptor(RxInfer.InitMessage(), GraphPPL.IndexedVariable(:z, nothing)), Normal(0, 1)))
+            push!(__init__, RxInfer.InitObject(RxInfer.InitDescriptor(RxInfer.InitMarginal(), GraphPPL.IndexedVariable(:x, nothing)), RxInfer.convert_fform(Normal, (; (m = 0, v = 1)...))))
+            push!(__init__, RxInfer.InitObject(RxInfer.InitDescriptor(RxInfer.InitMessage(), GraphPPL.IndexedVariable(:z, nothing)), RxInfer.convert_fform(Normal, (; (m = 0, v = 1)...))))            
             let __outer_init__ = __init__
                 let __init__ = RxInfer.GeneralSubModelInit(submodel)
-                    push!(__init__, RxInfer.InitObject(RxInfer.InitDescriptor(RxInfer.InitMarginal(), GraphPPL.IndexedVariable(:x, nothing)), Normal(0, 1)))
-                    push!(__init__, RxInfer.InitObject(RxInfer.InitDescriptor(RxInfer.InitMessage(), GraphPPL.IndexedVariable(:z, nothing)), Normal(0, 1)))
+                    push!(__init__, RxInfer.InitObject(RxInfer.InitDescriptor(RxInfer.InitMarginal(), GraphPPL.IndexedVariable(:x, nothing)), RxInfer.convert_fform(Normal, (; (m = 0, v = 1)...))))
+                    push!(__init__, RxInfer.InitObject(RxInfer.InitDescriptor(RxInfer.InitMessage(), GraphPPL.IndexedVariable(:z, nothing)), RxInfer.convert_fform(Normal, (; (m = 0, v = 1)...))))
                     push!(__outer_init__, __init__)
                 end
             end
@@ -746,3 +799,4 @@ end
     @test GraphPPL.getextra(model[node], RxInfer.InitMarExtraKey) == Distributions.Gamma(1.0, 1.0)
     @test occursin("Gamma{Float64}(α=1.0, θ=1.0)", repr(GraphPPL.getextra(model[node], RxInfer.InitMarExtraKey)))
 end
+
