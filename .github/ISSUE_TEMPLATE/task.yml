@@ -1,6 +1,6 @@
 name: Task
 description: Create a task that belongs to a Feature
-title: "Task: "
+title: "[Task]: "
 labels: ["task"]
 body:
   - type: markdown

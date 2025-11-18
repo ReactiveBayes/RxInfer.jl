@@ -1,6 +1,6 @@
 name: Feature
 description: Create a Feature that belongs to an Epic and will be broken down into Tasks
-title: "Feature: "
+title: "[Feature]: "
 labels: ["feature"]
 body:
   - type: markdown
