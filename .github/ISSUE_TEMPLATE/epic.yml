@@ -1,6 +1,6 @@
 name: Epic
 description: Create an epic for a large-scale project that will be broken down into Features and Tasks
-title: "Epic: "
+title: "[Epic]: "
 labels: ["epic"]
 body:
   - type: markdown
