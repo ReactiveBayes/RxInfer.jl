@@ -1,7 +1,7 @@
 name = "RxInfer"
 uuid = "86711068-29c9-4ff7-b620-ae75d7495b3d"
 authors = ["Bagaev Dmitry <d.v.bagaev@tue.nl> and contributors"]
-version = "4.6.3"
+version = "4.6.4"
 
 [deps]
 BayesBase = "b4ee3484-f114-42fe-b91c-797d54a0c67e"

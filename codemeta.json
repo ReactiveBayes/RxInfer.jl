@@ -9,12 +9,12 @@
     "downloadUrl": "https://github.com/reactivebayes/RxInfer.jl/releases",
     "issueTracker": "https://github.com/reactivebayes/RxInfer.jl/issues",
     "name": "RxInfer.jl",
-    "version": "4.6.2",
+    "version": "4.6.4",
     "description": "Julia package for automated, scalable and efficient Bayesian inference on factor graphs with reactive message passing. ",
     "applicationCategory": "Statistics",
     "developmentStatus": "active",
     "readme": "https://rxinfer.com",
-    "softwareVersion": "4.6.3",
+    "softwareVersion": "4.6.4",
     "keywords": [
         "Bayesian inference",
         "message passing",
@@ -48,11 +48,7 @@
             "@id": "https://orcid.org/0000-0001-9655-7986",
             "givenName": "Dmitry",
             "familyName": "Bagaev",
-            "email": "d.v.bagaev@tue.nl",
-            "affiliation": {
-                "@type": "Organization",
-                "name": "Eindhoven University of Technology"
-            }
+            "email": "bvdmitri@gmail.com"
         }
     ],
     "maintainer": [
@@ -61,11 +57,14 @@
             "@id": "https://orcid.org/0000-0001-9655-7986",
             "givenName": "Dmitry",
             "familyName": "Bagaev",
-            "email": "d.v.bagaev@tue.nl",
-            "affiliation": {
-                "@type": "Organization",
-                "name": "Eindhoven University of Technology"
-            }
+            "email": "bvdmitri@gmail.com"
+        },
+        {
+            "@type": "Person",
+            "@id": "https://orcid.org/0009-0007-0689-9300",
+            "givenName": "Wouter",
+            "familyName": "Nuijten",
+            "email": "w.w.l.nuijten@tue.nl"
         }
     ]
 }
