@@ -205,4 +205,5 @@ plot(p, size = (900, 400))
 ```@docs
 RxInfer.InitializationPlugin
 RxInfer.convert_init_object
+RxInfer.convert_init_fform
 ```
