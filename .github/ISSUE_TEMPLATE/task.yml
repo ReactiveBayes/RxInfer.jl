@@ -8,15 +8,6 @@ body:
       value: |
         Tasks are specific, actionable work items that belong to a Feature. Use this template to define a task that contributes to a feature's goals.
 
-  - type: input
-    id: feature-reference
-    attributes:
-      label: Parent Feature
-      description: Link to the Feature this task belongs to (use #issue-number)
-      placeholder: "#123"
-    validations:
-      required: true
-
   - type: textarea
     id: summary
     attributes:
@@ -66,18 +57,6 @@ body:
         - Depends on task #456
         - Blocks task #789
 
-  - type: dropdown
-    id: priority
-    attributes:
-      label: Priority
-      description: What is the priority of this task?
-      options:
-        - "Low"
-        - "Medium"
-        - "High"
-        - "Critical"
-    validations:
-      required: true
 
   - type: textarea
     id: estimated-effort
