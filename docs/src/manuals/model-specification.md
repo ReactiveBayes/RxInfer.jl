@@ -33,7 +33,11 @@ nothing #hide
 ```
 
 The model generator is not a real model (yet). For example, in the code above, we haven't specified anything for the `observation`. 
-The generator object allows us to iteratively add extra properties to the model, condition on data, and/or assign extra metadata information without actually materializing the entire graph structure. Read extra information about model generator [here](@ref lib-model-construction).
+The generator object allows us to iteratively add extra properties to the model, condition on data, and/or assign extra metadata information without actually materializing the entire graph structure. 
+
+```@docs
+RxInfer.@model
+```
 
 ## A state space model example
 
@@ -483,14 +487,6 @@ Model creation in `RxInfer` largely depends on [`GraphPPL`](https://github.com/R
 !!! note
     The model creation and construction were largely refactored in `GraphPPL` v4. 
     Read [_Migration Guide_](https://reactivebayes.github.io/GraphPPL.jl/stable/migration_3_to_4/) for more details.
-
-## [`@model` macro](@id user-guide-model-specification-model-macro)
-
-`RxInfer` operates with so-called [graphical probabilistic models](https://en.wikipedia.org/wiki/Graphical_model), more specifically [factor graphs](https://en.wikipedia.org/wiki/Factor_graph). Working with graphs directly is, however, tedious and error-prone, especially for large models. To simplify the process, `RxInfer` exports the `@model` macro, which translates a textual description of a probabilistic model into a corresponding factor graph representation.
-
-```@docs
-RxInfer.@model
-```
 
 Note, that `GraphPPL` also implements `@model` macro, but does **not** export it by default. This was a deliberate choice to allow inference backends (such as `RxInfer`) to implement [custom functionality](@ref user-guide-model-specification-pipelines) on top of the default `GraphPPL.@model` macro. This is done with a custom  _backend_ for `GraphPPL.@model` macro. Read more about backends in the corresponding section of `GraphPPL` [documentation](https://github.com/ReactiveBayes/GraphPPL.jl).
 
