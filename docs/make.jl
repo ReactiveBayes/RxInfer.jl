@@ -35,21 +35,26 @@ makedocs(;
             "RxInfer.jl vs. Others" => "manuals/comparison.md",
             "Using RxInfer from Python" => "manuals/how-to-use-rxinfer-from-python.md",
             "Model specification" => "manuals/model-specification.md",
-            "Constraints specification" => "manuals/constraints-specification.md",
-            "Meta specification" => "manuals/meta-specification.md",
+            "Variational inference" => [
+                "Bethe Free Energy" => "manuals/variational/bethe-free-energy.md",
+                "Constraints specification" => "manuals/variational/constraints-specification.md",
+                "Functional form constraints" => "manuals/variational/functional-forms.md"
+            ],
+            "Understanding Rules" => "manuals/rules_and_nodes.md",
             "Inference specification" => [
                 "Overview" => "manuals/inference/overview.md",
                 "Static inference" => "manuals/inference/static.md",
                 "Streamline inference" => "manuals/inference/streamlined.md",
                 "Static vs. Streamlined" => "manuals/inference/static-vs-streamlined.md",
                 "Initialization" => "manuals/inference/initialization.md",
+                "Meta specification" => "manuals/inference/meta-specification.md",
                 "Auto-updates" => "manuals/inference/autoupdates.md",
                 "Deterministic nodes" => "manuals/inference/delta-node.md",
                 "Non-conjugate inference" => "manuals/inference/nonconjugate.md",
-                "Undefined message update rules" => "manuals/inference/undefinedrules.md"
+                "Undefined message update rules" => "manuals/inference/undefinedrules.md",
+                "Inference results postprocessing" => "manuals/inference/postprocess.md",
+                "Creating your own custom nodes" => "manuals/inference/create-node.md",
             ],
-            "Inference customization" =>
-                ["Defining a custom node and rules" => "manuals/customization/custom-node.md", "Inference results postprocessing" => "manuals/customization/postprocess.md"],
             "Performance Tips" => "manuals/performance-tips.md",
             "FAQ" => "manuals/faq.md",
             "Debugging" => "manuals/debugging.md",
@@ -63,18 +68,13 @@ makedocs(;
                 "Using `=` instead of `:=` for deterministic nodes" => "manuals/sharpbits/usage-colon-equality.md"
             ]
         ],
-        "Library" => [
-            "Model construction" => "library/model-construction.md",
-            "Bethe Free Energy" => "library/bethe-free-energy.md",
-            "Functional form constraints" => "library/functional-forms.md",
-            "Exported methods" => "library/exported-methods.md"
-        ],
         "Examples" => "examples/overview.md",
         "Contributing" => [
             "Contribution guide" => "contributing/guide.md",
             "Contribution guidelines" => "contributing/guidelines.md",
             "Contributing to the documentation" => "contributing/new-documentation.md",
             "Contributing to the examples" => "contributing/new-example.md",
+            "Exported methods" => "contributing/exported-methods.md",
             "Publishing a new release" => "contributing/new-release.md"
         ]
     ]

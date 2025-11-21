@@ -2,7 +2,8 @@
 
 Welcome to the `RxInfer` documentation on creating custom factor graph nodes. In `RxInfer`, factor nodes represent functional relationships between variables, also known as factors. Together, these factors define your probabilistic model. Quite often these factors represent distributions, denoting how a certain parameter affects another. However, other factors are also possible, such as ones specifying linear or non-linear relationships. `RxInfer` already supports a lot of factor nodes, however, depending on the problem that you are trying to solve, you may need to create a custom node that better fits the specific requirements of your model. This tutorial will guide you through the process of defining a custom node in `RxInfer`, step by step. By the end of this tutorial, you will be able to create your own custom node and integrate it into your model.
 
-In addition, read another section on a different way of running inference with custom stochastic nodes without explicit rule specification [here](@ref inference-undefinedrules).
+!!! note 
+    Before we dive into the details of how to implement a custom node and its corresponding rule, read what a rule is and how it works in the [Understanding Rules](@ref what-is-a-rule) section. In addition, read another section on a different way of running inference with custom stochastic nodes without explicit rule specification [here](@ref inference-undefinedrules).
 
 ---
 
@@ -115,7 +116,7 @@ For the case of a `Beta` message coming into our node, the outgoing message will
 
 
 
-Here, `:out` refers to the interface of the outgoing message. The second argument denotes the incoming messages (which can be typed) as a tuple. Therefore make sure that it has a trailing `,` when there is a single message coming in. `m_π` is shorthand for _the incoming message on interface `π`_. As we will see later, the structured approximation update rule for incoming message from `π` will have `q_π` as parameter.
+Here, `:out` refers to the interface of the outgoing message. The second argument denotes the incoming messages (which can be typed) as a tuple. Therefore make sure that it has a trailing `,` when there is a single message coming in. `m_π` is shorthand for _the incoming message on interface `π`_. As we will see later, the structured approximation update rule for incoming message from `π` will have `q_π` as parameter. For more details on why some rules use `m_` prefixes while others use `q_` prefixes, see [Understanding Rules](@ref what-is-a-rule).
 
 The second rule is also straightforward; if `π` is a `PointMass` and therefore fixed, the outgoing message will be `MyBernoulli(π)`:
 
@@ -149,7 +150,7 @@ $$\vec{\nu}(x) \propto \exp \int q(\pi) \ln \mathrm{Ber}(x\mid \pi) \mathrm{d}x$
 
 $$\overleftarrow{\nu}(\pi) \propto \exp \sum_{x \in \{0,1\}} q(x) \ln \mathrm{Ber}(x\mid \pi)$$
 
-These messages depend on the marginals on the adjacent edges and not on the incoming messages as was the case with sum-product message passing. Update rules that operate on the marginals instead of the incoming messages are specified with the `q_{interface}` argument names. With these update rules, we can often support a wider family of distributions. Below we directly give the variational update rules. Deriving them yourself will be a nice challenge.
+These messages depend on the marginals on the adjacent edges and not on the incoming messages as was the case with sum-product message passing. Update rules that operate on the marginals instead of the incoming messages are specified with the `q_{interface}` argument names. With these update rules, we can often support a wider family of distributions. For a detailed explanation of why variational message passing requires `q_` prefixes instead of `m_` prefixes, see [Understanding Rules](@ref what-is-a-rule). Below we directly give the variational update rules. Deriving them yourself will be a nice challenge.
 
 ```@example create-node
 #rules towards out
@@ -390,6 +391,5 @@ nothing #hide
 ```
 
 As we can see, the print statement in the rule is executed, which means that the node reference passing is working as expected. This feature opens up possibilities for advanced inference scenarios, but should be used judiciously. Consider whether your use case truly requires access to the node object, as simpler solutions using standard message passing rules are often sufficient and more maintainable.
-
 
 

@@ -127,7 +127,7 @@ inference_result = infer(
 )
 ```
 
-However, let's say we would like to experiment with message update rules and define a new inference procedure by introducing a meta structure to the `Normal` node that always yields a message equal to `Normal` distribution with mean $m$ clamped between `lower_limit` and `upper_limit` for the outbound messages of the node. This is done as follows:
+However, let's say we would like to experiment with message update rules and define a new inference procedure by introducing a meta structure to the `Normal` node that always yields a message equal to `Normal` distribution with mean $m$ clamped between `lower_limit` and `upper_limit` for the outbound messages of the node. For background on what rules are and how they work, see [Understanding Rules](@ref what-is-a-rule). This is done as follows:
 
 ```@example custom-meta
 #create your new meta structure for Normal node

@@ -335,7 +335,7 @@ RxInfer's model specification extension for GraphPPL supports a feature called _
 
 - When running inference in a submodel is computationally expensive
 - When a submodel contains many variables whose inference results are not of primary importance
-- When specialized message passing update rules can be derived for variables in the Markov blanket of the submodel
+- When specialized message passing update rules (see [Understanding Rules](@ref what-is-a-rule)) can be derived for variables in the Markov blanket of the submodel
 
 Let's illustrate this concept with a simple example. We'll first create a basic submodel and then allow the inference backend to replace it with a corresponding node that has well-defined message update rules.
 
@@ -374,7 +374,7 @@ GraphPlot.gplot(getmodel(result.model))
 Now, let's create an optimized version of the `ShiftedNormal` submodel as a standalone node with its own message passing update rules.
 
 !!! note
-    Creating correct message passing update rules is beyond the scope of this section. For more information about custom message passing update rules, refer to the [Custom Node](@ref create-node) section.
+    Creating correct message passing update rules is beyond the scope of this section. For more information about what rules are and how they work, see [Understanding Rules](@ref what-is-a-rule). For details on implementing custom message passing update rules, refer to the [Custom Node](@ref create-node) section.
 
 ```@example node-contraction
 @node typeof(ShiftedNormal) Stochastic [ data, mean, precision, shift ]
