@@ -1,13 +1,13 @@
 @testitem "Gamma mixture model" begin
     using Distributions
-    using BenchmarkTools, LinearAlgebra, StableRNGs, Plots
+    using BenchmarkTools, LinearAlgebra, StableRNGs, Plots, BayesBase
 
     include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
     @model function gamma_mixture_model(y, nmixtures, priors_as, priors_bs, prior_s)
 
         # set prior on global selection variable
-        s ~ Dirichlet(probvec(prior_s))
+        s ~ prior_s
 
         # allocate vectors of random variables
         local as

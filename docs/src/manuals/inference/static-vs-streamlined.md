@@ -190,7 +190,7 @@ end
 
 # Initialization
 lgssm_init = @initialization begin
-    q(x) = MvNormal(μ₀, Σ₀)
+    q(x) = MvNormal(mean = μ₀, cov = Σ₀)
 end
 
 # Run streaming inference

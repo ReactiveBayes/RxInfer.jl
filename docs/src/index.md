@@ -20,13 +20,13 @@ CurrentModule = RxInfer
 
 *Julia package for automatic Bayesian inference on a factor graph with reactive message passing.*
 
-Given a probabilistic model, RxInfer allows for an efficient message-passing based Bayesian inference. It uses the model structure to generate an algorithm that consists of a sequence of local computations on a factor graph representation of the model. RxInfer.jl has been designed with a focus on efficiency, scalability and maximum performance for running inference with [reactive message passing](https://github.com/ReactiveBayes/ReactiveMP.jl).
+Given a probabilistic model, RxInfer allows for efficient, message-passing based Bayesian inference. It uses the model structure to generate an algorithm consisting of a sequence of local computations on a factor graph representation of the model. RxInfer.jl is designed for efficient, scalable, and high-performance performance inference using [reactive message passing](https://github.com/ReactiveBayes/ReactiveMP.jl).
 
-## Why RxInfer
+## Why RxInfer?
 
 Many important AI applications, including audio processing, self-driving vehicles, weather forecasting, and extended-reality video processing require continually solving an inference task in sophisticated probabilistic models with a large number of latent variables. Often, the inference task in these applications must be performed continually and in real-time in response to new observations.
 
-Popular MC-based inference methods, such as the No U-Turn Sampler (NUTS) or Hamiltonian Monte Carlo (HMC) sampling, rely on computationally heavy sampling procedures that do not scale well to probabilistic models with thousands of latent states. Therefore, while MC-based inference is an very versatile tool, it is practically not suitable for real-time applications. While the alternative variational inference method (VI) promises to scale better to large models than sampling-based inference, VI requires the derivation of gradients of a "Variational Free Energy" cost function. For large models, manual derivation of these gradients might not be feasible, while automated "black-box" gradient methods do not scale either because they are not capable of taking advantage of sparsity or conjugate pairs in the model. Therefore, while Bayesian inference is known as the optimal data processing framework, in practice, real-time AI applications rely on much simpler, often ad hoc, data processing algorithms.
+Popular MC-based inference methods, such as the No U-Turn Sampler (NUTS) or Hamiltonian Monte Carlo (HMC) sampling, rely on computationally heavy sampling procedures that do not scale well to probabilistic models with thousands of latent states. Therefore, while MC-based inference is a very versatile tool, it is practically not suitable for real-time applications. While the alternative variational inference method (VI) promises to scale better to large models than sampling-based inference, VI requires the derivation of gradients of a "Variational Free Energy" cost function. For large models, manual derivation of these gradients might not be feasible, while automated "black-box" gradient methods do not scale either because they are not capable of taking advantage of sparsity or conjugate pairs in the model. Therefore, while Bayesian inference is known as the optimal data processing framework, in practice, real-time AI applications rely on much simpler, often ad hoc, data processing algorithms.
 
 RxInfer aims to remedy these issues by running efficient Bayesian inference in sophisticated probabilistic models, taking advantage of local conjugate relationships in probabilistic models, and focusing on real-time Bayesian inference in large state-space models with thousands of latent variables. In addition, RxInfer provides a straightforward way to extend its functionality with custom factor nodes and message passing update rules. The engine is capable of running various Bayesian inference algorithms in different parts of the factor graph of a single probabilistic model. This makes it easier to explore different "what-if" scenarios and enables very efficient inference in specific cases.
 
@@ -61,7 +61,39 @@ RxInfer aims to remedy these issues by running efficient Bayesian inference in s
 
 ## How to get started?
 
-Head to the [Getting started](@ref user-guide-getting-started) section to get up and running with RxInfer. Alternatively, explore various [examples](@ref examples-overview) in the documentation.
+Head to the [Getting started](@ref user-guide-getting-started) section to get up and running with RxInfer. 
+
+
+## Explore examples
+
+The RxInfer ecosystem offers two main documentation websites:
+
+- **Documentation and Manual** (this site): Contains all the guides, tutorials, and API documentation to help you learn and use RxInfer.  
+- **Examples Site**: Features a wide variety of runnable, in-depth example notebooks and code, available at [examples.rxinfer.com](https://examples.rxinfer.com).
+
+Explore different [examples](@ref examples-overview) in this documentation, and visit the [RxInfer Examples Site](https://examples.rxinfer.com) for more hands-on tutorials and code.
+
+```@raw html
+<div style="display: flex; justify-content: center; align-items: center; margin: 2rem 0;">
+  <a href="https://examples.rxinfer.com/" 
+     style="
+         display:inline-block;
+         background:linear-gradient(90deg, #9558b2 0%, #4063d8 100%);
+         color:white;
+         font-weight:700;
+         font-size:1.25rem;
+         padding:1.1em 2.2em;
+         border-radius:0.5em;
+         text-decoration:none;
+         box-shadow:0 2px 8px rgba(0,0,0,0.10);
+         transition:background 0.15s, box-shadow 0.15s;
+         letter-spacing:0.02em;
+     "
+  >
+    🚀 Explore Tutorials
+  </a>
+</div>
+```
 
 ## Table of Contents
 

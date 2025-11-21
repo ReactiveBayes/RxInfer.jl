@@ -278,6 +278,53 @@ end
 
 what_walk(::typeof(convert_init_variables)) = walk_until_occurrence(:(lhs_ -> rhs_))
 
+resolve_parametrization(fform, args::NamedTuple) = begin
+    backend = ReactiveMPGraphPPLBackend(Static.True())
+    aliased_interfaces = GraphPPL.interface_aliases(GraphPPL.interface_aliases(backend, fform), GraphPPL.StaticInterfaces(keys(args)))
+    aliased_fform = GraphPPL.factor_alias(backend, fform, aliased_interfaces)
+    GraphPPL.__evaluate_fform(aliased_fform, values(args))
+end
+
+resolve_parametrization(fform, args) = begin
+    backend = ReactiveMPGraphPPLBackend(Static.True())
+    parametrization = GraphPPL.default_parametrization(backend, GraphPPL.Atomic(), fform, args)
+    if length(parametrization) == 1 && first(keys(parametrization)) == :in
+        return fform(args...)
+    end
+    resolve_parametrization(fform, parametrization)
+end
+
+resolve_init_args(arg::Expr) = begin
+    if @capture(arg, (kw_ = val_))
+        :($kw = $val)
+    else
+        arg
+    end
+end
+
+resolve_init_args(arg::Any) = arg
+
+"""
+    convert_init_fform(init_obj::Expr)
+
+Converts distribution constructor calls with (kw)args to use RxInfer.convert_fform.
+Skips conversion for special functions like `vague()` and `huge()`.
+"""
+function convert_init_fform(e::Expr)
+    if @capture(e, (fform_(args__; kwargs__)) | (fform_(args__)))
+        args = GraphPPL.combine_args(args, kwargs)
+        if @capture(args, (arg__,))
+            args = Expr(:tuple, map(resolve_init_args, arg)...)
+        end
+        return quote
+            RxInfer.resolve_parametrization($fform, $args)
+        end
+    end
+    return e
+end
+
+what_walk(::typeof(convert_init_fform)) = walk_until_occurrence(:(lhs_ -> rhs_))
+
 """
     convert_init_object(e::Expr)
 
@@ -299,6 +346,7 @@ function convert_init_object(e::Expr)
         elseif fform == :μ
             form = :(RxInfer.InitMessage())
         end
+        init_obj = convert_init_fform(init_obj)
         return quote
             push!(__init__, RxInfer.InitObject(RxInfer.InitDescriptor($form, $var), $init_obj))
         end

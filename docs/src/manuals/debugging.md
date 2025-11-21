@@ -229,7 +229,7 @@ result = infer(
 nothing #hide
 ```
 
-We can see the order of message update events. Note that `ReactiveMP` may decide to compute messages lazily, in which case the actual computation of the value of a message will be deffered until later moment. In this case, `LoggerPipelineStage` will report _DefferedMessage_.
+We can see the order of message update events. Note that `ReactiveMP` may decide to compute messages lazily, in which case the actual computation of the value of a message will be deferred until later moment. In this case, `LoggerPipelineStage` will report _DeferredMessage_.
 
 ## [Using `RxInferBenchmarkCallbacks` for Performance Analysis](@id user-guide-debugging-benchmark-callbacks)
 

@@ -155,7 +155,7 @@ These messages depend on the marginals on the adjacent edges and not on the inco
 #rules towards out
 @rule MyBernoulli(:out, Marginalisation) (q_π :: PointMass,) = MyBernoulli(mean(q_π))
 
-@rule Bernoulli(:out, Marginalisation) (q_π::Any,) = begin
+@rule MyBernoulli(:out, Marginalisation) (q_π::Any,) = begin
     rho_1 = mean(log, q_π)          # E[ln(x)]
     rho_2 = mean(mirrorlog, q_π)    # E[log(1-x)]
     m = max(rho_1, rho_2)
@@ -223,7 +223,7 @@ $$\begin{aligned}
 Which is what we implemented below. Note that `mean(mirrorlog, q(x))` is equal to $\mathrm{E}_{q(x)}[1-\log{x}]$.
 
 ```@example create-node
-@average_energy Bernoulli (q_out::Any, q_π::Any) = -mean(q_out) * mean(log, q_π) - (1.0 - mean(q_out)) * mean(mirrorlog, q_π)
+@average_energy MyBernoulli (q_out::Any, q_π::Any) = -mean(q_out) * mean(log, q_π) - (1.0 - mean(q_out)) * mean(mirrorlog, q_π)
 ```
 
 
