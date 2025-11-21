@@ -10,15 +10,6 @@ body:
         
         Features are high-level capabilities that belong to an Epic. Use this template to define a feature that will be broken down into specific tasks.
 
-  - type: input
-    id: epic-reference
-    attributes:
-      label: Parent Epic
-      description: Link to the Epic this feature belongs to (use #issue-number)
-      placeholder: "#123"
-    validations:
-      required: true
-
   - type: textarea
     id: summary
     attributes:
