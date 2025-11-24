@@ -136,7 +136,7 @@ When RxInfer encounters a missing rule, it means one of these is missing:
 2. A `@marginalrule` for computing joint marginals
 3. An `@average_energy` implementation for free energy computation
 
-You can add these using the methods described in [Creating your own custom nodes](@ref create-node).
+For an explanation of what rules are and how they work, see [Understanding Rules](@ref what-is-a-rule). You can add these using the methods described in [Creating your own custom nodes](@ref create-node).
 
 !!! note
     Not all message-passing rules have analytical solutions. In such cases, you might need to use numerical approximations or choose different model structures.
