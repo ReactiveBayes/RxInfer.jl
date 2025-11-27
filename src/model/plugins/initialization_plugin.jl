@@ -285,6 +285,8 @@ resolve_parametrization(fform, args::NamedTuple) = begin
     GraphPPL.__evaluate_fform(aliased_fform, values(args))
 end
 
+resolve_parametrization(fform, args::GraphPPL.MixedArguments) = GraphPPL.__evaluate_fform(fform, args)
+
 resolve_parametrization(fform, args) = begin
     backend = ReactiveMPGraphPPLBackend(Static.True())
     parametrization = GraphPPL.default_parametrization(backend, GraphPPL.Atomic(), fform, args)

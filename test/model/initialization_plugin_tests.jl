@@ -526,6 +526,16 @@ end
     end
 
     @test_expression_generating convert_init_fform(input) output
+
+    input = quote
+        Dirichlet(ones(3); check_args = false)
+    end
+
+    output = quote
+        RxInfer.resolve_parametrization(Dirichlet, GraphPPL.MixedArguments((ones(3),), (check_args = false,)))
+    end
+
+    @test_expression_generating convert_init_fform(input) output
 end
 
 @testitem "resolve_parametrization" begin
@@ -541,6 +551,8 @@ end
     @test resolve_parametrization(vague, (NormalMeanVariance,)) == NormalMeanVariance(0, 1e12)
 
     @test resolve_parametrization(tiny, (Float32,)) == tiny(Float32)
+
+    @test resolve_parametrization(Dirichlet, GraphPPL.MixedArguments((ones(3),), (check_args = false,))) == Dirichlet([1.0, 1.0, 1.0])
 
     result = resolve_parametrization(rand, (Float64, 3, 3))
     @test size(result) == (3, 3)
