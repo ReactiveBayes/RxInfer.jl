@@ -182,8 +182,8 @@ InitializationPlugin(::Nothing) = InitializationPlugin(NoInit())
 
 GraphPPL.plugin_type(::InitializationPlugin) = GraphPPL.VariableNodePlugin()
 
-GraphPPL.preprocess_plugin(plugin::InitializationPlugin, model::Model, context::Context, label::NodeLabel, nodedata::GraphPPL.NodeData, options::GraphPPL.NodeCreationOptions) = label,
-nodedata
+GraphPPL.preprocess_plugin(plugin::InitializationPlugin, model::Model, context::Context, label::NodeLabel, nodedata::GraphPPL.NodeData, options::GraphPPL.NodeCreationOptions) =
+    label, nodedata
 
 function GraphPPL.postprocess_plugin(plugin::InitializationPlugin{NoInit}, model::Model)
     apply_init!(model, default_init(GraphPPL.fform(GraphPPL.getcontext(model))))
@@ -284,6 +284,8 @@ resolve_parametrization(fform, args::NamedTuple) = begin
     aliased_fform = GraphPPL.factor_alias(backend, fform, aliased_interfaces)
     GraphPPL.__evaluate_fform(aliased_fform, values(args))
 end
+
+resolve_parametrization(fform, args::GraphPPL.MixedArguments) = GraphPPL.__evaluate_fform(fform, args)
 
 resolve_parametrization(fform, args) = begin
     backend = ReactiveMPGraphPPLBackend(Static.True())
