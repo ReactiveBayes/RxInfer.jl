@@ -182,8 +182,8 @@ InitializationPlugin(::Nothing) = InitializationPlugin(NoInit())
 
 GraphPPL.plugin_type(::InitializationPlugin) = GraphPPL.VariableNodePlugin()
 
-GraphPPL.preprocess_plugin(plugin::InitializationPlugin, model::Model, context::Context, label::NodeLabel, nodedata::GraphPPL.NodeData, options::GraphPPL.NodeCreationOptions) =
-    label, nodedata
+GraphPPL.preprocess_plugin(plugin::InitializationPlugin, model::Model, context::Context, label::NodeLabel, nodedata::GraphPPL.NodeData, options::GraphPPL.NodeCreationOptions) = label,
+nodedata
 
 function GraphPPL.postprocess_plugin(plugin::InitializationPlugin{NoInit}, model::Model)
     apply_init!(model, default_init(GraphPPL.fform(GraphPPL.getcontext(model))))
