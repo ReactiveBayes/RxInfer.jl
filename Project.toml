@@ -1,6 +1,6 @@
 name = "RxInfer"
 uuid = "86711068-29c9-4ff7-b620-ae75d7495b3d"
-version = "4.6.6"
+version = "4.6.7"
 authors = ["Bagaev Dmitry <d.v.bagaev@tue.nl> and contributors"]
 
 [deps]
@@ -33,11 +33,6 @@ UUIDs = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
 [weakdeps]
 ExponentialFamilyProjection = "17f509fa-9a96-44ba-99b2-1c5f01f0931b"
 PrettyTables = "08abe8d2-0d0c-5749-adfa-8a2ac140af0d"
-
-[sources]
-ExponentialFamily = {path = "/Users/bvdmitri/.julia/dev/ExponentialFamily.jl/"}
-GraphPPL = {path = "/Users/bvdmitri/.julia/dev/GraphPPL.jl/"}
-ReactiveMP = {path = "/Users/bvdmitri/.julia/dev/ReactiveMP.jl/"}
 
 [extensions]
 PrettyTablesExt = "PrettyTables"
