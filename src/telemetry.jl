@@ -1,4 +1,4 @@
-const RXINFER_DEFAULT_TELEMETRY_ENDPOINT = "https://rxinfer-telemetry-proxy-775335415984.europe-west4.run.app/addDocument"
+const RXINFER_DEFAULT_TELEMETRY_ENDPOINT = "https://firestore.googleapis.com/v1/projects/reactive-bayes/databases/(default)/documents/"
 
 const preference_telemetry_endpoint = @load_preference("telemetry_endpoint", RXINFER_DEFAULT_TELEMETRY_ENDPOINT)
 const preference_enable_using_rxinfer_telemetry = @load_preference("enable_using_rxinfer_telemetry", true)
