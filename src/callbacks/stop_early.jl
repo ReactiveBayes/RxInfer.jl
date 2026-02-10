@@ -9,7 +9,6 @@ Early-stopping criterion based on consecutive Bethe free energy (FE) values at e
 Fields
 - `atol::Float64`: Absolute tolerance 
 - `rtol::Float64`: Relative tolerance 
-- `start_fe_value::Float64`: Initial FE value used for the first comparison (optional)
 - `fe_values::Vector{Float64}`: History of observed FE values (most recent is last).
 
 The iterations stop when the current FE is approximately equal to the previous FE
@@ -22,11 +21,13 @@ struct StopEarlyIterationStrategy
     fe_values::Vector{Float64}
 end
 
+# function StopEarlyIterationStrategy(tolerance::Float64) 
+# 	return StopEarlyIterationStrategy(tolerance, Inf, Inf, [])
+# end
+
 function StopEarlyIterationStrategy(tolerance::Float64) 
-	return StopEarlyIterationStrategy(tolerance, Inf, Inf, [])
+	return StopEarlyIterationStrategy(0.0, tolerance, 0.0, [])
 end
-
-
 
 """
     (strategy::StopEarlyIterationStrategy)(model) -> Bool
@@ -35,7 +36,7 @@ Returns:
 - `true` if the current FE is approximately is approximately equal to the previous FE (stop iterations),
   `false` otherwise (continue iterations).
 """
-function (strategy::StopEarlyIterationStrategy)(model)
+function (strategy::StopEarlyIterationStrategy)(model,ntirations::Int64)
     current_fe_value = 0.0
     # Subscribe on the `BetheFreeEnergy` stream but only `take(1)` value from it
     subscribe!(score(model, RxInfer.BetheFreeEnergy(Real), RxInfer.DefaultObjectiveDiagnosticChecks) |> take(1), (v) -> current_fe_value = v)
