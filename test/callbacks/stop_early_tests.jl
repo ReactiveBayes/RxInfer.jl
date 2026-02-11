@@ -10,7 +10,7 @@
     mock = MockModel(fe_subject)
 
     # Push a free energy value
-    next!(fe_subject, 100.0)    
+    next!(fe_subject, 100.0)
     @test strategy(mock, 1) == false
 
     # Free energy value is close to the previous one, should stop
