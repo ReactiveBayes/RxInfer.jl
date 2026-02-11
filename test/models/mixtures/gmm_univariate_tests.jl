@@ -33,7 +33,8 @@
             returnvars     = KeepEach(),
             free_energy    = Float64,
             iterations     = n_its,
-            initialization = init
+            initialization = init,
+            callbacks=nothing
         )
     end
     ## -------------------------------------------- ##
