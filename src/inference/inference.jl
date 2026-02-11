@@ -486,7 +486,7 @@ function infer(;
     allow_node_contraction = false,
     showprogress = false, # batch specific
     catch_exception = false, # batch specific
-    callbacks = (after_iteration=StopEarlyIterationStrategy(0.001),),
+    callbacks = free_energy ? (after_iteration=StopEarlyIterationStrategy(1e-8),) : nothing,
     addons = nothing,
     postprocess = DefaultPostprocess(),
     events = nothing, # streamline specific
