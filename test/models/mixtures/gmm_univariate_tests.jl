@@ -34,7 +34,7 @@
             free_energy    = Float64,
             iterations     = n_its,
             initialization = init,
-            callbacks=nothing
+            callbacks      = nothing
         )
     end
     ## -------------------------------------------- ##

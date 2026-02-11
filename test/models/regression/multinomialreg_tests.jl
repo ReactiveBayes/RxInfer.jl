@@ -24,7 +24,7 @@
         showprogress = false,
         returnvars = KeepLast(),
         options = (limit_stack_depth = 100,),
-        callbacks = (after_iteration = StopEarlyIterationStrategy(1e-14),),
+        callbacks = (after_iteration = StopEarlyIterationStrategy(1e-14),)
     )
 
     m = mean(result.posteriors[:ψ])

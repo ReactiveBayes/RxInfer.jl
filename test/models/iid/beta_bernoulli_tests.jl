@@ -40,7 +40,7 @@
 
     # A simple execution of the inference, here the model is simple enough to be solved exactly
     # But we test for several iterations to make sure that the result is equal acros the iterationsl
-    result = infer(model = beta_bernoulli(a = 2.0, b = 7.0), data = (y = dataset,), iterations = 10, free_energy = true, callbacks=nothing)
+    result = infer(model = beta_bernoulli(a = 2.0, b = 7.0), data = (y = dataset,), iterations = 10, free_energy = true, callbacks = nothing)
 
     @test allequal(result.posteriors[:θ])
     @test allequal(result.free_energy)
@@ -55,7 +55,7 @@
     @test all(v -> v ≈ 2828.0533343622483, result_with_no_iterations.free_energy)
 
     # Double check that Free Energy is exactly the same for `MeanField` constraints because the model is simple enough and has only one variable
-    result_mean_field = infer(model = beta_bernoulli(a = 2.0, b = 7.0), constraints = MeanField(), data = (y = dataset,), iterations = 10, free_energy = true, callbacks=nothing)
+    result_mean_field = infer(model = beta_bernoulli(a = 2.0, b = 7.0), constraints = MeanField(), data = (y = dataset,), iterations = 10, free_energy = true, callbacks = nothing)
     @test length(result_mean_field.free_energy) === 10
     @test all(v -> v ≈ 2828.0533343622483, result_mean_field.free_energy)
 
@@ -140,7 +140,7 @@
 
     # Free energy allows for a specific type for the result of the free energy to make it a little more efficient
     for T in (BigFloat, Float64, Float32)
-        result_with_specific_free_energy_type = infer(model = beta_bernoulli(a = 2.0, b = 7.0), data = (y = dataset,), iterations = 10, free_energy = T, callbacks=nothing)
+        result_with_specific_free_energy_type = infer(model = beta_bernoulli(a = 2.0, b = 7.0), data = (y = dataset,), iterations = 10, free_energy = T, callbacks = nothing)
 
         @test all(t -> t[1] == t[2], Iterators.zip(result.posteriors[:θ], result_with_specific_free_energy_type.posteriors[:θ]))
         @test all(t -> t[1] ≈ t[2], Iterators.zip(result.free_energy, result_with_specific_free_energy_type.free_energy))

@@ -66,7 +66,7 @@
             free_energy = Float64,
             iterations = viters,
             initialization = init,
-            callbacks=nothing
+            callbacks = nothing
         )
     end
 
