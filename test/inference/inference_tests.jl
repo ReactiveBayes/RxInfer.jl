@@ -430,7 +430,7 @@ end
             initialization = init,
             iterations = 10,
             returnvars = KeepEach(),
-            callbacks=nothing,
+            callbacks = nothing,
             free_energy = true
         )
 
