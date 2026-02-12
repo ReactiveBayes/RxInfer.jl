@@ -19,7 +19,7 @@
 
     ## Inference definition
     function probit_inference(data, dependencies)
-        return infer(model = probit_model(dependencies = dependencies), data = (y = data,), iterations = 10, returnvars = KeepLast(), free_energy = true, callbacks = nothing)
+        return infer(model = probit_model(dependencies = dependencies), data = (y = data,), iterations = 10, returnvars = KeepLast(), free_energy = true)
     end
 
     ## Data creation
