@@ -41,8 +41,7 @@
             initialization = init,
             returnvars     = (γ = KeepEach(), θ = KeepEach()),
             iterations     = niter,
-            free_energy    = Float64,
-            callbacks      = nothing
+            free_energy    = Float64
         )
     end
 
