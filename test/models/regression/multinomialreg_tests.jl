@@ -23,7 +23,7 @@
         free_energy = true,
         showprogress = false,
         returnvars = KeepLast(),
-        options = (limit_stack_depth = 100,),
+        options = (limit_stack_depth = 100,)
     )
 
     m = mean(result.posteriors[:ψ])

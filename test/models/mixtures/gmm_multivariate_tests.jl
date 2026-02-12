@@ -65,7 +65,7 @@
             returnvars = KeepEach(),
             free_energy = Float64,
             iterations = viters,
-            initialization = init,
+            initialization = init
         )
     end
 
