@@ -2,6 +2,17 @@
     using RxInfer, Rocket
 
     strategy = StopEarlyIterationStrategy(1e-3)
+    strategy_with_atol = StopEarlyIterationStrategy(1e-5, 1e-3)
+
+    @test strategy.atol === 0.0
+    @test strategy.rtol === 1e-3
+    @test strategy.start_fe_value === Inf
+    @test isempty(strategy.fe_values)
+
+    @test strategy_with_atol.atol === 1e-5
+    @test strategy_with_atol.rtol === 1e-3
+    @test strategy_with_atol.start_fe_value === Inf
+    @test isempty(strategy_with_atol.fe_values)
 
     include("mock_model.jl")
     # Create a subject you can push values into

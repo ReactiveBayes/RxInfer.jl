@@ -446,7 +446,7 @@ Check the official documentation for more information about some of the argument
 - `free_energy_diagnostics = DefaultObjectiveDiagnosticChecks`: free energy diagnostic checks, optional, by default checks for possible `NaN`s and `Inf`s. `nothing` disables all checks.
 - `showprogress = false`: show progress module, optional, defaults to false (exclusive for batch inference)
 - `catch_exception`  specifies whether exceptions during the inference procedure should be caught, optional, defaults to false (exclusive for batch inference)
-- `callbacks = nothing`: inference cycle callbacks, optional
+- `callbacks = nothing`: inference cycle callbacks, optional. See [Early stopping](@ref manual-inference-early-stopping) for an opt-in callback example.
 - `addons = nothing`: inject and send extra computation information along messages
 - `postprocess = DefaultPostprocess()`: inference results postprocessing step, optional
 - `events = nothing`: inference cycle events, optional (exclusive for streamline inference)

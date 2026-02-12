@@ -1,17 +1,21 @@
 export StopEarlyIterationStrategy
 
 """
-   StopEarlyIterationStrategy
+    StopEarlyIterationStrategy
 
-Early-stopping criterion based on consecutive Bethe free energy (FE) values at each itertion.
+Early-stopping criterion based on consecutive Bethe free energy (FE) values.
 
 Fields
-- `atol::Float64`: Absolute tolerance 
-- `rtol::Float64`: Relative tolerance 
+- `atol::Float64`: Absolute tolerance.
+- `rtol::Float64`: Relative tolerance.
+- `start_fe_value::Float64`: Initial FE reference used before the first iteration.
 - `fe_values::Vector{Float64}`: History of observed FE values (most recent is last).
 
-The iterations stop when the current FE is approximately equal to the previous FE
-under the given tolerances.
+Constructors
+- `StopEarlyIterationStrategy(rtol)`: uses `atol = 0.0`, custom `rtol`.
+- `StopEarlyIterationStrategy(atol, rtol)`: custom absolute and relative tolerances.
+
+Both constructors use `start_fe_value = Inf` by default to avoid immediate stopping on the first iteration.
 """
 struct StopEarlyIterationStrategy
     atol::Float64
@@ -20,18 +24,23 @@ struct StopEarlyIterationStrategy
     fe_values::Vector{Float64}
 end
 
-function StopEarlyIterationStrategy(tolerance::Float64)
-    return StopEarlyIterationStrategy(0.0, tolerance, 0.0, [])
-end
+"""
+    StopEarlyIterationStrategy(rtol::Real)
+
+Create an early-stopping strategy with `atol = 0.0` and the given `rtol`.
+Uses `start_fe_value = Inf` by default.
+"""
+StopEarlyIterationStrategy(rtol::Real) = StopEarlyIterationStrategy(0.0, rtol)
 
 """
-    (strategy::StopEarlyIterationStrategy)(model) -> Bool
+    StopEarlyIterationStrategy(atol::Real, rtol::Real)
 
-Returns:
-- `true` if the current FE is approximately is approximately equal to the previous FE (stop iterations),
-  `false` otherwise (continue iterations).
+Create an early-stopping strategy with explicit absolute (`atol`) and relative (`rtol`) tolerances.
+Uses `start_fe_value = Inf` by default.
 """
-function (strategy::StopEarlyIterationStrategy)(model, ntirations::Int64)
+StopEarlyIterationStrategy(atol::Real, rtol::Real) = StopEarlyIterationStrategy(Float64(atol), Float64(rtol), Inf, Float64[])
+
+function (strategy::StopEarlyIterationStrategy)(model, iteration::Int)
     current_fe_value = 0.0
     # Subscribe on the `BetheFreeEnergy` stream but only `take(1)` value from it
     subscribe!(score(model, RxInfer.BetheFreeEnergy(Real), RxInfer.DefaultObjectiveDiagnosticChecks) |> take(1), (v) -> current_fe_value = v)
