@@ -41,15 +41,16 @@ end
 
 data = (y = randn(100),)
 max_iterations = 50
+initialization = @initialization begin
+    q(m) = NormalMeanVariance(0.0, 1.0)
+    q(tau) = GammaShapeRate(1.0, 1.0)
+end
 
 result = infer(
     model = iid_normal(),
     data = data,
     constraints = MeanField(),
-    initialization = @initialization begin
-        q(m) = NormalMeanVariance(0.0, 1.0)
-        q(tau) = GammaShapeRate(1.0, 1.0)
-    end,
+    initialization = initialization,
     free_energy = true,
     iterations = max_iterations,
     callbacks = (
