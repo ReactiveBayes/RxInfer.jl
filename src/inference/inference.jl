@@ -441,12 +441,12 @@ Check the official documentation for more information about some of the argument
 - `predictvars = nothing`: return structure info, optional (exclusive for batch inference)
 - `historyvars = nothing`: history structure info, optional, defaults to no history (exclusive for streamline inference)
 - `keephistory = nothing`: history buffer size, defaults to empty buffer (exclusive for streamline inference)
-- `iterations = nothing`: number of iterations, optional, defaults to `nothing`, the inference engine does not distinguish between variational message passing or Loopy belief propagation or expectation propagation iterations
+- `iterations = nothing`: number of iterations, optional, defaults to `nothing`, the inference engine does not distinguish between variational message passing or Loopy belief propagation or expectation propagation iterations. See [Early stopping](@ref manual-inference-early-stopping) for an opt-in callback example, which implements early stopping.
 - `free_energy = false`: compute the Bethe free energy, optional, defaults to false. Can be passed a floating point type, e.g. `Float64`, for better efficiency, but disables automatic differentiation packages, such as ForwardDiff.jl
 - `free_energy_diagnostics = DefaultObjectiveDiagnosticChecks`: free energy diagnostic checks, optional, by default checks for possible `NaN`s and `Inf`s. `nothing` disables all checks.
 - `showprogress = false`: show progress module, optional, defaults to false (exclusive for batch inference)
 - `catch_exception`  specifies whether exceptions during the inference procedure should be caught, optional, defaults to false (exclusive for batch inference)
-- `callbacks = nothing`: inference cycle callbacks, optional
+- `callbacks = nothing`: inference cycle callbacks, optional. See [Early stopping](@ref manual-inference-early-stopping) for an opt-in callback example.
 - `addons = nothing`: inject and send extra computation information along messages
 - `postprocess = DefaultPostprocess()`: inference results postprocessing step, optional
 - `events = nothing`: inference cycle events, optional (exclusive for streamline inference)
