@@ -225,6 +225,8 @@ Specifies the buffer size for the updates history both for the `historyvars` and
 
 Specifies the number of variational (or loopy belief propagation) iterations. By default set to `nothing`, which is equivalent of doing 1 iteration. However, if set explicitly to `1` the default setting for `returnvars` changes from `KeepLast` to `KeepEach`.
 
+See [Early stopping](@ref manual-inference-early-stopping) for an opt-in callback example that implements early stopping criterion.
+
 - ### `free_energy`
 
 **Batch inference:**
@@ -307,6 +309,8 @@ The list of all possible callbacks for different inference setting (batch or str
 - `before_autostart(engine::RxInferenceEngine)`
 - `after_autostart(engine::RxInferenceEngine)`
 
+See [Early stopping](@ref manual-inference-early-stopping) for an opt-in callback example, which implements early stopping criterion for Free Energy.
+See [Benchmarking RxInfer via callbacks](@ref user-guide-debugging-benchmark-callbacks) for another examples demonstrating how to benchmark inference via callbacks.
 
 - ### `addons`
 
