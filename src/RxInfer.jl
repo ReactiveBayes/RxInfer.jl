@@ -1,8 +1,10 @@
 module RxInfer
 
-using Reexport
+using Reexport, PrecompileTools
 
-@reexport using ReactiveMP, GraphPPL, Rocket, Distributions, ExponentialFamily, BayesBase, FastCholesky
+@recompile_invalidations begin
+    @reexport using ReactiveMP, GraphPPL, Rocket, Distributions, ExponentialFamily, BayesBase, FastCholesky
+end
 
 include("helpers.jl")
 include("rocket.jl")
