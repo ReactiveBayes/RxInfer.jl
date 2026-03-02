@@ -223,6 +223,10 @@ nothing #hide
 Now, we can call the [`infer`](@ref) function. We combine the pipeline logger stage with the callbacks, which were introduced in the [previous section](@ref user-guide-debugging-callbacks):
 
 ```@example debugging-with-callbacks
+init = @initialization begin 
+    q(μ) = vague(NormalMeanVariance)
+end
+
 result = infer(
     model = iid_normal_with_pipeline(),
     data  = (y = dataset, ),
@@ -249,6 +253,16 @@ Here's how to use it:
 
 ```@example debugging-with-callbacks
 using RxInfer
+
+@model function iid_normal(y)
+    μ  ~ Normal(mean = 0.0, variance = 100.0)
+    γ  ~ Gamma(shape = 1.0, rate = 1.0)
+    y .~ Normal(mean = μ, precision = γ)
+end
+
+init = @initialization begin 
+    q(μ) = vague(NormalMeanVariance)
+end
 
 infer(model = iid_normal(), data = (y = dataset, ), constraints = MeanField(), iterations = 5, initialization = init, callbacks = RxInferBenchmarkCallbacks()) #hide
 
