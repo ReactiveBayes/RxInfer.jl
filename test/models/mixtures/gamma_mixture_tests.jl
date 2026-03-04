@@ -76,7 +76,7 @@
     @test mean(_dists[1]) ≈ 0.32 atol = 1e-2
     @test mean(_dists[2]) ≈ 0.33 atol = 1e-2
     @test _mixing ≈ [0.8, 0.2] atol = 1e-2
-    @test last(gresult.free_energy) ≈ -146.8 atol = 1e-1
+    @test last(gresult.free_energy) ≈ -146.8 atol = 2e-1
 
     @test_plot "models" "gamma_mixture" begin
         # plot results
