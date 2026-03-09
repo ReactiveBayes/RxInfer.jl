@@ -146,6 +146,14 @@ function batch_inference(;
         _options = setaddons(_options, addons)
     end
 
+    # Set ReactiveMP event handler if `callbacks` are set
+    if !isnothing(callbacks)
+        if warn && !isnothing(geteventhandler(_options))
+            @warn "Both `callbacks = ...` and `options = (event_handler = ..., )` specify a value for the `event_handler`. Ignoring the `options` setting. Set `warn = false` to supress this warning."
+        end
+        _options = seteventhandler(_options, callbacks)
+    end
+
     # We create a model with the `GraphPPL` package and insert a certain RxInfer related 
     # plugins which include the VI plugin, meta plugin and the ReactiveMP integration plugin
     modelplugins = GraphPPL.PluginsCollection(
