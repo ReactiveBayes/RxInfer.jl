@@ -61,15 +61,10 @@ Rocket.on_complete!(updated::MarginalHasBeenUpdated)       = begin end
 
 # This creates a `tap` operator that will set the `updated` flag to true. 
 # Later on we check flags and `unset!` them after the `update!` procedure
-ensure_update(model::ProbabilisticModel, callback, variable_name::Symbol, updated::MarginalHasBeenUpdated) =
+ensure_update(model::ProbabilisticModel, callbacks, variable_name::Symbol, updated::MarginalHasBeenUpdated) =
     tap() do update
         set_updated!(updated)
-        callback(model, variable_name, update)
-    end
-
-ensure_update(model::ProbabilisticModel, ::Nothing, variable_name::Symbol, updated::MarginalHasBeenUpdated) =
-    tap() do _
-        set_updated!(updated) # If `callback` is nothing we simply set updated flag
+        invoke_callback(callbacks, Val(:on_marginal_update), variable_name, update)
     end
 
 function check_and_reset_updated!(updates)
@@ -102,9 +97,8 @@ log_data_entry(data::Pair) = log_data_entry(first(data), last(data))
 log_data_entry(name::Union{Symbol, String}, data) = log_data_entry(name, Base.IteratorSize(data), data)
 log_data_entry(name::Union{Symbol, String}, _, data) = InferenceLoggedDataEntry(name, typeof(data), :unknown, :unknown)
 log_data_entry(name::Union{Symbol, String}, ::Base.HasShape{0}, data) = InferenceLoggedDataEntry(name, typeof(data), (), ())
-log_data_entry(name::Union{Symbol, String}, ::Base.HasShape, data) = InferenceLoggedDataEntry(
-    name, typeof(data), log_data_entry_size(data), isempty(data) ? () : log_data_entry_size(first(data))
-)
+log_data_entry(name::Union{Symbol, String}, ::Base.HasShape, data) =
+    InferenceLoggedDataEntry(name, typeof(data), log_data_entry_size(data), isempty(data) ? () : log_data_entry_size(first(data)))
 
 log_data_entry_size(data) = log_data_entry_size(Base.IteratorSize(data), data)
 log_data_entry_size(::Base.HasShape, data) = size(data)

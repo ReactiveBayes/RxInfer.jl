@@ -37,7 +37,7 @@
     @test RxInfer.getcallbacks(options) === nothing
 
     callbacks = (args...) -> print(args...)
-    options = RxInfer.seteventhandler(options, callbacks)
+    options = RxInfer.setcallbacks(options, callbacks)
 
     @test RxInfer.getscheduler(options) === MyAnotherScheduler()
     @test RxInfer.getaddons(options) === (MyAnotherAddons(),)

@@ -269,9 +269,8 @@ function batch_inference(;
     executed_iterations = 0
 
     try
-        on_marginal_update = inference_get_callback(callbacks, :on_marginal_update)
-        subscriptions_rv   = Dict(variable => subscribe!(obtain_marginal(vardict[variable]) |> ensure_update(fmodel, on_marginal_update, variable, updates[variable]), actor) for (variable, actor) in pairs(actors_rv))
-        subscriptions_pr   = Dict(variable => subscribe!(obtain_prediction(vardict[variable]) |> ensure_update(fmodel, on_marginal_update, variable, updates[variable]), actor) for (variable, actor) in pairs(actors_pr))
+        subscriptions_rv = Dict(variable => subscribe!(obtain_marginal(vardict[variable]) |> ensure_update(fmodel, callbacks, variable, updates[variable]), actor) for (variable, actor) in pairs(actors_rv))
+        subscriptions_pr = Dict(variable => subscribe!(obtain_prediction(vardict[variable]) |> ensure_update(fmodel, callbacks, variable, updates[variable]), actor) for (variable, actor) in pairs(actors_pr))
 
         if !isempty(actors_pr) && is_free_energy
             error("The Bethe Free Energy computation is not compatible with the prediction functionality. Set `free_energy = false` to suppress this error.")

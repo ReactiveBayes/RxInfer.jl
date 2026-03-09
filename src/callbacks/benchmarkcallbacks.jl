@@ -78,7 +78,6 @@ function RxInferBenchmarkCallbacks(; capacity = DEFAULT_BENCHMARK_CALLBACKS_BUFF
 end
 
 check_available_callbacks(warn, callbacks::RxInferBenchmarkCallbacks, ::Val{AvailableCallbacks}) where {AvailableCallbacks} = nothing
-inference_get_callback(callbacks::RxInferBenchmarkCallbacks, name::Symbol) = nothing
 
 Base.isempty(callbacks::RxInferBenchmarkCallbacks) = isempty(callbacks.before_model_creation_ts)
 
