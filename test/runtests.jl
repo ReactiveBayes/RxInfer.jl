@@ -1,5 +1,9 @@
 using Aqua, Hwloc, ReTestItems, RxInfer
 
+## https://discourse.julialang.org/t/generation-of-documentation-fails-qt-qpa-xcb-could-not-connect-to-display/60988
+## https://gr-framework.org/workstations.html#no-output
+ENV["GKSwstype"] = "100"
+
 const IS_USE_DEV = get(ENV, "USE_DEV", "false") == "true"
 const IS_BENCHMARK = get(ENV, "BENCHMARK", "false") == "true"
 
