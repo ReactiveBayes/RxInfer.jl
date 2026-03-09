@@ -12,21 +12,21 @@
     @test RxInfer.getscheduler(options) === MyScheduler()
     @test RxInfer.getaddons(options) === (MyAddons(),)
     @test RxInfer.getrulefallback(options) === nothing
-    @test RxInfer.geteventhandler(options) === nothing
+    @test RxInfer.getcallbacks(options) === nothing
 
     options = RxInfer.setscheduler(options, MyAnotherScheduler())
 
     @test RxInfer.getscheduler(options) === MyAnotherScheduler()
     @test RxInfer.getaddons(options) === (MyAddons(),)
     @test RxInfer.getrulefallback(options) === nothing
-    @test RxInfer.geteventhandler(options) === nothing
+    @test RxInfer.getcallbacks(options) === nothing
 
     options = RxInfer.setaddons(options, MyAnotherAddons())
 
     @test RxInfer.getscheduler(options) === MyAnotherScheduler()
     @test RxInfer.getaddons(options) === (MyAnotherAddons(),)
     @test RxInfer.getrulefallback(options) === nothing
-    @test RxInfer.geteventhandler(options) === nothing
+    @test RxInfer.getcallbacks(options) === nothing
 
     rulefallback = (args...) -> print(args)
     options = RxInfer.setrulefallback(options, rulefallback)
@@ -34,15 +34,15 @@
     @test RxInfer.getscheduler(options) === MyAnotherScheduler()
     @test RxInfer.getaddons(options) === (MyAnotherAddons(),)
     @test RxInfer.getrulefallback(options) === rulefallback
-    @test RxInfer.geteventhandler(options) === nothing
+    @test RxInfer.getcallbacks(options) === nothing
 
-    event_handler = (args...) -> print(args...)
-    options = RxInfer.seteventhandler(options, event_handler)
+    callbacks = (args...) -> print(args...)
+    options = RxInfer.seteventhandler(options, callbacks)
 
     @test RxInfer.getscheduler(options) === MyAnotherScheduler()
     @test RxInfer.getaddons(options) === (MyAnotherAddons(),)
     @test RxInfer.getrulefallback(options) === rulefallback
-    @test RxInfer.geteventhandler(options) === event_handler
+    @test RxInfer.getcallbacks(options) === callbacks
 end
 
 @testitem "ReactiveMPInferenceOptions can be converted from NamedTuple" begin
@@ -50,13 +50,13 @@ end
 
     struct MySchedulerForNamedTuple end
 
-    event_handler = (args...) -> nothing
-    nt = (scheduler = MySchedulerForNamedTuple(), event_handler = event_handler)
+    callbacks = (args...) -> nothing
+    nt = (scheduler = MySchedulerForNamedTuple(), callbacks = callbacks)
 
     options = convert(ReactiveMPInferenceOptions, nt)
 
     @test RxInfer.getscheduler(options) === MySchedulerForNamedTuple()
-    @test RxInfer.geteventhandler(options) === event_handler
+    @test RxInfer.getcallbacks(options) === callbacks
 
     bad_nt = (blahblah = 1,)
 

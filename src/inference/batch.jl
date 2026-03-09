@@ -148,10 +148,10 @@ function batch_inference(;
 
     # Set ReactiveMP event handler if `callbacks` are set
     if !isnothing(callbacks)
-        if warn && !isnothing(geteventhandler(_options))
-            @warn "Both `callbacks = ...` and `options = (event_handler = ..., )` specify a value for the `event_handler`. Ignoring the `options` setting. Set `warn = false` to supress this warning."
+        if warn && !isnothing(getcallbacks(_options))
+            @warn "Both `callbacks = ...` and `options = (callbacks = ..., )` specify a value for the `callbacks`. Ignoring the `options` setting. Set `warn = false` to supress this warning."
         end
-        _options = seteventhandler(_options, callbacks)
+        _options = setcallbacks(_options, callbacks)
     end
 
     # We create a model with the `GraphPPL` package and insert a certain RxInfer related 

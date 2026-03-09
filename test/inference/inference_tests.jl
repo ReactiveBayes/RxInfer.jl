@@ -1794,7 +1794,7 @@ end
 end
 
 @testitem "It should be possible to assign event handlers for ReactiveMP #1" begin
-    @model function simple_model_for_event_handlers(y)
+    @model function simple_model_for_reactivemp_callbacks(y)
         t ~ Beta(2, 3)
         y ~ Bernoulli(t)
     end
@@ -1806,7 +1806,7 @@ end
         after_message_rule_call = (args...) -> push!(events, (event = :after_message_rule_call, args = args))
     )
 
-    result = infer(model = simple_model_for_event_handlers(), data = (y = 1,), callbacks = callbacks, iterations = 2)
+    result = infer(model = simple_model_for_reactivemp_callbacks(), data = (y = 1,), callbacks = callbacks, iterations = 2)
 
     @test result.posteriors[:t] == [Beta(3, 3), Beta(3, 3)]
     @test length(events) != 0

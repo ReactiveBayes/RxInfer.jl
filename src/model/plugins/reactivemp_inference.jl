@@ -27,7 +27,7 @@ struct ReactiveMPInferenceOptions{S, A, R, E}
     warn::Bool
     force_marginal_computation::Bool
     rulefallback::R
-    event_handler::E
+    callbacks::E
 end
 
 ReactiveMPInferenceOptions(scheduler, addons) = ReactiveMPInferenceOptions(scheduler, addons, true, false, nothing, nothing)
@@ -38,22 +38,22 @@ ReactiveMPInferenceOptions(scheduler, addons, warn, force_marginal_computation, 
 )
 
 setscheduler(options::ReactiveMPInferenceOptions, scheduler) = ReactiveMPInferenceOptions(
-    scheduler, options.addons, options.warn, options.force_marginal_computation, options.rulefallback, options.event_handler
+    scheduler, options.addons, options.warn, options.force_marginal_computation, options.rulefallback, options.callbacks
 )
 setaddons(options::ReactiveMPInferenceOptions, addons) = ReactiveMPInferenceOptions(
-    options.scheduler, addons, options.warn, options.force_marginal_computation, options.rulefallback, options.event_handler
+    options.scheduler, addons, options.warn, options.force_marginal_computation, options.rulefallback, options.callbacks
 )
 setwarn(options::ReactiveMPInferenceOptions, warn) = ReactiveMPInferenceOptions(
-    options.scheduler, options.addons, warn, options.force_marginal_computation, options.rulefallback, options.event_handler
+    options.scheduler, options.addons, warn, options.force_marginal_computation, options.rulefallback, options.callbacks
 )
 setforce_marginal_computation(options::ReactiveMPInferenceOptions, force_marginal_computation) = ReactiveMPInferenceOptions(
-    options.scheduler, options.addons, options.warn, force_marginal_computation, options.rulefallback, options.event_handler
+    options.scheduler, options.addons, options.warn, force_marginal_computation, options.rulefallback, options.callbacks
 )
 setrulefallback(options::ReactiveMPInferenceOptions, rulefallback) = ReactiveMPInferenceOptions(
-    options.scheduler, options.addons, options.warn, options.force_marginal_computation, rulefallback, options.event_handler
+    options.scheduler, options.addons, options.warn, options.force_marginal_computation, rulefallback, options.callbacks
 )
-seteventhandler(options::ReactiveMPInferenceOptions, event_handler) = ReactiveMPInferenceOptions(
-    options.scheduler, options.addons, options.warn, options.force_marginal_computation, options.rulefallback, event_handler
+setcallbacks(options::ReactiveMPInferenceOptions, callbacks) = ReactiveMPInferenceOptions(
+    options.scheduler, options.addons, options.warn, options.force_marginal_computation, options.rulefallback, callbacks
 )
 
 import Base: convert
@@ -63,7 +63,7 @@ function Base.convert(::Type{ReactiveMPInferenceOptions}, options::Nothing)
 end
 
 function Base.convert(::Type{ReactiveMPInferenceOptions}, options::NamedTuple{keys}) where {keys}
-    available_options = (:scheduler, :limit_stack_depth, :addons, :warn, :rulefallback, :force_marginal_computation, :event_handler)
+    available_options = (:scheduler, :limit_stack_depth, :addons, :warn, :rulefallback, :force_marginal_computation, :callbacks)
 
     for key in keys
         key ∈ available_options || error("Unknown model inference options: $(key). Available options are: $(available_options). ")
@@ -73,7 +73,7 @@ function Base.convert(::Type{ReactiveMPInferenceOptions}, options::NamedTuple{ke
     addons = haskey(options, :addons) ? options.addons : nothing
     rulefallback = haskey(options, :rulefallback) ? options.rulefallback : nothing
     force_marginal_computation = haskey(options, :force_marginal_computation) ? options.force_marginal_computation : false
-    event_handler = haskey(options, :event_handler) ? options.event_handler : nothing
+    callbacks = haskey(options, :callbacks) ? options.callbacks : nothing
 
     if warn && haskey(options, :scheduler) && haskey(options, :limit_stack_depth)
         @warn "Inference options have `scheduler` and `limit_stack_depth` options specified together. Ignoring `limit_stack_depth`. Use `warn = false` option in `ModelInferenceOptions` to suppress this warning."
@@ -87,19 +87,19 @@ function Base.convert(::Type{ReactiveMPInferenceOptions}, options::NamedTuple{ke
         nothing
     end
 
-    return ReactiveMPInferenceOptions(scheduler, addons, warn, force_marginal_computation, rulefallback, event_handler)
+    return ReactiveMPInferenceOptions(scheduler, addons, warn, force_marginal_computation, rulefallback, callbacks)
 end
 
 Rocket.getscheduler(options::ReactiveMPInferenceOptions) = something(options.scheduler, AsapScheduler())
 
-import ReactiveMP: getaddons, getrulefallback, geteventhandler
+import ReactiveMP: getaddons, getrulefallback, getcallbacks
 
 ReactiveMP.getaddons(options::ReactiveMPInferenceOptions) = ReactiveMP.getaddons(options, options.addons)
 ReactiveMP.getaddons(options::ReactiveMPInferenceOptions, addons::ReactiveMP.AbstractAddon) = (addons,) # ReactiveMP expects addons to be of type tuple
 ReactiveMP.getaddons(options::ReactiveMPInferenceOptions, addons::Nothing) = addons                     # Do nothing if addons is `nothing`
 ReactiveMP.getaddons(options::ReactiveMPInferenceOptions, addons::Tuple) = addons                       # Do nothing if addons is a `Tuple`
 ReactiveMP.getrulefallback(options::ReactiveMPInferenceOptions) = options.rulefallback
-ReactiveMP.geteventhandler(options::ReactiveMPInferenceOptions) = options.event_handler
+ReactiveMP.getcallbacks(options::ReactiveMPInferenceOptions) = options.callbacks
 
 # Get the force_marginal_computation setting
 getforce_marginal_computation(options::ReactiveMPInferenceOptions) = options.force_marginal_computation
@@ -253,9 +253,9 @@ function activate_rmp_factornode!(plugin::ReactiveMPInferencePlugin, model::Mode
     scheduler = getscheduler(getoptions(plugin))
     addons = getaddons(getoptions(plugin))
     rulefallback = getrulefallback(getoptions(plugin))
-    event_handler = geteventhandler(getoptions(plugin))
+    callbacks = getcallbacks(getoptions(plugin))
 
-    options = ReactiveMP.FactorNodeActivationOptions(metadata, dependencies, pipeline, addons, scheduler, rulefallback, event_handler)
+    options = ReactiveMP.FactorNodeActivationOptions(metadata, dependencies, pipeline, addons, scheduler, rulefallback, callbacks)
 
     return ReactiveMP.activate!(getextra(nodedata, ReactiveMPExtraFactorNodeKey), options)
 end
