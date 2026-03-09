@@ -1,5 +1,6 @@
 # [Early stopping](@id manual-inference-early-stopping)
 
+
 ```@meta
 CurrentModule = RxInfer
 ```
