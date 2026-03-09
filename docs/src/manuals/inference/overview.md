@@ -273,7 +273,7 @@ RxInfer.iserror
 
 - ### `callbacks`
 
-The inference function has its own lifecycle. The user is free to provide some (or none) of the callbacks to inject some extra logging or other procedures in the inference function, e.g.
+The inference function and underlying reactive message passing procedure both have their own lifecycle. The user is free to provide some (or none) of the callbacks to inject some extra logging or other procedures in the inference function, e.g.
 
 ```julia
 result = infer(
@@ -303,6 +303,8 @@ The list of all possible callbacks for different inference setting (batch or str
 
 !!! note
     `before_iteration` and `after_iteration` callbacks are allowed to return `true/false` value. `true` indicates that iterations must be halted and no further inference should be made.
+
+For `ReactiveMP` specific callbacks refer to the `ReactiveMP` documentation.
 
 **Exlusive for streamline inference**
 

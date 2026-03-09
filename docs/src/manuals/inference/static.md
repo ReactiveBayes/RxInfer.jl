@@ -347,6 +347,8 @@ nothing
 
 ---
 
+Below we list `RxInfer` specific callbacks, for `ReactiveMP` specific callbacks refer to the official documentation of `ReactiveMP`.
+
 ```julia
 before_model_creation()
 ```
