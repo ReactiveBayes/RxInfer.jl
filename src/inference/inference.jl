@@ -346,14 +346,9 @@ inference_check_dataismissing(d) = (ismissing(d) || any(ismissing, d))
 inference_fill_predictions(s::Symbol, d::AbstractArray) = NamedTuple{Tuple([s])}([repeat([missing], length(d))])
 inference_fill_predictions(s::Symbol, d::DataVariable) = NamedTuple{Tuple([s])}([missing])
 
-inference_invoke_callback(callbacks::T, name, args...) where {T} = _inference_invoke_callback(inference_get_callback(callbacks, name), args...)
-inference_invoke_callback(::Nothing, name, args...) = nothing
-
-_inference_invoke_callback(callback::T, args...) where {T} = callback(args...)
-_inference_invoke_callback(::Nothing, args...) = nothing
-
-inference_get_callback(callbacks, name) = get(() -> nothing, callbacks, name)
-inference_get_callback(::Nothing, name) = nothing
+# RxInfer uses and extends ReactiveMP's invoke_callback functionality
+# It is also being used exposed to the users via the `callbacks = ` keyword argument
+import ReactiveMP: invoke_callback
 
 unwrap_free_energy_option(option::Bool)                      = (option, Real)
 unwrap_free_energy_option(option::Type{T}) where {T <: Real} = (true, T)

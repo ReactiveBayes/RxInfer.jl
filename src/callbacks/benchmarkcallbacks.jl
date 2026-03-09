@@ -82,26 +82,44 @@ inference_get_callback(callbacks::RxInferBenchmarkCallbacks, name::Symbol) = not
 
 Base.isempty(callbacks::RxInferBenchmarkCallbacks) = isempty(callbacks.before_model_creation_ts)
 
-function inference_invoke_callback(callbacks::RxInferBenchmarkCallbacks, name::Symbol, args...)
-    if name === :before_model_creation
-        push!(callbacks.before_model_creation_ts, time_ns())
-        push!(callbacks.before_iteration_ts, UInt64[])
-        push!(callbacks.after_iteration_ts, UInt64[])
-    elseif name === :after_model_creation
-        push!(callbacks.after_model_creation_ts, time_ns())
-    elseif name === :before_inference
-        push!(callbacks.before_inference_ts, time_ns())
-    elseif name === :after_inference
-        push!(callbacks.after_inference_ts, time_ns())
-    elseif name === :before_iteration
-        push!(last(callbacks.before_iteration_ts), time_ns())
-    elseif name === :after_iteration
-        push!(last(callbacks.after_iteration_ts), time_ns())
-    elseif name === :before_autostart
-        push!(callbacks.before_autostart_ts, time_ns())
-    elseif name === :after_autostart
-        push!(callbacks.after_autostart_ts, time_ns())
-    end
+import ReactiveMP: invoke_callback
+
+function ReactiveMP.invoke_callback(callbacks::RxInferBenchmarkCallbacks, event::Any, args...)
+    return nothing
+end
+
+function ReactiveMP.invoke_callback(callbacks::RxInferBenchmarkCallbacks, ::Val{:before_model_creation}, args...)
+    push!(callbacks.before_model_creation_ts, time_ns())
+    push!(callbacks.before_iteration_ts, UInt64[])
+    push!(callbacks.after_iteration_ts, UInt64[])
+end
+
+function ReactiveMP.invoke_callback(callbacks::RxInferBenchmarkCallbacks, ::Val{:after_model_creation}, args...)
+    push!(callbacks.after_model_creation_ts, time_ns())
+end
+
+function ReactiveMP.invoke_callback(callbacks::RxInferBenchmarkCallbacks, ::Val{:before_inference}, args...)
+    push!(callbacks.before_inference_ts, time_ns())
+end
+
+function ReactiveMP.invoke_callback(callbacks::RxInferBenchmarkCallbacks, ::Val{:after_inference}, args...)
+    push!(callbacks.after_inference_ts, time_ns())
+end
+
+function ReactiveMP.invoke_callback(callbacks::RxInferBenchmarkCallbacks, ::Val{:before_iteration}, args...)
+    push!(last(callbacks.before_iteration_ts), time_ns())
+end
+
+function ReactiveMP.invoke_callback(callbacks::RxInferBenchmarkCallbacks, ::Val{:after_iteration}, args...)
+    push!(last(callbacks.after_iteration_ts), time_ns())
+end
+
+function ReactiveMP.invoke_callback(callbacks::RxInferBenchmarkCallbacks, ::Val{:before_autostart}, args...)
+    push!(callbacks.before_autostart_ts, time_ns())
+end
+
+function ReactiveMP.invoke_callback(callbacks::RxInferBenchmarkCallbacks, ::Val{:after_autostart}, args...)
+    push!(callbacks.after_autostart_ts, time_ns())
 end
 
 """

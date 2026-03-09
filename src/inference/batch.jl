@@ -211,9 +211,9 @@ function batch_inference(;
 
     infer_check_dicttype(:predictvars, predictvars)
 
-    inference_invoke_callback(callbacks, :before_model_creation)
+    invoke_callback(callbacks, Val(:before_model_creation))
     fmodel = create_model(_model | data)
-    inference_invoke_callback(callbacks, :after_model_creation, fmodel)
+    invoke_callback(callbacks, Val(:after_model_creation), fmodel)
     vardict = getvardict(fmodel)
     vardict = GraphPPL.variables(vardict) # TODO bvdmitri, should work recursively as well
 
@@ -293,7 +293,7 @@ function batch_inference(;
             end
         end
 
-        inference_invoke_callback(callbacks, :before_inference, fmodel)
+        invoke_callback(callbacks, Val(:before_inference), fmodel)
 
         fdata = filter(pairs(data)) do pair
             hk      = haskey(vardict, first(pair))
@@ -308,14 +308,14 @@ function batch_inference(;
         cacheddatavars = Dict((key => getvariable(vardict[key]) for key in keys(fdata)))
 
         for iteration in 1:_iterations
-            if something(ensure_bool_or_nothing(inference_invoke_callback(callbacks, :before_iteration, fmodel, iteration)), false)::Bool
+            if something(ensure_bool_or_nothing(invoke_callback(callbacks, Val(:before_iteration), fmodel, iteration)), false)::Bool
                 break
             end
-            inference_invoke_callback(callbacks, :before_data_update, fmodel, data)
+            invoke_callback(callbacks, Val(:before_data_update), fmodel, data)
             for (key, value) in fdata
                 update!(cacheddatavars[key], get_data(value))
             end
-            inference_invoke_callback(callbacks, :after_data_update, fmodel, data)
+            invoke_callback(callbacks, Val(:after_data_update), fmodel, data)
 
             # Check that all requested marginals have been updated and unset the `updated` flag
             # Throws an error if some were not update
@@ -327,7 +327,7 @@ function batch_inference(;
 
             executed_iterations += 1
 
-            if something(ensure_bool_or_nothing(inference_invoke_callback(callbacks, :after_iteration, fmodel, iteration)), false)::Bool
+            if something(ensure_bool_or_nothing(invoke_callback(callbacks, Val(:after_iteration), fmodel, iteration)), false)::Bool
                 break
             end
         end
@@ -336,7 +336,7 @@ function batch_inference(;
             unsubscribe!(subscription)
         end
 
-        inference_invoke_callback(callbacks, :after_inference, fmodel)
+        invoke_callback(callbacks, Val(:after_inference), fmodel)
     catch error
         potential_error = inference_process_error(error, !catch_exception)
     end
