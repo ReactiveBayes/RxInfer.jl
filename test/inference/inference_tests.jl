@@ -1793,6 +1793,29 @@ end
     @test result.posteriors[:θ] === missing
 end
 
+@testitem "Inference callbacks should have access to result extras" begin
+    @model function simple_model_for_result_extras(y)
+        t ~ Beta(2, 3)
+        y ~ Bernoulli(t)
+    end
+
+    using RxInfer
+
+    struct MyCallbackHandler
+        result
+    end
+
+    RxInfer.invoke_callback(handler::MyCallbackHandler, _, args...) = nothing
+    RxInfer.invoke_callback(handler::MyCallbackHandler, ::Val{:on_marginal_update}, model, name, update) = push!(handler.result, (name, update))
+
+    handler = MyCallbackHandler([])
+
+    result = infer(model = simple_model_for_result_extras(), data = (y = 1,), callbacks = handler)
+
+    @test result.extras[:my_callback_handler_result] === handler.result
+    @test result.extras[:my_callback_handler_result][1] === Beta(3, 3)
+end
+
 @testitem "It should be possible to assign event handlers for ReactiveMP #1" begin
     @model function simple_model_for_reactivemp_callbacks(y)
         t ~ Beta(2, 3)
