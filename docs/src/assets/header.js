@@ -183,7 +183,8 @@ document.addEventListener('DOMContentLoaded', function() {
             if (modal.classList.contains('is-active')) fetchRemoteIndex();
             connectBodyObserver();
         }
-    }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });    
+    }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
     fetchRemoteIndex();
-    })();})();
+    })();
+});
 
