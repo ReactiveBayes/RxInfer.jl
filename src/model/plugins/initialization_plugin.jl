@@ -367,7 +367,6 @@ function init_macro_interior(init_body::Expr)
     return init_body
 end
 
-
 """
     @initialization begin ... end 
         or
