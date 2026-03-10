@@ -81,7 +81,7 @@ function check_and_reset_updated!(updates)
         error("""
               Variables [ $(names) ] have not been updated after an update event. 
               Therefore, make sure to initialize all required marginals and messages. See `initialization` keyword argument for the inference function. 
-              See the official documentation for detailed information regarding the initialization.
+              See documentation: https://docs.rxinfer.com/stable/manuals/inference/initialization/ .
               """)
     end
 end
