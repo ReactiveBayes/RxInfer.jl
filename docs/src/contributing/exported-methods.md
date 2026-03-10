@@ -23,7 +23,7 @@ import Distributions: mean as mean_from_distributions
 mean_from_rxinfer === mean_from_distributions
 ```
 
-Even though we import `mean` function from two different packages they actually refer to the same object. Worth noting that this is not always the case - Julia will print a warning in case it finds unresolvable conflicts and usage of such functions will be disallowed unless user `import` them specifically. Read more about this in the [section of the Julia's documentation](https://docs.julialang.org/en/v1/manual/modules/#Handling-name-conflicts).
+Even though we import `mean` function from two different packages they actually refer to the same object. Worth noting that this is not always the case - Julia will print a warning in case it finds unresolvable conflicts and usage of such functions will be disallowed unless the user `import`s from them specifically. Read more about this in the [section of the Julia's documentation](https://docs.julialang.org/en/v1/manual/modules/#Handling-name-conflicts).
 
 ```@example another_import
 # It is easier to let Julia resolve names automatically

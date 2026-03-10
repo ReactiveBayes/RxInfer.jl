@@ -79,7 +79,6 @@ window.onload = function() {
     })())
     
     const documenterTarget = document.querySelector('#documenter');
-    
     documenterTarget.parentNode.insertBefore(header, documenterTarget);
 }
 

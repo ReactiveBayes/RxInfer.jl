@@ -46,7 +46,7 @@ dev_doc_init:
 docs: doc_init ## Generate documentation
 	julia --startup-file=no --project=docs/ docs/make.jl
 
-docs-serve: doc_init ## Serve documentation locally for preview in browser, requires `LiveServer.jl` installed globally
+docs-serve: doc_init ## Serve documentation locally for preview in browser
 	julia --project=docs/ -e 'ENV["DOCS_DRAFT"]="true"; using LiveServer; LiveServer.servedocs(launch_browser=true, port=5678)'
 
 devdocs: dev_doc_init ## Same as `make docs` but uses `dev-ed` versions of core packages
@@ -55,7 +55,7 @@ devdocs: dev_doc_init ## Same as `make docs` but uses `dev-ed` versions of core 
 .PHONY: test
 
 test: ## Run tests, use dev=true to use `dev-ed` version of core packages
-	julia -e 'ENV["USE_DEV"]="$(dev)"; import Pkg; Pkg.activate("."); Pkg.test()'	
+	julia -e 'ENV["USE_DEV"]="$(dev)"; import Pkg; Pkg.activate("."); Pkg.test(test_args = split("$(test_args)") .|> string)'	
 
 devtest: ## Alias for the `make test dev=true ...`
 	julia -e 'ENV["USE_DEV"]="true"; import Pkg; Pkg.activate("."); Pkg.test()'	

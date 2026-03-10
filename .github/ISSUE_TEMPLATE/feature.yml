@@ -1,0 +1,88 @@
+name: Feature
+description: Create a Feature that belongs to an Epic and will be broken down into Tasks
+title: "[Feature]: "
+labels: ["feature"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Note:** This template is for Scrum terminology (Epic → Feature → Task). If you're requesting a new feature or enhancement for RxInfer, please use the "Feature Request" template instead.
+        
+        Features are high-level capabilities that belong to an Epic. Use this template to define a feature that will be broken down into specific tasks.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Feature Summary
+      description: A clear and concise summary of what this feature provides
+      placeholder: Provide a brief overview of what this feature aims to deliver...
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Feature Description
+      description: Detailed description of the feature, its capabilities, and how it fits into the parent Epic
+      placeholder: Describe the feature in detail...
+    validations:
+      required: true
+
+  - type: textarea
+    id: goals
+    attributes:
+      label: Feature Goals
+      description: What are the main goals and acceptance criteria for this feature?
+      placeholder: |
+        - Goal 1
+        - Goal 2
+        - Acceptance criteria
+    validations:
+      required: true
+
+  - type: textarea
+    id: tasks
+    attributes:
+      label: Tasks
+      description: |
+        List the tasks that compose this feature. Tasks should be specific, actionable items.
+        You can create separate Task issues for each item or add more tasks as the feature progresses.
+      placeholder: |
+        - [ ] Task 1: [Description]
+        - [ ] Task 2: [Description]
+        - [ ] Task 3: [Description]
+    validations:
+      required: true
+
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: Are there any dependencies on other features, issues, PRs, or external factors?
+      placeholder: |
+        - Depends on feature #456
+        - Blocks feature #789
+
+  - type: textarea
+    id: timeline
+    attributes:
+      label: Estimated Timeline
+      description: Rough estimate of when this feature should be completed (if known)
+      placeholder: "Q1 2025, Q2 2025, etc."
+
+  - type: textarea
+    id: related
+    attributes:
+      label: Related Issues / PRs
+      description: Link to any related issues, PRs, or discussions
+      placeholder: |
+        - Related to #123
+        - Blocks #456
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any other relevant information about this feature
+      placeholder: Additional context...
+

@@ -6,7 +6,7 @@ This section describes built-in functional forms that can be used for posterior 
 
 In message passing framework, in order to compute a posterior over some latent state $q(x)$, it is necessary to compute a normalized product of two messages
 $$q(x) = \frac{\mu_1(x) \mu_2(x)}{\int \mu_1(x) \mu_2(x) \mathrm{d}x}.$$
-In some situations, when functional forms of $\mu_1(x)$ and $\mu_2(x)$ are know in advance, it is possible to compute the normalized product efficiently and analytically. It is, however, not always the case, since the messages can have arbitrary functional form and it is not always easy to compute the normalization factor.
+In some situations, when functional forms of $\mu_1(x)$ and $\mu_2(x)$ are known in advance, it is possible to compute the normalized product efficiently and analytically. It is, however, not always the case, since the messages can have arbitrary functional form and it is not always easy to compute the normalization factor.
 
 Functional forms help to circumvent this. They implement a custom callback on the product of two messages, which cannot 
 be computed analytically. Essentially, a functional form constraint defines a functional `F`, such that 
@@ -71,7 +71,7 @@ RxInfer.RightProposal
 
 ## [FixedMarginalFormConstraint](@id lib-forms-fixed-marginal-constraint)
 
-Fixed marginal form constraint replaces the resulting posterior marginal obtained during the inference procedure with the prespecified one. Worth to note that the inference backend still tries to compute real posterior marginal and may fail during this process. Might be useful for debugging purposes. If `nothing` is passed then the computed posterior marginal is returned (see also [`UnspecifiedFormConstraint`](@ref lib-forms-unspecified-constraint)).
+Fixed marginal form constraint replaces the resulting posterior marginal obtained during the inference procedure with the prespecified one. Note that the inference backend still tries to compute the real posterior marginal and may fail during this process. This may be useful for debugging. If `nothing` is passed then the computed posterior marginal is returned (see also [`UnspecifiedFormConstraint`](@ref lib-forms-unspecified-constraint)).
 
 ```@example constraints-functional-forms
 @constraints function block_updates(x_posterior = nothing) 

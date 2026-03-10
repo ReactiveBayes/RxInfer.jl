@@ -81,9 +81,11 @@ jobs:
         with:
           name: test-output-${{ matrix.version }}-${{ matrix.os }}-${{ matrix.arch }}
           path: test/_output
-  test-examples:
+  examples:
     name: Examples
     runs-on: ubuntu-latest
+    needs:
+      - test
     steps:
       - name: Checkout RxInfer
         uses: actions/checkout@v4
@@ -109,7 +111,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: 
       - test
-      - test-examples
     permissions:
       contents: write
     steps:

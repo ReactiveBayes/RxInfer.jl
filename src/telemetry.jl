@@ -1,4 +1,4 @@
-const RXINFER_DEFAULT_TELEMETRY_ENDPOINT = "https://rxinfer-telemetry-proxy-775335415984.europe-west4.run.app/addDocument"
+const RXINFER_DEFAULT_TELEMETRY_ENDPOINT = "https://firestore.googleapis.com/v1/projects/reactive-bayes/databases/(default)/documents/"
 
 const preference_telemetry_endpoint = @load_preference("telemetry_endpoint", RXINFER_DEFAULT_TELEMETRY_ENDPOINT)
 const preference_enable_using_rxinfer_telemetry = @load_preference("enable_using_rxinfer_telemetry", true)
@@ -75,6 +75,7 @@ function log_using_rxinfer()
         )
     catch e
         logged_usage[] = false
+        @debug "Failed to `log_using_rxinfer`" error=(e, catch_backtrace())
         nothing # Discard any log errors to avoid disrupting the user
     end
 
@@ -125,7 +126,6 @@ function __add_document(id, collection, payload)
     if !isnothing(preference_telemetry_endpoint)
         # Headers required for Firestore REST API
         headers = ["Accept" => "application/json", "Content-Type" => "application/json"]
-        data = Dict("payload" => payload, "collection" => collection)
 
         # Example values:
         # id = "550e8400-e29b-41d4-a716-446655440000" (a UUID string)
@@ -141,11 +141,11 @@ function __add_document(id, collection, payload)
             # If document exists, endpoint should look like:
             # "https://firestore.../using_rxinfer/abc123def456"
             name = id_name_mapping[id]
-            data["name"] = name
+            endpoint = string(rstrip(preference_telemetry_endpoint, '/'), '/', collection, '/', name)
             # For collections that allow patching (like using_rxinfer, sessions, session_stats),
             # send a PATCH request to update the existing document with new data
             if collection_allow_patch[collection]
-                HTTP.patch(preference_telemetry_endpoint, headers, JSON.json(data))
+                HTTP.patch(endpoint, headers, JSON.json(data))
                 # For collections that don't allow patching (like invokes),
                 # return a fake successful response without making a request,
                 # since we don't want to update existing documents in these collections
@@ -155,7 +155,8 @@ function __add_document(id, collection, payload)
         else
             # For new documents, endpoint would be like:
             # "https://firestore.../using_rxinfer"
-            HTTP.post(preference_telemetry_endpoint, headers, JSON.json(data))
+            endpoint = string(rstrip(preference_telemetry_endpoint, '/'), '/', collection)
+            HTTP.post(endpoint, headers, JSON.json(payload))
         end
 
         # Parse response if successful

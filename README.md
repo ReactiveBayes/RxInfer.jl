@@ -13,7 +13,6 @@
 [![Zenodo](https://img.shields.io/badge/Zenodo-10.5281/zenodo.7774921-important)](https://zenodo.org/badge/latestdoi/501995296)
 [![NumFocus](https://img.shields.io/badge/supported%20by-NumFocus-green)](#numfocus)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/ReactiveBayes/RxInfer.jl)
-[![Join our Discord](https://img.shields.io/badge/Join%20our-Discord-blue)](https://discord.gg/UvMhrbQh)
 
 
 # Overview
@@ -21,9 +20,6 @@
 `RxInfer.jl` is a Julia package for automatic Bayesian inference on a factor graph with reactive message passing.
 
 Given a probabilistic model, RxInfer allows for an efficient message-passing based Bayesian inference. It uses the model structure to generate an algorithm that consists of a sequence of local computations on a factor graph representation of the model.
-
-> [!NOTE]
-> RxInfer can also be used from Python through our [client-server infrastructure](#client-server-infrastructure) and [Python SDK](https://github.com/lazydynamics/RxInferClient.py).
 
 ### Performance and scalability
 
@@ -50,6 +46,7 @@ In this example, RxInfer executes exact inference consistently and does not depe
 
 ### References
 
+- [rxinfer.com](https://rxinfer.com) - the official RxInfer website
 - [RxInfer: A Julia package for reactive real-time Bayesian inference](https://doi.org/10.21105/joss.05161) - a reference paper for the `RxInfer.jl` framwork.
 - [Reactive Probabilistic Programming for Scalable Bayesian Inference](https://pure.tue.nl/ws/portalfiles/portal/313860204/20231219_Bagaev_hf.pdf) - a PhD dissertation outlining core ideas and principles behind `RxInfer` ([link2](https://research.tue.nl/nl/publications/reactive-probabilistic-programming-for-scalable-bayesian-inferenc), [link3](https://github.com/bvdmitri/phdthesis)).
 - [Variational Message Passing and Local Constraint Manipulation in Factor Graphs](https://doi.org/10.3390/e23070807) - describes theoretical aspects of the underlying Bayesian inference method.
@@ -164,24 +161,11 @@ result = infer(
 
 ![Coin Flip](docs/src/assets/img/coin-flip.svg?raw=true&sanitize=true "Coin-Flip readme results")
 
+# Where to go next?
+
+There are a set of [examples](https://examples.rxinfer.com/) available in the `RxInferExamples.jl` repository that demonstrate the more advanced features of the package. Alternatively, you can head to the [documentation](https://docs.rxinfer.com) that provides more detailed information of how to use `RxInfer` to specify more complex probabilistic models.
+
 # Roadmap
-
-## Current Focus Q1-Q2 2025
-
-- Refactoring of [ReactiveMP.jl](https://github.com/reactivebayes/ReactiveMP.jl) into [Cortex.jl](https://github.com/reactivebayes/Cortex.jl) with improved architecture and performance
-- Performance improvements in [GraphPPL.jl](https://github.com/reactivebayes/GraphPPL.jl) with new graph backend based on [BipartiteFactorGraphs.jl](https://github.com/ReactiveBayes/BipartiteFactorGraphs.jl)
-
-## Future Focus Q3-Q4 2025
-
-- Performance improvements in message passing rule execution (part of Cortex.jl)
-- Native support for Gaussian Processes modelling and inference
-- RxInfer.jl on edge devices (e.g. Raspberry Pi/Audio/Video processing)
-
-## History 
-
-- Q1 2025: Client-server architecture ([RxInferServer.jl](https://github.com/lazydynamics/RxInferServer)) and SDKs ([RxInferClient.py](https://github.com/lazydynamics/RxInferClient.py), [RxInferClient.ts](https://github.com/lazydynamics/RxInferClient.js))
-- Q3/Q4 2024: Graph structure visualization in [GraphPPL.jl](https://github.com/reactivebayes/GraphPPL.jl) and Semi-automated inference with [ExponentialFamilyProjection.jl]()
-- Q1/Q2 2024: Nested models with [GraphPPL.jl](https://github.com/reactivebayes/GraphPPL.jl) and Development of [ExponentialFamilyProjection.jl]()
 
 For a more granular view of our progress and ongoing tasks, check out our [project board](https://github.com/orgs/reactivebayes/projects/2/views/4) or join our 4-weekly [public meetings](https://dynalist.io/d/F4aA-Z2c8X-M1iWTn9hY_ndN).
 
@@ -200,10 +184,10 @@ We are very proud to be an affiliated project with [NumFocus](https://numfocus.o
 
 ![](docs/src/assets/numfocus.png)
 
-## Client-Server Infrastructure
+## Client-Server Infrastructure and Python integration
 
 > [!NOTE]
-> The development of RxInferServer has been sponsored by [Lazy Dynamics](https://lazydynamics.com/). The repositories are hosted under the [Lazy Dynamics](https://github.com/lazydynamics/) organization.
+> The development of RxInferServer has been sponsored by [Lazy Dynamics](https://lazydynamics.com/). The repositories are hosted under the [Lazy Dynamics](https://github.com/lazydynamics/) organization. Note that LICENSE for the RxInferServer is different from RxInfer.
 
 RxInfer can be deployed as a RESTful API service using [`RxInferServer`](https://github.com/lazydynamics/RxInferServer), which provides:
 
@@ -226,10 +210,6 @@ SDKs provide a convenient interface to:
 - Monitor inference progress
 - Handle authentication and API keys
 - Process results in a native format
-
-# Where to go next?
-
-There are a set of [examples](https://examples.rxinfer.com/) available in the `RxInferExamples.jl` repository that demonstrate the more advanced features of the package. Alternatively, you can head to the [documentation](https://docs.rxinfer.com) that provides more detailed information of how to use `RxInfer` to specify more complex probabilistic models.
 
 # Join Our Community and Contribute to RxInfer
 

@@ -140,3 +140,72 @@ header.navigation div.container nav.navbar ul.navbar-nav li.small-item {
 .docs-logo {
     margin-bottom: 0.5rem;
 }
+
+/* Banner as part of navbar, displayed below nav items */
+header.navigation div.container nav.navbar #site-banner {
+    width: 100%;
+    text-align: center;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.85em;
+    border-top: 1px solid #dbdbdb;
+    margin-top: 0.5rem;
+    order: 999; /* Ensure it appears after nav items */
+    display: block; /* Ensure banner is visible */
+    position: relative;
+}
+
+/* Hide banner when closed */
+header.navigation div.container nav.navbar #site-banner.banner-closed {
+    display: none !important;
+}
+
+/* Close button styling */
+#site-banner-close {
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    font-size: 1.5em;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 0.25rem;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+#site-banner-close:hover {
+    opacity: 1;
+}
+
+/* Make navbar flex column to stack nav items (ul) and banner vertically */
+header.navigation div.container nav.navbar {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Hide search banner when closed */
+#search-results-banner.banner-closed {
+    display: none !important;
+}
+
+/* Search banner close button styling */
+#search-banner-close {
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    font-size: 1.5em;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 0.25rem;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+#search-banner-close:hover {
+    opacity: 1;
+}

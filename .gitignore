@@ -23,6 +23,7 @@ Coverage.ipynb
 **/.DS_Store
 
 **/Manifest.toml
+**/Manifest-v*.toml
 **/LocalPreferences.toml
 !benchmarks/Manifest.toml
 

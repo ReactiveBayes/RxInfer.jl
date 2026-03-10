@@ -118,56 +118,65 @@ vline!([θ_real], label="Real θ", title = "Inference results")
 
 ## [Using `callbacks` in the `infer` function](@id user-guide-debugging-callbacks)
 
-Another way to inspect the inference procedure is to use the `callbacks` or `events` from the [`infer`](@ref) function. Read more about callbacks in the documentation to the [`infer`](@ref) function. Here, we show a simple application of callbacks to a simple IID inference problem. We start with model specification:
+Another way to inspect the inference procedure is to use the `callbacks` or `events` from the [`infer`](@ref) function. Read more about callbacks in the documentation to the [`infer`](@ref) function. Here, we show an application of callbacks to a model containing both scalar and vectorized latent variables. We start with the model specification:
 
 ```@example debugging-with-callbacks
 using RxInfer
 
-@model function iid_normal(y)
-    μ  ~ Normal(mean = 0.0, variance = 100.0)
-    γ  ~ Gamma(shape = 1.0, rate = 1.0)
-    y .~ Normal(mean = μ, precision = γ)
+@model function vectorized_model(y)
+    local u
+    θ ~ Normal(mean= 1.0, var = 1.0)
+    for i in 1:2
+        u[i] ~ Normal(mean = θ, var = 1.0)     # Vectorized variables
+    end    
+    y .~ Normal(mean = u, var = 1.0)
 end
 ```
 
 Next, let us define a syntehtic dataset:
 
 ```@example debugging-with-callbacks
-dataset = rand(NormalMeanPrecision(3.1415, 30.0), 100)
+dataset = [1.0, 2.0]
 nothing #hide
 ```
 
-Now, we can use the `callbacks` argument of the `infer` function to track the order of posteriors computation and their intermediate values for each variational iteration:
+Now, we can use the `callbacks` argument of the `infer` function to track the order of posteriors computation and their intermediate values for each variational iteration.
+
+!!! note "Note on Dispatch"
+    Since `RxInfer` passes a collection of posteriors when updating vectorized variables, we define two methods for `on_marginal_update_callback`:
+    * **Scalar method**: For individual variables (e.g., `θ`).
+    * **Vector method**: Specifically dispatched on `AbstractVector` to handle vectorized updates (e.g., `u`) using broadcasted operations like `mean.()`.
 
 ```@example debugging-with-callbacks
 # A callback that will be called every time before a variational iteration starts
 function before_iteration_callback(model, iteration)
-    println("Starting iteration ", iteration)
+    println("--- Starting iteration ", iteration, " ---")
 end
 
 # A callback that will be called every time after a variational iteration finishes
 function after_iteration_callback(model, iteration)
-    println("Iteration ", iteration, " has been finished")
+    println("--- Iteration ", iteration, " has been finished ---")
 end
 
 # A callback that will be called every time a posterior is updated
 function on_marginal_update_callback(model, variable_name, posterior)
     println("Latent variable ", variable_name, " has been updated. Estimated mean is ", mean(posterior), " with standard deviation ", std(posterior))
 end
+
+# A callback dispatched specifically for vectorized latent variables
+function on_marginal_update_callback(model, variable_name, posteriors::AbstractVector)
+    println("Latent variable ", variable_name, " has been updated. Estimated mean is ", mean.(posteriors), " with standard deviation ", std.(posteriors))
+end
 ```
 
 After we have defined all callbacks of interest, we can call the [`infer`](@ref) function passing them in the `callback` argument as a named tuple:
-```@example debugging-with-callbacks
-init = @initialization begin 
-    q(μ) = vague(NormalMeanVariance)
-end
 
+```@example debugging-with-callbacks
 result = infer(
-    model = iid_normal(),
+    model = vectorized_model(),
     data  = (y = dataset, ),
-    constraints = MeanField(),
-    iterations = 5,
-    initialization = init,
+    iterations = 3,
+    initialization = @initialization(q(θ) = Uniform(0, 1)),
     returnvars = KeepLast(),
     callbacks = (
         on_marginal_update = on_marginal_update_callback,
@@ -178,11 +187,12 @@ result = infer(
 nothing #hide
 ```
 
-We can see that the callback has been correctly executed for each intermediate variational iteration.
+We can see that the callback has been correctly executed for each intermediate variational iteration, correctly handling both the scalar `θ` and the vector `u`.
 
 ```@example debugging-with-callbacks
-println("Estimated mean: ", mean(result.posteriors[:μ]))
-println("Estimated precision: ", mean(result.posteriors[:γ]))
+println("Estimated mean u[1]: ", mean(result.posteriors[:u][1]))
+println("Estimated mean u[2]: ", mean(result.posteriors[:u][2]))
+println("Estimated mean θ: ", mean(result.posteriors[:θ]))
 nothing #hide
 ```
  
@@ -213,6 +223,10 @@ nothing #hide
 Now, we can call the [`infer`](@ref) function. We combine the pipeline logger stage with the callbacks, which were introduced in the [previous section](@ref user-guide-debugging-callbacks):
 
 ```@example debugging-with-callbacks
+init = @initialization begin 
+    q(μ) = vague(NormalMeanVariance)
+end
+
 result = infer(
     model = iid_normal_with_pipeline(),
     data  = (y = dataset, ),
@@ -229,7 +243,7 @@ result = infer(
 nothing #hide
 ```
 
-We can see the order of message update events. Note that `ReactiveMP` may decide to compute messages lazily, in which case the actual computation of the value of a message will be deffered until later moment. In this case, `LoggerPipelineStage` will report _DefferedMessage_.
+We can see the order of message update events. Note that `ReactiveMP` may decide to compute messages lazily, in which case the actual computation of the value of a message will be deferred until later moment. In this case, `LoggerPipelineStage` will report _DeferredMessage_.
 
 ## [Using `RxInferBenchmarkCallbacks` for Performance Analysis](@id user-guide-debugging-benchmark-callbacks)
 
@@ -239,6 +253,16 @@ Here's how to use it:
 
 ```@example debugging-with-callbacks
 using RxInfer
+
+@model function iid_normal(y)
+    μ  ~ Normal(mean = 0.0, variance = 100.0)
+    γ  ~ Gamma(shape = 1.0, rate = 1.0)
+    y .~ Normal(mean = μ, precision = γ)
+end
+
+init = @initialization begin 
+    q(μ) = vague(NormalMeanVariance)
+end
 
 infer(model = iid_normal(), data = (y = dataset, ), constraints = MeanField(), iterations = 5, initialization = init, callbacks = RxInferBenchmarkCallbacks()) #hide
 
