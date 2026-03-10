@@ -83,3 +83,88 @@ window.onload = function() {
     documenterTarget.parentNode.insertBefore(header, documenterTarget);
 }
 
+    // === Cross-site search: also search examples.rxinfer.com ===
+    (function () {
+        const REMOTE_BASE = 'https://examples.rxinfer.com';
+        const REMOTE_LABEL = 'Examples';
+        let remoteIndex = null;
+
+        async function fetchRemoteIndex() {
+            if (remoteIndex !== null) return;
+            try {
+                const res = await fetch(REMOTE_BASE + '/search_index.js');
+                if (!res.ok) return;
+                const text = await res.text();
+                remoteIndex = JSON.parse(text.slice(text.indexOf('{'))).docs;
+            } catch (e) {
+                remoteIndex = [];
+            }
+        }
+
+        function searchRemote(query) {
+            if (!remoteIndex || !remoteIndex.length) return [];
+            const words = query.trim().toLowerCase().split(/\s+/).filter(w => w.length > 1);
+            if (!words.length) return [];
+            return remoteIndex.filter(doc => {
+                const hay = (doc.title + ' ' + doc.text).toLowerCase();
+                return words.every(w => hay.includes(w));
+            }).slice(0, 8);
+        }
+
+        function esc(s) {
+            return (s || '').replace(/[&<>"']/g, c =>
+                ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
+
+        function renderResults(results) {
+            const items = results.map(doc => `
+                <a href="${REMOTE_BASE}/${doc.location || ''}" class="search-result-link w-100 is-flex is-flex-direction-column gap-2 px-4 py-2">
+                    <div class="w-100 is-flex is-flex-wrap-wrap is-justify-content-space-between is-align-items-flex-start">
+                        <div class="search-result-title has-text-weight-bold">${esc(doc.title)}</div>
+                        <div class="property-search-result-badge">${esc(doc.category)}</div>
+                    </div>
+                    <div class="has-text-left" style="font-size:smaller;opacity:0.7">
+                        <i class="fas fa-external-link-alt"></i> ${REMOTE_LABEL}: ${esc((doc.location||'').slice(0,60))}
+                    </div>
+                </a>
+                <div class="search-divider w-100"></div>`).join('');
+
+            return `<div id="cross-site-results" class="w-100 is-flex is-flex-direction-column gap-2">
+                <div style="padding:0.5rem 1rem;border-top:1px solid var(--card-border-color,#e9ecef);margin-top:0.5rem">
+                    <span class="is-size-7" style="opacity:0.7">Also from <strong>${REMOTE_LABEL}</strong> — ${results.length} result${results.length !== 1 ? 's' : ''}</span>
+                </div>${items}</div>`;
+        }
+
+        let injecting = false;
+
+        function inject() {
+            if (injecting) return;
+            const body = document.querySelector('.search-modal-card-body');
+            const input = document.querySelector('.documenter-search-input');
+            if (!body || !input || body.querySelector('#cross-site-results')) return;
+            const query = input.value || '';
+            if (query.trim().length < 2) return;
+            const results = searchRemote(query);
+            if (!results.length) return;
+            injecting = true;
+            body.insertAdjacentHTML('beforeend', renderResults(results));
+            injecting = false;
+        }
+
+        let bodyObserver = null;
+        function connectBodyObserver() {
+            const body = document.querySelector('.search-modal-card-body');
+            if (!body || bodyObserver) return;
+            bodyObserver = new MutationObserver(() => { if (!injecting) setTimeout(inject, 30); });
+            bodyObserver.observe(body, { childList: true });
+        }
+
+        new MutationObserver(() => {
+            const modal = document.getElementById('search-modal');
+            if (modal) {
+                if (modal.classList.contains('is-active')) fetchRemoteIndex();
+                connectBodyObserver();
+            }
+        }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+    })();
+
