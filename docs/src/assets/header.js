@@ -128,18 +128,57 @@ document.addEventListener('DOMContentLoaded', function() {
             ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     }
 
-    function renderResults(results) {
-        const items = results.map(doc => `
+    function extractSnippet(text, query, contextLength = 80) {
+        const words = query.trim().toLowerCase().split(/\s+/).filter(w => w.length > 1);
+        if (!words.length || !text) return '';
+        
+        const lowerText = text.toLowerCase();
+        
+        // Find first occurrence of any search term
+        let firstMatchIdx = -1;
+        for (const word of words) {
+            const idx = lowerText.indexOf(word);
+            if (idx !== -1 && (firstMatchIdx === -1 || idx < firstMatchIdx)) {
+                firstMatchIdx = idx;
+            }
+        }
+        
+        if (firstMatchIdx === -1) return '';
+        
+        // Extract context around the match
+        const start = Math.max(0, firstMatchIdx - contextLength);
+        const end = Math.min(text.length, firstMatchIdx + contextLength);
+        let snippet = text.slice(start, end);
+        
+        // Add ellipsis
+        if (start > 0) snippet = '…' + snippet;
+        if (end < text.length) snippet = snippet + '…';
+        
+        // Highlight all matching words
+        for (const word of words) {
+            const regex = new RegExp(`(${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+            snippet = snippet.replace(regex, '<mark style="background-color:var(--mark-bg,#fff3cd);padding:0 2px">$1</mark>');
+        }
+        
+        return snippet;
+    }
+
+    function renderResults(results, query) {
+        const items = results.map(doc => {
+            const snippet = extractSnippet(doc.text, query, 80);
+            return `
             <a href="${REMOTE_BASE}/${doc.location || ''}" class="search-result-link w-100 is-flex is-flex-direction-column gap-2 px-4 py-2">
                 <div class="w-100 is-flex is-flex-wrap-wrap is-justify-content-space-between is-align-items-flex-start">
                     <div class="search-result-title has-text-weight-bold">${esc(doc.title)}</div>
                     <div class="property-search-result-badge">${esc(doc.category)}</div>
                 </div>
+                ${snippet ? `<div style="font-size:smaller;opacity:0.8;line-height:1.5">${snippet}</div>` : ''}
                 <div class="has-text-left" style="font-size:smaller;opacity:0.7">
                     <i class="fas fa-external-link-alt"></i> ${REMOTE_LABEL}: ${esc((doc.location||'').slice(0,60))}
                 </div>
             </a>
-            <div class="search-divider w-100"></div>`).join('');
+            <div class="search-divider w-100"></div>`;
+        }).join('');
 
         return `<div id="cross-site-results" class="w-100 is-flex is-flex-direction-column gap-2">
             <div style="padding:0.5rem 1rem;border-top:1px solid var(--card-border-color,#e9ecef);margin-top:0.5rem">
@@ -165,7 +204,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const results = searchRemote(query);
         if (!results.length) return;
         injecting = true;
-        body.insertAdjacentHTML('beforeend', renderResults(results));
+        body.insertAdjacentHTML('beforeend', renderResults(results, query));
         injecting = false;
     }
 
