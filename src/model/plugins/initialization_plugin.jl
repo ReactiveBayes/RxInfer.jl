@@ -368,10 +368,29 @@ function init_macro_interior(init_body::Expr)
 end
 
 """
-    @initialization
+    @initialization begin ... end 
+        or
+    @initialization function f_name() ... end
 
-Macro for specifying the initialization state of a model. Accepts either a function or a block of code.
-Allows the specification of initial messages and marginals that can be applied to a model in the `infer` function.
+Macro for specifying the initialization state of a model: initial marginals and messages. 
+Accepts either a function or a block of code and is applied to a model through the `infer` function.
+
+Examples:
+    @initialization begin
+        # Initialize the marginal for the variable x
+        q(x) = vague(NormalMeanVariance)
+
+        # Initialize the message for the variable z
+        μ(z) = vague(NormalMeanVariance)
+
+        # Specify the initialization for a submodel of type `submodel`
+        for init in submodel
+            q(t) = vague(NormalMeanVariance)
+        end 
+    end
+
+See the full guide:
+https://docs.rxinfer.com/stable/manuals/inference/initialization/ 
 """
 macro initialization(init_body)
     return esc(RxInfer.init_macro_interior(init_body))
