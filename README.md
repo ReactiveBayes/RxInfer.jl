@@ -5,7 +5,7 @@
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://docs.rxinfer.com/dev/)
 [![Examples](https://img.shields.io/badge/examples-RxInfer-brightgreen)](https://examples.rxinfer.com/)
 [![Q&A](https://img.shields.io/badge/Q&A-RxInfer-orange)](https://github.com/reactivebayes/RxInfer.jl/discussions)
-[![Roadmap](https://img.shields.io/badge/roadmap-RxInfer-yellow)](#roadmap)
+[![Changelog](https://img.shields.io/badge/CHANGELOG-md-blue)](https://github.com/ReactiveBayes/RxInfer.jl/blob/main/CHANGELOG.md)
 [![Build Status](https://github.com/reactivebayes/RxInfer.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/reactivebayes/RxInfer.jl/actions/workflows/CI.yml?query=branch%3Amain)
 [![Coverage](https://codecov.io/gh/reactivebayes/RxInfer.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/reactivebayes/RxInfer.jl)
 [![Downloads](https://img.shields.io/badge/dynamic/json?url=http%3A%2F%2Fjuliapkgstats.com%2Fapi%2Fv1%2Fmonthly_downloads%2FRxInfer&query=total_requests&suffix=%2Fmonth&label=Downloads)](https://juliapkgstats.com/pkg/RxInfer)

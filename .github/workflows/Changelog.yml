@@ -1,0 +1,11 @@
+name: Check CHANGELOG.md has been updated
+on:
+  pull_request:
+    types: [assigned, opened, synchronize, reopened, labeled, unlabeled]
+    branches:
+      - main
+jobs:
+  check-changelog:
+    name: Check Changelog Action
+    steps:
+      - uses: tarides/changelog-check-action@v2
