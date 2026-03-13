@@ -1,4 +1,4 @@
-name: Check CHANGELOG.md has been updated
+name: Check CHANGELOG.md
 on:
   pull_request:
     types: [assigned, opened, synchronize, reopened, labeled, unlabeled]
