@@ -214,6 +214,7 @@ SDKs provide a convenient interface to:
 # Join Our Community and Contribute to RxInfer
 
 RxInfer is a community-driven project and we welcome all contributions! To get started:
+- Check our [CONTRIBUTING.md](CONTRIBUTING.md)
 - Check out our [contributing guide](https://docs.rxinfer.com/stable/contributing/guide)
 - Review the [contributing guidelines](https://docs.rxinfer.com/stable/contributing/guidelines)
 - Browse [beginner-friendly issues](https://github.com/ReactiveBayes/RxInfer.jl/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22) to find something that interests you

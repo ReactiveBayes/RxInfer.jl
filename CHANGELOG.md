@@ -11,7 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Documentation
 - Added docstring for the `@initialization` macro ([603](https://github.com/ReactiveBayes/RxInfer.jl/pull/603))
-- Started using CHANGELOG.md (first few entries were auto-generated with LLM based on tag log)
+- Added `CONTRIBUTING.md`
+- Started using `CHANGELOG.md` (first few entries were auto-generated with LLM based on tag log)
 
 ## [4.7.2] - 2026-03-12
 
