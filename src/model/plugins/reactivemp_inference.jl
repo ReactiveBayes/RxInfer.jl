@@ -33,28 +33,21 @@ end
 ReactiveMPInferenceOptions(scheduler, addons) = ReactiveMPInferenceOptions(scheduler, addons, true, false, nothing, nothing)
 ReactiveMPInferenceOptions(scheduler, addons, warn) = ReactiveMPInferenceOptions(scheduler, addons, warn, false, nothing, nothing)
 ReactiveMPInferenceOptions(scheduler, addons, warn, force_marginal_computation) = ReactiveMPInferenceOptions(scheduler, addons, warn, force_marginal_computation, nothing, nothing)
-ReactiveMPInferenceOptions(scheduler, addons, warn, force_marginal_computation, rulefallback) = ReactiveMPInferenceOptions(
-    scheduler, addons, warn, force_marginal_computation, rulefallback, nothing
-)
+ReactiveMPInferenceOptions(scheduler, addons, warn, force_marginal_computation, rulefallback) =
+    ReactiveMPInferenceOptions(scheduler, addons, warn, force_marginal_computation, rulefallback, nothing)
 
-setscheduler(options::ReactiveMPInferenceOptions, scheduler) = ReactiveMPInferenceOptions(
-    scheduler, options.addons, options.warn, options.force_marginal_computation, options.rulefallback, options.callbacks
-)
-setaddons(options::ReactiveMPInferenceOptions, addons) = ReactiveMPInferenceOptions(
-    options.scheduler, addons, options.warn, options.force_marginal_computation, options.rulefallback, options.callbacks
-)
-setwarn(options::ReactiveMPInferenceOptions, warn) = ReactiveMPInferenceOptions(
-    options.scheduler, options.addons, warn, options.force_marginal_computation, options.rulefallback, options.callbacks
-)
-setforce_marginal_computation(options::ReactiveMPInferenceOptions, force_marginal_computation) = ReactiveMPInferenceOptions(
-    options.scheduler, options.addons, options.warn, force_marginal_computation, options.rulefallback, options.callbacks
-)
-setrulefallback(options::ReactiveMPInferenceOptions, rulefallback) = ReactiveMPInferenceOptions(
-    options.scheduler, options.addons, options.warn, options.force_marginal_computation, rulefallback, options.callbacks
-)
-setcallbacks(options::ReactiveMPInferenceOptions, callbacks) = ReactiveMPInferenceOptions(
-    options.scheduler, options.addons, options.warn, options.force_marginal_computation, options.rulefallback, callbacks
-)
+setscheduler(options::ReactiveMPInferenceOptions, scheduler) =
+    ReactiveMPInferenceOptions(scheduler, options.addons, options.warn, options.force_marginal_computation, options.rulefallback, options.callbacks)
+setaddons(options::ReactiveMPInferenceOptions, addons) =
+    ReactiveMPInferenceOptions(options.scheduler, addons, options.warn, options.force_marginal_computation, options.rulefallback, options.callbacks)
+setwarn(options::ReactiveMPInferenceOptions, warn) =
+    ReactiveMPInferenceOptions(options.scheduler, options.addons, warn, options.force_marginal_computation, options.rulefallback, options.callbacks)
+setforce_marginal_computation(options::ReactiveMPInferenceOptions, force_marginal_computation) =
+    ReactiveMPInferenceOptions(options.scheduler, options.addons, options.warn, force_marginal_computation, options.rulefallback, options.callbacks)
+setrulefallback(options::ReactiveMPInferenceOptions, rulefallback) =
+    ReactiveMPInferenceOptions(options.scheduler, options.addons, options.warn, options.force_marginal_computation, rulefallback, options.callbacks)
+setcallbacks(options::ReactiveMPInferenceOptions, callbacks) =
+    ReactiveMPInferenceOptions(options.scheduler, options.addons, options.warn, options.force_marginal_computation, options.rulefallback, callbacks)
 
 import Base: convert
 
@@ -186,10 +179,10 @@ end
 
 function activate_rmp_variable!(plugin::ReactiveMPInferencePlugin, model::Model, nodedata::NodeData, nodeproperties::VariableNodeProperties)
     if is_random(nodeproperties)
-        # Fetch "prod-strategy" for messages and marginals. The prod-strategy usually defines the order of messages multiplication (left-to-right)
+        # Fetch "fold-strategy" for messages and marginals. The fold-strategy usually defines the order of messages multiplication (left-to-right)
         # But can use some custom logic for product, e.g. parallel products
-        messages_prod_strategy = getextra(nodedata, :messages_prod_strategy, ReactiveMP.FoldLeftProdStrategy())
-        marginal_prod_strategy = getextra(nodedata, :marginal_prod_strategy, ReactiveMP.FoldLeftProdStrategy())
+        messages_fold_strategy = getextra(nodedata, :messages_fold_strategy, ReactiveMP.MessagesProductFromLeftToRight())
+        marginal_fold_strategy = getextra(nodedata, :marginal_fold_strategy, ReactiveMP.MessagesProductFromLeftToRight())
         # Fetch "form-constraint" for messages and marginals. The form-constraint usually defines the form of the resulting distribution
         # By default it is `UnspecifiedFormConstraint` which means that the form of the resulting distribution is not specified in advance
         # and follows from the computation, but users may override it with other form constraints, e.g. `PointMassFormConstraint`, which
@@ -203,17 +196,27 @@ function activate_rmp_variable!(plugin::ReactiveMPInferencePlugin, model::Model,
                 plugin, model, getextra(nodedata, GraphPPL.VariationalConstraintsMarginalFormConstraintKey, ReactiveMP.UnspecifiedFormConstraint())
             ) + EnsureSupportedFunctionalForm(:q, GraphPPL.getname(nodeproperties), GraphPPL.index(nodeproperties))
         # Fetch "prod-constraint" for messages and marginals. The prod-constraint usually defines the constraints for a single product of messages
-        # It can for example preserve a specific parametrization of distribution 
+        # It can for example preserve a specific parametrization of distribution, see BayesBase.prod documentation for more details on that
         messages_prod_constraint = getextra(nodedata, :messages_prod_constraint, ReactiveMP.default_prod_constraint(messages_form_constraint))
         marginal_prod_constraint = getextra(nodedata, :marginal_prod_constraint, ReactiveMP.default_prod_constraint(marginal_form_constraint))
         # Fetch "form-check-strategy" for messages and marginals. The form-check-strategy usually defines the strategy for checking the form of the resulting distribution
         # The functional form constraint can be applied either after all products are computed or after each product
-        messages_form_check_strategy = getextra(nodedata, :messages_form_check_strategy, ReactiveMP.default_form_check_strategy(messages_form_constraint))
-        marginal_form_check_strategy = getextra(nodedata, :marginal_form_check_strategy, ReactiveMP.default_form_check_strategy(marginal_form_constraint))
+        messages_form_constraint_check_strategy = getextra(nodedata, :messages_form_constraint_check_strategy, ReactiveMP.default_form_check_strategy(messages_form_constraint))
+        marginal_form_constraint_check_strategy = getextra(nodedata, :marginal_form_constraint_check_strategy, ReactiveMP.default_form_check_strategy(marginal_form_constraint))
         # Create the activation options for the random variable which consists of the messages and marginal product functions and a scheduler
-        messages_prod_fn = ReactiveMP.messages_prod_fn(messages_prod_strategy, messages_prod_constraint, messages_form_constraint, messages_form_check_strategy)
-        marginal_prod_fn = ReactiveMP.marginal_prod_fn(marginal_prod_strategy, marginal_prod_constraint, marginal_form_constraint, marginal_form_check_strategy)
-        options = ReactiveMP.RandomVariableActivationOptions(Rocket.getscheduler(getoptions(plugin)), messages_prod_fn, marginal_prod_fn)
+        prod_context_for_messages_computation = ReactiveMP.MessageProductContext(
+            fold_strategy = messages_fold_strategy,
+            prod_constraint = messages_prod_constraint,
+            form_constraint = messages_form_constraint,
+            form_constraint_check_strategy = messages_form_constraint_check_strategy
+        )
+        prod_context_for_marginal_computation = ReactiveMP.MessageProductContext(
+            fold_strategy = marginal_fold_strategy,
+            prod_constraint = marginal_prod_constraint,
+            form_constraint = marginal_form_constraint,
+            form_constraint_check_strategy = marginal_form_constraint_check_strategy
+        )
+        options = ReactiveMP.RandomVariableActivationOptions(Rocket.getscheduler(getoptions(plugin)), prod_context_for_messages_computation, prod_context_for_marginal_computation)
         return ReactiveMP.activate!(getextra(nodedata, ReactiveMPExtraVariableKey)::RandomVariable, options)
     elseif is_data(nodeproperties)
         properties = getproperties(nodedata)::GraphPPL.VariableNodeProperties
