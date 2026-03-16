@@ -16,22 +16,18 @@ import ProgressMeter
 obtain_prediction(variable::Any) = getprediction(variable)
 obtain_prediction(variables::AbstractArray) = getpredictions(variables)
 
-obtain_marginal(variable::Any, strategy = SkipInitial()) = getmarginal(
-    variable, strategy
-)
-obtain_marginal(variables::AbstractArray, strategy = SkipInitial()) = getmarginals(
-    variables, strategy
-)
+obtain_marginal(variable::Any, strategy = SkipInitial()) =
+    getmarginal(variable, strategy)
+obtain_marginal(variables::AbstractArray, strategy = SkipInitial()) =
+    getmarginals(variables, strategy)
 
 assign_marginal!(variable::Any, marginal) = setmarginal!(variable, marginal)
-assign_marginal!(variables::AbstractArray, marginals) = setmarginals!(
-    variables, marginals
-)
+assign_marginal!(variables::AbstractArray, marginals) =
+    setmarginals!(variables, marginals)
 
 assign_message!(variable::Any, message) = setmessage!(variable, message)
-assign_message!(variables::AbstractArray, messages) = setmessages!(
-    variables, messages
-)
+assign_message!(variables::AbstractArray, messages) =
+    setmessages!(variables, messages)
 
 "Instructs the inference engine to keep each marginal update for all intermediate iterations."
 struct KeepEach end
@@ -42,20 +38,17 @@ struct KeepLast end
 make_actor(::Any, ::KeepEach) = keep(Marginal)
 make_actor(x::AbstractArray, ::KeepEach) = keep(typeof(similar(x, Marginal)))
 
-make_actor(::Any, ::KeepEach, capacity::Integer) = circularkeep(
-    Marginal, capacity
-)
-make_actor(x::AbstractArray, ::KeepEach, capacity::Integer) = circularkeep(
-    typeof(similar(x, Marginal)), capacity
-)
+make_actor(::Any, ::KeepEach, capacity::Integer) =
+    circularkeep(Marginal, capacity)
+make_actor(x::AbstractArray, ::KeepEach, capacity::Integer) =
+    circularkeep(typeof(similar(x, Marginal)), capacity)
 
 make_actor(::Any, ::KeepLast) = storage(Marginal)
 make_actor(x::AbstractArray, ::KeepLast) = buffer(Marginal, size(x))
 
 make_actor(::Any, ::KeepLast, capacity::Integer) = storage(Marginal)
-make_actor(x::AbstractArray, ::KeepLast, capacity::Integer) = buffer(
-    Marginal, size(x)
-)
+make_actor(x::AbstractArray, ::KeepLast, capacity::Integer) =
+    buffer(Marginal, size(x))
 
 ## Inference ensure update
 
@@ -122,26 +115,23 @@ struct InferenceLoggedDataEntry
 end
 
 # Very safe by default, logging should not crash if we don't know how to parse the data entry
-log_data_entry(data) = InferenceLoggedDataEntry(
-    :unknown, :unknown, :unknown, :unknown
-)
+log_data_entry(data) =
+    InferenceLoggedDataEntry(:unknown, :unknown, :unknown, :unknown)
 log_data_entry(data::Pair) = log_data_entry(first(data), last(data))
 
-log_data_entry(name::Union{Symbol, String}, data) = log_data_entry(
-    name, Base.IteratorSize(data), data
-)
-log_data_entry(name::Union{Symbol, String}, _, data) = InferenceLoggedDataEntry(
-    name, typeof(data), :unknown, :unknown
-)
-log_data_entry(name::Union{Symbol, String}, ::Base.HasShape{0}, data) = InferenceLoggedDataEntry(
-    name, typeof(data), (), ()
-)
-log_data_entry(name::Union{Symbol, String}, ::Base.HasShape, data) = InferenceLoggedDataEntry(
-    name,
-    typeof(data),
-    log_data_entry_size(data),
-    isempty(data) ? () : log_data_entry_size(first(data))
-)
+log_data_entry(name::Union{Symbol, String}, data) =
+    log_data_entry(name, Base.IteratorSize(data), data)
+log_data_entry(name::Union{Symbol, String}, _, data) =
+    InferenceLoggedDataEntry(name, typeof(data), :unknown, :unknown)
+log_data_entry(name::Union{Symbol, String}, ::Base.HasShape{0}, data) =
+    InferenceLoggedDataEntry(name, typeof(data), (), ())
+log_data_entry(name::Union{Symbol, String}, ::Base.HasShape, data) =
+    InferenceLoggedDataEntry(
+        name,
+        typeof(data),
+        log_data_entry_size(data),
+        isempty(data) ? () : log_data_entry_size(first(data))
+    )
 
 log_data_entry_size(data) = log_data_entry_size(Base.IteratorSize(data), data)
 log_data_entry_size(::Base.HasShape, data) = size(data)
@@ -150,19 +140,16 @@ log_data_entry_size(_, data) = ()
 # Julia has `Base.HasLength` by default, which is quite bad because it fallbacks here 
 # for structures that has nothing to do with being iterators nor implement `length`, 
 # Better to be safe here and simply return :unknown
-log_data_entry(name::Union{Symbol, String}, ::Base.HasLength, data) = InferenceLoggedDataEntry(
-    name, typeof(data), :unknown, :unknown
-)
+log_data_entry(name::Union{Symbol, String}, ::Base.HasLength, data) =
+    InferenceLoggedDataEntry(name, typeof(data), :unknown, :unknown)
 
 # Very safe by default, logging should not crash if we don't know how to parse the data entry
 log_data_entries(data) = :unknown
 
-log_data_entries(data::Union{NamedTuple, Dict}) = log_data_entries_from_pairs(
-    pairs(data)
-)
-log_data_entries_from_pairs(pairs) = collect(
-    Iterators.map(log_data_entry, pairs)
-)
+log_data_entries(data::Union{NamedTuple, Dict}) =
+    log_data_entries_from_pairs(pairs(data))
+log_data_entries_from_pairs(pairs) =
+    collect(Iterators.map(log_data_entry, pairs))
 
 function Base.show(io::IO, entry::InferenceLoggedDataEntry)
     print(
@@ -187,12 +174,10 @@ end
 # Very safe by default, logging should not crash if we don't know how to parse the dict/nt entry
 log_dictnt_entries(data) = string(typeof(data))
 
-log_dictnt_entries(data::Dict) = InferenceLoggedDictNTEntries(
-    :Dict, log_data_entries(data)
-)
-log_dictnt_entries(data::NamedTuple) = InferenceLoggedDictNTEntries(
-    :NamedTuple, log_data_entries(data)
-)
+log_dictnt_entries(data::Dict) =
+    InferenceLoggedDictNTEntries(:Dict, log_data_entries(data))
+log_dictnt_entries(data::NamedTuple) =
+    InferenceLoggedDictNTEntries(:NamedTuple, log_data_entries(data))
 
 function Base.show(io::IO, entry::InferenceLoggedDictNTEntries)
     entries_str = join(map(e -> "$(e.name)::$(e.type)", entry.entries), ", ")
@@ -316,11 +301,6 @@ end
 
 ## Extra error handling
 
-function inference_process_error(error)
-    # By default, rethrow the error
-    return inference_process_error(error, true)
-end
-
 const preference_inference_error_hint = @load_preference(
     "inference_error_hint", true
 )
@@ -357,7 +337,9 @@ function enable_inference_error_hint!()
     @info "Inference error hints are enabled. Restart Julia session for the change to take effect."
 end
 
-function inference_process_error(error, rethrow)
+function inference_process_error(
+    error; rethrow = true, disable_inference_error_hint = false
+)
     if error isa StackOverflowError
         @error """
         Stack overflow error detected during inference. This can happen with large model graphs 
@@ -372,7 +354,7 @@ function inference_process_error(error, rethrow)
         • See `infer` function docs for options
         """
     end
-    @static if preference_inference_error_hint
+    if preference_inference_error_hint && !disable_inference_error_hint
         @error """
         We encountered an error during inference, here are some helpful resources to get you back on track:
 
@@ -399,8 +381,15 @@ function inference_process_error(error, rethrow)
         - The complete error message and stack trace
         - (Optional) If you shared your session data, please include the session ID in the issue
 
-        Use `RxInfer.disable_inference_error_hint!()` to disable this message. 
+        Use `RxInfer.disable_inference_error_hint!()` to disable this message permanently (requires Julia session restart).
+        Use `infer(..., disable_inference_error_hint = true) to disable this message for specific inference run.`
         """
+        # This normally is turned off, but is enabled on CI in order to catch 
+        # bad examples or failing tests that print this error
+        # The tests that fail intentionally must use the `disable_inference_error_hint` option set to true
+        if get(ENV, "THROW_ON_INFERENCE_ERROR_HINT", "false") === "true"
+            error("Inference error hint has been displayed.")
+        end
     end
     if rethrow
         Base.rethrow(error)
@@ -452,16 +441,13 @@ end
 inference_check_dataismissing(d) = (ismissing(d) || any(ismissing, d))
 
 # Return NamedTuple for predictions
-inference_fill_predictions(s::Symbol, d::AbstractArray) = NamedTuple{
-    Tuple([s])
-}([repeat([missing], length(d))])
-inference_fill_predictions(s::Symbol, d::DataVariable) = NamedTuple{Tuple([s])}([
-    missing
-])
+inference_fill_predictions(s::Symbol, d::AbstractArray) =
+    NamedTuple{Tuple([s])}([repeat([missing], length(d))])
+inference_fill_predictions(s::Symbol, d::DataVariable) =
+    NamedTuple{Tuple([s])}([missing])
 
-inference_invoke_callback(callbacks::T, name, args...) where {T} = _inference_invoke_callback(
-    inference_get_callback(callbacks, name), args...
-)
+inference_invoke_callback(callbacks::T, name, args...) where {T} =
+    _inference_invoke_callback(inference_get_callback(callbacks, name), args...)
 inference_invoke_callback(::Nothing, name, args...) = nothing
 
 _inference_invoke_callback(callback::T, args...) where {T} = callback(args...)
@@ -566,7 +552,8 @@ Check the official documentation for more information about some of the argument
 - `free_energy = false`: compute the Bethe free energy, optional, defaults to false. Can be passed a floating point type, e.g. `Float64`, for better efficiency, but disables automatic differentiation packages, such as ForwardDiff.jl
 - `free_energy_diagnostics = DefaultObjectiveDiagnosticChecks`: free energy diagnostic checks, optional, by default checks for possible `NaN`s and `Inf`s. `nothing` disables all checks.
 - `showprogress = false`: show progress module, optional, defaults to false (exclusive for batch inference)
-- `catch_exception`  specifies whether exceptions during the inference procedure should be caught, optional, defaults to false (exclusive for batch inference)
+- `catch_exception`: specifies whether exceptions during the inference procedure should be caught, optional, defaults to false (exclusive for batch inference)
+- `disable_inference_error_hint`: specifies whether the error hint should be printed whether inference error occurs.
 - `callbacks = nothing`: inference cycle callbacks, optional. See [Early stopping](@ref manual-inference-early-stopping) for an opt-in callback example.
 - `addons = nothing`: inject and send extra computation information along messages
 - `postprocess = DefaultPostprocess()`: inference results postprocessing step, optional
@@ -607,6 +594,7 @@ function infer(;
     allow_node_contraction = false,
     showprogress = false, # batch specific
     catch_exception = false, # batch specific
+    disable_inference_error_hint = false, # batch specific
     callbacks = nothing,
     addons = nothing,
     postprocess = DefaultPostprocess(),
@@ -696,7 +684,8 @@ function infer(;
                 addons = addons,
                 postprocess = postprocess,
                 warn = warn,
-                catch_exception = catch_exception
+                catch_exception = catch_exception,
+                disable_inference_error_hint = disable_inference_error_hint
             )
         else
             check_available_callbacks(

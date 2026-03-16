@@ -24,7 +24,8 @@
             data = (y = data,),
             iterations = 10,
             returnvars = KeepLast(),
-            free_energy = true
+            free_energy = true,
+            disable_inference_error_hint = true
         )
     end
 

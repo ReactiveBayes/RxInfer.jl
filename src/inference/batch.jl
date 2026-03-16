@@ -137,7 +137,9 @@ function batch_inference(;
     # warn, optional, defaults to true
     warn = true,
     # catch exceptions during the inference procedure, optional, defaults to false
-    catch_exception = false
+    catch_exception = false,
+    # disable inference error hints
+    disable_inference_error_hint = false
 )
     _options = convert(ReactiveMPInferenceOptions, options)
     # If the `options` does not have `warn` key inside, override it with the keyword `warn`
@@ -403,7 +405,11 @@ function batch_inference(;
 
         inference_invoke_callback(callbacks, :after_inference, fmodel)
     catch error
-        potential_error = inference_process_error(error, !catch_exception)
+        potential_error = inference_process_error(
+            error;
+            rethrow = !catch_exception,
+            disable_inference_error_hint = disable_inference_error_hint
+        )
     end
 
     if !isnothing(fe_actor)
