@@ -540,8 +540,9 @@ end
 
     @node typeof(gcv) Stochastic [y, x, z, κ, ω]
 
-    RxInfer.ReactiveMP.default_meta(::typeof(gcv)) =
-        RxInfer.ReactiveMP.default_meta(GCV)
+    RxInfer.ReactiveMP.default_meta(::typeof(gcv)) = RxInfer.ReactiveMP.default_meta(
+        GCV
+    )
 
     @rule typeof(gcv)(:y, Marginalisation) (
         q_x::Any, q_z::Any, q_κ::Any, q_ω::Any, meta::Any
@@ -1087,7 +1088,7 @@ end
                     filter(
                         event ->
                             event isa RxInferenceEvent{:before_iteration} ||
-                                event isa RxInferenceEvent{:after_iteration},
+                            event isa RxInferenceEvent{:after_iteration},
                         events
                     )
                 ) == repeat([:before_iteration, :after_iteration], iterations)
@@ -1145,7 +1146,7 @@ end
                     filter(
                         event ->
                             event isa RxInferenceEvent{:before_auto_update} ||
-                                event isa RxInferenceEvent{:after_auto_update},
+                            event isa RxInferenceEvent{:after_auto_update},
                         events
                     )
                 ) == repeat(
@@ -1205,7 +1206,7 @@ end
                     filter(
                         event ->
                             event isa RxInferenceEvent{:before_data_update} ||
-                                event isa RxInferenceEvent{:after_data_update},
+                            event isa RxInferenceEvent{:after_data_update},
                         events
                     )
                 ) == repeat(

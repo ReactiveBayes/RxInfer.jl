@@ -6,7 +6,6 @@ ENV["LOG_USING_RXINFER"] = "false"
 ## https://gr-framework.org/workstations.html#no-output
 ENV["GKSwstype"] = "100"
 
-
 if get(ENV, "RUN_AQUA", "true") == "true"
     Aqua.test_all(
         RxInfer;
