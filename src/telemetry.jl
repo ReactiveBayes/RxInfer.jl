@@ -418,8 +418,8 @@ function share_session_data(
     # Create progress meter for stats if requested
     stats_progress = if show_progress
         ProgressMeter.Progress(
-        total_stats; desc = "Sharing statistics: ", color = :blue
-    )
+            total_stats; desc = "Sharing statistics: ", color = :blue
+        )
     else
         nothing
     end
@@ -489,10 +489,10 @@ function share_session_data(
     # Create progress meter for invokes within this stats if requested
     invokes_progress = if show_progress
         ProgressMeter.Progress(
-        length(invokes);
-        desc = "Sharing runs for $(label): ",
-        color = :green
-    )
+            length(invokes);
+            desc = "Sharing runs for $(label): ",
+            color = :green
+        )
     else
         nothing
     end

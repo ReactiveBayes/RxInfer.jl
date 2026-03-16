@@ -412,14 +412,11 @@ function activate_rmp_variable!(
         if !isnothing(value)
             _transform, _args = value
             transform = _transform
-            args = map(
-                arg -> if GraphPPL.is_nodelabel(arg)
-                    getvariable(getvarref(model, arg))
-                else
-                    arg
-                end,
-                _args
-            )
+            args = map(arg -> if GraphPPL.is_nodelabel(arg)
+                getvariable(getvarref(model, arg))
+            else
+                arg
+            end, _args)
         end
         options = ReactiveMP.DataVariableActivationOptions(
             true, !isnothing(value), transform, args
