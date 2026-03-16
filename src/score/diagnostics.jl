@@ -21,9 +21,9 @@ function apply_diagnostic_check(
 )
     error_fn =
         (_) -> """
-                   Failed to compute the final objective value. The result is `NaN`.
-                   Use `free_energy_diagnostics` keyword argument in the `inference` function to suppress this error.
-               """
+                              Failed to compute the final objective value. The result is `NaN`.
+                              Use `free_energy_diagnostics` keyword argument in the `inference` function to suppress this error.
+                          """
     return stream |> error_if(check_isnan, error_fn)
 end
 
@@ -43,9 +43,9 @@ function apply_diagnostic_check(
 )
     error_fn =
         (_) -> """
-                   Failed to compute the final objective value. The result is `Inf`.
-                   Use `free_energy_diagnostics` keyword argument in the `inference` function to suppress this error.
-               """
+                              Failed to compute the final objective value. The result is `Inf`.
+                              Use `free_energy_diagnostics` keyword argument in the `inference` function to suppress this error.
+                          """
     return stream |> error_if(check_isinf, error_fn)
 end
 

@@ -351,12 +351,12 @@ Base.show(io::IO, specification::AutoUpdateVariableLabel) =
         print(io, getlabel(specification))
     else
         print(
-        io,
-        getlabel(specification),
-        "[",
-        join(getindex(specification), ", "),
-        "]"
-    )
+            io,
+            getlabel(specification),
+            "[",
+            join(getindex(specification), ", "),
+            "]"
+        )
     end
 
 """
@@ -400,8 +400,13 @@ Base.show(io::IO, argument::AutoUpdateFetchMarginalArgument) =
         print(io, "q(", getlabel(argument), ")")
     else
         print(
-        io, "q(", getlabel(argument), "[", join(getindex(argument), ", "), "])"
-    )
+            io,
+            "q(",
+            getlabel(argument),
+            "[",
+            join(getindex(argument), ", "),
+            "])"
+        )
     end
 
 "This autoupdate would fetch updates from the last message (in the array of messages) of a variable"
@@ -422,8 +427,13 @@ Base.show(io::IO, argument::AutoUpdateFetchMessageArgument) =
         print(io, "μ(", getlabel(argument), ")")
     else
         print(
-        io, "μ(", getlabel(argument), "[", join(getindex(argument), ", "), "])"
-    )
+            io,
+            "μ(",
+            getlabel(argument),
+            "[",
+            join(getindex(argument), ", "),
+            "])"
+        )
     end
 
 # Model interactions with GraphPPL generator

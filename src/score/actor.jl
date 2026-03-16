@@ -105,8 +105,9 @@ end
 
 slice_snapshot(vector, ::Nothing) = vector
 slice_snapshot(vector, range::AbstractRange) = vector[range]
-slice_snapshot(vector, count::Int) = if length(vector) === count
-    vector
-else
-    vector[firstindex(vector):(firstindex(vector) + count - 1)]
-end
+slice_snapshot(vector, count::Int) =
+    if length(vector) === count
+        vector
+    else
+        vector[firstindex(vector):(firstindex(vector) + count - 1)]
+    end
