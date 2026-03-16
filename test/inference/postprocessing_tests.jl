@@ -56,7 +56,9 @@ end
 
     @node MyCustomNodeForPostprocessingTest Stochastic [out, in]
 
-    @rule MyCustomNodeForPostprocessingTest(:out, Marginalisation) (q_in::Any,) = begin
+    @rule MyCustomNodeForPostprocessingTest(:out, Marginalisation) (
+        q_in::Any,
+    ) = begin
         throw(ErrorException("This is a test error"))
     end
 
@@ -77,7 +79,7 @@ end
         postprocess = CustomPostprocessShouldNotBeInvoked(),
         catch_exception = true,
         disable_inference_error_hint = true
-   )
+    )
 
     @test result.error[1] isa ErrorException
     @test result.error[1].msg == "This is a test error"
