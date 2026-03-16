@@ -1,6 +1,12 @@
 
 export ProbabilisticModel, UnfactorizedData
-export getmodel, getreturnval, getvardict, getrandomvars, getconstantvars, getdatavars, getfactornodes
+export getmodel,
+    getreturnval,
+    getvardict,
+    getrandomvars,
+    getconstantvars,
+    getdatavars,
+    getfactornodes
 
 import Base: push!, show, getindex, haskey, firstindex, lastindex
 import ReactiveMP: getaddons, AbstractFactorNode
@@ -67,7 +73,8 @@ struct ConditionedModelGenerator{G, D}
 end
 
 getgenerator(generator::ConditionedModelGenerator) = generator.generator
-getconditioned_on(generator::ConditionedModelGenerator) = generator.conditioned_on
+getconditioned_on(generator::ConditionedModelGenerator) =
+    generator.conditioned_on
 
 """
     condition_on(generator::ModelGenerator; kwargs...)
@@ -108,7 +115,16 @@ end
 
 function Base.show(io::IO, generator::ConditionedModelGenerator)
     print(io, getmodel(getgenerator(generator)), "(")
-    print(io, join(Iterators.map(kv -> string(kv[1], " = ", kv[2]), getkwargs(getgenerator(generator))), ", "))
+    print(
+        io,
+        join(
+            Iterators.map(
+                kv -> string(kv[1], " = ", kv[2]),
+                getkwargs(getgenerator(generator))
+            ),
+            ", "
+        )
+    )
     print(io, ")")
     if !isnothing(getconditioned_on(generator))
         println(io, " conditioned on: ")
@@ -125,15 +141,21 @@ Materializes the model specification conditioned on some data into a correspondi
 Returns [`ProbabilisticModel`](@ref).
 """
 function create_model(generator::ConditionedModelGenerator)
-    return __infer_create_factor_graph_model(getgenerator(generator), getconditioned_on(generator))
+    return __infer_create_factor_graph_model(
+        getgenerator(generator), getconditioned_on(generator)
+    )
 end
 
 function __infer_create_factor_graph_model(::ModelGenerator, conditioned_on)
-    error("Cannot create a factor graph model from a `ModelGenerator` object. The `data` object must be a `NamedTuple` or a `Dict`. Got `$(typeof(conditioned_on))` instead.")
+    error(
+        "Cannot create a factor graph model from a `ModelGenerator` object. The `data` object must be a `NamedTuple` or a `Dict`. Got `$(typeof(conditioned_on))` instead."
+    )
 end
 
 # This function works for static data, such as `NamedTuple` or a `Dict`
-function __infer_create_factor_graph_model(generator::ModelGenerator, conditioned_on::Union{NamedTuple, Dict})
+function __infer_create_factor_graph_model(
+    generator::ModelGenerator, conditioned_on::Union{NamedTuple, Dict}
+)
     # If the data is already a `NamedTuple` this should not really matter 
     # But it makes it easier to deal with the `Dict` type, which is unordered by default
     ntdata = NamedTuple(conditioned_on)::NamedTuple
@@ -159,24 +181,52 @@ end
 
 # We use the `datalabel` to instantiate the data interface for the model, in case of `DeferredDataHandler`
 # the data is not known at the time of the model creation
-function __infer_create_data_interface(model, context, key::Symbol, ::DeferredDataHandler)
-    return GraphPPL.datalabel(model, context, GraphPPL.NodeCreationOptions(kind = :data, factorized = true), key, GraphPPL.MissingCollection())
+function __infer_create_data_interface(
+    model, context, key::Symbol, ::DeferredDataHandler
+)
+    return GraphPPL.datalabel(
+        model,
+        context,
+        GraphPPL.NodeCreationOptions(kind = :data, factorized = true),
+        key,
+        GraphPPL.MissingCollection()
+    )
 end
 
 # In all other cases we use the `datalabel` to instantiate the data interface for the model and the data is known at the time of the model creation
-function __infer_create_data_interface(model, context, key::Symbol, data::UnfactorizedData{D}) where {D}
-    return GraphPPL.datalabel(model, context, GraphPPL.NodeCreationOptions(kind = :data, factorized = false), key, get_data(data))
+function __infer_create_data_interface(
+    model, context, key::Symbol, data::UnfactorizedData{D}
+) where {D}
+    return GraphPPL.datalabel(
+        model,
+        context,
+        GraphPPL.NodeCreationOptions(kind = :data, factorized = false),
+        key,
+        get_data(data)
+    )
 end
 
 # In all other cases we use the `datalabel` to instantiate the data interface for the model and the data is known at the time of the model creation
 function __infer_create_data_interface(model, context, key::Symbol, data)
-    return GraphPPL.datalabel(model, context, GraphPPL.NodeCreationOptions(kind = :data, factorized = true), key, data)
+    return GraphPPL.datalabel(
+        model,
+        context,
+        GraphPPL.NodeCreationOptions(kind = :data, factorized = true),
+        key,
+        data
+    )
 end
 
 merge_data_handlers(data::Dict, newdata::Dict) = merge(data, newdata)
-merge_data_handlers(data::Dict, newdata::NamedTuple) = merge(data, convert(Dict, newdata))
-merge_data_handlers(data::NamedTuple, newdata::Dict) = merge(convert(Dict, data), newdata)
-merge_data_handlers(data::NamedTuple, newdata::NamedTuple) = merge(data, newdata)
+merge_data_handlers(data::Dict, newdata::NamedTuple) = merge(
+    data, convert(Dict, newdata)
+)
+merge_data_handlers(data::NamedTuple, newdata::Dict) = merge(
+    convert(Dict, data), newdata
+)
+merge_data_handlers(data::NamedTuple, newdata::NamedTuple) = merge(
+    data, newdata
+)
 
 # This function creates a named tuple of `DeferredDataHandler` objects from a tuple of symbols
 function create_deferred_data_handlers(symbols::NTuple{N, Symbol}) where {N}
@@ -185,5 +235,7 @@ end
 
 # This function creates a dictionary of `DeferredDataHandler` objects from an array of symbols
 function create_deferred_data_handlers(symbols::AbstractVector{Symbol})
-    return Dict{Symbol, DeferredDataHandler}(map(s -> s => DeferredDataHandler(), symbols))
+    return Dict{Symbol, DeferredDataHandler}(
+        map(s -> s => DeferredDataHandler(), symbols)
+    )
 end

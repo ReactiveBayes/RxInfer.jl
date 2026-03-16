@@ -19,7 +19,13 @@
 
     ## Inference definition
     function probit_inference(data, dependencies)
-        return infer(model = probit_model(dependencies = dependencies), data = (y = data,), iterations = 10, returnvars = KeepLast(), free_energy = true)
+        return infer(
+            model = probit_model(dependencies = dependencies),
+            data = (y = data,),
+            iterations = 10,
+            returnvars = KeepLast(),
+            free_energy = true
+        )
     end
 
     ## Data creation
@@ -55,8 +61,15 @@
 
     # `nothing` here should fallback to the `default` dependencies for the `Probit` node
     # Check that the result does not really depend on the initial value
-    for dependencies in
-        [nothing, RequireMessageFunctionalDependencies(in = NormalMeanPrecision(0.0, 1.0)), RequireMessageFunctionalDependencies(in = NormalMeanPrecision(0.0, 10.0))]
+    for dependencies in [
+        nothing,
+        RequireMessageFunctionalDependencies(
+            in = NormalMeanPrecision(0.0, 1.0)
+        ),
+        RequireMessageFunctionalDependencies(
+            in = NormalMeanPrecision(0.0, 10.0)
+        )
+    ]
         result = probit_inference(data_y, dependencies)
         @test length(result.free_energy) === 10
         @test all(<=(1e-6), diff(result.free_energy)) # Some values are fluctuating due to approximations
@@ -64,9 +77,16 @@
     end
 
     # We don't expect the `Probit` node to work properly when the `DefaultFunctionalDependencies` are being used
-    @test_throws ErrorException probit_inference(data_y, DefaultFunctionalDependencies())
+    @test_throws ErrorException probit_inference(
+        data_y, DefaultFunctionalDependencies()
+    )
 
-    result = probit_inference(data_y, RequireMessageFunctionalDependencies(in = NormalMeanPrecision(0.0, 1.0)))
+    result = probit_inference(
+        data_y,
+        RequireMessageFunctionalDependencies(
+            in = NormalMeanPrecision(0.0, 1.0)
+        )
+    )
 
     ## Create output plots
     @test_plot "models" "probit" begin
@@ -75,7 +95,13 @@
         px = plot(xlabel = "t", ylabel = "x, y", legend = :bottomright)
         px = scatter!(px, data_y, label = "y")
         px = plot!(px, data_x[2:end], label = "x", lw = 2)
-        px = plot!(px, mean.(mx)[2:end], ribbon = std.(mx)[2:end], fillalpha = 0.2, label = "x (inferred mean)")
+        px = plot!(
+            px,
+            mean.(mx)[2:end],
+            ribbon = std.(mx)[2:end],
+            fillalpha = 0.2,
+            label = "x (inferred mean)"
+        )
 
         pf = plot(xlabel = "t", ylabel = "BFE")
         pf = plot!(pf, result.free_energy, label = "Bethe Free Energy")

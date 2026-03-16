@@ -3,7 +3,9 @@
 
     include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
-    function generate_synthetic_binomial_data(n_samples::Int, true_beta::Vector{Float64}; seed::Int = 42)
+    function generate_synthetic_binomial_data(
+        n_samples::Int, true_beta::Vector{Float64}; seed::Int = 42
+    )
         rng = StableRNG(seed)
         n_features = length(true_beta)
         # Generate design matrix X
@@ -30,13 +32,24 @@
     @model function binomial_model(prior_xi, prior_precision, n_trials, X, y)
         β ~ MvNormalWeightedMeanPrecision(prior_xi, prior_precision)
         for i in eachindex(y)
-            y[i] ~ BinomialPolya(X[i], n_trials[i], β) where {dependencies = RequireMessageFunctionalDependencies(β = MvNormalWeightedMeanPrecision(prior_xi, prior_precision))}
+            y[i] ~ BinomialPolya(
+                X[i], n_trials[i], β
+            ) where {
+                dependencies = RequireMessageFunctionalDependencies(
+                    β = MvNormalWeightedMeanPrecision(prior_xi, prior_precision)
+                )
+            }
         end
     end
 
-    function binomial_inference(binomial_model, iterations, X, y, n_trials, n_features)
+    function binomial_inference(
+        binomial_model, iterations, X, y, n_trials, n_features
+    )
         return infer(
-            model = binomial_model(prior_xi = zeros(n_features), prior_precision = diageye(n_features)),
+            model = binomial_model(
+                prior_xi = zeros(n_features),
+                prior_precision = diageye(n_features)
+            ),
             data = (X = X, y = y, n_trials = n_trials),
             iterations = iterations,
             free_energy = true,
@@ -44,18 +57,27 @@
         )
     end
 
-    function run_simulation(n_sims::Int, n_samples::Int, true_beta::Vector{Float64}; iterations = n_iterations)
+    function run_simulation(
+        n_sims::Int,
+        n_samples::Int,
+        true_beta::Vector{Float64};
+        iterations = n_iterations
+    )
         # Storage for results
         n_features = length(true_beta)
         coverage = Vector{Vector{Float64}}(undef, n_sims)
         fes = Vector{Vector{Float64}}(undef, n_sims)
         for sim in 1:n_sims
             # Generate new dataset
-            X, y, n_trials = generate_synthetic_binomial_data(n_samples, true_beta, seed = sim)
+            X, y, n_trials = generate_synthetic_binomial_data(
+                n_samples, true_beta, seed = sim
+            )
             X = [collect(row) for row in eachrow(X)]
 
             # Run inference
-            results = binomial_inference(binomial_model, iterations, X, y, n_trials, n_features)
+            results = binomial_inference(
+                binomial_model, iterations, X, y, n_trials, n_features
+            )
             # Extract posterior parameters
             post = results.posteriors[:β][end]
             m = mean(post)
@@ -78,9 +100,12 @@
     end
     coverages = Vector{Float64}(undef, n_features)
     for i in 1:n_features
-        coverages[i] = sum(in_credible_interval.(getindex.(coverage, i))) / n_sims
+        coverages[i] =
+            sum(in_credible_interval.(getindex.(coverage, i))) / n_sims
         @test coverages[i] >= 0.8
     end
 
-    @test_benchmark "models" "binomialreg" binomial_inference(binomial_model, $n_iterations, $X, $y, $n_trials)
+    @test_benchmark "models" "binomialreg" binomial_inference(
+        binomial_model, $n_iterations, $X, $y, $n_trials
+    )
 end

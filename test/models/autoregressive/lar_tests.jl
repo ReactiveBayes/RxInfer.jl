@@ -30,25 +30,42 @@
     end
 
     # The state transition with the `AR` node for the Multivariate case
-    @model function lar_multivariate_state_transition(order, stype, observation, x_next, x_prev, θ, γ, c, τ)
-        x_next ~ AR(x_prev, θ, γ) where {meta = ARMeta(Multivariate, order, stype)}
+    @model function lar_multivariate_state_transition(
+        order, stype, observation, x_next, x_prev, θ, γ, c, τ
+    )
+        x_next ~
+        AR(x_prev, θ, γ) where {meta = ARMeta(Multivariate, order, stype)}
         observation ~ Normal(mean = dot(c, x_next), precision = τ)
     end
 
     # The state transition with the `AR` node for the Univariate case
-    @model function lar_univariate_state_transition(order, stype, observation, x_next, x_prev, θ, γ, c, τ)
-        x_next ~ AR(x_prev, θ, γ) where {meta = ARMeta(Univariate, order, stype)}
+    @model function lar_univariate_state_transition(
+        order, stype, observation, x_next, x_prev, θ, γ, c, τ
+    )
+        x_next ~
+        AR(x_prev, θ, γ) where {meta = ARMeta(Univariate, order, stype)}
         observation ~ Normal(mean = c * x_next, precision = τ)
     end
 
     # Generic LAR model implementation, which depends on `θprior`, `x0prior`, `state_transition` submodels
-    @model function lar_model(θprior, x0prior, state_transition, y, c, τ, order, stype)
+    @model function lar_model(
+        θprior, x0prior, state_transition, y, c, τ, order, stype
+    )
         γ ~ Gamma(shape = 1.0, rate = 1.0)
         θ ~ θprior(order = order)
         x0 ~ x0prior(order = order)
         x_prev = x0
         for i in eachindex(y)
-            x[i] ~ state_transition(observation = y[i], x_prev = x_prev, θ = θ, γ = γ, c = c, τ = τ, order = order, stype = stype)
+            x[i] ~ state_transition(
+                observation = y[i],
+                x_prev = x_prev,
+                θ = θ,
+                γ = γ,
+                c = c,
+                τ = τ,
+                order = order,
+                stype = stype
+            )
             x_prev = x[i]
         end
     end
@@ -70,10 +87,22 @@
 
     # The model constructor depending on the type of the AR process
     lar_make_model(::Type{Multivariate}, c, τ, stype, order) = lar_model(
-        θprior = lar_multivariate_θ_prior, x0prior = lar_multivariate_x0_prior, state_transition = lar_multivariate_state_transition, order = order, c = c, stype = stype, τ = τ
+        θprior = lar_multivariate_θ_prior,
+        x0prior = lar_multivariate_x0_prior,
+        state_transition = lar_multivariate_state_transition,
+        order = order,
+        c = c,
+        stype = stype,
+        τ = τ
     )
     lar_make_model(::Type{Univariate}, c, τ, stype, order) = lar_model(
-        θprior = lar_univariate_θ_prior, x0prior = lar_univariate_x0_prior, state_transition = lar_univariate_state_transition, order = order, c = c, stype = stype, τ = τ
+        θprior = lar_univariate_θ_prior,
+        x0prior = lar_univariate_x0_prior,
+        state_transition = lar_univariate_state_transition,
+        order = order,
+        c = c,
+        stype = stype,
+        τ = τ
     )
 
     function lar_inference(data, order, artype, stype, τ, iterations)
@@ -90,7 +119,13 @@
     end
 
     # The following coefficients correspond to stable poles
-    coefs_ar_5 = [0.10699399235785655, -0.5237303489793305, 0.3068897071844715, -0.17232255282458891, 0.13323964347539288]
+    coefs_ar_5 = [
+        0.10699399235785655,
+        -0.5237303489793305,
+        0.3068897071844715,
+        -0.17232255282458891,
+        0.13323964347539288
+    ]
 
     function generate_lar_data(rng, n, θ, γ, τ)
         order        = length(θ)
@@ -139,7 +174,9 @@
 
     # Test AR(k) + Multivariate
     for k in 1:4
-        local result = lar_inference(observations, k, Multivariate, ARsafe(), real_τ, 15)
+        local result = lar_inference(
+            observations, k, Multivariate, ARsafe(), real_τ, 15
+        )
         local qs = result.posteriors
         local fe = result.free_energy
         local (γ, θ, xs) = (qs[:γ], qs[:θ], qs[:x])
@@ -164,20 +201,39 @@
     @test length(fe) === 15
     @test abs(last(fe) - 514.66086) < 0.01
     @test all(filter(e -> abs(e) > 1e-1, diff(fe)) .< 0)
-    @test (mean(last(γ)) - 3.0std(last(γ)) < real_γ < mean(last(γ)) + 3.0std(last(γ)))
+    @test (
+        mean(last(γ)) - 3.0std(last(γ)) <
+        real_γ <
+        mean(last(γ)) + 3.0std(last(γ))
+    )
 
     @test_plot "models" "lar" begin
         p1 = plot(first.(states), label = "Hidden state")
         p1 = scatter!(p1, observations, label = "Observations")
-        p1 = plot!(p1, first.(mean.(xs)), ribbon = sqrt.(first.(var.(xs))), label = "Inferred states", legend = :bottomright)
+        p1 = plot!(
+            p1,
+            first.(mean.(xs)),
+            ribbon = sqrt.(first.(var.(xs))),
+            label = "Inferred states",
+            legend = :bottomright
+        )
 
-        p2 = plot(mean.(γ), ribbon = std.(γ), label = "Inferred transition precision", legend = :bottomright)
-        p2 = plot!([real_γ], seriestype = :hline, label = "Real transition precision")
+        p2 = plot(
+            mean.(γ),
+            ribbon = std.(γ),
+            label = "Inferred transition precision",
+            legend = :bottomright
+        )
+        p2 = plot!(
+            [real_γ], seriestype = :hline, label = "Real transition precision"
+        )
 
         p3 = plot(fe, label = "Bethe Free Energy")
 
         p = plot(p1, p2, p3, layout = @layout([a; b c]))
     end
 
-    @test_benchmark "models" "lar" lar_inference($observations, length($real_θ), Multivariate, ARsafe(), 15, $real_τ)
+    @test_benchmark "models" "lar" lar_inference(
+        $observations, length($real_θ), Multivariate, ARsafe(), 15, $real_τ
+    )
 end

@@ -15,7 +15,13 @@
     end
 
     function inference_mv_wishart_known_mean(mean, data, d)
-        return infer(model = mv_iid_wishart_known_mean(m = mean, d = d), data = (y = data,), iterations = 10, returnvars = KeepLast(), free_energy = Float64)
+        return infer(
+            model = mv_iid_wishart_known_mean(m = mean, d = d),
+            data = (y = data,),
+            iterations = 10,
+            returnvars = KeepLast(),
+            free_energy = Float64
+        )
     end
 
     ## Data creation
@@ -29,7 +35,11 @@
     C = L * L'
     P = inv(C)
 
-    data = rand(rng, MvNormalMeanPrecision(m, P), n) |> eachcol |> collect .|> collect
+    data =
+        rand(rng, MvNormalMeanPrecision(m, P), n) |>
+        eachcol |>
+        collect .|>
+        collect
 
     ## Inference execution
     result_km = inference_mv_wishart_known_mean(m, data, d)
@@ -43,10 +53,29 @@
         X = range(-5, 5, length = 200)
         Y = range(-5, 5, length = 200)
 
-        p = plot(title = "MvIID experiment / Precision parametrisation (known mean)")
-        p = contour!(p, X, Y, (x, y) -> pdf(MvNormalMeanPrecision(m, mean(result_km.posteriors[:P])), [x, y]), label = "Estimated")
-        p = contour!(p, X, Y, (x, y) -> pdf(MvNormalMeanPrecision(m, P), [x, y]), label = "Real")
+        p = plot(
+            title = "MvIID experiment / Precision parametrisation (known mean)"
+        )
+        p = contour!(
+            p,
+            X,
+            Y,
+            (x, y) -> pdf(
+                MvNormalMeanPrecision(m, mean(result_km.posteriors[:P])),
+                [x, y]
+            ),
+            label = "Estimated"
+        )
+        p = contour!(
+            p,
+            X,
+            Y,
+            (x, y) -> pdf(MvNormalMeanPrecision(m, P), [x, y]),
+            label = "Real"
+        )
     end
 
-    @test_benchmark "models" "iid_wishart_known_mean" inference_mv_wishart_known_mean($m, $data, $d)
+    @test_benchmark "models" "iid_wishart_known_mean" inference_mv_wishart_known_mean(
+        $m, $data, $d
+    )
 end

@@ -36,7 +36,8 @@
     end
 
     @meta function model_meta(rng, n_iterations, n_samples, learning_rate)
-        f() -> CVI(rng, n_iterations, n_samples, Optimisers.Descent(learning_rate))
+        f() ->
+            CVI(rng, n_iterations, n_samples, Optimisers.Descent(learning_rate))
     end
 
     init = @initialization begin
@@ -67,7 +68,9 @@
 
     hidden = collect(1:T)
     data = (hidden + rand(rng, NormalMeanVariance(0.0, sqrt(P)), T))
-    transformed = (data .- sensor_location) .^ 2 + rand(rng, NormalMeanVariance(0.0, sensor_var), T)
+    transformed =
+        (data .- sensor_location) .^ 2 +
+        rand(rng, NormalMeanVariance(0.0, sensor_var), T)
     ## -------------------------------------------- ##
     ## Inference execution
     res = inference_cvi(transformed, rng, 150)
@@ -77,9 +80,23 @@
 
     @test length(res.posteriors[:z]) === T
 
-    @test all(mean.(mz) .- 6 .* std.(mz) .< hidden .< (mean.(mz) .+ 6 .* std.(mz)))
-    @test (sum((mean.(mz) .- 4 .* std.(mz)) .< hidden .< (mean.(mz) .+ 4 .* std.(mz))) / T) > 0.95
-    @test (sum((mean.(mz) .- 3 .* std.(mz)) .< hidden .< (mean.(mz) .+ 3 .* std.(mz))) / T) > 0.90
+    @test all(
+        mean.(mz) .- 6 .* std.(mz) .< hidden .< (mean.(mz) .+ 6 .* std.(mz))
+    )
+    @test (
+        sum(
+            (mean.(mz) .- 4 .* std.(mz)) .<
+            hidden .<
+            (mean.(mz) .+ 4 .* std.(mz))
+        ) / T
+    ) > 0.95
+    @test (
+        sum(
+            (mean.(mz) .- 3 .* std.(mz)) .<
+            hidden .<
+            (mean.(mz) .+ 3 .* std.(mz))
+        ) / T
+    ) > 0.90
 
     # Free energy for the CVI may fluctuate
     @test all(d -> d < 3.0, diff(fe)) # Check that the fluctuations are not big
@@ -91,8 +108,20 @@
         px = plot()
 
         px = plot!(px, hidden, label = "Hidden Signal", color = :red)
-        px = plot!(px, map(mean, res.posteriors[:z]), label = "Estimated signal location", color = :orange)
-        px = plot!(px, map(mean, res.posteriors[:z]), ribbon = (9 .* var.(res.posteriors[:z])) .|> sqrt, fillalpha = 0.5, label = "Estimated Signal confidence", color = :blue)
+        px = plot!(
+            px,
+            map(mean, res.posteriors[:z]),
+            label = "Estimated signal location",
+            color = :orange
+        )
+        px = plot!(
+            px,
+            map(mean, res.posteriors[:z]),
+            ribbon = (9 .* var.(res.posteriors[:z])) .|> sqrt,
+            fillalpha = 0.5,
+            label = "Estimated Signal confidence",
+            color = :blue
+        )
         pf = plot(fe, label = "Bethe Free Energy")
 
         return plot(px, pf, layout = @layout([a; b]))

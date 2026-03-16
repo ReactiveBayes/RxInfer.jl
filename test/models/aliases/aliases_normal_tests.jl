@@ -32,7 +32,13 @@
         d ~ Normal(μ = s5, variance = 1.0)
     end
 
-    result = infer(model = normal_aliases(), data = (d = 1.0,), returnvars = (x1 = KeepLast(),), iterations = 10, free_energy = true)
+    result = infer(
+        model = normal_aliases(),
+        data = (d = 1.0,),
+        returnvars = (x1 = KeepLast(),),
+        iterations = 10,
+        free_energy = true
+    )
     # Here we simply test that it ran and gave some output 
     @test first(mean(result.posteriors[:x1])) ≈ 0.010554034251599802
     @test first(result.free_energy) ≈ 2.530978771805266
@@ -46,7 +52,10 @@ end
         d ~ Normal(x, 1.0)
     end
     @test_throws "`Normal` cannot be constructed without keyword arguments. Use `Normal(mean = ..., var = ...)` or `Normal(mean = ..., precision = ...)`." infer(
-        model = normal_by_itself(), data = (d = 1.0,), iterations = 1, free_energy = false
+        model = normal_by_itself(),
+        data = (d = 1.0,),
+        iterations = 1,
+        free_energy = false
     )
 end
 
@@ -56,6 +65,9 @@ end
         d ~ MvNormal(x, diageye(2))
     end
     @test_throws "`MvNormal` cannot be constructed without keyword arguments. Use `MvNormal(mean = ..., covariance = ...)` or `MvNormal(mean = ..., precision = ...)`." infer(
-        model = mvnormal_by_itself(), data = (d = 1.0,), iterations = 1, free_energy = false
+        model = mvnormal_by_itself(),
+        data = (d = 1.0,),
+        iterations = 1,
+        free_energy = false
     )
 end

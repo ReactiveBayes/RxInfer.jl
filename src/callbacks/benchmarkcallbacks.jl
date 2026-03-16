@@ -64,7 +64,9 @@ struct RxInferBenchmarkCallbacks
     after_autostart_ts::CircularBuffer{UInt64}
 end
 
-function RxInferBenchmarkCallbacks(; capacity = DEFAULT_BENCHMARK_CALLBACKS_BUFFER_CAPACITY)
+function RxInferBenchmarkCallbacks(;
+    capacity = DEFAULT_BENCHMARK_CALLBACKS_BUFFER_CAPACITY
+)
     RxInferBenchmarkCallbacks(
         CircularBuffer{UInt64}(capacity),
         CircularBuffer{UInt64}(capacity),
@@ -77,12 +79,19 @@ function RxInferBenchmarkCallbacks(; capacity = DEFAULT_BENCHMARK_CALLBACKS_BUFF
     )
 end
 
-check_available_callbacks(warn, callbacks::RxInferBenchmarkCallbacks, ::Val{AvailableCallbacks}) where {AvailableCallbacks} = nothing
-inference_get_callback(callbacks::RxInferBenchmarkCallbacks, name::Symbol) = nothing
+check_available_callbacks(
+    warn, callbacks::RxInferBenchmarkCallbacks, ::Val{AvailableCallbacks}
+) where {AvailableCallbacks} = nothing
+inference_get_callback(callbacks::RxInferBenchmarkCallbacks, name::Symbol) =
+    nothing
 
-Base.isempty(callbacks::RxInferBenchmarkCallbacks) = isempty(callbacks.before_model_creation_ts)
+Base.isempty(callbacks::RxInferBenchmarkCallbacks) = isempty(
+    callbacks.before_model_creation_ts
+)
 
-function inference_invoke_callback(callbacks::RxInferBenchmarkCallbacks, name::Symbol, args...)
+function inference_invoke_callback(
+    callbacks::RxInferBenchmarkCallbacks, name::Symbol, args...
+)
     if name === :before_model_creation
         push!(callbacks.before_model_creation_ts, time_ns())
         push!(callbacks.before_iteration_ts, UInt64[])
@@ -120,15 +129,25 @@ Each row represents a different operation (model creation, inference, iteration,
 Times are in nanoseconds.
 """
 function get_benchmark_stats(callbacks::RxInferBenchmarkCallbacks)
-    model_creation_time = collect(callbacks.after_model_creation_ts) .- collect(callbacks.before_model_creation_ts)
+    model_creation_time =
+        collect(callbacks.after_model_creation_ts) .-
+        collect(callbacks.before_model_creation_ts)
     stats_to_show = [("Model creation", model_creation_time)]
-    inference_time = collect(callbacks.after_inference_ts) .- collect(callbacks.before_inference_ts)
-    iteration_time = [collect(callbacks.after_iteration_ts[i]) .- collect(callbacks.before_iteration_ts[i]) for i in 1:length(callbacks.before_iteration_ts)]
+    inference_time =
+        collect(callbacks.after_inference_ts) .-
+        collect(callbacks.before_inference_ts)
+    iteration_time = [
+        collect(callbacks.after_iteration_ts[i]) .-
+        collect(callbacks.before_iteration_ts[i]) for
+        i in 1:length(callbacks.before_iteration_ts)
+    ]
     if length(inference_time) > 0
         push!(stats_to_show, ("Inference", inference_time))
         push!(stats_to_show, ("Iteration", reshape(stack(iteration_time), :)))
     end
-    autostart_time = collect(callbacks.after_autostart_ts) .- collect(callbacks.before_autostart_ts)
+    autostart_time =
+        collect(callbacks.after_autostart_ts) .-
+        collect(callbacks.before_autostart_ts)
     if length(autostart_time) > 0
         push!(stats_to_show, ("Autostart", autostart_time))
     end
@@ -148,7 +167,10 @@ end
 
 function Base.show(io::IO, callbacks::RxInferBenchmarkCallbacks)
     if isempty(callbacks)
-        return print(io, "RxInferBenchmarkCallbacks (empty, use `pretty_table` from `PrettyTables.jl` to display the statistics in a tabular format)")
+        return print(
+            io,
+            "RxInferBenchmarkCallbacks (empty, use `pretty_table` from `PrettyTables.jl` to display the statistics in a tabular format)"
+        )
     else
         return print(
             io,

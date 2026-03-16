@@ -10,10 +10,15 @@ mutable struct ScoreActor{L} <: Rocket.Actor{L}
 end
 
 ScoreActor(iterations::Int, keep::Int = 1) = ScoreActor(Real, iterations, keep)
-ScoreActor(::Type{L}, iterations::Int, keep::Int = 1) where {L <: Real} = ScoreActor{L}(zeros(L, iterations, keep), 1, 0, falses(keep))
+ScoreActor(::Type{L}, iterations::Int, keep::Int = 1) where {L <: Real} = ScoreActor{
+    L
+}(
+    zeros(L, iterations, keep), 1, 0, falses(keep)
+)
 
 Base.show(io::IO, ::ScoreActor{L}) where {L} = print(io, "ScoreActor(", L, ")")
-Base.setindex!(actor::ScoreActor, data, frame, index) = actor.score[index, frame] = data
+Base.setindex!(actor::ScoreActor, data, frame, index) =
+    actor.score[index, frame] = data
 
 function getvalid(actor::ScoreActor)
     firstframe  = something(findnext(actor.valid, actor.cframe + 1), 1)
@@ -22,7 +27,9 @@ function getvalid(actor::ScoreActor)
     ndrop       = (firstframe - 1) * niterations
     ntotal      = sum(actor.valid) * niterations
 
-    return Iterators.take(Iterators.drop(Iterators.cycle(continuous), ndrop), ntotal)
+    return Iterators.take(
+        Iterators.drop(Iterators.cycle(continuous), ndrop), ntotal
+    )
 end
 
 getniterations(actor::ScoreActor) = size(actor.score, 1)
@@ -98,4 +105,9 @@ end
 
 slice_snapshot(vector, ::Nothing) = vector
 slice_snapshot(vector, range::AbstractRange) = vector[range]
-slice_snapshot(vector, count::Int) = length(vector) === count ? vector : vector[firstindex(vector):(firstindex(vector) + count - 1)]
+slice_snapshot(vector, count::Int) =
+    if length(vector) === count
+        vector
+    else
+        vector[firstindex(vector):(firstindex(vector) + count - 1)]
+    end

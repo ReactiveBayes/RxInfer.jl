@@ -36,14 +36,27 @@
     ## -------------------------------------------- ##
 
     function inference_2inputs_θ_fixed(data, θ)
-        metas = (DeltaMeta(method = Linearization()), DeltaMeta(method = Unscented()), Linearization(), Unscented())
+        metas = (
+            DeltaMeta(method = Linearization()),
+            DeltaMeta(method = Unscented()),
+            Linearization(),
+            Unscented()
+        )
 
         datavar_based = map(metas) do meta
-            return infer(model = delta_2inputs_θ_fixed(meta = meta), data = (y = data, θ = θ), free_energy = true)
+            return infer(
+                model = delta_2inputs_θ_fixed(meta = meta),
+                data = (y = data, θ = θ),
+                free_energy = true
+            )
         end
 
         constvar_based = map(metas) do meta
-            return infer(model = delta_2inputs_θ_fixed(meta = meta, θ = θ), data = (y = data,), free_energy = true)
+            return infer(
+                model = delta_2inputs_θ_fixed(meta = meta, θ = θ),
+                data = (y = data,),
+                free_energy = true
+            )
         end
 
         foreach(zip(datavar_based, constvar_based)) do (d, c)
@@ -56,14 +69,27 @@
     end
 
     function inference_2inputs_x_fixed(data, x)
-        metas = (DeltaMeta(method = Linearization()), DeltaMeta(method = Unscented()), Linearization(), Unscented())
+        metas = (
+            DeltaMeta(method = Linearization()),
+            DeltaMeta(method = Unscented()),
+            Linearization(),
+            Unscented()
+        )
 
         datavar_based = map(metas) do meta
-            return infer(model = delta_2inputs_x_fixed(meta = meta), data = (y = data, x = x), free_energy = true)
+            return infer(
+                model = delta_2inputs_x_fixed(meta = meta),
+                data = (y = data, x = x),
+                free_energy = true
+            )
         end
 
         constvar_based = map(metas) do meta
-            return infer(model = delta_2inputs_x_fixed(meta = meta, x = x), data = (y = data,), free_energy = true)
+            return infer(
+                model = delta_2inputs_x_fixed(meta = meta, x = x),
+                data = (y = data,),
+                free_energy = true
+            )
         end
 
         foreach(zip(datavar_based, constvar_based)) do (d, c)

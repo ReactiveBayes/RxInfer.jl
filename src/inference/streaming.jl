@@ -21,7 +21,9 @@ Note, that it is not always possible to start/stop the inference procedure.
 
 See also: [`infer`](@ref), [`RxInferenceEvent`](@ref), [`RxInfer.start`](@ref), [`RxInfer.stop`](@ref)
 """
-mutable struct RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FS, R, I, M, N, X, E, J}
+mutable struct RxInferenceEngine{
+    T, D, L, V, P, H, S, U, A, FA, FS, R, I, M, N, X, E, J
+}
     datastream       :: D
     tickscheduler    :: L
     mainsubscription :: Teardown
@@ -142,14 +144,17 @@ function Base.show(io::IO, engine::RxInferenceEngine)
     print(io, "[ ", join(enabled_events(engine), ", "), " ]")
 end
 
-enabled_events(::RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FS, R, I, M, N, X, E}) where {T, D, L, V, P, H, S, U, A, FA, FS, R, I, M, N, X, E} = X
+enabled_events(
+    ::RxInferenceEngine{T, D, L, V, P, H, S, U, A, FA, FS, R, I, M, N, X, E}
+) where {T, D, L, V, P, H, S, U, A, FA, FS, R, I, M, N, X, E} = X
 
 function Base.getproperty(result::RxInferenceEngine, property::Symbol)
     if property === :enabled_events
         return enabled_events(result)
     elseif property === :free_energy
-        !isnothing(getfield(result, :fe_source)) ||
-            error("Bethe Free Energy stream has not been created. Use `free_energy = true` keyword argument for the `rxinference` function to compute Bethe Free Energy values.")
+        !isnothing(getfield(result, :fe_source)) || error(
+            "Bethe Free Energy stream has not been created. Use `free_energy = true` keyword argument for the `rxinference` function to compute Bethe Free Energy values."
+        )
         return getfield(result, :fe_source)
     elseif property === :free_energy_history
         !isnothing(getfield(result, :fe_actor)) || error(
@@ -193,24 +198,32 @@ function start(engine::RxInferenceEngine{T}) where {T}
         _enabled_events = engine.enabled_events
         _events         = engine.events
 
-        inference_invoke_event(Val(:before_start), Val(_enabled_events), _events, engine)
+        inference_invoke_event(
+            Val(:before_start), Val(_enabled_events), _events, engine
+        )
 
         _eventexecutor = RxInferenceEventExecutor(T, engine)
         _tickscheduler = engine.tickscheduler
 
         # This subscription tracks updates of all `posteriors`
-        engine.updatesubscriptions = map(keys(engine.updateflags), values(engine.updateflags)) do name, updateflag
+        engine.updatesubscriptions = map(
+            keys(engine.updateflags), values(engine.updateflags)
+        ) do name, updateflag
             return subscribe!(obtain_marginal(engine.vardict[name]), updateflag)
         end
 
         if !isnothing(engine.historyactors) && !isnothing(engine.history)
-            engine.historysubscriptions = map(keys(engine.historyactors), values(engine.historyactors)) do name, actor
+            engine.historysubscriptions = map(
+                keys(engine.historyactors), values(engine.historyactors)
+            ) do name, actor
                 return subscribe!(obtain_marginal(engine.vardict[name]), actor)
             end
         end
 
         if !isnothing(engine.fe_actor)
-            engine.fe_subscription = subscribe!(engine.fe_source, engine.fe_actor)
+            engine.fe_subscription = subscribe!(
+                engine.fe_source, engine.fe_actor
+            )
         end
 
         release!(_tickscheduler)
@@ -220,7 +233,9 @@ function start(engine::RxInferenceEngine{T}) where {T}
         # After all preparations we finaly can `subscribe!` on the `datastream`
         engine.mainsubscription = subscribe!(engine.datastream, _eventexecutor)
 
-        inference_invoke_event(Val(:after_start), Val(_enabled_events), _events, engine)
+        inference_invoke_event(
+            Val(:after_start), Val(_enabled_events), _events, engine
+        )
     end
 
     return nothing
@@ -249,14 +264,18 @@ function stop(engine::RxInferenceEngine)
         _enabled_events = engine.enabled_events
         _events         = engine.events
 
-        inference_invoke_event(Val(:before_stop), Val(_enabled_events), _events, engine)
+        inference_invoke_event(
+            Val(:before_stop), Val(_enabled_events), _events, engine
+        )
 
         unsubscribe!(engine.fe_subscription)
         unsubscribe!(engine.historysubscriptions)
         unsubscribe!(engine.updatesubscriptions)
         unsubscribe!(engine.mainsubscription)
         factor_nodes(getmodel(engine.model)) do _, node
-            marginal_stream = getextra(node, ReactiveMPExtraMarginalStreamKey, nothing)
+            marginal_stream = getextra(
+                node, ReactiveMPExtraMarginalStreamKey, nothing
+            )
             if !isnothing(marginal_stream)
                 unsubscribe!(marginal_stream)
             end
@@ -264,7 +283,9 @@ function stop(engine::RxInferenceEngine)
 
         engine.is_running = false
 
-        inference_invoke_event(Val(:after_stop), Val(_enabled_events), _events, engine)
+        inference_invoke_event(
+            Val(:after_stop), Val(_enabled_events), _events, engine
+        )
     end
 
     return nothing
@@ -275,15 +296,21 @@ import Rocket: Actor, on_next!, on_error!, on_complete!
 struct RxInferenceEventExecutor{T, E} <: Actor{T}
     engine::E
 
-    RxInferenceEventExecutor(::Type{T}, engine::E) where {T, E} = new{T, E}(engine)
+    RxInferenceEventExecutor(::Type{T}, engine::E) where {T, E} = new{T, E}(
+        engine
+    )
 end
 
-Base.show(io::IO, ::RxInferenceEventExecutor) = print(io, "RxInferenceEventExecutor")
+Base.show(io::IO, ::RxInferenceEventExecutor) = print(
+    io, "RxInferenceEventExecutor"
+)
 
 rxexecutorlock(fn::F, ::Nothing) where {F} = fn()
 rxexecutorlock(fn::F, locker) where {F}    = lock(fn, locker)
 
-function Rocket.on_next!(executor::RxInferenceEventExecutor{T}, event::T) where {T}
+function Rocket.on_next!(
+    executor::RxInferenceEventExecutor{T}, event::T
+) where {T}
     # This is the `main` executor of the inference procedure
     # It listens new data and is supposed to run indefinitely
 
@@ -307,7 +334,9 @@ function Rocket.on_next!(executor::RxInferenceEventExecutor{T}, event::T) where 
         _enabled_events = executor.engine.enabled_events
         _events         = executor.engine.events
 
-        inference_invoke_event(Val(:on_new_data), Val(_enabled_events), _events, _model, event)
+        inference_invoke_event(
+            Val(:on_new_data), Val(_enabled_events), _events, _model, event
+        )
 
         # Before we start our iterations we 'prefetch' recent values for autoupdates
         # This is important, because the values linked to the `autoupdate` may (and most likely will) 
@@ -318,23 +347,63 @@ function Rocket.on_next!(executor::RxInferenceEventExecutor{T}, event::T) where 
         # This loop correspond to the different VMP iterations
         # Here `_iterations` can be `Ref` too, so we use `[]`. Should not affect integers
         for iteration in 1:_iterations[]
-            inference_invoke_event(Val(:before_iteration), Val(_enabled_events), _events, _model, iteration)
+            inference_invoke_event(
+                Val(:before_iteration),
+                Val(_enabled_events),
+                _events,
+                _model,
+                iteration
+            )
 
             # At first we update all our priors (auto updates) with the fixed values from the `redirectupdate` field
-            inference_invoke_event(Val(:before_auto_update), Val(_enabled_events), _events, _model, iteration, _autoupdates)
+            inference_invoke_event(
+                Val(:before_auto_update),
+                Val(_enabled_events),
+                _events,
+                _model,
+                iteration,
+                _autoupdates
+            )
             run_autoupdate!(autoupdate_specs, autoupdate_fetched)
-            inference_invoke_event(Val(:after_auto_update), Val(_enabled_events), _events, _model, iteration, _autoupdates)
+            inference_invoke_event(
+                Val(:after_auto_update),
+                Val(_enabled_events),
+                _events,
+                _model,
+                iteration,
+                _autoupdates
+            )
 
             # At second we pass our observations
-            inference_invoke_event(Val(:before_data_update), Val(_enabled_events), _events, _model, iteration, event)
+            inference_invoke_event(
+                Val(:before_data_update),
+                Val(_enabled_events),
+                _events,
+                _model,
+                iteration,
+                event
+            )
             for (datavar, value) in zip(_datavars, values(event))
                 update!(datavar, value)
             end
-            inference_invoke_event(Val(:after_data_update), Val(_enabled_events), _events, _model, iteration, event)
+            inference_invoke_event(
+                Val(:after_data_update),
+                Val(_enabled_events),
+                _events,
+                _model,
+                iteration,
+                event
+            )
 
             check_and_reset_updated!(_updateflags)
 
-            inference_invoke_event(Val(:after_iteration), Val(_enabled_events), _events, _model, iteration)
+            inference_invoke_event(
+                Val(:after_iteration),
+                Val(_enabled_events),
+                _events,
+                _model,
+                iteration
+            )
         end
 
         # `release!` on `fe_actor` ensures that free energy sumed up between iterations correctly
@@ -343,17 +412,26 @@ function Rocket.on_next!(executor::RxInferenceEventExecutor{T}, event::T) where 
         end
 
         if !isnothing(_history) && !isnothing(_historyactors)
-            inference_invoke_event(Val(:before_history_save), Val(_enabled_events), _events, _model)
+            inference_invoke_event(
+                Val(:before_history_save), Val(_enabled_events), _events, _model
+            )
             for (name, actor) in pairs(_historyactors)
-                push!(_history[name], inference_postprocess(_postprocess, getvalues(actor)))
+                push!(
+                    _history[name],
+                    inference_postprocess(_postprocess, getvalues(actor))
+                )
             end
-            inference_invoke_event(Val(:after_history_save), Val(_enabled_events), _events, _model)
+            inference_invoke_event(
+                Val(:after_history_save), Val(_enabled_events), _events, _model
+            )
         end
 
         # On this `release!` call we update our priors for the next step
         release!(_tickscheduler)
 
-        inference_invoke_event(Val(:on_tick), Val(_enabled_events), _events, _model)
+        inference_invoke_event(
+            Val(:on_tick), Val(_enabled_events), _events, _model
+        )
     end
 end
 
@@ -366,7 +444,9 @@ function Rocket.on_error!(executor::RxInferenceEventExecutor, err)
     _engine.is_errored = true
     _engine.error      = err
 
-    inference_invoke_event(Val(:on_error), Val(_enabled_events), _events, _model, err)
+    inference_invoke_event(
+        Val(:on_error), Val(_enabled_events), _events, _model, err
+    )
 
     inference_process_error(err)
 end
@@ -379,7 +459,9 @@ function Rocket.on_complete!(executor::RxInferenceEventExecutor)
 
     _engine.is_completed = true
 
-    inference_invoke_event(Val(:on_complete), Val(_enabled_events), _events, _model)
+    inference_invoke_event(
+        Val(:on_complete), Val(_enabled_events), _events, _model
+    )
 
     return nothing
 end
@@ -434,12 +516,16 @@ end
 
 event_name(::RxInferenceEvent{T}) where {T} = T
 
-Base.show(io::IO, ::RxInferenceEvent{T}) where {T} = print(io, "RxInferenceEvent(:", T, ")")
+Base.show(io::IO, ::RxInferenceEvent{T}) where {T} = print(
+    io, "RxInferenceEvent(:", T, ")"
+)
 
 Base.iterate(event::RxInferenceEvent)        = iterate(event.data)
 Base.iterate(event::RxInferenceEvent, state) = iterate(event.data, state)
 
-function inference_invoke_event(::Val{Event}, ::Val{EnabledEvents}, events, args...) where {Event, EnabledEvents}
+function inference_invoke_event(
+    ::Val{Event}, ::Val{EnabledEvents}, events, args...
+) where {Event, EnabledEvents}
     # Here `E` must be a tuple of symbols
     if Event ∈ EnabledEvents
         next!(events, RxInferenceEvent(Val(Event), args))
@@ -483,7 +569,8 @@ function streaming_inference(;
 
         stream, etype
     else
-        eltype(datastream) <: NamedTuple || error("`eltype` of the `datastream` must be a `NamedTuple`")
+        eltype(datastream) <: NamedTuple ||
+            error("`eltype` of the `datastream` must be a `NamedTuple`")
         datastream, eltype(datastream)
     end
 
@@ -507,7 +594,10 @@ function streaming_inference(;
     # We create a model with the `GraphPPL` package and insert a certain RxInfer related 
     # plugins which include the VI plugin, meta plugin and the ReactiveMP integration plugin
     modelplugins = GraphPPL.PluginsCollection(
-        GraphPPL.VariationalConstraintsPlugin(constraints), GraphPPL.MetaPlugin(meta), RxInfer.InitializationPlugin(initialization), RxInfer.ReactiveMPInferencePlugin(_options)
+        GraphPPL.VariationalConstraintsPlugin(constraints),
+        GraphPPL.MetaPlugin(meta),
+        RxInfer.InitializationPlugin(initialization),
+        RxInfer.ReactiveMPInferencePlugin(_options)
     )
 
     is_free_energy, S = unwrap_free_energy_option(free_energy)
@@ -518,11 +608,17 @@ function streaming_inference(;
     end
 
     if getforce_marginal_computation(_options)
-        modelplugins = modelplugins + ReactiveMPForceMarginalComputationPlugin(MarginalComputationOptions())
+        modelplugins =
+            modelplugins + ReactiveMPForceMarginalComputationPlugin(
+                MarginalComputationOptions()
+            )
     end
 
     # The `_model` here still must be a `ModelGenerator`
-    _model = GraphPPL.with_backend(GraphPPL.with_plugins(model, modelplugins), ReactiveMPGraphPPLBackend(Static.static(allow_node_contraction)))
+    _model = GraphPPL.with_backend(
+        GraphPPL.with_plugins(model, modelplugins),
+        ReactiveMPGraphPPLBackend(Static.static(allow_node_contraction))
+    )
     _autoupdates = something(autoupdates, EmptyAutoUpdateSpecification)
 
     check_model_generator_compatibility(_autoupdates, _model)
@@ -532,10 +628,15 @@ function streaming_inference(;
     _autoupdates_data_handlers = autoupdates_data_handlers(autoupdates)
     foreach(keys(_autoupdates_data_handlers)) do _autoupdate_data_handler_key
         if _autoupdate_data_handler_key ∈ datavarnames
-            error(lazy"`$(_autoupdate_data_handler_key)` is present both in the `data` and in the `autoupdates`.")
+            error(
+                lazy"`$(_autoupdate_data_handler_key)` is present both in the `data` and in the `autoupdates`."
+            )
         end
     end
-    _condition_on = merge_data_handlers(create_deferred_data_handlers(datavarnames), autoupdates_data_handlers(autoupdates))
+    _condition_on = merge_data_handlers(
+        create_deferred_data_handlers(datavarnames),
+        autoupdates_data_handlers(autoupdates)
+    )
 
     inference_invoke_callback(callbacks, :before_model_creation)
     fmodel = create_model(_model | _condition_on)
@@ -551,18 +652,25 @@ function streaming_inference(;
     datavars = ntuple(N) do i
         datavarname = datavarnames[i]
         (haskey(vardict, datavarname) && is_data(vardict[datavarname])) ||
-            error("The `datastream` produces data for `$(datavarname)`, but the model does not have a datavar named `$(datavarname)`")
+            error(
+                "The `datastream` produces data for `$(datavarname)`, but the model does not have a datavar named `$(datavarname)`"
+            )
         return getvariable(vardict[datavarname])
     end
 
     # `iterations` might be set to `nothing` in which case we assume `1` iteration
     _iterations = something(iterations, 1)
-    (_iterations isa Integer || _iterations isa Ref{<:Integer}) || error("`iterations` argument must be of type Integer, Ref{<:Integer}, or `nothing`")
-    _iterations[] > 0 || error("`iterations` arguments must be greater than zero")
+    (_iterations isa Integer || _iterations isa Ref{<:Integer}) || error(
+        "`iterations` argument must be of type Integer, Ref{<:Integer}, or `nothing`"
+    )
+    _iterations[] > 0 ||
+        error("`iterations` arguments must be greater than zero")
 
     _keephistory = something(keephistory, 0)
-    _keephistory isa Integer || error("`keephistory` argument must be of type Integer or `nothing`")
-    _keephistory >= 0 || error("`keephistory` arguments must be greater than or equal to zero")
+    _keephistory isa Integer ||
+        error("`keephistory` argument must be of type Integer or `nothing`")
+    _keephistory >= 0 ||
+        error("`keephistory` arguments must be greater than or equal to zero")
 
     # `tickscheduler` defines a moment when we send new posteriors in the `posteriors` streams
     tickscheduler = PendingScheduler()
@@ -592,12 +700,19 @@ function streaming_inference(;
 
     # We check if `returnvars` argument is empty, in which case we return names of all random (non-proxy) variables in the model
     if isnothing(returnvars)
-        returnvars = [variable for (variable, value) in pairs(vardict) if (israndom(value))]
+        returnvars = [
+            variable for
+            (variable, value) in pairs(vardict) if (israndom(value))
+        ]
     end
 
-    eltype(returnvars) === Symbol || error("`returnvars` must contain a list of symbols") # TODO?
+    eltype(returnvars) === Symbol ||
+        error("`returnvars` must contain a list of symbols") # TODO?
 
-    returnvars = filter((varkey) -> __check_has_randomvar(:returnvars, vardict, varkey), returnvars)
+    returnvars = filter(
+        (varkey) -> __check_has_randomvar(:returnvars, vardict, varkey),
+        returnvars
+    )
 
     inference_check_itertype(:returnvars, returnvars)
 
@@ -612,10 +727,17 @@ function streaming_inference(;
         elseif historyvars === KeepEach() || historyvars === KeepLast()
             # Second we check if it is one of the two possible global values: `KeepEach` and `KeepLast`. 
             # If so, we replace it with either `KeepEach` or `KeepLast` for each random and not-proxied variable in a model
-            historyvars = Dict(variable => historyvars for (variable, value) in pairs(vardict) if (israndom(value) && !isanonymous(value)))
+            historyvars = Dict(
+                variable => historyvars for
+                (variable, value) in pairs(vardict) if
+                (israndom(value) && !isanonymous(value))
+            )
         end
 
-        historyvars = Dict((varkey => value) for (varkey, value) in pairs(historyvars) if __check_has_randomvar(:historyvars, vardict, varkey))
+        historyvars = Dict(
+            (varkey => value) for (varkey, value) in pairs(historyvars) if
+            __check_has_randomvar(:historyvars, vardict, varkey)
+        )
 
         infer_check_dicttype(:historyvars, historyvars)
     else
@@ -637,11 +759,17 @@ function streaming_inference(;
     # At this point we must have properly defined and fixed `returnvars` and `historyvars` objects
 
     # For each random variable entry in `returnvars` specification we create a boolean flag to track their updates
-    updateflags = Dict(variable => MarginalHasBeenUpdated(false) for variable in returnvars)
+    updateflags = Dict(
+        variable => MarginalHasBeenUpdated(false) for variable in returnvars
+    )
 
     # `posteriors` returns a `stream` for each entry in the `returnvars`
     posteriors = Dict(
-        variable => obtain_marginal(vardict[variable]) |> schedule_on(tickscheduler) |> map(Any, (data) -> inference_postprocess(postprocess, data)) for variable in returnvars
+        variable =>
+            obtain_marginal(vardict[variable]) |>
+            schedule_on(tickscheduler) |>
+            map(Any, (data) -> inference_postprocess(postprocess, data)) for
+        variable in returnvars
     )
 
     _events        = Subject(RxInferenceEvent)
@@ -649,7 +777,8 @@ function streaming_inference(;
 
     if !(_enabledevents isa Val) || !(unval(_enabledevents) isa Tuple)
         error("`events` keyword argument must be a `Val` of tuple of symbols")
-    elseif length(unval(_enabledevents)) > 0 && !(eltype(unval(_enabledevents)) === Symbol)
+    elseif length(unval(_enabledevents)) > 0 &&
+        !(eltype(unval(_enabledevents)) === Symbol)
         error("`events` keyword argument must be a `Val` of tuple of symbols")
     end
 
@@ -715,5 +844,10 @@ function available_events(::typeof(streaming_inference))
 end
 
 function available_callbacks(::typeof(streaming_inference))
-    return Val((:before_model_creation, :after_model_creation, :before_autostart, :after_autostart))
+    return Val((
+        :before_model_creation,
+        :after_model_creation,
+        :before_autostart,
+        :after_autostart
+    ))
 end

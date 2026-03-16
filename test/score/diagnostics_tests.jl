@@ -4,12 +4,19 @@
     stream = Subject(Any)
 
     vbenergy = stream |> map(Float64, entropy)
-    vbenergy = apply_diagnostic_check(ObjectiveDiagnosticCheckInfs(), nothing, vbenergy)
+    vbenergy = apply_diagnostic_check(
+        ObjectiveDiagnosticCheckInfs(), nothing, vbenergy
+    )
 
     events = []
 
     subscription = subscribe!(
-        vbenergy |> safe(), lambda(on_next = (data) -> push!(events, float(data)), on_error = (err) -> push!(events, err), on_complete = () -> push!(events, "completed"))
+        vbenergy |> safe(),
+        lambda(
+            on_next = (data) -> push!(events, float(data)),
+            on_error = (err) -> push!(events, err),
+            on_complete = () -> push!(events, "completed")
+        )
     )
 
     # First value is ok
@@ -35,12 +42,19 @@ end
     stream = Subject(Any)
 
     vbenergy = stream |> map(Float64, entropy)
-    vbenergy = apply_diagnostic_check(ObjectiveDiagnosticCheckNaNs(), nothing, vbenergy)
+    vbenergy = apply_diagnostic_check(
+        ObjectiveDiagnosticCheckNaNs(), nothing, vbenergy
+    )
 
     events = []
 
     subscription = subscribe!(
-        vbenergy |> safe(), lambda(on_next = (data) -> push!(events, float(data)), on_error = (err) -> push!(events, err), on_complete = () -> push!(events, "completed"))
+        vbenergy |> safe(),
+        lambda(
+            on_next = (data) -> push!(events, float(data)),
+            on_error = (err) -> push!(events, err),
+            on_complete = () -> push!(events, "completed")
+        )
     )
 
     # First value is ok
@@ -71,7 +85,12 @@ end
     events = []
 
     subscription = subscribe!(
-        vbenergy |> safe(), lambda(on_next = (data) -> push!(events, float(data)), on_error = (err) -> push!(events, err), on_complete = () -> push!(events, "completed"))
+        vbenergy |> safe(),
+        lambda(
+            on_next = (data) -> push!(events, float(data)),
+            on_error = (err) -> push!(events, err),
+            on_complete = () -> push!(events, "completed")
+        )
     )
 
     # First value is ok

@@ -1,6 +1,7 @@
 export PointMassFormConstraint
 
-import ReactiveMP: default_form_check_strategy, default_prod_constraint, constrain_form
+import ReactiveMP:
+    default_form_check_strategy, default_prod_constraint, constrain_form
 import DomainSets: Domain, infimum, supremum
 import Optim
 
@@ -55,7 +56,9 @@ struct PointMassFormConstraint{F, P, B} <: AbstractFormConstraint
     boundaries     :: B
 end
 
-Base.show(io::IO, ::PointMassFormConstraint) = print(io, "PointMassFormConstraint()")
+Base.show(io::IO, ::PointMassFormConstraint) = print(
+    io, "PointMassFormConstraint()"
+)
 
 PointMassFormConstraint(; optimizer = default_point_mass_form_constraint_optimizer, starting_point = default_point_mass_form_constraint_starting_point, boundaries = default_point_mass_form_constraint_boundaries) = PointMassFormConstraint(
     optimizer, starting_point, boundaries
@@ -69,13 +72,19 @@ call_optimizer(pmconstraint::PointMassFormConstraint, distribution::D) where {D}
 call_boundaries(pmconstraint::PointMassFormConstraint, distribution::D) where {D}     = pmconstraint.boundaries(variate_form(D), value_support(D), pmconstraint, distribution)
 call_starting_point(pmconstraint::PointMassFormConstraint, distribution::D) where {D} = pmconstraint.starting_point(variate_form(D), value_support(D), pmconstraint, distribution)
 
-ReactiveMP.constrain_form(pmconstraint::PointMassFormConstraint, distribution) = call_optimizer(pmconstraint, distribution)
+ReactiveMP.constrain_form(pmconstraint::PointMassFormConstraint, distribution) = call_optimizer(
+    pmconstraint, distribution
+)
 
 # There is no need to call the optimizer on a `Distribution` object since they should have a well defined `mode`
-ReactiveMP.constrain_form(::PointMassFormConstraint, distribution::Distribution) = PointMass(mode(distribution))
+ReactiveMP.constrain_form(::PointMassFormConstraint, distribution::Distribution) = PointMass(
+    mode(distribution)
+)
 
 # Categorical distribution has an exception since `mode` does not return a one-hot vector, which is required for backwards compatibility with `Categorical` marginals
-ReactiveMP.constrain_form(::PointMassFormConstraint, distribution::DiscreteNonParametric{T, P, Ts, Ps}) where {T, P, Ts, Ps} = begin
+ReactiveMP.constrain_form(
+    ::PointMassFormConstraint, distribution::DiscreteNonParametric{T, P, Ts, Ps}
+) where {T, P, Ts, Ps} = begin
     pv = probvec(distribution)
     result = SparseVector{P, Int64}(undef, length(pv))
     result[argmax(pv)] = one(P)
@@ -90,7 +99,12 @@ Uses the `starting_point` and `boundaries` callbacks to determine the starting p
 """
 function default_point_mass_form_constraint_optimizer end
 
-function default_point_mass_form_constraint_optimizer(::Type{Univariate}, ::Type{Continuous}, constraint::PointMassFormConstraint, distribution)
+function default_point_mass_form_constraint_optimizer(
+    ::Type{Univariate},
+    ::Type{Continuous},
+    constraint::PointMassFormConstraint,
+    distribution
+)
     target = let distribution = distribution
         (x) -> -logpdf(distribution, x[1])
     end
@@ -98,19 +112,37 @@ function default_point_mass_form_constraint_optimizer(::Type{Univariate}, ::Type
     lower, upper = call_boundaries(constraint, distribution)
 
     result = if isinf(lower) && isinf(upper)
-        Optim.optimize(target, call_starting_point(constraint, distribution), Optim.LBFGS())
+        Optim.optimize(
+            target,
+            call_starting_point(constraint, distribution),
+            Optim.LBFGS()
+        )
     else
-        Optim.optimize(target, [lower], [upper], call_starting_point(constraint, distribution), Optim.Fminbox(Optim.GradientDescent()))
+        Optim.optimize(
+            target,
+            [lower],
+            [upper],
+            call_starting_point(constraint, distribution),
+            Optim.Fminbox(Optim.GradientDescent())
+        )
     end
 
     if Optim.converged(result)
         return PointMass(Optim.minimizer(result)[1])
     else
-        error("Optimisation procedure for point mass estimation did not converge", result)
+        error(
+            "Optimisation procedure for point mass estimation did not converge",
+            result
+        )
     end
 end
 
-function default_point_mass_form_constraint_optimizer(::Type{Univariate}, ::Type{Discrete}, constraint::PointMassFormConstraint, distribution)
+function default_point_mass_form_constraint_optimizer(
+    ::Type{Univariate},
+    ::Type{Discrete},
+    constraint::PointMassFormConstraint,
+    distribution
+)
 
     # fetch probvec
     p = probvec(distribution)
@@ -129,13 +161,24 @@ Defines a default boundaries for the `PointMassFormConstraint`. By default simpl
 """
 function default_point_mass_form_constraint_boundaries end
 
-function default_point_mass_form_constraint_boundaries(::Type{Univariate}, ::Type{Continuous}, constraint::PointMassFormConstraint, distribution)
+function default_point_mass_form_constraint_boundaries(
+    ::Type{Univariate},
+    ::Type{Continuous},
+    constraint::PointMassFormConstraint,
+    distribution
+)
     return __default_univariate_boundaries(support(distribution))
 end
 
-__default_univariate_boundaries(interval::AbstractRange) = (minimum(interval), maximum(interval))
-__default_univariate_boundaries(interval::Distributions.RealInterval) = (minimum(interval), maximum(interval))
-__default_univariate_boundaries(domain::Domain) = (infimum(domain), supremum(domain))
+__default_univariate_boundaries(interval::AbstractRange) = (
+    minimum(interval), maximum(interval)
+)
+__default_univariate_boundaries(interval::Distributions.RealInterval) = (
+    minimum(interval), maximum(interval)
+)
+__default_univariate_boundaries(domain::Domain) = (
+    infimum(domain), supremum(domain)
+)
 
 """
     default_point_mass_form_constraint_starting_point(::Type{<:VariateType}, ::Type{<:ValueSupport}, constraint::PointMassFormConstraint, distribution)
@@ -145,11 +188,18 @@ If support is unbounded returns a zero point. Otherwise throws an error.
 """
 function default_point_mass_form_constraint_starting_point end
 
-function default_point_mass_form_constraint_starting_point(::Type{Univariate}, ::Type{Continuous}, constraint::PointMassFormConstraint, distribution)
+function default_point_mass_form_constraint_starting_point(
+    ::Type{Univariate},
+    ::Type{Continuous},
+    constraint::PointMassFormConstraint,
+    distribution
+)
     lower, upper = call_boundaries(constraint, distribution)
     return if isinf(lower) && isinf(upper)
         return zeros(1)
     else
-        error("No default starting point specified for a range [ $(lower), $(upper) ]")
+        error(
+            "No default starting point specified for a range [ $(lower), $(upper) ]"
+        )
     end
 end
