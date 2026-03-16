@@ -1,5 +1,6 @@
 @testitem "Model can be conditioned on fixed data and materialized" begin
-    import RxInfer: condition_on, create_model, getconditioned_on, DeferredDataHandler
+    import RxInfer:
+        condition_on, create_model, getconditioned_on, DeferredDataHandler
 
     @model function beta_bernoulli(y, a, b)
         θ ~ Beta(a, b)
@@ -10,8 +11,12 @@
         model_generator           = beta_bernoulli(a = 1.0, b = 1.0)
         model_generator_with_data = condition_on(model_generator, y = [0.0, 1.0, 0.0])
 
-        @test getconditioned_on(model_generator_with_data) == (y = [0.0, 1.0, 0.0],)
-        @test occursin("beta_bernoulli(a = 1.0, b = 1.0) conditioned on: ", repr(model_generator_with_data))
+        @test getconditioned_on(model_generator_with_data) ==
+            (y = [0.0, 1.0, 0.0],)
+        @test occursin(
+            "beta_bernoulli(a = 1.0, b = 1.0) conditioned on: ",
+            repr(model_generator_with_data)
+        )
         @test occursin("y = [0.0, 1.0, 0.0]", repr(model_generator_with_data))
         @test create_model(model_generator_with_data) isa ProbabilisticModel
     end
@@ -20,8 +25,12 @@
         model_generator           = beta_bernoulli(a = 2.0)
         model_generator_with_data = condition_on(model_generator, y = [0.0, 1.0, 0.0], b = 7.0)
 
-        @test getconditioned_on(model_generator_with_data) == (y = [0.0, 1.0, 0.0], b = 7.0)
-        @test occursin("beta_bernoulli(a = 2.0) conditioned on: ", repr(model_generator_with_data))
+        @test getconditioned_on(model_generator_with_data) ==
+            (y = [0.0, 1.0, 0.0], b = 7.0)
+        @test occursin(
+            "beta_bernoulli(a = 2.0) conditioned on: ",
+            repr(model_generator_with_data)
+        )
         @test occursin("y = [0.0, 1.0, 0.0]", repr(model_generator_with_data))
         @test occursin("b = 7.0", repr(model_generator_with_data))
         @test create_model(model_generator_with_data) isa ProbabilisticModel
@@ -36,8 +45,12 @@
         model_generator           = beta_bernoulli_single(a = 1.0, b = 1.0)
         model_generator_with_data = condition_on(model_generator, y = DeferredDataHandler())
 
-        @test getconditioned_on(model_generator_with_data) == (y = DeferredDataHandler(),)
-        @test occursin("beta_bernoulli_single(a = 1.0, b = 1.0) conditioned on: ", repr(model_generator_with_data))
+        @test getconditioned_on(model_generator_with_data) ==
+            (y = DeferredDataHandler(),)
+        @test occursin(
+            "beta_bernoulli_single(a = 1.0, b = 1.0) conditioned on: ",
+            repr(model_generator_with_data)
+        )
         @test occursin("y = [ deffered data ]", repr(model_generator_with_data))
         @test create_model(model_generator_with_data) isa ProbabilisticModel
     end
@@ -53,7 +66,9 @@ end
 
     conditioned = beta_bernoulli(a = 1.0, b = 1.0) | (y = [1.0, 0.0, 3.0],)
 
-    @test occursin("beta_bernoulli(a = 1.0, b = 1.0) conditioned on: ", repr(conditioned))
+    @test occursin(
+        "beta_bernoulli(a = 1.0, b = 1.0) conditioned on: ", repr(conditioned)
+    )
     @test occursin("y = [1.0, 0.0, 3.0]", repr(conditioned))
     @test create_model(conditioned) isa ProbabilisticModel
 end
@@ -62,10 +77,12 @@ end
     import RxInfer: create_deferred_data_handlers, DeferredDataHandler
 
     @testset "Creating deferred labels from tuple of symbols" begin
-        @test create_deferred_data_handlers((:x, :y)) === (x = DeferredDataHandler(), y = DeferredDataHandler())
+        @test create_deferred_data_handlers((:x, :y)) ===
+            (x = DeferredDataHandler(), y = DeferredDataHandler())
     end
 
     @testset "Creating deferred labels from array of symbols" begin
-        @test create_deferred_data_handlers([:x, :y]) == Dict(:x => DeferredDataHandler(), :y => DeferredDataHandler())
+        @test create_deferred_data_handlers([:x, :y]) ==
+            Dict(:x => DeferredDataHandler(), :y => DeferredDataHandler())
     end
 end

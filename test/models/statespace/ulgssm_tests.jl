@@ -16,7 +16,11 @@
     end
 
     function univariate_lgssm_inference(data, x0, c, P)
-        return infer(model = univariate_lgssm_model(x0 = x0, c = c, P = P), data = (y = data,), free_energy = true)
+        return infer(
+            model = univariate_lgssm_model(x0 = x0, c = c, P = P),
+            data = (y = data,),
+            free_energy = true
+        )
     end
 
     ## Data creation
@@ -34,7 +38,11 @@
 
     ## Test inference results
     @test length(x_estimated) === n
-    @test all((mean.(x_estimated) .- 3 .* std.(x_estimated)) .< hidden .< (mean.(x_estimated) .+ 3 .* std.(x_estimated)))
+    @test all(
+        (mean.(x_estimated) .- 3 .* std.(x_estimated)) .<
+        hidden .<
+        (mean.(x_estimated) .+ 3 .* std.(x_estimated))
+    )
     @test all(var.(x_estimated) .> 0.0)
     @test length(fe) === 1
     @test abs(last(fe) - 1854.297647) < 0.01
@@ -51,5 +59,7 @@
         return p
     end
 
-    @test_benchmark "models" "ulgssm" univariate_lgssm_inference($data, $x0_prior, 1.0, $P)
+    @test_benchmark "models" "ulgssm" univariate_lgssm_inference(
+        $data, $x0_prior, 1.0, $P
+    )
 end

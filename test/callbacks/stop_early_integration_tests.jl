@@ -33,7 +33,11 @@
         end
 
         return infer(
-            model = gaussian_state_space_model(x0 = NormalMeanVariance(0.0, 10.0), process_var = 0.2, obs_var = 0.5),
+            model = gaussian_state_space_model(
+                x0 = NormalMeanVariance(0.0, 10.0),
+                process_var = 0.2,
+                obs_var = 0.5
+            ),
             data = (y = data,),
             constraints = MeanField(),
             initialization = initialization,

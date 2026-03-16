@@ -1,7 +1,11 @@
 const RXINFER_DEFAULT_TELEMETRY_ENDPOINT = "https://firestore.googleapis.com/v1/projects/reactive-bayes/databases/(default)/documents/"
 
-const preference_telemetry_endpoint = @load_preference("telemetry_endpoint", RXINFER_DEFAULT_TELEMETRY_ENDPOINT)
-const preference_enable_using_rxinfer_telemetry = @load_preference("enable_using_rxinfer_telemetry", true)
+const preference_telemetry_endpoint = @load_preference(
+    "telemetry_endpoint", RXINFER_DEFAULT_TELEMETRY_ENDPOINT
+)
+const preference_enable_using_rxinfer_telemetry = @load_preference(
+    "enable_using_rxinfer_telemetry", true
+)
 
 """
     set_telemetry_endpoint!(endpoint)
@@ -45,7 +49,8 @@ function log_using_rxinfer()
         return nothing
     end
 
-    if !preference_enable_using_rxinfer_telemetry || isnothing(preference_telemetry_endpoint)
+    if !preference_enable_using_rxinfer_telemetry ||
+        isnothing(preference_telemetry_endpoint)
         return nothing
     end
 
@@ -66,9 +71,15 @@ function log_using_rxinfer()
             "using_rxinfer",
             (
                 fields = (
-                    rxinferVersion = (stringValue = string(pkgversion(@__MODULE__)),),
+                    rxinferVersion = (
+                        stringValue = string(pkgversion(@__MODULE__)),
+                    ),
                     juliaVersion = (stringValue = string(VERSION),),
-                    timestamp = (timestampValue = Dates.format(now(UTC), "yyyy-mm-ddTHH:MM:SS.sssZ"),),
+                    timestamp = (
+                        timestampValue = Dates.format(
+                            now(UTC), "yyyy-mm-ddTHH:MM:SS.sssZ"
+                        ),
+                    ),
                     id = (stringValue = id,)
                 ),
             )
@@ -116,7 +127,12 @@ const id_name_mapping = Dict{String, String}()
 
 # The mapping of the collection name to the allow_patch flag
 # This is used to avoid pushing data to Firestore if the document already exists
-const collection_allow_patch = Dict{String, Bool}("using_rxinfer" => true, "sessions" => true, "session_stats" => true, "invokes" => false)
+const collection_allow_patch = Dict{String, Bool}(
+    "using_rxinfer" => true,
+    "sessions" => true,
+    "session_stats" => true,
+    "invokes" => false
+)
 
 # Adds or updates a document in Firestore based on the provided id and collection.
 # If a document with the same id already exists (tracked in id_name_mapping), 
@@ -125,7 +141,9 @@ const collection_allow_patch = Dict{String, Bool}("using_rxinfer" => true, "sess
 function __add_document(id, collection, payload)
     if !isnothing(preference_telemetry_endpoint)
         # Headers required for Firestore REST API
-        headers = ["Accept" => "application/json", "Content-Type" => "application/json"]
+        headers = [
+            "Accept" => "application/json", "Content-Type" => "application/json"
+        ]
 
         # Example values:
         # id = "550e8400-e29b-41d4-a716-446655440000" (a UUID string)
@@ -141,7 +159,13 @@ function __add_document(id, collection, payload)
             # If document exists, endpoint should look like:
             # "https://firestore.../using_rxinfer/abc123def456"
             name = id_name_mapping[id]
-            endpoint = string(rstrip(preference_telemetry_endpoint, '/'), '/', collection, '/', name)
+            endpoint = string(
+                rstrip(preference_telemetry_endpoint, '/'),
+                '/',
+                collection,
+                '/',
+                name
+            )
             # For collections that allow patching (like using_rxinfer, sessions, session_stats),
             # send a PATCH request to update the existing document with new data
             if collection_allow_patch[collection]
@@ -155,7 +179,9 @@ function __add_document(id, collection, payload)
         else
             # For new documents, endpoint would be like:
             # "https://firestore.../using_rxinfer"
-            endpoint = string(rstrip(preference_telemetry_endpoint, '/'), '/', collection)
+            endpoint = string(
+                rstrip(preference_telemetry_endpoint, '/'), '/', collection
+            )
             HTTP.post(endpoint, headers, JSON.json(payload))
         end
 
@@ -222,11 +248,19 @@ function to_firestore_value(value::Nothing)
 end
 
 function to_firestore_value(value::AbstractVector)
-    return (arrayValue = (values = [to_firestore_value(item) for item in value],),)
+    return (
+        arrayValue = (values = [to_firestore_value(item) for item in value],),
+    )
 end
 
 function to_firestore_value(value::AbstractDict)
-    return (mapValue = (fields = Dict(string(k) => to_firestore_value(v) for (k, v) in value),),)
+    return (
+        mapValue = (
+            fields = Dict(
+                string(k) => to_firestore_value(v) for (k, v) in value
+            ),
+        ),
+    )
 end
 
 function to_firestore_value(value::Any)
@@ -241,7 +275,11 @@ Convert a Julia NamedTuple to a Firestore document format.
 Returns a NamedTuple with fields in Firestore format.
 """
 function to_firestore_document(data::NamedTuple)
-    return (fields = NamedTuple(k => to_firestore_value(v) for (k, v) in pairs(data)),)
+    return (
+        fields = NamedTuple(
+            k => to_firestore_value(v) for (k, v) in pairs(data)
+        ),
+    )
 end
 
 """
@@ -250,7 +288,11 @@ end
 Convert a Session object to a Firestore-compatible document format.
 """
 function to_firestore_session(session::Session)
-    return to_firestore_document((id = session.id, created_at = session.created_at, environment = session.environment))
+    return to_firestore_document((
+        id = session.id,
+        created_at = session.created_at,
+        environment = session.environment
+    ))
 end
 
 """
@@ -268,8 +310,16 @@ function to_firestore_session_stats(stats::SessionStats, session_id::UUID)
         success_count = stats.success_count,
         failed_count = stats.failed_count,
         success_rate = stats.success_rate,
-        min_duration_ms = stats.min_duration_ms == Inf ? 0.0 : stats.min_duration_ms,
-        max_duration_ms = stats.max_duration_ms == -Inf ? 0.0 : stats.max_duration_ms,
+        min_duration_ms = if stats.min_duration_ms == Inf
+            0.0
+        else
+            stats.min_duration_ms
+        end,
+        max_duration_ms = if stats.max_duration_ms == -Inf
+            0.0
+        else
+            stats.max_duration_ms
+        end,
         total_duration_ms = stats.total_duration_ms,
         context_keys = collect(stats.context_keys)
     ))
@@ -283,7 +333,12 @@ Includes a reference to the parent session stats.
 """
 function to_firestore_invoke(invoke::SessionInvoke, stats_id::UUID)
     return to_firestore_document((
-        id = invoke.id, session_stats = stats_id, status = invoke.status, execution_start = invoke.execution_start, execution_end = invoke.execution_end, context = invoke.context
+        id = invoke.id,
+        session_stats = stats_id,
+        status = invoke.status,
+        execution_start = invoke.execution_start,
+        execution_end = invoke.execution_end,
+        context = invoke.context
     ))
 end
 
@@ -315,7 +370,10 @@ When `show_progress` is true (default), the function displays:
 - A blue progress bar for sharing session statistics
 - A green progress bar for sharing labeled runs
 """
-function share_session_data(session::Union{Session, Nothing} = RxInfer.default_session(); show_progress::Bool = true)
+function share_session_data(
+    session::Union{Session, Nothing} = RxInfer.default_session();
+    show_progress::Bool = true
+)
     if isnothing(preference_telemetry_endpoint)
         @warn "Cannot share session data: telemetry endpoint is not set. See `RxInfer.set_telemetry_endpoint!()`"
         return nothing
@@ -326,7 +384,8 @@ function share_session_data(session::Union{Session, Nothing} = RxInfer.default_s
         return nothing
     end
 
-    @info "Starting to share session data to help improve RxInfer.jl" session_id = session.id num_stats = length(session.stats)
+    @info "Starting to share session data to help improve RxInfer.jl" session_id =
+        session.id num_stats = length(session.stats)
 
     if !preference_automatic_session_sharing
         @info """
@@ -342,7 +401,9 @@ function share_session_data(session::Union{Session, Nothing} = RxInfer.default_s
     end
 
     # Share session information
-    session_name = __add_document(string(session.id), "sessions", to_firestore_session(session))
+    session_name = __add_document(
+        string(session.id), "sessions", to_firestore_session(session)
+    )
     if isnothing(session_name)
         @warn "Unable to share session data" session_id = session.id
         return nothing
@@ -355,11 +416,19 @@ function share_session_data(session::Union{Session, Nothing} = RxInfer.default_s
     shared_invokes = 0
 
     # Create progress meter for stats if requested
-    stats_progress = show_progress ? ProgressMeter.Progress(total_stats; desc = "Sharing statistics: ", color = :blue) : nothing
+    stats_progress = if show_progress
+        ProgressMeter.Progress(
+        total_stats; desc = "Sharing statistics: ", color = :blue
+    )
+    else
+        nothing
+    end
 
     # Share session statistics
     for (_, stats) in session.stats
-        shared_invokes += share_session_data(session, stats; show_progress = show_progress)
+        shared_invokes += share_session_data(
+            session, stats; show_progress = show_progress
+        )
         shared_stats += 1
         show_progress && ProgressMeter.next!(stats_progress)
     end
@@ -369,7 +438,9 @@ function share_session_data(session::Union{Session, Nothing} = RxInfer.default_s
         @warn """
         Session data sharing completed with some limitations.
         We appreciate your contribution even if not all data could be shared.
-        """ session_id = session.id shared_stats = shared_stats total_stats = total_stats shared_invokes = shared_invokes total_invokes = total_invokes
+        """ session_id = session.id shared_stats = shared_stats total_stats =
+            total_stats shared_invokes = shared_invokes total_invokes =
+            total_invokes
     else
         @info """
         Thank you for sharing your session data! 
@@ -385,33 +456,56 @@ function share_session_data(session::Union{Session, Nothing} = RxInfer.default_s
         Call `RxInfer.summarize_session()` to get the list of run IDs (you may want to additionally install `PrettyTables.jl` to see the nicely formatted output).
 
         This helps us provide better support by understanding your usage context.
-        """ session_id = session.id session_name = session_name stats_count = shared_stats invokes_count = shared_invokes
+        """ session_id = session.id session_name = session_name stats_count =
+            shared_stats invokes_count = shared_invokes
     end
 
     return nothing
 end
 
-function share_session_data(session::Session, stats::SessionStats; show_progress::Bool = true)
-    return share_session_data(session, stats, stats.invokes; show_progress = show_progress)
+function share_session_data(
+    session::Session, stats::SessionStats; show_progress::Bool = true
+)
+    return share_session_data(
+        session, stats, stats.invokes; show_progress = show_progress
+    )
 end
 
-function share_session_data(session::Session, stats::SessionStats, invokes; show_progress::Bool = true)
+function share_session_data(
+    session::Session, stats::SessionStats, invokes; show_progress::Bool = true
+)
     label = stats.label
-    stats_name = __add_document(string(stats.id), "session_stats", to_firestore_session_stats(stats, session.id))
+    stats_name = __add_document(
+        string(stats.id),
+        "session_stats",
+        to_firestore_session_stats(stats, session.id)
+    )
     if isnothing(stats_name)
-        @warn "Unable to share statistics data" stats_id = stats.id label = label session_id = session.id
+        @warn "Unable to share statistics data" stats_id = stats.id label =
+            label session_id = session.id
         return nothing
     end
 
     # Create progress meter for invokes within this stats if requested
-    invokes_progress = show_progress ? ProgressMeter.Progress(length(invokes); desc = "Sharing runs for $(label): ", color = :green) : nothing
+    invokes_progress = if show_progress
+        ProgressMeter.Progress(
+        length(invokes);
+        desc = "Sharing runs for $(label): ",
+        color = :green
+    )
+    else
+        nothing
+    end
 
     # Share labeled runs
     invokes_shared = 0
     for invoke in invokes
-        invoke_name = __add_document(string(invoke.id), "invokes", to_firestore_invoke(invoke, stats.id))
+        invoke_name = __add_document(
+            string(invoke.id), "invokes", to_firestore_invoke(invoke, stats.id)
+        )
         if isnothing(invoke_name)
-            @warn "Unable to share run data" invoke_id = invoke.id stats_id = stats.id session_id = session.id
+            @warn "Unable to share run data" invoke_id = invoke.id stats_id =
+                stats.id session_id = session.id
             continue
         end
         invokes_shared += 1
@@ -419,7 +513,8 @@ function share_session_data(session::Session, stats::SessionStats, invokes; show
     end
 
     if invokes_shared < length(invokes)
-        @warn "Some runs could not be shared" stats_id = stats.id label = label shared = invokes_shared total = length(stats.invokes) session_id = session.id
+        @warn "Some runs could not be shared" stats_id = stats.id label = label shared =
+            invokes_shared total = length(stats.invokes) session_id = session.id
     end
 
     return invokes_shared

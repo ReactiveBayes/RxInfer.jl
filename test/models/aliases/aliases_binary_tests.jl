@@ -17,7 +17,12 @@
     end
 
     function binary_aliases_inference(aliases)
-        return infer(model = binary_aliases(aliases = aliases), data = (y = 0.5,), iterations = 100, free_energy = true)
+        return infer(
+            model = binary_aliases(aliases = aliases),
+            data = (y = 0.5,),
+            iterations = 100,
+            free_energy = true
+        )
     end
 
     for aliases in [binary_aliases_1, binary_aliases_2]

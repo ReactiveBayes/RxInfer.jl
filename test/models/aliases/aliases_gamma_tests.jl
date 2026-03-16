@@ -30,7 +30,14 @@
         q(γ) = vague(GammaShapeRate)
     end
 
-    results = infer(model = gamma_aliases(), data = (y = 10.0,), constraints = constraints, iterations = 100, initialization = init, free_energy = true)
+    results = infer(
+        model = gamma_aliases(),
+        data = (y = 10.0,),
+        constraints = constraints,
+        iterations = 100,
+        initialization = init,
+        free_energy = true
+    )
 
     # Here we simply test that it ran and gave some output 
     @test mean(results.posteriors[:s][end]) ≈ 9.468846338832027
@@ -51,5 +58,8 @@ end
         infer(model = gamma_by_itself(), data = (d = 1.0,))
     end
 
-    @test occursin("'Gamma' and 'GammaShapeScale' without keywords are constructed with parameters (Shape, Scale)", String(take!(io)))
+    @test occursin(
+        "'Gamma' and 'GammaShapeScale' without keywords are constructed with parameters (Shape, Scale)",
+        String(take!(io))
+    )
 end

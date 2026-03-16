@@ -20,7 +20,8 @@
         b ~ Normal(mean = 0.0, var = 1.0)
         # Variance over-complicated for a purpose of checking that this expressions is allowed, 
         # it should be equal to `1.0`, but it shouldn't create any extra factor nodes
-        y .~ Normal(mean = x .* b .+ a, var = det((diageye(2) .+ diageye(2)) ./ 2))
+        y .~
+        Normal(mean = x .* b .+ a, var = det((diageye(2) .+ diageye(2)) ./ 2))
     end
 
     init = @initialization begin
@@ -30,7 +31,12 @@
     ## Inference definition
     function linreg_inference(modelfn, niters, xdata, ydata)
         return infer(
-            model = modelfn(), data = (x = xdata, y = ydata), returnvars = (a = KeepLast(), b = KeepLast()), initialization = init, free_energy = true, iterations = niters
+            model = modelfn(),
+            data = (x = xdata, y = ydata),
+            returnvars = (a = KeepLast(), b = KeepLast()),
+            initialization = init,
+            free_energy = true,
+            iterations = niters
         )
     end
 
@@ -65,6 +71,10 @@
     @test isapprox(mean(bres), realb, atol = 0.1)
     @test fres[end] < fres[2] # Loopy belief propagation has no guaranties though
 
-    @test_benchmark "models" "linreg" linreg_inference(linear_regression, 25, $xdata, $ydata)
-    @test_benchmark "models" "linreg_broadcasted" linreg_inference(linear_regression_broadcasted, 25, $xdata, $ydata)
+    @test_benchmark "models" "linreg" linreg_inference(
+        linear_regression, 25, $xdata, $ydata
+    )
+    @test_benchmark "models" "linreg_broadcasted" linreg_inference(
+        linear_regression_broadcasted, 25, $xdata, $ydata
+    )
 end

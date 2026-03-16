@@ -15,8 +15,15 @@ end
 # Model specification with `@model` macro
 
 function GraphPPL.model_macro_interior_pipelines(::ReactiveMPGraphPPLBackend)
-    default_pipelines = GraphPPL.model_macro_interior_pipelines(GraphPPL.DefaultBackend())
-    return (RxInfer.error_datavar_constvar_randomvar, RxInfer.compose_simple_operators_with_brackets, RxInfer.inject_tilderhs_aliases, default_pipelines...)
+    default_pipelines = GraphPPL.model_macro_interior_pipelines(
+        GraphPPL.DefaultBackend()
+    )
+    return (
+        RxInfer.error_datavar_constvar_randomvar,
+        RxInfer.compose_simple_operators_with_brackets,
+        RxInfer.inject_tilderhs_aliases,
+        default_pipelines...
+    )
 end
 
 """
@@ -26,7 +33,13 @@ An additional pipeline stage for the `@model` macro from `GraphPPL`.
 Notify the user that the `datavar`, `constvar` and `randomvar` syntax has been removed and is not be supported in the current version.
 """
 function error_datavar_constvar_randomvar(e::Expr)
-    if @capture(e, ((lhs_ = datavar(args__)) | (lhs_ = constvar(args__)) | (lhs_ = randomvar(args__))))
+    if @capture(
+        e,
+        (
+            (lhs_ = datavar(args__)) | (lhs_ = constvar(args__)) |
+            (lhs_ = randomvar(args__))
+        )
+    )
         return :(error(
             "`datavar`, `constvar` and `randomvar` syntax has been removed from new versions of `RxInfer.jl`. Please refer to `GraphPPL` documentation for new model creation syntax."
         ))
@@ -60,7 +73,10 @@ end
 
 function recursive_brackets_expression(operator, args)
     if length(args) > 2
-        return recursive_brackets_expression(operator, vcat([Expr(:call, operator, args[1], args[2])], args[3:end]))
+        return recursive_brackets_expression(
+            operator,
+            vcat([Expr(:call, operator, args[1], args[2])], args[3:end])
+        )
     else
         return Expr(:call, operator, args...)
     end
@@ -94,8 +110,14 @@ function inject_tilderhs_aliases(e::Expr)
     if @capture(e, lhs_ ~ rhs_)
         newrhs = MacroTools.postwalk(rhs) do expression
             # We short-circuit if `mflag` is true
-            _expression, _ = foldl(ReactiveMPNodeAliases; init = (expression, false)) do (expression, mflag), alias
-                return mflag ? (expression, true) : apply_alias_transformation(expression, alias)
+            _expression, _ = foldl(
+                ReactiveMPNodeAliases; init = (expression, false)
+            ) do (expression, mflag), alias
+                return if mflag
+                    (expression, true)
+                else
+                    apply_alias_transformation(expression, alias)
+                end
             end
             return _expression
         end
@@ -111,19 +133,35 @@ Replaces `a || b` with `ReactiveMP.OR(a, b)`, `a && b` with `ReactiveMP.AND(a, b
 """
 const ReactiveMPNodeAliases = (
     (
-        (expression) -> @capture(expression, a_ || b_) ? :(ReactiveMP.OR($a, $b)) : expression,
+        (expression) -> if @capture(expression, a_ || b_)
+            :(ReactiveMP.OR($a, $b))
+        else
+            expression
+        end,
         "`a || b`: alias for `ReactiveMP.OR(a, b)` node (operator precedence between `||`, `&&`, `->` and `!` is the same as in Julia)."
     ),
     (
-        (expression) -> @capture(expression, a_ && b_) ? :(ReactiveMP.AND($a, $b)) : expression,
+        (expression) -> if @capture(expression, a_ && b_)
+            :(ReactiveMP.AND($a, $b))
+        else
+            expression
+        end,
         "`a && b`: alias for `ReactiveMP.AND(a, b)` node (operator precedence `||`, `&&`, `->` and `!` is the same as in Julia)."
     ),
     (
-        (expression) -> @capture(expression, a_ -> b_) ? :(ReactiveMP.IMPLY($a, $b)) : expression,
+        (expression) -> if @capture(expression, a_ -> b_)
+            :(ReactiveMP.IMPLY($a, $b))
+        else
+            expression
+        end,
         "`a -> b`: alias for `ReactiveMP.IMPLY(a, b)` node (operator precedence `||`, `&&`, `->` and `!` is the same as in Julia)."
     ),
     (
-        (expression) -> @capture(expression, (¬a_) | (!a_)) ? :(ReactiveMP.NOT($a)) : expression,
+        (expression) -> if @capture(expression, (¬a_) | (!a_))
+            :(ReactiveMP.NOT($a))
+        else
+            expression
+        end,
         "`¬a` and `!a`: alias for `ReactiveMP.NOT(a)` node (Unicode `\\neg`, operator precedence `||`, `&&`, `->` and `!` is the same as in Julia)."
     )
 )
@@ -146,82 +184,144 @@ See the documentation to [`GraphPPL.@model`](https://github.com/ReactiveBayes/Gr
 $(begin io = IOBuffer(); RxInfer.show_tilderhs_alias(io); String(take!(io)) end)
 """
 macro model(model_specification)
-    return esc(GraphPPL.model_macro_interior(ReactiveMPGraphPPLBackend{Static.False}, model_specification))
+    return esc(
+        GraphPPL.model_macro_interior(
+            ReactiveMPGraphPPLBackend{Static.False}, model_specification
+        )
+    )
 end
 
 # Backend specific methods
 
-function GraphPPL.NodeBehaviour(backend::ReactiveMPGraphPPLBackend, something::F) where {F}
+function GraphPPL.NodeBehaviour(
+    backend::ReactiveMPGraphPPLBackend, something::F
+) where {F}
     # Check the `sdtype` from `ReactiveMP` instead of using the `DefaultBackend`
-    return GraphPPL.NodeBehaviour(backend, ReactiveMP.sdtype(something), something)
+    return GraphPPL.NodeBehaviour(
+        backend, ReactiveMP.sdtype(something), something
+    )
 end
-function GraphPPL.NodeBehaviour(backend::ReactiveMPGraphPPLBackend, ::ReactiveMP.Deterministic, _)
+function GraphPPL.NodeBehaviour(
+    backend::ReactiveMPGraphPPLBackend, ::ReactiveMP.Deterministic, _
+)
     return GraphPPL.Deterministic()
 end
-function GraphPPL.NodeBehaviour(backend::ReactiveMPGraphPPLBackend, ::ReactiveMP.Stochastic, _)
+function GraphPPL.NodeBehaviour(
+    backend::ReactiveMPGraphPPLBackend, ::ReactiveMP.Stochastic, _
+)
     return GraphPPL.Stochastic()
 end
 
 # If node contraction is enabled, we need to check if the node is predefined in `ReactiveMP`
 # if this is the case, we use the `Atomic` node type, otherwise we fallback to the `DefaultBackend`
-function GraphPPL.NodeType(backend::ReactiveMPGraphPPLBackend{Static.True}, something::F) where {F}
-    return GraphPPL.NodeType(backend, ReactiveMP.is_predefined_node(something), something)
+function GraphPPL.NodeType(
+    backend::ReactiveMPGraphPPLBackend{Static.True}, something::F
+) where {F}
+    return GraphPPL.NodeType(
+        backend, ReactiveMP.is_predefined_node(something), something
+    )
 end
-function GraphPPL.NodeType(backend::ReactiveMPGraphPPLBackend{Static.True}, ::ReactiveMP.UndefinedNodeFunctionalForm, something::F) where {F}
+function GraphPPL.NodeType(
+    backend::ReactiveMPGraphPPLBackend{Static.True},
+    ::ReactiveMP.UndefinedNodeFunctionalForm,
+    something::F
+) where {F}
     # Fallback to the default behaviour if the node is not predefined
-    return GraphPPL.NodeType(ReactiveMPGraphPPLBackend(Static.False()), something)
+    return GraphPPL.NodeType(
+        ReactiveMPGraphPPLBackend(Static.False()), something
+    )
 end
-function GraphPPL.NodeType(backend::ReactiveMPGraphPPLBackend{Static.True}, ::ReactiveMP.PredefinedNodeFunctionalForm, something::F) where {F}
+function GraphPPL.NodeType(
+    backend::ReactiveMPGraphPPLBackend{Static.True},
+    ::ReactiveMP.PredefinedNodeFunctionalForm,
+    something::F
+) where {F}
     # Fallback to the default behaviour if the node is not predefined
     return GraphPPL.Atomic()
 end
 
 # Fallback to the default behaviour
-function GraphPPL.NodeType(::ReactiveMPGraphPPLBackend{Static.False}, something::F) where {F}
+function GraphPPL.NodeType(
+    ::ReactiveMPGraphPPLBackend{Static.False}, something::F
+) where {F}
     return GraphPPL.NodeType(GraphPPL.DefaultBackend(), something)
 end
-function GraphPPL.aliases(::ReactiveMPGraphPPLBackend{Static.False}, something::F) where {F}
+function GraphPPL.aliases(
+    ::ReactiveMPGraphPPLBackend{Static.False}, something::F
+) where {F}
     # Fallback to the default behaviour
     return GraphPPL.aliases(GraphPPL.DefaultBackend(), something)
 end
 
-function GraphPPL.interfaces(backend::ReactiveMPGraphPPLBackend, something::F, ninputs) where {F}
+function GraphPPL.interfaces(
+    backend::ReactiveMPGraphPPLBackend, something::F, ninputs
+) where {F}
     # Check `interfaces` from `ReactiveMP` and fallback to the `DefaultBackend` is those are `nothing`
-    return GraphPPL.interfaces(backend, ReactiveMP.interfaces(something), something, ninputs)
+    return GraphPPL.interfaces(
+        backend, ReactiveMP.interfaces(something), something, ninputs
+    )
 end
-function GraphPPL.interfaces(::ReactiveMPGraphPPLBackend, ::Val{I}, something, ninputs) where {I}
+function GraphPPL.interfaces(
+    ::ReactiveMPGraphPPLBackend, ::Val{I}, something, ninputs
+) where {I}
     if isequal(length(I), ninputs)
         return GraphPPL.StaticInterfaces(I)
     else
-        error("`$(something)` has `$(length(I))` interfaces `$(I)`, but `$(ninputs)` requested.")
+        error(
+            "`$(something)` has `$(length(I))` interfaces `$(I)`, but `$(ninputs)` requested."
+        )
     end
 end
-function GraphPPL.interfaces(::ReactiveMPGraphPPLBackend, ::Nothing, something::F, ninputs) where {F}
+function GraphPPL.interfaces(
+    ::ReactiveMPGraphPPLBackend, ::Nothing, something::F, ninputs
+) where {F}
     return GraphPPL.interfaces(GraphPPL.DefaultBackend(), something, ninputs)
 end
 
-function GraphPPL.factor_alias(::ReactiveMPGraphPPLBackend, something::F, interfaces) where {F}
+function GraphPPL.factor_alias(
+    ::ReactiveMPGraphPPLBackend, something::F, interfaces
+) where {F}
     # Fallback to the default behaviour
-    return GraphPPL.factor_alias(GraphPPL.DefaultBackend(), something, interfaces)
+    return GraphPPL.factor_alias(
+        GraphPPL.DefaultBackend(), something, interfaces
+    )
 end
-function GraphPPL.interface_aliases(::ReactiveMPGraphPPLBackend, something::F) where {F}
+function GraphPPL.interface_aliases(
+    ::ReactiveMPGraphPPLBackend, something::F
+) where {F}
     # Fallback to the default behaviour
     return GraphPPL.interface_aliases(GraphPPL.DefaultBackend(), something)
 end
 
-function GraphPPL.default_parametrization(backend::ReactiveMPGraphPPLBackend, nodetype, something::F, rhs) where {F}
+function GraphPPL.default_parametrization(
+    backend::ReactiveMPGraphPPLBackend, nodetype, something::F, rhs
+) where {F}
     # First check `inputinterfaces` from `ReacticeMP` and fallback to the `DefaultBackend` is those are `nothing`
-    return GraphPPL.default_parametrization(backend, nodetype, ReactiveMP.inputinterfaces(something), something, rhs)
+    return GraphPPL.default_parametrization(
+        backend, nodetype, ReactiveMP.inputinterfaces(something), something, rhs
+    )
 end
-function GraphPPL.default_parametrization(backend::ReactiveMPGraphPPLBackend, ::GraphPPL.Atomic, ::Val{I}, something, rhs) where {I}
+function GraphPPL.default_parametrization(
+    backend::ReactiveMPGraphPPLBackend,
+    ::GraphPPL.Atomic,
+    ::Val{I},
+    something,
+    rhs
+) where {I}
     if isequal(length(I), length(rhs))
         return NamedTuple{I}(rhs)
     else
-        error("`$(something)` has `$(length(I))` input interfaces `$(I)`, but `$(length(rhs))` arguments provided.")
+        error(
+            "`$(something)` has `$(length(I))` input interfaces `$(I)`, but `$(length(rhs))` arguments provided."
+        )
     end
 end
-function GraphPPL.default_parametrization(backend::ReactiveMPGraphPPLBackend, nodetype, ::Nothing, something::F, rhs) where {F}
-    return GraphPPL.default_parametrization(GraphPPL.DefaultBackend(), nodetype, something, rhs)
+function GraphPPL.default_parametrization(
+    backend::ReactiveMPGraphPPLBackend, nodetype, ::Nothing, something::F, rhs
+) where {F}
+    return GraphPPL.default_parametrization(
+        GraphPPL.DefaultBackend(), nodetype, something, rhs
+    )
 end
 
 function GraphPPL.instantiate(::Type{ReactiveMPGraphPPLBackend})
@@ -237,8 +337,16 @@ end
 
 # Node specific aliases
 
-GraphPPL.factor_alias(::ReactiveMPGraphPPLBackend, ::Type{Normal}, ::GraphPPL.StaticInterfaces{(:μ, :v)}) = ExponentialFamily.NormalMeanVariance
-GraphPPL.factor_alias(::ReactiveMPGraphPPLBackend, ::Type{Normal}, ::GraphPPL.StaticInterfaces{(:μ, :τ)}) = ExponentialFamily.NormalMeanPrecision
+GraphPPL.factor_alias(
+    ::ReactiveMPGraphPPLBackend,
+    ::Type{Normal},
+    ::GraphPPL.StaticInterfaces{(:μ, :v)}
+) = ExponentialFamily.NormalMeanVariance
+GraphPPL.factor_alias(
+    ::ReactiveMPGraphPPLBackend,
+    ::Type{Normal},
+    ::GraphPPL.StaticInterfaces{(:μ, :τ)}
+) = ExponentialFamily.NormalMeanPrecision
 GraphPPL.default_parametrization(::ReactiveMPGraphPPLBackend, ::GraphPPL.Atomic, ::Type{Normal}, rhs) = error(
     "`Normal` cannot be constructed without keyword arguments. Use `Normal(mean = ..., var = ...)` or `Normal(mean = ..., precision = ...)`."
 )
@@ -247,24 +355,67 @@ GraphPPL.default_parametrization(::ReactiveMPGraphPPLBackend, ::GraphPPL.Atomic,
 # GraphPPL.interfaces(::ReactiveMPGraphPPLBackend, ::Type{<:ExponentialFamily.NormalMeanPrecision}, _) = GraphPPL.StaticInterfaces((:out, :μ, :τ))
 
 GraphPPL.interface_aliases(::ReactiveMPGraphPPLBackend, ::Type{Normal}) = GraphPPL.StaticInterfaceAliases((
-    (:mean, :μ), (:m, :μ), (:variance, :v), (:var, :v), (:τ⁻¹, :v), (:σ², :v), (:precision, :τ), (:prec, :τ), (:p, :τ), (:w, :τ), (:σ⁻², :τ), (:γ, :τ)
+    (:mean, :μ),
+    (:m, :μ),
+    (:variance, :v),
+    (:var, :v),
+    (:τ⁻¹, :v),
+    (:σ², :v),
+    (:precision, :τ),
+    (:prec, :τ),
+    (:p, :τ),
+    (:w, :τ),
+    (:σ⁻², :τ),
+    (:γ, :τ)
 ))
 
-GraphPPL.factor_alias(::ReactiveMPGraphPPLBackend, ::Type{MvNormal}, ::GraphPPL.StaticInterfaces{(:μ, :Σ)}) = ExponentialFamily.MvNormalMeanCovariance
-GraphPPL.factor_alias(::ReactiveMPGraphPPLBackend, ::Type{MvNormal}, ::GraphPPL.StaticInterfaces{(:μ, :Λ)}) = ExponentialFamily.MvNormalMeanPrecision
+GraphPPL.factor_alias(
+    ::ReactiveMPGraphPPLBackend,
+    ::Type{MvNormal},
+    ::GraphPPL.StaticInterfaces{(:μ, :Σ)}
+) = ExponentialFamily.MvNormalMeanCovariance
+GraphPPL.factor_alias(
+    ::ReactiveMPGraphPPLBackend,
+    ::Type{MvNormal},
+    ::GraphPPL.StaticInterfaces{(:μ, :Λ)}
+) = ExponentialFamily.MvNormalMeanPrecision
 GraphPPL.default_parametrization(::ReactiveMPGraphPPLBackend, ::GraphPPL.Atomic, ::Type{MvNormal}, rhs) = error(
     "`MvNormal` cannot be constructed without keyword arguments. Use `MvNormal(mean = ..., covariance = ...)` or `MvNormal(mean = ..., precision = ...)`."
 )
 
 GraphPPL.interface_aliases(::ReactiveMPGraphPPLBackend, ::Type{MvNormal}) = GraphPPL.StaticInterfaceAliases((
-    (:mean, :μ), (:m, :μ), (:covariance, :Σ), (:cov, :Σ), (:Λ⁻¹, :Σ), (:V, :Σ), (:precision, :Λ), (:prec, :Λ), (:W, :Λ), (:Σ⁻¹, :Λ)
+    (:mean, :μ),
+    (:m, :μ),
+    (:covariance, :Σ),
+    (:cov, :Σ),
+    (:Λ⁻¹, :Σ),
+    (:V, :Σ),
+    (:precision, :Λ),
+    (:prec, :Λ),
+    (:W, :Λ),
+    (:Σ⁻¹, :Λ)
 ))
 
-GraphPPL.factor_alias(::ReactiveMPGraphPPLBackend, ::Type{Gamma}, ::GraphPPL.StaticInterfaces{(:α, :θ)}) = ExponentialFamily.GammaShapeScale
-GraphPPL.factor_alias(::ReactiveMPGraphPPLBackend, ::Type{Gamma}, ::GraphPPL.StaticInterfaces{(:α, :β)}) = ExponentialFamily.GammaShapeRate
-GraphPPL.default_parametrization(backend::ReactiveMPGraphPPLBackend, nodetype::GraphPPL.Atomic, factor::Type{Gamma}, rhs) = begin
+GraphPPL.factor_alias(
+    ::ReactiveMPGraphPPLBackend,
+    ::Type{Gamma},
+    ::GraphPPL.StaticInterfaces{(:α, :θ)}
+) = ExponentialFamily.GammaShapeScale
+GraphPPL.factor_alias(
+    ::ReactiveMPGraphPPLBackend,
+    ::Type{Gamma},
+    ::GraphPPL.StaticInterfaces{(:α, :β)}
+) = ExponentialFamily.GammaShapeRate
+GraphPPL.default_parametrization(
+    backend::ReactiveMPGraphPPLBackend,
+    nodetype::GraphPPL.Atomic,
+    factor::Type{Gamma},
+    rhs
+) = begin
     @warn "'Gamma' and 'GammaShapeScale' without keywords are constructed with parameters (Shape, Scale)." maxlog=1
-    return GraphPPL.default_parametrization(backend, nodetype, ReactiveMP.inputinterfaces(factor), factor, rhs)
+    return GraphPPL.default_parametrization(
+        backend, nodetype, ReactiveMP.inputinterfaces(factor), factor, rhs
+    )
 end
 
 GraphPPL.interface_aliases(::ReactiveMPGraphPPLBackend, ::Type{Gamma}) = GraphPPL.StaticInterfaceAliases((

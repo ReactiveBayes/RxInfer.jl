@@ -55,7 +55,12 @@ function Base.show(io::IO, result::InferenceResult)
 
     if !isnothing(getfield(result, :free_energy))
         print(io, rpad("  Free Energy:", lcolumnlen), " | ")
-        print(IOContext(io, :compact => true, :limit => true, :displaysize => (1, 80)), result.free_energy)
+        print(
+            IOContext(
+                io, :compact => true, :limit => true, :displaysize => (1, 80)
+            ),
+            result.free_energy
+        )
         print(io, "\n")
     end
 
@@ -83,10 +88,12 @@ end
 
 function Base.getproperty(result::InferenceResult, property::Symbol)
     if property === :free_energy && getfield(result, :free_energy) === nothing
-        error("""
-              Bethe Free Energy has not been computed. 
-              Use `free_energy = true` keyword argument for the `inference` function to compute Bethe Free Energy values.
-              """)
+        error(
+            """
+            Bethe Free Energy has not been computed. 
+            Use `free_energy = true` keyword argument for the `inference` function to compute Bethe Free Energy values.
+            """
+        )
     else
         return getfield(result, property)
     end
@@ -149,7 +156,10 @@ function batch_inference(;
     # We create a model with the `GraphPPL` package and insert a certain RxInfer related 
     # plugins which include the VI plugin, meta plugin and the ReactiveMP integration plugin
     modelplugins = GraphPPL.PluginsCollection(
-        GraphPPL.VariationalConstraintsPlugin(constraints), GraphPPL.MetaPlugin(meta), RxInfer.InitializationPlugin(initialization), RxInfer.ReactiveMPInferencePlugin(_options)
+        GraphPPL.VariationalConstraintsPlugin(constraints),
+        GraphPPL.MetaPlugin(meta),
+        RxInfer.InitializationPlugin(initialization),
+        RxInfer.ReactiveMPInferencePlugin(_options)
     )
 
     is_free_energy, S = unwrap_free_energy_option(free_energy)
@@ -160,11 +170,17 @@ function batch_inference(;
     end
 
     if getforce_marginal_computation(_options)
-        modelplugins = modelplugins + ReactiveMPForceMarginalComputationPlugin(MarginalComputationOptions())
+        modelplugins =
+            modelplugins + ReactiveMPForceMarginalComputationPlugin(
+                MarginalComputationOptions()
+            )
     end
 
     # The `_model` here still must be a `ModelGenerator`
-    _model = GraphPPL.with_backend(GraphPPL.with_plugins(model, modelplugins), ReactiveMPGraphPPLBackend(Static.static(allow_node_contraction)))
+    _model = GraphPPL.with_backend(
+        GraphPPL.with_plugins(model, modelplugins),
+        ReactiveMPGraphPPLBackend(Static.static(allow_node_contraction))
+    )
 
     infer_check_dicttype(:data, data)
 
@@ -172,18 +188,27 @@ function batch_inference(;
     if (predictvars === KeepEach() || predictvars === KeepLast())
         if !isnothing(data)
             predictoption = predictvars
-            predictvars = Dict(variable => predictoption for (variable, value) in pairs(data))
+            predictvars = Dict(
+                variable => predictoption for (variable, value) in pairs(data)
+            )
         else # else we throw an error
-            error("`predictvar` is specified as `$(predictvars)`, but `data` is not provided. Make sure to provide `data` or specify `predictvars` explicitly.")
+            error(
+                "`predictvar` is specified as `$(predictvars)`, but `data` is not provided. Make sure to provide `data` or specify `predictvars` explicitly."
+            )
         end
         # If `predictvar` is specified, but `data` is not, we initialize the `data` with missing values
     elseif !isnothing(predictvars) && isnothing(data)
-        data = Dict(variable => missing for (variable, value) in pairs(predictvars))
+        data = Dict(
+            variable => missing for (variable, value) in pairs(predictvars)
+        )
         # If `predictvar` is not specified, but `data` is, we initialize the `predictvars` with `KeepLast` or `KeepEach` depending on the `iterations` value
         # But only if the data has missing values in it
     elseif isnothing(predictvars) && !isnothing(data)
         predictoption = iterations isa Number ? KeepEach() : KeepLast()
-        predictvars = Dict(variable => predictoption for (variable, value) in pairs(data) if inference_check_dataismissing(get_data(value)))
+        predictvars = Dict(
+            variable => predictoption for (variable, value) in pairs(data) if
+            inference_check_dataismissing(get_data(value))
+        )
         # If both `predictvar` and `data` are specified we double check if there are some entries in the `predictvars`
         # which are not specified in the `data` and inject them
         # We do the same the other way around for the `data` entries which are not specified in the `predictvars`
@@ -194,9 +219,12 @@ function batch_inference(;
             end
         end
         for (variable, value) in pairs(data)
-            if !haskey(predictvars, variable) && inference_check_dataismissing(value)
+            if !haskey(predictvars, variable) &&
+                inference_check_dataismissing(value)
                 predictoption = iterations isa Number ? KeepEach() : KeepLast()
-                predictvars = merge(predictvars, Dict(variable => predictoption))
+                predictvars = merge(
+                    predictvars, Dict(variable => predictoption)
+                )
             end
         end
     end
@@ -211,7 +239,9 @@ function batch_inference(;
 
     # First what we do - we check if `returnvars` is nothing or one of the two possible values: `KeepEach` and `KeepLast`. 
     # If so, we replace it with either `KeepEach` or `KeepLast` for each random and not-proxied variable in a model
-    if isnothing(returnvars) || returnvars === KeepEach() || returnvars === KeepLast()
+    if isnothing(returnvars) ||
+        returnvars === KeepEach() ||
+        returnvars === KeepLast()
         # Checks if the first argument is `nothing`, in which case returns the second argument
         returnoption = something(returnvars, iterations isa Number ? KeepEach() : KeepLast())
         returnvars   = Dict(variable => returnoption for (variable, value) in pairs(vardict) if (israndom(value) && !isanonymous(value)))
@@ -244,14 +274,26 @@ function batch_inference(;
     end
 
     # Second, for each random variable and predicting variable entry we create an actor
-    actors_rv = Dict(variable => make_actor(vardict[variable], value) for (variable, value) in pairs(returnvars) if __check_has_randomvar(vardict, variable))
-    actors_pr = Dict(variable => make_actor(vardict[variable], value) for (variable, value) in pairs(predictvars) if __check_has_prediction(vardict, variable))
+    actors_rv = Dict(
+        variable => make_actor(vardict[variable], value) for
+        (variable, value) in pairs(returnvars) if
+        __check_has_randomvar(vardict, variable)
+    )
+    actors_pr = Dict(
+        variable => make_actor(vardict[variable], value) for
+        (variable, value) in pairs(predictvars) if
+        __check_has_prediction(vardict, variable)
+    )
 
     # At third, for each variable entry we create a boolean flag to track their updates
-    updates = Dict(variable => MarginalHasBeenUpdated(false) for (variable, _) in pairs(merge(actors_rv, actors_pr)))
+    updates = Dict(
+        variable => MarginalHasBeenUpdated(false) for
+        (variable, _) in pairs(merge(actors_rv, actors_pr))
+    )
 
     _iterations = something(iterations, 1)
-    _iterations isa Integer || error("`iterations` argument must be of type Integer or `nothing`")
+    _iterations isa Integer ||
+        error("`iterations` argument must be of type Integer or `nothing`")
     _iterations > 0 || error("`iterations` arguments must be greater than zero")
 
     fe_actor = nothing
@@ -266,7 +308,9 @@ function batch_inference(;
         subscriptions_pr   = Dict(variable => subscribe!(obtain_prediction(vardict[variable]) |> ensure_update(fmodel, on_marginal_update, variable, updates[variable]), actor) for (variable, actor) in pairs(actors_pr))
 
         if !isempty(actors_pr) && is_free_energy
-            error("The Bethe Free Energy computation is not compatible with the prediction functionality. Set `free_energy = false` to suppress this error.")
+            error(
+                "The Bethe Free Energy computation is not compatible with the prediction functionality. Set `free_energy = false` to suppress this error."
+            )
         end
 
         if is_free_energy
@@ -275,9 +319,16 @@ function batch_inference(;
         end
 
         if isnothing(data) || isempty(data)
-            error("Data is empty. Make sure you used `data` keyword argument with correct value.")
+            error(
+                "Data is empty. Make sure you used `data` keyword argument with correct value."
+            )
         else
-            foreach(filter(pair -> isdata(last(pair)) && !isanonymous(last(pair)), pairs(vardict))) do pair
+            foreach(
+                filter(
+                    pair -> isdata(last(pair)) && !isanonymous(last(pair)),
+                    pairs(vardict)
+                )
+            ) do pair
                 varname = first(pair)
                 haskey(data, varname) || error(
                     "Data entry `$(varname)` is missing in `data` or `predictvars` arguments. Double check `data = ($(varname) = ???, )` or `predictvars = ($(varname) = ???, )`"
@@ -296,18 +347,32 @@ function batch_inference(;
             return hk && is_data
         end
 
-        progress_meter = showprogress ? ProgressMeter.Progress(_iterations) : nothing
-        cacheddatavars = Dict((key => getvariable(vardict[key]) for key in keys(fdata)))
+        progress_meter =
+            showprogress ? ProgressMeter.Progress(_iterations) : nothing
+        cacheddatavars = Dict((
+            key => getvariable(vardict[key]) for key in keys(fdata)
+        ))
 
         for iteration in 1:_iterations
-            if something(ensure_bool_or_nothing(inference_invoke_callback(callbacks, :before_iteration, fmodel, iteration)), false)::Bool
+            if something(
+                ensure_bool_or_nothing(
+                    inference_invoke_callback(
+                        callbacks, :before_iteration, fmodel, iteration
+                    )
+                ),
+                false
+            )::Bool
                 break
             end
-            inference_invoke_callback(callbacks, :before_data_update, fmodel, data)
+            inference_invoke_callback(
+                callbacks, :before_data_update, fmodel, data
+            )
             for (key, value) in fdata
                 update!(cacheddatavars[key], get_data(value))
             end
-            inference_invoke_callback(callbacks, :after_data_update, fmodel, data)
+            inference_invoke_callback(
+                callbacks, :after_data_update, fmodel, data
+            )
 
             # Check that all requested marginals have been updated and unset the `updated` flag
             # Throws an error if some were not update
@@ -319,12 +384,20 @@ function batch_inference(;
 
             executed_iterations += 1
 
-            if something(ensure_bool_or_nothing(inference_invoke_callback(callbacks, :after_iteration, fmodel, iteration)), false)::Bool
+            if something(
+                ensure_bool_or_nothing(
+                    inference_invoke_callback(
+                        callbacks, :after_iteration, fmodel, iteration
+                    )
+                ),
+                false
+            )::Bool
                 break
             end
         end
 
-        for (_, subscription) in pairs(merge(subscriptions_pr, subscriptions_rv))
+        for (_, subscription) in
+            pairs(merge(subscriptions_pr, subscriptions_rv))
             unsubscribe!(subscription)
         end
 
@@ -341,7 +414,9 @@ function batch_inference(;
 
     if getforce_marginal_computation(_options)
         factor_nodes(getmodel(fmodel)) do _, node
-            marginal_stream = getextra(node, ReactiveMPExtraMarginalStreamKey, nothing)
+            marginal_stream = getextra(
+                node, ReactiveMPExtraMarginalStreamKey, nothing
+            )
             if !isnothing(marginal_stream)
                 unsubscribe!(marginal_stream)
             end
@@ -362,7 +437,9 @@ function batch_inference(;
     predicted_values = Dict(variable => inference_postprocess_or_missing(postprocess, actor) for (variable, actor) in pairs(actors_pr))
     fe_values        = !isnothing(fe_actor) ? score_snapshot_iterations(fe_actor, executed_iterations) : nothing
 
-    return InferenceResult(posterior_values, predicted_values, fe_values, fmodel, potential_error)
+    return InferenceResult(
+        posterior_values, predicted_values, fe_values, fmodel, potential_error
+    )
 end
 
 function available_callbacks(::typeof(batch_inference))
