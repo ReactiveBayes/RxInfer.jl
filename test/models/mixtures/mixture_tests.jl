@@ -50,14 +50,14 @@
             data = (y = dataset,),
             returnvars = (θ = KeepLast(),),
             free_energy = true,
-            addons = AddonLogScale()
+            addons = AddonLogScale(),
         )
         result2 = infer(
             model = beta_model2(),
             data = (y = dataset,),
             returnvars = (θ = KeepLast(),),
             free_energy = true,
-            addons = AddonLogScale()
+            addons = AddonLogScale(),
         )
 
         resultswitch = infer(
@@ -67,9 +67,9 @@
                 θ = KeepLast(),
                 in1 = KeepLast(),
                 in2 = KeepLast(),
-                selector = KeepLast()
+                selector = KeepLast(),
             ),
-            addons = AddonLogScale()
+            addons = AddonLogScale(),
         )
 
         ## -------------------------------------------- ##
@@ -96,11 +96,11 @@
             log(0.7) - result2.free_energy[1]
         @test log(
             0.3 * exp(-result1.free_energy[1]) +
-            0.7 * exp(-result2.free_energy[1])
+            0.7 * exp(-result2.free_energy[1]),
         ) ≈ getlogscale(resultswitch.posteriors[:selector])
         @test log(
             0.3 * exp(-result1.free_energy[1]) +
-            0.7 * exp(-result2.free_energy[1])
+            0.7 * exp(-result2.free_energy[1]),
         ) ≈ getlogscale(resultswitch.posteriors[:θ])
         @test getlogscale(resultswitch.posteriors[:θ]) ≈
             getlogscale(resultswitch.posteriors[:selector])
@@ -117,12 +117,12 @@
                     MixtureDistribution(
                         [Beta(4.0, 8.0), Beta(8.0, 4.0)], [0.5, 0.5]
                     ),
-                    x
+                    x,
                 ),
                 fillalpha = 0.3,
                 fillrange = 0,
                 label = "P(θ)",
-                c = 1
+                c = 1,
             )
             plot!(
                 rθ,
@@ -130,7 +130,7 @@
                 fillalpha = 0.3,
                 fillrange = 0,
                 label = "P(θ|y)",
-                c = 3
+                c = 3,
             )
             vline!([θ_real], label = "Real θ")
             return p

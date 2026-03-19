@@ -45,44 +45,35 @@ struct ReactiveMPInferenceOptions{S, A, R, E}
     callbacks::E
 end
 
-ReactiveMPInferenceOptions(scheduler, addons) =
-    ReactiveMPInferenceOptions(scheduler, addons, true, false, nothing, nothing)
-ReactiveMPInferenceOptions(scheduler, addons, warn) =
-    ReactiveMPInferenceOptions(scheduler, addons, warn, false, nothing, nothing)
-ReactiveMPInferenceOptions(
-    scheduler, addons, warn, force_marginal_computation
-) = ReactiveMPInferenceOptions(
+ReactiveMPInferenceOptions(scheduler, addons) = ReactiveMPInferenceOptions(
+    scheduler, addons, true, false, nothing, nothing
+)
+ReactiveMPInferenceOptions(scheduler, addons, warn) = ReactiveMPInferenceOptions(
+    scheduler, addons, warn, false, nothing, nothing
+)
+ReactiveMPInferenceOptions(scheduler, addons, warn, force_marginal_computation) = ReactiveMPInferenceOptions(
     scheduler, addons, warn, force_marginal_computation, nothing, nothing
 )
-ReactiveMPInferenceOptions(
-    scheduler, addons, warn, force_marginal_computation, rulefallback
-) = ReactiveMPInferenceOptions(
-    scheduler,
-    addons,
-    warn,
-    force_marginal_computation,
-    rulefallback,
-    nothing,
+ReactiveMPInferenceOptions(scheduler, addons, warn, force_marginal_computation, rulefallback) = ReactiveMPInferenceOptions(
+    scheduler, addons, warn, force_marginal_computation, rulefallback, nothing
 )
 
-setscheduler(options::ReactiveMPInferenceOptions, scheduler) =
-    ReactiveMPInferenceOptions(
-        scheduler,
-        options.addons,
-        options.warn,
-        options.force_marginal_computation,
-        options.rulefallback,
-        options.callbacks,
-    )
-setaddons(options::ReactiveMPInferenceOptions, addons) =
-    ReactiveMPInferenceOptions(
-        options.scheduler,
-        addons,
-        options.warn,
-        options.force_marginal_computation,
-        options.rulefallback,
-        options.callbacks,
-    )
+setscheduler(options::ReactiveMPInferenceOptions, scheduler) = ReactiveMPInferenceOptions(
+    scheduler,
+    options.addons,
+    options.warn,
+    options.force_marginal_computation,
+    options.rulefallback,
+    options.callbacks,
+)
+setaddons(options::ReactiveMPInferenceOptions, addons) = ReactiveMPInferenceOptions(
+    options.scheduler,
+    addons,
+    options.warn,
+    options.force_marginal_computation,
+    options.rulefallback,
+    options.callbacks,
+)
 setwarn(options::ReactiveMPInferenceOptions, warn) = ReactiveMPInferenceOptions(
     options.scheduler,
     options.addons,
@@ -91,9 +82,7 @@ setwarn(options::ReactiveMPInferenceOptions, warn) = ReactiveMPInferenceOptions(
     options.rulefallback,
     options.callbacks,
 )
-setforce_marginal_computation(
-    options::ReactiveMPInferenceOptions, force_marginal_computation
-) = ReactiveMPInferenceOptions(
+setforce_marginal_computation(options::ReactiveMPInferenceOptions, force_marginal_computation) = ReactiveMPInferenceOptions(
     options.scheduler,
     options.addons,
     options.warn,
@@ -101,24 +90,22 @@ setforce_marginal_computation(
     options.rulefallback,
     options.callbacks,
 )
-setrulefallback(options::ReactiveMPInferenceOptions, rulefallback) =
-    ReactiveMPInferenceOptions(
-        options.scheduler,
-        options.addons,
-        options.warn,
-        options.force_marginal_computation,
-        rulefallback,
-        options.callbacks,
-    )
-setcallbacks(options::ReactiveMPInferenceOptions, callbacks) =
-    ReactiveMPInferenceOptions(
-        options.scheduler,
-        options.addons,
-        options.warn,
-        options.force_marginal_computation,
-        options.rulefallback,
-        callbacks,
-    )
+setrulefallback(options::ReactiveMPInferenceOptions, rulefallback) = ReactiveMPInferenceOptions(
+    options.scheduler,
+    options.addons,
+    options.warn,
+    options.force_marginal_computation,
+    rulefallback,
+    options.callbacks,
+)
+setcallbacks(options::ReactiveMPInferenceOptions, callbacks) = ReactiveMPInferenceOptions(
+    options.scheduler,
+    options.addons,
+    options.warn,
+    options.force_marginal_computation,
+    options.rulefallback,
+    callbacks,
+)
 
 import Base: convert
 
@@ -180,16 +167,18 @@ function Base.convert(
     )
 end
 
-Rocket.getscheduler(options::ReactiveMPInferenceOptions) =
-    something(options.scheduler, AsapScheduler())
+Rocket.getscheduler(options::ReactiveMPInferenceOptions) = something(
+    options.scheduler, AsapScheduler()
+)
 
 import ReactiveMP: getaddons, getrulefallback, getcallbacks
 
-ReactiveMP.getaddons(options::ReactiveMPInferenceOptions) =
-    ReactiveMP.getaddons(options, options.addons)
-ReactiveMP.getaddons(
-    options::ReactiveMPInferenceOptions, addons::ReactiveMP.AbstractAddon
-) = (addons,) # ReactiveMP expects addons to be of type tuple
+ReactiveMP.getaddons(options::ReactiveMPInferenceOptions) = ReactiveMP.getaddons(
+    options, options.addons
+)
+ReactiveMP.getaddons(options::ReactiveMPInferenceOptions, addons::ReactiveMP.AbstractAddon) = (
+    addons,
+) # ReactiveMP expects addons to be of type tuple
 ReactiveMP.getaddons(options::ReactiveMPInferenceOptions, addons::Nothing) =
     addons                     # Do nothing if addons is `nothing`
 ReactiveMP.getaddons(options::ReactiveMPInferenceOptions, addons::Tuple) =
@@ -221,8 +210,7 @@ const ReactiveMPExtraPipelineKey = GraphPPL.NodeDataExtraKey{
     :pipeline, ReactiveMP.Any
 }()
 
-GraphPPL.plugin_type(::ReactiveMPInferencePlugin) =
-    FactorAndVariableNodesPlugin()
+GraphPPL.plugin_type(::ReactiveMPInferencePlugin) = FactorAndVariableNodesPlugin()
 
 function GraphPPL.preprocess_plugin(
     plugin::ReactiveMPInferencePlugin,
@@ -541,13 +529,15 @@ getlabel(ref::GraphVariableRef) = ref.label
 getvariable(ref::GraphVariableRef) = ref.variable
 getname(ref::GraphVariableRef) = GraphPPL.getname(getlabel(ref))
 
-GraphPPL.is_data(collection::AbstractArray{GraphVariableRef}) =
-    all(GraphPPL.is_data, collection)
+GraphPPL.is_data(collection::AbstractArray{GraphVariableRef}) = all(
+    GraphPPL.is_data, collection
+)
 
 GraphPPL.is_data(ref::GraphVariableRef) = GraphPPL.is_data(ref.properties)
 GraphPPL.is_random(ref::GraphVariableRef) = GraphPPL.is_random(ref.properties)
-GraphPPL.is_constant(ref::GraphVariableRef) =
-    GraphPPL.is_constant(ref.properties)
+GraphPPL.is_constant(ref::GraphVariableRef) = GraphPPL.is_constant(
+    ref.properties
+)
 
 function GraphVariableRef(model::GraphPPL.Model, label::GraphPPL.NodeLabel)
     nodedata = model[label]::GraphPPL.NodeData
@@ -566,13 +556,16 @@ function getvardict(model::GraphPPL.Model)
     )
 end
 
-getvarref(model::GraphPPL.Model, label::GraphPPL.NodeLabel) =
-    GraphVariableRef(model, label)
-getvarref(model::GraphPPL.Model, container::AbstractArray) =
-    map(element -> getvarref(model, element), container)
+getvarref(model::GraphPPL.Model, label::GraphPPL.NodeLabel) = GraphVariableRef(
+    model, label
+)
+getvarref(model::GraphPPL.Model, container::AbstractArray) = map(
+    element -> getvarref(model, element), container
+)
 
-getvariable(nodedata::GraphPPL.NodeData) =
-    getextra(nodedata, ReactiveMPExtraVariableKey)
+getvariable(nodedata::GraphPPL.NodeData) = getextra(
+    nodedata, ReactiveMPExtraVariableKey
+)
 getvariable(container::AbstractArray) = map(getvariable, container)
 
 function getrandomvars(model::GraphPPL.Model)
@@ -603,41 +596,52 @@ function getfactornodes(model::GraphPPL.Model)
     return map(label -> model[label]::GraphPPL.NodeData, factor_nodes(model))
 end
 
-ReactiveMP.israndom(collection::AbstractArray{GraphVariableRef}) =
-    all(ReactiveMP.israndom, collection)
-ReactiveMP.isdata(collection::AbstractArray{GraphVariableRef}) =
-    all(ReactiveMP.isdata, collection)
-ReactiveMP.isconst(collection::AbstractArray{GraphVariableRef}) =
-    all(ReactiveMP.isconst, collection)
+ReactiveMP.israndom(collection::AbstractArray{GraphVariableRef}) = all(
+    ReactiveMP.israndom, collection
+)
+ReactiveMP.isdata(collection::AbstractArray{GraphVariableRef}) = all(
+    ReactiveMP.isdata, collection
+)
+ReactiveMP.isconst(collection::AbstractArray{GraphVariableRef}) = all(
+    ReactiveMP.isconst, collection
+)
 
 ReactiveMP.israndom(ref::GraphVariableRef) = GraphPPL.is_random(ref.properties)
 ReactiveMP.isdata(ref::GraphVariableRef) = GraphPPL.is_data(ref.properties)
 ReactiveMP.isconst(ref::GraphVariableRef) = GraphPPL.is_constant(ref.properties)
 
-isanonymous(collection::AbstractArray{GraphVariableRef}) =
-    all(isanonymous, collection)
+isanonymous(collection::AbstractArray{GraphVariableRef}) = all(
+    isanonymous, collection
+)
 isanonymous(ref::GraphVariableRef) = GraphPPL.is_anonymous(ref.properties)
 
-ReactiveMP.getmarginal(ref::GraphVariableRef, strategy) =
-    ReactiveMP.getmarginal(ref.variable, strategy)
-ReactiveMP.getmarginals(collection::AbstractArray{GraphVariableRef}, strategy) =
-    ReactiveMP.getmarginals(map(ref -> ref.variable, collection), strategy)
+ReactiveMP.getmarginal(ref::GraphVariableRef, strategy) = ReactiveMP.getmarginal(
+    ref.variable, strategy
+)
+ReactiveMP.getmarginals(collection::AbstractArray{GraphVariableRef}, strategy) = ReactiveMP.getmarginals(
+    map(ref -> ref.variable, collection), strategy
+)
 
-ReactiveMP.getprediction(ref::GraphVariableRef) =
-    ReactiveMP.getprediction(ref.variable)
-ReactiveMP.getpredictions(collection::AbstractArray{GraphVariableRef}) =
-    ReactiveMP.getpredictions(map(ref -> ref.variable, collection))
+ReactiveMP.getprediction(ref::GraphVariableRef) = ReactiveMP.getprediction(
+    ref.variable
+)
+ReactiveMP.getpredictions(collection::AbstractArray{GraphVariableRef}) = ReactiveMP.getpredictions(
+    map(ref -> ref.variable, collection)
+)
 
-ReactiveMP.setmarginal!(ref::GraphVariableRef, marginal) =
-    setmarginal!(ref.variable, marginal)
-ReactiveMP.setmarginals!(
-    collection::AbstractArray{GraphVariableRef}, marginal
-) = ReactiveMP.setmarginals!(map(ref -> ref.variable, collection), marginal)
+ReactiveMP.setmarginal!(ref::GraphVariableRef, marginal) = setmarginal!(
+    ref.variable, marginal
+)
+ReactiveMP.setmarginals!(collection::AbstractArray{GraphVariableRef}, marginal) = ReactiveMP.setmarginals!(
+    map(ref -> ref.variable, collection), marginal
+)
 
-ReactiveMP.setmessage!(ref::GraphVariableRef, marginal) =
-    setmessage!(ref.variable, marginal)
-ReactiveMP.setmessages!(collection::AbstractArray{GraphVariableRef}, marginal) =
-    ReactiveMP.setmessages!(map(ref -> ref.variable, collection), marginal)
+ReactiveMP.setmessage!(ref::GraphVariableRef, marginal) = setmessage!(
+    ref.variable, marginal
+)
+ReactiveMP.setmessages!(collection::AbstractArray{GraphVariableRef}, marginal) = ReactiveMP.setmessages!(
+    map(ref -> ref.variable, collection), marginal
+)
 
 # Form constraint preprocessing 
 

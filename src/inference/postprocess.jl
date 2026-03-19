@@ -36,7 +36,7 @@ inference_postprocess(::UnpackMarginalPostprocess, result::Marginal) = getdata(
 )
 inference_postprocess(::UnpackMarginalPostprocess, result::AbstractArray) = map(
     (element) -> inference_postprocess(UnpackMarginalPostprocess(), element),
-    result
+    result,
 )
 
 """This postprocessing step does nothing."""

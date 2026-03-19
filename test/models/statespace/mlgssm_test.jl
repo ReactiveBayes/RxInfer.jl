@@ -62,7 +62,7 @@
             model = model(x0 = x0, A = A, B = B, Q = Q, P = P),
             data = (y = data,),
             free_energy = true,
-            options = (limit_stack_depth = 500,)
+            options = (limit_stack_depth = 500,),
         )
     end
 
@@ -104,7 +104,7 @@
     for model in [
         multivariate_lgssm_model,
         multivariate_lgssm_model_with_submodel,
-        multivariate_lgssm_model_with_several_submodel
+        multivariate_lgssm_model_with_several_submodel,
     ]
         mresult = multivariate_lgssm_inference(model, y, x0, A, B, Q, P)
         xmarginals = mresult.posteriors[:x]
@@ -121,7 +121,7 @@
         @test all(
             (mean.(xmarginals) .- 3.0 .* var.(xmarginals)) .<
             x .<
-            (mean.(xmarginals) .+ 3.0 .* var.(xmarginals))
+            (mean.(xmarginals) .+ 3.0 .* var.(xmarginals)),
         )
         @test all(isposdef.(cov.(xmarginals)))
         @test length(fe) === 1
@@ -149,13 +149,13 @@
             px,
             x[subrange] |> slicedim(1),
             label = "Hidden Signal (dim-1)",
-            color = :orange
+            color = :orange,
         )
         px = plot!(
             px,
             x[subrange] |> slicedim(2),
             label = "Hidden Signal (dim-2)",
-            color = :green
+            color = :green,
         )
 
         px = plot!(
@@ -164,7 +164,7 @@
             ribbon = var.(xmarginals)[subrange] |> slicedim(1) .|> sqrt,
             fillalpha = 0.5,
             label = "Estimated Signal (dim-1)",
-            color = :teal
+            color = :teal,
         )
         px = plot!(
             px,
@@ -172,7 +172,7 @@
             ribbon = var.(xmarginals)[subrange] |> slicedim(2) .|> sqrt,
             fillalpha = 0.5,
             label = "Estimated Signal (dim-1)",
-            color = :violet
+            color = :violet,
         )
 
         return px

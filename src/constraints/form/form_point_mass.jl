@@ -103,7 +103,7 @@ function default_point_mass_form_constraint_optimizer(
     ::Type{Univariate},
     ::Type{Continuous},
     constraint::PointMassFormConstraint,
-    distribution
+    distribution,
 )
     target = let distribution = distribution
         (x) -> -logpdf(distribution, x[1])
@@ -115,7 +115,7 @@ function default_point_mass_form_constraint_optimizer(
         Optim.optimize(
             target,
             call_starting_point(constraint, distribution),
-            Optim.LBFGS()
+            Optim.LBFGS(),
         )
     else
         Optim.optimize(
@@ -123,7 +123,7 @@ function default_point_mass_form_constraint_optimizer(
             [lower],
             [upper],
             call_starting_point(constraint, distribution),
-            Optim.Fminbox(Optim.GradientDescent())
+            Optim.Fminbox(Optim.GradientDescent()),
         )
     end
 
@@ -132,7 +132,7 @@ function default_point_mass_form_constraint_optimizer(
     else
         error(
             "Optimisation procedure for point mass estimation did not converge",
-            result
+            result,
         )
     end
 end
@@ -141,7 +141,7 @@ function default_point_mass_form_constraint_optimizer(
     ::Type{Univariate},
     ::Type{Discrete},
     constraint::PointMassFormConstraint,
-    distribution
+    distribution,
 )
 
     # fetch probvec
@@ -165,7 +165,7 @@ function default_point_mass_form_constraint_boundaries(
     ::Type{Univariate},
     ::Type{Continuous},
     constraint::PointMassFormConstraint,
-    distribution
+    distribution,
 )
     return __default_univariate_boundaries(support(distribution))
 end
@@ -192,14 +192,14 @@ function default_point_mass_form_constraint_starting_point(
     ::Type{Univariate},
     ::Type{Continuous},
     constraint::PointMassFormConstraint,
-    distribution
+    distribution,
 )
     lower, upper = call_boundaries(constraint, distribution)
     return if isinf(lower) && isinf(upper)
         return zeros(1)
     else
         error(
-            "No default starting point specified for a range [ $(lower), $(upper) ]"
+            "No default starting point specified for a range [ $(lower), $(upper) ]",
         )
     end
 end

@@ -76,7 +76,7 @@ mutable struct RxInferenceEngine{
         vardict::N,
         enabledevents::Val{X},
         events::E,
-        ticklock::J
+        ticklock::J,
     ) where {T, D, L, V, P, H, S, U, A, FA, FS, R, I, M, N, X, E, J} = begin
         return new{T, D, L, V, P, H, S, U, A, FA, FS, R, I, M, N, X, E, J}(
             datastream,
@@ -102,7 +102,7 @@ mutable struct RxInferenceEngine{
             false,
             false,
             nothing,
-            ticklock
+            ticklock,
         )
     end
 end
@@ -153,22 +153,22 @@ function Base.getproperty(result::RxInferenceEngine, property::Symbol)
         return enabled_events(result)
     elseif property === :free_energy
         !isnothing(getfield(result, :fe_source)) || error(
-            "Bethe Free Energy stream has not been created. Use `free_energy = true` keyword argument for the `rxinference` function to compute Bethe Free Energy values."
+            "Bethe Free Energy stream has not been created. Use `free_energy = true` keyword argument for the `rxinference` function to compute Bethe Free Energy values.",
         )
         return getfield(result, :fe_source)
     elseif property === :free_energy_history
         !isnothing(getfield(result, :fe_actor)) || error(
-            "Bethe Free Energy history has not been computed. Use `free_energy = true` keyword argument for the `rxinference` function to compute Bethe Free Energy values together with the `keephistory` argument."
+            "Bethe Free Energy history has not been computed. Use `free_energy = true` keyword argument for the `rxinference` function to compute Bethe Free Energy values together with the `keephistory` argument.",
         )
         return score_snapshot_iterations(getfield(result, :fe_actor))
     elseif property === :free_energy_final_only_history
         !isnothing(getfield(result, :fe_actor)) || error(
-            "Bethe Free Energy history has not been comptued. Use `free_energy = true` keyword argument for the `rxinference` function to compute Bethe Free Energy values together with the `keephistory` argument."
+            "Bethe Free Energy history has not been comptued. Use `free_energy = true` keyword argument for the `rxinference` function to compute Bethe Free Energy values together with the `keephistory` argument.",
         )
         return score_snapshot_final(getfield(result, :fe_actor))
     elseif property === :free_energy_raw_history
         !isnothing(getfield(result, :fe_actor)) || error(
-            "Bethe Free Energy history has not been comptued. Use `free_energy = true` keyword argument for the `rxinference` function to compute Bethe Free Energy values together with the `keephistory` argument."
+            "Bethe Free Energy history has not been comptued. Use `free_energy = true` keyword argument for the `rxinference` function to compute Bethe Free Energy values together with the `keephistory` argument.",
         )
         return score_snapshot(getfield(result, :fe_actor))
     end
@@ -352,7 +352,7 @@ function Rocket.on_next!(
                 Val(_enabled_events),
                 _events,
                 _model,
-                iteration
+                iteration,
             )
 
             # At first we update all our priors (auto updates) with the fixed values from the `redirectupdate` field
@@ -362,7 +362,7 @@ function Rocket.on_next!(
                 _events,
                 _model,
                 iteration,
-                _autoupdates
+                _autoupdates,
             )
             run_autoupdate!(autoupdate_specs, autoupdate_fetched)
             inference_fire_event(
@@ -371,7 +371,7 @@ function Rocket.on_next!(
                 _events,
                 _model,
                 iteration,
-                _autoupdates
+                _autoupdates,
             )
 
             # At second we pass our observations
@@ -381,7 +381,7 @@ function Rocket.on_next!(
                 _events,
                 _model,
                 iteration,
-                event
+                event,
             )
             for (datavar, value) in zip(_datavars, values(event))
                 update!(datavar, value)
@@ -392,7 +392,7 @@ function Rocket.on_next!(
                 _events,
                 _model,
                 iteration,
-                event
+                event,
             )
 
             check_and_reset_updated!(_updateflags)
@@ -402,7 +402,7 @@ function Rocket.on_next!(
                 Val(_enabled_events),
                 _events,
                 _model,
-                iteration
+                iteration,
             )
         end
 
@@ -418,7 +418,7 @@ function Rocket.on_next!(
             for (name, actor) in pairs(_historyactors)
                 push!(
                     _history[name],
-                    inference_postprocess(_postprocess, getvalues(actor))
+                    inference_postprocess(_postprocess, getvalues(actor)),
                 )
             end
             inference_fire_event(
@@ -555,7 +555,7 @@ function streaming_inference(;
     callbacks = nothing,
     postprocess = DefaultPostprocess(),
     uselock = false,
-    warn = true
+    warn = true,
 )
 
     # In case if `data` is used we cast to a synchronous `datastream` with zip operator
@@ -605,7 +605,7 @@ function streaming_inference(;
         GraphPPL.VariationalConstraintsPlugin(constraints),
         GraphPPL.MetaPlugin(meta),
         RxInfer.InitializationPlugin(initialization),
-        RxInfer.ReactiveMPInferencePlugin(_options)
+        RxInfer.ReactiveMPInferencePlugin(_options),
     )
 
     is_free_energy, S = unwrap_free_energy_option(free_energy)
@@ -625,7 +625,7 @@ function streaming_inference(;
     # The `_model` here still must be a `ModelGenerator`
     _model = GraphPPL.with_backend(
         GraphPPL.with_plugins(model, modelplugins),
-        ReactiveMPGraphPPLBackend(Static.static(allow_node_contraction))
+        ReactiveMPGraphPPLBackend(Static.static(allow_node_contraction)),
     )
     _autoupdates = something(autoupdates, EmptyAutoUpdateSpecification)
 
@@ -637,13 +637,13 @@ function streaming_inference(;
     foreach(keys(_autoupdates_data_handlers)) do _autoupdate_data_handler_key
         if _autoupdate_data_handler_key ∈ datavarnames
             error(
-                lazy"`$(_autoupdate_data_handler_key)` is present both in the `data` and in the `autoupdates`."
+                lazy"`$(_autoupdate_data_handler_key)` is present both in the `data` and in the `autoupdates`.",
             )
         end
     end
     _condition_on = merge_data_handlers(
         create_deferred_data_handlers(datavarnames),
-        autoupdates_data_handlers(autoupdates)
+        autoupdates_data_handlers(autoupdates),
     )
 
     invoke_callback(callbacks, Val(:before_model_creation))
@@ -661,7 +661,7 @@ function streaming_inference(;
         datavarname = datavarnames[i]
         (haskey(vardict, datavarname) && is_data(vardict[datavarname])) ||
             error(
-                "The `datastream` produces data for `$(datavarname)`, but the model does not have a datavar named `$(datavarname)`"
+                "The `datastream` produces data for `$(datavarname)`, but the model does not have a datavar named `$(datavarname)`",
             )
         return getvariable(vardict[datavarname])
     end
@@ -669,7 +669,7 @@ function streaming_inference(;
     # `iterations` might be set to `nothing` in which case we assume `1` iteration
     _iterations = something(iterations, 1)
     (_iterations isa Integer || _iterations isa Ref{<:Integer}) || error(
-        "`iterations` argument must be of type Integer, Ref{<:Integer}, or `nothing`"
+        "`iterations` argument must be of type Integer, Ref{<:Integer}, or `nothing`",
     )
     _iterations[] > 0 ||
         error("`iterations` arguments must be greater than zero")
@@ -719,7 +719,7 @@ function streaming_inference(;
 
     returnvars = filter(
         (varkey) -> __check_has_randomvar(:returnvars, vardict, varkey),
-        returnvars
+        returnvars,
     )
 
     inference_check_itertype(:returnvars, returnvars)
@@ -818,7 +818,7 @@ function streaming_inference(;
         vardict,
         _enabledevents,
         _events,
-        _ticklock
+        _ticklock,
     )
 
     if autostart
@@ -847,7 +847,7 @@ function available_events(::typeof(streaming_inference))
         :after_history_save,
         :on_tick,
         :on_error,
-        :on_complete
+        :on_complete,
     ))
 end
 
@@ -866,6 +866,6 @@ function available_callbacks(::typeof(streaming_inference))
         :before_form_constraint_applied,
         :after_form_constraint_applied,
         :before_marginal_computation,
-        :after_marginal_computation
+        :after_marginal_computation,
     ))
 end

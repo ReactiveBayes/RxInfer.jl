@@ -321,14 +321,14 @@ end
         @test occursin("Nothing", repr(log_dictnt_entries(nothing)))
         @test occursin(
             "UnknownArbitraryType2",
-            repr(log_dictnt_entries(UnknownArbitraryType2()))
+            repr(log_dictnt_entries(UnknownArbitraryType2())),
         )
         @test occursin(
             "Dict: x::Float64", repr(log_dictnt_entries(Dict(:x => 1.5)))
         )
         @test occursin(
             "NamedTuple: y::Vector{Float64}, a::Int64",
-            repr(log_dictnt_entries((y = [1.0, 2.0], a = 1)))
+            repr(log_dictnt_entries((y = [1.0, 2.0], a = 1))),
         )
         @test occursin(
             "NamedTuple: x::Missing", repr(log_dictnt_entries((x = missing,)))
@@ -368,7 +368,7 @@ end
                 model = test_model1(),
                 constraints = test_model1_constraints(),
                 data = (y = rand(n),),
-                initialization = init
+                initialization = init,
             )
             @test getreturnval(result.model) === (n, 2, 3.0, "hello world")
         end
@@ -385,7 +385,7 @@ end
             initialization = init,
             iterations = 10,
             returnvars = KeepEach(),
-            free_energy = true
+            free_energy = true,
         )
 
         @test RxInfer.issuccess(result)
@@ -417,7 +417,7 @@ end
                         error("bang!")
                     end
                 end,
-            )
+            ),
         )
 
         result_with_error = infer(
@@ -437,7 +437,7 @@ end
                         error("bang!")
                     end
                 end,
-            )
+            ),
         )
 
         @test !RxInfer.issuccess(result_with_error)
@@ -469,7 +469,7 @@ end
             initialization = init,
             iterations = 10,
             returnvars = KeepEach(),
-            free_energy = true
+            free_energy = true,
         )
 
         @test length(results1.free_energy) === 10
@@ -487,8 +487,9 @@ end
             free_energy = true,
             callbacks = (
                 # halt before iteration 5, but the logic could be more complex of course
-                before_iteration = (model, iteration) -> iteration === 5 ? StopIteration() : nothing,
-            )
+                before_iteration = (model, iteration) ->
+                    iteration === 5 ? StopIteration() : nothing,
+            ),
         )
 
         # We halted before iteration 5, so we assume the result length should be 4
@@ -507,8 +508,9 @@ end
             free_energy = true,
             callbacks = (
                 # halt after iteration 5, but the logic could be more complex of course
-                after_iteration = (model, iteration) -> iteration === 5 ? StopIteration() : nothing,
-            )
+                after_iteration = (model, iteration) ->
+                    iteration === 5 ? StopIteration() : nothing,
+            ),
         )
 
         # We halted after iteration 5, so we assume the result length should be 5
@@ -590,7 +592,7 @@ end
         q_z::Any,
         q_κ::Any,
         q_ω::Any,
-        meta::Union{<:GCVMetadata, Nothing}
+        meta::Union{<:GCVMetadata, Nothing},
     ) = begin
         y_mean, y_var = mean_var(q_y)
         x_mean, x_var = mean_var(q_x)
@@ -634,7 +636,7 @@ end
         initialization = hgf_1_initialization(),
         constraints = MeanField(),
         allow_node_contraction = true,
-        free_energy = true
+        free_energy = true,
     )
 
     @test all(!isnan, mean.(result_1.posteriors[:x]))
@@ -677,7 +679,7 @@ end
         data = (y = dataset,),
         initialization = hgf_2_initialization(),
         constraints = MeanField(),
-        allow_node_contraction = true
+        allow_node_contraction = true,
     )
 
     @test result_2.posteriors[:x_1] isa Vector{<:NormalDistributionsFamily}
@@ -700,7 +702,7 @@ end
             data = (y = observations,),
             addons = AddonLogScale(),
             options = (addons = AddonLogScale(),),
-            warn = true
+            warn = true,
         )
         # Should not display a warning if `warn` is set to `true`
         @test_logs infer(
@@ -708,7 +710,7 @@ end
             data = (y = observations,),
             addons = AddonLogScale(),
             options = (addons = AddonLogScale(),),
-            warn = false
+            warn = false,
         )
     end
 end
@@ -744,7 +746,7 @@ end
             constraints = test_model1_constraints(),
             data = (y = rand(10),),
             disable_inference_error_hint = true,
-            initialization = init
+            initialization = init,
         )
     end
 end
@@ -809,7 +811,7 @@ end
                 initialization = init,
                 iterations = iterations,
                 free_energy = free_energy,
-                autoupdates = autoupdates
+                autoupdates = autoupdates,
             )
 
             # Test that the `.model` reference is correct
@@ -826,7 +828,7 @@ end
                 sort(collect(returnvars))
             @test all(
                 p -> typeof(p) <: Rocket.Subscribable,
-                collect(values(engine.posteriors))
+                collect(values(engine.posteriors)),
             )
 
             # Check that we save the history of the marginals if needed
@@ -886,9 +888,9 @@ end
                 before_autostart = (args...) ->
                     push!(callbacksdata, (:before_autostart, args)),
                 after_autostart = (args...) ->
-                    push!(callbacksdata, (:after_autostart, args))
+                    push!(callbacksdata, (:after_autostart, args)),
             ),
-            autostart = true
+            autostart = true,
         )
 
         # First check the order
@@ -896,7 +898,7 @@ end
             :before_model_creation,
             :after_model_creation,
             :before_autostart,
-            :after_autostart
+            :after_autostart,
         ]
 
         @test typeof(callbacksdata[1][2]) <: Tuple{}                   # before_model_creation
@@ -922,9 +924,9 @@ end
                 before_autostart = (args...) ->
                     push!(callbacksdata, (:before_autostart, args)),
                 after_autostart = (args...) ->
-                    push!(callbacksdata, (:after_autostart, args))
+                    push!(callbacksdata, (:after_autostart, args)),
             ),
-            autostart = false
+            autostart = false,
         )
 
         # First check the order
@@ -945,7 +947,7 @@ end
 
         @test_logs (
             :warn,
-            r"Unknown callback specification.*hello_world.*Available callbacks.*"
+            r"Unknown callback specification.*hello_world.*Available callbacks.*",
         ) result = infer(
             model = test_model1(),
             constraints = MeanField(),
@@ -955,7 +957,7 @@ end
             callbacks = (
                 hello_world = (args...) -> push!(callbacksdata, args),
             ),
-            autostart = true
+            autostart = true,
         )
 
         @test length(callbacksdata) === 0
@@ -999,11 +1001,11 @@ end
                     :after_history_save,
                     :on_tick,
                     :on_error,
-                    :on_complete
+                    :on_complete,
                 )),
                 iterations = iterations,
                 autostart = false,
-                warn = false
+                warn = false,
             )
 
             event_listener = CustomEventListener([])
@@ -1021,16 +1023,16 @@ end
                 @test length(
                     filter(
                         event -> event isa RxInferenceEvent{:on_new_data},
-                        events
-                    )
+                        events,
+                    ),
                 ) == 1
 
                 # Check the associated data with the `:on_new_data` events
                 foreach(
                     filter(
                         event -> event isa RxInferenceEvent{:on_new_data},
-                        events
-                    )
+                        events,
+                    ),
                 ) do event
                     # `(model, data) = event`
                     model, data = event
@@ -1042,14 +1044,14 @@ end
                 @test length(
                     filter(
                         event -> event isa RxInferenceEvent{:before_iteration},
-                        events
-                    )
+                        events,
+                    ),
                 ) == iterations
                 @test length(
                     filter(
                         event -> event isa RxInferenceEvent{:after_iteration},
-                        events
-                    )
+                        events,
+                    ),
                 ) == iterations
 
                 # Check the associated data with the `:before_iteration` events
@@ -1058,9 +1060,9 @@ end
                         filter(
                             event ->
                                 event isa RxInferenceEvent{:before_iteration},
-                            events
-                        )
-                    )
+                            events,
+                        ),
+                    ),
                 ) do (ii, event)
                     model, iteration = event
                     @test model === engine.model
@@ -1073,9 +1075,9 @@ end
                         filter(
                             event ->
                                 event isa RxInferenceEvent{:after_iteration},
-                            events
-                        )
-                    )
+                            events,
+                        ),
+                    ),
                 ) do (ii, event)
                     model, iteration = event
                     @test model === engine.model
@@ -1089,8 +1091,8 @@ end
                         event ->
                             event isa RxInferenceEvent{:before_iteration} ||
                             event isa RxInferenceEvent{:after_iteration},
-                        events
-                    )
+                        events,
+                    ),
                 ) == repeat([:before_iteration, :after_iteration], iterations)
 
                 # Check that the number of `:before_auto_update` and `:after_auto_update` events depends on the number of iterations
@@ -1098,14 +1100,14 @@ end
                     filter(
                         event ->
                             event isa RxInferenceEvent{:before_auto_update},
-                        events
-                    )
+                        events,
+                    ),
                 ) == iterations
                 @test length(
                     filter(
                         event -> event isa RxInferenceEvent{:after_auto_update},
-                        events
-                    )
+                        events,
+                    ),
                 ) == iterations
 
                 # Check the associated data with the `:before_auto_update` events
@@ -1114,9 +1116,9 @@ end
                         filter(
                             event ->
                                 event isa RxInferenceEvent{:before_auto_update},
-                            events
-                        )
-                    )
+                            events,
+                        ),
+                    ),
                 ) do (ii, event)
                     model, iteration, fupdate = event
                     @test model === engine.model
@@ -1130,9 +1132,9 @@ end
                         filter(
                             event ->
                                 event isa RxInferenceEvent{:after_auto_update},
-                            events
-                        )
-                    )
+                            events,
+                        ),
+                    ),
                 ) do (ii, event)
                     model, iteration, fupdate = event
                     @test model === engine.model
@@ -1147,8 +1149,8 @@ end
                         event ->
                             event isa RxInferenceEvent{:before_auto_update} ||
                             event isa RxInferenceEvent{:after_auto_update},
-                        events
-                    )
+                        events,
+                    ),
                 ) == repeat(
                     [:before_auto_update, :after_auto_update], iterations
                 )
@@ -1158,14 +1160,14 @@ end
                     filter(
                         event ->
                             event isa RxInferenceEvent{:before_data_update},
-                        events
-                    )
+                        events,
+                    ),
                 ) == iterations
                 @test length(
                     filter(
                         event -> event isa RxInferenceEvent{:after_data_update},
-                        events
-                    )
+                        events,
+                    ),
                 ) == iterations
 
                 # Check the associated data with the `:before_auto_update` events
@@ -1174,9 +1176,9 @@ end
                         filter(
                             event ->
                                 event isa RxInferenceEvent{:before_data_update},
-                            events
-                        )
-                    )
+                            events,
+                        ),
+                    ),
                 ) do (ii, event)
                     model, iteration, data = event
                     @test model === engine.model
@@ -1190,9 +1192,9 @@ end
                         filter(
                             event ->
                                 event isa RxInferenceEvent{:after_data_update},
-                            events
-                        )
-                    )
+                            events,
+                        ),
+                    ),
                 ) do (ii, event)
                     model, iteration, data = event
                     @test model === engine.model
@@ -1207,8 +1209,8 @@ end
                         event ->
                             event isa RxInferenceEvent{:before_data_update} ||
                             event isa RxInferenceEvent{:after_data_update},
-                        events
-                    )
+                        events,
+                    ),
                 ) == repeat(
                     [:before_data_update, :after_data_update], iterations
                 )
@@ -1225,7 +1227,7 @@ end
                                RxInferenceEvent{:before_data_update} ||
                                event isa RxInferenceEvent{:after_data_update} ||
                                event isa RxInferenceEvent{:after_iteration}
-                    end
+                    end,
                 ) == repeat(
                     [
                         :before_iteration,
@@ -1233,9 +1235,9 @@ end
                         :after_auto_update,
                         :before_data_update,
                         :after_data_update,
-                        :after_iteration
+                        :after_iteration,
                     ],
-                    iterations
+                    iterations,
                 )
 
                 if keephistory > 0
@@ -1244,22 +1246,22 @@ end
                             event ->
                                 event isa
                                 RxInferenceEvent{:before_history_save},
-                            events
-                        )
+                            events,
+                        ),
                     ) == 1
                     @test length(
                         filter(
                             event ->
                                 event isa RxInferenceEvent{:after_history_save},
-                            events
-                        )
+                            events,
+                        ),
                     ) == 1
                 end
 
                 @test length(
                     filter(
                         event -> event isa RxInferenceEvent{:on_tick}, events
-                    )
+                    ),
                 ) == 1
 
                 # We should receive the `:on_complete` event only for the last data point
@@ -1267,15 +1269,15 @@ end
                     @test length(
                         filter(
                             event -> event isa RxInferenceEvent{:on_complete},
-                            events
-                        )
+                            events,
+                        ),
                     ) == 1
                 else
                     @test length(
                         filter(
                             event -> event isa RxInferenceEvent{:on_complete},
-                            events
-                        )
+                            events,
+                        ),
                     ) == 0
                 end
             end
@@ -1295,7 +1297,7 @@ end
             historyvars = (τ = KeepLast(),),
             iterations = 10,
             keephistory = 100,
-            autostart = true
+            autostart = true,
         )
 
         # Check that the result is not of type `Marginal`
@@ -1316,7 +1318,7 @@ end
                 historyvars = (τ = KeepLast(),),
                 iterations = 10,
                 keephistory = 100,
-                autostart = true
+                autostart = true,
             )
 
             # Check that the result is of type `Marginal`
@@ -1341,7 +1343,7 @@ end
         @test_throws ErrorException infer(
             model = test_model1(),
             data = (y = observedy,),
-            datastream = labeled(Val((:y,)), combineLatest(from(observedy)))
+            datastream = labeled(Val((:y,)), combineLatest(from(observedy))),
         )
     end
 end
@@ -1412,7 +1414,7 @@ end
         result = infer(model = rolling_die(), data = (y = observations,))
         @test isequal(
             first(mean(result.posteriors[:θ])),
-            last(mean(result.posteriors[:θ]))
+            last(mean(result.posteriors[:θ])),
         )
     end
 
@@ -1424,7 +1426,7 @@ end
             model = rolling_die(),
             data = (y = observations,),
             callbacks = (before_model_creation = (args...) -> nothing),
-            disable_inference_error_hint = true
+            disable_inference_error_hint = true,
         )
     end
 
@@ -1432,25 +1434,27 @@ end
         result = infer(
             model = rolling_die(),
             data = (y = observations,),
-            callbacks = (before_model_creation = (args...) -> nothing,)
+            callbacks = (before_model_creation = (args...) -> nothing,),
         )
         @test isequal(
             first(mean(result.posteriors[:θ])),
-            last(mean(result.posteriors[:θ]))
+            last(mean(result.posteriors[:θ])),
         )
     end
 
     @testset "Test callbacks with custom struct" begin
         struct TestCustomCallbackHandler end
-        ReactiveMP.invoke_callback(::TestCustomCallbackHandler, event, args...) = nothing
+        ReactiveMP.invoke_callback(
+            ::TestCustomCallbackHandler, event, args...
+        ) = nothing
         result = infer(
             model = rolling_die(),
             data = (y = observations,),
-            callbacks = TestCustomCallbackHandler()
+            callbacks = TestCustomCallbackHandler(),
         )
         @test isequal(
             first(mean(result.posteriors[:θ])),
-            last(mean(result.posteriors[:θ]))
+            last(mean(result.posteriors[:θ])),
         )
     end
 
@@ -1463,7 +1467,7 @@ end
             autostart = true,
             keephistory = 1,
             warn = true,
-            events = Val((:blabla,))
+            events = Val((:blabla,)),
         )
         result = @test_logs infer(
             model = rolling_die_streamlined(),
@@ -1473,11 +1477,11 @@ end
             autostart = true,
             keephistory = 1,
             warn = false,
-            events = Val((:blabla,))
+            events = Val((:blabla,)),
         )
         @test isequal(
             first(mean(result.history[:θ][end])),
-            last(mean(result.history[:θ][end]))
+            last(mean(result.history[:θ][end])),
         )
     end
 end
@@ -1495,17 +1499,17 @@ end
     @test_throws "`a` is present both in the `data` and in the `autoupdates`." infer(
         model = beta_bernoulli(),
         data = (y = [1], a = [2]),
-        autoupdates = autoupdates
+        autoupdates = autoupdates,
     )
     @test_throws "`a` is present both in the `data` and in the `autoupdates`." infer(
         model = beta_bernoulli(),
         data = (y = [1], a = [2], b = [2]),
-        autoupdates = autoupdates
+        autoupdates = autoupdates,
     )
     @test_throws "`b` is present both in the `data` and in the `autoupdates`." infer(
         model = beta_bernoulli(),
         data = (y = [1], b = [2]),
-        autoupdates = autoupdates
+        autoupdates = autoupdates,
     )
 end
 
@@ -1538,19 +1542,19 @@ end
         model = beta_bernoulli(),
         data = (y = 1,),
         initmessages = (t = Normal(0.0, 1.0)),
-        initmarginals = (t = Normal(0.0, 1.0))
+        initmarginals = (t = Normal(0.0, 1.0)),
     )
 
     @test_throws "`initmessages` and `initmarginals` keyword arguments have been deprecated and removed. Use the `@initialization` macro and the `initialization` keyword instead." infer(
         model = beta_bernoulli(),
         data = (y = 1,),
-        initmarginals = (t = Normal(0.0, 1.0))
+        initmarginals = (t = Normal(0.0, 1.0)),
     )
 
     @test_throws "`initmessages` and `initmarginals` keyword arguments have been deprecated and removed. Use the `@initialization` macro and the `initialization` keyword instead." infer(
         model = beta_bernoulli(),
         data = (y = 1,),
-        initmessages = (t = Normal(0.0, 1.0))
+        initmessages = (t = Normal(0.0, 1.0)),
     )
 end
 
@@ -1608,7 +1612,7 @@ end
     """ result = infer(
         model = invalid_product_posterior(),
         data = (out = 1.0,),
-        disable_inference_error_hint = true
+        disable_inference_error_hint = true,
     )
 
     # Product of `DistributionA` & `DistributionB` in the message
@@ -1641,7 +1645,7 @@ end
         model = invalid_product_message(),
         data = (out = 1.0,),
         returnvars = (θ = KeepEach(),),
-        disable_inference_error_hint = true
+        disable_inference_error_hint = true,
     )
 end
 
@@ -1672,12 +1676,12 @@ end
             A = diageye(4),
             goal = [0, 1, 0, 0],
             p_B = DirichletCollection(ones(4, 4)),
-            p_s_t = Categorical([0.7, 0.3, 0, 0])
+            p_s_t = Categorical([0.7, 0.3, 0, 0]),
         ),
         data = (y = [[1, 0, 0, 0], missing, missing],),
         initialization = pred_model_init(DirichletCollection(ones(4, 4))),
         constraints = pred_model_constraints,
-        iterations = 10
+        iterations = 10,
     )
     # In this model, since we have no information about the transition tensor, the prediction for the middle state should be close to uniform. Because of our identity likelihood model, the prediction for the middle observation should be close to the posterior for the middle state. If we do VMP it is not.
 
@@ -1686,7 +1690,7 @@ end
         0.0670307763637994,
         0.8994760923993603,
         0.016746565618420153,
-        0.016746565618420153
+        0.016746565618420153,
     ]
     @test entropy(last(result.predictions[:y])[2]) <
         entropy(last(result.posteriors[:s])[2])
@@ -1700,19 +1704,19 @@ end
             A = diageye(4),
             goal = [0, 0, 1, 0],
             p_B = DirichletCollection(ones(4, 4)),
-            p_s_t = Categorical([0.7, 0.3, 0, 0])
+            p_s_t = Categorical([0.7, 0.3, 0, 0]),
         ),
         data = (y = UnfactorizedData([[1, 0, 0, 0], missing, missing]),),
         initialization = pred_model_init(DirichletCollection(ones(4, 4))),
         constraints = pred_model_constraints,
-        iterations = 10
+        iterations = 10,
     )
     # Correctly estimates variance
     @test probvec(last(result.predictions[:y])[2]) ≈ [
         0.25160378360439883,
         0.20140807577024974,
         0.3455800648551016,
-        0.20140807577024974
+        0.20140807577024974,
     ]
     @test entropy(last(result.predictions[:y])[2]) ≈
         entropy(last(result.posteriors[:s])[2])
@@ -1800,7 +1804,7 @@ end
         data = test_data,
         iterations = 10,
         free_energy = true,
-        session = session
+        session = session,
     )
 
     stats = RxInfer.get_session_stats(session, :inference)
@@ -1862,7 +1866,7 @@ end
     result = infer(
         model = simple_model_missing_data(),
         predictvars = (y = KeepEach(),),
-        meta = meta
+        meta = meta,
     )
 
     # Test summarize_session output format for inference invokes with default n_last
@@ -1918,7 +1922,7 @@ end
         datastream = datastream,
         autoupdates = autoupdates,
         initialization = initialization,
-        session = session
+        session = session,
     )
     stats = RxInfer.get_session_stats(session, :inference)
 
@@ -1945,7 +1949,7 @@ end
         data = (y = 1.0,),
         constraints = iidconstraints(),
         initialization = iidinit(),
-        session = session
+        session = session,
     )
     stats = RxInfer.get_session_stats(session, :inference)
     last_invoke = stats.invokes[end]
@@ -1972,7 +1976,7 @@ end
         model = simple_nonlinear_model(),
         data = (y = 1.0,),
         meta = model_meta(),
-        session = session
+        session = session,
     )
     stats = RxInfer.get_session_stats(session, :inference)
     last_invoke = stats.invokes[end]
@@ -1997,7 +2001,7 @@ end
         model = simple_model(),
         data = (y = 1.0,),
         initialization = initialization,
-        session = session
+        session = session,
     )
     stats = RxInfer.get_session_stats(session, :inference)
     last_invoke = stats.invokes[end]
@@ -2024,7 +2028,7 @@ end
         data = (y = 1.0,),
         autoupdates = autoupdates,
         initialization = initialization,
-        session = session
+        session = session,
     )
     stats = RxInfer.get_session_stats(session, :inference)
     last_invoke = stats.invokes[end]
@@ -2044,7 +2048,7 @@ end
         m_out::Categorical,
         m_in::Categorical,
         q_a::PointMass,
-        meta::CountingMeta
+        meta::CountingMeta,
     ) = begin
         meta.count += 1
         return @call_marginalrule DiscreteTransition(:out_in) (
@@ -2067,7 +2071,7 @@ end
     result = infer(
         model = test_model(meta = meta),
         data = (A = diageye(2),),
-        options = (force_marginal_computation = true,)
+        options = (force_marginal_computation = true,),
     )
     @test meta.count == 1
 
@@ -2075,7 +2079,7 @@ end
         model = test_model(meta = meta),
         data = (A = diageye(2),),
         options = (force_marginal_computation = true,),
-        iterations = 10
+        iterations = 10,
     )
     @test meta.count == 11
 
@@ -2108,7 +2112,7 @@ end
         datastream = datastream,
         autoupdates = autoupdates,
         initialization = init,
-        autostart = true
+        autostart = true,
     )
     @test meta.count == 0
 
@@ -2121,7 +2125,7 @@ end
         autoupdates = autoupdates,
         initialization = init,
         autostart = true,
-        options = (force_marginal_computation = true,)
+        options = (force_marginal_computation = true,),
     )
     @test meta.count == 10
     RxInfer.stop(engine)
@@ -2136,7 +2140,7 @@ end
     result = infer(
         model = test_model_for_force_marginal_computations(),
         data = (y = 1.0,),
-        options = (force_marginal_computation = true,)
+        options = (force_marginal_computation = true,),
     )
 end
 
@@ -2160,13 +2164,12 @@ end
         model = my_model_with_error(),
         data = (y = 1.0,),
         catch_exception = true,
-        disable_inference_error_hint = true
+        disable_inference_error_hint = true,
     )
 
     @test result.posteriors[:θ] === missing
 end
 
-@testmodule ReactiveMPEventHandlerTestUtils begin 
+@testmodule ReactiveMPEventHandlerTestUtils begin
     import RxInfer.ReactiveMP
 end
-

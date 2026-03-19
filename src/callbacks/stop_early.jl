@@ -49,9 +49,9 @@ function (strategy::StopEarlyIterationStrategy)(model, iteration::Int)
         score(
             model,
             RxInfer.BetheFreeEnergy(Real),
-            RxInfer.DefaultObjectiveDiagnosticChecks
+            RxInfer.DefaultObjectiveDiagnosticChecks,
         ) |> take(1),
-        (v) -> current_fe_value = v
+        (v) -> current_fe_value = v,
     )
     # Take the previous value from the saved history, use the large value if the first iteration
     previous_fe_value = if isempty(strategy.fe_values)
@@ -66,7 +66,7 @@ function (strategy::StopEarlyIterationStrategy)(model, iteration::Int)
         current_fe_value,
         previous_fe_value;
         atol = strategy.atol,
-        rtol = strategy.rtol
+        rtol = strategy.rtol,
     )
         return StopIteration()
     end

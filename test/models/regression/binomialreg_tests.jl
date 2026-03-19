@@ -37,7 +37,7 @@
             ) where {
                 dependencies = RequireMessageFunctionalDependencies(
                     β = MvNormalWeightedMeanPrecision(prior_xi, prior_precision)
-                )
+                ),
             }
         end
     end
@@ -48,12 +48,12 @@
         return infer(
             model = binomial_model(
                 prior_xi = zeros(n_features),
-                prior_precision = diageye(n_features)
+                prior_precision = diageye(n_features),
             ),
             data = (X = X, y = y, n_trials = n_trials),
             iterations = iterations,
             free_energy = true,
-            options = (limit_stack_depth = 100,)
+            options = (limit_stack_depth = 100,),
         )
     end
 
@@ -61,7 +61,7 @@
         n_sims::Int,
         n_samples::Int,
         true_beta::Vector{Float64};
-        iterations = n_iterations
+        iterations = n_iterations,
     )
         # Storage for results
         n_features = length(true_beta)

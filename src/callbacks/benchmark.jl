@@ -81,7 +81,7 @@ function RxInferBenchmarkCallbacks(;
         CircularBuffer{Vector{UInt64}}(capacity),
         CircularBuffer{Vector{UInt64}}(capacity),
         CircularBuffer{UInt64}(capacity),
-        CircularBuffer{UInt64}(capacity)
+        CircularBuffer{UInt64}(capacity),
     )
 end
 
@@ -106,13 +106,16 @@ function ReactiveMP.invoke_callback(
 end
 
 function ReactiveMP.invoke_callback(
-    callbacks::RxInferBenchmarkCallbacks, ::Val{:after_model_creation}, model, args...
+    callbacks::RxInferBenchmarkCallbacks,
+    ::Val{:after_model_creation},
+    model,
+    args...,
 )
     if haskey(model.metadata, :benchmark)
         error(
             "The model's metadata already contains a `:benchmark` key. " *
             "This can happen if you pass `benchmark = true` while also providing " *
-            "`RxInferBenchmarkCallbacks` in the `callbacks` argument. Use one or the other, not both."
+            "`RxInferBenchmarkCallbacks` in the `callbacks` argument. Use one or the other, not both.",
         )
     end
     model.metadata[:benchmark] = callbacks
@@ -211,14 +214,14 @@ function Base.show(io::IO, callbacks::RxInferBenchmarkCallbacks)
     if isempty(callbacks)
         return print(
             io,
-            "RxInferBenchmarkCallbacks (empty, use `pretty_table` from `PrettyTables.jl` to display the statistics in a tabular format)"
+            "RxInferBenchmarkCallbacks (empty, use `pretty_table` from `PrettyTables.jl` to display the statistics in a tabular format)",
         )
     else
         return print(
             io,
             "RxInferBenchmarkCallbacks (",
             length(callbacks.before_model_creation_ts),
-            "evaluations, use `pretty_table` from `PrettyTables.jl` to display the statistics in a tabular format)"
+            "evaluations, use `pretty_table` from `PrettyTables.jl` to display the statistics in a tabular format)",
         )
     end
 end

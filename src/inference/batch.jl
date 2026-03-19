@@ -59,7 +59,7 @@ function Base.show(io::IO, result::InferenceResult)
             IOContext(
                 io, :compact => true, :limit => true, :displaysize => (1, 80)
             ),
-            result.free_energy
+            result.free_energy,
         )
         print(io, "\n")
     end
@@ -67,7 +67,7 @@ function Base.show(io::IO, result::InferenceResult)
     if iserror(result)
         print(
             io,
-            "[ WARN ] An error has occurred during the inference procedure. The result might not be complete. You can use the `.error` field to access the error and its backtrace. Use `Base.showerror` function to display the error."
+            "[ WARN ] An error has occurred during the inference procedure. The result might not be complete. You can use the `.error` field to access the error and its backtrace. Use `Base.showerror` function to display the error.",
         )
     end
 end
@@ -92,7 +92,7 @@ function Base.getproperty(result::InferenceResult, property::Symbol)
             """
             Bethe Free Energy has not been computed. 
             Use `free_energy = true` keyword argument for the `inference` function to compute Bethe Free Energy values.
-            """
+            """,
         )
     else
         return getfield(result, property)
@@ -139,7 +139,7 @@ function batch_inference(;
     # catch exceptions during the inference procedure, optional, defaults to false
     catch_exception = false,
     # disable inference error hints
-    disable_inference_error_hint = false
+    disable_inference_error_hint = false,
 )
     _options = convert(ReactiveMPInferenceOptions, options)
     # If the `options` does not have `warn` key inside, override it with the keyword `warn`
@@ -169,7 +169,7 @@ function batch_inference(;
         GraphPPL.VariationalConstraintsPlugin(constraints),
         GraphPPL.MetaPlugin(meta),
         RxInfer.InitializationPlugin(initialization),
-        RxInfer.ReactiveMPInferencePlugin(_options)
+        RxInfer.ReactiveMPInferencePlugin(_options),
     )
 
     is_free_energy, S = unwrap_free_energy_option(free_energy)
@@ -189,7 +189,7 @@ function batch_inference(;
     # The `_model` here still must be a `ModelGenerator`
     _model = GraphPPL.with_backend(
         GraphPPL.with_plugins(model, modelplugins),
-        ReactiveMPGraphPPLBackend(Static.static(allow_node_contraction))
+        ReactiveMPGraphPPLBackend(Static.static(allow_node_contraction)),
     )
 
     infer_check_dicttype(:data, data)
@@ -203,7 +203,7 @@ function batch_inference(;
             )
         else # else we throw an error
             error(
-                "`predictvar` is specified as `$(predictvars)`, but `data` is not provided. Make sure to provide `data` or specify `predictvars` explicitly."
+                "`predictvar` is specified as `$(predictvars)`, but `data` is not provided. Make sure to provide `data` or specify `predictvars` explicitly.",
             )
         end
         # If `predictvar` is specified, but `data` is not, we initialize the `data` with missing values
@@ -318,7 +318,7 @@ function batch_inference(;
                 obtain_marginal(vardict[variable]) |> ensure_update(
                     fmodel, callbacks, variable, updates[variable]
                 ),
-                actor
+                actor,
             ) for (variable, actor) in pairs(actors_rv)
         )
         subscriptions_pr = Dict(
@@ -326,13 +326,13 @@ function batch_inference(;
                 obtain_prediction(vardict[variable]) |> ensure_update(
                     fmodel, callbacks, variable, updates[variable]
                 ),
-                actor
+                actor,
             ) for (variable, actor) in pairs(actors_pr)
         )
 
         if !isempty(actors_pr) && is_free_energy
             error(
-                "The Bethe Free Energy computation is not compatible with the prediction functionality. Set `free_energy = false` to suppress this error."
+                "The Bethe Free Energy computation is not compatible with the prediction functionality. Set `free_energy = false` to suppress this error.",
             )
         end
 
@@ -343,18 +343,18 @@ function batch_inference(;
 
         if isnothing(data) || isempty(data)
             error(
-                "Data is empty. Make sure you used `data` keyword argument with correct value."
+                "Data is empty. Make sure you used `data` keyword argument with correct value.",
             )
         else
             foreach(
                 filter(
                     pair -> isdata(last(pair)) && !isanonymous(last(pair)),
-                    pairs(vardict)
-                )
+                    pairs(vardict),
+                ),
             ) do pair
                 varname = first(pair)
                 haskey(data, varname) || error(
-                    "Data entry `$(varname)` is missing in `data` or `predictvars` arguments. Double check `data = ($(varname) = ???, )` or `predictvars = ($(varname) = ???, )`"
+                    "Data entry `$(varname)` is missing in `data` or `predictvars` arguments. Double check `data = ($(varname) = ???, )` or `predictvars = ($(varname) = ???, )`",
                 )
             end
         end
@@ -380,7 +380,7 @@ function batch_inference(;
             if should_stop_iteration(
                 invoke_callback(
                     callbacks, Val(:before_iteration), fmodel, iteration
-                )
+                ),
             )
                 break
             end
@@ -403,7 +403,7 @@ function batch_inference(;
             if should_stop_iteration(
                 invoke_callback(
                     callbacks, Val(:after_iteration), fmodel, iteration
-                )
+                ),
             )
                 break
             end
@@ -419,7 +419,7 @@ function batch_inference(;
         potential_error = inference_process_error(
             error;
             rethrow = !catch_exception,
-            disable_inference_error_hint = disable_inference_error_hint
+            disable_inference_error_hint = disable_inference_error_hint,
         )
     end
 
@@ -479,7 +479,7 @@ function available_callbacks(::typeof(batch_inference))
         :before_form_constraint_applied,
         :after_form_constraint_applied,
         :before_marginal_computation,
-        :after_marginal_computation
+        :after_marginal_computation,
     ))
 end
 

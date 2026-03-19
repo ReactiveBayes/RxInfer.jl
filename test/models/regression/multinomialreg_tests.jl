@@ -24,7 +24,7 @@
             ) where {
                 dependencies = RequireMessageFunctionalDependencies(
                     ψ = MvNormalWeightedMeanPrecision(ξ_ψ, W_ψ)
-                )
+                ),
             }
         end
     end
@@ -33,14 +33,14 @@
         model = multinomial_model(
             ξ_ψ = zeros(k - 1),
             W_ψ = rand(rng, Wishart(k, diageye(k - 1))),
-            N = N
+            N = N,
         ),
         data = (y = X,),
         iterations = 100,
         free_energy = true,
         showprogress = false,
         returnvars = KeepLast(),
-        options = (limit_stack_depth = 100,)
+        options = (limit_stack_depth = 100,),
     )
 
     m = mean(result.posteriors[:ψ])
@@ -79,7 +79,7 @@ end
         ) where {
             dependencies = RequireMessageFunctionalDependencies(
                 ψ = MvNormalWeightedMeanPrecision(zeros(k - 1), diageye(k - 1))
-            )
+            ),
         }
     end
 
@@ -100,7 +100,7 @@ end
         autoupdates = auto(),
         keephistory = length(X),
         free_energy = true,
-        showprogress = false
+        showprogress = false,
     )
 
     m = result.history[:ψ][end]
