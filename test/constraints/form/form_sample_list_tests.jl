@@ -1,5 +1,6 @@
 @testitem "PointMassFormConstraint" begin
-    using DomainSets, StableRNGs, DomainSets, Distributions, Random, LinearAlgebra
+    using DomainSets,
+        StableRNGs, DomainSets, Distributions, Random, LinearAlgebra
     import RxInfer: SampleListFormConstraint, constrain_form
 
     @testset "approximation for generic univariate f" begin
@@ -31,7 +32,9 @@
         for s in 2:4, nsamples in (5000, 10000)
             constraint = SampleListFormConstraint(nsamples)
 
-            d = MvNormalMeanCovariance(randn(irng, Float64, s), Diagonal(rand(irng, Float64, s)))
+            d = MvNormalMeanCovariance(
+                randn(irng, Float64, s), Diagonal(rand(irng, Float64, s))
+            )
             f = ContinuousMultivariateLogPdf(s, (x) -> 0)
 
             prod_df = prod(GenericProd(), d, f)
@@ -52,7 +55,9 @@
         using LinearAlgebra
         left = MvNormalMeanCovariance(randn(2), Diagonal(rand(2)))
 
-        right = LinearizedProductOf([ContinuousMultivariateLogPdf(2, (x) -> rand()) for _ in 1:10], 10)
+        right = LinearizedProductOf(
+            [ContinuousMultivariateLogPdf(2, (x) -> rand()) for _ in 1:10], 10
+        )
         constraint = SampleListFormConstraint(100)
         q = constrain_form(constraint, prod(GenericProd(), left, right))
         @test q isa SampleList

@@ -38,16 +38,34 @@ StopEarlyIterationStrategy(rtol::Real) = StopEarlyIterationStrategy(0.0, rtol)
 Create an early-stopping strategy with explicit absolute (`atol`) and relative (`rtol`) tolerances.
 Uses `start_fe_value = Inf` by default.
 """
-StopEarlyIterationStrategy(atol::Real, rtol::Real) = StopEarlyIterationStrategy(Float64(atol), Float64(rtol), Inf, Float64[])
+StopEarlyIterationStrategy(atol::Real, rtol::Real) = StopEarlyIterationStrategy(
+    Float64(atol), Float64(rtol), Inf, Float64[]
+)
 
 function (strategy::StopEarlyIterationStrategy)(model, iteration::Int)
     current_fe_value = 0.0
     # Subscribe on the `BetheFreeEnergy` stream but only `take(1)` value from it
-    subscribe!(score(model, RxInfer.BetheFreeEnergy(Real), RxInfer.DefaultObjectiveDiagnosticChecks) |> take(1), (v) -> current_fe_value = v)
+    subscribe!(
+        score(
+            model,
+            RxInfer.BetheFreeEnergy(Real),
+            RxInfer.DefaultObjectiveDiagnosticChecks
+        ) |> take(1),
+        (v) -> current_fe_value = v
+    )
     # Take the previous value from the saved history, use the large value if the first iteration
-    previous_fe_value = isempty(strategy.fe_values) ? strategy.start_fe_value : last(strategy.fe_values)
+    previous_fe_value = if isempty(strategy.fe_values)
+        strategy.start_fe_value
+    else
+        last(strategy.fe_values)
+    end
     # Save the current value in the history
     push!(strategy.fe_values, current_fe_value)
     # Stop early if the previous value is close to the current
-    return isapprox(current_fe_value, previous_fe_value; atol = strategy.atol, rtol = strategy.rtol)
+    return isapprox(
+        current_fe_value,
+        previous_fe_value;
+        atol = strategy.atol,
+        rtol = strategy.rtol
+    )
 end

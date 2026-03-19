@@ -33,7 +33,12 @@
     )
 
     results = map(metas) do meta
-        return infer(model = delta_1input(meta = meta), data = (y = 1.0,), free_energy = true, iterations = 10)
+        return infer(
+            model = delta_1input(meta = meta),
+            data = (y = 1.0,),
+            free_energy = true,
+            iterations = 10
+        )
     end
 
     @test all(result -> result isa RxInfer.InferenceResult, results)
@@ -76,7 +81,12 @@ end
     )
 
     results = map(metas) do meta
-        return infer(model = delta_2inputs(meta = meta), data = (y = 1.0,), free_energy = true, iterations = 10)
+        return infer(
+            model = delta_2inputs(meta = meta),
+            data = (y = 1.0,),
+            free_energy = true,
+            iterations = 10
+        )
     end
 
     @test all(result -> result isa RxInfer.InferenceResult, results)
@@ -102,10 +112,20 @@ end
         y ~ Normal(μ = w, σ² = 0.5)
     end
 
-    metas = (DeltaMeta(method = Linearization()), DeltaMeta(method = Unscented()), Linearization(), Unscented())
+    metas = (
+        DeltaMeta(method = Linearization()),
+        DeltaMeta(method = Unscented()),
+        Linearization(),
+        Unscented()
+    )
 
     results = map(metas) do meta
-        return infer(model = delta_3inputs(meta = meta), data = (y = 1.0,), free_energy = true, iterations = 10)
+        return infer(
+            model = delta_3inputs(meta = meta),
+            data = (y = 1.0,),
+            free_energy = true,
+            iterations = 10
+        )
     end
 
     @test all(result -> result isa RxInfer.InferenceResult, results)
@@ -130,10 +150,20 @@ end
         y ~ Normal(μ = w, σ² = 0.5)
     end
 
-    metas = (DeltaMeta(method = Linearization()), DeltaMeta(method = Unscented()), Linearization(), Unscented())
+    metas = (
+        DeltaMeta(method = Linearization()),
+        DeltaMeta(method = Unscented()),
+        Linearization(),
+        Unscented()
+    )
 
     results = map(metas) do meta
-        return infer(model = delta_2input_1d2d(meta = meta), data = (y = 1.0,), free_energy = true, iterations = 10)
+        return infer(
+            model = delta_2input_1d2d(meta = meta),
+            data = (y = 1.0,),
+            free_energy = true,
+            iterations = 10
+        )
     end
 
     @test all(result -> result isa RxInfer.InferenceResult, results)
@@ -156,7 +186,11 @@ end
         y ~ MvNormalMeanPrecision(u, diageye(2))
     end
 
-    results = infer(model = test_model(), data = (z = [1, 2], y = [1, 2]), meta = test_meta())
+    results = infer(
+        model = test_model(),
+        data = (z = [1, 2], y = [1, 2]),
+        meta = test_meta()
+    )
 
     @test results isa RxInfer.InferenceResult
 end
