@@ -161,4 +161,48 @@ end
 
         @test haskey(result.model.metadata, :benchmark)
     end
+
+    @testset "Should error when both `benchmark = true` and `RxInferBenchmarkCallbacks` are provided" begin
+        @test_throws "already contains a `:benchmark` key" infer(;
+            model = simple_model_for_benchmark_metadata(),
+            data = (y = [1.0, 2.0, 3.0],),
+            callbacks = RxInferBenchmarkCallbacks(),
+            benchmark = true,
+        )
+    end
+end
+
+@testitem "benchmark = true should be compatible with custom callbacks and StopIteration" begin
+    using RxInfer
+
+    @model function simple_model_for_benchmark_and_stop(y)
+        τ ~ Gamma(; shape = 1.0, rate = 1.0)
+        y .~ Normal(; mean = 0.0, precision = τ)
+    end
+
+    max_iterations = 50
+    stopped_at = Ref(0)
+
+    result = infer(;
+        model = simple_model_for_benchmark_and_stop(),
+        data = (y = [1.0, 2.0, 3.0],),
+        iterations = max_iterations,
+        benchmark = true,
+        callbacks = (
+            after_iteration = (model, iteration) -> begin
+                stopped_at[] = iteration
+                if iteration >= 3
+                    return StopIteration()
+                end
+                return nothing
+            end,
+        ),
+    )
+
+    @test stopped_at[] == 3
+    @test haskey(result.model.metadata, :benchmark)
+    benchmark = result.model.metadata[:benchmark]
+    @test benchmark isa RxInferBenchmarkCallbacks
+    @test length(last(benchmark.before_iteration_ts)) == 3
+    @test length(last(benchmark.after_iteration_ts)) == 3
 end

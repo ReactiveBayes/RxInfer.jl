@@ -108,6 +108,13 @@ end
 function ReactiveMP.invoke_callback(
     callbacks::RxInferBenchmarkCallbacks, ::Val{:after_model_creation}, model, args...
 )
+    if haskey(model.metadata, :benchmark)
+        error(
+            "The model's metadata already contains a `:benchmark` key. " *
+            "This can happen if you pass `benchmark = true` while also providing " *
+            "`RxInferBenchmarkCallbacks` in the `callbacks` argument. Use one or the other, not both."
+        )
+    end
     model.metadata[:benchmark] = callbacks
     push!(callbacks.after_model_creation_ts, time_ns())
 end

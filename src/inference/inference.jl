@@ -17,22 +17,18 @@ import ProgressMeter
 obtain_prediction(variable::Any) = getprediction(variable)
 obtain_prediction(variables::AbstractArray) = getpredictions(variables)
 
-obtain_marginal(variable::Any, strategy = SkipInitial()) = getmarginal(
-    variable, strategy
-)
-obtain_marginal(variables::AbstractArray, strategy = SkipInitial()) = getmarginals(
-    variables, strategy
-)
+obtain_marginal(variable::Any, strategy = SkipInitial()) =
+    getmarginal(variable, strategy)
+obtain_marginal(variables::AbstractArray, strategy = SkipInitial()) =
+    getmarginals(variables, strategy)
 
 assign_marginal!(variable::Any, marginal) = setmarginal!(variable, marginal)
-assign_marginal!(variables::AbstractArray, marginals) = setmarginals!(
-    variables, marginals
-)
+assign_marginal!(variables::AbstractArray, marginals) =
+    setmarginals!(variables, marginals)
 
 assign_message!(variable::Any, message) = setmessage!(variable, message)
-assign_message!(variables::AbstractArray, messages) = setmessages!(
-    variables, messages
-)
+assign_message!(variables::AbstractArray, messages) =
+    setmessages!(variables, messages)
 
 "Instructs the inference engine to keep each marginal update for all intermediate iterations."
 struct KeepEach end
@@ -43,20 +39,17 @@ struct KeepLast end
 make_actor(::Any, ::KeepEach) = keep(Marginal)
 make_actor(x::AbstractArray, ::KeepEach) = keep(typeof(similar(x, Marginal)))
 
-make_actor(::Any, ::KeepEach, capacity::Integer) = circularkeep(
-    Marginal, capacity
-)
-make_actor(x::AbstractArray, ::KeepEach, capacity::Integer) = circularkeep(
-    typeof(similar(x, Marginal)), capacity
-)
+make_actor(::Any, ::KeepEach, capacity::Integer) =
+    circularkeep(Marginal, capacity)
+make_actor(x::AbstractArray, ::KeepEach, capacity::Integer) =
+    circularkeep(typeof(similar(x, Marginal)), capacity)
 
 make_actor(::Any, ::KeepLast) = storage(Marginal)
 make_actor(x::AbstractArray, ::KeepLast) = buffer(Marginal, size(x))
 
 make_actor(::Any, ::KeepLast, capacity::Integer) = storage(Marginal)
-make_actor(x::AbstractArray, ::KeepLast, capacity::Integer) = buffer(
-    Marginal, size(x)
-)
+make_actor(x::AbstractArray, ::KeepLast, capacity::Integer) =
+    buffer(Marginal, size(x))
 
 ## Inference ensure update
 
@@ -100,13 +93,27 @@ struct StopIteration end
 should_stop_iteration(::StopIteration) = true
 should_stop_iteration(anything_else) = false
 
+# Reduce functions for merged callbacks.
+# For before/after iteration events, if any handler returns `StopIteration`,
+# the merged result must also be `StopIteration`.
+reduce_stop_iteration(a::StopIteration, _) = a
+reduce_stop_iteration(_, b::StopIteration) = b
+reduce_stop_iteration(_, b) = b
+
+# Returns a `NamedTuple` of per-event reduce functions for use with `ReactiveMP.merge_callbacks`.
+# Ensures that `StopIteration` is propagated correctly when multiple callback handlers are merged.
+callbacks_reduce_fn() = (
+    before_iteration = reduce_stop_iteration,
+    after_iteration = reduce_stop_iteration,
+)
+
 # This creates a `tap` operator that will set the `updated` flag to true.
 # Later on we check flags and `unset!` them after the `update!` procedure
 ensure_update(
     model::ProbabilisticModel,
     callbacks,
     variable_name::Symbol,
-    updated::MarginalHasBeenUpdated
+    updated::MarginalHasBeenUpdated,
 ) =
     tap() do update
         set_updated!(updated)
@@ -126,7 +133,7 @@ function check_and_reset_updated!(updates)
             Variables [ $(names) ] have not been updated after an update event. 
             Therefore, make sure to initialize all required marginals and messages. See `initialization` keyword argument for the inference function. 
             See documentation: https://docs.rxinfer.com/stable/manuals/inference/initialization/ .
-            """
+            """,
         )
     end
 end
@@ -141,26 +148,23 @@ struct InferenceLoggedDataEntry
 end
 
 # Very safe by default, logging should not crash if we don't know how to parse the data entry
-log_data_entry(data) = InferenceLoggedDataEntry(
-    :unknown, :unknown, :unknown, :unknown
-)
+log_data_entry(data) =
+    InferenceLoggedDataEntry(:unknown, :unknown, :unknown, :unknown)
 log_data_entry(data::Pair) = log_data_entry(first(data), last(data))
 
-log_data_entry(name::Union{Symbol, String}, data) = log_data_entry(
-    name, Base.IteratorSize(data), data
-)
-log_data_entry(name::Union{Symbol, String}, _, data) = InferenceLoggedDataEntry(
-    name, typeof(data), :unknown, :unknown
-)
-log_data_entry(name::Union{Symbol, String}, ::Base.HasShape{0}, data) = InferenceLoggedDataEntry(
-    name, typeof(data), (), ()
-)
-log_data_entry(name::Union{Symbol, String}, ::Base.HasShape, data) = InferenceLoggedDataEntry(
-    name,
-    typeof(data),
-    log_data_entry_size(data),
-    isempty(data) ? () : log_data_entry_size(first(data))
-)
+log_data_entry(name::Union{Symbol, String}, data) =
+    log_data_entry(name, Base.IteratorSize(data), data)
+log_data_entry(name::Union{Symbol, String}, _, data) =
+    InferenceLoggedDataEntry(name, typeof(data), :unknown, :unknown)
+log_data_entry(name::Union{Symbol, String}, ::Base.HasShape{0}, data) =
+    InferenceLoggedDataEntry(name, typeof(data), (), ())
+log_data_entry(name::Union{Symbol, String}, ::Base.HasShape, data) =
+    InferenceLoggedDataEntry(
+        name,
+        typeof(data),
+        log_data_entry_size(data),
+        isempty(data) ? () : log_data_entry_size(first(data)),
+    )
 
 log_data_entry_size(data) = log_data_entry_size(Base.IteratorSize(data), data)
 log_data_entry_size(::Base.HasShape, data) = size(data)
@@ -169,19 +173,16 @@ log_data_entry_size(_, data) = ()
 # Julia has `Base.HasLength` by default, which is quite bad because it fallbacks here 
 # for structures that has nothing to do with being iterators nor implement `length`, 
 # Better to be safe here and simply return :unknown
-log_data_entry(name::Union{Symbol, String}, ::Base.HasLength, data) = InferenceLoggedDataEntry(
-    name, typeof(data), :unknown, :unknown
-)
+log_data_entry(name::Union{Symbol, String}, ::Base.HasLength, data) =
+    InferenceLoggedDataEntry(name, typeof(data), :unknown, :unknown)
 
 # Very safe by default, logging should not crash if we don't know how to parse the data entry
 log_data_entries(data) = :unknown
 
-log_data_entries(data::Union{NamedTuple, Dict}) = log_data_entries_from_pairs(
-    pairs(data)
-)
-log_data_entries_from_pairs(pairs) = collect(
-    Iterators.map(log_data_entry, pairs)
-)
+log_data_entries(data::Union{NamedTuple, Dict}) =
+    log_data_entries_from_pairs(pairs(data))
+log_data_entries_from_pairs(pairs) =
+    collect(Iterators.map(log_data_entry, pairs))
 
 function Base.show(io::IO, entry::InferenceLoggedDataEntry)
     print(
@@ -194,7 +195,7 @@ function Base.show(io::IO, entry::InferenceLoggedDataEntry)
         entry.size,
         ", elsize=",
         entry.elsize,
-        ")"
+        ")",
     )
 end
 
@@ -206,12 +207,10 @@ end
 # Very safe by default, logging should not crash if we don't know how to parse the dict/nt entry
 log_dictnt_entries(data) = string(typeof(data))
 
-log_dictnt_entries(data::Dict) = InferenceLoggedDictNTEntries(
-    :Dict, log_data_entries(data)
-)
-log_dictnt_entries(data::NamedTuple) = InferenceLoggedDictNTEntries(
-    :NamedTuple, log_data_entries(data)
-)
+log_dictnt_entries(data::Dict) =
+    InferenceLoggedDictNTEntries(:Dict, log_data_entries(data))
+log_dictnt_entries(data::NamedTuple) =
+    InferenceLoggedDictNTEntries(:NamedTuple, log_data_entries(data))
 
 function Base.show(io::IO, entry::InferenceLoggedDictNTEntries)
     entries_str = join(map(e -> "$(e.name)::$(e.type)", entry.entries), ", ")
@@ -231,15 +230,15 @@ function summarize_invokes(io::IO, ::Val{:inference}, invokes; n_last = 5)
     if !isempty(invokes)
         println(
             io,
-            "\nLast $n_last invokes, use `n_last` keyword argument to see more or less."
+            "\nLast $n_last invokes, use `n_last` keyword argument to see more or less.",
         )
         println(
             io,
-            "*  Note that benchmarking with `BenchmarkTools` or similar will pollute the session with test invokes."
+            "*  Note that benchmarking with `BenchmarkTools` or similar will pollute the session with test invokes.",
         )
         println(
             io,
-            "   It is advised to explicitly pass `session = nothing` when benchmarking code involving the `infer` function."
+            "   It is advised to explicitly pass `session = nothing` when benchmarking code involving the `infer` function.",
         )
 
         println(io, "\nLegend:")
@@ -259,9 +258,9 @@ function summarize_invokes(io::IO, ::Val{:inference}, invokes; n_last = 5)
                 Dates.value(
                     Dates.Millisecond(
                         invoke.execution_end - invoke.execution_start
-                    )
-                ),
-                digits = 2
+                    ),
+                );
+                digits = 2,
             )
             model = get(invoke.context, :model_name, nothing)
             model = model === nothing ? "N/A" : string(model)
@@ -305,7 +304,7 @@ function summarize_invokes(io::IO, ::Val{:inference}, invokes; n_last = 5)
             "Meta",
             "Init",
             "Data",
-            "Error"
+            "Error",
         ],)
         summarize_invokes_pretty_table(
             summarize_invokes,
@@ -314,7 +313,7 @@ function summarize_invokes(io::IO, ::Val{:inference}, invokes; n_last = 5)
             header = header,
             maximum_columns_width = [12, 6, 10, 25, 6, 6, 6, 20, 6],
             autowrap = true,
-            linebreaks = true
+            linebreaks = true,
         )
     end
 end
@@ -323,7 +322,7 @@ end
 function summarize_invokes_pretty_table(f::Any, io::IO, data; kwargs...)
     print(
         io,
-        "\n !! PrettyTables.jl is not installed, skipping the pretty table output.       !! \n !! Install the `PrettyTables.jl` package to see the nicely formatted output. !! \n"
+        "\n !! PrettyTables.jl is not installed, skipping the pretty table output.       !! \n !! Install the `PrettyTables.jl` package to see the nicely formatted output. !! \n",
     )
     println(io)
     if haskey(kwargs, :header)
@@ -445,7 +444,7 @@ function inference_check_itertype(keyword::Symbol, ::T) where {T}
         Note: Julia's parser interprets `(something)` and (something, ) differently. 
             The first expression simply ignores parenthesis around `something`. 
             The second expression defines `Tuple`with `something` as a first (and the last) entry.
-        """
+        """,
     )
 end
 
@@ -453,7 +452,7 @@ function infer_check_dicttype(
     ::Symbol,
     ::Union{
         Nothing, NamedTuple, Dict, GraphPPL.VarDict, RxInferBenchmarkCallbacks
-    }
+    },
 )
     # This function check is the second argument is of type `Nothing`, `NamedTuple`, `Dict` or `VarDict`. 
     # Does nothing is true, throws an error otherwise (see the second method below)
@@ -468,23 +467,21 @@ function infer_check_dicttype(keyword::Symbol, ::T) where {T}
         Note: Julia's parser interprets `(x = something)` and (x = something, ) differently. 
             The first expression defines (or **overwrites!**) the local/global variable named `x` with `something` as a content. 
             The second expression defines `NamedTuple` with `x` as a key and `something` as a value.
-        """
+        """,
     )
 end
 
 inference_check_dataismissing(d) = (ismissing(d) || any(ismissing, d))
 
 # Return NamedTuple for predictions
-inference_fill_predictions(s::Symbol, d::AbstractArray) = NamedTuple{
-    Tuple([s])
-}([repeat([missing], length(d))])
-inference_fill_predictions(s::Symbol, d::DataVariable) = NamedTuple{Tuple([s])}([
-    missing
-])
+inference_fill_predictions(s::Symbol, d::AbstractArray) =
+    NamedTuple{Tuple([s])}([repeat([missing], length(d))])
+inference_fill_predictions(s::Symbol, d::DataVariable) =
+    NamedTuple{Tuple([s])}([missing])
 
 # RxInfer uses and extends ReactiveMP's invoke_callback functionality
 # It is also being used exposed to the users via the `callbacks = ` keyword argument
-import ReactiveMP: invoke_callback
+import ReactiveMP: invoke_callback, merge_callbacks
 
 unwrap_free_energy_option(option::Bool)                      = (option, Real)
 unwrap_free_energy_option(option::Type{T}) where {T <: Real} = (true, T)
@@ -566,6 +563,7 @@ include("streaming.jl")
         uselock = false,
         autostart = true,
         catch_exception = false,
+        benchmark = false,
         session = RxInfer.default_session()
     )
 
@@ -603,6 +601,7 @@ Check the official documentation for more information about some of the argument
 - `uselock = false`: specifies either to use the lock structure for the inference or not, if set to true uses `Base.Threads.SpinLock`. Accepts custom `AbstractLock`. (exclusive for streamline inference)
 - `autostart = true`: specifies whether to call `RxInfer.start` on the created engine automatically or not (exclusive for streamline inference)
 - `warn = true`: enables/disables warnings
+- `benchmark = false`: when set to `true`, automatically merges a [`RxInferBenchmarkCallbacks`](@ref) instance with the user-provided `callbacks`. The benchmark results are accessible via `result.model.metadata[:benchmark]`. See [Benchmark callbacks](@ref manual-inference-benchmark-callbacks).
 - `session = RxInfer.default_session()`: current logging session for the RxInfer invokes, see `Session` for more details, pass `nothing` to disable logging
 
 ## Error hints
@@ -644,7 +643,8 @@ function infer(;
     uselock = false, # streamline  specific
     autostart = true, # streamline specific
     warn = true,
-    session = RxInfer.default_session()
+    benchmark = false,
+    session = RxInfer.default_session(),
 )
     if isnothing(model)
         error(
@@ -652,23 +652,31 @@ function infer(;
         )
     elseif !isa(model, GraphPPL.ModelGenerator)
         error(
-            "The `model` keyword argument must be of type `GraphPPL.ModelGenerator`."
+            "The `model` keyword argument must be of type `GraphPPL.ModelGenerator`.",
         )
     elseif !isnothing(data) && !isnothing(datastream)
         error(
-            """`data` and `datastream` keyword arguments cannot be used together. """
+            """`data` and `datastream` keyword arguments cannot be used together. """,
         )
     elseif isnothing(data) && isnothing(predictvars) && isnothing(datastream)
         error(
-            """One of the keyword arguments `data` or `predictvars` or `datastream` must be specified"""
+            """One of the keyword arguments `data` or `predictvars` or `datastream` must be specified""",
         )
     elseif !isnothing(initmessages) || !isnothing(initmarginals)
         error(
-            """`initmessages` and `initmarginals` keyword arguments have been deprecated and removed. Use the `@initialization` macro and the `initialization` keyword instead."""
+            """`initmessages` and `initmarginals` keyword arguments have been deprecated and removed. Use the `@initialization` macro and the `initialization` keyword instead.""",
         )
     end
 
     infer_check_dicttype(:data, data)
+
+    if benchmark
+        callbacks = merge_callbacks(
+            callbacks,
+            RxInferBenchmarkCallbacks();
+            reduce_fn = callbacks_reduce_fn(),
+        )
+    end
 
     return with_session(session, :inference) do invoke
         append_invoke_context(invoke) do ctx
@@ -707,7 +715,7 @@ function infer(;
             check_available_events(
                 warn, events, available_events(batch_inference)
             )
-            batch_inference(
+            batch_inference(;
                 model = model,
                 data = data,
                 initialization = initialization,
@@ -726,7 +734,7 @@ function infer(;
                 postprocess = postprocess,
                 warn = warn,
                 catch_exception = catch_exception,
-                disable_inference_error_hint = disable_inference_error_hint
+                disable_inference_error_hint = disable_inference_error_hint,
             )
         else
             check_available_callbacks(
@@ -735,7 +743,7 @@ function infer(;
             check_available_events(
                 warn, events, available_events(streaming_inference)
             )
-            streaming_inference(
+            streaming_inference(;
                 model = model,
                 data = data,
                 datastream = datastream,
@@ -757,7 +765,7 @@ function infer(;
                 postprocess = postprocess,
                 warn = warn,
                 events = events,
-                uselock = uselock
+                uselock = uselock,
             )
         end
     end
