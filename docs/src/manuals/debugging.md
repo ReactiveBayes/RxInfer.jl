@@ -302,24 +302,5 @@ The `RxInferBenchmarkCallbacks` structure collects timestamps at various stages 
 - Before and after each iteration
 - Before and after autostart (for streaming inference)
 
-```@docs
-RxInferBenchmarkCallbacks
-RxInfer.get_benchmark_stats
-RxInfer.DEFAULT_BENCHMARK_CALLBACKS_BUFFER_CAPACITY
-```
-
-!!! note
-    By default, the `RxInferBenchmarkCallbacks` structure uses a circular buffer with a limited capacity to store timestamps. This helps limit memory usage in long-running applications. You can change the buffer capacity by passing a different value to the `capacity` keyword argument of the `RxInferBenchmarkCallbacks` constructor.
-
-This information can be used to:
-- Track performance statistics (min/max/average) of your inference procedure
-- Identify performance variability across runs
-- Monitor the time spent in different stages of inference
-- Establish performance baselines for your models
-- Detect performance regressions
-
-The timestamps are collected using `time_ns()` for high precision timing measurements and are automatically formatted into human-readable durations when displayed.
-
-!!! note
-    The timing measurements include all overhead from the Julia runtime and may vary between runs. For more precise benchmarking of specific code sections, consider using the `BenchmarkTools.jl` package. When gathering performance statistics, consider running multiple iterations to get more reliable metrics.
+For the full API reference, programmatic access to statistics, and model metadata integration, see the dedicated [Benchmark callbacks](@ref manual-inference-benchmark-callbacks) page.
 
