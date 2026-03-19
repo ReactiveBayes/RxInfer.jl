@@ -14,8 +14,9 @@ struct TracedEvent
     arguments::Tuple
 end
 
-Base.show(io::IO, te::TracedEvent) =
-    print(io, "TracedEvent(:$(te.event), $(length(te.arguments)) args)")
+Base.show(io::IO, te::TracedEvent) = print(
+    io, "TracedEvent(:$(te.event), $(length(te.arguments)) args)"
+)
 
 """
     RxInferTraceCallbacks()
@@ -72,8 +73,9 @@ Returns the vector of [`TracedEvent`](@ref) recorded by the trace callbacks filt
 
 See also: [`RxInferTraceCallbacks`](@ref).
 """
-tracedevents(event::Symbol, callbacks::RxInferTraceCallbacks) =
-    filter(e -> e.event == event, callbacks.events)
+tracedevents(event::Symbol, callbacks::RxInferTraceCallbacks) = filter(
+    e -> e.event == event, callbacks.events
+)
 
 Base.isempty(callbacks::RxInferTraceCallbacks) = isempty(callbacks.events)
 
