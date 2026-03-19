@@ -22,13 +22,13 @@
 
     # Push a free energy value
     next!(fe_subject, 100.0)
-    @test strategy(mock, 1) == false
+    @test isnothing(strategy(mock, 1))
 
     # Free energy value is close to the previous one, should stop
     next!(fe_subject, 100.0)
-    @test strategy(mock, 2) == true
+    @test strategy(mock, 2) isa StopIteration
 
     # Free energy value is not close to the previous one, should not stop
     next!(fe_subject, 110.0)
-    @test strategy(mock, 3) == false
+    @test isnothing(strategy(mock, 3))
 end

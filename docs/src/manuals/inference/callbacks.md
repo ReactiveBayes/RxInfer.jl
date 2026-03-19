@@ -253,7 +253,7 @@ after_iteration(model::ProbabilisticModel, iteration::Int)
 Called after each variational iteration.
 
 !!! note
-    `before_iteration` and `after_iteration` callbacks are allowed to return `true` to halt iterations early. See [Early stopping](@ref manual-inference-early-stopping) for an example.
+    `before_iteration` and `after_iteration` callbacks can return [`StopIteration()`](@ref) to halt iterations early. Any other return value (including `nothing`) will let iterations continue. See [Early stopping](@ref manual-inference-early-stopping) for an example.
 
 ```julia
 before_data_update(model::ProbabilisticModel, data)

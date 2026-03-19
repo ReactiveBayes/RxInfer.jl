@@ -2,6 +2,7 @@ export KeepEach, KeepLast
 export infer
 export InferenceResult
 export RxInferenceEngine, RxInferenceEvent
+export StopIteration
 
 using Preferences
 
@@ -73,7 +74,33 @@ Rocket.on_next!(updated::MarginalHasBeenUpdated, anything) = set_updated!(update
 Rocket.on_error!(updated::MarginalHasBeenUpdated, err)     = begin end
 Rocket.on_complete!(updated::MarginalHasBeenUpdated)       = begin end
 
-# This creates a `tap` operator that will set the `updated` flag to true. 
+"""
+    StopIteration()
+
+Return this value from a `before_iteration` or `after_iteration` callback to signal
+that the inference procedure should stop iterating. Any other return value
+(including `nothing`) will let iterations continue.
+
+See also: [Callbacks](@ref manual-inference-callbacks), [`StopEarlyIterationStrategy`](@ref)
+
+# Example
+```julia
+result = infer(
+    model = my_model(),
+    data  = my_data,
+    iterations = 100,
+    callbacks = (
+        after_iteration = (model, iteration) -> iteration >= 5 ? StopIteration() : nothing,
+    )
+)
+```
+"""
+struct StopIteration end
+
+should_stop_iteration(::StopIteration) = true
+should_stop_iteration(anything_else) = false
+
+# This creates a `tap` operator that will set the `updated` flag to true.
 # Later on we check flags and `unset!` them after the `update!` procedure
 ensure_update(
     model::ProbabilisticModel,

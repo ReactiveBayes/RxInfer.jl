@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 - The `callbacks` argument in the `infer` function now accepts any custom structure that implements `ReactiveMP.invoke_callback`, in addition to `NamedTuple` and `Dict`. The available callbacks list now also includes ReactiveMP-level callbacks such as `before_message_rule_call`, `after_message_rule_call`, `before_product_of_messages`, `after_product_of_messages`, `before_marginal_computation`, `after_marginal_computation`, and others.
+- **Breaking:** `before_iteration` and `after_iteration` callbacks must now return `StopIteration()` to halt iterations instead of `true`. Any other return value (including `nothing`) continues iteration. The `StopEarlyIterationStrategy` has been updated accordingly.
 - Tests are now running with `TestItemRunner` instead of `ReTestItems`
 - `infer` function got a new keyword argument `disable_inference_error_hint` that disables the inference error hint if set to `true`
 - The inference error hint now can be forced to throw an error with `THROW_ON_INFERENCE_ERROR_HINT` environment variable. This is done primarily to catch errors on CI when a test prints this unintentionally (which also confuses our developers in [$606](https://github.com/ReactiveBayes/RxInfer.jl/issues/606)). All tests or documentation examples now need to use the `disable_inference_error_hint` if the error is intentional.

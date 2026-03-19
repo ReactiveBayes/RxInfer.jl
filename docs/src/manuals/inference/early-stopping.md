@@ -17,6 +17,7 @@ For a general overview of the callbacks system, see the [Callbacks](@ref manual-
 - Both constructors use `start_fe_value = Inf` for the initial comparison value.
 
 ```@docs
+RxInfer.StopIteration
 RxInfer.StopEarlyIterationStrategy
 RxInfer.StopEarlyIterationStrategy(rtol::Real)
 RxInfer.StopEarlyIterationStrategy(atol::Real, rtol::Real)
@@ -24,8 +25,9 @@ RxInfer.StopEarlyIterationStrategy(atol::Real, rtol::Real)
 
 ## Example
 
-To use the [`RxInfer.StopEarlyIterationStrategy`](@ref) we need to pass it to the 
-`after_iteration` field of the `callbacks` argument of the [`infer`](@ref) function. 
+To use the [`RxInfer.StopEarlyIterationStrategy`](@ref) we need to pass it to the
+`after_iteration` field of the `callbacks` argument of the [`infer`](@ref) function.
+The strategy returns [`StopIteration()`](@ref) when the free energy has converged, which signals the inference engine to stop iterating.
 Check out more about callbacks for static inference [here](@ref manual-static-inference-callbacks).
 
 Note that in this case we still have to specify the `iterations`, which 

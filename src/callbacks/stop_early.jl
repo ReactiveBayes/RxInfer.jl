@@ -62,10 +62,13 @@ function (strategy::StopEarlyIterationStrategy)(model, iteration::Int)
     # Save the current value in the history
     push!(strategy.fe_values, current_fe_value)
     # Stop early if the previous value is close to the current
-    return isapprox(
+    if isapprox(
         current_fe_value,
         previous_fe_value;
         atol = strategy.atol,
         rtol = strategy.rtol
     )
+        return StopIteration()
+    end
+    return nothing
 end

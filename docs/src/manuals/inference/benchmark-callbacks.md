@@ -95,7 +95,7 @@ The `RxInferBenchmarkCallbacks` structure collects timestamps at the following s
 
 ## Buffer capacity
 
-By default, the structure uses circular buffers with a capacity of $(RxInfer.DEFAULT_BENCHMARK_CALLBACKS_BUFFER_CAPACITY) entries.
+By default, the structure uses circular buffers with a capacity of [`RxInfer.DEFAULT_BENCHMARK_CALLBACKS_BUFFER_CAPACITY`](@ref) entries.
 This limits memory usage in long-running applications. You can change the capacity:
 
 ```@example manual-inference-benchmark-callbacks

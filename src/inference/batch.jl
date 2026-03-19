@@ -377,14 +377,11 @@ function batch_inference(;
         ))
 
         for iteration in 1:_iterations
-            if something(
-                ensure_bool_or_nothing(
-                    invoke_callback(
-                        callbacks, Val(:before_iteration), fmodel, iteration
-                    )
-                ),
-                false
-            )::Bool
+            if should_stop_iteration(
+                invoke_callback(
+                    callbacks, Val(:before_iteration), fmodel, iteration
+                )
+            )
                 break
             end
             invoke_callback(callbacks, Val(:before_data_update), fmodel, data)
@@ -403,14 +400,11 @@ function batch_inference(;
 
             executed_iterations += 1
 
-            if something(
-                ensure_bool_or_nothing(
-                    invoke_callback(
-                        callbacks, Val(:after_iteration), fmodel, iteration
-                    )
-                ),
-                false
-            )::Bool
+            if should_stop_iteration(
+                invoke_callback(
+                    callbacks, Val(:after_iteration), fmodel, iteration
+                )
+            )
                 break
             end
         end
