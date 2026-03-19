@@ -409,6 +409,7 @@ end
             returnvars = KeepEach(),
             free_energy = true,
             catch_exception = false,
+            disable_inference_error_hint = true,
             callbacks = (
                 after_iteration = (model, iteration) -> begin
                     # For test purposes we throw an error after `5` iterations
@@ -428,6 +429,7 @@ end
             returnvars = KeepEach(),
             free_energy = true,
             catch_exception = true,
+            disable_inference_error_hint = true,
             callbacks = (
                 after_iteration = (model, iteration) -> begin
                     # For test purposes we throw an error after `5` iterations
@@ -741,6 +743,7 @@ end
             model = test_model1(),
             constraints = test_model1_constraints(),
             data = (y = rand(10),),
+            disable_inference_error_hint = true,
             initialization = init
         )
     end
@@ -1345,7 +1348,9 @@ end
 
 @testitem "vector of inputs in streaming inference" begin
     import RxInfer: infer
-    @model function test_model(x, y, mx, vx)
+    @model function test_model_for_vector_of_inputs_in_streaming_inference(
+        x, y, mx, vx
+    )
         for i in 1:3
             x[i] ~ NormalMeanVariance(mx, vx)
         end
@@ -1366,7 +1371,7 @@ end
     end
 
     engine = infer(
-        model = test_model(),
+        model = test_model_for_vector_of_inputs_in_streaming_inference(),
         datastream = datastream,
         autoupdates = autoupdates,
         initialization = @initialization begin
@@ -1579,7 +1584,11 @@ end
     end
     ```
     Refer to the documentation for more details on functional form constraints.
-    """ result = infer(model = invalid_product_posterior(), data = (out = 1.0,))
+    """ result = infer(
+        model = invalid_product_posterior(),
+        data = (out = 1.0,),
+        disable_inference_error_hint = true
+    )
 
     # Product of `DistributionA` & `DistributionB` in the message
     @model function invalid_product_message(out)
@@ -1610,7 +1619,8 @@ end
     """ result = infer(
         model = invalid_product_message(),
         data = (out = 1.0,),
-        returnvars = (θ = KeepEach(),)
+        returnvars = (θ = KeepEach(),),
+        disable_inference_error_hint = true
     )
 end
 
@@ -2228,35 +2238,40 @@ end
     RxInfer.stop(engine)
 
     # Test deterministic nodes
-    @model function test_model(y)
+    @model function test_model_for_force_marginal_computations(y)
         x1 ~ Normal(mean = 0.0, variance = 1.0)
         x2 ~ Normal(mean = 0.0, variance = 1.0)
         y ~ Normal(mean = x1 + x2, variance = 1.0)
     end
 
     result = infer(
-        model = test_model(),
+        model = test_model_for_force_marginal_computations(),
         data = (y = 1.0,),
         options = (force_marginal_computation = true,)
     )
 end
 
 @testitem "Inference should have missing posterior if error occurs immediately" begin
-    struct MyCustomNode end
+    struct MyCustomNodeForMissingPosteriorTest end
 
-    @node MyCustomNode Stochastic [out, in]
+    @node MyCustomNodeForMissingPosteriorTest Stochastic [out, in]
 
-    @rule MyCustomNode(:out, Marginalisation) (q_in::Any,) = begin
+    @rule MyCustomNodeForMissingPosteriorTest(:out, Marginalisation) (
+        q_in::Any,
+    ) = begin
         throw(ErrorException("This is a test error"))
     end
 
     @model function my_model_with_error(y)
-        θ ~ MyCustomNode(1)
+        θ ~ MyCustomNodeForMissingPosteriorTest(1)
         y ~ Bernoulli(θ)
     end
 
     result = infer(
-        model = my_model_with_error(), data = (y = 1.0,), catch_exception = true
+        model = my_model_with_error(),
+        data = (y = 1.0,),
+        catch_exception = true,
+        disable_inference_error_hint = true
     )
 
     @test result.posteriors[:θ] === missing

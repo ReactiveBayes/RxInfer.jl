@@ -29,7 +29,7 @@
 
     # Third value is Inf, should trigger the check
     next!(stream, NormalMeanPrecision(0.0, 0.0))
-    @test events[3] isa String && occursin("The result is `Inf`", events[3])
+    @test occursin("The result is `Inf`", events[3])
 
     # Normally stream should unsubscribe after first error 
     next!(stream, NormalMeanPrecision(0.0, 0.0))
@@ -67,7 +67,7 @@ end
 
     # Third value is NaN, should trigger the check
     next!(stream, NormalMeanPrecision(NaN, NaN))
-    @test events[3] isa String && occursin("The result is `NaN`", events[3])
+    @test occursin("The result is `NaN`", events[3])
 
     # Normally stream should unsubscribe after first error 
     next!(stream, NormalMeanPrecision(0.0, 0.0))

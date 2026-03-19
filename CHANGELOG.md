@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Tests are now running with `TestItemRunner` instead of `ReTestItems`
+- `infer` function got a new keyword argument `disable_inference_error_hint` that disables the inference error hint if set to `true`
+- The inference error hint now can be forced to throw an error with `THROW_ON_INFERENCE_ERROR_HINT` environment variable. This is done primarily to catch errors on CI when a test prints this unintentionally (which also confuses our developers in [$606](https://github.com/ReactiveBayes/RxInfer.jl/issues/606)). All tests or documentation examples now need to use the `disable_inference_error_hint` if the error is intentional.
+
 ## [4.7.3] - 2026-03-13
 
 ### Documentation

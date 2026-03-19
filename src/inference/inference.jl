@@ -316,11 +316,6 @@ end
 
 ## Extra error handling
 
-function inference_process_error(error)
-    # By default, rethrow the error
-    return inference_process_error(error, true)
-end
-
 const preference_inference_error_hint = @load_preference(
     "inference_error_hint", true
 )
@@ -357,7 +352,9 @@ function enable_inference_error_hint!()
     @info "Inference error hints are enabled. Restart Julia session for the change to take effect."
 end
 
-function inference_process_error(error, rethrow)
+function inference_process_error(
+    error; rethrow = true, disable_inference_error_hint = false
+)
     if error isa StackOverflowError
         @error """
         Stack overflow error detected during inference. This can happen with large model graphs 
@@ -372,7 +369,7 @@ function inference_process_error(error, rethrow)
         • See `infer` function docs for options
         """
     end
-    @static if preference_inference_error_hint
+    if preference_inference_error_hint && !disable_inference_error_hint
         @error """
         We encountered an error during inference, here are some helpful resources to get you back on track:
 
@@ -399,8 +396,15 @@ function inference_process_error(error, rethrow)
         - The complete error message and stack trace
         - (Optional) If you shared your session data, please include the session ID in the issue
 
-        Use `RxInfer.disable_inference_error_hint!()` to disable this message. 
+        Use `RxInfer.disable_inference_error_hint!()` to disable this message permanently (requires Julia session restart).
+        Use `infer(..., disable_inference_error_hint = true) to disable this message for specific inference run.`
         """
+        # This normally is turned off, but is enabled on CI in order to catch 
+        # bad examples or failing tests that print this error
+        # The tests that fail intentionally must use the `disable_inference_error_hint` option set to true
+        if get(ENV, "THROW_ON_INFERENCE_ERROR_HINT", "false") === "true"
+            error("Inference error hint has been displayed.")
+        end
     end
     if rethrow
         Base.rethrow(error)
@@ -566,7 +570,8 @@ Check the official documentation for more information about some of the argument
 - `free_energy = false`: compute the Bethe free energy, optional, defaults to false. Can be passed a floating point type, e.g. `Float64`, for better efficiency, but disables automatic differentiation packages, such as ForwardDiff.jl
 - `free_energy_diagnostics = DefaultObjectiveDiagnosticChecks`: free energy diagnostic checks, optional, by default checks for possible `NaN`s and `Inf`s. `nothing` disables all checks.
 - `showprogress = false`: show progress module, optional, defaults to false (exclusive for batch inference)
-- `catch_exception`  specifies whether exceptions during the inference procedure should be caught, optional, defaults to false (exclusive for batch inference)
+- `catch_exception`: specifies whether exceptions during the inference procedure should be caught, optional, defaults to false (exclusive for batch inference)
+- `disable_inference_error_hint`: specifies whether the error hint should be printed whether inference error occurs.
 - `callbacks = nothing`: inference cycle callbacks, optional. See [Early stopping](@ref manual-inference-early-stopping) for an opt-in callback example.
 - `addons = nothing`: inject and send extra computation information along messages
 - `postprocess = DefaultPostprocess()`: inference results postprocessing step, optional
@@ -607,6 +612,7 @@ function infer(;
     allow_node_contraction = false,
     showprogress = false, # batch specific
     catch_exception = false, # batch specific
+    disable_inference_error_hint = false, # batch specific
     callbacks = nothing,
     addons = nothing,
     postprocess = DefaultPostprocess(),
@@ -696,7 +702,8 @@ function infer(;
                 addons = addons,
                 postprocess = postprocess,
                 warn = warn,
-                catch_exception = catch_exception
+                catch_exception = catch_exception,
+                disable_inference_error_hint = disable_inference_error_hint
             )
         else
             check_available_callbacks(

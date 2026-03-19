@@ -52,11 +52,13 @@ end
 @testitem "Postprocessing should not be invoked when error occurs immediately" begin
 
     # We are going to throw in the rule
-    struct MyCustomNode end
+    struct MyCustomNodeForPostprocessingTest end
 
-    @node MyCustomNode Stochastic [out, in]
+    @node MyCustomNodeForPostprocessingTest Stochastic [out, in]
 
-    @rule MyCustomNode(:out, Marginalisation) (q_in::Any,) = begin
+    @rule MyCustomNodeForPostprocessingTest(:out, Marginalisation) (
+        q_in::Any,
+    ) = begin
         throw(ErrorException("This is a test error"))
     end
 
@@ -67,7 +69,7 @@ end
     )
 
     @model function my_model_with_error(y)
-        θ ~ MyCustomNode(1)
+        θ ~ MyCustomNodeForPostprocessingTest(1)
         y ~ Bernoulli(θ)
     end
 
@@ -75,7 +77,8 @@ end
         model = my_model_with_error(),
         data = (y = 1.0,),
         postprocess = CustomPostprocessShouldNotBeInvoked(),
-        catch_exception = true
+        catch_exception = true,
+        disable_inference_error_hint = true
     )
 
     @test result.error[1] isa ErrorException

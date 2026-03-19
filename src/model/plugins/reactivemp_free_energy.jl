@@ -162,11 +162,11 @@ function apply_diagnostic_check(
     ::ObjectiveDiagnosticCheckNaNs, node::GraphPPL.FactorNodeProperties, stream
 )
     error_fn = let node = node
-        (_) -> """
-                                 Failed to compute node bound free energy component. The result is `NaN`. 
-                                 Use `objective_diagnostics` keyword argument in the `inference` function to suppress this error.
-                                 $(node)
-                             """
+        (_) -> lazy"""
+        Failed to compute node bound free energy component. The result is `NaN`. 
+        Use `objective_diagnostics` keyword argument in the `inference` function to suppress this error.
+        $(node)
+        """
     end
     return stream |> error_if(check_isnan, error_fn)
 end
@@ -177,10 +177,10 @@ function apply_diagnostic_check(
     stream
 )
     error_fn = let variable = variable
-        (_) -> """
-                                 Failed to compute variable bound free energy component for `$(variable)` variable. The result is `NaN`. 
-                                 Use `objective_diagnostics` keyword argument in the `inference` function to suppress this error.
-                             """
+        (_) -> lazy"""
+        Failed to compute variable bound free energy component for `$(variable)` variable. The result is `NaN`. 
+        Use `objective_diagnostics` keyword argument in the `inference` function to suppress this error.
+        """
     end
     return stream |> error_if(check_isnan, error_fn)
 end
@@ -189,11 +189,11 @@ function apply_diagnostic_check(
     ::ObjectiveDiagnosticCheckInfs, node::GraphPPL.FactorNodeProperties, stream
 )
     error_fn = let node = node
-        (_) -> """
-                                 Failed to compute node bound free energy component. The result is `Inf`. 
-                                 Use `diagnostic_checks` field in `BetheFreeEnergy` constructor or `free_energy_diagnostics` keyword argument in the `inference` function to suppress this error.
-                                 $(node)
-                             """
+        (_) -> lazy"""
+        Failed to compute node bound free energy component. The result is `Inf`. 
+        Use `diagnostic_checks` field in `BetheFreeEnergy` constructor or `free_energy_diagnostics` keyword argument in the `inference` function to suppress this error.
+        $(node)
+        """
     end
     return stream |> error_if(check_isinf, error_fn)
 end
@@ -204,10 +204,10 @@ function apply_diagnostic_check(
     stream
 )
     error_fn = let variable = variable
-        (_) -> """
-                                 Failed to compute variable bound free energy component for `$(variable)` variable. The result is `Inf`. 
-                                 Use `diagnostic_checks` field in `BetheFreeEnergy` constructor or `free_energy_diagnostics` keyword argument in the `inference` function to suppress this error.
-                             """
+        (_) -> lazy"""
+        Failed to compute variable bound free energy component for `$(variable)` variable. The result is `Inf`. 
+        Use `diagnostic_checks` field in `BetheFreeEnergy` constructor or `free_energy_diagnostics` keyword argument in the `inference` function to suppress this error.
+        """
     end
     return stream |> error_if(check_isinf, error_fn)
 end
