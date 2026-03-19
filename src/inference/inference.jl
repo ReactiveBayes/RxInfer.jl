@@ -75,10 +75,17 @@ Rocket.on_complete!(updated::MarginalHasBeenUpdated)       = begin end
 
 # This creates a `tap` operator that will set the `updated` flag to true. 
 # Later on we check flags and `unset!` them after the `update!` procedure
-ensure_update(model::ProbabilisticModel, callbacks, variable_name::Symbol, updated::MarginalHasBeenUpdated) =
+ensure_update(
+    model::ProbabilisticModel,
+    callbacks,
+    variable_name::Symbol,
+    updated::MarginalHasBeenUpdated
+) =
     tap() do update
         set_updated!(updated)
-        invoke_callback(callbacks, Val(:on_marginal_update), variable_name, update)
+        invoke_callback(
+            callbacks, Val(:on_marginal_update), variable_name, update
+        )
     end
 
 function check_and_reset_updated!(updates)

@@ -2290,11 +2290,17 @@ end
     end
 
     RxInfer.invoke_callback(handler::MyCallbackHandler, _, args...) = nothing
-    RxInfer.invoke_callback(handler::MyCallbackHandler, ::Val{:on_marginal_update}, model, name, update) = push!(handler.result, (name, update))
+    RxInfer.invoke_callback(handler::MyCallbackHandler, ::Val{:on_marginal_update}, model, name, update) = push!(
+        handler.result, (name, update)
+    )
 
     handler = MyCallbackHandler([])
 
-    result = infer(model = simple_model_for_result_extras(), data = (y = 1,), callbacks = handler)
+    result = infer(
+        model = simple_model_for_result_extras(),
+        data = (y = 1,),
+        callbacks = handler
+    )
 
     @test result.extras[:my_callback_handler_result] === handler.result
     @test result.extras[:my_callback_handler_result][1] === Beta(3, 3)
@@ -2309,17 +2315,28 @@ end
     events = []
 
     callbacks = (
-        before_message_rule_call = (args...) -> push!(events, (event = :before_message_rule_call, args = args)),
-        after_message_rule_call = (args...) -> push!(events, (event = :after_message_rule_call, args = args))
+        before_message_rule_call = (args...) ->
+            push!(events, (event = :before_message_rule_call, args = args)),
+        after_message_rule_call = (args...) ->
+            push!(events, (event = :after_message_rule_call, args = args))
     )
 
-    result = infer(model = simple_model_for_reactivemp_callbacks(), data = (y = 1,), callbacks = callbacks, iterations = 2)
+    result = infer(
+        model = simple_model_for_reactivemp_callbacks(),
+        data = (y = 1,),
+        callbacks = callbacks,
+        iterations = 2
+    )
 
     @test result.posteriors[:t] == [Beta(3, 3), Beta(3, 3)]
     @test length(events) != 0
 
-    before_message_rule_call_events = filter(e -> e.event === :before_message_rule_call, events)
-    after_message_rule_call_events = filter(e -> e.event === :after_message_rule_call, events)
+    before_message_rule_call_events = filter(
+        e -> e.event === :before_message_rule_call, events
+    )
+    after_message_rule_call_events = filter(
+        e -> e.event === :after_message_rule_call, events
+    )
 
     # The model is simple enough, the prior message from `Beta` shouldn't trigger the 
     # re-computation on the second iteration, but only computed once on the first iteration

@@ -198,7 +198,9 @@ function start(engine::RxInferenceEngine{T}) where {T}
         _enabled_events = engine.enabled_events
         _events         = engine.events
 
-        inference_fire_event(Val(:before_start), Val(_enabled_events), _events, engine)
+        inference_fire_event(
+            Val(:before_start), Val(_enabled_events), _events, engine
+        )
 
         _eventexecutor = RxInferenceEventExecutor(T, engine)
         _tickscheduler = engine.tickscheduler
@@ -231,7 +233,9 @@ function start(engine::RxInferenceEngine{T}) where {T}
         # After all preparations we finaly can `subscribe!` on the `datastream`
         engine.mainsubscription = subscribe!(engine.datastream, _eventexecutor)
 
-        inference_fire_event(Val(:after_start), Val(_enabled_events), _events, engine)
+        inference_fire_event(
+            Val(:after_start), Val(_enabled_events), _events, engine
+        )
     end
 
     return nothing
@@ -260,7 +264,9 @@ function stop(engine::RxInferenceEngine)
         _enabled_events = engine.enabled_events
         _events         = engine.events
 
-        inference_fire_event(Val(:before_stop), Val(_enabled_events), _events, engine)
+        inference_fire_event(
+            Val(:before_stop), Val(_enabled_events), _events, engine
+        )
 
         unsubscribe!(engine.fe_subscription)
         unsubscribe!(engine.historysubscriptions)
@@ -277,7 +283,9 @@ function stop(engine::RxInferenceEngine)
 
         engine.is_running = false
 
-        inference_fire_event(Val(:after_stop), Val(_enabled_events), _events, engine)
+        inference_fire_event(
+            Val(:after_stop), Val(_enabled_events), _events, engine
+        )
     end
 
     return nothing
@@ -326,7 +334,9 @@ function Rocket.on_next!(
         _enabled_events = executor.engine.enabled_events
         _events         = executor.engine.events
 
-        inference_fire_event(Val(:on_new_data), Val(_enabled_events), _events, _model, event)
+        inference_fire_event(
+            Val(:on_new_data), Val(_enabled_events), _events, _model, event
+        )
 
         # Before we start our iterations we 'prefetch' recent values for autoupdates
         # This is important, because the values linked to the `autoupdate` may (and most likely will) 
@@ -337,23 +347,63 @@ function Rocket.on_next!(
         # This loop correspond to the different VMP iterations
         # Here `_iterations` can be `Ref` too, so we use `[]`. Should not affect integers
         for iteration in 1:_iterations[]
-            inference_fire_event(Val(:before_iteration), Val(_enabled_events), _events, _model, iteration)
+            inference_fire_event(
+                Val(:before_iteration),
+                Val(_enabled_events),
+                _events,
+                _model,
+                iteration
+            )
 
             # At first we update all our priors (auto updates) with the fixed values from the `redirectupdate` field
-            inference_fire_event(Val(:before_auto_update), Val(_enabled_events), _events, _model, iteration, _autoupdates)
+            inference_fire_event(
+                Val(:before_auto_update),
+                Val(_enabled_events),
+                _events,
+                _model,
+                iteration,
+                _autoupdates
+            )
             run_autoupdate!(autoupdate_specs, autoupdate_fetched)
-            inference_fire_event(Val(:after_auto_update), Val(_enabled_events), _events, _model, iteration, _autoupdates)
+            inference_fire_event(
+                Val(:after_auto_update),
+                Val(_enabled_events),
+                _events,
+                _model,
+                iteration,
+                _autoupdates
+            )
 
             # At second we pass our observations
-            inference_fire_event(Val(:before_data_update), Val(_enabled_events), _events, _model, iteration, event)
+            inference_fire_event(
+                Val(:before_data_update),
+                Val(_enabled_events),
+                _events,
+                _model,
+                iteration,
+                event
+            )
             for (datavar, value) in zip(_datavars, values(event))
                 update!(datavar, value)
             end
-            inference_fire_event(Val(:after_data_update), Val(_enabled_events), _events, _model, iteration, event)
+            inference_fire_event(
+                Val(:after_data_update),
+                Val(_enabled_events),
+                _events,
+                _model,
+                iteration,
+                event
+            )
 
             check_and_reset_updated!(_updateflags)
 
-            inference_fire_event(Val(:after_iteration), Val(_enabled_events), _events, _model, iteration)
+            inference_fire_event(
+                Val(:after_iteration),
+                Val(_enabled_events),
+                _events,
+                _model,
+                iteration
+            )
         end
 
         # `release!` on `fe_actor` ensures that free energy sumed up between iterations correctly
@@ -362,20 +412,26 @@ function Rocket.on_next!(
         end
 
         if !isnothing(_history) && !isnothing(_historyactors)
-            inference_fire_event(Val(:before_history_save), Val(_enabled_events), _events, _model)
+            inference_fire_event(
+                Val(:before_history_save), Val(_enabled_events), _events, _model
+            )
             for (name, actor) in pairs(_historyactors)
                 push!(
                     _history[name],
                     inference_postprocess(_postprocess, getvalues(actor))
                 )
             end
-            inference_fire_event(Val(:after_history_save), Val(_enabled_events), _events, _model)
+            inference_fire_event(
+                Val(:after_history_save), Val(_enabled_events), _events, _model
+            )
         end
 
         # On this `release!` call we update our priors for the next step
         release!(_tickscheduler)
 
-        inference_fire_event(Val(:on_tick), Val(_enabled_events), _events, _model)
+        inference_fire_event(
+            Val(:on_tick), Val(_enabled_events), _events, _model
+        )
     end
 end
 
@@ -388,7 +444,9 @@ function Rocket.on_error!(executor::RxInferenceEventExecutor, err)
     _engine.is_errored = true
     _engine.error      = err
 
-    inference_fire_event(Val(:on_error), Val(_enabled_events), _events, _model, err)
+    inference_fire_event(
+        Val(:on_error), Val(_enabled_events), _events, _model, err
+    )
 
     inference_process_error(err)
 end
@@ -401,7 +459,9 @@ function Rocket.on_complete!(executor::RxInferenceEventExecutor)
 
     _engine.is_completed = true
 
-    inference_fire_event(Val(:on_complete), Val(_enabled_events), _events, _model)
+    inference_fire_event(
+        Val(:on_complete), Val(_enabled_events), _events, _model
+    )
 
     return nothing
 end
@@ -463,7 +523,9 @@ Base.show(io::IO, ::RxInferenceEvent{T}) where {T} = print(
 Base.iterate(event::RxInferenceEvent)        = iterate(event.data)
 Base.iterate(event::RxInferenceEvent, state) = iterate(event.data, state)
 
-function inference_fire_event(::Val{Event}, ::Val{EnabledEvents}, events, args...) where {Event, EnabledEvents}
+function inference_fire_event(
+    ::Val{Event}, ::Val{EnabledEvents}, events, args...
+) where {Event, EnabledEvents}
     # Here `E` must be a tuple of symbols
     if Event ∈ EnabledEvents
         next!(events, RxInferenceEvent(Val(Event), args))

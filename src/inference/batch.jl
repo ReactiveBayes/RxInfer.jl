@@ -314,12 +314,20 @@ function batch_inference(;
 
     try
         subscriptions_rv = Dict(
-            variable => subscribe!(obtain_marginal(vardict[variable]) |> ensure_update(fmodel, callbacks, variable, updates[variable]), actor) for
-            (variable, actor) in pairs(actors_rv)
+            variable => subscribe!(
+                obtain_marginal(vardict[variable]) |> ensure_update(
+                    fmodel, callbacks, variable, updates[variable]
+                ),
+                actor
+            ) for (variable, actor) in pairs(actors_rv)
         )
         subscriptions_pr = Dict(
-            variable => subscribe!(obtain_prediction(vardict[variable]) |> ensure_update(fmodel, callbacks, variable, updates[variable]), actor) for
-            (variable, actor) in pairs(actors_pr)
+            variable => subscribe!(
+                obtain_prediction(vardict[variable]) |> ensure_update(
+                    fmodel, callbacks, variable, updates[variable]
+                ),
+                actor
+            ) for (variable, actor) in pairs(actors_pr)
         )
 
         if !isempty(actors_pr) && is_free_energy
@@ -369,7 +377,14 @@ function batch_inference(;
         ))
 
         for iteration in 1:_iterations
-            if something(ensure_bool_or_nothing(invoke_callback(callbacks, Val(:before_iteration), fmodel, iteration)), false)::Bool
+            if something(
+                ensure_bool_or_nothing(
+                    invoke_callback(
+                        callbacks, Val(:before_iteration), fmodel, iteration
+                    )
+                ),
+                false
+            )::Bool
                 break
             end
             invoke_callback(callbacks, Val(:before_data_update), fmodel, data)
@@ -388,7 +403,14 @@ function batch_inference(;
 
             executed_iterations += 1
 
-            if something(ensure_bool_or_nothing(invoke_callback(callbacks, Val(:after_iteration), fmodel, iteration)), false)::Bool
+            if something(
+                ensure_bool_or_nothing(
+                    invoke_callback(
+                        callbacks, Val(:after_iteration), fmodel, iteration
+                    )
+                ),
+                false
+            )::Bool
                 break
             end
         end

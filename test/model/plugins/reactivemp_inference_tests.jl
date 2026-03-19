@@ -60,6 +60,10 @@ end
 
     bad_nt = (blahblah = 1,)
 
-    @test_throws "Unknown model inference options: blahblah" convert(ReactiveMPInferenceOptions, bad_nt)
-    @test_throws "Available options are" convert(ReactiveMPInferenceOptions, bad_nt)
+    @test_throws "Unknown model inference options: blahblah" convert(
+        ReactiveMPInferenceOptions, bad_nt
+    )
+    @test_throws "Available options are" convert(
+        ReactiveMPInferenceOptions, bad_nt
+    )
 end

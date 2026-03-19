@@ -45,24 +45,67 @@ struct ReactiveMPInferenceOptions{S, A, R, E}
     callbacks::E
 end
 
-ReactiveMPInferenceOptions(scheduler, addons) = ReactiveMPInferenceOptions(scheduler, addons, true, false, nothing, nothing)
-ReactiveMPInferenceOptions(scheduler, addons, warn) = ReactiveMPInferenceOptions(scheduler, addons, warn, false, nothing, nothing)
-ReactiveMPInferenceOptions(scheduler, addons, warn, force_marginal_computation) = ReactiveMPInferenceOptions(scheduler, addons, warn, force_marginal_computation, nothing, nothing)
-ReactiveMPInferenceOptions(scheduler, addons, warn, force_marginal_computation, rulefallback) =
-    ReactiveMPInferenceOptions(scheduler, addons, warn, force_marginal_computation, rulefallback, nothing)
+ReactiveMPInferenceOptions(scheduler, addons) = ReactiveMPInferenceOptions(
+    scheduler, addons, true, false, nothing, nothing
+)
+ReactiveMPInferenceOptions(scheduler, addons, warn) = ReactiveMPInferenceOptions(
+    scheduler, addons, warn, false, nothing, nothing
+)
+ReactiveMPInferenceOptions(scheduler, addons, warn, force_marginal_computation) = ReactiveMPInferenceOptions(
+    scheduler, addons, warn, force_marginal_computation, nothing, nothing
+)
+ReactiveMPInferenceOptions(scheduler, addons, warn, force_marginal_computation, rulefallback) = ReactiveMPInferenceOptions(
+    scheduler, addons, warn, force_marginal_computation, rulefallback, nothing
+)
 
-setscheduler(options::ReactiveMPInferenceOptions, scheduler) =
-    ReactiveMPInferenceOptions(scheduler, options.addons, options.warn, options.force_marginal_computation, options.rulefallback, options.callbacks)
-setaddons(options::ReactiveMPInferenceOptions, addons) =
-    ReactiveMPInferenceOptions(options.scheduler, addons, options.warn, options.force_marginal_computation, options.rulefallback, options.callbacks)
-setwarn(options::ReactiveMPInferenceOptions, warn) =
-    ReactiveMPInferenceOptions(options.scheduler, options.addons, warn, options.force_marginal_computation, options.rulefallback, options.callbacks)
-setforce_marginal_computation(options::ReactiveMPInferenceOptions, force_marginal_computation) =
-    ReactiveMPInferenceOptions(options.scheduler, options.addons, options.warn, force_marginal_computation, options.rulefallback, options.callbacks)
-setrulefallback(options::ReactiveMPInferenceOptions, rulefallback) =
-    ReactiveMPInferenceOptions(options.scheduler, options.addons, options.warn, options.force_marginal_computation, rulefallback, options.callbacks)
-setcallbacks(options::ReactiveMPInferenceOptions, callbacks) =
-    ReactiveMPInferenceOptions(options.scheduler, options.addons, options.warn, options.force_marginal_computation, options.rulefallback, callbacks)
+setscheduler(options::ReactiveMPInferenceOptions, scheduler) = ReactiveMPInferenceOptions(
+    scheduler,
+    options.addons,
+    options.warn,
+    options.force_marginal_computation,
+    options.rulefallback,
+    options.callbacks
+)
+setaddons(options::ReactiveMPInferenceOptions, addons) = ReactiveMPInferenceOptions(
+    options.scheduler,
+    addons,
+    options.warn,
+    options.force_marginal_computation,
+    options.rulefallback,
+    options.callbacks
+)
+setwarn(options::ReactiveMPInferenceOptions, warn) = ReactiveMPInferenceOptions(
+    options.scheduler,
+    options.addons,
+    warn,
+    options.force_marginal_computation,
+    options.rulefallback,
+    options.callbacks
+)
+setforce_marginal_computation(options::ReactiveMPInferenceOptions, force_marginal_computation) = ReactiveMPInferenceOptions(
+    options.scheduler,
+    options.addons,
+    options.warn,
+    force_marginal_computation,
+    options.rulefallback,
+    options.callbacks
+)
+setrulefallback(options::ReactiveMPInferenceOptions, rulefallback) = ReactiveMPInferenceOptions(
+    options.scheduler,
+    options.addons,
+    options.warn,
+    options.force_marginal_computation,
+    rulefallback,
+    options.callbacks
+)
+setcallbacks(options::ReactiveMPInferenceOptions, callbacks) = ReactiveMPInferenceOptions(
+    options.scheduler,
+    options.addons,
+    options.warn,
+    options.force_marginal_computation,
+    options.rulefallback,
+    callbacks
+)
 
 import Base: convert
 
@@ -70,17 +113,34 @@ function Base.convert(::Type{ReactiveMPInferenceOptions}, options::Nothing)
     return convert(ReactiveMPInferenceOptions, (;))
 end
 
-function Base.convert(::Type{ReactiveMPInferenceOptions}, options::NamedTuple{keys}) where {keys}
-    available_options = (:scheduler, :limit_stack_depth, :addons, :warn, :rulefallback, :force_marginal_computation, :callbacks)
+function Base.convert(
+    ::Type{ReactiveMPInferenceOptions}, options::NamedTuple{keys}
+) where {keys}
+    available_options = (
+        :scheduler,
+        :limit_stack_depth,
+        :addons,
+        :warn,
+        :rulefallback,
+        :force_marginal_computation,
+        :callbacks
+    )
 
     for key in keys
-        key ∈ available_options || error("Unknown model inference options: $(key). Available options are: $(available_options). ")
+        key ∈ available_options || error(
+            "Unknown model inference options: $(key). Available options are: $(available_options). "
+        )
     end
 
     warn = haskey(options, :warn) ? options.warn : true
     addons = haskey(options, :addons) ? options.addons : nothing
-    rulefallback = haskey(options, :rulefallback) ? options.rulefallback : nothing
-    force_marginal_computation = haskey(options, :force_marginal_computation) ? options.force_marginal_computation : false
+    rulefallback =
+        haskey(options, :rulefallback) ? options.rulefallback : nothing
+    force_marginal_computation = if haskey(options, :force_marginal_computation)
+        options.force_marginal_computation
+    else
+        false
+    end
     callbacks = haskey(options, :callbacks) ? options.callbacks : nothing
 
     if warn &&
@@ -97,7 +157,14 @@ function Base.convert(::Type{ReactiveMPInferenceOptions}, options::NamedTuple{ke
         nothing
     end
 
-    return ReactiveMPInferenceOptions(scheduler, addons, warn, force_marginal_computation, rulefallback, callbacks)
+    return ReactiveMPInferenceOptions(
+        scheduler,
+        addons,
+        warn,
+        force_marginal_computation,
+        rulefallback,
+        callbacks
+    )
 end
 
 Rocket.getscheduler(options::ReactiveMPInferenceOptions) = something(
@@ -106,11 +173,18 @@ Rocket.getscheduler(options::ReactiveMPInferenceOptions) = something(
 
 import ReactiveMP: getaddons, getrulefallback, getcallbacks
 
-ReactiveMP.getaddons(options::ReactiveMPInferenceOptions) = ReactiveMP.getaddons(options, options.addons)
-ReactiveMP.getaddons(options::ReactiveMPInferenceOptions, addons::ReactiveMP.AbstractAddon) = (addons,) # ReactiveMP expects addons to be of type tuple
-ReactiveMP.getaddons(options::ReactiveMPInferenceOptions, addons::Nothing) = addons                     # Do nothing if addons is `nothing`
-ReactiveMP.getaddons(options::ReactiveMPInferenceOptions, addons::Tuple) = addons                       # Do nothing if addons is a `Tuple`
-ReactiveMP.getrulefallback(options::ReactiveMPInferenceOptions) = options.rulefallback
+ReactiveMP.getaddons(options::ReactiveMPInferenceOptions) = ReactiveMP.getaddons(
+    options, options.addons
+)
+ReactiveMP.getaddons(options::ReactiveMPInferenceOptions, addons::ReactiveMP.AbstractAddon) = (
+    addons,
+) # ReactiveMP expects addons to be of type tuple
+ReactiveMP.getaddons(options::ReactiveMPInferenceOptions, addons::Nothing) =
+    addons                     # Do nothing if addons is `nothing`
+ReactiveMP.getaddons(options::ReactiveMPInferenceOptions, addons::Tuple) =
+    addons                       # Do nothing if addons is a `Tuple`
+ReactiveMP.getrulefallback(options::ReactiveMPInferenceOptions) =
+    options.rulefallback
 ReactiveMP.getcallbacks(options::ReactiveMPInferenceOptions) = options.callbacks
 
 # Get the force_marginal_computation setting
@@ -270,8 +344,16 @@ function activate_rmp_variable!(
     if is_random(nodeproperties)
         # Fetch "fold-strategy" for messages and marginals. The fold-strategy usually defines the order of messages multiplication (left-to-right)
         # But can use some custom logic for product, e.g. parallel products
-        messages_fold_strategy = getextra(nodedata, :messages_fold_strategy, ReactiveMP.MessagesProductFromLeftToRight())
-        marginal_fold_strategy = getextra(nodedata, :marginal_fold_strategy, ReactiveMP.MessagesProductFromLeftToRight())
+        messages_fold_strategy = getextra(
+            nodedata,
+            :messages_fold_strategy,
+            ReactiveMP.MessagesProductFromLeftToRight()
+        )
+        marginal_fold_strategy = getextra(
+            nodedata,
+            :marginal_fold_strategy,
+            ReactiveMP.MessagesProductFromLeftToRight()
+        )
         # Fetch "form-constraint" for messages and marginals. The form-constraint usually defines the form of the resulting distribution
         # By default it is `UnspecifiedFormConstraint` which means that the form of the resulting distribution is not specified in advance
         # and follows from the computation, but users may override it with other form constraints, e.g. `PointMassFormConstraint`, which
@@ -306,12 +388,28 @@ function activate_rmp_variable!(
             )
         # Fetch "prod-constraint" for messages and marginals. The prod-constraint usually defines the constraints for a single product of messages
         # It can for example preserve a specific parametrization of distribution, see BayesBase.prod documentation for more details on that
-        messages_prod_constraint = getextra(nodedata, :messages_prod_constraint, ReactiveMP.default_prod_constraint(messages_form_constraint))
-        marginal_prod_constraint = getextra(nodedata, :marginal_prod_constraint, ReactiveMP.default_prod_constraint(marginal_form_constraint))
+        messages_prod_constraint = getextra(
+            nodedata,
+            :messages_prod_constraint,
+            ReactiveMP.default_prod_constraint(messages_form_constraint)
+        )
+        marginal_prod_constraint = getextra(
+            nodedata,
+            :marginal_prod_constraint,
+            ReactiveMP.default_prod_constraint(marginal_form_constraint)
+        )
         # Fetch "form-check-strategy" for messages and marginals. The form-check-strategy usually defines the strategy for checking the form of the resulting distribution
         # The functional form constraint can be applied either after all products are computed or after each product
-        messages_form_constraint_check_strategy = getextra(nodedata, :messages_form_constraint_check_strategy, ReactiveMP.default_form_check_strategy(messages_form_constraint))
-        marginal_form_constraint_check_strategy = getextra(nodedata, :marginal_form_constraint_check_strategy, ReactiveMP.default_form_check_strategy(marginal_form_constraint))
+        messages_form_constraint_check_strategy = getextra(
+            nodedata,
+            :messages_form_constraint_check_strategy,
+            ReactiveMP.default_form_check_strategy(messages_form_constraint)
+        )
+        marginal_form_constraint_check_strategy = getextra(
+            nodedata,
+            :marginal_form_constraint_check_strategy,
+            ReactiveMP.default_form_check_strategy(marginal_form_constraint)
+        )
         # Create the activation options for the random variable which consists of the messages and marginal product functions and a scheduler
         prod_context_for_messages_computation = ReactiveMP.MessageProductContext(
             fold_strategy = messages_fold_strategy,
@@ -325,8 +423,15 @@ function activate_rmp_variable!(
             form_constraint = marginal_form_constraint,
             form_constraint_check_strategy = marginal_form_constraint_check_strategy
         )
-        options = ReactiveMP.RandomVariableActivationOptions(Rocket.getscheduler(getoptions(plugin)), prod_context_for_messages_computation, prod_context_for_marginal_computation)
-        return ReactiveMP.activate!(getextra(nodedata, ReactiveMPExtraVariableKey)::RandomVariable, options)
+        options = ReactiveMP.RandomVariableActivationOptions(
+            Rocket.getscheduler(getoptions(plugin)),
+            prod_context_for_messages_computation,
+            prod_context_for_marginal_computation
+        )
+        return ReactiveMP.activate!(
+            getextra(nodedata, ReactiveMPExtraVariableKey)::RandomVariable,
+            options
+        )
     elseif is_data(nodeproperties)
         properties = getproperties(nodedata)::GraphPPL.VariableNodeProperties
         # The datavar can be linked to another variable via a `transform` function, which should be stored in the `value` 
@@ -394,7 +499,15 @@ function activate_rmp_factornode!(
     rulefallback = getrulefallback(getoptions(plugin))
     callbacks = getcallbacks(getoptions(plugin))
 
-    options = ReactiveMP.FactorNodeActivationOptions(metadata, dependencies, pipeline, addons, scheduler, rulefallback, callbacks)
+    options = ReactiveMP.FactorNodeActivationOptions(
+        metadata,
+        dependencies,
+        pipeline,
+        addons,
+        scheduler,
+        rulefallback,
+        callbacks
+    )
 
     return ReactiveMP.activate!(
         getextra(nodedata, ReactiveMPExtraFactorNodeKey), options
