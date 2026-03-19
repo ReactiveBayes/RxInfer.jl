@@ -487,7 +487,7 @@ end
             free_energy = true,
             callbacks = (
                 # halt before iteration 5, but the logic could be more complex of course
-                before_iteration = (model, iteration) -> iteration === 5,
+                before_iteration = (model, iteration) -> iteration === 5 ? StopIteration() : nothing,
             )
         )
 
@@ -507,7 +507,7 @@ end
             free_energy = true,
             callbacks = (
                 # halt after iteration 5, but the logic could be more complex of course
-                after_iteration = (model, iteration) -> iteration === 5,
+                after_iteration = (model, iteration) -> iteration === 5 ? StopIteration() : nothing,
             )
         )
 
