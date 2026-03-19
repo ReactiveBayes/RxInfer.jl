@@ -442,7 +442,7 @@ Nice, the history of the estimated posteriors aligns well with the real (hidden)
 
 ## [Callbacks](@id manual-online-inference-callbacks)
 
-The [`RxInferenceEngine`](@ref) has its own lifecycle. The callbacks differ a little bit from [Using callbacks with Static Inference](@ref manual-static-inference-callbacks). Callbacks can be a `NamedTuple`, `Dict`, or any custom structure that implements `ReactiveMP.invoke_callback`.
+The [`RxInferenceEngine`](@ref) has its own lifecycle. The callbacks differ a little bit from [Using callbacks with Static Inference](@ref manual-static-inference-callbacks). Callbacks can be a `NamedTuple`, `Dict`, or any custom structure that implements `ReactiveMP.invoke_callback`. For a comprehensive overview of the callbacks system, including custom callback structures and model metadata, see the [Callbacks](@ref manual-inference-callbacks) section.
 Here are available callbacks that can be used together with the streaming inference:
 ```@eval
 using RxInfer, Test, Markdown

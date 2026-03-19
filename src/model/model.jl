@@ -31,10 +31,19 @@ end
 get_data(x) = x
 get_data(x::UnfactorizedData) = x.data
 
-"A structure that holds the factor graph representation of a probabilistic model."
+"""
+A structure that holds the factor graph representation of a probabilistic model.
+
+# Fields
+- `model::M`: The underlying factor graph model.
+- `metadata::Dict{Any, Any}`: A dictionary for storing arbitrary metadata during inference, e.g. from callbacks.
+"""
 struct ProbabilisticModel{M}
     model::M
+    metadata::Dict{Any, Any}
 end
+
+ProbabilisticModel(model) = ProbabilisticModel(model, Dict{Any, Any}())
 
 "Returns the underlying factor graph model."
 getmodel(model::ProbabilisticModel) = model.model

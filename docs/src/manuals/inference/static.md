@@ -328,7 +328,7 @@ plot(results.free_energy, label = "Bethe Free Energy")
 
 ## [Callbacks](@id manual-static-inference-callbacks)
 
-The [`infer`](@ref) function has its own lifecycle, consisting of multiple steps. A user is free to inject some extra logic during the inference procedure, e.g. for [debugging purposes](@ref user-guide-debugging-callbacks) or [performance analysis](@ref user-guide-debugging-benchmark-callbacks). By supplying callbacks, users can inject custom logic on specific moments during the inference procedure. Callbacks can be a `NamedTuple`, `Dict`, or any custom structure that implements `ReactiveMP.invoke_callback`. Here are available callbacks that can be used together with the static datasets:
+The [`infer`](@ref) function has its own lifecycle, consisting of multiple steps. A user is free to inject some extra logic during the inference procedure, e.g. for [debugging purposes](@ref user-guide-debugging-callbacks) or [performance analysis](@ref manual-inference-benchmark-callbacks). By supplying callbacks, users can inject custom logic on specific moments during the inference procedure. Callbacks can be a `NamedTuple`, `Dict`, or any custom structure that implements `ReactiveMP.invoke_callback`. For a comprehensive overview of the callbacks system, including custom callback structures and model metadata, see the [Callbacks](@ref manual-inference-callbacks) section. Here are available callbacks that can be used together with the static datasets:
 ```@eval
 using RxInfer, Test, Markdown
 # Update the documentation below if this test does not pass

@@ -84,7 +84,7 @@ ensure_update(
     tap() do update
         set_updated!(updated)
         invoke_callback(
-            callbacks, Val(:on_marginal_update), variable_name, update
+            callbacks, Val(:on_marginal_update), model, variable_name, update
         )
     end
 
@@ -569,7 +569,7 @@ Check the official documentation for more information about some of the argument
 - `free_energy_diagnostics = DefaultObjectiveDiagnosticChecks`: free energy diagnostic checks, optional, by default checks for possible `NaN`s and `Inf`s. `nothing` disables all checks.
 - `showprogress = false`: show progress module, optional, defaults to false (exclusive for batch inference)
 - `catch_exception`  specifies whether exceptions during the inference procedure should be caught, optional, defaults to false (exclusive for batch inference)
-- `callbacks = nothing`: inference cycle callbacks, optional. Can be a `NamedTuple`, `Dict`, or any custom structure that implements `ReactiveMP.invoke_callback`. See [Early stopping](@ref manual-inference-early-stopping) for an opt-in callback example. Also, see [Static inference callbacks](@ref manual-static-inference-callbacks) and [Online inference callbacks](@ref manual-online-inference-callbacks) sections for more information.
+- `callbacks = nothing`: inference cycle callbacks, optional. Can be a `NamedTuple`, `Dict`, or any custom structure that implements `ReactiveMP.invoke_callback`. See [Callbacks](@ref manual-inference-callbacks) for a comprehensive overview, [Benchmark callbacks](@ref manual-inference-benchmark-callbacks) for performance analysis, and [Early stopping](@ref manual-inference-early-stopping) for an opt-in callback example.
 - `addons = nothing`: inject and send extra computation information along messages
 - `postprocess = DefaultPostprocess()`: inference results postprocessing step, optional
 - `events = nothing`: inference cycle events, optional (exclusive for streamline inference)

@@ -22,6 +22,10 @@ The structure uses circular buffers with a default capacity of $(DEFAULT_BENCHMA
 which helps to limit memory usage in long-running applications. Use `RxInferBenchmarkCallbacks(; capacity = N)` to change the buffer capacity.
 See also [`RxInfer.get_benchmark_stats(callbacks)`](@ref).
 
+After model creation, the benchmark callbacks instance is automatically saved into the model's metadata
+under the `:benchmark` key (i.e., `model.metadata[:benchmark]`), making it accessible from the inference result via
+`result.model.metadata[:benchmark]`.
+
 # Fields
 - `before_model_creation_ts`: CircularBuffer of timestamps before model creation
 - `after_model_creation_ts`: CircularBuffer of timestamps after model creation
@@ -39,12 +43,15 @@ callbacks = RxInferBenchmarkCallbacks()
 
 # Run inference multiple times to gather statistics
 for _ in 1:10
-    infer(
+    result = infer(
         model = my_model(),
         data = my_data,
         callbacks = callbacks
     )
 end
+
+# Access the benchmark callbacks from the inference result
+result.model.metadata[:benchmark] === callbacks # true
 
 # Display the timing statistics (you need to install `PrettyTables.jl` to use `pretty_table` function)
 using PrettyTables
@@ -99,8 +106,9 @@ function ReactiveMP.invoke_callback(
 end
 
 function ReactiveMP.invoke_callback(
-    callbacks::RxInferBenchmarkCallbacks, ::Val{:after_model_creation}, args...
+    callbacks::RxInferBenchmarkCallbacks, ::Val{:after_model_creation}, model, args...
 )
+    model.metadata[:benchmark] = callbacks
     push!(callbacks.after_model_creation_ts, time_ns())
 end
 

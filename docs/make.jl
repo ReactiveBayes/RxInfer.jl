@@ -49,6 +49,8 @@ makedocs(;
                 "Initialization" => "manuals/inference/initialization.md",
                 "Meta specification" => "manuals/inference/meta-specification.md",
                 "Auto-updates" => "manuals/inference/autoupdates.md",
+                "Callbacks" => "manuals/inference/callbacks.md",
+                "Benchmark callbacks" => "manuals/inference/benchmark-callbacks.md",
                 "Early stopping" => "manuals/inference/early-stopping.md",
                 "Deterministic nodes" => "manuals/inference/delta-node.md",
                 "Non-conjugate inference" => "manuals/inference/nonconjugate.md",

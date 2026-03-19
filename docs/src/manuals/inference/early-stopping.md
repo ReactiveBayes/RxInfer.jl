@@ -6,6 +6,7 @@ CurrentModule = RxInfer
 ```
 
 `RxInfer` supports early stopping as an opt-in callback via `StopEarlyIterationStrategy`.
+For a general overview of the callbacks system, see the [Callbacks](@ref manual-inference-callbacks) section.
 
 ## Constructors
 

@@ -118,7 +118,7 @@ vline!([θ_real], label="Real θ", title = "Inference results")
 
 ## [Using `callbacks` in the `infer` function](@id user-guide-debugging-callbacks)
 
-Another way to inspect the inference procedure is to use the `callbacks` or `events` from the [`infer`](@ref) function. Read more about callbacks in the documentation to the [`infer`](@ref) function. Here, we show an application of callbacks to a model containing both scalar and vectorized latent variables. We start with the model specification:
+Another way to inspect the inference procedure is to use the `callbacks` or `events` from the [`infer`](@ref) function. Read more about callbacks in the [Callbacks](@ref manual-inference-callbacks) section. Here, we show an application of callbacks to a model containing both scalar and vectorized latent variables. We start with the model specification:
 
 ```@example debugging-with-callbacks
 using RxInfer
@@ -246,6 +246,9 @@ nothing #hide
 We can see the order of message update events. Note that `ReactiveMP` may decide to compute messages lazily, in which case the actual computation of the value of a message will be deferred until later moment. In this case, `LoggerPipelineStage` will report _DeferredMessage_.
 
 ## [Using `RxInferBenchmarkCallbacks` for Performance Analysis](@id user-guide-debugging-benchmark-callbacks)
+
+!!! tip
+    For comprehensive documentation on `RxInferBenchmarkCallbacks`, including model metadata integration and programmatic access to statistics, see the dedicated [Benchmark callbacks](@ref manual-inference-benchmark-callbacks) page.
 
 `RxInfer` provides a built-in benchmarking callback structure called [`RxInferBenchmarkCallbacks`](@ref) that helps collect timing information during the inference procedure. This structure aggregates timing information across multiple runs, allowing you to track performance statistics (min/max/average/etc.) of your model's creation and inference procedure.
 
