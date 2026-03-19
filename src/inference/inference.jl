@@ -469,12 +469,25 @@ function check_available_callbacks(
     warn, callbacks, ::Val{AvailableCallbacks}
 ) where {AvailableCallbacks}
     if warn && !isnothing(callbacks)
-        for key in keys(callbacks)
-            if warn && key ∉ AvailableCallbacks
-                @warn "Unknown callback specification: $(key). Available callbacks: $(AvailableCallbacks). Set `warn = false` to supress this warning."
-            end
+        _check_available_callback_keys(warn, callbacks, AvailableCallbacks)
+    end
+end
+
+# For NamedTuples and Dicts we can check the keys against the available callbacks
+function _check_available_callback_keys(
+    warn, callbacks::Union{NamedTuple, Dict}, available_callbacks
+)
+    for key in keys(callbacks)
+        if key ∉ available_callbacks
+            @warn "Unknown callback specification: $(key). Available callbacks: $(available_callbacks). Set `warn = false` to supress this warning."
         end
     end
+end
+
+# For arbitrary callback structures (custom structs, etc.) we skip the key check
+# since they use `ReactiveMP.invoke_callback` dispatch instead
+function _check_available_callback_keys(warn, callbacks, available_callbacks)
+    return nothing
 end
 
 function check_available_events(
@@ -556,7 +569,7 @@ Check the official documentation for more information about some of the argument
 - `free_energy_diagnostics = DefaultObjectiveDiagnosticChecks`: free energy diagnostic checks, optional, by default checks for possible `NaN`s and `Inf`s. `nothing` disables all checks.
 - `showprogress = false`: show progress module, optional, defaults to false (exclusive for batch inference)
 - `catch_exception`  specifies whether exceptions during the inference procedure should be caught, optional, defaults to false (exclusive for batch inference)
-- `callbacks = nothing`: inference cycle callbacks, optional. See [Early stopping](@ref manual-inference-early-stopping) for an opt-in callback example. Also, see [Static inference callbacks](@ref manual-static-inference-callbacks) and [Online inference callbacks](@ref manual-online-inference-callbacks) sections for more information.
+- `callbacks = nothing`: inference cycle callbacks, optional. Can be a `NamedTuple`, `Dict`, or any custom structure that implements `ReactiveMP.invoke_callback`. See [Early stopping](@ref manual-inference-early-stopping) for an opt-in callback example. Also, see [Static inference callbacks](@ref manual-static-inference-callbacks) and [Online inference callbacks](@ref manual-online-inference-callbacks) sections for more information.
 - `addons = nothing`: inject and send extra computation information along messages
 - `postprocess = DefaultPostprocess()`: inference results postprocessing step, optional
 - `events = nothing`: inference cycle events, optional (exclusive for streamline inference)
@@ -628,7 +641,6 @@ function infer(;
         )
     end
 
-    infer_check_dicttype(:callbacks, callbacks)
     infer_check_dicttype(:data, data)
 
     return with_session(session, :inference) do invoke

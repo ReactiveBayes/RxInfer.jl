@@ -856,6 +856,16 @@ function available_callbacks(::typeof(streaming_inference))
         :before_model_creation,
         :after_model_creation,
         :before_autostart,
-        :after_autostart
+        :after_autostart,
+        :before_message_rule_call,
+        :after_message_rule_call,
+        :before_product_of_two_messages,
+        :after_product_of_two_messages,
+        :before_product_of_messages,
+        :after_product_of_messages,
+        :before_form_constraint_applied,
+        :after_form_constraint_applied,
+        :before_marginal_computation,
+        :after_marginal_computation
     ))
 end

@@ -475,7 +475,17 @@ function available_callbacks(::typeof(batch_inference))
         :before_data_update,
         :after_data_update,
         :after_iteration,
-        :after_inference
+        :after_inference,
+        :before_message_rule_call,
+        :after_message_rule_call,
+        :before_product_of_two_messages,
+        :after_product_of_two_messages,
+        :before_product_of_messages,
+        :after_product_of_messages,
+        :before_form_constraint_applied,
+        :after_form_constraint_applied,
+        :before_marginal_computation,
+        :after_marginal_computation
     ))
 end
 

@@ -78,10 +78,6 @@ function RxInferBenchmarkCallbacks(;
     )
 end
 
-check_available_callbacks(
-    warn, callbacks::RxInferBenchmarkCallbacks, ::Val{AvailableCallbacks}
-) where {AvailableCallbacks} = nothing
-
 Base.isempty(callbacks::RxInferBenchmarkCallbacks) = isempty(
     callbacks.before_model_creation_ts
 )

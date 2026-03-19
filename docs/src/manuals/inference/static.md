@@ -328,7 +328,7 @@ plot(results.free_energy, label = "Bethe Free Energy")
 
 ## [Callbacks](@id manual-static-inference-callbacks)
 
-The [`infer`](@ref) function has its own lifecycle, consisting of multiple steps. A user is free to inject some extra logic during the inference procedure, e.g. for [debugging purposes](@ref user-guide-debugging-callbacks) or [performance analysis](@ref user-guide-debugging-benchmark-callbacks). By supplying callbacks, users can inject custom logic on specific moments during the inference procedure. Here are available callbacks that can be used together with the static datasets:
+The [`infer`](@ref) function has its own lifecycle, consisting of multiple steps. A user is free to inject some extra logic during the inference procedure, e.g. for [debugging purposes](@ref user-guide-debugging-callbacks) or [performance analysis](@ref user-guide-debugging-benchmark-callbacks). By supplying callbacks, users can inject custom logic on specific moments during the inference procedure. Callbacks can be a `NamedTuple`, `Dict`, or any custom structure that implements `ReactiveMP.invoke_callback`. Here are available callbacks that can be used together with the static datasets:
 ```@eval
 using RxInfer, Test, Markdown
 # Update the documentation below if this test does not pass
@@ -341,14 +341,24 @@ using RxInfer, Test, Markdown
     :before_data_update,
     :after_data_update,
     :after_iteration,
-    :after_inference
+    :after_inference,
+    :before_message_rule_call,
+    :after_message_rule_call,
+    :before_product_of_two_messages,
+    :after_product_of_two_messages,
+    :before_product_of_messages,
+    :after_product_of_messages,
+    :before_form_constraint_applied,
+    :after_form_constraint_applied,
+    :before_marginal_computation,
+    :after_marginal_computation
 )) 
 nothing
 ```
 
 ---
 
-Below we list `RxInfer` specific callbacks, for `ReactiveMP` specific callbacks refer to the official documentation of `ReactiveMP`.
+Below we list `RxInfer` specific callbacks. In addition to these, `ReactiveMP` provides lower-level callbacks for the message passing procedure itself, such as `before_message_rule_call`, `after_message_rule_call`, `before_product_of_messages`, `after_product_of_messages`, `before_marginal_computation`, `after_marginal_computation`, and others. For a full list and detailed descriptions of these callbacks, refer to the official documentation of `ReactiveMP`.
 
 ```julia
 before_model_creation()

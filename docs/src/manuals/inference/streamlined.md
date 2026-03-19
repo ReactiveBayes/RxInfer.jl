@@ -442,18 +442,33 @@ Nice, the history of the estimated posteriors aligns well with the real (hidden)
 
 ## [Callbacks](@id manual-online-inference-callbacks)
 
-The [`RxInferenceEngine`](@ref) has its own lifecycle. The callbacks differ a little bit from [Using callbacks with Static Inference](@ref manual-static-inference-callbacks). 
+The [`RxInferenceEngine`](@ref) has its own lifecycle. The callbacks differ a little bit from [Using callbacks with Static Inference](@ref manual-static-inference-callbacks). Callbacks can be a `NamedTuple`, `Dict`, or any custom structure that implements `ReactiveMP.invoke_callback`.
 Here are available callbacks that can be used together with the streaming inference:
 ```@eval
 using RxInfer, Test, Markdown
 # Update the documentation below if this test does not pass
-@test RxInfer.available_callbacks(RxInfer.streaming_inference) === Val((:before_model_creation, :after_model_creation, :before_autostart, :after_autostart))
+@test RxInfer.available_callbacks(RxInfer.streaming_inference) === Val((
+    :before_model_creation,
+    :after_model_creation,
+    :before_autostart,
+    :after_autostart,
+    :before_message_rule_call,
+    :after_message_rule_call,
+    :before_product_of_two_messages,
+    :after_product_of_two_messages,
+    :before_product_of_messages,
+    :after_product_of_messages,
+    :before_form_constraint_applied,
+    :after_form_constraint_applied,
+    :before_marginal_computation,
+    :after_marginal_computation
+))
 nothing
 ```
 
 ---
 
-Below we list `RxInfer` specific callbacks, for `ReactiveMP` specific callbacks refer to the official documentation of `ReactiveMP`.
+Below we list `RxInfer` specific callbacks. In addition to these, `ReactiveMP` provides lower-level callbacks for the message passing procedure itself, such as `before_message_rule_call`, `after_message_rule_call`, `before_product_of_messages`, `after_product_of_messages`, `before_marginal_computation`, `after_marginal_computation`, and others. For a full list and detailed descriptions of these callbacks, refer to the official documentation of `ReactiveMP`.
 
 ```julia
 before_model_creation()

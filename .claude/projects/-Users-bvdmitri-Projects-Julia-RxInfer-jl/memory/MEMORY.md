@@ -1,0 +1,1 @@
+- [feedback_test_throws_style.md](feedback_test_throws_style.md) - Prefer @test_throws with partial string matching over exception types
