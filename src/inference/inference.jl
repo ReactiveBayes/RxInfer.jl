@@ -581,6 +581,7 @@ include("streaming.jl")
         autostart = true,
         catch_exception = false,
         benchmark = false,
+        trace = false,
         session = RxInfer.default_session()
     )
 
@@ -611,7 +612,7 @@ Check the official documentation for more information about some of the argument
 - `free_energy_diagnostics = DefaultObjectiveDiagnosticChecks`: free energy diagnostic checks, optional, by default checks for possible `NaN`s and `Inf`s. `nothing` disables all checks.
 - `showprogress = false`: show progress module, optional, defaults to false (exclusive for batch inference)
 - `catch_exception`  specifies whether exceptions during the inference procedure should be caught, optional, defaults to false (exclusive for batch inference)
-- `callbacks = nothing`: inference cycle callbacks, optional. Can be a `NamedTuple`, `Dict`, or any custom structure that implements `ReactiveMP.invoke_callback`. See [Callbacks](@ref manual-inference-callbacks) for a comprehensive overview, [Benchmark callbacks](@ref manual-inference-benchmark-callbacks) for performance analysis, and [Early stopping](@ref manual-inference-early-stopping) for an opt-in callback example.
+- `callbacks = nothing`: inference cycle callbacks, optional. Can be a `NamedTuple`, `Dict`, or any custom structure that implements `ReactiveMP.invoke_callback`. See [Callbacks](@ref manual-inference-callbacks) for a comprehensive overview, [Benchmark callbacks](@ref manual-inference-benchmark-callbacks) for performance analysis, [Trace callbacks](@ref manual-inference-trace-callbacks) for event tracing, and [Early stopping](@ref manual-inference-early-stopping) for an opt-in callback example.
 - `addons = nothing`: inject and send extra computation information along messages
 - `postprocess = DefaultPostprocess()`: inference results postprocessing step, optional
 - `events = nothing`: inference cycle events, optional (exclusive for streamline inference)
@@ -619,6 +620,7 @@ Check the official documentation for more information about some of the argument
 - `autostart = true`: specifies whether to call `RxInfer.start` on the created engine automatically or not (exclusive for streamline inference)
 - `warn = true`: enables/disables warnings
 - `benchmark = false`: when set to `true`, automatically merges a [`RxInferBenchmarkCallbacks`](@ref) instance with the user-provided `callbacks`. The benchmark results are accessible via `result.model.metadata[:benchmark]`. See [Benchmark callbacks](@ref manual-inference-benchmark-callbacks).
+- `trace = false`: when set to `true`, automatically merges a [`RxInferTraceCallbacks`](@ref) instance with the user-provided `callbacks`. The trace results are accessible via `result.model.metadata[:trace]`. See [Trace callbacks](@ref manual-inference-trace-callbacks).
 - `session = RxInfer.default_session()`: current logging session for the RxInfer invokes, see `Session` for more details, pass `nothing` to disable logging
 
 ## Error hints
@@ -661,6 +663,7 @@ function infer(;
     autostart = true, # streamline specific
     warn = true,
     benchmark = false,
+    trace = false,
     session = RxInfer.default_session(),
 )
     if isnothing(model)
@@ -691,6 +694,14 @@ function infer(;
         callbacks = merge_callbacks(
             callbacks,
             RxInferBenchmarkCallbacks();
+            reduce_fn = callbacks_reduce_fn(),
+        )
+    end
+
+    if trace
+        callbacks = merge_callbacks(
+            callbacks,
+            RxInferTraceCallbacks();
             reduce_fn = callbacks_reduce_fn(),
         )
     end
