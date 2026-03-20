@@ -264,76 +264,39 @@ Each event is a concrete struct subtyping `ReactiveMP.Event{E}` with named field
 
 #### Common to batch and streamline inference
 
-[`BeforeModelCreationEvent`](@ref) — `:before_model_creation`
-
-Called before the model is created. Has no fields.
-
-[`AfterModelCreationEvent`](@ref) — `:after_model_creation`
-
-Called after the model has been created.
-- `model`: the created [`ProbabilisticModel`](@ref) instance
+```@docs
+BeforeModelCreationEvent
+AfterModelCreationEvent
+```
 
 #### Batch inference only
 
 For more details on batch inference, see [Static inference](@ref manual-static-inference).
 
-[`OnMarginalUpdateEvent`](@ref) — `:on_marginal_update`
-
-Called after each marginal update.
-- `model`: the [`ProbabilisticModel`](@ref) instance
-- `variable_name`: the name of the updated variable (`Symbol`)
-- `update`: the updated marginal value
-
-[`BeforeInferenceEvent`](@ref) — `:before_inference`
-
-Called before the inference procedure starts.
-- `model`: the [`ProbabilisticModel`](@ref) instance
-
-[`AfterInferenceEvent`](@ref) — `:after_inference`
-
-Called after the inference procedure ends.
-- `model`: the [`ProbabilisticModel`](@ref) instance
-
-[`BeforeIterationEvent`](@ref) — `:before_iteration`
-
-Called before each variational iteration.
-- `model`: the [`ProbabilisticModel`](@ref) instance
-- `iteration`: the current iteration number (`Int`)
-
-[`AfterIterationEvent`](@ref) — `:after_iteration`
-
-Called after each variational iteration.
-- `model`: the [`ProbabilisticModel`](@ref) instance
-- `iteration`: the current iteration number (`Int`)
+```@docs
+OnMarginalUpdateEvent
+BeforeInferenceEvent
+AfterInferenceEvent
+BeforeIterationEvent
+AfterIterationEvent
+```
 
 !!! note
     `before_iteration` and `after_iteration` callbacks can return [`StopIteration()`](@ref) to halt iterations early. Any other return value (including `nothing`) will let iterations continue. See [Early stopping](@ref manual-inference-early-stopping) for an example.
 
-[`BeforeDataUpdateEvent`](@ref) — `:before_data_update`
-
-Called before each data update.
-- `model`: the [`ProbabilisticModel`](@ref) instance
-- `data`: the data being used
-
-[`AfterDataUpdateEvent`](@ref) — `:after_data_update`
-
-Called after each data update.
-- `model`: the [`ProbabilisticModel`](@ref) instance
-- `data`: the data that was used
+```@docs
+BeforeDataUpdateEvent
+AfterDataUpdateEvent
+```
 
 #### Streamline inference only
 
 For more details on streamline inference, see [Streamline inference](@ref manual-online-inference).
 
-[`BeforeAutostartEvent`](@ref) — `:before_autostart`
-
-Called before `RxInfer.start()`, if `autostart` is set to `true`.
-- `engine`: the [`RxInferenceEngine`](@ref) instance
-
-[`AfterAutostartEvent`](@ref) — `:after_autostart`
-
-Called after `RxInfer.start()`, if `autostart` is set to `true`.
-- `engine`: the [`RxInferenceEngine`](@ref) instance
+```@docs
+BeforeAutostartEvent
+AfterAutostartEvent
+```
 
 ### ReactiveMP events
 
@@ -384,19 +347,3 @@ RxInfer provides the following built-in callback structures:
 - [`RxInferBenchmarkCallbacks`](@ref) — collects timing statistics across inference runs. See [Benchmark callbacks](@ref manual-inference-benchmark-callbacks).
 - [`RxInferTraceCallbacks`](@ref) — records all callback events for debugging and inspection. See [Trace callbacks](@ref manual-inference-trace-callbacks).
 - [`StopEarlyIterationStrategy`](@ref) — stops variational iterations early based on free energy convergence. See [Early stopping](@ref manual-inference-early-stopping).
-
-## Event type reference
-
-```@docs
-BeforeModelCreationEvent
-AfterModelCreationEvent
-BeforeInferenceEvent
-AfterInferenceEvent
-BeforeIterationEvent
-AfterIterationEvent
-BeforeDataUpdateEvent
-AfterDataUpdateEvent
-OnMarginalUpdateEvent
-BeforeAutostartEvent
-AfterAutostartEvent
-```
