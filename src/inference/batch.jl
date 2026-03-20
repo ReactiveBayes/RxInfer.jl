@@ -241,9 +241,9 @@ function batch_inference(;
 
     infer_check_dicttype(:predictvars, predictvars)
 
-    invoke_callback(callbacks, Val(:before_model_creation))
+    invoke_callback(callbacks, BeforeModelCreationEvent())
     fmodel = create_model(_model | data)
-    invoke_callback(callbacks, Val(:after_model_creation), fmodel)
+    invoke_callback(callbacks, AfterModelCreationEvent(fmodel))
     vardict = getvardict(fmodel)
     vardict = GraphPPL.variables(vardict) # TODO bvdmitri, should work recursively as well
 
@@ -359,7 +359,7 @@ function batch_inference(;
             end
         end
 
-        invoke_callback(callbacks, Val(:before_inference), fmodel)
+        invoke_callback(callbacks, BeforeInferenceEvent(fmodel))
 
         fdata = filter(pairs(data)) do pair
             hk      = haskey(vardict, first(pair))
@@ -379,16 +379,21 @@ function batch_inference(;
         for iteration in 1:_iterations
             if should_stop_iteration(
                 invoke_callback(
-                    callbacks, Val(:before_iteration), fmodel, iteration
+                    callbacks,
+                    BeforeIterationEvent(fmodel, iteration),
                 ),
             )
                 break
             end
-            invoke_callback(callbacks, Val(:before_data_update), fmodel, data)
+            invoke_callback(
+                callbacks, BeforeDataUpdateEvent(fmodel, data)
+            )
             for (key, value) in fdata
                 update!(cacheddatavars[key], get_data(value))
             end
-            invoke_callback(callbacks, Val(:after_data_update), fmodel, data)
+            invoke_callback(
+                callbacks, AfterDataUpdateEvent(fmodel, data)
+            )
 
             # Check that all requested marginals have been updated and unset the `updated` flag
             # Throws an error if some were not update
@@ -402,7 +407,8 @@ function batch_inference(;
 
             if should_stop_iteration(
                 invoke_callback(
-                    callbacks, Val(:after_iteration), fmodel, iteration
+                    callbacks,
+                    AfterIterationEvent(fmodel, iteration),
                 ),
             )
                 break
@@ -414,7 +420,7 @@ function batch_inference(;
             unsubscribe!(subscription)
         end
 
-        invoke_callback(callbacks, Val(:after_inference), fmodel)
+        invoke_callback(callbacks, AfterInferenceEvent(fmodel))
     catch error
         potential_error = inference_process_error(
             error;

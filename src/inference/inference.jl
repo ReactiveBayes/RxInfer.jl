@@ -11,6 +11,7 @@ import GraphPPL: ModelGenerator, create_model
 
 import ReactiveMP: israndom, isdata, isconst
 import ReactiveMP: CountingReal
+import ReactiveMP: Event, event_name
 
 import ProgressMeter
 
@@ -90,7 +91,7 @@ result = infer(
     data  = my_data,
     iterations = 100,
     callbacks = (
-        after_iteration = (model, iteration) -> iteration >= 5 ? StopIteration() : nothing,
+        after_iteration = (event) -> event.iteration >= 5 ? StopIteration() : nothing,
     )
 )
 ```
@@ -125,7 +126,8 @@ ensure_update(
     tap() do update
         set_updated!(updated)
         invoke_callback(
-            callbacks, Val(:on_marginal_update), model, variable_name, update
+            callbacks,
+            OnMarginalUpdateEvent(model, variable_name, update),
         )
     end
 

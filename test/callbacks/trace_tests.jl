@@ -1,6 +1,7 @@
 
 @testitem "Test inference trace callbacks" begin
     using RxInfer
+    using ReactiveMP: event_name
 
     @model function simple_trace_model(y)
         τ ~ Gamma(; shape = 1.0, rate = 1.0)
@@ -20,7 +21,7 @@
         @test !isempty(events)
         @test all(e -> e isa TracedEvent, events)
 
-        event_names = [e.event for e in events]
+        event_names = [event_name(typeof(e.event)) for e in events]
         @test :before_model_creation in event_names
         @test :after_model_creation in event_names
     end
@@ -52,7 +53,7 @@
         )
 
         events = RxInfer.tracedevents(trace)
-        event_names = [e.event for e in events]
+        event_names = [event_name(typeof(e.event)) for e in events]
 
         @test :before_inference in event_names
         @test :after_inference in event_names
@@ -137,6 +138,7 @@ end
 
 @testitem "trace = true should be compatible with custom callbacks and StopIteration" begin
     using RxInfer
+    using ReactiveMP: event_name
 
     @model function simple_model_for_trace_and_stop(y)
         τ ~ Gamma(; shape = 1.0, rate = 1.0)
@@ -152,9 +154,9 @@ end
         iterations = max_iterations,
         trace = true,
         callbacks = (
-            after_iteration = (model, iteration) -> begin
-                stopped_at[] = iteration
-                if iteration >= 3
+            after_iteration = (event) -> begin
+                stopped_at[] = event.iteration
+                if event.iteration >= 3
                     return StopIteration()
                 end
                 return nothing
@@ -168,7 +170,7 @@ end
     @test trace isa RxInferTraceCallbacks
 
     events = RxInfer.tracedevents(trace)
-    event_names = [e.event for e in events]
+    event_names = [event_name(typeof(e.event)) for e in events]
     @test count(==(:before_iteration), event_names) == 3
     @test count(==(:after_iteration), event_names) == 3
 end
@@ -196,13 +198,14 @@ end
 
 @testitem "TracedEvent structure" begin
     using RxInfer
+    using ReactiveMP: event_name
 
-    te = TracedEvent(:test_event, (1, 2, 3))
-    @test te.event === :test_event
-    @test te.arguments === (1, 2, 3)
+    te = TracedEvent(BeforeModelCreationEvent())
+    @test te.event isa BeforeModelCreationEvent
+    @test event_name(typeof(te.event)) === :before_model_creation
 
     # Test show
     buf = IOBuffer()
     show(buf, te)
-    @test String(take!(buf)) == "TracedEvent(:test_event, 3 args)"
+    @test String(take!(buf)) == "TracedEvent(:before_model_creation)"
 end

@@ -149,23 +149,24 @@ Now, we can use the `callbacks` argument of the `infer` function to track the or
 
 ```@example debugging-with-callbacks
 # A callback that will be called every time before a variational iteration starts
-function before_iteration_callback(model, iteration)
-    println("--- Starting iteration ", iteration, " ---")
+function before_iteration_callback(event)
+    println("--- Starting iteration ", event.iteration, " ---")
 end
 
 # A callback that will be called every time after a variational iteration finishes
-function after_iteration_callback(model, iteration)
-    println("--- Iteration ", iteration, " has been finished ---")
+function after_iteration_callback(event)
+    println("--- Iteration ", event.iteration, " has been finished ---")
 end
 
 # A callback that will be called every time a posterior is updated
-function on_marginal_update_callback(model, variable_name, posterior)
-    println("Latent variable ", variable_name, " has been updated. Estimated mean is ", mean(posterior), " with standard deviation ", std(posterior))
-end
-
-# A callback dispatched specifically for vectorized latent variables
-function on_marginal_update_callback(model, variable_name, posteriors::AbstractVector)
-    println("Latent variable ", variable_name, " has been updated. Estimated mean is ", mean.(posteriors), " with standard deviation ", std.(posteriors))
+function on_marginal_update_callback(event)
+    variable_name = event.variable_name
+    posterior = event.update
+    if posterior isa AbstractVector
+        println("Latent variable ", variable_name, " has been updated. Estimated mean is ", mean.(posterior), " with standard deviation ", std.(posterior))
+    else
+        println("Latent variable ", variable_name, " has been updated. Estimated mean is ", mean(posterior), " with standard deviation ", std(posterior))
+    end
 end
 ```
 

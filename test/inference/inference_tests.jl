@@ -411,9 +411,9 @@ end
             catch_exception = false,
             disable_inference_error_hint = true,
             callbacks = (
-                after_iteration = (model, iteration) -> begin
+                after_iteration = (event) -> begin
                     # For test purposes we throw an error after `5` iterations
-                    if iteration >= 5
+                    if event.iteration >= 5
                         error("bang!")
                     end
                 end,
@@ -431,9 +431,9 @@ end
             catch_exception = true,
             disable_inference_error_hint = true,
             callbacks = (
-                after_iteration = (model, iteration) -> begin
+                after_iteration = (event) -> begin
                     # For test purposes we throw an error after `5` iterations
-                    if iteration >= 5
+                    if event.iteration >= 5
                         error("bang!")
                     end
                 end,
@@ -487,8 +487,8 @@ end
             free_energy = true,
             callbacks = (
                 # halt before iteration 5, but the logic could be more complex of course
-                before_iteration = (model, iteration) ->
-                    iteration === 5 ? StopIteration() : nothing,
+                before_iteration = (event) ->
+                    event.iteration === 5 ? StopIteration() : nothing,
             ),
         )
 
@@ -508,8 +508,8 @@ end
             free_energy = true,
             callbacks = (
                 # halt after iteration 5, but the logic could be more complex of course
-                after_iteration = (model, iteration) ->
-                    iteration === 5 ? StopIteration() : nothing,
+                after_iteration = (event) ->
+                    event.iteration === 5 ? StopIteration() : nothing,
             ),
         )
 
@@ -881,14 +881,14 @@ end
             initialization = init,
             autoupdates = autoupdates,
             callbacks = (
-                before_model_creation = (args...) ->
-                    push!(callbacksdata, (:before_model_creation, args)),
-                after_model_creation = (args...) ->
-                    push!(callbacksdata, (:after_model_creation, args)),
-                before_autostart = (args...) ->
-                    push!(callbacksdata, (:before_autostart, args)),
-                after_autostart = (args...) ->
-                    push!(callbacksdata, (:after_autostart, args)),
+                before_model_creation = (event) ->
+                    push!(callbacksdata, (:before_model_creation, event)),
+                after_model_creation = (event) ->
+                    push!(callbacksdata, (:after_model_creation, event)),
+                before_autostart = (event) ->
+                    push!(callbacksdata, (:before_autostart, event)),
+                after_autostart = (event) ->
+                    push!(callbacksdata, (:after_autostart, event)),
             ),
             autostart = true,
         )
@@ -901,10 +901,13 @@ end
             :after_autostart,
         ]
 
-        @test typeof(callbacksdata[1][2]) <: Tuple{}                   # before_model_creation
-        @test typeof(callbacksdata[2][2]) <: Tuple{ProbabilisticModel} # after_model_creation 
-        @test typeof(callbacksdata[3][2]) <: Tuple{RxInferenceEngine}  # before_autostart 
-        @test typeof(callbacksdata[4][2]) <: Tuple{RxInferenceEngine}  # after_autostart
+        @test callbacksdata[1][2] isa BeforeModelCreationEvent
+        @test callbacksdata[2][2] isa AfterModelCreationEvent
+        @test callbacksdata[2][2].model isa ProbabilisticModel
+        @test callbacksdata[3][2] isa BeforeAutostartEvent
+        @test callbacksdata[3][2].engine isa RxInferenceEngine
+        @test callbacksdata[4][2] isa AfterAutostartEvent
+        @test callbacksdata[4][2].engine isa RxInferenceEngine
     end
 
     @testset "Check callbacks usage: autostart disabled" begin
@@ -917,14 +920,14 @@ end
             initialization = init,
             autoupdates = autoupdates,
             callbacks = (
-                before_model_creation = (args...) ->
-                    push!(callbacksdata, (:before_model_creation, args)),
-                after_model_creation = (args...) ->
-                    push!(callbacksdata, (:after_model_creation, args)),
-                before_autostart = (args...) ->
-                    push!(callbacksdata, (:before_autostart, args)),
-                after_autostart = (args...) ->
-                    push!(callbacksdata, (:after_autostart, args)),
+                before_model_creation = (event) ->
+                    push!(callbacksdata, (:before_model_creation, event)),
+                after_model_creation = (event) ->
+                    push!(callbacksdata, (:after_model_creation, event)),
+                before_autostart = (event) ->
+                    push!(callbacksdata, (:before_autostart, event)),
+                after_autostart = (event) ->
+                    push!(callbacksdata, (:after_autostart, event)),
             ),
             autostart = false,
         )
@@ -933,8 +936,9 @@ end
         @test first.(callbacksdata) ==
             [:before_model_creation, :after_model_creation]
 
-        @test typeof(callbacksdata[1][2]) <: Tuple{}                   # before_model_creation
-        @test typeof(callbacksdata[2][2]) <: Tuple{ProbabilisticModel} # after_model_creation 
+        @test callbacksdata[1][2] isa BeforeModelCreationEvent
+        @test callbacksdata[2][2] isa AfterModelCreationEvent
+        @test callbacksdata[2][2].model isa ProbabilisticModel
 
         RxInfer.start(engine)
 
@@ -1434,7 +1438,7 @@ end
         result = infer(
             model = rolling_die(),
             data = (y = observations,),
-            callbacks = (before_model_creation = (args...) -> nothing,),
+            callbacks = (before_model_creation = (event) -> nothing,),
         )
         @test isequal(
             first(mean(result.posteriors[:θ])),
@@ -1445,7 +1449,7 @@ end
     @testset "Test callbacks with custom struct" begin
         struct TestCustomCallbackHandler end
         ReactiveMP.invoke_callback(
-            ::TestCustomCallbackHandler, event, args...
+            ::TestCustomCallbackHandler, ::ReactiveMP.Event
         ) = nothing
         result = infer(
             model = rolling_die(),

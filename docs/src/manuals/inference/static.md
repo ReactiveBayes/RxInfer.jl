@@ -420,13 +420,14 @@ before_data_update_called = Ref(false) #hide
 after_data_update_called = Ref(false) #hide
 on_marginal_update_called = Ref(false) #hide
 
-function before_model_creation()
+function before_model_creation(event::BeforeModelCreationEvent)
     before_model_creation_called[] = true #hide
     println("The model is about to be created")
 end
 
-function after_model_creation(model::ProbabilisticModel)
+function after_model_creation(event::AfterModelCreationEvent)
     after_model_creation_called[] = true #hide
+    model = event.model
     println("The model has been created")
     println("  The number of factor nodes is: ", length(RxInfer.getfactornodes(model)))
     println("  The number of latent states is: ", length(RxInfer.getrandomvars(model)))
@@ -434,39 +435,39 @@ function after_model_creation(model::ProbabilisticModel)
     println("  The number of constants is: ", length(RxInfer.getconstantvars(model)))
 end
 
-function before_inference(model::ProbabilisticModel)
+function before_inference(event::BeforeInferenceEvent)
     before_inference_called[] = true #hide
     println("The inference procedure is about to start")
 end
 
-function after_inference(model::ProbabilisticModel)
+function after_inference(event::AfterInferenceEvent)
     after_inference_called[] = true #hide
     println("The inference procedure has ended")
 end
 
-function before_iteration(model::ProbabilisticModel, iteration::Int)
+function before_iteration(event::BeforeIterationEvent)
     before_iteration_called[] = true #hide
-    println("The iteration ", iteration, " is about to start")
+    println("The iteration ", event.iteration, " is about to start")
 end
 
-function after_iteration(model::ProbabilisticModel, iteration::Int)
+function after_iteration(event::AfterIterationEvent)
     after_iteration_called[] = true #hide
-    println("The iteration ", iteration, " has ended")
+    println("The iteration ", event.iteration, " has ended")
 end
 
-function before_data_update(model::ProbabilisticModel, data)
+function before_data_update(event::BeforeDataUpdateEvent)
     before_data_update_called[] = true #hide
     println("The data is about to be processed")
 end
 
-function after_data_update(model::ProbabilisticModel, data)
+function after_data_update(event::AfterDataUpdateEvent)
     after_data_update_called[] = true #hide
     println("The data has been processed")
 end
 
-function on_marginal_update(model::ProbabilisticModel, name, update)
+function on_marginal_update(event::OnMarginalUpdateEvent)
     on_marginal_update_called[] = true #hide
-    println("New marginal update for ", name, " ", update)
+    println("New marginal update for ", event.variable_name, " ", event.update)
 end
 ```
 

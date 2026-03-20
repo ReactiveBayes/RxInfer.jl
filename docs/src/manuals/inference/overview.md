@@ -279,8 +279,8 @@ The inference function and underlying reactive message passing procedure both ha
 result = infer(
     ...,
     callbacks = (
-        on_marginal_update = (model, name, update) -> println("\$(name) has been updated: \$(update)"),
-        after_inference    = (args...) -> println("Inference has been completed")
+        on_marginal_update = (event) -> println("\$(event.variable_name) has been updated: \$(event.update)"),
+        after_inference    = (event) -> println("Inference has been completed")
     )
 )
 ```

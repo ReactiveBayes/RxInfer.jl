@@ -5,7 +5,7 @@ CurrentModule = RxInfer
 ```
 
 `RxInfer` provides a built-in callback structure called [`RxInferTraceCallbacks`](@ref) for recording all callback events during the inference procedure.
-Each event is stored as a [`TracedEvent`](@ref) containing the event name (as a `Symbol`) and the arguments passed to the callback.
+Each event is stored as a [`TracedEvent`](@ref) containing the event name (as a `Symbol`) and the event object itself.
 This is useful for debugging, understanding the inference flow, and inspecting what happens at each stage.
 For general information about the callbacks system, see [Callbacks](@ref manual-inference-callbacks).
 
@@ -94,15 +94,17 @@ println(trace)
 
 ## Inspecting traced events
 
-Each [`TracedEvent`](@ref) has two fields:
-- `event::Symbol` — the name of the callback event (e.g. `:before_iteration`, `:after_model_creation`)
-- `arguments::Tuple` — the arguments that were passed to the callback
+Each [`TracedEvent`](@ref) has a single field:
+- `event::ReactiveMP.Event` — the original event object that was passed to the callback
+
+You can retrieve the event name via `ReactiveMP.event_name(typeof(traced_event.event))` and access event-specific fields directly on `traced_event.event`.
 
 ```@example manual-inference-trace-callbacks
+using ReactiveMP: event_name
 events = RxInfer.tracedevents(trace)
 
 # Filter for specific events
-iteration_events = filter(e -> e.event === :before_iteration, events)
+iteration_events = filter(e -> event_name(typeof(e.event)) === :before_iteration, events)
 @test length(iteration_events) == 3 #hide
 println("Number of iterations: ", length(iteration_events))
 ```

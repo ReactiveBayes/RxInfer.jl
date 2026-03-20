@@ -91,7 +91,7 @@
         y ~ Normal(; mean = x_current, precision = τ)
     end
 
-    # We assume the following factorisation between variables 
+    # We assume the following factorisation between variables
     # in the variational distribution
     @constraints function filter_constraints()
         q(x_prev, x_current, τ) = q(x_prev, x_current)q(τ)
@@ -189,9 +189,9 @@ end
         iterations = max_iterations,
         benchmark = true,
         callbacks = (
-            after_iteration = (model, iteration) -> begin
-                stopped_at[] = iteration
-                if iteration >= 3
+            after_iteration = (event) -> begin
+                stopped_at[] = event.iteration
+                if event.iteration >= 3
                     return StopIteration()
                 end
                 return nothing

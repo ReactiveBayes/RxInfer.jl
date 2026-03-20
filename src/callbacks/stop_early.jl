@@ -42,12 +42,12 @@ StopEarlyIterationStrategy(atol::Real, rtol::Real) = StopEarlyIterationStrategy(
     Float64(atol), Float64(rtol), Inf, Float64[]
 )
 
-function (strategy::StopEarlyIterationStrategy)(model, iteration::Int)
+function (strategy::StopEarlyIterationStrategy)(event::AfterIterationEvent)
     current_fe_value = 0.0
     # Subscribe on the `BetheFreeEnergy` stream but only `take(1)` value from it
     subscribe!(
         score(
-            model,
+            event.model,
             RxInfer.BetheFreeEnergy(Real),
             RxInfer.DefaultObjectiveDiagnosticChecks,
         ) |> take(1),
