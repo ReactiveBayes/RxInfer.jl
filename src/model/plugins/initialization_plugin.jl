@@ -123,7 +123,7 @@ function Base.show(io::IO, init::SubModelInit)
         "Init for submodel ",
         getsubmodel(init),
         " = ",
-        getinitobjects(init)
+        getinitobjects(init),
     )
 end
 
@@ -134,7 +134,7 @@ function Base.push!(m::InitSpecification, o::InitObject)
             x ->
                 getvardescriptor(getvardescriptor(x)) ≠
                 getvardescriptor(getvardescriptor(o)),
-            m.init_objects
+            m.init_objects,
         )
     end
     push!(m.init_objects, o)
@@ -166,7 +166,7 @@ end
 function apply_init!(
     model::Model,
     context::Context,
-    init::InitObject{S, T} where {S <: InitDescriptor, T}
+    init::InitObject{S, T} where {S <: InitDescriptor, T},
 )
     nodes = unroll(context[getvardescriptor(getvardescriptor(init))])
     apply_init!(model, context, init, nodes)
@@ -180,7 +180,7 @@ function apply_init!(
     model::Model,
     context::Context,
     init::InitObject{S, T} where {S <: InitDescriptor, T},
-    nodes::AbstractArray{NodeLabel}
+    nodes::AbstractArray{NodeLabel},
 )
     for node in nodes
         save_init!(model, node, init)
@@ -191,7 +191,7 @@ function apply_init!(
     model::Model,
     context::Context,
     init::InitObject{S, T},
-    nodes::AbstractArray{NodeLabel}
+    nodes::AbstractArray{NodeLabel},
 ) where {S <: InitDescriptor, T <: AbstractArray}
     for (node, marginal) in zip(nodes, getinitinfo(init))
         save_init!(model, node, InitObject(getvardescriptor(init), marginal))
@@ -253,7 +253,7 @@ check_for_returns_init = (x) -> GraphPPL.check_for_returns(x; tag = "init")
 function check_for_trailing_commas(e::Expr)
     if @capture(e, (a_ = (b_, c_) = d_))
         error(
-            "Trailing comma in init specification detected, please place every init statement on a new line without trailing commas."
+            "Trailing comma in init specification detected, please place every init statement on a new line without trailing commas.",
         )
     end
     return e
@@ -344,7 +344,7 @@ resolve_parametrization(fform, args::NamedTuple) = begin
     backend = ReactiveMPGraphPPLBackend(Static.True())
     aliased_interfaces = GraphPPL.interface_aliases(
         GraphPPL.interface_aliases(backend, fform),
-        GraphPPL.StaticInterfaces(keys(args))
+        GraphPPL.StaticInterfaces(keys(args)),
     )
     aliased_fform = GraphPPL.factor_alias(backend, fform, aliased_interfaces)
     GraphPPL.__evaluate_fform(aliased_fform, values(args))
@@ -423,7 +423,7 @@ function convert_init_object(e::Expr)
                 __init__,
                 RxInfer.InitObject(
                     RxInfer.InitDescriptor($form, $var), $init_obj
-                )
+                ),
             )
         end
     else

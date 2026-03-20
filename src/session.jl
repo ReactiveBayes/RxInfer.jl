@@ -141,14 +141,14 @@ function create_session()
         :os => string(Sys.KERNEL),
         :machine => string(Sys.MACHINE),
         :cpu_threads => Sys.CPU_THREADS,
-        :word_size => Sys.WORD_SIZE
+        :word_size => Sys.WORD_SIZE,
     )
     return Session(
         uuid4(),          # Generate unique ID
         now(),            # Current timestamp
         environment,      # Environment information
         Base.Semaphore(1),  # Thread-safe semaphore
-        Dict{Symbol, SessionStats}()  # Empty stats dictionary
+        Dict{Symbol, SessionStats}(),  # Empty stats dictionary
     )
 end
 
@@ -160,7 +160,7 @@ If no labels specified deletes everything.
 """
 function reset_session!(
     session::Union{Nothing, Session} = RxInfer.default_session(),
-    labels = nothing
+    labels = nothing,
 )
     if isnothing(labels)
         labels = keys(session.stats)
@@ -282,7 +282,7 @@ function with_session(f::F, session, label::Symbol) where {F}
         end
     else
         error(
-            lazy"Unsupported session type $(typeof(session)). Should either be `RxInfer.Session` or `nothing`."
+            lazy"Unsupported session type $(typeof(session)). Should either be `RxInfer.Session` or `nothing`.",
         )
     end
 end
@@ -379,7 +379,7 @@ function summarize_session(
     io::IO,
     session::Union{Session, Nothing} = RxInfer.default_session(),
     label::Symbol = :inference;
-    n_last = 5
+    n_last = 5,
 )
     if isnothing(session)
         println(io, "Session logging is disabled")
@@ -396,17 +396,17 @@ function summarize_session(
     println(io, "Failed invokes: $(stats.failed_count)")
 
     mean_execution = round(
-        stats.total_duration_ms / max(1, stats.total_invokes), digits = 2
+        stats.total_duration_ms / max(1, stats.total_invokes); digits = 2
     )
     min_execution = if stats.min_duration_ms == Inf
         0.0
     else
-        round(stats.min_duration_ms, digits = 2)
+        round(stats.min_duration_ms; digits = 2)
     end
     max_execution = if stats.max_duration_ms == -Inf
         0.0
     else
-        round(stats.max_duration_ms, digits = 2)
+        round(stats.max_duration_ms; digits = 2)
     end
 
     println(
@@ -417,7 +417,7 @@ function summarize_session(
         min_execution,
         "ms, max: ",
         max_execution,
-        "ms)"
+        "ms)",
     )
     println(io, "Context keys: $(join(collect(stats.context_keys), ", "))")
 
@@ -431,7 +431,7 @@ function summarize_session(
 
     println(
         io,
-        "\nTip: Share this session with `RxInfer.share_session_data()` to help improve RxInfer"
+        "\nTip: Share this session with `RxInfer.share_session_data()` to help improve RxInfer",
     )
     println(io, "     and get better support when reporting issues.")
 
@@ -451,7 +451,7 @@ returns a new empty `SessionStats` instance.
 """
 function get_session_stats(
     session::Union{Nothing, Session} = RxInfer.default_session(),
-    label::Symbol = :inference
+    label::Symbol = :inference,
 )
     if isnothing(session)
         return SessionStats(label)
@@ -466,26 +466,26 @@ function Base.show(io::IO, invoke::SessionInvoke)
     duration_ms = round(
         Dates.value(
             Dates.Millisecond(invoke.execution_end - invoke.execution_start)
-        ),
-        digits = 2
+        );
+        digits = 2,
     )
     print(
         io,
-        "SessionInvoke(id=$(invoke.id), status=$(invoke.status), duration=$(duration_ms)ms, context_keys=[$(join(keys(invoke.context), ", "))])"
+        "SessionInvoke(id=$(invoke.id), status=$(invoke.status), duration=$(duration_ms)ms, context_keys=[$(join(keys(invoke.context), ", "))])",
     )
 end
 
 function Base.show(io::IO, stats::SessionStats)
     print(
         io,
-        "SessionStats(id=$(stats.id), label=:$(stats.label), total=$(stats.total_invokes), success_rate=$(round(stats.success_rate * 100, digits=1))%, invokes=$(length(stats.invokes))/$(capacity(stats.invokes)))"
+        "SessionStats(id=$(stats.id), label=:$(stats.label), total=$(stats.total_invokes), success_rate=$(round(stats.success_rate * 100, digits=1))%, invokes=$(length(stats.invokes))/$(capacity(stats.invokes)))",
     )
 end
 
 function Base.show(io::IO, session::Session)
     print(
         io,
-        "Session(id=$(session.id), labels=[$(join(keys(session.stats), ", "))])"
+        "Session(id=$(session.id), labels=[$(join(keys(session.stats), ", "))])",
     )
 end
 

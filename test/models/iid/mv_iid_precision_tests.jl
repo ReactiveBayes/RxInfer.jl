@@ -36,7 +36,7 @@
             initialization = mv_iid_wishart_init(d),
             returnvars = KeepLast(),
             iterations = 10,
-            free_energy = Float64
+            free_energy = Float64,
         )
     end
 
@@ -78,16 +78,16 @@
                 MvNormalMeanPrecision(
                     mean(result.posteriors[:m]), mean(result.posteriors[:P])
                 ),
-                [x, y]
+                [x, y],
             ),
-            label = "Estimated"
+            label = "Estimated",
         )
         p = contour!(
             p,
             X,
             Y,
             (x, y) -> pdf(MvNormalMeanPrecision(m, P), [x, y]),
-            label = "Real"
+            label = "Real",
         )
     end
 

@@ -43,7 +43,7 @@ end
     result = infer(
         model = beta_bernoulli(),
         data = (y = 1.0,),
-        postprocess = CustomPostprocess()
+        postprocess = CustomPostprocess(),
     )
 
     @test occursin("Beta{Float64}(α=2.0, β=1.0)", result.posteriors[:θ])
@@ -78,7 +78,7 @@ end
         data = (y = 1.0,),
         postprocess = CustomPostprocessShouldNotBeInvoked(),
         catch_exception = true,
-        disable_inference_error_hint = true
+        disable_inference_error_hint = true,
     )
 
     @test result.error[1] isa ErrorException

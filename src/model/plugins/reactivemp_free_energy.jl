@@ -36,7 +36,7 @@ const BetheFreeEnergyDefaultScheduler = AsapScheduler()
 BetheFreeEnergy(::Type{T}) where {T} = BetheFreeEnergy(
     T,
     BetheFreeEnergyDefaultMarginalSkipStrategy,
-    BetheFreeEnergyDefaultScheduler
+    BetheFreeEnergyDefaultScheduler,
 )
 
 get_skip_strategy(objective::BetheFreeEnergy) = objective.skip_strategy
@@ -63,7 +63,7 @@ function GraphPPL.preprocess_plugin(
     ::Context,
     label::NodeLabel,
     nodedata::NodeData,
-    ::NodeCreationOptions
+    ::NodeCreationOptions,
 )
     return label, nodedata
 end
@@ -89,7 +89,7 @@ function GraphPPL.postprocess_plugin(
             factornode,
             metadata,
             skip_strategy,
-            scheduler
+            scheduler,
         )
         setextra!(node, ReactiveMPExtraBetheFreeEnergyStreamKey, bfe_stream)
     end
@@ -103,7 +103,7 @@ function GraphPPL.postprocess_plugin(
                 VariableBoundEntropy(),
                 variable,
                 skip_strategy,
-                scheduler
+                scheduler,
             )
             setextra!(node, ReactiveMPExtraBetheFreeEnergyStreamKey, bfe_stream)
         end
@@ -140,8 +140,8 @@ function score(
         (nodedata::GraphPPL.NodeData) ->
             ReactiveMP.degree(getextra(nodedata, :rmp_variable))
 
-    data_point_entropies_n     = mapreduce(degree_fn, +, getdatavars(model), init = 0)
-    constant_point_entropies_n = mapreduce(degree_fn, +, getconstantvars(model), init = 0)
+    data_point_entropies_n     = mapreduce(degree_fn, +, getdatavars(model); init = 0)
+    constant_point_entropies_n = mapreduce(degree_fn, +, getconstantvars(model); init = 0)
 
     point_entropies = CountingReal(
         T, data_point_entropies_n + constant_point_entropies_n
@@ -150,7 +150,7 @@ function score(
     bfe_stream =
         combineLatest(
             (node_bound_free_energies_sum, variable_bound_entropies_sum),
-            PushNew()
+            PushNew(),
         ) |> map(T, d -> float(d[1] + d[2] - point_entropies))
 
     return apply_diagnostic_check(diagnostic_checks, nothing, bfe_stream)
@@ -174,7 +174,7 @@ end
 function apply_diagnostic_check(
     ::ObjectiveDiagnosticCheckNaNs,
     variable::GraphPPL.VariableNodeProperties,
-    stream
+    stream,
 )
     error_fn = let variable = variable
         (_) -> lazy"""
@@ -201,7 +201,7 @@ end
 function apply_diagnostic_check(
     ::ObjectiveDiagnosticCheckInfs,
     variable::GraphPPL.VariableNodeProperties,
-    stream
+    stream,
 )
     error_fn = let variable = variable
         (_) -> lazy"""

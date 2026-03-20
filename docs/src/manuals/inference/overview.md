@@ -273,44 +273,20 @@ RxInfer.iserror
 
 - ### `callbacks`
 
-The inference function has its own lifecycle. The user is free to provide some (or none) of the callbacks to inject some extra logging or other procedures in the inference function, e.g.
+The inference function and underlying reactive message passing procedure both have their own lifecycle. The user is free to provide some (or none) of the callbacks to inject extra logic during the inference procedure. Callbacks can be a `NamedTuple`, `Dict`, or any custom structure that implements `ReactiveMP.handle_event`. For example:
 
 ```julia
 result = infer(
     ...,
     callbacks = (
-        on_marginal_update = (model, name, update) -> println("\$(name) has been updated: \$(update)"),
-        after_inference    = (args...) -> println("Inference has been completed")
+        on_marginal_update = (event) -> println("\$(event.variable_name) has been updated: \$(event.update)"),
+        after_inference    = (event) -> println("Inference has been completed")
     )
 )
 ```
 
-The `callbacks` keyword argument accepts a named-tuple of 'name = callback' pairs. 
-The list of all possible callbacks for different inference setting (batch or streamline) and their arguments is present below:
-
-- `before_model_creation()`
-- `after_model_creation(model::ProbabilisticModel)`
-
-**Exlusive for batch inference**
-
-- `on_marginal_update(model::ProbabilisticModel, name::Symbol, update)`
-- `before_inference(model::ProbabilisticModel)`
-- `before_iteration(model::ProbabilisticModel, iteration::Int)::Bool`
-- `before_data_update(model::ProbabilisticModel, data)`
-- `after_data_update(model::ProbabilisticModel, data)`
-- `after_iteration(model::ProbabilisticModel, iteration::Int)::Bool`
-- `after_inference(model::ProbabilisticModel)`
-
-!!! note
-    `before_iteration` and `after_iteration` callbacks are allowed to return `true/false` value. `true` indicates that iterations must be halted and no further inference should be made.
-
-**Exlusive for streamline inference**
-
-- `before_autostart(engine::RxInferenceEngine)`
-- `after_autostart(engine::RxInferenceEngine)`
-
-See [Early stopping](@ref manual-inference-early-stopping) for an opt-in callback example, which implements early stopping criterion for Free Energy.
-See [Benchmarking RxInfer via callbacks](@ref user-guide-debugging-benchmark-callbacks) for another examples demonstrating how to benchmark inference via callbacks.
+For the full list of available events, supported callback types, model metadata, and built-in callback handlers, see the [Callbacks](@ref manual-inference-callbacks) section.
+See also [Early stopping](@ref manual-inference-early-stopping) and [Benchmark callbacks](@ref manual-inference-benchmark-callbacks).
 
 - ### `addons`
 

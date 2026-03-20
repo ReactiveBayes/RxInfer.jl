@@ -59,7 +59,7 @@ function Base.show(io::IO, result::InferenceResult)
             IOContext(
                 io, :compact => true, :limit => true, :displaysize => (1, 80)
             ),
-            result.free_energy
+            result.free_energy,
         )
         print(io, "\n")
     end
@@ -67,7 +67,7 @@ function Base.show(io::IO, result::InferenceResult)
     if iserror(result)
         print(
             io,
-            "[ WARN ] An error has occurred during the inference procedure. The result might not be complete. You can use the `.error` field to access the error and its backtrace. Use `Base.showerror` function to display the error."
+            "[ WARN ] An error has occurred during the inference procedure. The result might not be complete. You can use the `.error` field to access the error and its backtrace. Use `Base.showerror` function to display the error.",
         )
     end
 end
@@ -92,7 +92,7 @@ function Base.getproperty(result::InferenceResult, property::Symbol)
             """
             Bethe Free Energy has not been computed. 
             Use `free_energy = true` keyword argument for the `inference` function to compute Bethe Free Energy values.
-            """
+            """,
         )
     else
         return getfield(result, property)
@@ -139,7 +139,7 @@ function batch_inference(;
     # catch exceptions during the inference procedure, optional, defaults to false
     catch_exception = false,
     # disable inference error hints
-    disable_inference_error_hint = false
+    disable_inference_error_hint = false,
 )
     _options = convert(ReactiveMPInferenceOptions, options)
     # If the `options` does not have `warn` key inside, override it with the keyword `warn`
@@ -155,13 +155,21 @@ function batch_inference(;
         _options = setaddons(_options, addons)
     end
 
+    # Set ReactiveMP event handler if `callbacks` are set
+    if !isnothing(callbacks)
+        if warn && !isnothing(getcallbacks(_options))
+            @warn "Both `callbacks = ...` and `options = (callbacks = ..., )` specify a value for the `callbacks`. Ignoring the `options` setting. Set `warn = false` to supress this warning."
+        end
+        _options = setcallbacks(_options, callbacks)
+    end
+
     # We create a model with the `GraphPPL` package and insert a certain RxInfer related 
     # plugins which include the VI plugin, meta plugin and the ReactiveMP integration plugin
     modelplugins = GraphPPL.PluginsCollection(
         GraphPPL.VariationalConstraintsPlugin(constraints),
         GraphPPL.MetaPlugin(meta),
         RxInfer.InitializationPlugin(initialization),
-        RxInfer.ReactiveMPInferencePlugin(_options)
+        RxInfer.ReactiveMPInferencePlugin(_options),
     )
 
     is_free_energy, S = unwrap_free_energy_option(free_energy)
@@ -181,7 +189,7 @@ function batch_inference(;
     # The `_model` here still must be a `ModelGenerator`
     _model = GraphPPL.with_backend(
         GraphPPL.with_plugins(model, modelplugins),
-        ReactiveMPGraphPPLBackend(Static.static(allow_node_contraction))
+        ReactiveMPGraphPPLBackend(Static.static(allow_node_contraction)),
     )
 
     infer_check_dicttype(:data, data)
@@ -195,7 +203,7 @@ function batch_inference(;
             )
         else # else we throw an error
             error(
-                "`predictvar` is specified as `$(predictvars)`, but `data` is not provided. Make sure to provide `data` or specify `predictvars` explicitly."
+                "`predictvar` is specified as `$(predictvars)`, but `data` is not provided. Make sure to provide `data` or specify `predictvars` explicitly.",
             )
         end
         # If `predictvar` is specified, but `data` is not, we initialize the `data` with missing values
@@ -233,9 +241,9 @@ function batch_inference(;
 
     infer_check_dicttype(:predictvars, predictvars)
 
-    inference_invoke_callback(callbacks, :before_model_creation)
+    invoke_callback(callbacks, BeforeModelCreationEvent())
     fmodel = create_model(_model | data)
-    inference_invoke_callback(callbacks, :after_model_creation, fmodel)
+    invoke_callback(callbacks, AfterModelCreationEvent(fmodel))
     vardict = getvardict(fmodel)
     vardict = GraphPPL.variables(vardict) # TODO bvdmitri, should work recursively as well
 
@@ -305,13 +313,26 @@ function batch_inference(;
     executed_iterations = 0
 
     try
-        on_marginal_update = inference_get_callback(callbacks, :on_marginal_update)
-        subscriptions_rv   = Dict(variable => subscribe!(obtain_marginal(vardict[variable]) |> ensure_update(fmodel, on_marginal_update, variable, updates[variable]), actor) for (variable, actor) in pairs(actors_rv))
-        subscriptions_pr   = Dict(variable => subscribe!(obtain_prediction(vardict[variable]) |> ensure_update(fmodel, on_marginal_update, variable, updates[variable]), actor) for (variable, actor) in pairs(actors_pr))
+        subscriptions_rv = Dict(
+            variable => subscribe!(
+                obtain_marginal(vardict[variable]) |> ensure_update(
+                    fmodel, callbacks, variable, updates[variable]
+                ),
+                actor,
+            ) for (variable, actor) in pairs(actors_rv)
+        )
+        subscriptions_pr = Dict(
+            variable => subscribe!(
+                obtain_prediction(vardict[variable]) |> ensure_update(
+                    fmodel, callbacks, variable, updates[variable]
+                ),
+                actor,
+            ) for (variable, actor) in pairs(actors_pr)
+        )
 
         if !isempty(actors_pr) && is_free_energy
             error(
-                "The Bethe Free Energy computation is not compatible with the prediction functionality. Set `free_energy = false` to suppress this error."
+                "The Bethe Free Energy computation is not compatible with the prediction functionality. Set `free_energy = false` to suppress this error.",
             )
         end
 
@@ -322,23 +343,23 @@ function batch_inference(;
 
         if isnothing(data) || isempty(data)
             error(
-                "Data is empty. Make sure you used `data` keyword argument with correct value."
+                "Data is empty. Make sure you used `data` keyword argument with correct value.",
             )
         else
             foreach(
                 filter(
                     pair -> isdata(last(pair)) && !isanonymous(last(pair)),
-                    pairs(vardict)
-                )
+                    pairs(vardict),
+                ),
             ) do pair
                 varname = first(pair)
                 haskey(data, varname) || error(
-                    "Data entry `$(varname)` is missing in `data` or `predictvars` arguments. Double check `data = ($(varname) = ???, )` or `predictvars = ($(varname) = ???, )`"
+                    "Data entry `$(varname)` is missing in `data` or `predictvars` arguments. Double check `data = ($(varname) = ???, )` or `predictvars = ($(varname) = ???, )`",
                 )
             end
         end
 
-        inference_invoke_callback(callbacks, :before_inference, fmodel)
+        invoke_callback(callbacks, BeforeInferenceEvent(fmodel))
 
         fdata = filter(pairs(data)) do pair
             hk      = haskey(vardict, first(pair))
@@ -356,24 +377,21 @@ function batch_inference(;
         ))
 
         for iteration in 1:_iterations
-            if something(
-                ensure_bool_or_nothing(
-                    inference_invoke_callback(
-                        callbacks, :before_iteration, fmodel, iteration
-                    )
-                ),
-                false
-            )::Bool
+            before_iteration_event = invoke_callback(
+                callbacks,
+                BeforeIterationEvent(fmodel, iteration),
+            )
+            if before_iteration_event.stop_iteration
                 break
             end
-            inference_invoke_callback(
-                callbacks, :before_data_update, fmodel, data
+            invoke_callback(
+                callbacks, BeforeDataUpdateEvent(fmodel, data)
             )
             for (key, value) in fdata
                 update!(cacheddatavars[key], get_data(value))
             end
-            inference_invoke_callback(
-                callbacks, :after_data_update, fmodel, data
+            invoke_callback(
+                callbacks, AfterDataUpdateEvent(fmodel, data)
             )
 
             # Check that all requested marginals have been updated and unset the `updated` flag
@@ -386,14 +404,11 @@ function batch_inference(;
 
             executed_iterations += 1
 
-            if something(
-                ensure_bool_or_nothing(
-                    inference_invoke_callback(
-                        callbacks, :after_iteration, fmodel, iteration
-                    )
-                ),
-                false
-            )::Bool
+            after_iteration_event = invoke_callback(
+                callbacks,
+                AfterIterationEvent(fmodel, iteration),
+            )
+            if after_iteration_event.stop_iteration
                 break
             end
         end
@@ -403,12 +418,12 @@ function batch_inference(;
             unsubscribe!(subscription)
         end
 
-        inference_invoke_callback(callbacks, :after_inference, fmodel)
+        invoke_callback(callbacks, AfterInferenceEvent(fmodel))
     catch error
         potential_error = inference_process_error(
             error;
             rethrow = !catch_exception,
-            disable_inference_error_hint = disable_inference_error_hint
+            disable_inference_error_hint = disable_inference_error_hint,
         )
     end
 
@@ -458,7 +473,17 @@ function available_callbacks(::typeof(batch_inference))
         :before_data_update,
         :after_data_update,
         :after_iteration,
-        :after_inference
+        :after_inference,
+        :before_message_rule_call,
+        :after_message_rule_call,
+        :before_product_of_two_messages,
+        :after_product_of_two_messages,
+        :before_product_of_messages,
+        :after_product_of_messages,
+        :before_form_constraint_applied,
+        :after_form_constraint_applied,
+        :before_marginal_computation,
+        :after_marginal_computation,
     ))
 end
 

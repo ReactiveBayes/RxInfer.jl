@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- **Breaking:** The callback system has been refactored to use event structs instead of dispatch with positional arguments. All callback events are now concrete structs subtyping `ReactiveMP.Event{E}` with named fields. Callbacks receive a single event object instead of positional arguments.
+  - **NamedTuple/Dict callbacks**: Functions now receive a single event object instead of positional args. E.g. `(model, iteration) -> ...` becomes `(event) -> println(event.model, event.iteration)`.
+  - **Custom callback structs**: The `callbacks` field of `infer` function now accepts custom structs that implement `ReactiveMP.handle_event(::MyCustomCallbacksHandler, event::SomeEvent)`.
+  - **ReactiveMP events**: It is possible now to add callbacks to the events happening in ReactiveMP inference engine. See the documentation of ReactiveMP for the available events.
+  - **`StopEarlyIterationStrategy`**: Now receives an `AfterIterationEvent` instead of `(model, iteration)`.
+  - New RxInfer-level event types: `BeforeModelCreationEvent`, `AfterModelCreationEvent`, `BeforeInferenceEvent`, `AfterInferenceEvent`, `BeforeIterationEvent`, `AfterIterationEvent`, `BeforeDataUpdateEvent`, `AfterDataUpdateEvent`, `OnMarginalUpdateEvent`, `BeforeAutostartEvent`, `AfterAutostartEvent`.
+  - Migration is straightforward: replace positional arguments with named field access on the event object. See the Callbacks section in the documentation for details.
+- The `callbacks` argument in the `infer` function now accepts any custom structure that implements `ReactiveMP.handle_event`, in addition to `NamedTuple` and `Dict`. The available callbacks list now also includes ReactiveMP-level callbacks such as `before_message_rule_call`, `after_message_rule_call`, `before_product_of_messages`, `after_product_of_messages`, `before_marginal_computation`, `after_marginal_computation`, and others.
+- **Breaking:** `before_iteration` and `after_iteration` callbacks now use a mutable `stop_iteration::Bool` field on the event (default `false`). Set `event.stop_iteration = true` from a callback to halt iterations early instead of returning `true`. The `StopEarlyIterationStrategy` has been updated accordingly.
+- The `infer` function now accepts a `benchmark = true` keyword argument that automatically merges `RxInferBenchmarkCallbacks` with user-provided callbacks. Benchmark results are accessible via `result.model.metadata[:benchmark]`.
+- The `infer` function now accepts a `trace = true` keyword argument that automatically merges `RxInferTraceCallbacks` with user-provided callbacks. All callback events are recorded as `TracedEvent` and accessible via `result.model.metadata[:trace]`.
 - Tests are now running with `TestItemRunner` instead of `ReTestItems`
 - `infer` function got a new keyword argument `disable_inference_error_hint` that disables the inference error hint if set to `true`
 - The inference error hint now can be forced to throw an error with `THROW_ON_INFERENCE_ERROR_HINT` environment variable. This is done primarily to catch errors on CI when a test prints this unintentionally (which also confuses our developers in [$606](https://github.com/ReactiveBayes/RxInfer.jl/issues/606)). All tests or documentation examples now need to use the `disable_inference_error_hint` if the error is intentional.
