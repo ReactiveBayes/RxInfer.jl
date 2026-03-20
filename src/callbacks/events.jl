@@ -69,13 +69,17 @@ Fires right before each variational iteration.
 # Fields
 - `model::M`: the [`ProbabilisticModel`](@ref) instance
 - `iteration::Int`: the current iteration number
+- `stop_iteration::Bool`: set to `true` from a callback to halt iterations early (default: `false`)
 
-See also: [`AfterIterationEvent`](@ref), [`StopIteration`](@ref), [Callbacks](@ref manual-inference-callbacks)
+See also: [`AfterIterationEvent`](@ref), [Callbacks](@ref manual-inference-callbacks)
 """
-struct BeforeIterationEvent{M} <: Event{:before_iteration}
+mutable struct BeforeIterationEvent{M} <: Event{:before_iteration}
     model::M
     iteration::Int
+    stop_iteration::Bool
 end
+
+BeforeIterationEvent(model::M, iteration::Int) where {M} = BeforeIterationEvent(model, iteration, false)
 
 """
     AfterIterationEvent{M} <: ReactiveMP.Event{:after_iteration}
@@ -85,13 +89,17 @@ Fires right after each variational iteration.
 # Fields
 - `model::M`: the [`ProbabilisticModel`](@ref) instance
 - `iteration::Int`: the current iteration number
+- `stop_iteration::Bool`: set to `true` from a callback to halt iterations early (default: `false`)
 
-See also: [`BeforeIterationEvent`](@ref), [`StopIteration`](@ref), [Callbacks](@ref manual-inference-callbacks)
+See also: [`BeforeIterationEvent`](@ref), [Callbacks](@ref manual-inference-callbacks)
 """
-struct AfterIterationEvent{M} <: Event{:after_iteration}
+mutable struct AfterIterationEvent{M} <: Event{:after_iteration}
     model::M
     iteration::Int
+    stop_iteration::Bool
 end
+
+AfterIterationEvent(model::M, iteration::Int) where {M} = AfterIterationEvent(model, iteration, false)
 
 """
     BeforeDataUpdateEvent{M, D} <: ReactiveMP.Event{:before_data_update}

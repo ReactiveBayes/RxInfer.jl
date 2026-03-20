@@ -93,10 +93,10 @@ function Base.show(io::IO, callbacks::RxInferTraceCallbacks)
     end
 end
 
-import ReactiveMP: invoke_callback, Event, event_name
+import ReactiveMP: handle_event, Event, event_name
 
 # Catch-all: trace every event
-function ReactiveMP.invoke_callback(
+function ReactiveMP.handle_event(
     callbacks::RxInferTraceCallbacks, event::Event
 )
     push!(callbacks.events, TracedEvent(event))
@@ -104,7 +104,7 @@ function ReactiveMP.invoke_callback(
 end
 
 # Special handling for :after_model_creation to save to metadata
-function ReactiveMP.invoke_callback(
+function ReactiveMP.handle_event(
     callbacks::RxInferTraceCallbacks,
     event::AfterModelCreationEvent,
 )

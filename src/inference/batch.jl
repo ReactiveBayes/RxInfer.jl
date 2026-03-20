@@ -377,12 +377,11 @@ function batch_inference(;
         ))
 
         for iteration in 1:_iterations
-            if should_stop_iteration(
-                invoke_callback(
-                    callbacks,
-                    BeforeIterationEvent(fmodel, iteration),
-                ),
+            before_iteration_event = invoke_callback(
+                callbacks,
+                BeforeIterationEvent(fmodel, iteration),
             )
+            if before_iteration_event.stop_iteration
                 break
             end
             invoke_callback(
@@ -405,12 +404,11 @@ function batch_inference(;
 
             executed_iterations += 1
 
-            if should_stop_iteration(
-                invoke_callback(
-                    callbacks,
-                    AfterIterationEvent(fmodel, iteration),
-                ),
+            after_iteration_event = invoke_callback(
+                callbacks,
+                AfterIterationEvent(fmodel, iteration),
             )
+            if after_iteration_event.stop_iteration
                 break
             end
         end

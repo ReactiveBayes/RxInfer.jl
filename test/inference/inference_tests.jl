@@ -487,8 +487,11 @@ end
             free_energy = true,
             callbacks = (
                 # halt before iteration 5, but the logic could be more complex of course
-                before_iteration = (event) ->
-                    event.iteration === 5 ? StopIteration() : nothing,
+                before_iteration = (event) -> begin
+                    if event.iteration === 5
+                        event.stop_iteration = true
+                    end
+                end,
             ),
         )
 
@@ -508,8 +511,11 @@ end
             free_energy = true,
             callbacks = (
                 # halt after iteration 5, but the logic could be more complex of course
-                after_iteration = (event) ->
-                    event.iteration === 5 ? StopIteration() : nothing,
+                after_iteration = (event) -> begin
+                    if event.iteration === 5
+                        event.stop_iteration = true
+                    end
+                end,
             ),
         )
 
@@ -1448,7 +1454,7 @@ end
 
     @testset "Test callbacks with custom struct" begin
         struct TestCustomCallbackHandler end
-        ReactiveMP.invoke_callback(
+        ReactiveMP.handle_event(
             ::TestCustomCallbackHandler, ::ReactiveMP.Event
         ) = nothing
         result = infer(

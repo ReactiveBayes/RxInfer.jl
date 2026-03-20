@@ -89,16 +89,16 @@ Base.isempty(callbacks::RxInferBenchmarkCallbacks) = isempty(
     callbacks.before_model_creation_ts
 )
 
-import ReactiveMP: invoke_callback, Event
+import ReactiveMP: handle_event, Event
 
 # Fallback: ignore unhandled events
-function ReactiveMP.invoke_callback(
+function ReactiveMP.handle_event(
     callbacks::RxInferBenchmarkCallbacks, ::Event
 )
     return nothing
 end
 
-function ReactiveMP.invoke_callback(
+function ReactiveMP.handle_event(
     callbacks::RxInferBenchmarkCallbacks, ::BeforeModelCreationEvent
 )
     push!(callbacks.before_model_creation_ts, time_ns())
@@ -106,7 +106,7 @@ function ReactiveMP.invoke_callback(
     push!(callbacks.after_iteration_ts, UInt64[])
 end
 
-function ReactiveMP.invoke_callback(
+function ReactiveMP.handle_event(
     callbacks::RxInferBenchmarkCallbacks,
     event::AfterModelCreationEvent,
 )
@@ -121,37 +121,37 @@ function ReactiveMP.invoke_callback(
     push!(callbacks.after_model_creation_ts, time_ns())
 end
 
-function ReactiveMP.invoke_callback(
+function ReactiveMP.handle_event(
     callbacks::RxInferBenchmarkCallbacks, ::BeforeInferenceEvent
 )
     push!(callbacks.before_inference_ts, time_ns())
 end
 
-function ReactiveMP.invoke_callback(
+function ReactiveMP.handle_event(
     callbacks::RxInferBenchmarkCallbacks, ::AfterInferenceEvent
 )
     push!(callbacks.after_inference_ts, time_ns())
 end
 
-function ReactiveMP.invoke_callback(
+function ReactiveMP.handle_event(
     callbacks::RxInferBenchmarkCallbacks, ::BeforeIterationEvent
 )
     push!(last(callbacks.before_iteration_ts), time_ns())
 end
 
-function ReactiveMP.invoke_callback(
+function ReactiveMP.handle_event(
     callbacks::RxInferBenchmarkCallbacks, ::AfterIterationEvent
 )
     push!(last(callbacks.after_iteration_ts), time_ns())
 end
 
-function ReactiveMP.invoke_callback(
+function ReactiveMP.handle_event(
     callbacks::RxInferBenchmarkCallbacks, ::BeforeAutostartEvent
 )
     push!(callbacks.before_autostart_ts, time_ns())
 end
 
-function ReactiveMP.invoke_callback(
+function ReactiveMP.handle_event(
     callbacks::RxInferBenchmarkCallbacks, ::AfterAutostartEvent
 )
     push!(callbacks.after_autostart_ts, time_ns())

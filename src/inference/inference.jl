@@ -2,7 +2,6 @@ export KeepEach, KeepLast
 export infer
 export InferenceResult
 export RxInferenceEngine, RxInferenceEvent
-export StopIteration
 
 using Preferences
 
@@ -74,46 +73,6 @@ set_updated!(updated::MarginalHasBeenUpdated)   = updated.updated = true
 Rocket.on_next!(updated::MarginalHasBeenUpdated, anything) = set_updated!(updated)
 Rocket.on_error!(updated::MarginalHasBeenUpdated, err)     = begin end
 Rocket.on_complete!(updated::MarginalHasBeenUpdated)       = begin end
-
-"""
-    StopIteration()
-
-Return this value from a `before_iteration` or `after_iteration` callback to signal
-that the inference procedure should stop iterating. Any other return value
-(including `nothing`) will let iterations continue.
-
-See also: [Callbacks](@ref manual-inference-callbacks), [`StopEarlyIterationStrategy`](@ref)
-
-# Example
-```julia
-result = infer(
-    model = my_model(),
-    data  = my_data,
-    iterations = 100,
-    callbacks = (
-        after_iteration = (event) -> event.iteration >= 5 ? StopIteration() : nothing,
-    )
-)
-```
-"""
-struct StopIteration end
-
-should_stop_iteration(::StopIteration) = true
-should_stop_iteration(anything_else) = false
-
-# Reduce functions for merged callbacks.
-# For before/after iteration events, if any handler returns `StopIteration`,
-# the merged result must also be `StopIteration`.
-reduce_stop_iteration(a::StopIteration, _) = a
-reduce_stop_iteration(_, b::StopIteration) = b
-reduce_stop_iteration(_, b) = b
-
-# Returns a `NamedTuple` of per-event reduce functions for use with `ReactiveMP.merge_callbacks`.
-# Ensures that `StopIteration` is propagated correctly when multiple callback handlers are merged.
-callbacks_reduce_fn() = (
-    before_iteration = reduce_stop_iteration,
-    after_iteration = reduce_stop_iteration,
-)
 
 # This creates a `tap` operator that will set the `updated` flag to true.
 # Later on we check flags and `unset!` them after the `update!` procedure
@@ -498,9 +457,10 @@ inference_fill_predictions(s::Symbol, d::DataVariable) = NamedTuple{Tuple([s])}(
     missing
 ])
 
-# RxInfer uses and extends ReactiveMP's invoke_callback functionality
-# It is also being used exposed to the users via the `callbacks = ` keyword argument
-import ReactiveMP: invoke_callback, merge_callbacks
+# RxInfer uses and extends ReactiveMP's callback functionality
+# Custom callback handlers should implement `ReactiveMP.handle_event` for the events they want to handle
+# `invoke_callback` dispatches to `handle_event` and always returns the event itself
+import ReactiveMP: invoke_callback, handle_event, merge_callbacks
 
 unwrap_free_energy_option(option::Bool)                      = (option, Real)
 unwrap_free_energy_option(option::Type{T}) where {T <: Real} = (true, T)
@@ -528,7 +488,7 @@ function _check_available_callback_keys(
 end
 
 # For arbitrary callback structures (custom structs, etc.) we skip the key check
-# since they use `ReactiveMP.invoke_callback` dispatch instead
+# since they use `ReactiveMP.handle_event` dispatch instead
 function _check_available_callback_keys(warn, callbacks, available_callbacks)
     return nothing
 end
@@ -614,7 +574,7 @@ Check the official documentation for more information about some of the argument
 - `free_energy_diagnostics = DefaultObjectiveDiagnosticChecks`: free energy diagnostic checks, optional, by default checks for possible `NaN`s and `Inf`s. `nothing` disables all checks.
 - `showprogress = false`: show progress module, optional, defaults to false (exclusive for batch inference)
 - `catch_exception`  specifies whether exceptions during the inference procedure should be caught, optional, defaults to false (exclusive for batch inference)
-- `callbacks = nothing`: inference cycle callbacks, optional. Can be a `NamedTuple`, `Dict`, or any custom structure that implements `ReactiveMP.invoke_callback`. See [Callbacks](@ref manual-inference-callbacks) for a comprehensive overview, [Benchmark callbacks](@ref manual-inference-benchmark-callbacks) for performance analysis, [Trace callbacks](@ref manual-inference-trace-callbacks) for event tracing, and [Early stopping](@ref manual-inference-early-stopping) for an opt-in callback example.
+- `callbacks = nothing`: inference cycle callbacks, optional. Can be a `NamedTuple`, `Dict`, or any custom structure that implements `ReactiveMP.handle_event`. See [Callbacks](@ref manual-inference-callbacks) for a comprehensive overview, [Benchmark callbacks](@ref manual-inference-benchmark-callbacks) for performance analysis, [Trace callbacks](@ref manual-inference-trace-callbacks) for event tracing, and [Early stopping](@ref manual-inference-early-stopping) for an opt-in callback example.
 - `addons = nothing`: inject and send extra computation information along messages
 - `postprocess = DefaultPostprocess()`: inference results postprocessing step, optional
 - `events = nothing`: inference cycle events, optional (exclusive for streamline inference)
@@ -695,16 +655,14 @@ function infer(;
     if benchmark
         callbacks = merge_callbacks(
             callbacks,
-            RxInferBenchmarkCallbacks();
-            reduce_fn = callbacks_reduce_fn(),
+            RxInferBenchmarkCallbacks(),
         )
     end
 
     if trace
         callbacks = merge_callbacks(
             callbacks,
-            RxInferTraceCallbacks();
-            reduce_fn = callbacks_reduce_fn(),
+            RxInferTraceCallbacks(),
         )
     end
 

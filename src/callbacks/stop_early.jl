@@ -68,7 +68,7 @@ function (strategy::StopEarlyIterationStrategy)(event::AfterIterationEvent)
         atol = strategy.atol,
         rtol = strategy.rtol,
     )
-        return StopIteration()
+        event.stop_iteration = true
     end
     return nothing
 end

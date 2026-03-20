@@ -61,13 +61,13 @@ end
     struct ArbitraryCallbackHandler end
 
     # Catch-all: ignore unhandled events
-    function ReactiveMP.invoke_callback(
+    function ReactiveMP.handle_event(
         ::ArbitraryCallbackHandler, ::ReactiveMP.Event
     )
         return nothing
     end
 
-    function ReactiveMP.invoke_callback(
+    function ReactiveMP.handle_event(
         ::ArbitraryCallbackHandler,
         event::OnMarginalUpdateEvent,
     )
@@ -101,15 +101,15 @@ end
         log::Vector{Tuple{Symbol, Int}}
     end
 
-    function ReactiveMP.invoke_callback(::ConcreteTypeHandler, ::ReactiveMP.Event)
+    function ReactiveMP.handle_event(::ConcreteTypeHandler, ::ReactiveMP.Event)
         return nothing
     end
 
-    function ReactiveMP.invoke_callback(handler::ConcreteTypeHandler, event::BeforeIterationEvent)
+    function ReactiveMP.handle_event(handler::ConcreteTypeHandler, event::BeforeIterationEvent)
         push!(handler.log, (:before_iteration, event.iteration))
     end
 
-    function ReactiveMP.invoke_callback(handler::ConcreteTypeHandler, event::AfterIterationEvent)
+    function ReactiveMP.handle_event(handler::ConcreteTypeHandler, event::AfterIterationEvent)
         push!(handler.log, (:after_iteration, event.iteration))
     end
 
@@ -118,15 +118,15 @@ end
         log::Vector{Tuple{Symbol, Int}}
     end
 
-    function ReactiveMP.invoke_callback(::EventNameHandler, ::ReactiveMP.Event)
+    function ReactiveMP.handle_event(::EventNameHandler, ::ReactiveMP.Event)
         return nothing
     end
 
-    function ReactiveMP.invoke_callback(handler::EventNameHandler, event::ReactiveMP.Event{:before_iteration})
+    function ReactiveMP.handle_event(handler::EventNameHandler, event::ReactiveMP.Event{:before_iteration})
         push!(handler.log, (:before_iteration, event.iteration))
     end
 
-    function ReactiveMP.invoke_callback(handler::EventNameHandler, event::ReactiveMP.Event{:after_iteration})
+    function ReactiveMP.handle_event(handler::EventNameHandler, event::ReactiveMP.Event{:after_iteration})
         push!(handler.log, (:after_iteration, event.iteration))
     end
 

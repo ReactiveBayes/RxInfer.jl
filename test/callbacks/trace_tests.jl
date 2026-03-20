@@ -136,7 +136,7 @@ end
     end
 end
 
-@testitem "trace = true should be compatible with custom callbacks and StopIteration" begin
+@testitem "trace = true should be compatible with custom callbacks and early stopping via stop_iteration" begin
     using RxInfer
     using ReactiveMP: event_name
 
@@ -157,9 +157,8 @@ end
             after_iteration = (event) -> begin
                 stopped_at[] = event.iteration
                 if event.iteration >= 3
-                    return StopIteration()
+                    event.stop_iteration = true
                 end
-                return nothing
             end,
         ),
     )

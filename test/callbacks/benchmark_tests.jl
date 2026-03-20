@@ -172,7 +172,7 @@ end
     end
 end
 
-@testitem "benchmark = true should be compatible with custom callbacks and StopIteration" begin
+@testitem "benchmark = true should be compatible with custom callbacks and early stopping via stop_iteration" begin
     using RxInfer
 
     @model function simple_model_for_benchmark_and_stop(y)
@@ -192,9 +192,8 @@ end
             after_iteration = (event) -> begin
                 stopped_at[] = event.iteration
                 if event.iteration >= 3
-                    return StopIteration()
+                    event.stop_iteration = true
                 end
-                return nothing
             end,
         ),
     )

@@ -273,7 +273,7 @@ RxInfer.iserror
 
 - ### `callbacks`
 
-The inference function and underlying reactive message passing procedure both have their own lifecycle. The user is free to provide some (or none) of the callbacks to inject extra logic during the inference procedure. Callbacks can be a `NamedTuple`, `Dict`, or any custom structure that implements `ReactiveMP.invoke_callback`. For example:
+The inference function and underlying reactive message passing procedure both have their own lifecycle. The user is free to provide some (or none) of the callbacks to inject extra logic during the inference procedure. Callbacks can be a `NamedTuple`, `Dict`, or any custom structure that implements `ReactiveMP.handle_event`. For example:
 
 ```julia
 result = infer(

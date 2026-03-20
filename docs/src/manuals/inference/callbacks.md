@@ -89,7 +89,7 @@ nothing #hide
 ### Custom callback structures
 
 For more advanced use cases, you can pass any custom structure as a callback handler.
-The structure must implement `ReactiveMP.invoke_callback` methods for the event types it wants to handle:
+The structure must implement `ReactiveMP.handle_event` methods for the event types it wants to handle:
 
 ```@example manual-inference-callbacks
 struct MyCallbackHandler
@@ -97,14 +97,14 @@ struct MyCallbackHandler
 end
 
 # Catch-all: ignore events you don't care about
-ReactiveMP.invoke_callback(::MyCallbackHandler, ::ReactiveMP.Event) = nothing
+ReactiveMP.handle_event(::MyCallbackHandler, ::ReactiveMP.Event) = nothing
 
 # Handle specific events by dispatching on the concrete event type
-function ReactiveMP.invoke_callback(handler::MyCallbackHandler, event::BeforeInferenceEvent)
+function ReactiveMP.handle_event(handler::MyCallbackHandler, event::BeforeInferenceEvent)
     push!(handler.log, "inference started")
 end
 
-function ReactiveMP.invoke_callback(handler::MyCallbackHandler, event::AfterInferenceEvent)
+function ReactiveMP.handle_event(handler::MyCallbackHandler, event::AfterInferenceEvent)
     push!(handler.log, "inference completed")
 end
 
@@ -132,14 +132,14 @@ struct MyEventNameHandler
 end
 
 # Catch-all
-ReactiveMP.invoke_callback(::MyEventNameHandler, ::ReactiveMP.Event) = nothing
+ReactiveMP.handle_event(::MyEventNameHandler, ::ReactiveMP.Event) = nothing
 
 # Dispatch using Event{:name} — no need to know the concrete struct name
-function ReactiveMP.invoke_callback(handler::MyEventNameHandler, event::ReactiveMP.Event{:before_inference})
+function ReactiveMP.handle_event(handler::MyEventNameHandler, event::ReactiveMP.Event{:before_inference})
     push!(handler.log, "inference started (via Event name)")
 end
 
-function ReactiveMP.invoke_callback(handler::MyEventNameHandler, event::ReactiveMP.Event{:after_inference})
+function ReactiveMP.handle_event(handler::MyEventNameHandler, event::ReactiveMP.Event{:after_inference})
     push!(handler.log, "inference completed (via Event name)")
 end
 
@@ -181,9 +181,9 @@ end
 
 struct MarginalHistoryCollector end
 
-ReactiveMP.invoke_callback(::MarginalHistoryCollector, ::ReactiveMP.Event) = nothing
+ReactiveMP.handle_event(::MarginalHistoryCollector, ::ReactiveMP.Event) = nothing
 
-function ReactiveMP.invoke_callback(::MarginalHistoryCollector, event::OnMarginalUpdateEvent)
+function ReactiveMP.handle_event(::MarginalHistoryCollector, event::OnMarginalUpdateEvent)
     history = get!(() -> [], event.model.metadata, :marginal_history)
     push!(history, (iteration_variable = event.variable_name, value = event.update))
 end
@@ -282,7 +282,7 @@ AfterIterationEvent
 ```
 
 !!! note
-    `before_iteration` and `after_iteration` callbacks can return [`StopIteration()`](@ref) to halt iterations early. Any other return value (including `nothing`) will let iterations continue. See [Early stopping](@ref manual-inference-early-stopping) for an example.
+    `before_iteration` and `after_iteration` events carry a mutable `stop_iteration::Bool` field (default `false`). Set `event.stop_iteration = true` from a callback to halt iterations early. See [Early stopping](@ref manual-inference-early-stopping) for an example.
 
 ```@docs
 BeforeDataUpdateEvent
@@ -330,12 +330,12 @@ For detailed descriptions of these events and their fields, refer to the officia
     )
     ```
 
-    For custom callback structures, implement `invoke_callback` methods that dispatch on the concrete event type:
+    For custom callback structures, implement `handle_event` methods that dispatch on the concrete event type:
     ```julia
     # Dispatch on specific events
-    ReactiveMP.invoke_callback(::MyHandler, event::BeforeInferenceEvent) = ... # event.model
+    ReactiveMP.handle_event(::MyHandler, event::BeforeInferenceEvent) = ... # event.model
     # Catch-all for events you don't care about
-    ReactiveMP.invoke_callback(::MyHandler, ::ReactiveMP.Event) = nothing
+    ReactiveMP.handle_event(::MyHandler, ::ReactiveMP.Event) = nothing
     ```
 
     The migration is straightforward: replace positional arguments with named field access on the event object. The event structs are fully documented with their field names — see the sections above.
