@@ -15,9 +15,8 @@ struct TracedEvent
     event::Event
 end
 
-Base.show(io::IO, te::TracedEvent) = print(
-    io, "TracedEvent(:$(event_name(typeof(te.event))))"
-)
+Base.show(io::IO, te::TracedEvent) =
+    print(io, "TracedEvent(:$(event_name(typeof(te.event))))")
 
 """
     RxInferTraceCallbacks()
@@ -74,21 +73,37 @@ Returns the vector of [`TracedEvent`](@ref) recorded by the trace callbacks filt
 
 See also: [`RxInferTraceCallbacks`](@ref).
 """
-tracedevents(event::Symbol, callbacks::RxInferTraceCallbacks) = filter(
-    e -> event_name(typeof(e.event)) == event, callbacks.events
-)
+tracedevents(event::Symbol, callbacks::RxInferTraceCallbacks) =
+    filter(e -> event_name(typeof(e.event)) == event, callbacks.events)
 
 Base.isempty(callbacks::RxInferTraceCallbacks) = isempty(callbacks.events)
+
+function _event_name_to_type_name(name::Symbol)
+    return join(map(uppercasefirst, split(string(name), "_"))) * "Event"
+end
 
 function Base.show(io::IO, callbacks::RxInferTraceCallbacks)
     if isempty(callbacks)
         print(io, "RxInferTraceCallbacks (empty, no events recorded)")
     else
+        events = callbacks.events
+        names = unique(event_name(typeof(e.event)) for e in events)
+        println(
+            io, "RxInferTraceCallbacks (", length(events), " events recorded)"
+        )
+        for name in names
+            println(io, "  :$name ")
+        end
+        hint_event = _event_name_to_type_name(first(names))
         print(
             io,
-            "RxInferTraceCallbacks (",
-            length(callbacks.events),
-            " events recorded)",
+            "Use `?",
+            hint_event,
+            " or ",
+            "@doc(",
+            hint_event,
+            ")",
+            "` to see the documentation for an event.",
         )
     end
 end
@@ -96,17 +111,14 @@ end
 import ReactiveMP: handle_event, Event, event_name
 
 # Catch-all: trace every event
-function ReactiveMP.handle_event(
-    callbacks::RxInferTraceCallbacks, event::Event
-)
+function ReactiveMP.handle_event(callbacks::RxInferTraceCallbacks, event::Event)
     push!(callbacks.events, TracedEvent(event))
     return nothing
 end
 
 # Special handling for :after_model_creation to save to metadata
 function ReactiveMP.handle_event(
-    callbacks::RxInferTraceCallbacks,
-    event::AfterModelCreationEvent,
+    callbacks::RxInferTraceCallbacks, event::AfterModelCreationEvent
 )
     if haskey(event.model.metadata, :trace)
         error(

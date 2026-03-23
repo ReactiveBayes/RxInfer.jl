@@ -318,7 +318,7 @@ function set_rmp_variable!(
     nodedata::NodeData,
     nodeproperties::VariableNodeProperties,
 )
-    varlabel = LazyString(nodeproperties) # TODO: should we make VariableNodeProperties mutable?
+    varlabel = nodeproperties # TODO: should we make VariableNodeProperties mutable?
     if is_random(nodeproperties)
         return setextra!(
             nodedata, ReactiveMPExtraVariableKey, randomvar(; label = varlabel)
