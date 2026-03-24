@@ -124,6 +124,9 @@ end
 
         @test haskey(result.model.metadata, :trace)
         @test result.model.metadata[:trace] isa RxInferTraceCallbacks
+        events = RxInfer.tracedevents(result.model.metadata[:trace])
+        @test hasproperty(first(events), :time_ns)
+        @test first(events).time_ns <= last(events).time_ns
     end
 
     @testset "Should error when both `trace = true` and `RxInferTraceCallbacks` are provided" begin
