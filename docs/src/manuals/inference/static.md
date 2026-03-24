@@ -131,6 +131,34 @@ result.predictions[:y]
 rand(result.predictions[:y][3])
 ```
 
+### [Uninformative data entries](@id manual-static-inference-uninformative-data)
+
+In addition to missing values (`missing`), RxInfer also supports uninformative (`Uninformative()`) entries. These correspond to data entries that are present in the dataset but intentionally carry no statistical information about the latent variables.
+
+Conceptually, an uninformative entry represents a situation where no observation exists in the model and thus should not influence the posterior update. This is different from missing, which indicates that the observation itself is absent and a prediction is computed instead.
+
+```@example manual-static-inference-uninformative-data
+result = infer(
+    model = beta_bernoulli(a = 1.0, b = 1.0),
+    data  = (y = [ true, false, Uninformative(), true, false ], )
+)
+```
+
+In this case, the entire dataset may also consist of `Uninformative()` entries:
+
+```@example manual-static-inference-uninformative-data
+result = infer(
+    model = beta_bernoulli(a = 1.0, b = 1.0),
+    data  = (y = [ Uninformative(), Uninformative(), Uninformative(), Uninformative(), Uninformative() ], )
+)
+```
+
+The resulting posterior equals the prior as intended.
+
+```@example manual-static-inference-uninformative-data
+result.posteriors[:θ]
+```
+
 ## [Variational Inference with static datasets](@id manual-static-inference-variational-inference)
 
 The example above is quite simple and performs exact Bayesian inference. However, for more complex model, we may need to specify variational constraints and perform variational inference. To demonstrate this, we will use a slightly more complex model, where we need to estimate mean and the precision of IID samples drawn from the [Normal distribution](https://en.wikipedia.org/wiki/Normal_distribution):
