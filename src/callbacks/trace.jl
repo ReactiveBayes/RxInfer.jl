@@ -15,8 +15,8 @@ struct TracedEvent
     event::Event
 end
 
-# Base.show(io::IO, te::TracedEvent) =
-#     print(io, "TracedEvent(:$(event_name(typeof(te.event))))")
+Base.summary(io::IO, te::TracedEvent) =
+    print(io, "TracedEvent(:$(event_name(typeof(te.event))))")
 
 """
     RxInferTraceCallbacks()
