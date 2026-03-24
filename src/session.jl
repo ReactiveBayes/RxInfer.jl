@@ -2,8 +2,12 @@ using Dates, UUIDs, Preferences, Logging
 
 import DataStructures: CircularBuffer, capacity
 
-preference_enable_session_logging = @load_preference("enable_session_logging", true)
-const preference_automatic_session_sharing = @load_preference("automatic_session_sharing", false)
+preference_enable_session_logging = @load_preference(
+    "enable_session_logging", true
+)
+const preference_automatic_session_sharing = @load_preference(
+    "automatic_session_sharing", false
+)
 
 """
     SessionInvoke
@@ -72,7 +76,9 @@ set_session_stats_capacity!(100)
 The change requires a Julia session restart to take effect. Default value is `1000`.
 Must be a positive integer.
 """
-const DEFAULT_SESSION_STATS_CAPACITY = @load_preference("session_stats_capacity", 1000)
+const DEFAULT_SESSION_STATS_CAPACITY = @load_preference(
+    "session_stats_capacity", 1000
+)
 
 """
     set_session_stats_capacity!(capacity::Int)
@@ -86,9 +92,13 @@ function set_session_stats_capacity!(capacity::Int)
 end
 
 # Constructor for empty stats
-function SessionStats(label::Symbol, capacity::Int = DEFAULT_SESSION_STATS_CAPACITY)
+function SessionStats(
+    label::Symbol, capacity::Int = DEFAULT_SESSION_STATS_CAPACITY
+)
     invokes = CircularBuffer{SessionInvoke}(capacity)
-    return SessionStats(uuid4(), label, 0, 0, 0, 0.0, Inf, -Inf, 0.0, Set{Symbol}(), invokes)
+    return SessionStats(
+        uuid4(), label, 0, 0, 0, 0.0, Inf, -Inf, 0.0, Set{Symbol}(), invokes
+    )
 end
 
 """
@@ -148,7 +158,10 @@ end
 Removes gathered statistics from the session. Optionally accepts a vector of labels to delete.
 If no labels specified deletes everything.
 """
-function reset_session!(session::Union{Nothing, Session} = RxInfer.default_session(), labels = nothing)
+function reset_session!(
+    session::Union{Nothing, Session} = RxInfer.default_session(),
+    labels = nothing
+)
     if isnothing(labels)
         labels = keys(session.stats)
     end
@@ -168,7 +181,9 @@ end
 Create a new session invoke with status set to `:unknown`.
 """
 function create_invoke()
-    return SessionInvoke(uuid4(), :unknown, Dates.now(), Dates.now(), Dict{Symbol, Any}())
+    return SessionInvoke(
+        uuid4(), :unknown, Dates.now(), Dates.now(), Dict{Symbol, Any}()
+    )
 end
 
 """
@@ -190,7 +205,9 @@ function update_stats!(stats::SessionStats, invoke::SessionInvoke)
     stats.success_rate = stats.success_count / stats.total_invokes
 
     # Calculate duration in milliseconds
-    duration_ms = Dates.value(Dates.Millisecond(invoke.execution_end - invoke.execution_start))
+    duration_ms = Dates.value(
+        Dates.Millisecond(invoke.execution_end - invoke.execution_start)
+    )
 
     # Update duration stats
     stats.min_duration_ms = min(stats.min_duration_ms, duration_ms)
@@ -228,7 +245,9 @@ function update_session!(session::Session, label::Symbol, invoke::SessionInvoke)
         if preference_automatic_session_sharing
             Base.Threads.@spawn try
                 Logging.with_logger(Logging.NullLogger()) do
-                    share_session_data(session, stats, [invoke], show_progress = false)
+                    share_session_data(
+                        session, stats, [invoke], show_progress = false
+                    )
                 end
             catch e
                 nothing
@@ -262,7 +281,9 @@ function with_session(f::F, session, label::Symbol) where {F}
             update_session!(session, label, invoke)
         end
     else
-        error(lazy"Unsupported session type $(typeof(session)). Should either be `RxInfer.Session` or `nothing`.")
+        error(
+            lazy"Unsupported session type $(typeof(session)). Should either be `RxInfer.Session` or `nothing`."
+        )
     end
 end
 
@@ -350,9 +371,16 @@ The default label is `:inference` which gathers statistics of the `infer` functi
     You may want to additionally install `PrettyTables.jl` package to see the nicely formatted output of the `summarize_session` function.
     It is not bundled with `RxInfer` by default, but, if installed manually, it makes the output more readable.
 """
-summarize_session(session::Session = RxInfer.default_session(), label::Symbol = :inference; n_last = 5) = summarize_session(stdout, session, label; n_last = n_last)
+summarize_session(session::Session = RxInfer.default_session(), label::Symbol = :inference; n_last = 5) = summarize_session(
+    stdout, session, label; n_last = n_last
+)
 
-function summarize_session(io::IO, session::Union{Session, Nothing} = RxInfer.default_session(), label::Symbol = :inference; n_last = 5)
+function summarize_session(
+    io::IO,
+    session::Union{Session, Nothing} = RxInfer.default_session(),
+    label::Symbol = :inference;
+    n_last = 5
+)
     if isnothing(session)
         println(io, "Session logging is disabled")
         return nothing
@@ -367,11 +395,30 @@ function summarize_session(io::IO, session::Union{Session, Nothing} = RxInfer.de
     println(io, "Success rate: $(round(stats.success_rate * 100, digits=1))%")
     println(io, "Failed invokes: $(stats.failed_count)")
 
-    mean_execution = round(stats.total_duration_ms / max(1, stats.total_invokes), digits = 2)
-    min_execution = stats.min_duration_ms == Inf ? 0.0 : round(stats.min_duration_ms, digits = 2)
-    max_execution = stats.max_duration_ms == -Inf ? 0.0 : round(stats.max_duration_ms, digits = 2)
+    mean_execution = round(
+        stats.total_duration_ms / max(1, stats.total_invokes), digits = 2
+    )
+    min_execution = if stats.min_duration_ms == Inf
+        0.0
+    else
+        round(stats.min_duration_ms, digits = 2)
+    end
+    max_execution = if stats.max_duration_ms == -Inf
+        0.0
+    else
+        round(stats.max_duration_ms, digits = 2)
+    end
 
-    println(io, "Average execution time ", mean_execution, "ms (min: ", min_execution, "ms, max: ", max_execution, "ms)")
+    println(
+        io,
+        "Average execution time ",
+        mean_execution,
+        "ms (min: ",
+        min_execution,
+        "ms, max: ",
+        max_execution,
+        "ms)"
+    )
     println(io, "Context keys: $(join(collect(stats.context_keys), ", "))")
 
     if stats.total_invokes == 0
@@ -382,7 +429,10 @@ function summarize_session(io::IO, session::Union{Session, Nothing} = RxInfer.de
     # Call label-specific summary with n_last parameter
     summarize_invokes(io, Val(label), invokes; n_last = n_last)
 
-    println(io, "\nTip: Share this session with `RxInfer.share_session_data()` to help improve RxInfer")
+    println(
+        io,
+        "\nTip: Share this session with `RxInfer.share_session_data()` to help improve RxInfer"
+    )
     println(io, "     and get better support when reporting issues.")
 
     return nothing
@@ -399,7 +449,10 @@ returns a new empty `SessionStats` instance.
 - `label::Symbol`: The label to get statistics for, defaults to :inference
 
 """
-function get_session_stats(session::Union{Nothing, Session} = RxInfer.default_session(), label::Symbol = :inference)
+function get_session_stats(
+    session::Union{Nothing, Session} = RxInfer.default_session(),
+    label::Symbol = :inference
+)
     if isnothing(session)
         return SessionStats(label)
     end
@@ -410,8 +463,16 @@ end
 
 # Show methods for nice printing
 function Base.show(io::IO, invoke::SessionInvoke)
-    duration_ms = round(Dates.value(Dates.Millisecond(invoke.execution_end - invoke.execution_start)), digits = 2)
-    print(io, "SessionInvoke(id=$(invoke.id), status=$(invoke.status), duration=$(duration_ms)ms, context_keys=[$(join(keys(invoke.context), ", "))])")
+    duration_ms = round(
+        Dates.value(
+            Dates.Millisecond(invoke.execution_end - invoke.execution_start)
+        ),
+        digits = 2
+    )
+    print(
+        io,
+        "SessionInvoke(id=$(invoke.id), status=$(invoke.status), duration=$(duration_ms)ms, context_keys=[$(join(keys(invoke.context), ", "))])"
+    )
 end
 
 function Base.show(io::IO, stats::SessionStats)
@@ -422,7 +483,10 @@ function Base.show(io::IO, stats::SessionStats)
 end
 
 function Base.show(io::IO, session::Session)
-    print(io, "Session(id=$(session.id), labels=[$(join(keys(session.stats), ", "))])")
+    print(
+        io,
+        "Session(id=$(session.id), labels=[$(join(keys(session.stats), ", "))])"
+    )
 end
 
 """

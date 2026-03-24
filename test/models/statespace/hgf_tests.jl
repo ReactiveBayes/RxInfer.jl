@@ -1,12 +1,23 @@
 @testitem "Hierarchical Gaussian Filter" begin
-    using RxInfer, BenchmarkTools, Random, Plots, Dates, LinearAlgebra, StableRNGs
+    using RxInfer,
+        BenchmarkTools, Random, Plots, Dates, LinearAlgebra, StableRNGs
 
     # `include(test/utiltests.jl)`
     include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
     # We create a single-time step of corresponding state-space process to
     # perform online learning (filtering)
-    @model function hgf(real_k, real_w, z_variance, y_variance, zt_min_mean, zt_min_var, xt_min_mean, xt_min_var, y)
+    @model function hgf(
+        real_k,
+        real_w,
+        z_variance,
+        y_variance,
+        zt_min_mean,
+        zt_min_var,
+        xt_min_mean,
+        xt_min_var,
+        y
+    )
         zt_min ~ Normal(mean = zt_min_mean, var = zt_min_var)
         xt_min ~ Normal(mean = xt_min_mean, var = xt_min_var)
 
@@ -29,7 +40,9 @@
     end
 
     ## Inference definition
-    function hgf_online_inference(data, vmp_iters, real_k, real_w, z_variance, y_variance)
+    function hgf_online_inference(
+        data, vmp_iters, real_k, real_w, z_variance, y_variance
+    )
         autoupdates = @autoupdates begin
             zt_min_mean, zt_min_var = mean_var(q(zt))
             xt_min_mean, xt_min_var = mean_var(q(xt))
@@ -90,7 +103,9 @@
 
     ## Inference execution
     vmp_iters = 10
-    result = hgf_online_inference(y, vmp_iters, real_k, real_w, z_variance, y_variance)
+    result = hgf_online_inference(
+        y, vmp_iters, real_k, real_w, z_variance, y_variance
+    )
 
     mz = result.history[:zt]
     mx = result.history[:xt]
@@ -106,8 +121,14 @@
     @test all((mean.(mz) .- 6 .* std.(mz)) .< z .< (mean.(mz) .+ 6 .* std.(mz)))
     @test all((mean.(mx) .- 6 .* std.(mx)) .< x .< (mean.(mx) .+ 6 .* std.(mx)))
     # Check if more than 95% of estimates are within 3std interval
-    @test (sum((mean.(mz) .- 3 .* std.(mz)) .< z .< (mean.(mz) .+ 3 .* std.(mz))) / n) > 0.95
-    @test (sum((mean.(mx) .- 3 .* std.(mx)) .< x .< (mean.(mx) .+ 3 .* std.(mx))) / n) > 0.95
+    @test (
+        sum((mean.(mz) .- 3 .* std.(mz)) .< z .< (mean.(mz) .+ 3 .* std.(mz))) /
+        n
+    ) > 0.95
+    @test (
+        sum((mean.(mx) .- 3 .* std.(mx)) .< x .< (mean.(mx) .+ 3 .* std.(mx))) /
+        n
+    ) > 0.95
     @test all(var.(mx) .> 0.0)
     @test all(var.(mz) .> 0.0)
 
@@ -117,10 +138,24 @@
         px = plot(title = "Hidden States X")
 
         plot!(pz, 1:n, z, label = "z_i", color = :orange)
-        plot!(pz, 1:n, mean.(mz), ribbon = std.(mz), label = "estimated z_i", color = :teal)
+        plot!(
+            pz,
+            1:n,
+            mean.(mz),
+            ribbon = std.(mz),
+            label = "estimated z_i",
+            color = :teal
+        )
 
         plot!(px, 1:n, x, label = "x_i", color = :green)
-        plot!(px, 1:n, mean.(mx), ribbon = std.(mx), label = "estimated x_i", color = :violet)
+        plot!(
+            px,
+            1:n,
+            mean.(mx),
+            ribbon = std.(mx),
+            label = "estimated x_i",
+            color = :violet
+        )
 
         pf = plot(fe, label = "Bethe Free Energy")
 
@@ -128,5 +163,7 @@
         return p
     end
 
-    @test_benchmark "models" "hgf" hgf_online_inference($y, $vmp_iters, $real_k, $real_w, $z_variance, $y_variance)
+    @test_benchmark "models" "hgf" hgf_online_inference(
+        $y, $vmp_iters, $real_k, $real_w, $z_variance, $y_variance
+    )
 end

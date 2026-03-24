@@ -1,10 +1,14 @@
 # [Understating why we need to initialize posteriors or messages in RxInfer](@id initialization)
 
-In certain models, after completing the model specification step and moving on to execute the inference procedure, you may encounter an error prompting you to _initialize required marginals and messages_. Understanding why this step is necessary can be perplexing. This tutorial is designed to explore the intuition behind model initialization using a practical example
+In certain models, after completing the model specification step and moving on to execute the inference procedure, you may encounter the error prompting you to _initialize required marginals and messages_. 
 
 ```@docs
 @initialization
 ```
+
+In RxInfer, initialization is essential because both loopy belief propagation and variational message passing with factorization constraints require well‑defined starting messages and/or marginals. The exact requirements depend on how the model is specified. For this reason, whenever an error indicates missing initialization, the user should carefully review their model structure and intended factorization, and only then define the necessary initial messages and marginals. This tutorial provides intuition for why initialization is needed and demonstrates these ideas through a practical example.
+
+
 
 The syntax for the `@initialization` macro is similar to the `@constraints` and `@meta` macro. An example is shown below:
 

@@ -216,7 +216,8 @@ using RxInfer, Test
 end
 @test_throws "Variables [ μ, τ ] have not been updated after an update event." infer(
     model = iid_estimation(),
-    data  = (y = rand(10), )
+    data  = (y = rand(10), ),
+    disable_inference_error_hint = true #hide
 )
 nothing
 ```

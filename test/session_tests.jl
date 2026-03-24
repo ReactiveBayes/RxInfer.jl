@@ -28,7 +28,9 @@
 
     if get(ENV, "CI", "false") == "true"
         # This test breaks precompilation in VSCode, thus disabled locally, executes only in CI
-        rxinfer_version = VersionNumber(TOML.parsefile(joinpath(pkgdir(RxInfer), "Project.toml"))["version"])
+        rxinfer_version = VersionNumber(
+            TOML.parsefile(joinpath(pkgdir(RxInfer), "Project.toml"))["version"]
+        )
         @test session.environment[:rxinfer_version] == string(rxinfer_version)
     end
 end
@@ -107,7 +109,9 @@ end
 
 @testitem "Log session should save errors if any" begin
     session = RxInfer.create_session()
-    @test_throws "I'm an error" RxInfer.with_session(session, :error_session) do invoke
+    @test_throws "I'm an error" RxInfer.with_session(
+        session, :error_session
+    ) do invoke
         error("I'm an error")
     end
     stats = RxInfer.get_session_stats(session, :error_session)
@@ -115,7 +119,9 @@ end
     last_invoke = stats.invokes[end]
     @test last_invoke.context[:error] == "ErrorException(\"I'm an error\")"
 
-    @test_throws "I'm an error" RxInfer.with_session(nothing, :error_session) do invoke
+    @test_throws "I'm an error" RxInfer.with_session(
+        nothing, :error_session
+    ) do invoke
         error("I'm an error")
     end
     @test length(stats.invokes) === 1
@@ -231,14 +237,20 @@ end
     invoke.execution_end = invoke.execution_start + Millisecond(123)
 
     output = sprint(show, invoke)
-    @test occursin("SessionInvoke(id=$(invoke.id), status=success, duration=123.0ms", output)
+    @test occursin(
+        "SessionInvoke(id=$(invoke.id), status=success, duration=123.0ms",
+        output
+    )
 
     # Test SessionStats show
     stats = RxInfer.SessionStats(:test)
     RxInfer.update_stats!(stats, invoke)
 
     output = sprint(show, stats)
-    @test occursin("SessionStats(id=$(stats.id), label=:test, total=1, success_rate=100.0%, invokes=1/$(RxInfer.DEFAULT_SESSION_STATS_CAPACITY))", output)
+    @test occursin(
+        "SessionStats(id=$(stats.id), label=:test, total=1, success_rate=100.0%, invokes=1/$(RxInfer.DEFAULT_SESSION_STATS_CAPACITY))",
+        output
+    )
 
     # Test Session show
     session = RxInfer.create_session()
@@ -263,7 +275,8 @@ end
     stats = RxInfer.get_session_stats(session, :test_1)
     @test length(stats.invokes) === 1
     last_invoke = stats.invokes[end]
-    @test last_invoke.context[:__append_invoke_context_error] == "ErrorException(\"I'm an error\")"
+    @test last_invoke.context[:__append_invoke_context_error] ==
+        "ErrorException(\"I'm an error\")"
 
     RxInfer.with_session(session, :test_2) do invoke
         RxInfer.append_invoke_context(invoke) do ctx

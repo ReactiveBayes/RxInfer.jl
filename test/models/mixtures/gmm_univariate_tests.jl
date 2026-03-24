@@ -67,7 +67,10 @@
     end
 
     # Execute inference for different constraints specifications
-    results = map((constraints) -> inference_univariate(y, 10, constraints), [MeanField(), constraints])
+    results = map(
+        (constraints) -> inference_univariate(y, 10, constraints),
+        [MeanField(), constraints]
+    )
 
     fresult = results[begin]
     # All execution must be equivalent (check against first)
@@ -111,10 +114,14 @@
         @test abs(r - mean(e)) < 3std(e)
     end
 
-    @test_throws "must be the naive mean-field" inference_univariate(y, 10, BetheFactorization())
-    @test_throws "must be the naive mean-field" inference_univariate(y, 10, @constraints(
-        begin end
-    ))
+    @test_throws "must be the naive mean-field" inference_univariate(
+        y, 10, BetheFactorization()
+    )
+    @test_throws "must be the naive mean-field" inference_univariate(
+        y, 10, @constraints(
+            begin end
+        )
+    )
 
     @test_plot "models" "gmm_univariate" begin
         dim(d) = (a) -> map(r -> r[d], a)
@@ -123,20 +130,32 @@
         mp = plot!(mp, [μ1], seriestype = :hline, label = "real m1")
         mp = plot!(mp, [μ2], seriestype = :hline, label = "real m2")
 
-        wp = plot(mean.(mw1), ribbon = std.(mw1), label = "w1 prediction", legend = :bottomleft, ylim = (0, 5))
+        wp = plot(
+            mean.(mw1),
+            ribbon = std.(mw1),
+            label = "w1 prediction",
+            legend = :bottomleft,
+            ylim = (0, 5)
+        )
         wp = plot!(wp, [w1], seriestype = :hline, label = "real w1")
         wp = plot!(wp, mean.(mw2), ribbon = var.(mw2), label = "w2 prediction")
         wp = plot!(wp, [w2], seriestype = :hline, label = "real w2")
 
-        swp = plot(mean.(mswitch), ribbon = std.(mswitch), label = "Switch prediction")
+        swp = plot(
+            mean.(mswitch), ribbon = std.(mswitch), label = "Switch prediction"
+        )
 
         swp = plot!(swp, [switch[1]], seriestype = :hline, label = "switch[1]")
         swp = plot!(swp, [switch[2]], seriestype = :hline, label = "switch[2]")
 
         fep = plot(fe[2:end], label = "Free Energy", legend = :bottomleft)
 
-        return plot(mp, wp, swp, fep, layout = @layout([a b; c d]), size = (1000, 700))
+        return plot(
+            mp, wp, swp, fep, layout = @layout([a b; c d]), size = (1000, 700)
+        )
     end
 
-    @test_benchmark "models" "gmm_univariate" inference_univariate($y, 10, MeanField())
+    @test_benchmark "models" "gmm_univariate" inference_univariate(
+        $y, 10, MeanField()
+    )
 end

@@ -33,10 +33,20 @@ end
         y ~ Normal(mean = x, var = 1.0)
     end
 
-    import RxInfer: __infer_create_factor_graph_model, ProbabilisticModel, getmodel
-    import GraphPPL: is_data, is_random, is_constant, is_variable, is_factor, getproperties, getcontext
+    import RxInfer:
+        __infer_create_factor_graph_model, ProbabilisticModel, getmodel
+    import GraphPPL:
+        is_data,
+        is_random,
+        is_constant,
+        is_variable,
+        is_factor,
+        getproperties,
+        getcontext
 
-    @testset let model = __infer_create_factor_graph_model(simple_model_for_infer_create_model(a = 1, b = 2), (y = 3,))
+    @testset let model = __infer_create_factor_graph_model(
+            simple_model_for_infer_create_model(a = 1, b = 2), (y = 3,)
+        )
         @test model isa ProbabilisticModel
         graphicalmodel = getmodel(model)
         ctx = getcontext(getmodel(model))
@@ -243,10 +253,14 @@ end
     import RxInfer: log_data_entry
 
     @testset "repr formatting" begin
-        @test repr(log_data_entry(:x => 1.5)) == "data: x (type=Float64, size=(), elsize=())"
-        @test repr(log_data_entry(:y => [1.0, 2.0, 3.0])) == "data: y (type=Vector{Float64}, size=(3,), elsize=())"
-        @test repr(log_data_entry(:z => [[1, 2], [3, 4]])) == "data: z (type=Vector{Vector{Int64}}, size=(2,), elsize=(2,))"
-        @test repr(log_data_entry(:w => missing)) == "data: w (type=Missing, size=unknown, elsize=unknown)"
+        @test repr(log_data_entry(:x => 1.5)) ==
+            "data: x (type=Float64, size=(), elsize=())"
+        @test repr(log_data_entry(:y => [1.0, 2.0, 3.0])) ==
+            "data: y (type=Vector{Float64}, size=(3,), elsize=())"
+        @test repr(log_data_entry(:z => [[1, 2], [3, 4]])) ==
+            "data: z (type=Vector{Vector{Int64}}, size=(2,), elsize=(2,))"
+        @test repr(log_data_entry(:w => missing)) ==
+            "data: w (type=Missing, size=unknown, elsize=unknown)"
     end
 end
 
@@ -255,7 +269,9 @@ end
 
     struct UnknownArbitraryType end
 
-    @test occursin("UnknownArbitraryType", log_dictnt_entries(UnknownArbitraryType()))
+    @test occursin(
+        "UnknownArbitraryType", log_dictnt_entries(UnknownArbitraryType())
+    )
     @test occursin("Nothing", log_dictnt_entries(nothing))
 
     @testset let entry = log_dictnt_entries(Dict(:x => 1.5))
@@ -265,7 +281,9 @@ end
         @test entry.entries[1].type === Float64
     end
 
-    @testset let entry = log_dictnt_entries(Dict(:y => [1.0, 2.0, 3.0], :a => 1))
+    @testset let entry = log_dictnt_entries(
+            Dict(:y => [1.0, 2.0, 3.0], :a => 1)
+        )
         @test length(entry.entries) === 2
         @test entry.base_type === :Dict
 
@@ -301,10 +319,20 @@ end
 
     @testset "repr formatting" begin
         @test occursin("Nothing", repr(log_dictnt_entries(nothing)))
-        @test occursin("UnknownArbitraryType2", repr(log_dictnt_entries(UnknownArbitraryType2())))
-        @test occursin("Dict: x::Float64", repr(log_dictnt_entries(Dict(:x => 1.5))))
-        @test occursin("NamedTuple: y::Vector{Float64}, a::Int64", repr(log_dictnt_entries((y = [1.0, 2.0], a = 1))))
-        @test occursin("NamedTuple: x::Missing", repr(log_dictnt_entries((x = missing,))))
+        @test occursin(
+            "UnknownArbitraryType2",
+            repr(log_dictnt_entries(UnknownArbitraryType2()))
+        )
+        @test occursin(
+            "Dict: x::Float64", repr(log_dictnt_entries(Dict(:x => 1.5)))
+        )
+        @test occursin(
+            "NamedTuple: y::Vector{Float64}, a::Int64",
+            repr(log_dictnt_entries((y = [1.0, 2.0], a = 1)))
+        )
+        @test occursin(
+            "NamedTuple: x::Missing", repr(log_dictnt_entries((x = missing,)))
+        )
     end
 end
 
@@ -336,7 +364,12 @@ end
 
     @testset "returnval should be set properly" begin
         for n in 2:5
-            result = infer(model = test_model1(), constraints = test_model1_constraints(), data = (y = rand(n),), initialization = init)
+            result = infer(
+                model = test_model1(),
+                constraints = test_model1_constraints(),
+                data = (y = rand(n),),
+                initialization = init
+            )
             @test getreturnval(result.model) === (n, 2, 3.0, "hello world")
         end
     end
@@ -376,12 +409,15 @@ end
             returnvars = KeepEach(),
             free_energy = true,
             catch_exception = false,
-            callbacks = (after_iteration = (model, iteration) -> begin
-                # For test purposes we throw an error after `5` iterations
-                if iteration >= 5
-                    error("bang!")
-                end
-            end,)
+            disable_inference_error_hint = true,
+            callbacks = (
+                after_iteration = (model, iteration) -> begin
+                    # For test purposes we throw an error after `5` iterations
+                    if iteration >= 5
+                        error("bang!")
+                    end
+                end,
+            )
         )
 
         result_with_error = infer(
@@ -393,12 +429,15 @@ end
             returnvars = KeepEach(),
             free_energy = true,
             catch_exception = true,
-            callbacks = (after_iteration = (model, iteration) -> begin
-                # For test purposes we throw an error after `5` iterations
-                if iteration >= 5
-                    error("bang!")
-                end
-            end,)
+            disable_inference_error_hint = true,
+            callbacks = (
+                after_iteration = (model, iteration) -> begin
+                    # For test purposes we throw an error after `5` iterations
+                    if iteration >= 5
+                        error("bang!")
+                    end
+                end,
+            )
         )
 
         @test !RxInfer.issuccess(result_with_error)
@@ -501,29 +540,58 @@ end
 
     @node typeof(gcv) Stochastic [y, x, z, κ, ω]
 
-    RxInfer.ReactiveMP.default_meta(::typeof(gcv)) = RxInfer.ReactiveMP.default_meta(GCV)
+    RxInfer.ReactiveMP.default_meta(::typeof(gcv)) = RxInfer.ReactiveMP.default_meta(
+        GCV
+    )
 
-    @rule typeof(gcv)(:y, Marginalisation) (q_x::Any, q_z::Any, q_κ::Any, q_ω::Any, meta::Any) = begin
-        return @call_rule GCV(:y, Marginalisation) (q_x = q_x, q_z = q_z, q_κ = q_κ, q_ω = q_ω, meta = meta)
+    @rule typeof(gcv)(:y, Marginalisation) (
+        q_x::Any, q_z::Any, q_κ::Any, q_ω::Any, meta::Any
+    ) = begin
+        return @call_rule GCV(:y, Marginalisation) (
+            q_x = q_x, q_z = q_z, q_κ = q_κ, q_ω = q_ω, meta = meta
+        )
     end
 
-    @rule typeof(gcv)(:x, Marginalisation) (q_y::Any, q_z::Any, q_κ::Any, q_ω::Any, meta::Any) = begin
-        return @call_rule GCV(:x, Marginalisation) (q_y = q_y, q_z = q_z, q_κ = q_κ, q_ω = q_ω, meta = meta)
+    @rule typeof(gcv)(:x, Marginalisation) (
+        q_y::Any, q_z::Any, q_κ::Any, q_ω::Any, meta::Any
+    ) = begin
+        return @call_rule GCV(:x, Marginalisation) (
+            q_y = q_y, q_z = q_z, q_κ = q_κ, q_ω = q_ω, meta = meta
+        )
     end
 
-    @rule typeof(gcv)(:ω, Marginalisation) (q_y::Any, q_x::Any, q_z::Any, q_κ::Any, meta::Any) = begin
-        return @call_rule GCV(:ω, Marginalisation) (q_y = q_y, q_x = q_x, q_z = q_z, q_κ = q_κ, meta = meta)
+    @rule typeof(gcv)(:ω, Marginalisation) (
+        q_y::Any, q_x::Any, q_z::Any, q_κ::Any, meta::Any
+    ) = begin
+        return @call_rule GCV(:ω, Marginalisation) (
+            q_y = q_y, q_x = q_x, q_z = q_z, q_κ = q_κ, meta = meta
+        )
     end
 
-    @rule typeof(gcv)(:z, Marginalisation) (q_y::Any, q_x::Any, q_κ::Any, q_ω::Any, meta::Any) = begin
-        return @call_rule GCV(:z, Marginalisation) (q_y = q_y, q_x = q_x, q_κ = q_κ, q_ω = q_ω, meta = meta)
+    @rule typeof(gcv)(:z, Marginalisation) (
+        q_y::Any, q_x::Any, q_κ::Any, q_ω::Any, meta::Any
+    ) = begin
+        return @call_rule GCV(:z, Marginalisation) (
+            q_y = q_y, q_x = q_x, q_κ = q_κ, q_ω = q_ω, meta = meta
+        )
     end
 
-    @rule typeof(gcv)(:κ, Marginalisation) (q_y::Any, q_x::Any, q_z::Any, q_ω::Any, meta::Any) = begin
-        return @call_rule GCV(:κ, Marginalisation) (q_y = q_y, q_x = q_x, q_z = q_z, q_ω = q_ω, meta = meta)
+    @rule typeof(gcv)(:κ, Marginalisation) (
+        q_y::Any, q_x::Any, q_z::Any, q_ω::Any, meta::Any
+    ) = begin
+        return @call_rule GCV(:κ, Marginalisation) (
+            q_y = q_y, q_x = q_x, q_z = q_z, q_ω = q_ω, meta = meta
+        )
     end
 
-    @average_energy typeof(gcv) (q_y::Any, q_x::Any, q_z::Any, q_κ::Any, q_ω::Any, meta::Union{<:GCVMetadata, Nothing}) = begin
+    @average_energy typeof(gcv) (
+        q_y::Any,
+        q_x::Any,
+        q_z::Any,
+        q_κ::Any,
+        q_ω::Any,
+        meta::Union{<:GCVMetadata, Nothing}
+    ) = begin
         y_mean, y_var = mean_var(q_y)
         x_mean, x_var = mean_var(q_x)
         z_mean, z_var = mean_var(q_z)
@@ -560,7 +628,14 @@ end
         q(x) = NormalMeanVariance(0, 1)
     end
 
-    result_1 = infer(model = hgf_1(), data = (y = dataset,), initialization = hgf_1_initialization(), constraints = MeanField(), allow_node_contraction = true, free_energy = true)
+    result_1 = infer(
+        model = hgf_1(),
+        data = (y = dataset,),
+        initialization = hgf_1_initialization(),
+        constraints = MeanField(),
+        allow_node_contraction = true,
+        free_energy = true
+    )
 
     @test all(!isnan, mean.(result_1.posteriors[:x]))
     @test all(!isnan, var.(result_1.posteriors[:x]))
@@ -597,7 +672,13 @@ end
         q(x_3) = vague(NormalMeanVariance)
     end
 
-    result_2 = infer(model = hgf_2(), data = (y = dataset,), initialization = hgf_2_initialization(), constraints = MeanField(), allow_node_contraction = true)
+    result_2 = infer(
+        model = hgf_2(),
+        data = (y = dataset,),
+        initialization = hgf_2_initialization(),
+        constraints = MeanField(),
+        allow_node_contraction = true
+    )
 
     @test result_2.posteriors[:x_1] isa Vector{<:NormalDistributionsFamily}
 end
@@ -615,10 +696,20 @@ end
     @testset "Test warning for addons" begin
         # Should display a warning if `warn` is set to `true`
         @test_logs (:warn, r"Both .* specify a value for the `addons`.*") infer(
-            model = beta_bernoulli(), data = (y = observations,), addons = AddonLogScale(), options = (addons = AddonLogScale(),), warn = true
+            model = beta_bernoulli(),
+            data = (y = observations,),
+            addons = AddonLogScale(),
+            options = (addons = AddonLogScale(),),
+            warn = true
         )
         # Should not display a warning if `warn` is set to `true`
-        @test_logs infer(model = beta_bernoulli(), data = (y = observations,), addons = AddonLogScale(), options = (addons = AddonLogScale(),), warn = false)
+        @test_logs infer(
+            model = beta_bernoulli(),
+            data = (y = observations,),
+            addons = AddonLogScale(),
+            options = (addons = AddonLogScale(),),
+            warn = false
+        )
     end
 end
 
@@ -649,7 +740,11 @@ end
         end
 
         @test_throws "size of datavar array and data must match" infer(
-            model = test_model1(), constraints = test_model1_constraints(), data = (y = rand(10),), initialization = init
+            model = test_model1(),
+            constraints = test_model1_constraints(),
+            data = (y = rand(10),),
+            disable_inference_error_hint = true,
+            initialization = init
         )
     end
 end
@@ -692,8 +787,17 @@ end
     end
 
     @testset "Check basic usage" begin
-        for keephistory in (0, 1, 2), iterations in (3, 4), free_energy in (true, Float64, false), returnvars in ((:x_t,), (:x_t, :τ)), historyvars in ((:x_t,), (:x_t, :τ))
-            historyvars = keephistory > 0 ? NamedTuple{historyvars}(map(_ -> KeepEach(), historyvars)) : nothing
+        for keephistory in (0, 1, 2),
+            iterations in (3, 4),
+            free_energy in (true, Float64, false),
+            returnvars in ((:x_t,), (:x_t, :τ)),
+            historyvars in ((:x_t,), (:x_t, :τ))
+
+            historyvars = if keephistory > 0
+                NamedTuple{historyvars}(map(_ -> KeepEach(), historyvars))
+            else
+                nothing
+            end
 
             engine = infer(
                 model = test_model1(),
@@ -718,12 +822,17 @@ end
             @test getreturnval(engine.model) === (2, 3.0, "hello world")
 
             # Test that the `.posteriors` field is constructed correctly
-            @test sort(collect(keys(engine.posteriors))) == sort(collect(returnvars))
-            @test all(p -> typeof(p) <: Rocket.Subscribable, collect(values(engine.posteriors)))
+            @test sort(collect(keys(engine.posteriors))) ==
+                sort(collect(returnvars))
+            @test all(
+                p -> typeof(p) <: Rocket.Subscribable,
+                collect(values(engine.posteriors))
+            )
 
             # Check that we save the history of the marginals if needed
             if keephistory > 0
-                @test sort(collect(keys(engine.history))) == sort(collect(keys(historyvars)))
+                @test sort(collect(keys(engine.history))) ==
+                    sort(collect(keys(historyvars)))
                 for key in keys(historyvars)
                     @test length(engine.history[key]) === keephistory
                     @test length(engine.history[key][end]) === iterations
@@ -743,8 +852,10 @@ end
                 @test length(engine.free_energy_history) === iterations
                 @test all(<=(0), diff(engine.free_energy_history))
 
-                @test length(engine.free_energy_final_only_history) === keephistory
-                @test length(engine.free_energy_raw_history) === keephistory * iterations
+                @test length(engine.free_energy_final_only_history) ===
+                    keephistory
+                @test length(engine.free_energy_raw_history) ===
+                    keephistory * iterations
             else
                 @test_throws ErrorException engine.free_energy_history
                 @test_throws ErrorException engine.free_energy_final_only_history
@@ -768,16 +879,25 @@ end
             initialization = init,
             autoupdates = autoupdates,
             callbacks = (
-                before_model_creation = (args...) -> push!(callbacksdata, (:before_model_creation, args)),
-                after_model_creation = (args...) -> push!(callbacksdata, (:after_model_creation, args)),
-                before_autostart = (args...) -> push!(callbacksdata, (:before_autostart, args)),
-                after_autostart = (args...) -> push!(callbacksdata, (:after_autostart, args))
+                before_model_creation = (args...) ->
+                    push!(callbacksdata, (:before_model_creation, args)),
+                after_model_creation = (args...) ->
+                    push!(callbacksdata, (:after_model_creation, args)),
+                before_autostart = (args...) ->
+                    push!(callbacksdata, (:before_autostart, args)),
+                after_autostart = (args...) ->
+                    push!(callbacksdata, (:after_autostart, args))
             ),
             autostart = true
         )
 
         # First check the order
-        @test first.(callbacksdata) == [:before_model_creation, :after_model_creation, :before_autostart, :after_autostart]
+        @test first.(callbacksdata) == [
+            :before_model_creation,
+            :after_model_creation,
+            :before_autostart,
+            :after_autostart
+        ]
 
         @test typeof(callbacksdata[1][2]) <: Tuple{}                   # before_model_creation
         @test typeof(callbacksdata[2][2]) <: Tuple{ProbabilisticModel} # after_model_creation 
@@ -795,16 +915,21 @@ end
             initialization = init,
             autoupdates = autoupdates,
             callbacks = (
-                before_model_creation = (args...) -> push!(callbacksdata, (:before_model_creation, args)),
-                after_model_creation = (args...) -> push!(callbacksdata, (:after_model_creation, args)),
-                before_autostart = (args...) -> push!(callbacksdata, (:before_autostart, args)),
-                after_autostart = (args...) -> push!(callbacksdata, (:after_autostart, args))
+                before_model_creation = (args...) ->
+                    push!(callbacksdata, (:before_model_creation, args)),
+                after_model_creation = (args...) ->
+                    push!(callbacksdata, (:after_model_creation, args)),
+                before_autostart = (args...) ->
+                    push!(callbacksdata, (:before_autostart, args)),
+                after_autostart = (args...) ->
+                    push!(callbacksdata, (:after_autostart, args))
             ),
             autostart = false
         )
 
         # First check the order
-        @test first.(callbacksdata) == [:before_model_creation, :after_model_creation]
+        @test first.(callbacksdata) ==
+            [:before_model_creation, :after_model_creation]
 
         @test typeof(callbacksdata[1][2]) <: Tuple{}                   # before_model_creation
         @test typeof(callbacksdata[2][2]) <: Tuple{ProbabilisticModel} # after_model_creation 
@@ -818,13 +943,18 @@ end
     @testset "Check callbacks usage: unknown callback warning" begin
         callbacksdata = []
 
-        @test_logs (:warn, r"Unknown callback specification.*hello_world.*Available callbacks.*") result = infer(
+        @test_logs (
+            :warn,
+            r"Unknown callback specification.*hello_world.*Available callbacks.*"
+        ) result = infer(
             model = test_model1(),
             constraints = MeanField(),
             data = (y = observedy,),
             initialization = init,
             autoupdates = autoupdates,
-            callbacks = (hello_world = (args...) -> push!(callbacksdata, args),),
+            callbacks = (
+                hello_world = (args...) -> push!(callbacksdata, args),
+            ),
             autostart = true
         )
 
@@ -836,11 +966,15 @@ end
             eventsdata
         end
 
-        function Rocket.on_next!(listener::CustomEventListener, event::RxInferenceEvent{:on_new_data})
+        function Rocket.on_next!(
+            listener::CustomEventListener, event::RxInferenceEvent{:on_new_data}
+        )
             push!(listener.eventsdata, Any[event])
         end
 
-        function Rocket.on_next!(listener::CustomEventListener, event::RxInferenceEvent)
+        function Rocket.on_next!(
+            listener::CustomEventListener, event::RxInferenceEvent
+        )
             push!(last(listener.eventsdata), event)
         end
 
@@ -884,10 +1018,20 @@ end
             @test length(eventsdata) === length(observedy)
 
             for (index, events) in enumerate(eventsdata)
-                @test length(filter(event -> event isa RxInferenceEvent{:on_new_data}, events)) == 1
+                @test length(
+                    filter(
+                        event -> event isa RxInferenceEvent{:on_new_data},
+                        events
+                    )
+                ) == 1
 
                 # Check the associated data with the `:on_new_data` events
-                foreach(filter(event -> event isa RxInferenceEvent{:on_new_data}, events)) do event
+                foreach(
+                    filter(
+                        event -> event isa RxInferenceEvent{:on_new_data},
+                        events
+                    )
+                ) do event
                     # `(model, data) = event`
                     model, data = event
                     @test model === engine.model
@@ -895,33 +1039,85 @@ end
                 end
 
                 # Check that the number of `:before_iteration` and `:after_iteration` events depends on the number of iterations
-                @test length(filter(event -> event isa RxInferenceEvent{:before_iteration}, events)) == iterations
-                @test length(filter(event -> event isa RxInferenceEvent{:after_iteration}, events)) == iterations
+                @test length(
+                    filter(
+                        event -> event isa RxInferenceEvent{:before_iteration},
+                        events
+                    )
+                ) == iterations
+                @test length(
+                    filter(
+                        event -> event isa RxInferenceEvent{:after_iteration},
+                        events
+                    )
+                ) == iterations
 
                 # Check the associated data with the `:before_iteration` events
-                foreach(enumerate(filter(event -> event isa RxInferenceEvent{:before_iteration}, events))) do (ii, event)
+                foreach(
+                    enumerate(
+                        filter(
+                            event ->
+                                event isa RxInferenceEvent{:before_iteration},
+                            events
+                        )
+                    )
+                ) do (ii, event)
                     model, iteration = event
                     @test model === engine.model
                     @test iteration === ii
                 end
 
                 # Check the associated data with the `:after_iteration` events
-                foreach(enumerate(filter(event -> event isa RxInferenceEvent{:after_iteration}, events))) do (ii, event)
+                foreach(
+                    enumerate(
+                        filter(
+                            event ->
+                                event isa RxInferenceEvent{:after_iteration},
+                            events
+                        )
+                    )
+                ) do (ii, event)
                     model, iteration = event
                     @test model === engine.model
                     @test iteration === ii
                 end
 
                 # Check the correct ordering of the `:before_iteration` and `:after_iteration` events
-                @test map(event_name, filter(event -> event isa RxInferenceEvent{:before_iteration} || event isa RxInferenceEvent{:after_iteration}, events)) ==
-                    repeat([:before_iteration, :after_iteration], iterations)
+                @test map(
+                    event_name,
+                    filter(
+                        event ->
+                            event isa RxInferenceEvent{:before_iteration} ||
+                            event isa RxInferenceEvent{:after_iteration},
+                        events
+                    )
+                ) == repeat([:before_iteration, :after_iteration], iterations)
 
                 # Check that the number of `:before_auto_update` and `:after_auto_update` events depends on the number of iterations
-                @test length(filter(event -> event isa RxInferenceEvent{:before_auto_update}, events)) == iterations
-                @test length(filter(event -> event isa RxInferenceEvent{:after_auto_update}, events)) == iterations
+                @test length(
+                    filter(
+                        event ->
+                            event isa RxInferenceEvent{:before_auto_update},
+                        events
+                    )
+                ) == iterations
+                @test length(
+                    filter(
+                        event -> event isa RxInferenceEvent{:after_auto_update},
+                        events
+                    )
+                ) == iterations
 
                 # Check the associated data with the `:before_auto_update` events
-                foreach(enumerate(filter(event -> event isa RxInferenceEvent{:before_auto_update}, events))) do (ii, event)
+                foreach(
+                    enumerate(
+                        filter(
+                            event ->
+                                event isa RxInferenceEvent{:before_auto_update},
+                            events
+                        )
+                    )
+                ) do (ii, event)
                     model, iteration, fupdate = event
                     @test model === engine.model
                     @test iteration === ii
@@ -929,7 +1125,15 @@ end
                 end
 
                 # Check the associated data with the `:after_auto_update` events
-                foreach(enumerate(filter(event -> event isa RxInferenceEvent{:after_auto_update}, events))) do (ii, event)
+                foreach(
+                    enumerate(
+                        filter(
+                            event ->
+                                event isa RxInferenceEvent{:after_auto_update},
+                            events
+                        )
+                    )
+                ) do (ii, event)
                     model, iteration, fupdate = event
                     @test model === engine.model
                     @test iteration === ii
@@ -937,15 +1141,43 @@ end
                 end
 
                 # Check the correct ordering of the `:before_auto_update` and `:after_auto_update` events
-                @test map(event_name, filter(event -> event isa RxInferenceEvent{:before_auto_update} || event isa RxInferenceEvent{:after_auto_update}, events)) ==
-                    repeat([:before_auto_update, :after_auto_update], iterations)
+                @test map(
+                    event_name,
+                    filter(
+                        event ->
+                            event isa RxInferenceEvent{:before_auto_update} ||
+                            event isa RxInferenceEvent{:after_auto_update},
+                        events
+                    )
+                ) == repeat(
+                    [:before_auto_update, :after_auto_update], iterations
+                )
 
                 # Check that the number of `:before_data_update` and `:after_data_update` events depends on the number of iterations
-                @test length(filter(event -> event isa RxInferenceEvent{:before_data_update}, events)) == iterations
-                @test length(filter(event -> event isa RxInferenceEvent{:after_data_update}, events)) == iterations
+                @test length(
+                    filter(
+                        event ->
+                            event isa RxInferenceEvent{:before_data_update},
+                        events
+                    )
+                ) == iterations
+                @test length(
+                    filter(
+                        event -> event isa RxInferenceEvent{:after_data_update},
+                        events
+                    )
+                ) == iterations
 
                 # Check the associated data with the `:before_auto_update` events
-                foreach(enumerate(filter(event -> event isa RxInferenceEvent{:before_data_update}, events))) do (ii, event)
+                foreach(
+                    enumerate(
+                        filter(
+                            event ->
+                                event isa RxInferenceEvent{:before_data_update},
+                            events
+                        )
+                    )
+                ) do (ii, event)
                     model, iteration, data = event
                     @test model === engine.model
                     @test iteration === ii
@@ -953,7 +1185,15 @@ end
                 end
 
                 # Check the associated data with the `:after_auto_update` events
-                foreach(enumerate(filter(event -> event isa RxInferenceEvent{:after_data_update}, events))) do (ii, event)
+                foreach(
+                    enumerate(
+                        filter(
+                            event ->
+                                event isa RxInferenceEvent{:after_data_update},
+                            events
+                        )
+                    )
+                ) do (ii, event)
                     model, iteration, data = event
                     @test model === engine.model
                     @test iteration === ii
@@ -961,34 +1201,82 @@ end
                 end
 
                 # Check the correct ordering of the `:before_auto_update` and `:after_auto_update` events
-                @test map(event_name, filter(event -> event isa RxInferenceEvent{:before_data_update} || event isa RxInferenceEvent{:after_data_update}, events)) ==
-                    repeat([:before_data_update, :after_data_update], iterations)
+                @test map(
+                    event_name,
+                    filter(
+                        event ->
+                            event isa RxInferenceEvent{:before_data_update} ||
+                            event isa RxInferenceEvent{:after_data_update},
+                        events
+                    )
+                ) == repeat(
+                    [:before_data_update, :after_data_update], iterations
+                )
 
                 # Check the correct ordering of the iteration related events
                 @test map(
                     event_name,
                     filter(events) do event
                         return event isa RxInferenceEvent{:before_iteration} ||
-                               event isa RxInferenceEvent{:before_auto_update} ||
+                               event isa
+                               RxInferenceEvent{:before_auto_update} ||
                                event isa RxInferenceEvent{:after_auto_update} ||
-                               event isa RxInferenceEvent{:before_data_update} ||
+                               event isa
+                               RxInferenceEvent{:before_data_update} ||
                                event isa RxInferenceEvent{:after_data_update} ||
                                event isa RxInferenceEvent{:after_iteration}
                     end
-                ) == repeat([:before_iteration, :before_auto_update, :after_auto_update, :before_data_update, :after_data_update, :after_iteration], iterations)
+                ) == repeat(
+                    [
+                        :before_iteration,
+                        :before_auto_update,
+                        :after_auto_update,
+                        :before_data_update,
+                        :after_data_update,
+                        :after_iteration
+                    ],
+                    iterations
+                )
 
                 if keephistory > 0
-                    @test length(filter(event -> event isa RxInferenceEvent{:before_history_save}, events)) == 1
-                    @test length(filter(event -> event isa RxInferenceEvent{:after_history_save}, events)) == 1
+                    @test length(
+                        filter(
+                            event ->
+                                event isa
+                                RxInferenceEvent{:before_history_save},
+                            events
+                        )
+                    ) == 1
+                    @test length(
+                        filter(
+                            event ->
+                                event isa RxInferenceEvent{:after_history_save},
+                            events
+                        )
+                    ) == 1
                 end
 
-                @test length(filter(event -> event isa RxInferenceEvent{:on_tick}, events)) == 1
+                @test length(
+                    filter(
+                        event -> event isa RxInferenceEvent{:on_tick}, events
+                    )
+                ) == 1
 
                 # We should receive the `:on_complete` event only for the last data point
                 if index === length(eventsdata)
-                    @test length(filter(event -> event isa RxInferenceEvent{:on_complete}, events)) == 1
+                    @test length(
+                        filter(
+                            event -> event isa RxInferenceEvent{:on_complete},
+                            events
+                        )
+                    ) == 1
                 else
-                    @test length(filter(event -> event isa RxInferenceEvent{:on_complete}, events)) == 0
+                    @test length(
+                        filter(
+                            event -> event isa RxInferenceEvent{:on_complete},
+                            events
+                        )
+                    ) == 0
                 end
             end
 
@@ -1011,7 +1299,9 @@ end
         )
 
         # Check that the result is not of type `Marginal`
-        @test all(data -> !(typeof(data) <: ReactiveMP.Marginal), engine.history[:τ])
+        @test all(
+            data -> !(typeof(data) <: ReactiveMP.Marginal), engine.history[:τ]
+        )
     end
 
     @testset "Check postprocess usage: NoopPostprocess & nothing" begin
@@ -1030,7 +1320,9 @@ end
             )
 
             # Check that the result is of type `Marginal`
-            @test all(data -> typeof(data) <: ReactiveMP.Marginal, engine.history[:τ])
+            @test all(
+                data -> typeof(data) <: ReactiveMP.Marginal, engine.history[:τ]
+            )
         end
     end
 
@@ -1046,13 +1338,19 @@ end
     end
 
     @testset "`data` and `datastream` cannot be used together" begin
-        @test_throws ErrorException infer(model = test_model1(), data = (y = observedy,), datastream = labeled(Val((:y,)), combineLatest(from(observedy))))
+        @test_throws ErrorException infer(
+            model = test_model1(),
+            data = (y = observedy,),
+            datastream = labeled(Val((:y,)), combineLatest(from(observedy)))
+        )
     end
 end
 
 @testitem "vector of inputs in streaming inference" begin
     import RxInfer: infer
-    @model function test_model(x, y, mx, vx)
+    @model function test_model_for_vector_of_inputs_in_streaming_inference(
+        x, y, mx, vx
+    )
         for i in 1:3
             x[i] ~ NormalMeanVariance(mx, vx)
         end
@@ -1061,7 +1359,9 @@ end
     end
 
     d = [(x = rand(3), y = rand()) for i in 1:10]
-    datastream = from(d) |> map(NamedTuple{(:x, :y), Tuple{Vector{Float64}, Float64}}, (d) -> d)
+    datastream =
+        from(d) |>
+        map(NamedTuple{(:x, :y), Tuple{Vector{Float64}, Float64}}, (d) -> d)
 
     foo(x) = 1.0
 
@@ -1070,9 +1370,14 @@ end
         vx = foo(q(my))
     end
 
-    engine = infer(model = test_model(), datastream = datastream, autoupdates = autoupdates, initialization = @initialization begin
-        q(my) = NormalMeanVariance(1.0, 1.0)
-    end)
+    engine = infer(
+        model = test_model_for_vector_of_inputs_in_streaming_inference(),
+        datastream = datastream,
+        autoupdates = autoupdates,
+        initialization = @initialization begin
+            q(my) = NormalMeanVariance(1.0, 1.0)
+        end
+    )
 
     @test engine.history === nothing
 end
@@ -1101,17 +1406,31 @@ end
     observations = [[1.0; zeros(5)], [zeros(5); 1.0]]
 
     @testset "Test misspecified data" begin
-        @test_throws "Keyword argument `data` expects either `Dict` or `NamedTuple` as an input" infer(model = rolling_die(), data = (y = observations))
+        @test_throws "Keyword argument `data` expects either `Dict` or `NamedTuple` as an input" infer(
+            model = rolling_die(), data = (y = observations)
+        )
         result = infer(model = rolling_die(), data = (y = observations,))
-        @test isequal(first(mean(result.posteriors[:θ])), last(mean(result.posteriors[:θ])))
+        @test isequal(
+            first(mean(result.posteriors[:θ])),
+            last(mean(result.posteriors[:θ]))
+        )
     end
 
     @testset "Test misspecified callbacks" begin
         @test_throws "Keyword argument `callbacks` expects either `Dict` or `NamedTuple` as an input" infer(
-            model = rolling_die(), data = (y = observations,), callbacks = (before_model_creation = (args...) -> nothing)
+            model = rolling_die(),
+            data = (y = observations,),
+            callbacks = (before_model_creation = (args...) -> nothing)
         )
-        result = infer(model = rolling_die(), data = (y = observations,), callbacks = (before_model_creation = (args...) -> nothing,))
-        @test isequal(first(mean(result.posteriors[:θ])), last(mean(result.posteriors[:θ])))
+        result = infer(
+            model = rolling_die(),
+            data = (y = observations,),
+            callbacks = (before_model_creation = (args...) -> nothing,)
+        )
+        @test isequal(
+            first(mean(result.posteriors[:θ])),
+            last(mean(result.posteriors[:θ]))
+        )
     end
 
     @testset "Test misspecified event type in the streamlined inference" begin
@@ -1135,7 +1454,10 @@ end
             warn = false,
             events = Val((:blabla,))
         )
-        @test isequal(first(mean(result.history[:θ][end])), last(mean(result.history[:θ][end])))
+        @test isequal(
+            first(mean(result.history[:θ][end])),
+            last(mean(result.history[:θ][end]))
+        )
     end
 end
 
@@ -1149,9 +1471,21 @@ end
         a, b = params(q(t))
     end
 
-    @test_throws "`a` is present both in the `data` and in the `autoupdates`." infer(model = beta_bernoulli(), data = (y = [1], a = [2]), autoupdates = autoupdates)
-    @test_throws "`a` is present both in the `data` and in the `autoupdates`." infer(model = beta_bernoulli(), data = (y = [1], a = [2], b = [2]), autoupdates = autoupdates)
-    @test_throws "`b` is present both in the `data` and in the `autoupdates`." infer(model = beta_bernoulli(), data = (y = [1], b = [2]), autoupdates = autoupdates)
+    @test_throws "`a` is present both in the `data` and in the `autoupdates`." infer(
+        model = beta_bernoulli(),
+        data = (y = [1], a = [2]),
+        autoupdates = autoupdates
+    )
+    @test_throws "`a` is present both in the `data` and in the `autoupdates`." infer(
+        model = beta_bernoulli(),
+        data = (y = [1], a = [2], b = [2]),
+        autoupdates = autoupdates
+    )
+    @test_throws "`b` is present both in the `data` and in the `autoupdates`." infer(
+        model = beta_bernoulli(),
+        data = (y = [1], b = [2]),
+        autoupdates = autoupdates
+    )
 end
 
 @testitem "Autoupdates should throw an error if the return value does not match the left hand side in size" begin
@@ -1166,7 +1500,10 @@ end
     end
 
     @test_throws "Couldn't run autoupdate. The update provides `3` values, but `2` are needed." infer(
-        model = beta_bernoulli(), data = (y = [1],), autoupdates = autoupdates, initialization = @initialization(q(t) = Beta(1, 1))
+        model = beta_bernoulli(),
+        data = (y = [1],),
+        autoupdates = autoupdates,
+        initialization = @initialization(q(t) = Beta(1, 1))
     )
 end
 
@@ -1177,15 +1514,22 @@ end
     end
 
     @test_throws "`initmessages` and `initmarginals` keyword arguments have been deprecated and removed. Use the `@initialization` macro and the `initialization` keyword instead." infer(
-        model = beta_bernoulli(), data = (y = 1,), initmessages = (t = Normal(0.0, 1.0)), initmarginals = (t = Normal(0.0, 1.0))
+        model = beta_bernoulli(),
+        data = (y = 1,),
+        initmessages = (t = Normal(0.0, 1.0)),
+        initmarginals = (t = Normal(0.0, 1.0))
     )
 
     @test_throws "`initmessages` and `initmarginals` keyword arguments have been deprecated and removed. Use the `@initialization` macro and the `initialization` keyword instead." infer(
-        model = beta_bernoulli(), data = (y = 1,), initmarginals = (t = Normal(0.0, 1.0))
+        model = beta_bernoulli(),
+        data = (y = 1,),
+        initmarginals = (t = Normal(0.0, 1.0))
     )
 
     @test_throws "`initmessages` and `initmarginals` keyword arguments have been deprecated and removed. Use the `@initialization` macro and the `initialization` keyword instead." infer(
-        model = beta_bernoulli(), data = (y = 1,), initmessages = (t = Normal(0.0, 1.0))
+        model = beta_bernoulli(),
+        data = (y = 1,),
+        initmessages = (t = Normal(0.0, 1.0))
     )
 end
 
@@ -1204,9 +1548,15 @@ end
     @node DistributionB Stochastic [out, b]
     @node LikelihoodDistribution Stochastic [out, input]
 
-    @rule DistributionA(:out, Marginalisation) (q_a::Any,) = DistributionA(mean(q_a))
-    @rule DistributionB(:out, Marginalisation) (q_b::Any,) = DistributionB(mean(q_b))
-    @rule LikelihoodDistribution(:input, Marginalisation) (q_out::Any,) = LikelihoodDistribution(mean(q_out))
+    @rule DistributionA(:out, Marginalisation) (q_a::Any,) = DistributionA(
+        mean(q_a)
+    )
+    @rule DistributionB(:out, Marginalisation) (q_b::Any,) = DistributionB(
+        mean(q_b)
+    )
+    @rule LikelihoodDistribution(:input, Marginalisation) (q_out::Any,) = LikelihoodDistribution(
+        mean(q_out)
+    )
 
     @model function invalid_product_posterior(out)
         θ ~ DistributionA(1.0)
@@ -1214,7 +1564,9 @@ end
     end
 
     # Product of `DistributionA` & `LikelihoodDistribution` in the posterior
-    P = typeof(prod(GenericProd(), DistributionA(1.0), LikelihoodDistribution(1.0))) # the actual order may change though
+    P = typeof(
+        prod(GenericProd(), DistributionA(1.0), LikelihoodDistribution(1.0))
+    ) # the actual order may change though
     @test_throws """
     The expression `q(θ)` has an undefined functional form of type `$(P)`. 
     This is likely because the inference backend does not support the product of these distributions. 
@@ -1232,7 +1584,11 @@ end
     end
     ```
     Refer to the documentation for more details on functional form constraints.
-    """ result = infer(model = invalid_product_posterior(), data = (out = 1.0,))
+    """ result = infer(
+        model = invalid_product_posterior(),
+        data = (out = 1.0,),
+        disable_inference_error_hint = true
+    )
 
     # Product of `DistributionA` & `DistributionB` in the message
     @model function invalid_product_message(out)
@@ -1260,7 +1616,12 @@ end
     end
     ```
     Refer to the documentation for more details on functional form constraints.
-    """ result = infer(model = invalid_product_message(), data = (out = 1.0,), returnvars = (θ = KeepEach(),))
+    """ result = infer(
+        model = invalid_product_message(),
+        data = (out = 1.0,),
+        returnvars = (θ = KeepEach(),),
+        disable_inference_error_hint = true
+    )
 end
 
 @testitem "`infer` with UnfactorizedData" begin
@@ -1286,7 +1647,12 @@ end
     end
 
     result = infer(
-        model = pred_model(A = diageye(4), goal = [0, 1, 0, 0], p_B = DirichletCollection(ones(4, 4)), p_s_t = Categorical([0.7, 0.3, 0, 0])),
+        model = pred_model(
+            A = diageye(4),
+            goal = [0, 1, 0, 0],
+            p_B = DirichletCollection(ones(4, 4)),
+            p_s_t = Categorical([0.7, 0.3, 0, 0])
+        ),
         data = (y = [[1, 0, 0, 0], missing, missing],),
         initialization = pred_model_init(DirichletCollection(ones(4, 4))),
         constraints = pred_model_constraints,
@@ -1295,23 +1661,40 @@ end
     # In this model, since we have no information about the transition tensor, the prediction for the middle state should be close to uniform. Because of our identity likelihood model, the prediction for the middle observation should be close to the posterior for the middle state. If we do VMP it is not.
 
     # Underestimates variance
-    @test probvec(last(result.predictions[:y])[2]) ≈ [0.0670307763637994, 0.8994760923993603, 0.016746565618420153, 0.016746565618420153]
-    @test entropy(last(result.predictions[:y])[2]) < entropy(last(result.posteriors[:s])[2])
+    @test probvec(last(result.predictions[:y])[2]) ≈ [
+        0.0670307763637994,
+        0.8994760923993603,
+        0.016746565618420153,
+        0.016746565618420153
+    ]
+    @test entropy(last(result.predictions[:y])[2]) <
+        entropy(last(result.posteriors[:s])[2])
 
     pred_model_constraints = @constraints begin
         q(s, B) = q(s)q(B)
         q(y[1], s) = q(y[1])q(s)
     end
     result = infer(
-        model = pred_model(A = diageye(4), goal = [0, 0, 1, 0], p_B = DirichletCollection(ones(4, 4)), p_s_t = Categorical([0.7, 0.3, 0, 0])),
+        model = pred_model(
+            A = diageye(4),
+            goal = [0, 0, 1, 0],
+            p_B = DirichletCollection(ones(4, 4)),
+            p_s_t = Categorical([0.7, 0.3, 0, 0])
+        ),
         data = (y = UnfactorizedData([[1, 0, 0, 0], missing, missing]),),
         initialization = pred_model_init(DirichletCollection(ones(4, 4))),
         constraints = pred_model_constraints,
         iterations = 10
     )
     # Correctly estimates variance
-    @test probvec(last(result.predictions[:y])[2]) ≈ [0.25160378360439883, 0.20140807577024974, 0.3455800648551016, 0.20140807577024974]
-    @test entropy(last(result.predictions[:y])[2]) ≈ entropy(last(result.posteriors[:s])[2])
+    @test probvec(last(result.predictions[:y])[2]) ≈ [
+        0.25160378360439883,
+        0.20140807577024974,
+        0.3455800648551016,
+        0.20140807577024974
+    ]
+    @test entropy(last(result.predictions[:y])[2]) ≈
+        entropy(last(result.posteriors[:s])[2])
 end
 
 @testitem "Session Logging basic execution" begin
@@ -1346,7 +1729,9 @@ end
     @test !isnothing(latest_invoke.context[:data])
     @test occursin(latest_invoke.context[:model_name], "simple_model")
     @test occursin("function simple_model", latest_invoke.context[:model])
-    @test occursin("Normal(mean = 0.0, var = 1.0)", latest_invoke.context[:model])
+    @test occursin(
+        "Normal(mean = 0.0, var = 1.0)", latest_invoke.context[:model]
+    )
     @test occursin("Normal(mean = x, var = 1.0)", latest_invoke.context[:model])
     @test length(latest_invoke.context[:data]) === 1
 
@@ -1356,7 +1741,9 @@ end
     @test saved_data_properties.type === Float64
 
     custom_session = RxInfer.create_session()
-    result = infer(model = simple_model(), data = test_data, session = custom_session)
+    result = infer(
+        model = simple_model(), data = test_data, session = custom_session
+    )
     custom_stats = RxInfer.get_session_stats(custom_session, :inference)
 
     @test length(custom_stats.invokes) === 1
@@ -1387,7 +1774,13 @@ end
     test_data = (y = 1.0,)
 
     # Run inference inside session `session`
-    result = infer(model = simple_model(), data = test_data, iterations = 10, free_energy = true, session = session)
+    result = infer(
+        model = simple_model(),
+        data = test_data,
+        iterations = 10,
+        free_energy = true,
+        session = session
+    )
 
     stats = RxInfer.get_session_stats(session, :inference)
     last_invoke = last(stats.invokes)
@@ -1445,7 +1838,11 @@ end
         f() -> Linearization()
     end
 
-    result = infer(model = simple_model_missing_data(), predictvars = (y = KeepEach(),), meta = meta)
+    result = infer(
+        model = simple_model_missing_data(),
+        predictvars = (y = KeepEach(),),
+        meta = meta
+    )
 
     # Test summarize_session output format for inference invokes with default n_last
     output = IOBuffer()
@@ -1465,7 +1862,9 @@ end
 
     session = RxInfer.create_session()
 
-    @test_throws "Oops" infer(model = simple_errored_model(), data = (y = 1,), session = session)
+    @test_throws "Oops" infer(
+        model = simple_errored_model(), data = (y = 1,), session = session
+    )
 
     stats = RxInfer.get_session_stats(session, :inference)
     last_invoke = last(stats.invokes)
@@ -1493,7 +1892,13 @@ end
 
     session = RxInfer.create_session()
 
-    engine = infer(model = state_space_model_one_time_step(), datastream = datastream, autoupdates = autoupdates, initialization = initialization, session = session)
+    engine = infer(
+        model = state_space_model_one_time_step(),
+        datastream = datastream,
+        autoupdates = autoupdates,
+        initialization = initialization,
+        session = session
+    )
     stats = RxInfer.get_session_stats(session, :inference)
 
     @test length(stats.invokes) === 1
@@ -1514,11 +1919,19 @@ end
         q(t) = vague(Gamma)
     end
     session = RxInfer.create_session()
-    result = infer(model = iid(), data = (y = 1.0,), constraints = iidconstraints(), initialization = iidinit(), session = session)
+    result = infer(
+        model = iid(),
+        data = (y = 1.0,),
+        constraints = iidconstraints(),
+        initialization = iidinit(),
+        session = session
+    )
     stats = RxInfer.get_session_stats(session, :inference)
     last_invoke = stats.invokes[end]
     @test haskey(last_invoke.context, :constraints)
-    @test occursin("function iidconstraints()", last_invoke.context[:constraints])
+    @test occursin(
+        "function iidconstraints()", last_invoke.context[:constraints]
+    )
     @test occursin("q(m, t)", last_invoke.context[:constraints])
     @test occursin("q(m)", last_invoke.context[:constraints])
     @test occursin("q(t)", last_invoke.context[:constraints])
@@ -1534,7 +1947,12 @@ end
         f() -> Linearization()
     end
     session = RxInfer.create_session()
-    result = infer(model = simple_nonlinear_model(), data = (y = 1.0,), meta = model_meta(), session = session)
+    result = infer(
+        model = simple_nonlinear_model(),
+        data = (y = 1.0,),
+        meta = model_meta(),
+        session = session
+    )
     stats = RxInfer.get_session_stats(session, :inference)
     last_invoke = stats.invokes[end]
     @test haskey(last_invoke.context, :meta)
@@ -1554,7 +1972,12 @@ end
         q(x) = vague(NormalMeanVariance)
     end
     session = RxInfer.create_session()
-    result = infer(model = simple_model(), data = (y = 1.0,), initialization = initialization, session = session)
+    result = infer(
+        model = simple_model(),
+        data = (y = 1.0,),
+        initialization = initialization,
+        session = session
+    )
     stats = RxInfer.get_session_stats(session, :inference)
     last_invoke = stats.invokes[end]
     @test haskey(last_invoke.context, :initialization)
@@ -1575,7 +1998,13 @@ end
         x_mean, x_var = mean_var(q(x))
     end
     session = RxInfer.create_session()
-    result = infer(model = simple_model(), data = (y = 1.0,), autoupdates = autoupdates, initialization = initialization, session = session)
+    result = infer(
+        model = simple_model(),
+        data = (y = 1.0,),
+        autoupdates = autoupdates,
+        initialization = initialization,
+        session = session
+    )
     stats = RxInfer.get_session_stats(session, :inference)
     last_invoke = stats.invokes[end]
     @test haskey(last_invoke.context, :autoupdates)
@@ -1612,13 +2041,22 @@ end
         q(τ) = Gamma(1.0, 1.0)
     end
 
-    infer(model = test_model1(), data = (y = [1.0, 2.0, 3.0],), callbacks = callbacks, iterations = 10, initialization = init, constraints = test_model1_constraints())
+    infer(
+        model = test_model1(),
+        data = (y = [1.0, 2.0, 3.0],),
+        callbacks = callbacks,
+        iterations = 10,
+        initialization = init,
+        constraints = test_model1_constraints()
+    )
     @test length(callbacks.before_model_creation_ts) == 1
     @test length(callbacks.after_model_creation_ts) == 1
-    @test first(callbacks.before_model_creation_ts) < first(callbacks.after_model_creation_ts)
+    @test first(callbacks.before_model_creation_ts) <
+        first(callbacks.after_model_creation_ts)
     @test length(callbacks.before_inference_ts) == 1
     @test length(callbacks.after_inference_ts) == 1
-    @test first(callbacks.before_inference_ts) < first(callbacks.after_inference_ts)
+    @test first(callbacks.before_inference_ts) <
+        first(callbacks.after_inference_ts)
     @test length(callbacks.before_iteration_ts) == 1
     @test length(callbacks.after_iteration_ts) == 1
     @test length(last(callbacks.before_iteration_ts)) == 10
@@ -1626,13 +2064,22 @@ end
 
     callbacks = RxInferBenchmarkCallbacks()
     for i in 1:10
-        infer(model = test_model1(), data = (y = [1.0, 2.0, 3.0],), callbacks = callbacks, iterations = 10, initialization = init, constraints = test_model1_constraints())
+        infer(
+            model = test_model1(),
+            data = (y = [1.0, 2.0, 3.0],),
+            callbacks = callbacks,
+            iterations = 10,
+            initialization = init,
+            constraints = test_model1_constraints()
+        )
         @test length(callbacks.before_model_creation_ts) == i
         @test length(callbacks.after_model_creation_ts) == i
-        @test last(callbacks.before_model_creation_ts) < last(callbacks.after_model_creation_ts)
+        @test last(callbacks.before_model_creation_ts) <
+            last(callbacks.after_model_creation_ts)
         @test length(callbacks.before_inference_ts) == i
         @test length(callbacks.after_inference_ts) == i
-        @test last(callbacks.before_inference_ts) < last(callbacks.after_inference_ts)
+        @test last(callbacks.before_inference_ts) <
+            last(callbacks.after_inference_ts)
         @test length(callbacks.before_iteration_ts) == i
         @test length(callbacks.after_iteration_ts) == i
         length(last(callbacks.before_iteration_ts)) == 10
@@ -1704,9 +2151,16 @@ end
         count::Int
     end
 
-    @marginalrule DiscreteTransition(:out_in) (m_out::Categorical, m_in::Categorical, q_a::PointMass, meta::CountingMeta) = begin
+    @marginalrule DiscreteTransition(:out_in) (
+        m_out::Categorical,
+        m_in::Categorical,
+        q_a::PointMass,
+        meta::CountingMeta
+    ) = begin
         meta.count += 1
-        return @call_marginalrule DiscreteTransition(:out_in) (m_out = m_out, m_in = m_in, q_a = q_a)
+        return @call_marginalrule DiscreteTransition(:out_in) (
+            m_out = m_out, m_in = m_in, q_a = q_a
+        )
     end
 
     # Test batch inference
@@ -1721,10 +2175,19 @@ end
     result = infer(model = test_model(meta = meta), data = (A = diageye(2),))
     @test meta.count == 0
 
-    result = infer(model = test_model(meta = meta), data = (A = diageye(2),), options = (force_marginal_computation = true,))
+    result = infer(
+        model = test_model(meta = meta),
+        data = (A = diageye(2),),
+        options = (force_marginal_computation = true,)
+    )
     @test meta.count == 1
 
-    result = infer(model = test_model(meta = meta), data = (A = diageye(2),), options = (force_marginal_computation = true,), iterations = 10)
+    result = infer(
+        model = test_model(meta = meta),
+        data = (A = diageye(2),),
+        options = (force_marginal_computation = true,),
+        iterations = 10
+    )
     @test meta.count == 11
 
     # Test streaming inference
@@ -1747,12 +2210,22 @@ end
     meta = CountingMeta(0)
 
     static_observations = [rand(2, 2) for _ in 1:10]
-    datastream = from(static_observations) |> map(NamedTuple{(:A,), Tuple{Matrix{Float64}}}, (d) -> (A = d,))
+    datastream =
+        from(static_observations) |>
+        map(NamedTuple{(:A,), Tuple{Matrix{Float64}}}, (d) -> (A = d,))
 
-    result = infer(model = streaming_test_model(meta = meta), datastream = datastream, autoupdates = autoupdates, initialization = init, autostart = true)
+    result = infer(
+        model = streaming_test_model(meta = meta),
+        datastream = datastream,
+        autoupdates = autoupdates,
+        initialization = init,
+        autostart = true
+    )
     @test meta.count == 0
 
-    datastream = from(static_observations) |> map(NamedTuple{(:A,), Tuple{Matrix{Float64}}}, (d) -> (A = d,))
+    datastream =
+        from(static_observations) |>
+        map(NamedTuple{(:A,), Tuple{Matrix{Float64}}}, (d) -> (A = d,))
     engine = infer(
         model = streaming_test_model(meta = meta),
         datastream = datastream,
@@ -1765,30 +2238,41 @@ end
     RxInfer.stop(engine)
 
     # Test deterministic nodes
-    @model function test_model(y)
+    @model function test_model_for_force_marginal_computations(y)
         x1 ~ Normal(mean = 0.0, variance = 1.0)
         x2 ~ Normal(mean = 0.0, variance = 1.0)
         y ~ Normal(mean = x1 + x2, variance = 1.0)
     end
 
-    result = infer(model = test_model(), data = (y = 1.0,), options = (force_marginal_computation = true,))
+    result = infer(
+        model = test_model_for_force_marginal_computations(),
+        data = (y = 1.0,),
+        options = (force_marginal_computation = true,)
+    )
 end
 
 @testitem "Inference should have missing posterior if error occurs immediately" begin
-    struct MyCustomNode end
+    struct MyCustomNodeForMissingPosteriorTest end
 
-    @node MyCustomNode Stochastic [out, in]
+    @node MyCustomNodeForMissingPosteriorTest Stochastic [out, in]
 
-    @rule MyCustomNode(:out, Marginalisation) (q_in::Any,) = begin
+    @rule MyCustomNodeForMissingPosteriorTest(:out, Marginalisation) (
+        q_in::Any,
+    ) = begin
         throw(ErrorException("This is a test error"))
     end
 
     @model function my_model_with_error(y)
-        θ ~ MyCustomNode(1)
+        θ ~ MyCustomNodeForMissingPosteriorTest(1)
         y ~ Bernoulli(θ)
     end
 
-    result = infer(model = my_model_with_error(), data = (y = 1.0,), catch_exception = true)
+    result = infer(
+        model = my_model_with_error(),
+        data = (y = 1.0,),
+        catch_exception = true,
+        disable_inference_error_hint = true
+    )
 
     @test result.posteriors[:θ] === missing
 end

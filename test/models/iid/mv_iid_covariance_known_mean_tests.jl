@@ -15,7 +15,13 @@
     end
 
     function inference_mv_inverse_wishart_known_mean(data, m, d)
-        return infer(model = mv_iid_inverse_wishart_known_mean(m = m, d = d), data = (y = data,), iterations = 10, returnvars = KeepLast(), free_energy = Float64)
+        return infer(
+            model = mv_iid_inverse_wishart_known_mean(m = m, d = d),
+            data = (y = data,),
+            iterations = 10,
+            returnvars = KeepLast(),
+            free_energy = Float64
+        )
     end
 
     ## Data creation
@@ -28,7 +34,11 @@
     L = randn(rng, d, d)
     C = L * L'
 
-    data = rand(rng, MvNormalMeanCovariance(m, C), n) |> eachcol |> collect .|> collect
+    data =
+        rand(rng, MvNormalMeanCovariance(m, C), n) |>
+        eachcol |>
+        collect .|>
+        collect
 
     ## Inference execution
     result_km = inference_mv_inverse_wishart_known_mean(data, m, d)
@@ -42,10 +52,29 @@
         X = range(-5, 5, length = 200)
         Y = range(-5, 5, length = 200)
 
-        p = plot(title = "MvIID experiment / Covariance parametrisation with known mean")
-        p = contour!(p, X, Y, (x, y) -> pdf(MvNormalMeanCovariance(m, mean(result_km.posteriors[:C])), [x, y]), label = "Estimated")
-        p = contour!(p, X, Y, (x, y) -> pdf(MvNormalMeanCovariance(m, C), [x, y]), label = "Real")
+        p = plot(
+            title = "MvIID experiment / Covariance parametrisation with known mean"
+        )
+        p = contour!(
+            p,
+            X,
+            Y,
+            (x, y) -> pdf(
+                MvNormalMeanCovariance(m, mean(result_km.posteriors[:C])),
+                [x, y]
+            ),
+            label = "Estimated"
+        )
+        p = contour!(
+            p,
+            X,
+            Y,
+            (x, y) -> pdf(MvNormalMeanCovariance(m, C), [x, y]),
+            label = "Real"
+        )
     end
 
-    @test_benchmark "models" "iid_inverse_wishart_known_mean" inference_mv_inverse_wishart_known_mean($data, $m, $d)
+    @test_benchmark "models" "iid_inverse_wishart_known_mean" inference_mv_inverse_wishart_known_mean(
+        $data, $m, $d
+    )
 end

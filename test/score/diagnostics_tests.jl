@@ -4,12 +4,19 @@
     stream = Subject(Any)
 
     vbenergy = stream |> map(Float64, entropy)
-    vbenergy = apply_diagnostic_check(ObjectiveDiagnosticCheckInfs(), nothing, vbenergy)
+    vbenergy = apply_diagnostic_check(
+        ObjectiveDiagnosticCheckInfs(), nothing, vbenergy
+    )
 
     events = []
 
     subscription = subscribe!(
-        vbenergy |> safe(), lambda(on_next = (data) -> push!(events, float(data)), on_error = (err) -> push!(events, err), on_complete = () -> push!(events, "completed"))
+        vbenergy |> safe(),
+        lambda(
+            on_next = (data) -> push!(events, float(data)),
+            on_error = (err) -> push!(events, err),
+            on_complete = () -> push!(events, "completed")
+        )
     )
 
     # First value is ok
@@ -22,7 +29,7 @@
 
     # Third value is Inf, should trigger the check
     next!(stream, NormalMeanPrecision(0.0, 0.0))
-    @test events[3] isa String && occursin("The result is `Inf`", events[3])
+    @test occursin("The result is `Inf`", events[3])
 
     # Normally stream should unsubscribe after first error 
     next!(stream, NormalMeanPrecision(0.0, 0.0))
@@ -35,12 +42,19 @@ end
     stream = Subject(Any)
 
     vbenergy = stream |> map(Float64, entropy)
-    vbenergy = apply_diagnostic_check(ObjectiveDiagnosticCheckNaNs(), nothing, vbenergy)
+    vbenergy = apply_diagnostic_check(
+        ObjectiveDiagnosticCheckNaNs(), nothing, vbenergy
+    )
 
     events = []
 
     subscription = subscribe!(
-        vbenergy |> safe(), lambda(on_next = (data) -> push!(events, float(data)), on_error = (err) -> push!(events, err), on_complete = () -> push!(events, "completed"))
+        vbenergy |> safe(),
+        lambda(
+            on_next = (data) -> push!(events, float(data)),
+            on_error = (err) -> push!(events, err),
+            on_complete = () -> push!(events, "completed")
+        )
     )
 
     # First value is ok
@@ -53,7 +67,7 @@ end
 
     # Third value is NaN, should trigger the check
     next!(stream, NormalMeanPrecision(NaN, NaN))
-    @test events[3] isa String && occursin("The result is `NaN`", events[3])
+    @test occursin("The result is `NaN`", events[3])
 
     # Normally stream should unsubscribe after first error 
     next!(stream, NormalMeanPrecision(0.0, 0.0))
@@ -71,7 +85,12 @@ end
     events = []
 
     subscription = subscribe!(
-        vbenergy |> safe(), lambda(on_next = (data) -> push!(events, float(data)), on_error = (err) -> push!(events, err), on_complete = () -> push!(events, "completed"))
+        vbenergy |> safe(),
+        lambda(
+            on_next = (data) -> push!(events, float(data)),
+            on_error = (err) -> push!(events, err),
+            on_complete = () -> push!(events, "completed")
+        )
     )
 
     # First value is ok

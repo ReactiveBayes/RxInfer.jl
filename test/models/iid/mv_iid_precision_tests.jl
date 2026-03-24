@@ -51,7 +51,11 @@
     C = L * L'
     P = inv(C)
 
-    data = rand(rng, MvNormalMeanPrecision(m, P), n) |> eachcol |> collect .|> collect
+    data =
+        rand(rng, MvNormalMeanPrecision(m, P), n) |>
+        eachcol |>
+        collect .|>
+        collect
 
     ## Inference execution
     result = inference_mv_wishart(data, d)
@@ -66,8 +70,25 @@
         Y = range(-5, 5, length = 200)
 
         p = plot(title = "MvIID experiment / Precision parametrisation")
-        p = contour!(p, X, Y, (x, y) -> pdf(MvNormalMeanPrecision(mean(result.posteriors[:m]), mean(result.posteriors[:P])), [x, y]), label = "Estimated")
-        p = contour!(p, X, Y, (x, y) -> pdf(MvNormalMeanPrecision(m, P), [x, y]), label = "Real")
+        p = contour!(
+            p,
+            X,
+            Y,
+            (x, y) -> pdf(
+                MvNormalMeanPrecision(
+                    mean(result.posteriors[:m]), mean(result.posteriors[:P])
+                ),
+                [x, y]
+            ),
+            label = "Estimated"
+        )
+        p = contour!(
+            p,
+            X,
+            Y,
+            (x, y) -> pdf(MvNormalMeanPrecision(m, P), [x, y]),
+            label = "Real"
+        )
     end
 
     @test_benchmark "models" "iid_mv_wishart" inference_mv_wishart($data, $d)

@@ -3,52 +3,142 @@
     import RxInfer: InitDescriptor, InitMessage, InitMarginal
     import GraphPPL: IndexedVariable
 
-    @test @inferred(InitDescriptor(InitMessage(), GraphPPL.IndexedVariable(:x, nothing))) == InitDescriptor{InitMessage}(InitMessage(), IndexedVariable(:x, nothing))
-    @test @inferred(InitDescriptor(InitMarginal(), GraphPPL.IndexedVariable(:x, nothing))) == InitDescriptor{InitMarginal}(InitMarginal(), IndexedVariable(:x, nothing))
+    @test @inferred(
+        InitDescriptor(InitMessage(), GraphPPL.IndexedVariable(:x, nothing))
+    ) == InitDescriptor{InitMessage}(
+        InitMessage(), IndexedVariable(:x, nothing)
+    )
+    @test @inferred(
+        InitDescriptor(InitMarginal(), GraphPPL.IndexedVariable(:x, nothing))
+    ) == InitDescriptor{InitMarginal}(
+        InitMarginal(), IndexedVariable(:x, nothing)
+    )
 end
 
 @testitem "InitObject" begin
     using RxInfer
     import RxInfer: InitObject, InitDescriptor, InitMessage, InitMarginal
 
-    @test @inferred(InitObject(InitDescriptor(InitMessage(), GraphPPL.IndexedVariable(:x, nothing)), Normal(0, 10))) ===
-        InitObject(InitDescriptor(InitMessage(), GraphPPL.IndexedVariable(:x, nothing)), Normal(0, 10))
-    @test @inferred(InitObject(InitDescriptor(InitMarginal(), GraphPPL.IndexedVariable(:x, nothing)), Normal(0, 10))) ===
-        InitObject(InitDescriptor(InitMarginal(), GraphPPL.IndexedVariable(:x, nothing)), Normal(0, 10))
+    @test @inferred(
+        InitObject(
+            InitDescriptor(
+                InitMessage(), GraphPPL.IndexedVariable(:x, nothing)
+            ),
+            Normal(0, 10)
+        )
+    ) === InitObject(
+        InitDescriptor(InitMessage(), GraphPPL.IndexedVariable(:x, nothing)),
+        Normal(0, 10)
+    )
+    @test @inferred(
+        InitObject(
+            InitDescriptor(
+                InitMarginal(), GraphPPL.IndexedVariable(:x, nothing)
+            ),
+            Normal(0, 10)
+        )
+    ) === InitObject(
+        InitDescriptor(InitMarginal(), GraphPPL.IndexedVariable(:x, nothing)),
+        Normal(0, 10)
+    )
 
-    @test occursin(r"μ\(x\) = ", repr(InitObject(InitDescriptor(InitMessage(), GraphPPL.IndexedVariable(:x, nothing)), Normal(0, 10))))
-    @test occursin(r"q\(x\) = ", repr(InitObject(InitDescriptor(InitMarginal(), GraphPPL.IndexedVariable(:x, nothing)), Normal(0, 10))))
+    @test occursin(
+        r"μ\(x\) = ",
+        repr(
+            InitObject(
+                InitDescriptor(
+                    InitMessage(), GraphPPL.IndexedVariable(:x, nothing)
+                ),
+                Normal(0, 10)
+            )
+        )
+    )
+    @test occursin(
+        r"q\(x\) = ",
+        repr(
+            InitObject(
+                InitDescriptor(
+                    InitMarginal(), GraphPPL.IndexedVariable(:x, nothing)
+                ),
+                Normal(0, 10)
+            )
+        )
+    )
 end
 
 @testitem "SpecificSubModelInit" begin
     using RxInfer
     using GraphPPL
-    import RxInfer: SpecificSubModelInit, InitSpecification, InitDescriptor, InitMarginal, InitObject, GeneralSubModelInit
+    import RxInfer:
+        SpecificSubModelInit,
+        InitSpecification,
+        InitDescriptor,
+        InitMarginal,
+        InitObject,
+        GeneralSubModelInit
 
     @model function dummymodel()
         x ~ Normal(mean = 0.0, var = 1.0)
         y ~ Normal(mean = x, var = 1.0)
     end
 
-    @test SpecificSubModelInit(GraphPPL.FactorID(dummymodel, 1), InitSpecification()) isa SpecificSubModelInit
-    push!(SpecificSubModelInit(GraphPPL.FactorID(dummymodel, 1)), InitObject(InitDescriptor(InitMarginal(), GraphPPL.IndexedVariable(:x, nothing)), Normal(0, 10)))
-    push!(SpecificSubModelInit(GraphPPL.FactorID(dummymodel, 1), InitSpecification()), SpecificSubModelInit(GraphPPL.FactorID(sum, 1), InitSpecification()))
-    push!(SpecificSubModelInit(GraphPPL.FactorID(dummymodel, 1), InitSpecification()), GeneralSubModelInit(dummymodel, InitSpecification()))
+    @test SpecificSubModelInit(
+        GraphPPL.FactorID(dummymodel, 1), InitSpecification()
+    ) isa SpecificSubModelInit
+    push!(
+        SpecificSubModelInit(GraphPPL.FactorID(dummymodel, 1)),
+        InitObject(
+            InitDescriptor(
+                InitMarginal(), GraphPPL.IndexedVariable(:x, nothing)
+            ),
+            Normal(0, 10)
+        )
+    )
+    push!(
+        SpecificSubModelInit(
+            GraphPPL.FactorID(dummymodel, 1), InitSpecification()
+        ),
+        SpecificSubModelInit(GraphPPL.FactorID(sum, 1), InitSpecification())
+    )
+    push!(
+        SpecificSubModelInit(
+            GraphPPL.FactorID(dummymodel, 1), InitSpecification()
+        ),
+        GeneralSubModelInit(dummymodel, InitSpecification())
+    )
 end
 
 @testitem "GeneralSubModelInit" begin
     using RxInfer
     using GraphPPL
-    import RxInfer: SpecificSubModelInit, InitSpecification, InitDescriptor, InitMarginal, InitObject, GeneralSubModelInit
+    import RxInfer:
+        SpecificSubModelInit,
+        InitSpecification,
+        InitDescriptor,
+        InitMarginal,
+        InitObject,
+        GeneralSubModelInit
 
     @model function dummymodel()
         x ~ Normal(mean = 0.0, var = 1.0)
         y ~ Normal(mean = x, var = 1.0)
     end
 
-    @test GeneralSubModelInit(dummymodel, InitSpecification()) isa GeneralSubModelInit
-    push!(GeneralSubModelInit(dummymodel, InitSpecification()), InitObject(InitDescriptor(InitMarginal(), GraphPPL.IndexedVariable(:x, nothing)), Normal(0, 10)))
-    push!(GeneralSubModelInit(dummymodel, InitSpecification()), SpecificSubModelInit(GraphPPL.FactorID(sum, 1), InitSpecification()))
+    @test GeneralSubModelInit(dummymodel, InitSpecification()) isa
+        GeneralSubModelInit
+    push!(
+        GeneralSubModelInit(dummymodel, InitSpecification()),
+        InitObject(
+            InitDescriptor(
+                InitMarginal(), GraphPPL.IndexedVariable(:x, nothing)
+            ),
+            Normal(0, 10)
+        )
+    )
+    push!(
+        GeneralSubModelInit(dummymodel, InitSpecification()),
+        SpecificSubModelInit(GraphPPL.FactorID(sum, 1), InitSpecification())
+    )
     init = InitSpecification()
     push!(init, GeneralSubModelInit(dummymodel, InitSpecification()))
 end
@@ -56,7 +146,15 @@ end
 @testitem "filter general and specific submodel init" begin
     using RxInfer
     using GraphPPL
-    import RxInfer: SpecificSubModelInit, InitSpecification, InitDescriptor, InitMarginal, InitObject, GeneralSubModelInit, getgeneralsubmodelinit, getspecificsubmodelinit
+    import RxInfer:
+        SpecificSubModelInit,
+        InitSpecification,
+        InitDescriptor,
+        InitMarginal,
+        InitObject,
+        GeneralSubModelInit,
+        getgeneralsubmodelinit,
+        getspecificsubmodelinit
     import GraphPPL: FactorID, hasextra
 
     init = InitSpecification()
@@ -69,7 +167,8 @@ end
     @test length(getgeneralsubmodelinit(init)) === 1
     @test length(getspecificsubmodelinit(init)) === 1
 
-    @test getspecificsubmodelinit(init, FactorID(sum, 1)).tag == FactorID(sum, 1)
+    @test getspecificsubmodelinit(init, FactorID(sum, 1)).tag ==
+        FactorID(sum, 1)
     @test getspecificsubmodelinit(init, FactorID(sum, 5)) === nothing
 
     @test getgeneralsubmodelinit(init, sin).fform == sin
@@ -111,7 +210,17 @@ end
     # Test apply init marginal for top level variable
     model = create_model(gcv_collection())
     context = getcontext(model)
-    init = InitSpecification([InitObject(InitDescriptor(InitMarginal(), GraphPPL.IndexedVariable(:κ, nothing)), Normal(0, 1))], [])
+    init = InitSpecification(
+        [
+            InitObject(
+                InitDescriptor(
+                    InitMarginal(), GraphPPL.IndexedVariable(:κ, nothing)
+                ),
+                Normal(0, 1)
+            )
+        ],
+        []
+    )
     apply_init!(model, context, init)
     node = context[:κ]
     @test !hasextra(model[node], InitMsgExtraKey)
@@ -123,7 +232,17 @@ end
     # Test apply init marginal for top level variable
     model = create_model(gcv_collection())
     context = getcontext(model)
-    init = InitSpecification([InitObject(InitDescriptor(InitMessage(), GraphPPL.IndexedVariable(:κ, nothing)), Normal(0, 1))], [])
+    init = InitSpecification(
+        [
+            InitObject(
+                InitDescriptor(
+                    InitMessage(), GraphPPL.IndexedVariable(:κ, nothing)
+                ),
+                Normal(0, 1)
+            )
+        ],
+        []
+    )
     apply_init!(model, context, init)
     node = context[:κ]
     @test getextra(model[node], InitMsgExtraKey) == Normal(0, 1)
@@ -135,7 +254,17 @@ end
     # Test apply init marginal for a vector of variables
     model = create_model(gcv_collection())
     context = getcontext(model)
-    init = InitSpecification([InitObject(InitDescriptor(InitMessage(), GraphPPL.IndexedVariable(:x, nothing)), Normal(0, 1))], [])
+    init = InitSpecification(
+        [
+            InitObject(
+                InitDescriptor(
+                    InitMessage(), GraphPPL.IndexedVariable(:x, nothing)
+                ),
+                Normal(0, 1)
+            )
+        ],
+        []
+    )
     apply_init!(model, context, init)
     node_c = context[:x]
     for node in node_c
@@ -149,7 +278,17 @@ end
     # Test apply init message for a vector of variables
     model = create_model(gcv_collection())
     context = getcontext(model)
-    init = InitSpecification([InitObject(InitDescriptor(InitMarginal(), GraphPPL.IndexedVariable(:x, nothing)), Normal(0, 1))], [])
+    init = InitSpecification(
+        [
+            InitObject(
+                InitDescriptor(
+                    InitMarginal(), GraphPPL.IndexedVariable(:x, nothing)
+                ),
+                Normal(0, 1)
+            )
+        ],
+        []
+    )
     apply_init!(model, context, init)
     node_c = context[:x]
     for node in node_c
@@ -163,7 +302,15 @@ end
     # Test apply init message for an element of a vector
     model = create_model(gcv_collection())
     context = getcontext(model)
-    init = InitSpecification([InitObject(InitDescriptor(InitMarginal(), GraphPPL.IndexedVariable(:x, 1)), Normal(0, 1))], [])
+    init = InitSpecification(
+        [
+            InitObject(
+                InitDescriptor(InitMarginal(), GraphPPL.IndexedVariable(:x, 1)),
+                Normal(0, 1)
+            )
+        ],
+        []
+    )
     apply_init!(model, context, init)
     node = context[:x][1]
     @test !hasextra(model[node], InitMsgExtraKey)
@@ -177,7 +324,15 @@ end
     # Test apply init message for an element of a vector
     model = create_model(gcv_collection())
     context = getcontext(model)
-    init = InitSpecification([InitObject(InitDescriptor(InitMessage(), GraphPPL.IndexedVariable(:x, 1)), Normal(0, 1))], [])
+    init = InitSpecification(
+        [
+            InitObject(
+                InitDescriptor(InitMessage(), GraphPPL.IndexedVariable(:x, 1)),
+                Normal(0, 1)
+            )
+        ],
+        []
+    )
     apply_init!(model, context, init)
     node = context[:x][1]
     @test getextra(model[node], InitMsgExtraKey) == Normal(0, 1)
@@ -195,7 +350,19 @@ end
         [],
         [
             SpecificSubModelInit(
-                GraphPPL.FactorID(gcv, 1), InitSpecification([InitObject(InitDescriptor(InitMarginal(), GraphPPL.IndexedVariable(:log_σ, nothing)), Normal(0, 1))], [])
+                GraphPPL.FactorID(gcv, 1),
+                InitSpecification(
+                    [
+                        InitObject(
+                            InitDescriptor(
+                                InitMarginal(),
+                                GraphPPL.IndexedVariable(:log_σ, nothing)
+                            ),
+                            Normal(0, 1)
+                        )
+                    ],
+                    []
+                )
             )
         ]
     )
@@ -216,7 +383,19 @@ end
         [],
         [
             SpecificSubModelInit(
-                GraphPPL.FactorID(gcv, 1), InitSpecification([InitObject(InitDescriptor(InitMessage(), GraphPPL.IndexedVariable(:log_σ, nothing)), Normal(0, 1))], [])
+                GraphPPL.FactorID(gcv, 1),
+                InitSpecification(
+                    [
+                        InitObject(
+                            InitDescriptor(
+                                InitMessage(),
+                                GraphPPL.IndexedVariable(:log_σ, nothing)
+                            ),
+                            Normal(0, 1)
+                        )
+                    ],
+                    []
+                )
             )
         ]
     )
@@ -234,7 +413,24 @@ end
     model = create_model(gcv_collection())
     context = getcontext(model)
     init = InitSpecification(
-        [], [GeneralSubModelInit(gcv, InitSpecification([InitObject(InitDescriptor(InitMarginal(), GraphPPL.IndexedVariable(:log_σ, nothing)), Normal(0, 1))], []))]
+        [],
+        [
+            GeneralSubModelInit(
+                gcv,
+                InitSpecification(
+                    [
+                        InitObject(
+                            InitDescriptor(
+                                InitMarginal(),
+                                GraphPPL.IndexedVariable(:log_σ, nothing)
+                            ),
+                            Normal(0, 1)
+                        )
+                    ],
+                    []
+                )
+            )
+        ]
     )
     apply_init!(model, context, init)
     for i in 1:10
@@ -247,7 +443,24 @@ end
     model = create_model(gcv_collection())
     context = getcontext(model)
     init = InitSpecification(
-        [], [GeneralSubModelInit(gcv, InitSpecification([InitObject(InitDescriptor(InitMessage(), GraphPPL.IndexedVariable(:log_σ, nothing)), Normal(0, 1))], []))]
+        [],
+        [
+            GeneralSubModelInit(
+                gcv,
+                InitSpecification(
+                    [
+                        InitObject(
+                            InitDescriptor(
+                                InitMessage(),
+                                GraphPPL.IndexedVariable(:log_σ, nothing)
+                            ),
+                            Normal(0, 1)
+                        )
+                    ],
+                    []
+                )
+            )
+        ]
     )
     apply_init!(model, context, init)
     for i in 1:10
@@ -269,7 +482,9 @@ end
         q(x) = Normal(0, 1)
         μ(z) = Normal(0, 1)
     end
-    @test_expression_generating GraphPPL.apply_pipeline(input, check_for_returns_init) input
+    @test_expression_generating GraphPPL.apply_pipeline(
+        input, check_for_returns_init
+    ) input
 
     # Test 2: check_for_returns_init with a return statement
     input = quote
@@ -277,7 +492,9 @@ end
         μ(z) = Normal(0, 1)
         return nothing
     end
-    @test_throws ErrorException("The init macro does not support return statements.") GraphPPL.apply_pipeline(input, check_for_returns_init)
+    @test_throws ErrorException(
+        "The init macro does not support return statements."
+    ) GraphPPL.apply_pipeline(input, check_for_returns_init)
 end
 
 @testitem "add_init_constructor" begin
@@ -447,7 +664,9 @@ end
                 q(x) = Normal(0, 1)
                 μ(z) = Normal(0, 1)
                 let __outer_init__ = __init__
-                    let __init__ = RxInfer.SpecificSubModelInit(RxInfer.GraphPPL.FactorID(subsubmodel, 1))
+                    let __init__ = RxInfer.SpecificSubModelInit(
+                            RxInfer.GraphPPL.FactorID(subsubmodel, 1)
+                        )
                         q(x) = Normal(0, 1)
                         μ(z) = Normal(0, 1)
                         push!(__outer_init__, __init__)
@@ -532,7 +751,10 @@ end
     end
 
     output = quote
-        RxInfer.resolve_parametrization(Dirichlet, GraphPPL.MixedArguments((ones(3),), (check_args = false,)))
+        RxInfer.resolve_parametrization(
+            Dirichlet,
+            GraphPPL.MixedArguments((ones(3),), (check_args = false,))
+        )
     end
 
     @test_expression_generating convert_init_fform(input) output
@@ -544,15 +766,19 @@ end
 
     include("../utiltests.jl")
 
-    @test resolve_parametrization(Normal, (mean = 0, var = 1)) == NormalMeanVariance(0, 1)
+    @test resolve_parametrization(Normal, (mean = 0, var = 1)) ==
+        NormalMeanVariance(0, 1)
 
     @test resolve_parametrization(Gamma, (1, 1)) == GammaShapeScale(1, 1)
 
-    @test resolve_parametrization(vague, (NormalMeanVariance,)) == NormalMeanVariance(0, 1e12)
+    @test resolve_parametrization(vague, (NormalMeanVariance,)) ==
+        NormalMeanVariance(0, 1e12)
 
     @test resolve_parametrization(tiny, (Float32,)) == tiny(Float32)
 
-    @test resolve_parametrization(Dirichlet, GraphPPL.MixedArguments((ones(3),), (check_args = false,))) == Dirichlet([1.0, 1.0, 1.0])
+    @test resolve_parametrization(
+        Dirichlet, GraphPPL.MixedArguments((ones(3),), (check_args = false,))
+    ) == Dirichlet([1.0, 1.0, 1.0])
 
     result = resolve_parametrization(rand, (Float64, 3, 3))
     @test size(result) == (3, 3)
@@ -570,7 +796,15 @@ end
         q(GraphPPL.IndexedVariable(:x, 1)) = Normal(0, 1)
     end
     output = quote
-        push!(__init__, RxInfer.InitObject(RxInfer.InitDescriptor(RxInfer.InitMarginal(), GraphPPL.IndexedVariable(:x, 1)), RxInfer.resolve_parametrization(Normal, (0, 1))))
+        push!(
+            __init__,
+            RxInfer.InitObject(
+                RxInfer.InitDescriptor(
+                    RxInfer.InitMarginal(), GraphPPL.IndexedVariable(:x, 1)
+                ),
+                RxInfer.resolve_parametrization(Normal, (0, 1))
+            )
+        )
     end
     @test_expression_generating apply_pipeline(input, convert_init_object) output
 
@@ -579,7 +813,16 @@ end
         q(GraphPPL.IndexedVariable(:x, nothing)) = Normal(0, 1)
     end
     output = quote
-        push!(__init__, RxInfer.InitObject(RxInfer.InitDescriptor(RxInfer.InitMarginal(), GraphPPL.IndexedVariable(:x, nothing)), RxInfer.resolve_parametrization(Normal, (0, 1))))
+        push!(
+            __init__,
+            RxInfer.InitObject(
+                RxInfer.InitDescriptor(
+                    RxInfer.InitMarginal(),
+                    GraphPPL.IndexedVariable(:x, nothing)
+                ),
+                RxInfer.resolve_parametrization(Normal, (0, 1))
+            )
+        )
     end
     @test_expression_generating apply_pipeline(input, convert_init_object) output
 
@@ -588,7 +831,15 @@ end
         μ(GraphPPL.IndexedVariable(:x, 1)) = Normal(0, 1)
     end
     output = quote
-        push!(__init__, RxInfer.InitObject(RxInfer.InitDescriptor(RxInfer.InitMessage(), GraphPPL.IndexedVariable(:x, 1)), RxInfer.resolve_parametrization(Normal, (0, 1))))
+        push!(
+            __init__,
+            RxInfer.InitObject(
+                RxInfer.InitDescriptor(
+                    RxInfer.InitMessage(), GraphPPL.IndexedVariable(:x, 1)
+                ),
+                RxInfer.resolve_parametrization(Normal, (0, 1))
+            )
+        )
     end
     @test_expression_generating apply_pipeline(input, convert_init_object) output
 
@@ -597,7 +848,16 @@ end
         μ(GraphPPL.IndexedVariable(:x, nothing)) = Normal(0, 1)
     end
     output = quote
-        push!(__init__, RxInfer.InitObject(RxInfer.InitDescriptor(RxInfer.InitMessage(), GraphPPL.IndexedVariable(:x, nothing)), RxInfer.resolve_parametrization(Normal, (0, 1))))
+        push!(
+            __init__,
+            RxInfer.InitObject(
+                RxInfer.InitDescriptor(
+                    RxInfer.InitMessage(),
+                    GraphPPL.IndexedVariable(:x, nothing)
+                ),
+                RxInfer.resolve_parametrization(Normal, (0, 1))
+            )
+        )
     end
     @test_expression_generating apply_pipeline(input, convert_init_object) output
 end
@@ -616,7 +876,13 @@ end
             push!(
                 __init__,
                 RxInfer.InitObject(
-                    RxInfer.InitDescriptor(RxInfer.InitMarginal(), GraphPPL.IndexedVariable(:x, nothing)), RxInfer.resolve_parametrization(Normal, (mean = 0, var = 1))
+                    RxInfer.InitDescriptor(
+                        RxInfer.InitMarginal(),
+                        GraphPPL.IndexedVariable(:x, nothing)
+                    ),
+                    RxInfer.resolve_parametrization(
+                        Normal, (mean = 0, var = 1)
+                    )
                 )
             )
             __init__
@@ -633,11 +899,23 @@ end
         let __init__ = RxInfer.InitSpecification()
             push!(
                 __init__,
-                RxInfer.InitObject(RxInfer.InitDescriptor(RxInfer.InitMarginal(), GraphPPL.IndexedVariable(:x, nothing)), RxInfer.resolve_parametrization(Normal, (m = 0, v = 1)))
+                RxInfer.InitObject(
+                    RxInfer.InitDescriptor(
+                        RxInfer.InitMarginal(),
+                        GraphPPL.IndexedVariable(:x, nothing)
+                    ),
+                    RxInfer.resolve_parametrization(Normal, (m = 0, v = 1))
+                )
             )
             push!(
                 __init__,
-                RxInfer.InitObject(RxInfer.InitDescriptor(RxInfer.InitMessage(), GraphPPL.IndexedVariable(:z, nothing)), RxInfer.resolve_parametrization(Normal, (m = 0, v = 1)))
+                RxInfer.InitObject(
+                    RxInfer.InitDescriptor(
+                        RxInfer.InitMessage(),
+                        GraphPPL.IndexedVariable(:z, nothing)
+                    ),
+                    RxInfer.resolve_parametrization(Normal, (m = 0, v = 1))
+                )
             )
             __init__
         end
@@ -657,24 +935,48 @@ end
         let __init__ = RxInfer.InitSpecification()
             push!(
                 __init__,
-                RxInfer.InitObject(RxInfer.InitDescriptor(RxInfer.InitMarginal(), GraphPPL.IndexedVariable(:x, nothing)), RxInfer.resolve_parametrization(Normal, (m = 0, v = 1)))
+                RxInfer.InitObject(
+                    RxInfer.InitDescriptor(
+                        RxInfer.InitMarginal(),
+                        GraphPPL.IndexedVariable(:x, nothing)
+                    ),
+                    RxInfer.resolve_parametrization(Normal, (m = 0, v = 1))
+                )
             )
             push!(
                 __init__,
-                RxInfer.InitObject(RxInfer.InitDescriptor(RxInfer.InitMessage(), GraphPPL.IndexedVariable(:z, nothing)), RxInfer.resolve_parametrization(Normal, (m = 0, v = 1)))
+                RxInfer.InitObject(
+                    RxInfer.InitDescriptor(
+                        RxInfer.InitMessage(),
+                        GraphPPL.IndexedVariable(:z, nothing)
+                    ),
+                    RxInfer.resolve_parametrization(Normal, (m = 0, v = 1))
+                )
             )
             let __outer_init__ = __init__
                 let __init__ = RxInfer.GeneralSubModelInit(submodel)
                     push!(
                         __init__,
                         RxInfer.InitObject(
-                            RxInfer.InitDescriptor(RxInfer.InitMarginal(), GraphPPL.IndexedVariable(:x, nothing)), RxInfer.resolve_parametrization(Normal, (m = 0, v = 1))
+                            RxInfer.InitDescriptor(
+                                RxInfer.InitMarginal(),
+                                GraphPPL.IndexedVariable(:x, nothing)
+                            ),
+                            RxInfer.resolve_parametrization(
+                                Normal, (m = 0, v = 1)
+                            )
                         )
                     )
                     push!(
                         __init__,
                         RxInfer.InitObject(
-                            RxInfer.InitDescriptor(RxInfer.InitMessage(), GraphPPL.IndexedVariable(:z, nothing)), RxInfer.resolve_parametrization(Normal, (m = 0, v = 1))
+                            RxInfer.InitDescriptor(
+                                RxInfer.InitMessage(),
+                                GraphPPL.IndexedVariable(:z, nothing)
+                            ),
+                            RxInfer.resolve_parametrization(
+                                Normal, (m = 0, v = 1)
+                            )
                         )
                     )
                     push!(__outer_init__, __init__)
@@ -698,25 +1000,49 @@ end
             push!(
                 __init__,
                 RxInfer.InitObject(
-                    RxInfer.InitDescriptor(RxInfer.InitMarginal(), GraphPPL.IndexedVariable(:x, nothing)), RxInfer.resolve_parametrization(vague, (NormalMeanVariance,))
+                    RxInfer.InitDescriptor(
+                        RxInfer.InitMarginal(),
+                        GraphPPL.IndexedVariable(:x, nothing)
+                    ),
+                    RxInfer.resolve_parametrization(
+                        vague, (NormalMeanVariance,)
+                    )
                 )
             )
             push!(
                 __init__,
-                RxInfer.InitObject(RxInfer.InitDescriptor(RxInfer.InitMessage(), GraphPPL.IndexedVariable(:z, nothing)), RxInfer.resolve_parametrization(Dirichlet, ([1, 1],)))
+                RxInfer.InitObject(
+                    RxInfer.InitDescriptor(
+                        RxInfer.InitMessage(),
+                        GraphPPL.IndexedVariable(:z, nothing)
+                    ),
+                    RxInfer.resolve_parametrization(Dirichlet, ([1, 1],))
+                )
             )
             let __outer_init__ = __init__
                 let __init__ = RxInfer.GeneralSubModelInit(submodel)
                     push!(
                         __init__,
                         RxInfer.InitObject(
-                            RxInfer.InitDescriptor(RxInfer.InitMarginal(), GraphPPL.IndexedVariable(:x, nothing)), RxInfer.resolve_parametrization(vague, (NormalMeanVariance,))
+                            RxInfer.InitDescriptor(
+                                RxInfer.InitMarginal(),
+                                GraphPPL.IndexedVariable(:x, nothing)
+                            ),
+                            RxInfer.resolve_parametrization(
+                                vague, (NormalMeanVariance,)
+                            )
                         )
                     )
                     push!(
                         __init__,
                         RxInfer.InitObject(
-                            RxInfer.InitDescriptor(RxInfer.InitMessage(), GraphPPL.IndexedVariable(:z, nothing)), RxInfer.resolve_parametrization(Dirichlet, ([1, 1],))
+                            RxInfer.InitDescriptor(
+                                RxInfer.InitMessage(),
+                                GraphPPL.IndexedVariable(:z, nothing)
+                            ),
+                            RxInfer.resolve_parametrization(
+                                Dirichlet, ([1, 1],)
+                            )
                         )
                     )
                     push!(__outer_init__, __init__)
@@ -729,7 +1055,8 @@ end
 
     # Test that comma inbetween init statements throws an error
     input = quote
-        q(μ) = NormalMeanPrecision(0.0, 0.001), q(τ) = GammaShapeRate(10.0, 10.0)
+        q(μ) =
+            NormalMeanPrecision(0.0, 0.001), q(τ) = GammaShapeRate(10.0, 10.0)
     end
 
     @test_throws ErrorException init_macro_interior(input)
@@ -765,15 +1092,22 @@ end
         q(γ) = vague(GammaShapeRate)
     end
 
-    model = create_model(with_plugins(gamma_aliases(), GraphPPL.PluginsCollection(RxInfer.InitializationPlugin(init))))
+    model = create_model(
+        with_plugins(
+            gamma_aliases(),
+            GraphPPL.PluginsCollection(RxInfer.InitializationPlugin(init))
+        )
+    )
 
     for node in filter(GraphPPL.as_variable(:x), model)
         @test GraphPPL.hasextra(model[node], RxInfer.InitMarExtraKey)
-        @test GraphPPL.getextra(model[node], RxInfer.InitMarExtraKey) == vague(NormalMeanVariance)
+        @test GraphPPL.getextra(model[node], RxInfer.InitMarExtraKey) ==
+            vague(NormalMeanVariance)
     end
     for node in filter(GraphPPL.as_variable(:γ), model)
         @test GraphPPL.hasextra(model[node], RxInfer.InitMarExtraKey)
-        @test GraphPPL.getextra(model[node], RxInfer.InitMarExtraKey) == vague(GammaShapeRate)
+        @test GraphPPL.getextra(model[node], RxInfer.InitMarExtraKey) ==
+            vague(GammaShapeRate)
     end
 
     @model function matrix_init()
@@ -793,22 +1127,34 @@ end
         ]
     end
 
-    model = create_model(with_plugins(matrix_init(), GraphPPL.PluginsCollection(RxInfer.InitializationPlugin(init))))
+    model = create_model(
+        with_plugins(
+            matrix_init(),
+            GraphPPL.PluginsCollection(RxInfer.InitializationPlugin(init))
+        )
+    )
 
     for node in filter(GraphPPL.as_variable(:x), model)
         @test GraphPPL.hasextra(model[node], RxInfer.InitMarExtraKey)
-        @test GraphPPL.getextra(model[node], RxInfer.InitMarExtraKey) == vague(NormalMeanVariance)
+        @test GraphPPL.getextra(model[node], RxInfer.InitMarExtraKey) ==
+            vague(NormalMeanVariance)
     end
 
     init = @initialization begin
         q(x) = [vague(NormalMeanVariance) for _ in 1:9]
     end
 
-    model = create_model(with_plugins(matrix_init(), GraphPPL.PluginsCollection(RxInfer.InitializationPlugin(init))))
+    model = create_model(
+        with_plugins(
+            matrix_init(),
+            GraphPPL.PluginsCollection(RxInfer.InitializationPlugin(init))
+        )
+    )
 
     for node in filter(GraphPPL.as_variable(:x), model)
         @test GraphPPL.hasextra(model[node], RxInfer.InitMarExtraKey)
-        @test GraphPPL.getextra(model[node], RxInfer.InitMarExtraKey) == vague(NormalMeanVariance)
+        @test GraphPPL.getextra(model[node], RxInfer.InitMarExtraKey) ==
+            vague(NormalMeanVariance)
     end
 end
 
@@ -829,14 +1175,23 @@ end
         q(x) = vague(NormalMeanVariance)
     end
 
-    model = GraphPPL.create_model(GraphPPL.with_plugins(model_with_init(), GraphPPL.PluginsCollection(RxInfer.InitializationPlugin())))
-    @test GraphPPL.getextra(model[model[][:x]], RxInfer.InitMarExtraKey) == NormalMeanVariance(0, 1e12)
+    model = GraphPPL.create_model(
+        GraphPPL.with_plugins(
+            model_with_init(),
+            GraphPPL.PluginsCollection(RxInfer.InitializationPlugin())
+        )
+    )
+    @test GraphPPL.getextra(model[model[][:x]], RxInfer.InitMarExtraKey) ==
+        NormalMeanVariance(0, 1e12)
 end
 
 @testitem "throw warning if double init" begin
     using RxInfer
 
-    @test_logs (:warn, "Variable u is initialized multiple times. The last initialization will be used.") @initialization begin
+    @test_logs (
+        :warn,
+        "Variable u is initialized multiple times. The last initialization will be used."
+    ) @initialization begin
         q(u) = NormalMeanVariance(0, 1)
         q(u) = NormalMeanVariance(0, 1)
     end
@@ -868,22 +1223,42 @@ end
     init_gamma = @initialization begin
         q(s) = Gamma(1, 1)
     end
-    model = create_model(with_plugins(gamma_only(), GraphPPL.PluginsCollection(RxInfer.InitializationPlugin(init_gamma))))
+    model = create_model(
+        with_plugins(
+            gamma_only(),
+            GraphPPL.PluginsCollection(
+                RxInfer.InitializationPlugin(init_gamma)
+            )
+        )
+    )
     node = GraphPPL.getcontext(model)[:s]
     @test GraphPPL.hasextra(model[node], RxInfer.InitMarExtraKey)
-    @test GraphPPL.getextra(model[node], RxInfer.InitMarExtraKey) == Distributions.Gamma(1.0, 1.0)
-    @test occursin("Gamma{Float64}(α=1.0, θ=1.0)", repr(GraphPPL.getextra(model[node], RxInfer.InitMarExtraKey)))
+    @test GraphPPL.getextra(model[node], RxInfer.InitMarExtraKey) ==
+        Distributions.Gamma(1.0, 1.0)
+    @test occursin(
+        "Gamma{Float64}(α=1.0, θ=1.0)",
+        repr(GraphPPL.getextra(model[node], RxInfer.InitMarExtraKey))
+    )
 
     # GammaShapeScale without kwargs
     init_gss = @initialization begin
         q(s) = GammaShapeScale(1, 1)
     end
 
-    model = create_model(with_plugins(gamma_only(), GraphPPL.PluginsCollection(RxInfer.InitializationPlugin(init_gss))))
+    model = create_model(
+        with_plugins(
+            gamma_only(),
+            GraphPPL.PluginsCollection(RxInfer.InitializationPlugin(init_gss))
+        )
+    )
     node = GraphPPL.getcontext(model)[:s]
     @test GraphPPL.hasextra(model[node], RxInfer.InitMarExtraKey)
-    @test GraphPPL.getextra(model[node], RxInfer.InitMarExtraKey) == Distributions.Gamma(1.0, 1.0)
-    @test occursin("Gamma{Float64}(α=1.0, θ=1.0)", repr(GraphPPL.getextra(model[node], RxInfer.InitMarExtraKey)))
+    @test GraphPPL.getextra(model[node], RxInfer.InitMarExtraKey) ==
+        Distributions.Gamma(1.0, 1.0)
+    @test occursin(
+        "Gamma{Float64}(α=1.0, θ=1.0)",
+        repr(GraphPPL.getextra(model[node], RxInfer.InitMarExtraKey))
+    )
 end
 
 @testitem "Full initialization macro with function" begin
@@ -927,7 +1302,14 @@ end
 
     # Test 1: Empty block works with model
     empty_init = @initialization begin end
-    model = create_model(with_plugins(simple_model(), GraphPPL.PluginsCollection(RxInfer.InitializationPlugin(empty_init))))
+    model = create_model(
+        with_plugins(
+            simple_model(),
+            GraphPPL.PluginsCollection(
+                RxInfer.InitializationPlugin(empty_init)
+            )
+        )
+    )
     context = getcontext(model)
     @test !hasextra(model[context[:x]], InitMarExtraKey)
     @test !hasextra(model[context[:x]], InitMsgExtraKey)
@@ -936,20 +1318,36 @@ end
     single_marginal = @initialization begin
         q(x) = NormalMeanVariance(0, 1)
     end
-    model = create_model(with_plugins(simple_model(), GraphPPL.PluginsCollection(RxInfer.InitializationPlugin(single_marginal))))
+    model = create_model(
+        with_plugins(
+            simple_model(),
+            GraphPPL.PluginsCollection(
+                RxInfer.InitializationPlugin(single_marginal)
+            )
+        )
+    )
     context = getcontext(model)
     @test hasextra(model[context[:x]], InitMarExtraKey)
-    @test getextra(model[context[:x]], InitMarExtraKey) == NormalMeanVariance(0, 1)
+    @test getextra(model[context[:x]], InitMarExtraKey) ==
+        NormalMeanVariance(0, 1)
     @test !hasextra(model[context[:y]], InitMarExtraKey)
 
     # Test 3: Block with single message init works
     single_message = @initialization begin
         μ(z) = NormalMeanVariance(0, 1)
     end
-    model = create_model(with_plugins(simple_model(), GraphPPL.PluginsCollection(RxInfer.InitializationPlugin(single_message))))
+    model = create_model(
+        with_plugins(
+            simple_model(),
+            GraphPPL.PluginsCollection(
+                RxInfer.InitializationPlugin(single_message)
+            )
+        )
+    )
     context = getcontext(model)
     @test hasextra(model[context[:z]], InitMsgExtraKey)
-    @test getextra(model[context[:z]], InitMsgExtraKey) == NormalMeanVariance(0, 1)
+    @test getextra(model[context[:z]], InitMsgExtraKey) ==
+        NormalMeanVariance(0, 1)
     @test !hasextra(model[context[:x]], InitMsgExtraKey)
 
     # Test 4: Block with multiple inits (marginal and message) works
@@ -958,11 +1356,21 @@ end
         μ(y) = NormalMeanPrecision(0, 1)
         q(z) = vague(NormalMeanVariance)
     end
-    model = create_model(with_plugins(simple_model(), GraphPPL.PluginsCollection(RxInfer.InitializationPlugin(multiple_inits))))
+    model = create_model(
+        with_plugins(
+            simple_model(),
+            GraphPPL.PluginsCollection(
+                RxInfer.InitializationPlugin(multiple_inits)
+            )
+        )
+    )
     context = getcontext(model)
-    @test getextra(model[context[:x]], InitMarExtraKey) == NormalMeanVariance(0, 1)
-    @test getextra(model[context[:y]], InitMsgExtraKey) == NormalMeanPrecision(0, 1)
-    @test getextra(model[context[:z]], InitMarExtraKey) == vague(NormalMeanVariance)
+    @test getextra(model[context[:x]], InitMarExtraKey) ==
+        NormalMeanVariance(0, 1)
+    @test getextra(model[context[:y]], InitMsgExtraKey) ==
+        NormalMeanPrecision(0, 1)
+    @test getextra(model[context[:z]], InitMarExtraKey) ==
+        vague(NormalMeanVariance)
 
     # Test 5: Block with indexed variables works
     indexed_vars = @initialization begin
@@ -970,11 +1378,21 @@ end
         q(x[2]) = NormalMeanVariance(1, 1)
         μ(y[1]) = Normal(mean = 0, var = 1)
     end
-    model = create_model(with_plugins(indexed_model(), GraphPPL.PluginsCollection(RxInfer.InitializationPlugin(indexed_vars))))
+    model = create_model(
+        with_plugins(
+            indexed_model(),
+            GraphPPL.PluginsCollection(
+                RxInfer.InitializationPlugin(indexed_vars)
+            )
+        )
+    )
     context = getcontext(model)
-    @test getextra(model[context[:x][1]], InitMarExtraKey) == NormalMeanVariance(0, 1)
-    @test getextra(model[context[:x][2]], InitMarExtraKey) == NormalMeanVariance(1, 1)
-    @test getextra(model[context[:y][1]], InitMsgExtraKey) == NormalMeanVariance(0, 1)
+    @test getextra(model[context[:x][1]], InitMarExtraKey) ==
+        NormalMeanVariance(0, 1)
+    @test getextra(model[context[:x][2]], InitMarExtraKey) ==
+        NormalMeanVariance(1, 1)
+    @test getextra(model[context[:y][1]], InitMsgExtraKey) ==
+        NormalMeanVariance(0, 1)
     @test !hasextra(model[context[:x][3]], InitMarExtraKey)
     @test !hasextra(model[context[:y][2]], InitMsgExtraKey)
 
@@ -985,11 +1403,22 @@ end
             q(x) = NormalMeanVariance(0, 1)
         end
     end
-    model = create_model(with_plugins(model_with_submodel(), GraphPPL.PluginsCollection(RxInfer.InitializationPlugin(general_submodel))))
+    model = create_model(
+        with_plugins(
+            model_with_submodel(),
+            GraphPPL.PluginsCollection(
+                RxInfer.InitializationPlugin(general_submodel)
+            )
+        )
+    )
     context = getcontext(model)
-    @test getextra(model[context[:x]], InitMarExtraKey) == NormalMeanVariance(0, 1)
+    @test getextra(model[context[:x]], InitMarExtraKey) ==
+        NormalMeanVariance(0, 1)
     for i in 1:3
-        @test getextra(model[GraphPPL.unroll(context[test_submodel, i][:x])], InitMarExtraKey) == NormalMeanVariance(0, 1)
+        @test getextra(
+            model[GraphPPL.unroll(context[test_submodel, i][:x])],
+            InitMarExtraKey
+        ) == NormalMeanVariance(0, 1)
     end
 
     # Test 7: Block with specific submodel init works
@@ -999,12 +1428,25 @@ end
             q(x) = NormalMeanVariance(1, 1)
         end
     end
-    model = create_model(with_plugins(model_with_submodel(), GraphPPL.PluginsCollection(RxInfer.InitializationPlugin(specific_submodel))))
+    model = create_model(
+        with_plugins(
+            model_with_submodel(),
+            GraphPPL.PluginsCollection(
+                RxInfer.InitializationPlugin(specific_submodel)
+            )
+        )
+    )
     context = getcontext(model)
-    @test getextra(model[context[:x]], InitMarExtraKey) == NormalMeanVariance(0, 1)
-    @test getextra(model[GraphPPL.unroll(context[test_submodel, 1][:x])], InitMarExtraKey) == NormalMeanVariance(1, 1)
+    @test getextra(model[context[:x]], InitMarExtraKey) ==
+        NormalMeanVariance(0, 1)
+    @test getextra(
+        model[GraphPPL.unroll(context[test_submodel, 1][:x])], InitMarExtraKey
+    ) == NormalMeanVariance(1, 1)
     for i in 2:3
-        @test !hasextra(model[GraphPPL.unroll(context[test_submodel, i][:x])], InitMarExtraKey)
+        @test !hasextra(
+            model[GraphPPL.unroll(context[test_submodel, i][:x])],
+            InitMarExtraKey
+        )
     end
 
     # Test 8: Block with nested submodel init works
@@ -1017,12 +1459,25 @@ end
             q(x) = NormalMeanVariance(2, 1)
         end
     end
-    model = create_model(with_plugins(model_with_submodel(), GraphPPL.PluginsCollection(RxInfer.InitializationPlugin(nested_submodel))))
+    model = create_model(
+        with_plugins(
+            model_with_submodel(),
+            GraphPPL.PluginsCollection(
+                RxInfer.InitializationPlugin(nested_submodel)
+            )
+        )
+    )
     context = getcontext(model)
-    @test getextra(model[context[:x]], InitMarExtraKey) == NormalMeanVariance(0, 1)
-    @test getextra(model[GraphPPL.unroll(context[test_submodel, 1][:x])], InitMarExtraKey) == NormalMeanVariance(2, 1)
+    @test getextra(model[context[:x]], InitMarExtraKey) ==
+        NormalMeanVariance(0, 1)
+    @test getextra(
+        model[GraphPPL.unroll(context[test_submodel, 1][:x])], InitMarExtraKey
+    ) == NormalMeanVariance(2, 1)
     for i in 2:3
-        @test getextra(model[GraphPPL.unroll(context[test_submodel, i][:x])], InitMarExtraKey) == NormalMeanVariance(0, 1)
+        @test getextra(
+            model[GraphPPL.unroll(context[test_submodel, i][:x])],
+            InitMarExtraKey
+        ) == NormalMeanVariance(0, 1)
     end
 
     # Test 9: Block with mixed: regular + general + specific submodel init works
@@ -1036,55 +1491,122 @@ end
             q(x) = Dirichlet([1, 1, 1])
         end
     end
-    model = create_model(with_plugins(model_with_submodel(), GraphPPL.PluginsCollection(RxInfer.InitializationPlugin(mixed_init))))
+    model = create_model(
+        with_plugins(
+            model_with_submodel(),
+            GraphPPL.PluginsCollection(
+                RxInfer.InitializationPlugin(mixed_init)
+            )
+        )
+    )
     context = getcontext(model)
-    @test getextra(model[context[:x]], InitMarExtraKey) == NormalMeanVariance(0, 1e12)
-    @test getextra(model[context[:y][1]], InitMsgExtraKey) == NormalMeanVariance(0, 1)
-    @test getextra(model[GraphPPL.unroll(context[test_submodel, 1][:x])], InitMarExtraKey) == NormalMeanVariance(0, 1)
-    @test getextra(model[GraphPPL.unroll(context[test_submodel, 2][:x])], InitMarExtraKey) == Dirichlet([1, 1, 1])
-    @test getextra(model[GraphPPL.unroll(context[test_submodel, 3][:x])], InitMarExtraKey) == NormalMeanVariance(0, 1)
+    @test getextra(model[context[:x]], InitMarExtraKey) ==
+        NormalMeanVariance(0, 1e12)
+    @test getextra(model[context[:y][1]], InitMsgExtraKey) ==
+        NormalMeanVariance(0, 1)
+    @test getextra(
+        model[GraphPPL.unroll(context[test_submodel, 1][:x])], InitMarExtraKey
+    ) == NormalMeanVariance(0, 1)
+    @test getextra(
+        model[GraphPPL.unroll(context[test_submodel, 2][:x])], InitMarExtraKey
+    ) == Dirichlet([1, 1, 1])
+    @test getextra(
+        model[GraphPPL.unroll(context[test_submodel, 3][:x])], InitMarExtraKey
+    ) == NormalMeanVariance(0, 1)
 
     # Test 10: Function with no arguments works
     @initialization function init_no_args()
         q(x) = NormalMeanVariance(0, 1)
     end
-    model = create_model(with_plugins(simple_model(), GraphPPL.PluginsCollection(RxInfer.InitializationPlugin(init_no_args()))))
+    model = create_model(
+        with_plugins(
+            simple_model(),
+            GraphPPL.PluginsCollection(
+                RxInfer.InitializationPlugin(init_no_args())
+            )
+        )
+    )
     context = getcontext(model)
-    @test getextra(model[context[:x]], InitMarExtraKey) == NormalMeanVariance(0, 1)
+    @test getextra(model[context[:x]], InitMarExtraKey) ==
+        NormalMeanVariance(0, 1)
 
     # Test 11: Function with positional arguments works
     @initialization function init_pos_args(dist, mean_val)
         q(x) = dist
         q(y) = NormalMeanVariance(mean_val, 1)
     end
-    model = create_model(with_plugins(simple_model(), GraphPPL.PluginsCollection(RxInfer.InitializationPlugin(init_pos_args(NormalMeanVariance(0, 1), 2.0)))))
+    model = create_model(
+        with_plugins(
+            simple_model(),
+            GraphPPL.PluginsCollection(
+                RxInfer.InitializationPlugin(
+                    init_pos_args(NormalMeanVariance(0, 1), 2.0)
+                )
+            )
+        )
+    )
     context = getcontext(model)
-    @test getextra(model[context[:x]], InitMarExtraKey) == NormalMeanVariance(0, 1)
-    @test getextra(model[context[:y]], InitMarExtraKey) == NormalMeanVariance(2.0, 1)
+    @test getextra(model[context[:x]], InitMarExtraKey) ==
+        NormalMeanVariance(0, 1)
+    @test getextra(model[context[:y]], InitMarExtraKey) ==
+        NormalMeanVariance(2.0, 1)
 
     # Test 12: Function with keyword arguments works
-    @initialization function init_kw_args(; dist = NormalMeanVariance(0, 1), mean_val = 0.0)
+    @initialization function init_kw_args(;
+        dist = NormalMeanVariance(0, 1), mean_val = 0.0
+    )
         q(x) = dist
         q(y) = NormalMeanVariance(mean_val, 1)
     end
-    model = create_model(with_plugins(simple_model(), GraphPPL.PluginsCollection(RxInfer.InitializationPlugin(init_kw_args(dist = NormalMeanPrecision(0, 1), mean_val = 3.0)))))
+    model = create_model(
+        with_plugins(
+            simple_model(),
+            GraphPPL.PluginsCollection(
+                RxInfer.InitializationPlugin(
+                    init_kw_args(
+                        dist = NormalMeanPrecision(0, 1), mean_val = 3.0
+                    )
+                )
+            )
+        )
+    )
     context = getcontext(model)
-    @test getextra(model[context[:x]], InitMarExtraKey) == NormalMeanPrecision(0, 1)
-    @test getextra(model[context[:y]], InitMarExtraKey) == NormalMeanVariance(3.0, 1)
+    @test getextra(model[context[:x]], InitMarExtraKey) ==
+        NormalMeanPrecision(0, 1)
+    @test getextra(model[context[:y]], InitMarExtraKey) ==
+        NormalMeanVariance(3.0, 1)
 
     # Test 13: Function with both positional and keyword arguments works
     @initialization function init_mixed_args(dist; mean_val = 0.0)
         q(x) = dist
         q(y) = NormalMeanVariance(mean_val, 1)
     end
-    model = create_model(with_plugins(simple_model(), GraphPPL.PluginsCollection(RxInfer.InitializationPlugin(init_mixed_args(NormalMeanVariance(0, 1), mean_val = 4.0)))))
+    model = create_model(
+        with_plugins(
+            simple_model(),
+            GraphPPL.PluginsCollection(
+                RxInfer.InitializationPlugin(
+                    init_mixed_args(NormalMeanVariance(0, 1), mean_val = 4.0)
+                )
+            )
+        )
+    )
     context = getcontext(model)
-    @test getextra(model[context[:x]], InitMarExtraKey) == NormalMeanVariance(0, 1)
-    @test getextra(model[context[:y]], InitMarExtraKey) == NormalMeanVariance(4.0, 1)
+    @test getextra(model[context[:x]], InitMarExtraKey) ==
+        NormalMeanVariance(0, 1)
+    @test getextra(model[context[:y]], InitMarExtraKey) ==
+        NormalMeanVariance(4.0, 1)
 
     # Test 14: Function with empty body works
     @initialization function init_empty_func() end
-    model = create_model(with_plugins(simple_model(), GraphPPL.PluginsCollection(RxInfer.InitializationPlugin(init_empty_func()))))
+    model = create_model(
+        with_plugins(
+            simple_model(),
+            GraphPPL.PluginsCollection(
+                RxInfer.InitializationPlugin(init_empty_func())
+            )
+        )
+    )
     context = getcontext(model)
     @test !hasextra(model[context[:x]], InitMarExtraKey)
 
@@ -1095,16 +1617,43 @@ end
             q(x) = NormalMeanVariance(0, 1)
         end
     end
-    model = create_model(with_plugins(model_with_submodel(), GraphPPL.PluginsCollection(RxInfer.InitializationPlugin(init_func_with_submodel(NormalMeanVariance(0, 1))))))
+    model = create_model(
+        with_plugins(
+            model_with_submodel(),
+            GraphPPL.PluginsCollection(
+                RxInfer.InitializationPlugin(
+                    init_func_with_submodel(NormalMeanVariance(0, 1))
+                )
+            )
+        )
+    )
     context = getcontext(model)
-    @test getextra(model[context[:x]], InitMarExtraKey) == NormalMeanVariance(0, 1)
+    @test getextra(model[context[:x]], InitMarExtraKey) ==
+        NormalMeanVariance(0, 1)
     for i in 1:3
-        @test getextra(model[GraphPPL.unroll(context[test_submodel, i][:x])], InitMarExtraKey) == NormalMeanVariance(0, 1)
+        @test getextra(
+            model[GraphPPL.unroll(context[test_submodel, i][:x])],
+            InitMarExtraKey
+        ) == NormalMeanVariance(0, 1)
     end
 
     # Test 16: EmptyInit constant works the same as empty block
-    model1 = create_model(with_plugins(simple_model(), GraphPPL.PluginsCollection(RxInfer.InitializationPlugin(RxInfer.EmptyInit))))
-    model2 = create_model(with_plugins(simple_model(), GraphPPL.PluginsCollection(RxInfer.InitializationPlugin(empty_init))))
+    model1 = create_model(
+        with_plugins(
+            simple_model(),
+            GraphPPL.PluginsCollection(
+                RxInfer.InitializationPlugin(RxInfer.EmptyInit)
+            )
+        )
+    )
+    model2 = create_model(
+        with_plugins(
+            simple_model(),
+            GraphPPL.PluginsCollection(
+                RxInfer.InitializationPlugin(empty_init)
+            )
+        )
+    )
     context1 = getcontext(model1)
     context2 = getcontext(model2)
     @test !hasextra(model1[context1[:x]], InitMarExtraKey)

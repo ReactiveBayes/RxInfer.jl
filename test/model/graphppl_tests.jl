@@ -4,13 +4,19 @@
     import MacroTools: @capture
 
     input = :(a = randomvar())
-    @test @capture(apply_pipeline(input, error_datavar_constvar_randomvar), error(_))
+    @test @capture(
+        apply_pipeline(input, error_datavar_constvar_randomvar), error(_)
+    )
 
     input = :(a = datavar())
-    @test @capture(apply_pipeline(input, error_datavar_constvar_randomvar), error(_))
+    @test @capture(
+        apply_pipeline(input, error_datavar_constvar_randomvar), error(_)
+    )
 
     input = :(a = constvar())
-    @test @capture(apply_pipeline(input, error_datavar_constvar_randomvar), error(_))
+    @test @capture(
+        apply_pipeline(input, error_datavar_constvar_randomvar), error(_)
+    )
 
     input = :(x ~ Normal(mean = 0.0, var = 1.0))
     @test apply_pipeline(input, error_datavar_constvar_randomvar) == input
@@ -22,32 +28,39 @@ end
 
     input = :(s ~ s1 + s2 + s3 + s4 + s5)
     output = :(s ~ (((s1 + s2) + s3) + s4) + s5)
-    @test apply_pipeline(input, compose_simple_operators_with_brackets) == output
+    @test apply_pipeline(input, compose_simple_operators_with_brackets) ==
+        output
 
     input = :(s ~ (s1 + s2) + s3 + (s4 + s5))
     output = :(s ~ (((s1 + s2) + s3) + (s4 + s5)))
-    @test apply_pipeline(input, compose_simple_operators_with_brackets) == output
+    @test apply_pipeline(input, compose_simple_operators_with_brackets) ==
+        output
 
     input = :(s ~ (s1 + s2) + (s3 + (s4 + s5)))
     output = :(s ~ (s1 + s2) + (s3 + (s4 + s5)))
-    @test apply_pipeline(input, compose_simple_operators_with_brackets) == output
+    @test apply_pipeline(input, compose_simple_operators_with_brackets) ==
+        output
 
     input = :(s ~ Normal(μ = s1 + s2 + s3 + s4 + s5, 1.0))
     output = :(s ~ Normal(μ = (((s1 + s2) + s3) + s4) + s5, 1.0))
-    @test apply_pipeline(input, compose_simple_operators_with_brackets) == output
+    @test apply_pipeline(input, compose_simple_operators_with_brackets) ==
+        output
 
     input = :(s ~ Normal(μ = s1 + s2 + s3 + s4 + s5, 1.0) where {a = 1})
     output = :(s ~ Normal(μ = (((s1 + s2) + s3) + s4) + s5, 1.0) where {a = 1})
-    @test apply_pipeline(input, compose_simple_operators_with_brackets) == output
+    @test apply_pipeline(input, compose_simple_operators_with_brackets) ==
+        output
 
     # If not `~` should not change
     input = :(s = s1 + s2 + s3 + s4 + s5)
     output = :(s = s1 + s2 + s3 + s4 + s5)
-    @test apply_pipeline(input, compose_simple_operators_with_brackets) == output
+    @test apply_pipeline(input, compose_simple_operators_with_brackets) ==
+        output
 
     input = :(s ~ s1 * s2 * s3 * s4 * s5)
     output = :(s ~ (((s1 * s2) * s3) * s4) * s5)
-    @test apply_pipeline(input, compose_simple_operators_with_brackets) == output
+    @test apply_pipeline(input, compose_simple_operators_with_brackets) ==
+        output
 end
 
 @testitem "inject_tilderhs_aliases" begin
@@ -57,35 +70,43 @@ end
 
     input = :(a ~ b || c)
     output = :(a ~ ReactiveMP.OR(b, c))
-    @test prettify(apply_pipeline(input, inject_tilderhs_aliases)) == prettify(output)
+    @test prettify(apply_pipeline(input, inject_tilderhs_aliases)) ==
+        prettify(output)
 
     input = :(b || c)
     output = :(b || c)
-    @test prettify(apply_pipeline(input, inject_tilderhs_aliases)) == prettify(output)
+    @test prettify(apply_pipeline(input, inject_tilderhs_aliases)) ==
+        prettify(output)
 
     input = :(a ~ b && c)
     output = :(a ~ ReactiveMP.AND(b, c))
-    @test prettify(apply_pipeline(input, inject_tilderhs_aliases)) == prettify(output)
+    @test prettify(apply_pipeline(input, inject_tilderhs_aliases)) ==
+        prettify(output)
 
     input = :(b && c)
     output = :(b && c)
-    @test prettify(apply_pipeline(input, inject_tilderhs_aliases)) == prettify(output)
+    @test prettify(apply_pipeline(input, inject_tilderhs_aliases)) ==
+        prettify(output)
 
     input = :(a ~ b -> c)
     output = :(a ~ ReactiveMP.IMPLY(b, c))
-    @test prettify(apply_pipeline(input, inject_tilderhs_aliases)) == prettify(output)
+    @test prettify(apply_pipeline(input, inject_tilderhs_aliases)) ==
+        prettify(output)
 
     input = :(a = b -> b + 1)
     output = :(a = b -> b + 1)
-    @test prettify(apply_pipeline(input, inject_tilderhs_aliases)) == prettify(output)
+    @test prettify(apply_pipeline(input, inject_tilderhs_aliases)) ==
+        prettify(output)
 
     input = :(a ~ ¬b)
     output = :(a ~ ReactiveMP.NOT(b))
-    @test prettify(apply_pipeline(input, inject_tilderhs_aliases)) == prettify(output)
+    @test prettify(apply_pipeline(input, inject_tilderhs_aliases)) ==
+        prettify(output)
 
     input = :(a ~ !b)
     output = :(a ~ ReactiveMP.NOT(b))
-    @test prettify(apply_pipeline(input, inject_tilderhs_aliases)) == prettify(output)
+    @test prettify(apply_pipeline(input, inject_tilderhs_aliases)) ==
+        prettify(output)
 end
 
 @testitem "`@node` should properly define `GraphPPL` backend specific information" begin
@@ -94,36 +115,81 @@ end
     import GraphPPL
     using Static
 
-    struct CustomStochasticNode end
+    struct CustomStochasticNodeForGraphPPLTests1 end
 
-    @node CustomStochasticNode Stochastic [out, (x, aliases = [xx]), (y, aliases = [yy]), z]
+    @node CustomStochasticNodeForGraphPPLTests1 Stochastic [
+        out, (x, aliases = [xx]), (y, aliases = [yy]), z
+    ]
 
     backend = ReactiveMPGraphPPLBackend(Static.False())
 
-    @test GraphPPL.NodeBehaviour(backend, CustomStochasticNode) === GraphPPL.Stochastic()
-    @test GraphPPL.NodeType(backend, CustomStochasticNode) === GraphPPL.Atomic()
-    @test GraphPPL.interfaces(backend, CustomStochasticNode, 4) === GraphPPL.StaticInterfaces((:out, :x, :y, :z))
-    @test_throws ErrorException GraphPPL.interfaces(backend, CustomStochasticNode, 1)
-    @test_throws ErrorException GraphPPL.interfaces(backend, CustomStochasticNode, 2)
-    @test_throws ErrorException GraphPPL.interfaces(backend, CustomStochasticNode, 3)
-    @test_throws ErrorException GraphPPL.interfaces(backend, CustomStochasticNode, 5)
-    @test GraphPPL.default_parametrization(backend, GraphPPL.Atomic(), CustomStochasticNode, (1, 2, 3)) === (x = 1, y = 2, z = 3)
-    @test_throws ErrorException GraphPPL.default_parametrization(backend, GraphPPL.Atomic(), CustomStochasticNode, (1, 2))
-    @test_throws ErrorException GraphPPL.default_parametrization(backend, GraphPPL.Atomic(), CustomStochasticNode, (1, 2, 3, 4))
+    @test GraphPPL.NodeBehaviour(
+        backend, CustomStochasticNodeForGraphPPLTests1
+    ) === GraphPPL.Stochastic()
+    @test GraphPPL.NodeType(backend, CustomStochasticNodeForGraphPPLTests1) ===
+        GraphPPL.Atomic()
+    @test GraphPPL.interfaces(
+        backend, CustomStochasticNodeForGraphPPLTests1, 4
+    ) === GraphPPL.StaticInterfaces((:out, :x, :y, :z))
+    @test_throws ErrorException GraphPPL.interfaces(
+        backend, CustomStochasticNodeForGraphPPLTests1, 1
+    )
+    @test_throws ErrorException GraphPPL.interfaces(
+        backend, CustomStochasticNodeForGraphPPLTests1, 2
+    )
+    @test_throws ErrorException GraphPPL.interfaces(
+        backend, CustomStochasticNodeForGraphPPLTests1, 3
+    )
+    @test_throws ErrorException GraphPPL.interfaces(
+        backend, CustomStochasticNodeForGraphPPLTests1, 5
+    )
+    @test GraphPPL.default_parametrization(
+        backend,
+        GraphPPL.Atomic(),
+        CustomStochasticNodeForGraphPPLTests1,
+        (1, 2, 3)
+    ) === (x = 1, y = 2, z = 3)
+    @test_throws ErrorException GraphPPL.default_parametrization(
+        backend,
+        GraphPPL.Atomic(),
+        CustomStochasticNodeForGraphPPLTests1,
+        (1, 2)
+    )
+    @test_throws ErrorException GraphPPL.default_parametrization(
+        backend,
+        GraphPPL.Atomic(),
+        CustomStochasticNodeForGraphPPLTests1,
+        (1, 2, 3, 4)
+    )
 
-    function f end
+    function f_for_graphppl_tests1 end
 
-    @node typeof(f) Deterministic [out, in1, in2]
+    @node typeof(f_for_graphppl_tests1) Deterministic [out, in1, in2]
 
-    @test GraphPPL.NodeBehaviour(backend, f) === GraphPPL.Deterministic()
-    @test GraphPPL.NodeType(backend, f) === GraphPPL.Atomic()
-    @test GraphPPL.interfaces(backend, f, 3) === GraphPPL.StaticInterfaces((:out, :in1, :in2))
-    @test_throws ErrorException GraphPPL.interfaces(backend, f, 1)
-    @test_throws ErrorException GraphPPL.interfaces(backend, f, 2)
-    @test_throws ErrorException GraphPPL.interfaces(backend, f, 4)
-    @test GraphPPL.default_parametrization(backend, GraphPPL.Atomic(), f, (1, 2)) === (in1 = 1, in2 = 2)
-    @test_throws ErrorException GraphPPL.default_parametrization(backend, GraphPPL.Atomic(), f, (1,))
-    @test_throws ErrorException GraphPPL.default_parametrization(backend, GraphPPL.Atomic(), f, (1, 2, 3))
+    @test GraphPPL.NodeBehaviour(backend, f_for_graphppl_tests1) ===
+        GraphPPL.Deterministic()
+    @test GraphPPL.NodeType(backend, f_for_graphppl_tests1) ===
+        GraphPPL.Atomic()
+    @test GraphPPL.interfaces(backend, f_for_graphppl_tests1, 3) ===
+        GraphPPL.StaticInterfaces((:out, :in1, :in2))
+    @test_throws ErrorException GraphPPL.interfaces(
+        backend, f_for_graphppl_tests1, 1
+    )
+    @test_throws ErrorException GraphPPL.interfaces(
+        backend, f_for_graphppl_tests1, 2
+    )
+    @test_throws ErrorException GraphPPL.interfaces(
+        backend, f_for_graphppl_tests1, 4
+    )
+    @test GraphPPL.default_parametrization(
+        backend, GraphPPL.Atomic(), f_for_graphppl_tests1, (1, 2)
+    ) === (in1 = 1, in2 = 2)
+    @test_throws ErrorException GraphPPL.default_parametrization(
+        backend, GraphPPL.Atomic(), f_for_graphppl_tests1, (1,)
+    )
+    @test_throws ErrorException GraphPPL.default_parametrization(
+        backend, GraphPPL.Atomic(), f_for_graphppl_tests1, (1, 2, 3)
+    )
 end
 
 @testitem "`@node` should properly define `GraphPPL` backend specific information with node contraction allowed" begin
@@ -132,36 +198,81 @@ end
     import GraphPPL
     import Static
 
-    struct CustomStochasticNode end
+    struct CustomStochasticNodeForGraphPPLTests2 end
 
-    @node CustomStochasticNode Stochastic [out, (x, aliases = [xx]), (y, aliases = [yy]), z]
+    @node CustomStochasticNodeForGraphPPLTests2 Stochastic [
+        out, (x, aliases = [xx]), (y, aliases = [yy]), z
+    ]
 
     backend = ReactiveMPGraphPPLBackend(Static.True())
 
-    @test GraphPPL.NodeBehaviour(backend, CustomStochasticNode) === GraphPPL.Stochastic()
-    @test GraphPPL.NodeType(backend, CustomStochasticNode) === GraphPPL.Atomic()
-    @test GraphPPL.interfaces(backend, CustomStochasticNode, 4) === GraphPPL.StaticInterfaces((:out, :x, :y, :z))
-    @test_throws ErrorException GraphPPL.interfaces(backend, CustomStochasticNode, 1)
-    @test_throws ErrorException GraphPPL.interfaces(backend, CustomStochasticNode, 2)
-    @test_throws ErrorException GraphPPL.interfaces(backend, CustomStochasticNode, 3)
-    @test_throws ErrorException GraphPPL.interfaces(backend, CustomStochasticNode, 5)
-    @test GraphPPL.default_parametrization(backend, GraphPPL.Atomic(), CustomStochasticNode, (1, 2, 3)) === (x = 1, y = 2, z = 3)
-    @test_throws ErrorException GraphPPL.default_parametrization(backend, GraphPPL.Atomic(), CustomStochasticNode, (1, 2))
-    @test_throws ErrorException GraphPPL.default_parametrization(backend, GraphPPL.Atomic(), CustomStochasticNode, (1, 2, 3, 4))
+    @test GraphPPL.NodeBehaviour(
+        backend, CustomStochasticNodeForGraphPPLTests2
+    ) === GraphPPL.Stochastic()
+    @test GraphPPL.NodeType(backend, CustomStochasticNodeForGraphPPLTests2) ===
+        GraphPPL.Atomic()
+    @test GraphPPL.interfaces(
+        backend, CustomStochasticNodeForGraphPPLTests2, 4
+    ) === GraphPPL.StaticInterfaces((:out, :x, :y, :z))
+    @test_throws ErrorException GraphPPL.interfaces(
+        backend, CustomStochasticNodeForGraphPPLTests2, 1
+    )
+    @test_throws ErrorException GraphPPL.interfaces(
+        backend, CustomStochasticNodeForGraphPPLTests2, 2
+    )
+    @test_throws ErrorException GraphPPL.interfaces(
+        backend, CustomStochasticNodeForGraphPPLTests2, 3
+    )
+    @test_throws ErrorException GraphPPL.interfaces(
+        backend, CustomStochasticNodeForGraphPPLTests2, 5
+    )
+    @test GraphPPL.default_parametrization(
+        backend,
+        GraphPPL.Atomic(),
+        CustomStochasticNodeForGraphPPLTests2,
+        (1, 2, 3)
+    ) === (x = 1, y = 2, z = 3)
+    @test_throws ErrorException GraphPPL.default_parametrization(
+        backend,
+        GraphPPL.Atomic(),
+        CustomStochasticNodeForGraphPPLTests2,
+        (1, 2)
+    )
+    @test_throws ErrorException GraphPPL.default_parametrization(
+        backend,
+        GraphPPL.Atomic(),
+        CustomStochasticNodeForGraphPPLTests2,
+        (1, 2, 3, 4)
+    )
 
-    function f end
+    function f_for_graphppl_tests2 end
 
-    @node typeof(f) Deterministic [out, in1, in2]
+    @node typeof(f_for_graphppl_tests2) Deterministic [out, in1, in2]
 
-    @test GraphPPL.NodeBehaviour(backend, f) === GraphPPL.Deterministic()
-    @test GraphPPL.NodeType(backend, f) === GraphPPL.Atomic()
-    @test GraphPPL.interfaces(backend, f, 3) === GraphPPL.StaticInterfaces((:out, :in1, :in2))
-    @test_throws ErrorException GraphPPL.interfaces(backend, f, 1)
-    @test_throws ErrorException GraphPPL.interfaces(backend, f, 2)
-    @test_throws ErrorException GraphPPL.interfaces(backend, f, 4)
-    @test GraphPPL.default_parametrization(backend, GraphPPL.Atomic(), f, (1, 2)) === (in1 = 1, in2 = 2)
-    @test_throws ErrorException GraphPPL.default_parametrization(backend, GraphPPL.Atomic(), f, (1,))
-    @test_throws ErrorException GraphPPL.default_parametrization(backend, GraphPPL.Atomic(), f, (1, 2, 3))
+    @test GraphPPL.NodeBehaviour(backend, f_for_graphppl_tests2) ===
+        GraphPPL.Deterministic()
+    @test GraphPPL.NodeType(backend, f_for_graphppl_tests2) ===
+        GraphPPL.Atomic()
+    @test GraphPPL.interfaces(backend, f_for_graphppl_tests2, 3) ===
+        GraphPPL.StaticInterfaces((:out, :in1, :in2))
+    @test_throws ErrorException GraphPPL.interfaces(
+        backend, f_for_graphppl_tests2, 1
+    )
+    @test_throws ErrorException GraphPPL.interfaces(
+        backend, f_for_graphppl_tests2, 2
+    )
+    @test_throws ErrorException GraphPPL.interfaces(
+        backend, f_for_graphppl_tests2, 4
+    )
+    @test GraphPPL.default_parametrization(
+        backend, GraphPPL.Atomic(), f_for_graphppl_tests2, (1, 2)
+    ) === (in1 = 1, in2 = 2)
+    @test_throws ErrorException GraphPPL.default_parametrization(
+        backend, GraphPPL.Atomic(), f_for_graphppl_tests2, (1,)
+    )
+    @test_throws ErrorException GraphPPL.default_parametrization(
+        backend, GraphPPL.Atomic(), f_for_graphppl_tests2, (1, 2, 3)
+    )
 end
 
 @testitem "Backend Tests" begin
@@ -169,9 +280,16 @@ end
     import Static
     import RxInfer: ReactiveMPGraphPPLBackend
 
-    @test GraphPPL.instantiate(ReactiveMPGraphPPLBackend{Static.True}) == ReactiveMPGraphPPLBackend(Static.True())
-    @test GraphPPL.instantiate(ReactiveMPGraphPPLBackend{Static.False}) == ReactiveMPGraphPPLBackend(Static.False())
-    @test GraphPPL.instantiate(ReactiveMPGraphPPLBackend) == ReactiveMPGraphPPLBackend(Static.False())
+    @test GraphPPL.instantiate(ReactiveMPGraphPPLBackend{Static.True}) ==
+        ReactiveMPGraphPPLBackend(Static.True())
+    @test GraphPPL.instantiate(ReactiveMPGraphPPLBackend{Static.False}) ==
+        ReactiveMPGraphPPLBackend(Static.False())
+    @test GraphPPL.instantiate(ReactiveMPGraphPPLBackend) ==
+        ReactiveMPGraphPPLBackend(Static.False())
 
-    @test GraphPPL.NodeType(ReactiveMPGraphPPLBackend(Static.True()), ReactiveMP.UndefinedNodeFunctionalForm(), sum) == GraphPPL.Atomic()
+    @test GraphPPL.NodeType(
+        ReactiveMPGraphPPLBackend(Static.True()),
+        ReactiveMP.UndefinedNodeFunctionalForm(),
+        sum
+    ) == GraphPPL.Atomic()
 end

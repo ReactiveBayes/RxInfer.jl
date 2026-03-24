@@ -1,5 +1,6 @@
 @testitem "Simple prior-likelihood model check" begin
-    using ExponentialFamilyProjection, StableRNGs, Plots, BayesBase, Distributions
+    using ExponentialFamilyProjection,
+        StableRNGs, Plots, BayesBase, Distributions
 
     include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
@@ -33,9 +34,14 @@
     rng = StableRNG(42)
 
     function run_experiment(y)
-        analytical = infer(model = simple_model_1(prior = Beta(1, 1), likelihood = Bernoulli), data = (y = y,))
+        analytical = infer(
+            model = simple_model_1(prior = Beta(1, 1), likelihood = Bernoulli),
+            data = (y = y,)
+        )
         projected = infer(
-            model = simple_model_1(prior = MyBeta(1, 1), likelihood = MyBernoulli),
+            model = simple_model_1(
+                prior = MyBeta(1, 1), likelihood = MyBernoulli
+            ),
             data = (y = y,),
             constraints = projection_constraints(),
             options = (rulefallback = NodeFunctionRuleFallback(),)
@@ -48,20 +54,35 @@
 
         analytical, projected = run_experiment(y)
 
-        @test mean(analytical.posteriors[:p]) ≈ mean(projected.posteriors[:p]) rtol = 1e-1
+        @test mean(analytical.posteriors[:p]) ≈ mean(projected.posteriors[:p]) rtol =
+            1e-1
     end
 
     @test_plot "projection" "simple-beta-bernoulli" begin
         y = rand(StableRNG(42), Bernoulli(0.68), 1000)
         analytical, projected = run_experiment(y)
-        p = plot(0.0:0.01:1.0, (x) -> pdf(analytical.posteriors[:p], x), label = "analytical posterior", fill = 0, fillalpha = 0.2)
-        p = plot!(p, 0.0:0.01:1.0, (x) -> pdf(projected.posteriors[:p], x), label = "projected posterior", fill = 0, fillalpha = 0.2)
+        p = plot(
+            0.0:0.01:1.0,
+            (x) -> pdf(analytical.posteriors[:p], x),
+            label = "analytical posterior",
+            fill = 0,
+            fillalpha = 0.2
+        )
+        p = plot!(
+            p,
+            0.0:0.01:1.0,
+            (x) -> pdf(projected.posteriors[:p], x),
+            label = "projected posterior",
+            fill = 0,
+            fillalpha = 0.2
+        )
         return p
     end
 end
 
 @testitem "Non-conjugate IID estimation" begin
-    using StableRNGs, ExponentialFamilyProjection, BayesBase, Distributions, Plots
+    using StableRNGs,
+        ExponentialFamilyProjection, BayesBase, Distributions, Plots
 
     include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
@@ -111,10 +132,22 @@ end
             free_energy = true,
             options = (limit_stack_depth = 500,)
         )
-        p1 = plot(0.0:0.01:1.0, (x) -> pdf(result.posteriors[:r], x), label = "q(r)", fill = 0, fillalpha = 0.2)
+        p1 = plot(
+            0.0:0.01:1.0,
+            (x) -> pdf(result.posteriors[:r], x),
+            label = "q(r)",
+            fill = 0,
+            fillalpha = 0.2
+        )
         p1 = vline!([realr], label = "real r")
 
-        p2 = plot(0.0:0.01:1.0, (x) -> pdf(result.posteriors[:t], x), label = "q(t)", fill = 0, fillalpha = 0.2)
+        p2 = plot(
+            0.0:0.01:1.0,
+            (x) -> pdf(result.posteriors[:t], x),
+            label = "q(t)",
+            fill = 0,
+            fillalpha = 0.2
+        )
         p2 = vline!([realt], label = "real t")
 
         return plot(p1, p2)
@@ -122,7 +155,8 @@ end
 end
 
 @testitem "Sunspot dataset" begin
-    using StableRNGs, ExponentialFamilyProjection, BayesBase, Distributions, Plots
+    using StableRNGs,
+        ExponentialFamilyProjection, BayesBase, Distributions, Plots
 
     include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
@@ -237,14 +271,19 @@ end
         initialization = init,
         data = (y = dataset,),
         free_energy = true,
-        options = (rulefallback = NodeFunctionRuleFallback(), limit_stack_depth = 500)
+        options = (
+            rulefallback = NodeFunctionRuleFallback(), limit_stack_depth = 500
+        )
     )
 
     @test all(<(0), diff(result.free_energy))
 
-    test_deviation = count(zip(result.posteriors[:z][end], dataset)) do (posterior_i, data_i)
-        return mean(posterior_i) - 5std(posterior_i) < data_i < mean(posterior_i) + 5std(posterior_i)
-    end
+    test_deviation =
+        count(zip(result.posteriors[:z][end], dataset)) do (posterior_i, data_i)
+            return mean(posterior_i) - 5std(posterior_i) <
+                   data_i <
+                   mean(posterior_i) + 5std(posterior_i)
+        end
 
     @test test_deviation / length(dataset) > 0.8
     foreach(result.posteriors[:γ]) do posteriorγ
@@ -257,20 +296,34 @@ end
     end
 
     @test_plot "projection" "sunspot" begin
-        p1 = plot(mean.(result.posteriors[:z][end]), ribbon = std.(result.posteriors[:z][end]))
+        p1 = plot(
+            mean.(result.posteriors[:z][end]),
+            ribbon = std.(result.posteriors[:z][end])
+        )
         p1 = scatter!(p1, dataset)
 
         p2 = plot(result.free_energy)
 
-        p3 = plot(0.0:0.01:2.0, (x) -> pdf(result.posteriors[:γ][end], x), fill = 0, fillalpha = 0.1)
-        p4 = plot(0.0:0.1:40.0, (x) -> pdf(result.posteriors[:z₀][end], x), fill = 0, fillalpha = 0.1)
+        p3 = plot(
+            0.0:0.01:2.0,
+            (x) -> pdf(result.posteriors[:γ][end], x),
+            fill = 0,
+            fillalpha = 0.1
+        )
+        p4 = plot(
+            0.0:0.1:40.0,
+            (x) -> pdf(result.posteriors[:z₀][end], x),
+            fill = 0,
+            fillalpha = 0.1
+        )
 
         return plot(p1, p2, p3, p4)
     end
 end
 
 @testitem "Inference with delta node and CVI projection" begin
-    using StableRNGs, ExponentialFamilyProjection, ReactiveMP, Distributions, Plots
+    using StableRNGs,
+        ExponentialFamilyProjection, ReactiveMP, Distributions, Plots
 
     include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
@@ -342,16 +395,40 @@ end
     @test_plot "projection" "iid_delta" begin
         ra, rb, rmean, rprecision, y, result = run_experiment(0.22, 0.88)
 
-        p1 = plot(0.0:0.01:1.0, (x) -> pdf(result.posteriors[:a], x), label = "inferred a", fill = 0, fillalpha = 0.2)
+        p1 = plot(
+            0.0:0.01:1.0,
+            (x) -> pdf(result.posteriors[:a], x),
+            label = "inferred a",
+            fill = 0,
+            fillalpha = 0.2
+        )
         p1 = vline!([ra], label = "real a")
 
-        p2 = plot(0.0:0.01:1.0, (x) -> pdf(result.posteriors[:b], x), label = "inferred b", fill = 0, fillalpha = 0.2)
+        p2 = plot(
+            0.0:0.01:1.0,
+            (x) -> pdf(result.posteriors[:b], x),
+            label = "inferred b",
+            fill = 0,
+            fillalpha = 0.2
+        )
         p2 = vline!([rb], label = "real b")
 
-        p3 = plot(0.0:0.01:5.0, (x) -> pdf(result.posteriors[:mean], x), label = "inferred mean", fill = 0, fillalpha = 0.2)
+        p3 = plot(
+            0.0:0.01:5.0,
+            (x) -> pdf(result.posteriors[:mean], x),
+            label = "inferred mean",
+            fill = 0,
+            fillalpha = 0.2
+        )
         p3 = vline!([rmean], label = "real mean")
 
-        p4 = plot(0.0:0.01:5.0, (x) -> pdf(result.posteriors[:precision], x), label = "inferred precision", fill = 0, fillalpha = 0.2)
+        p4 = plot(
+            0.0:0.01:5.0,
+            (x) -> pdf(result.posteriors[:precision], x),
+            label = "inferred precision",
+            fill = 0,
+            fillalpha = 0.2
+        )
         p4 = vline!([rprecision], label = "real precision")
 
         plot(p1, p2, p3, p4)
@@ -403,31 +480,58 @@ end
     @meta function mymeta()
         foo() -> CVIProjection(
             out_prjparams = ProjectionParameters(niterations = 500),
-            in_prjparams = (in_1 = ProjectionParameters(niterations = 500), in_2 = ProjectionParameters(niterations = 500))
+            in_prjparams = (
+                in_1 = ProjectionParameters(niterations = 500),
+                in_2 = ProjectionParameters(niterations = 500)
+            )
         )
     end
 
     result = infer(
-        model = mymodel(C = C), data = (y = y,), meta = mymeta(), constraints = myconstraints(), initialization = myinitialization(), free_energy = true, iterations = 40
+        model = mymodel(C = C),
+        data = (y = y,),
+        meta = mymeta(),
+        constraints = myconstraints(),
+        initialization = myinitialization(),
+        free_energy = true,
+        iterations = 40
     )
 
     conf_bound_a = 3 * std(result.posteriors[:a][end])
-    @test mean(result.posteriors[:a][end]) - conf_bound_a < a < mean(result.posteriors[:a][end]) + conf_bound_a
+    @test mean(result.posteriors[:a][end]) - conf_bound_a <
+        a <
+        mean(result.posteriors[:a][end]) + conf_bound_a
 
     conf_bound_b = 3 * std(result.posteriors[:b][end])
-    @test mean(result.posteriors[:b][end]) - conf_bound_b < b < mean(result.posteriors[:b][end]) + conf_bound_b
+    @test mean(result.posteriors[:b][end]) - conf_bound_b <
+        b <
+        mean(result.posteriors[:b][end]) + conf_bound_b
 
     @test mean(result.posteriors[:a][end]) ≈ a atol = 1e-2
-    @test foo(mean(result.posteriors[:a][end]), mean(result.posteriors[:b][end])) ≈ foo(a, b) atol = 1e-2
+    @test foo(
+        mean(result.posteriors[:a][end]), mean(result.posteriors[:b][end])
+    ) ≈ foo(a, b) atol = 1e-2
     @test mean(result.posteriors[:μ][end]) ≈ foo(a, b) atol = 2e-2
     @test first(result.free_energy) > last(result.free_energy)
     @test count(<(0), diff(result.free_energy)) > 0.95
 
     @test_plot "projection" "iid_delta_multiple_input" begin
-        p1 = plot(0.0:0.01:1.0, (x) -> pdf(result.posteriors[:a][end], x), label = "inferred a", fill = 0, fillalpha = 0.2)
+        p1 = plot(
+            0.0:0.01:1.0,
+            (x) -> pdf(result.posteriors[:a][end], x),
+            label = "inferred a",
+            fill = 0,
+            fillalpha = 0.2
+        )
         p1 = vline!([a], label = "real a")
 
-        p2 = plot(0.0:0.01:5.0, (x) -> pdf(result.posteriors[:b][end], x), label = "inferred b", fill = 0, fillalpha = 0.2)
+        p2 = plot(
+            0.0:0.01:5.0,
+            (x) -> pdf(result.posteriors[:b][end], x),
+            label = "inferred b",
+            fill = 0,
+            fillalpha = 0.2
+        )
         p2 = vline!([b], label = "real b")
 
         p3 = plot(result.free_energy, label = "free energy")
@@ -475,11 +579,21 @@ end
     end
 
     @meta function mymeta()
-        foo() -> CVIProjection(rng = StableRNG(42), sampling_strategy = FullSampling(10), outsamples = 5)
+        foo() -> CVIProjection(
+            rng = StableRNG(42),
+            sampling_strategy = FullSampling(10),
+            outsamples = 5
+        )
     end
 
     result = infer(
-        model = mymodel(C = C), data = (y = y,), meta = mymeta(), constraints = myconstraints(), initialization = myinitialization(), free_energy = true, iterations = 15
+        model = mymodel(C = C),
+        data = (y = y,),
+        meta = mymeta(),
+        constraints = myconstraints(),
+        initialization = myinitialization(),
+        free_energy = true,
+        iterations = 15
     )
 
     @test mean(result.posteriors[:a][end]) ≈ a atol = 0.05
@@ -487,10 +601,22 @@ end
     @test first(result.free_energy) > last(result.free_energy)
 
     @test_plot "projection" "iid_delta_multiple_input" begin
-        p1 = plot(0.0:0.01:1.0, (x) -> pdf(result.posteriors[:a][end], x), label = "inferred a", fill = 0, fillalpha = 0.2)
+        p1 = plot(
+            0.0:0.01:1.0,
+            (x) -> pdf(result.posteriors[:a][end], x),
+            label = "inferred a",
+            fill = 0,
+            fillalpha = 0.2
+        )
         p1 = vline!([a], label = "real a")
 
-        p2 = plot(0.0:0.01:5.0, (x) -> pdf(result.posteriors[:b][end], x), label = "inferred b", fill = 0, fillalpha = 0.2)
+        p2 = plot(
+            0.0:0.01:5.0,
+            (x) -> pdf(result.posteriors[:b][end], x),
+            label = "inferred b",
+            fill = 0,
+            fillalpha = 0.2
+        )
         p2 = vline!([b], label = "real b")
 
         p3 = plot(result.free_energy, label = "free energy")
@@ -500,7 +626,8 @@ end
 end
 
 @testitem "Projection constraint should skip processing of `ExponentialFamilyDistribution` instances" begin
-    using BayesBase, ExponentialFamily, Distributions, ExponentialFamilyProjection
+    using BayesBase,
+        ExponentialFamily, Distributions, ExponentialFamilyProjection
 
     struct NodePrior end
     struct NodeLikelihood end
@@ -511,7 +638,9 @@ end
     @rule NodePrior(:out, Marginalisation) (q_in::Any,) = NodePrior()
     @rule NodeLikelihood(:in, Marginalisation) (q_out::Any,) = NodeLikelihood()
 
-    BayesBase.prod(::GenericProd, ::NodePrior, ::NodeLikelihood) = convert(ExponentialFamilyDistribution, Beta(1, 1))
+    BayesBase.prod(::GenericProd, ::NodePrior, ::NodeLikelihood) = convert(
+        ExponentialFamilyDistribution, Beta(1, 1)
+    )
 
     @model function mymodel(y)
         a ~ NodePrior(1)
@@ -522,7 +651,9 @@ end
         q(a)::ProjectedTo(Beta)
     end
 
-    result = infer(model = mymodel(), data = (y = 1.0,), constraints = constraints)
+    result = infer(
+        model = mymodel(), data = (y = 1.0,), constraints = constraints
+    )
 
     @test result.posteriors[:a] == Beta(1, 1)
 end

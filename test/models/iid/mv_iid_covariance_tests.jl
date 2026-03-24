@@ -43,7 +43,11 @@
     L = randn(rng, d, d)
     C = L * L'
 
-    data = rand(rng, MvNormalMeanCovariance(m, C), n) |> eachcol |> collect .|> collect
+    data =
+        rand(rng, MvNormalMeanCovariance(m, C), n) |>
+        eachcol |>
+        collect .|>
+        collect
 
     ## Inference execution
     result = inference_mv_inverse_wishart(data, d)
@@ -58,9 +62,28 @@
         Y = range(-5, 5, length = 200)
 
         p = plot(title = "MvIID experiment / Covariance parametrisation")
-        p = contour!(p, X, Y, (x, y) -> pdf(MvNormalMeanCovariance(mean(result.posteriors[:m]), mean(result.posteriors[:C])), [x, y]), label = "Estimated")
-        p = contour!(p, X, Y, (x, y) -> pdf(MvNormalMeanCovariance(m, C), [x, y]), label = "Real")
+        p = contour!(
+            p,
+            X,
+            Y,
+            (x, y) -> pdf(
+                MvNormalMeanCovariance(
+                    mean(result.posteriors[:m]), mean(result.posteriors[:C])
+                ),
+                [x, y]
+            ),
+            label = "Estimated"
+        )
+        p = contour!(
+            p,
+            X,
+            Y,
+            (x, y) -> pdf(MvNormalMeanCovariance(m, C), [x, y]),
+            label = "Real"
+        )
     end
 
-    @test_benchmark "models" "iid_inverse_wishart" inference_mv_inverse_wishart($data, $d)
+    @test_benchmark "models" "iid_inverse_wishart" inference_mv_inverse_wishart(
+        $data, $d
+    )
 end
