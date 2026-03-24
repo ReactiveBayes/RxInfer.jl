@@ -16,7 +16,7 @@ struct TracedEvent
     time_ns::UInt64
 end
 
-Base.show(io::IO, te::TracedEvent) =
+Base.summary(io::IO, te::TracedEvent) =
     print(io, "TracedEvent(:$(event_name(typeof(te.event))))")
 
 """
