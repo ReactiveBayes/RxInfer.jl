@@ -13,6 +13,7 @@ Use `ReactiveMP.event_name(traced_event.event)` to retrieve the event name as a 
 """
 struct TracedEvent
     event::Event
+    time_ns::UInt64
 end
 
 Base.show(io::IO, te::TracedEvent) =
@@ -112,7 +113,7 @@ import ReactiveMP: handle_event, Event, event_name
 
 # Catch-all: trace every event
 function ReactiveMP.handle_event(callbacks::RxInferTraceCallbacks, event::Event)
-    push!(callbacks.events, TracedEvent(event))
+    push!(callbacks.events, TracedEvent(event, time_ns()))
     return nothing
 end
 
@@ -128,6 +129,6 @@ function ReactiveMP.handle_event(
         )
     end
     event.model.metadata[:trace] = callbacks
-    push!(callbacks.events, TracedEvent(event))
+    push!(callbacks.events, TracedEvent(event, time_ns()))
     return nothing
 end
