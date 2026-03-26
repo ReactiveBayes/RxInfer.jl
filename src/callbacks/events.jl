@@ -79,7 +79,9 @@ mutable struct BeforeIterationEvent{M} <: Event{:before_iteration}
     stop_iteration::Bool
 end
 
-BeforeIterationEvent(model::M, iteration::Int) where {M} = BeforeIterationEvent(model, iteration, false)
+BeforeIterationEvent(model::M, iteration::Int) where {M} = BeforeIterationEvent(
+    model, iteration, false
+)
 
 """
     AfterIterationEvent{M} <: ReactiveMP.Event{:after_iteration}
@@ -99,7 +101,9 @@ mutable struct AfterIterationEvent{M} <: Event{:after_iteration}
     stop_iteration::Bool
 end
 
-AfterIterationEvent(model::M, iteration::Int) where {M} = AfterIterationEvent(model, iteration, false)
+AfterIterationEvent(model::M, iteration::Int) where {M} = AfterIterationEvent(
+    model, iteration, false
+)
 
 """
     BeforeDataUpdateEvent{M, D} <: ReactiveMP.Event{:before_data_update}

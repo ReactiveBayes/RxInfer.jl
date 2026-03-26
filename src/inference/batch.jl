@@ -378,21 +378,16 @@ function batch_inference(;
 
         for iteration in 1:_iterations
             before_iteration_event = invoke_callback(
-                callbacks,
-                BeforeIterationEvent(fmodel, iteration),
+                callbacks, BeforeIterationEvent(fmodel, iteration)
             )
             if before_iteration_event.stop_iteration
                 break
             end
-            invoke_callback(
-                callbacks, BeforeDataUpdateEvent(fmodel, data)
-            )
+            invoke_callback(callbacks, BeforeDataUpdateEvent(fmodel, data))
             for (key, value) in fdata
                 update!(cacheddatavars[key], get_data(value))
             end
-            invoke_callback(
-                callbacks, AfterDataUpdateEvent(fmodel, data)
-            )
+            invoke_callback(callbacks, AfterDataUpdateEvent(fmodel, data))
 
             # Check that all requested marginals have been updated and unset the `updated` flag
             # Throws an error if some were not update
@@ -405,8 +400,7 @@ function batch_inference(;
             executed_iterations += 1
 
             after_iteration_event = invoke_callback(
-                callbacks,
-                AfterIterationEvent(fmodel, iteration),
+                callbacks, AfterIterationEvent(fmodel, iteration)
             )
             if after_iteration_event.stop_iteration
                 break
