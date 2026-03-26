@@ -218,7 +218,5 @@ end
     @test event_name(typeof(te.event)) === :before_model_creation
 
     # Test summary
-    buf = IOBuffer()
-    summary(buf, te)
-    @test String(take!(buf)) == "TracedEvent(:before_model_creation)"
+    @test sprint(summary, te) == "TracedEvent(:before_model_creation)"
 end
