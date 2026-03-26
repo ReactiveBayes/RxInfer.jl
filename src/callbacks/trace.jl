@@ -8,6 +8,8 @@ Wraps the original event object (a subtype of `ReactiveMP.Event`).
 
 # Fields
 - `event::ReactiveMP.Event`: the event object that was passed to the callback
+- `time_ns::UInt64`: the timestamp of the event in nanoseconds, uses `time_ns()` function from Julia
+
 
 Use `ReactiveMP.event_name(traced_event.event)` to retrieve the event name as a `Symbol`.
 """
