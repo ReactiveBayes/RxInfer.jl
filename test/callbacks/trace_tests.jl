@@ -24,6 +24,16 @@
         event_names = [event_name(typeof(e.event)) for e in events]
         @test :before_model_creation in event_names
         @test :after_model_creation in event_names
+        
+        trace_ids = map(events) do e
+            hasfield(typeof(e.event), :trace_id) ? e.event.trace_id : nothing
+        end
+        # There should be some trace IDs
+        @test length(trace_ids) >= 10
+        # They should be matched: before and after. I'll test this by checking that all IDs appear exactly twice.
+        found_ids = filter(!isnothing, trace_ids)
+        @test sort(found_ids) == sort([unique(found_ids)..., unique(found_ids)...])
+        
     end
 
     @model function trace_iter_model(y)
@@ -201,8 +211,9 @@ end
 @testitem "TracedEvent structure" begin
     using RxInfer
     using ReactiveMP: event_name
+    using UUIDs
 
-    te = TracedEvent(BeforeModelCreationEvent())
+    te = TracedEvent(BeforeModelCreationEvent(uuid4()))
     @test te.event isa BeforeModelCreationEvent
     @test event_name(typeof(te.event)) === :before_model_creation
 

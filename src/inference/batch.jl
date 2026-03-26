@@ -241,9 +241,10 @@ function batch_inference(;
 
     infer_check_dicttype(:predictvars, predictvars)
 
-    invoke_callback(callbacks, BeforeModelCreationEvent())
+    model_creation_trace_id = uuid4()
+    invoke_callback(callbacks, BeforeModelCreationEvent(model_creation_trace_id))
     fmodel = create_model(_model | data)
-    invoke_callback(callbacks, AfterModelCreationEvent(fmodel))
+    invoke_callback(callbacks, AfterModelCreationEvent(fmodel, model_creation_trace_id))
     vardict = getvardict(fmodel)
     vardict = GraphPPL.variables(vardict) # TODO bvdmitri, should work recursively as well
 
@@ -359,7 +360,8 @@ function batch_inference(;
             end
         end
 
-        invoke_callback(callbacks, BeforeInferenceEvent(fmodel))
+        inference_trace_id = uuid4()
+        invoke_callback(callbacks, BeforeInferenceEvent(fmodel, inference_trace_id))
 
         fdata = filter(pairs(data)) do pair
             hk      = haskey(vardict, first(pair))
@@ -384,14 +386,15 @@ function batch_inference(;
             if before_iteration_event.stop_iteration
                 break
             end
+            data_update_trace_id = uuid4()
             invoke_callback(
-                callbacks, BeforeDataUpdateEvent(fmodel, data)
+                callbacks, BeforeDataUpdateEvent(fmodel, data, data_update_trace_id)
             )
             for (key, value) in fdata
                 update!(cacheddatavars[key], get_data(value))
             end
             invoke_callback(
-                callbacks, AfterDataUpdateEvent(fmodel, data)
+                callbacks, AfterDataUpdateEvent(fmodel, data, data_update_trace_id)
             )
 
             # Check that all requested marginals have been updated and unset the `updated` flag
@@ -406,7 +409,7 @@ function batch_inference(;
 
             after_iteration_event = invoke_callback(
                 callbacks,
-                AfterIterationEvent(fmodel, iteration),
+                AfterIterationEvent(fmodel, iteration, before_iteration_event.trace_id),
             )
             if after_iteration_event.stop_iteration
                 break
@@ -418,7 +421,7 @@ function batch_inference(;
             unsubscribe!(subscription)
         end
 
-        invoke_callback(callbacks, AfterInferenceEvent(fmodel))
+        invoke_callback(callbacks, AfterInferenceEvent(fmodel, inference_trace_id))
     catch error
         potential_error = inference_process_error(
             error;
