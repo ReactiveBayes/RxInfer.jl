@@ -32,3 +32,6 @@ Coverage.ipynb
 benchmark/*.json
 
 .venv
+
+AGENTS.md
+CLAUDE.md
