@@ -646,9 +646,10 @@ function streaming_inference(;
         autoupdates_data_handlers(autoupdates),
     )
 
-    invoke_callback(callbacks, BeforeModelCreationEvent())
+    model_creation_trace_id = uuid4()
+    invoke_callback(callbacks, BeforeModelCreationEvent(model_creation_trace_id))
     fmodel = create_model(_model | _condition_on)
-    invoke_callback(callbacks, AfterModelCreationEvent(fmodel))
+    invoke_callback(callbacks, AfterModelCreationEvent(fmodel, model_creation_trace_id))
 
     vardict = getvardict(fmodel)
     vardict = GraphPPL.variables(vardict) # TODO: Should work recursively as well
@@ -822,9 +823,10 @@ function streaming_inference(;
     )
 
     if autostart
-        invoke_callback(callbacks, BeforeAutostartEvent(engine))
+        autostart_trace_id = uuid4()
+        invoke_callback(callbacks, BeforeAutostartEvent(engine, autostart_trace_id))
         start(engine)
-        invoke_callback(callbacks, AfterAutostartEvent(engine))
+        invoke_callback(callbacks, AfterAutostartEvent(engine, autostart_trace_id))
     end
 
     return engine
