@@ -203,8 +203,8 @@ end
     @test te.event isa BeforeModelCreationEvent
     @test event_name(typeof(te.event)) === :before_model_creation
 
-    # Test show
+    # Test summary
     buf = IOBuffer()
-    show(buf, te)
+    summary(buf, te)
     @test String(take!(buf)) == "TracedEvent(:before_model_creation)"
 end
