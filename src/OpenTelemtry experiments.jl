@@ -139,12 +139,22 @@ Needed for OTel
 """
 
 # ╔═╡ 4dc178b5-d0a0-46ac-92b8-cbe45e7d0b3a
-function get_trace_id(te::TracedEvent)
-	event = te.event
-	if hasfield(typeof(event), :trace_id)
-		tid = event.trace_id
+# function get_trace_id(te::TracedEvent)
+# 	event = te.event
+# 	if hasfield(typeof(event), :trace_id)
+# 		tid = event.trace_id
+# 	end
+# end
+
+# ╔═╡ b8fdcbe7-2ed7-4cd1-b215-cb0905b7efe2
+@generated function get_trace_id(event::ReactiveMP.Event)
+	if hasfield(event, :trace_id)
+		:(event.trace_id)
 	end
 end
+
+# ╔═╡ d139d769-d411-4718-ab0a-cb6f176afd9d
+get_trace_id(after_marginal_events[1].event)
 
 # ╔═╡ 2542529b-f49c-4167-a6a3-8a099ee942d0
 function find_spans(trace_events::Vector{TracedEvent})
@@ -159,7 +169,7 @@ function find_spans(trace_events::Vector{TracedEvent})
 	not_matched = TracedEvent[]
 
 	for te in trace_events
-		tid = get_trace_id(te)
+		tid = get_trace_id(te.event)
 		if !isnothing(tid)
 			if haskey(starts, tid)
 				stops[tid] = te
@@ -273,8 +283,8 @@ begin
 	@generated function struct_to_simple_dict(x)
 		fff = fieldnames(x)
 		quote
-			d = Dict(
-			 "type" => $(string(x)),
+			d = Dict{String,String}(
+			 # "type" => $(string(x)),
 			)
 			for f in $(fff)
 				d[string(f)] = to_observability_string(getfield(x, f), f)
@@ -422,10 +432,97 @@ end
 PlutoUI.DownloadButton(result, "result.json")
 
 # ╔═╡ 3498ce24-5d99-454c-ae1b-9cf7c2249b1e
+md"""
+# Perfetto export
+"""
 
+# ╔═╡ 0676725a-907e-4e94-a77d-708da32524f2
+after_marginal_events
+
+# ╔═╡ 9e475912-b6d7-4086-a092-59787f014917
+supertype(after_marginal_events[1].event |> typeof)
+
+# ╔═╡ ccadfd66-7274-4ceb-bfa6-c5d53f335a32
+@generated function event_phase(t::ReactiveMP.Event)
+	name = t.name.name
+	startswith(string(name), "Before") ? "B" :
+	startswith(string(name), "After") ? "E" :
+		"X"
+end
+
+# ╔═╡ 3afd1265-bd5d-40cc-ae47-617930b189c9
+function to_perfetto(te::TracedEvent; time_delta::Int64=0)
+	e = te.event
+	t = typeof(e).name.name
+
+	original_name = string(t)
+	nice_name = replace(original_name, r"(^Before)|(^After)|(Event$)" => "")
+
+	ph = event_phase(e)
+	
+	Dict(
+		"pid" => 1,
+		"tid" => 1,
+		"name" => nice_name,
+		"cat" => "default",
+		"ph" => ph,
+		"ts" => Float64(Int64(te.time_ns) + time_delta + (ph == "E" ? 1 : 0)) / 1000,
+		"id" => string(get_trace_id(e)),
+		"args" => struct_to_simple_dict(e),
+	)
+end
+
+# ╔═╡ d3bbed88-8539-4e88-9e7a-58f788e40864
+to_perfetto(after_marginal_events[711])
+
+# ╔═╡ bbffd54b-4511-4f38-970d-eb40a9bd036d
+
+
+# ╔═╡ 6f45ef45-5f17-4d59-8f1b-e5f964ea0f36
+aa = after_marginal_events[1].time_ns
+
+# ╔═╡ 27cc69f4-cd23-4493-bda7-eabe12bfb2a3
+bb = after_marginal_events[3].time_ns
+
+# ╔═╡ 07488896-bb4a-44a3-afdb-b0fa94a952b1
+Int64(bb - aa) / 1e3
+
+# ╔═╡ c53048fe-105a-4841-be9d-0173c711916c
+perfetto_traces = let
+	time_delta = -Int64(after_marginal_events[1].time_ns)
+	to_perfetto.(after_marginal_events; time_delta)
+end
 
 # ╔═╡ 762fdff8-ada8-42f0-9505-d0a0b86f7014
+perfetto = Dict(
+	"traceEvents" => perfetto_traces,
+	"metadata" => Dict(
+		
+		"clock-domain" => "MONO",
+		"trace-capture-datetime" => 
+		"command_line" => "RxInferBoard",
+		"higres-ticks" => true,
+	)
+)
 
+# ╔═╡ 673f532b-1aae-4196-824f-c51ad4aef2e2
+result_perfetto = sprint() do io
+	JSON3.write(io, perfetto)
+end
+
+# ╔═╡ 265bd35e-2832-4a80-830b-6029ee4f2688
+"$(round(length(result_perfetto) / 1e6, digits=2)) MB" |> Text
+
+# ╔═╡ 99c68335-8a0f-440e-adaf-c23ac4f1a36f
+
+
+# ╔═╡ cb5b75b5-2224-45cc-98ae-b0b5f9c0cf64
+PlutoUI.DownloadButton(result_perfetto, "result_perfetto.json")
+
+# ╔═╡ d8cb0743-3f42-4d3c-951b-ed22b3fca916
+filter(after_marginal_events) do te
+	get_trace_id(te.event) == Base.UUID("bab13dad-e17a-4638-b190-4dbadbea4736")
+end
 
 # ╔═╡ Cell order:
 # ╟─18d21cb8-e14f-4cbd-b679-7c696eac8b21
@@ -445,6 +542,8 @@ PlutoUI.DownloadButton(result, "result.json")
 # ╟─66399916-d2d5-4e18-8b84-ef1e10074b49
 # ╠═d13c9fbb-0771-4d8e-82ae-563875cad3ce
 # ╠═4dc178b5-d0a0-46ac-92b8-cbe45e7d0b3a
+# ╠═b8fdcbe7-2ed7-4cd1-b215-cb0905b7efe2
+# ╠═d139d769-d411-4718-ab0a-cb6f176afd9d
 # ╠═2542529b-f49c-4167-a6a3-8a099ee942d0
 # ╠═98d10049-164f-44b4-8c6c-6a1714aa0a3d
 # ╟─d12d24be-938c-4fd6-918d-955427ab8b50
@@ -486,5 +585,20 @@ PlutoUI.DownloadButton(result, "result.json")
 # ╠═298fc244-24fd-4dc0-a140-a602e7170e10
 # ╠═93480c78-5e9c-4398-b2e4-414249553545
 # ╠═e93851c8-15db-4f72-abee-34f23837d1e8
-# ╠═3498ce24-5d99-454c-ae1b-9cf7c2249b1e
+# ╟─3498ce24-5d99-454c-ae1b-9cf7c2249b1e
+# ╠═0676725a-907e-4e94-a77d-708da32524f2
+# ╠═9e475912-b6d7-4086-a092-59787f014917
+# ╠═ccadfd66-7274-4ceb-bfa6-c5d53f335a32
+# ╠═d3bbed88-8539-4e88-9e7a-58f788e40864
+# ╠═3afd1265-bd5d-40cc-ae47-617930b189c9
+# ╠═bbffd54b-4511-4f38-970d-eb40a9bd036d
+# ╠═6f45ef45-5f17-4d59-8f1b-e5f964ea0f36
+# ╠═27cc69f4-cd23-4493-bda7-eabe12bfb2a3
+# ╠═07488896-bb4a-44a3-afdb-b0fa94a952b1
+# ╠═c53048fe-105a-4841-be9d-0173c711916c
 # ╠═762fdff8-ada8-42f0-9505-d0a0b86f7014
+# ╠═673f532b-1aae-4196-824f-c51ad4aef2e2
+# ╠═265bd35e-2832-4a80-830b-6029ee4f2688
+# ╠═99c68335-8a0f-440e-adaf-c23ac4f1a36f
+# ╠═cb5b75b5-2224-45cc-98ae-b0b5f9c0cf64
+# ╠═d8cb0743-3f42-4d3c-951b-ed22b3fca916
