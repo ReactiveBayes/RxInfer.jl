@@ -25,6 +25,15 @@ using UUIDs
 # ╔═╡ 93480c78-5e9c-4398-b2e4-414249553545
 using PlutoUI
 
+# ╔═╡ 7883817d-d74d-40c8-b1a2-08904fdc0f9c
+using BenchmarkTools
+
+# ╔═╡ 19609cfa-f124-4060-976f-40102d7cc45d
+using Profile, ProfileSVG
+
+# ╔═╡ 42f96fd4-8c47-4c41-895d-aeecbb3aa19a
+using Base64
+
 # ╔═╡ 18d21cb8-e14f-4cbd-b679-7c696eac8b21
 TableOfContents()
 
@@ -200,6 +209,8 @@ md"""
 """
 
 # ╔═╡ cf550cc4-5dd8-4340-875c-2032441ce765
+# ╠═╡ disabled = true
+#=╠═╡
 function find_parent(span, all_spans)
 	start = findfirst(isequal(span), all_spans)
 	is_bigger(other_span) = 
@@ -210,11 +221,14 @@ function find_parent(span, all_spans)
 	r = findfirst(i -> is_bigger(all_spans[i]), other_indices)
 	r === nothing ? nothing : other_indices[r]
 end
+  ╠═╡ =#
 
 # ╔═╡ 04407b00-3308-4e35-b144-4dac46afc252
+#=╠═╡
 zzz = map(found.spans) do s
 	find_parent(s, found.spans)
 end
+  ╠═╡ =#
 
 # ╔═╡ f479106f-d65c-479a-8ef6-3fe8dbe391b7
 md"""
@@ -230,34 +244,39 @@ trace/span IDs are hex strings.
 # ╔═╡ 252de4a1-24d7-4c84-8196-44e0fb50b37b
 import JSON3
 
-# ╔═╡ 925e6b73-b394-4199-a6ad-94e43156ed5a
-# function struct_to_simple_dict(x)
-# 	Dict(
-# 		"type" => string(typeof(x)),
-# 		(string(f) => to_observability_string(getfield(x, f), f)
-# 		for f in fieldnames(typeof(x)))...
-# 	)
-# end
+# ╔═╡ 1afa52be-6a37-4049-b0f9-e9d0d720f31f
+
+
+# ╔═╡ 0747b0f9-1081-4bb9-8193-6d3d2c59cda4
+dump(quote
+	x = (a=1,b=2)
+end)
+
+# ╔═╡ 299a9c0d-1ef6-421d-ba97-317a913b1940
+VERSION
+
+# ╔═╡ 2c049a69-24d1-43ab-bd18-4ab9828628df
+
 
 # ╔═╡ 57251562-4f84-4dd5-b0af-9000983366d9
 function to_observability_string(z::Any, keyname::Symbol)
 
-	tstart = time()
-	result = string(z)
-	elapsed = time() - tstart
+	# tstart = time()
+	# result = string(z)
+	# elapsed = time() - tstart
 
-	if elapsed > 0.003
-		@warn "Field took too long to render to string" elapsed typeof(z) keyname result
-	end
+	# if elapsed > 0.003
+	# 	@warn "Field took too long to render to string" elapsed typeof(z) keyname result
+	# end
 
 	
-	if length(result) > 2000
-		@warn "String result is very long" elapsed typeof(z) keyname result
-	end
+	# if length(result) > 2000
+	# 	@warn "String result is very long" elapsed typeof(z) keyname result
+	# end
 
-	result
+	# result
 
-	# string(z)
+	string(z)
 end
 
 # ╔═╡ 31455dd1-1755-46ed-995a-00c17d1653b2
@@ -282,15 +301,22 @@ begin
 	
 	@generated function struct_to_simple_dict(x)
 		fff = fieldnames(x)
-		quote
-			d = Dict{String,String}(
-			 # "type" => $(string(x)),
-			)
-			for f in $(fff)
-				d[string(f)] = to_observability_string(getfield(x, f), f)
-			end
-			d
-		end
+		Expr(
+			:tuple,
+			(
+				Expr(Symbol("="), f, :(to_observability_string(getfield(x, $(QuoteNode(f))), $(QuoteNode(f)))))
+				for f in fff
+			)...
+		)
+		# quote
+		# 	d = Dict{String,String}(
+		# 	 # "type" => $(string(x)),
+		# 	)
+		# 	for f in $(fff)
+		# 		d[string(f)] = to_observability_string(getfield(x, f), f)
+		# 	end
+		# 	d
+		# end
 	end
 end
 
@@ -347,6 +373,8 @@ to_otel_dict(d::AbstractDict) = [
 ]
 
 # ╔═╡ 408490d7-dc1f-49ad-b35c-909397b87668
+# ╠═╡ disabled = true
+#=╠═╡
 function to_otld_span(trace1::TracedEvent, trace2::TracedEvent; 
 					  parent_id::Union{Nothing,UUID}=nothing)
 
@@ -369,16 +397,21 @@ function to_otld_span(trace1::TracedEvent, trace2::TracedEvent;
 	    "status"               => Dict("code" => 1),
 	)
 end
+  ╠═╡ =#
 
 # ╔═╡ 6d5eb541-0e0e-4ccb-ac13-b6409c990d66
+#=╠═╡
 to_otld_span(found.spans[7]...; parent_id=found.spans[zzz[7]][1].event.trace_id)
+  ╠═╡ =#
 
 # ╔═╡ 649a64f5-f697-41ca-98d3-eb8ab94e6025
+#=╠═╡
 json_spans = map(1:min(lastindex(zzz),10_000)) do i
 	p = zzz[i]
 	parent_id = p === nothing ? nothing : found.spans[p][1].event.trace_id
 	to_otld_span(found.spans[i]...; parent_id)
 end
+  ╠═╡ =#
 
 # ╔═╡ c77e4434-df63-4aed-a961-254cc5c59c0c
 to_otel_value(v::Dict)  = Dict("kvlistValue" => Dict("values" => to_otel_dict(v)))
@@ -393,6 +426,7 @@ const resource_attrs = Dict(
 )
 
 # ╔═╡ d33734f9-8f0f-4832-bb79-593a7b39dbe2
+#=╠═╡
 otlp = Dict(
     "resourceSpans" => [
         Dict(
@@ -419,17 +453,24 @@ otlp = Dict(
         ),
     ],
 )
+  ╠═╡ =#
 
 # ╔═╡ b4802d6d-024c-41a0-9cbf-2670fa04864c
+#=╠═╡
 result = sprint() do io
 	JSON3.write(io, otlp)
 end
+  ╠═╡ =#
 
 # ╔═╡ 298fc244-24fd-4dc0-a140-a602e7170e10
+#=╠═╡
 "$(round(length(result) / 1e6, digits=2)) MB" |> Text
+  ╠═╡ =#
 
 # ╔═╡ e93851c8-15db-4f72-abee-34f23837d1e8
+#=╠═╡
 PlutoUI.DownloadButton(result, "result.json")
+  ╠═╡ =#
 
 # ╔═╡ 3498ce24-5d99-454c-ae1b-9cf7c2249b1e
 md"""
@@ -466,7 +507,11 @@ function to_perfetto(te::TracedEvent; time_delta::Int64=0)
 		"name" => nice_name,
 		"cat" => "default",
 		"ph" => ph,
-		"ts" => Float64(Int64(te.time_ns) + time_delta + (ph == "E" ? 1 : 0)) / 1000,
+		"ts" => Float64(
+			Int64(te.time_ns) + 
+				time_delta + 
+				(ph == "E" ? 1 : 0) # add 1 ns to End events because some recorded events are 0ns long, which is otherwise not supported in perfetto.
+		) / 1000,
 		"id" => string(get_trace_id(e)),
 		"args" => struct_to_simple_dict(e),
 	)
@@ -490,8 +535,11 @@ Int64(bb - aa) / 1e3
 # ╔═╡ c53048fe-105a-4841-be9d-0173c711916c
 perfetto_traces = let
 	time_delta = -Int64(after_marginal_events[1].time_ns)
-	to_perfetto.(after_marginal_events; time_delta)
+	to_perfetto.(after_marginal_events; time_delta=time_delta)
 end
+
+# ╔═╡ 2aaaddba-7bc5-41d3-b92c-2c5b3f9fe25c
+
 
 # ╔═╡ 762fdff8-ada8-42f0-9505-d0a0b86f7014
 perfetto = Dict(
@@ -522,6 +570,98 @@ PlutoUI.DownloadButton(result_perfetto, "result_perfetto.json")
 # ╔═╡ d8cb0743-3f42-4d3c-951b-ed22b3fca916
 filter(after_marginal_events) do te
 	get_trace_id(te.event) == Base.UUID("bab13dad-e17a-4638-b190-4dbadbea4736")
+end
+
+# ╔═╡ bf6b7471-7ccb-4884-bc4e-a82eb18dcd46
+# open_with_perfetto(result_perfetto)
+
+# ╔═╡ 9f438e0a-6b2f-4d06-a66c-517d5ba85c16
+# view_with_perfetto(result_perfetto)
+
+# ╔═╡ 22c1b7e9-fc0f-44ac-944d-07e7b611f2b9
+codeunits(result_perfetto)
+
+# ╔═╡ fad878e1-bf48-4d91-8f1b-3f9c93a69463
+function view_with_perfetto(perfetto_json_contents; name = "RxInfer trace")
+	b64 = Base64.base64encode(perfetto_json_contents)
+
+	id = String(rand('a':'z', 10))
+
+	file = """
+		<div style="width: 100%; height: clamp(650px, 90vh, 1000px);">
+	<iframe id=$id src="https://ui.perfetto.dev"
+	  style="width:100%;height:100%;border:7px solid yellow;border-radius: 12px;"></iframe>
+	<script>
+	const b64 = "$(b64)";
+	const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+	const iframe = document.getElementById('$(id)');
+	
+	// Keep sending PING until Perfetto replies with PONG
+	const interval = setInterval(() => {
+	  iframe.contentWindow.postMessage('PING', 'https://ui.perfetto.dev');
+	}, 50);
+	
+	window.addEventListener('message', (e) => {
+	  if (e.data !== 'PONG') return;
+	  clearInterval(interval);
+	  iframe.contentWindow.postMessage({
+	    perfetto: { 
+	      buffer: bytes.buffer, 
+	      title: "$(name)",
+	    }
+	  }, 'https://ui.perfetto.dev');
+	});
+	</script>
+	</div>
+	"""
+
+	HTML(file) |> PlutoUI.WideCell
+end
+
+# ╔═╡ 5287b97c-2148-4186-a8d5-127a396132f9
+function open_with_perfetto(perfetto_json_contents; name = "RxInfer trace")
+	b64 = Base64.base64encode(perfetto_json_contents)
+
+	file = """
+	<!DOCTYPE html><html><body style="margin:0">
+	<iframe id="pf" src="https://ui.perfetto.dev"
+	  style="width:100vw;height:100vh;border:none;position:fixed;top:0;left:0"></iframe>
+	<script>
+	const b64 = "$(b64)";
+	const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+	const iframe = document.getElementById('pf');
+	
+	// Keep sending PING until Perfetto replies with PONG
+	const interval = setInterval(() => {
+	  iframe.contentWindow.postMessage('PING', 'https://ui.perfetto.dev');
+	}, 50);
+	
+	window.addEventListener('message', (e) => {
+	  if (e.data !== 'PONG') return;
+	  clearInterval(interval);
+	  iframe.contentWindow.postMessage({
+	    perfetto: { 
+	      buffer: bytes.buffer, 
+	      title: "$(name)",
+	    }
+	  }, 'https://ui.perfetto.dev');
+	});
+	</script>
+	</body></html>
+	"""
+
+	filename = tempname(cleanup=false) * ".html"
+	write(filename, file)
+
+	if Sys.isapple()
+        run(`open $filename`)
+    elseif Sys.iswindows()
+        run(`cmd /c start "" $filename`)
+    elseif Sys.islinux()
+        run(`xdg-open $filename`)
+    else
+        @info("Open this in your browser: $filename")
+    end
 end
 
 # ╔═╡ Cell order:
@@ -555,7 +695,10 @@ end
 # ╠═28df460d-bd14-4160-87ec-79894ae89854
 # ╠═408490d7-dc1f-49ad-b35c-909397b87668
 # ╠═8361472e-6283-4dac-996b-6c99579bc1d4
-# ╠═925e6b73-b394-4199-a6ad-94e43156ed5a
+# ╠═1afa52be-6a37-4049-b0f9-e9d0d720f31f
+# ╠═0747b0f9-1081-4bb9-8193-6d3d2c59cda4
+# ╠═299a9c0d-1ef6-421d-ba97-317a913b1940
+# ╠═2c049a69-24d1-43ab-bd18-4ab9828628df
 # ╠═57251562-4f84-4dd5-b0af-9000983366d9
 # ╠═31455dd1-1755-46ed-995a-00c17d1653b2
 # ╠═f157ba01-48d8-4762-8a2c-5a2a9140b3b2
@@ -596,9 +739,18 @@ end
 # ╠═27cc69f4-cd23-4493-bda7-eabe12bfb2a3
 # ╠═07488896-bb4a-44a3-afdb-b0fa94a952b1
 # ╠═c53048fe-105a-4841-be9d-0173c711916c
+# ╠═2aaaddba-7bc5-41d3-b92c-2c5b3f9fe25c
+# ╠═7883817d-d74d-40c8-b1a2-08904fdc0f9c
+# ╠═19609cfa-f124-4060-976f-40102d7cc45d
 # ╠═762fdff8-ada8-42f0-9505-d0a0b86f7014
 # ╠═673f532b-1aae-4196-824f-c51ad4aef2e2
 # ╠═265bd35e-2832-4a80-830b-6029ee4f2688
 # ╠═99c68335-8a0f-440e-adaf-c23ac4f1a36f
 # ╠═cb5b75b5-2224-45cc-98ae-b0b5f9c0cf64
 # ╠═d8cb0743-3f42-4d3c-951b-ed22b3fca916
+# ╠═42f96fd4-8c47-4c41-895d-aeecbb3aa19a
+# ╠═bf6b7471-7ccb-4884-bc4e-a82eb18dcd46
+# ╠═9f438e0a-6b2f-4d06-a66c-517d5ba85c16
+# ╠═22c1b7e9-fc0f-44ac-944d-07e7b611f2b9
+# ╠═fad878e1-bf48-4d91-8f1b-3f9c93a69463
+# ╠═5287b97c-2148-4186-a8d5-127a396132f9
