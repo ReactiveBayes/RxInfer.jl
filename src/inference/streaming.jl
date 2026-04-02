@@ -551,9 +551,9 @@ function streaming_inference(;
     allow_node_contraction = false,
     autostart = true,
     events = nothing,
-    annotations = nothing,
+    addons = nothing,
     callbacks = nothing,
-    postprocess = nothing,
+    postprocess = DefaultPostprocess(),
     uselock = false,
     warn = true,
 )
@@ -583,17 +583,12 @@ function streaming_inference(;
         _options = setwarn(_options, warn)
     end
 
-    # Override `options` annotations if the `annotations` keyword argument is present
-    if !isnothing(annotations)
-        if warn && !isnothing(getannotations(_options))
-            @warn "Both `annotations = ...` and `options = (annotations = ..., )` specify a value for the `annotations`. Ignoring the `options` setting. Set `warn = false` to supress this warning."
+    # Override `options` addons if the `addons` keyword argument is present 
+    if !isnothing(addons)
+        if warn && !isnothing(getaddons(_options))
+            @warn "Both `addons = ...` and `options = (addons = ..., )` specify a value for the `addons`. Ignoring the `options` setting. Set `warn = false` to supress this warning."
         end
-        _options = setannotations(_options, annotations)
-    end
-
-    # Determine the default postprocessing strategy based on annotations
-    if isnothing(postprocess)
-        postprocess = isnothing(getannotations(_options)) ? UnpackMarginalPostprocess() : NoopPostprocess()
+        _options = setaddons(_options, addons)
     end
 
     # Set ReactiveMP event handler if `callbacks` are set

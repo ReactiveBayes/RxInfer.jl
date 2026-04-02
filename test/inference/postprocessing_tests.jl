@@ -1,25 +1,31 @@
+@testitem "Default postprocessing" begin
+
+    # Default postprocessing step removes Marginal type wrapper if no addons are present, 
+    # and keeps the Marginal type wrapper otherwise
+    @test inference_postprocess(
+        DefaultPostprocess(), Marginal(1.0, false, false, nothing)
+    ) == 1.0
+    @test inference_postprocess(
+        DefaultPostprocess(), Marginal(1.0, false, false, 1)
+    ) == Marginal(1.0, false, false, 1)
+end
+
 @testitem "UnpackMarginal postprocessing" begin
     @test inference_postprocess(
-        UnpackMarginalPostprocess(), Marginal(1.0, false, false)
+        UnpackMarginalPostprocess(), Marginal(1.0, false, false, nothing)
     ) == 1.0
-
-    ann = ReactiveMP.AnnotationDict()
-    ReactiveMP.annotate!(ann, :test, 1)
     @test inference_postprocess(
-        UnpackMarginalPostprocess(), Marginal(1.0, false, false, ann)
+        UnpackMarginalPostprocess(), Marginal(1.0, false, false, 1)
     ) == 1.0
 end
 
 @testitem "Noop postprocessing" begin
     @test inference_postprocess(
-        NoopPostprocess(), Marginal(1.0, false, false)
-    ) == Marginal(1.0, false, false)
-
-    ann = ReactiveMP.AnnotationDict()
-    ReactiveMP.annotate!(ann, :test, 1)
+        NoopPostprocess(), Marginal(1.0, false, false, nothing)
+    ) == Marginal(1.0, false, false, nothing)
     @test inference_postprocess(
-        NoopPostprocess(), Marginal(1.0, false, false, ann)
-    ) == Marginal(1.0, false, false, ann)
+        NoopPostprocess(), Marginal(1.0, false, false, 1)
+    ) == Marginal(1.0, false, false, 1)
 end
 
 @testitem "Custom postprocessing" begin
