@@ -391,11 +391,7 @@ end
         @test RxInfer.issuccess(result)
         @test !RxInfer.iserror(result)
 
-        io = IOBuffer()
-
-        Base.showerror(io, result)
-
-        error_str = String(take!(io))
+        error_str = sprint(Base.showerror, result)
 
         @test contains(error_str, "The inference has completed successfully.")
 
@@ -446,11 +442,7 @@ end
         @test length(result_with_error.free_energy) === 5
         @test all(result_with_error.free_energy .=== result.free_energy[1:5])
 
-        io = IOBuffer()
-
-        Base.showerror(io, result_with_error)
-
-        error_str = String(take!(io))
+        error_str = sprint(Base.showerror, result_with_error)
 
         @test contains(error_str, "ErrorException")
         @test contains(error_str, "bang!")
@@ -1809,9 +1801,9 @@ end
     @test Set(other_stats.context_keys) == Set([])
 
     # Test summarize_session output format for inference invokes with default n_last
-    output = IOBuffer()
-    RxInfer.summarize_session(output, session, :inference; n_last = 3)
-    output_str = String(take!(output))
+    output_str = sprint() do io
+        RxInfer.summarize_session(io, session, :inference; n_last = 3)
+    end
 
     @test contains(output_str, "Session Summary (label: inference)")
     @test contains(output_str, "Total invokes: 1")
@@ -1845,9 +1837,9 @@ end
     )
 
     # Test summarize_session output format for inference invokes with default n_last
-    output = IOBuffer()
-    RxInfer.summarize_session(output; n_last = 1)
-    output_str = String(take!(output))
+    output_str = sprint() do io
+        RxInfer.summarize_session(io; n_last = 1)
+    end
 
     @test contains(output_str, "Status")
     @test contains(output_str, "Duration")
