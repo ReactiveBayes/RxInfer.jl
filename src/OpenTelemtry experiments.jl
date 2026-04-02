@@ -115,7 +115,7 @@ begin
 	hidden_τ       = 2.7182
 	distribution   = NormalMeanPrecision(hidden_μ, hidden_τ)
 	rng            = StableRNG(42)
-	n_observations = 20
+	n_observations = 1000
 	dataset        = rand(rng, distribution, n_observations)
 end
 
@@ -501,19 +501,19 @@ function to_perfetto(te::TracedEvent; time_delta::Int64=0)
 
 	ph = event_phase(e)
 	
-	Dict(
-		"pid" => 1,
-		"tid" => 1,
-		"name" => nice_name,
-		"cat" => "default",
-		"ph" => ph,
-		"ts" => Float64(
-			Int64(te.time_ns) + 
-				time_delta + 
-				(ph == "E" ? 1 : 0) # add 1 ns to End events because some recorded events are 0ns long, which is otherwise not supported in perfetto.
-		) / 1000,
-		"id" => string(get_trace_id(e)),
-		"args" => struct_to_simple_dict(e),
+	(
+	    pid = 1,
+	    tid = 1,
+	    name = nice_name,
+	    # cat = "default",
+	    ph = ph,
+	    ts = Float64(
+	        Int64(te.time_ns) +
+	            time_delta +
+	            (ph == "E" ? 1 : 0) # add 1 ns to End events because some recorded events are 0ns long, which is otherwise not supported in perfetto.
+	    ) / 1000,
+	    id = string(get_trace_id(e)),
+	    args = struct_to_simple_dict(e),
 	)
 end
 
@@ -572,14 +572,20 @@ filter(after_marginal_events) do te
 	get_trace_id(te.event) == Base.UUID("bab13dad-e17a-4638-b190-4dbadbea4736")
 end
 
+# ╔═╡ 91727b0d-8cf2-42c3-b1fc-c9af91b48863
+md"""
+# Open Perfetto from Julia
+Uncomment these cells to try it:
+"""
+
 # ╔═╡ bf6b7471-7ccb-4884-bc4e-a82eb18dcd46
 # open_with_perfetto(result_perfetto)
 
 # ╔═╡ 9f438e0a-6b2f-4d06-a66c-517d5ba85c16
 # view_with_perfetto(result_perfetto)
 
-# ╔═╡ 22c1b7e9-fc0f-44ac-944d-07e7b611f2b9
-codeunits(result_perfetto)
+# ╔═╡ a26e8294-fb5d-4b4c-a9c1-b8780d809a37
+
 
 # ╔═╡ fad878e1-bf48-4d91-8f1b-3f9c93a69463
 function view_with_perfetto(perfetto_json_contents; name = "RxInfer trace")
@@ -626,10 +632,20 @@ function open_with_perfetto(perfetto_json_contents; name = "RxInfer trace")
 	<!DOCTYPE html><html><body style="margin:0">
 	<iframe id="pf" src="https://ui.perfetto.dev"
 	  style="width:100vw;height:100vh;border:none;position:fixed;top:0;left:0"></iframe>
+		
+		<div id="overlay" style="
+	  position:fixed;top:0;left:0;width:100vw;height:100vh;
+	  background:rgba(255,255,255,0.5);
+	  display:flex;align-items:center;justify-content:center;
+	  transition:opacity 0.4s ease;
+	"><span style="font:bold 3rem system-ui;white-space:nowrap">Loading...</span></div>
+	
 	<script>
 	const b64 = "$(b64)";
 	const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
 	const iframe = document.getElementById('pf');
+	const overlay = document.getElementById('overlay');
+
 	
 	// Keep sending PING until Perfetto replies with PONG
 	const interval = setInterval(() => {
@@ -645,6 +661,9 @@ function open_with_perfetto(perfetto_json_contents; name = "RxInfer trace")
 	      title: "$(name)",
 	    }
 	  }, 'https://ui.perfetto.dev');
+		
+	  overlay.style.opacity = '0';
+	  setTimeout(() => overlay.remove(), 400);
 	});
 	</script>
 	</body></html>
@@ -749,8 +768,9 @@ end
 # ╠═cb5b75b5-2224-45cc-98ae-b0b5f9c0cf64
 # ╠═d8cb0743-3f42-4d3c-951b-ed22b3fca916
 # ╠═42f96fd4-8c47-4c41-895d-aeecbb3aa19a
+# ╟─91727b0d-8cf2-42c3-b1fc-c9af91b48863
 # ╠═bf6b7471-7ccb-4884-bc4e-a82eb18dcd46
 # ╠═9f438e0a-6b2f-4d06-a66c-517d5ba85c16
-# ╠═22c1b7e9-fc0f-44ac-944d-07e7b611f2b9
+# ╟─a26e8294-fb5d-4b4c-a9c1-b8780d809a37
 # ╠═fad878e1-bf48-4d91-8f1b-3f9c93a69463
 # ╠═5287b97c-2148-4186-a8d5-127a396132f9
