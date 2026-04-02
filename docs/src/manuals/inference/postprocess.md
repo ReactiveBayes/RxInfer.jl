@@ -1,25 +1,44 @@
 # [Inference results postprocessing](@id user-guide-inference-postprocess)
 
-[`infer`](@ref) allow users to postprocess the inference result with the `postprocess = ...` keyword argument. The inference engine 
-operates on __wrapper__ types to distinguish between marginals and messages. By default these wrapper types are removed from the inference results if no addons option is present. Together with the enabled addons, however, the wrapper types are preserved in the inference result output value. Use the options below to change this behavior:
+The [`infer`](@ref) function allows users to control how inference results are postprocessed 
+via the `postprocess` keyword argument.
+
+Internally, the inference engine operates on `Marginal` wrapper types that carry both the 
+underlying distribution and any associated annotation data. The postprocessing step determines
+whether these wrappers are preserved or stripped from the final result.
+
+## Default behavior
+
+The default postprocessing strategy depends on whether [annotations](@ref) are enabled:
+
+- **Without annotations** (`annotations = nothing`, the default): the strategy is [`UnpackMarginalPostprocess`](@ref). 
+  Since no annotation data is attached, the `Marginal` wrapper is removed and the result 
+  contains the underlying distribution directly (e.g., a `Normal` or `Beta` distribution).
+- **With annotations** (e.g., `annotations = LogScaleAnnotations()`): the strategy is [`NoopPostprocess`](@ref). 
+  The `Marginal` wrapper is preserved so that annotation data remains accessible via 
+  `ReactiveMP.getannotations`.
+
+You can always override the default by passing `postprocess = ...` explicitly to [`infer`](@ref).
+
+## Available strategies
 
 ```@docs
 inference_postprocess
-DefaultPostprocess
 UnpackMarginalPostprocess
 NoopPostprocess
 ```
 
 ## [Custom postprocessing step](@id user-guide-inference-postprocess-custom)
 
-In order to implement a custom postprocessing strategy simply implement the [`inference_postprocess`](@ref) method:
+To implement a custom postprocessing strategy, define a new type and implement the 
+[`inference_postprocess`](@ref) method for it:
 
 ```@example custom-postprocessing
 using RxInfer
 
 struct CustomPostprocess end
 
-# For demonstration purposes out postprocessing step simply stringifyes the result
+# For demonstration purposes our postprocessing step simply stringifies the result
 RxInfer.inference_postprocess(::CustomPostprocess, result::Marginal) = string(ReactiveMP.getdata(result))
 ```
 

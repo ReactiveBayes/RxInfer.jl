@@ -701,21 +701,21 @@ end
 
     observations = float.(rand(Bernoulli(0.75), 10))
 
-    @testset "Test warning for addons" begin
+    @testset "Test warning for annotations" begin
         # Should display a warning if `warn` is set to `true`
-        @test_logs (:warn, r"Both .* specify a value for the `addons`.*") infer(
+        @test_logs (:warn, r"Both .* specify a value for the `annotations`.*") infer(
             model = beta_bernoulli(),
             data = (y = observations,),
-            addons = AddonLogScale(),
-            options = (addons = AddonLogScale(),),
+            annotations = LogScaleAnnotations(),
+            options = (annotations = LogScaleAnnotations(),),
             warn = true,
         )
         # Should not display a warning if `warn` is set to `true`
         @test_logs infer(
             model = beta_bernoulli(),
             data = (y = observations,),
-            addons = AddonLogScale(),
-            options = (addons = AddonLogScale(),),
+            annotations = LogScaleAnnotations(),
+            options = (annotations = LogScaleAnnotations(),),
             warn = false,
         )
     end

@@ -50,14 +50,14 @@
             data = (y = dataset,),
             returnvars = (θ = KeepLast(),),
             free_energy = true,
-            addons = AddonLogScale(),
+            annotations = LogScaleAnnotations(),
         )
         result2 = infer(
             model = beta_model2(),
             data = (y = dataset,),
             returnvars = (θ = KeepLast(),),
             free_energy = true,
-            addons = AddonLogScale(),
+            annotations = LogScaleAnnotations(),
         )
 
         resultswitch = infer(
@@ -69,7 +69,7 @@
                 in2 = KeepLast(),
                 selector = KeepLast(),
             ),
-            addons = AddonLogScale(),
+            annotations = LogScaleAnnotations(),
         )
 
         ## -------------------------------------------- ##
