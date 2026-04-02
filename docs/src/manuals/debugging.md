@@ -239,18 +239,18 @@ The [`RxInferBenchmarkCallbacks`](@ref) structure collects timestamps at various
 
 For the full API reference, programmatic access to statistics, and model metadata integration, see the dedicated [Benchmark callbacks](@ref manual-inference-benchmark-callbacks) page.
 
-## [Legacy: Tracing message computations with `AddonMemory`](@id user-guide-debugging-memory-addon)
+## [Legacy: Tracing message computations with `InputArgumentsAnnotations`](@id user-guide-debugging-memory-addon)
 
 !!! warning "Legacy feature"
-    The `AddonMemory` system is a legacy feature from `ReactiveMP` and may be removed in a future release.
+    The `InputArgumentsAnnotations` system is a legacy feature from `ReactiveMP` and may be removed in a future release.
     For most debugging and inspection use cases, the [Trace callbacks](@ref manual-inference-trace-callbacks) system is more powerful and easier to use — it records every event (including message rule calls, product computations, form constraint applications, and marginal computations) from both RxInfer and ReactiveMP.
 
-`RxInfer` provides a way to save the history of the computations leading up to the computed messages and marginals. This history is added on top of messages and marginals and is referred to as a _Memory Addon_.
+`RxInfer` provides a way to save the history of the computations leading up to the computed messages and marginals. This history is added on top of messages and marginals and is referred to as an _Input Arguments Annotation_.
 
 !!! note
-    Addons is a feature of `ReactiveMP`. Read more about implementing custom addons in the corresponding section of the `ReactiveMP` package.
+    Annotations are a feature of `ReactiveMP`. Read more about implementing custom annotations in the corresponding section of the `ReactiveMP` package.
 
-We demonstrate the Memory Addon on the coin toss example from [earlier](@ref user-guide-getting-started-coin-flip-simulation) in the documentation. We model the binary outcome $x$ (heads or tails) using a `Bernoulli` distribution, with a parameter $\theta$ that represents the probability of landing on heads. We have a `Beta` prior distribution for the $\theta$ parameter, with a known shape $\alpha$ and rate $\beta$ parameter.
+We demonstrate the Input Arguments Annotation on the coin toss example from [earlier](@ref user-guide-getting-started-coin-flip-simulation) in the documentation. We model the binary outcome $x$ (heads or tails) using a `Bernoulli` distribution, with a parameter $\theta$ that represents the probability of landing on heads. We have a `Beta` prior distribution for the $\theta$ parameter, with a known shape $\alpha$ and rate $\beta$ parameter.
 
 $$\theta \sim \mathrm{Beta}(a, b)$$
 $$x_i \sim \mathrm{Bernoulli}(\theta)$$
@@ -285,24 +285,24 @@ plot(rθ, (rvar) -> pdf(result.posteriors[:θ], rvar), label="Infered posterior"
 vline!([θ_real], label="Real θ", title = "Inference results")
 ```
 
-We can figure out what's wrong by tracing the computation of the posterior with the Memory Addon.
-To obtain the trace, add `addons = (AddonMemory(),)` as an argument to the [`infer`](@ref) function.
-Note that the argument to the `addons` keyword argument must be a tuple, because multiple addons can be activated at the same time.
+We can figure out what's wrong by tracing the computation of the posterior with the Input Arguments Annotation.
+To obtain the trace, add `annotations = (InputArgumentsAnnotations(),)` as an argument to the [`infer`](@ref) function.
+Note that the argument to the `annotations` keyword argument must be a tuple, because multiple annotations can be activated at the same time.
 
 ```@example addoncoin
 result = infer(
     model = coin_model(),
     data  = (x = dataset, ),
-    addons = (AddonMemory(),)
+    annotations = (InputArgumentsAnnotations(),)
 )
 ```
 Now we have access to the messages that led to the marginal posterior:
 
 ```@example addoncoin
-RxInfer.ReactiveMP.getaddons(result.posteriors[:θ])
+RxInfer.ReactiveMP.getannotations(result.posteriors[:θ])
 ```
 
-![Addons_messages](../assets/img/debugging_messages.png)
+![messages_annotated_with_input_arguments](../assets/img/debugging_messages.png)
 
 The messages in the factor graph are marked in color. If you're interested in the mathematics behind these results, consider verifying them manually using the general equation for sum-product messages:
 
