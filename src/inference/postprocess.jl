@@ -5,7 +5,7 @@ export inference_postprocess,
     inference_postprocess(strategy, result)
 
 Postprocesses the `result` of the inference procedure according to the given `strategy`.
-The `result` is typically a [`ReactiveMP.Marginal`](@ref) or a collection of `Marginal`s.
+The `result` is typically a `Marginal` or a collection of `Marginal`s.
 
 The [`infer`](@ref) function selects a default strategy automatically based on whether
 annotations are enabled:
