@@ -244,6 +244,33 @@ trace/span IDs are hex strings.
 # ╔═╡ 252de4a1-24d7-4c84-8196-44e0fb50b37b
 import JSON3
 
+# ╔═╡ 408490d7-dc1f-49ad-b35c-909397b87668
+# ╠═╡ disabled = true
+#=╠═╡
+function to_otld_span(trace1::TracedEvent, trace2::TracedEvent; 
+					  parent_id::Union{Nothing,UUID}=nothing)
+
+	original_name = string(typeof(trace1.event).name.name)
+	nice_name = replace(original_name, r"(^Before)|(^After)|(Event$)" => "")
+	
+	Dict(
+	    # "name"                 => string(typeof(trace1.event)),
+	    "name"                 => nice_name,
+		
+	    "traceId"              => random_trace_id,
+	    "spanId"               => uuid_to_16bit(trace1.event.trace_id),
+	    "parentSpanId"         => parent_id === nothing ? "" : uuid_to_16bit(parent_id),
+	    "kind"                 => 0,
+	    "startTimeUnixNano"    => ns_string(trace1.time_ns),
+	    "endTimeUnixNano"      => ns_string(trace2.time_ns),
+	    "attributes"           => to_otel_dict(
+			struct_to_simple_dict(trace2.event),
+		),
+	    "status"               => Dict("code" => 1),
+	)
+end
+  ╠═╡ =#
+
 # ╔═╡ 1afa52be-6a37-4049-b0f9-e9d0d720f31f
 
 
@@ -305,7 +332,7 @@ begin
 			:tuple,
 			(
 				Expr(Symbol("="), f, :(to_observability_string(getfield(x, $(QuoteNode(f))), $(QuoteNode(f)))))
-				for f in fff
+				for f in fff if f !== :trace_id
 			)...
 		)
 		# quote
@@ -320,6 +347,11 @@ begin
 	end
 end
 
+# ╔═╡ 6d5eb541-0e0e-4ccb-ac13-b6409c990d66
+#=╠═╡
+to_otld_span(found.spans[7]...; parent_id=found.spans[zzz[7]][1].event.trace_id)
+  ╠═╡ =#
+
 # ╔═╡ 0f0b0b6f-ed43-4666-b8d8-1debc54cedf6
 fieldnames(ReactiveMP.RandomVariable)
 
@@ -329,6 +361,15 @@ time_ns_drift = let
 	now_measured = time_ns()
 	now_real - now_measured
 end
+
+# ╔═╡ 649a64f5-f697-41ca-98d3-eb8ab94e6025
+#=╠═╡
+json_spans = map(1:min(lastindex(zzz),10_000)) do i
+	p = zzz[i]
+	parent_id = p === nothing ? nothing : found.spans[p][1].event.trace_id
+	to_otld_span(found.spans[i]...; parent_id)
+end
+  ╠═╡ =#
 
 # ╔═╡ bfa274ff-75dd-4e2e-9022-a3c3f9185ce2
 ns_string(t::UInt64) = string(t + time_ns_drift; base=10)
@@ -371,47 +412,6 @@ to_otel_dict(d::AbstractDict) = [
     Dict("key" => k, "value" => to_otel_value(v))
     for (k,v) in d
 ]
-
-# ╔═╡ 408490d7-dc1f-49ad-b35c-909397b87668
-# ╠═╡ disabled = true
-#=╠═╡
-function to_otld_span(trace1::TracedEvent, trace2::TracedEvent; 
-					  parent_id::Union{Nothing,UUID}=nothing)
-
-	original_name = string(typeof(trace1.event).name.name)
-	nice_name = replace(original_name, r"(^Before)|(^After)|(Event$)" => "")
-	
-	Dict(
-	    # "name"                 => string(typeof(trace1.event)),
-	    "name"                 => nice_name,
-		
-	    "traceId"              => random_trace_id,
-	    "spanId"               => uuid_to_16bit(trace1.event.trace_id),
-	    "parentSpanId"         => parent_id === nothing ? "" : uuid_to_16bit(parent_id),
-	    "kind"                 => 0,
-	    "startTimeUnixNano"    => ns_string(trace1.time_ns),
-	    "endTimeUnixNano"      => ns_string(trace2.time_ns),
-	    "attributes"           => to_otel_dict(
-			struct_to_simple_dict(trace2.event),
-		),
-	    "status"               => Dict("code" => 1),
-	)
-end
-  ╠═╡ =#
-
-# ╔═╡ 6d5eb541-0e0e-4ccb-ac13-b6409c990d66
-#=╠═╡
-to_otld_span(found.spans[7]...; parent_id=found.spans[zzz[7]][1].event.trace_id)
-  ╠═╡ =#
-
-# ╔═╡ 649a64f5-f697-41ca-98d3-eb8ab94e6025
-#=╠═╡
-json_spans = map(1:min(lastindex(zzz),10_000)) do i
-	p = zzz[i]
-	parent_id = p === nothing ? nothing : found.spans[p][1].event.trace_id
-	to_otld_span(found.spans[i]...; parent_id)
-end
-  ╠═╡ =#
 
 # ╔═╡ c77e4434-df63-4aed-a961-254cc5c59c0c
 to_otel_value(v::Dict)  = Dict("kvlistValue" => Dict("values" => to_otel_dict(v)))
@@ -512,7 +512,7 @@ function to_perfetto(te::TracedEvent; time_delta::Int64=0)
 	            time_delta +
 	            (ph == "E" ? 1 : 0) # add 1 ns to End events because some recorded events are 0ns long, which is otherwise not supported in perfetto.
 	    ) / 1000,
-	    id = string(get_trace_id(e)),
+	    # id = string(get_trace_id(e)),
 	    args = struct_to_simple_dict(e),
 	)
 end
@@ -553,19 +553,8 @@ perfetto = Dict(
 	)
 )
 
-# ╔═╡ 673f532b-1aae-4196-824f-c51ad4aef2e2
-result_perfetto = sprint() do io
-	JSON3.write(io, perfetto)
-end
-
-# ╔═╡ 265bd35e-2832-4a80-830b-6029ee4f2688
-"$(round(length(result_perfetto) / 1e6, digits=2)) MB" |> Text
-
 # ╔═╡ 99c68335-8a0f-440e-adaf-c23ac4f1a36f
 
-
-# ╔═╡ cb5b75b5-2224-45cc-98ae-b0b5f9c0cf64
-PlutoUI.DownloadButton(result_perfetto, "result_perfetto.json")
 
 # ╔═╡ d8cb0743-3f42-4d3c-951b-ed22b3fca916
 filter(after_marginal_events) do te
@@ -579,16 +568,16 @@ Uncomment these cells to try it:
 """
 
 # ╔═╡ bf6b7471-7ccb-4884-bc4e-a82eb18dcd46
-# open_with_perfetto(result_perfetto)
-
-# ╔═╡ 9f438e0a-6b2f-4d06-a66c-517d5ba85c16
-# view_with_perfetto(result_perfetto)
+# perfetto_open(result_perfetto)
 
 # ╔═╡ a26e8294-fb5d-4b4c-a9c1-b8780d809a37
 
 
+# ╔═╡ d51dcb7a-820d-4728-b2d8-f9f3850f0774
+# perfetto_view(traces::Vector{TracedEvent}; name = "$(Time(now())) RxInfer trace")
+
 # ╔═╡ fad878e1-bf48-4d91-8f1b-3f9c93a69463
-function view_with_perfetto(perfetto_json_contents; name = "RxInfer trace")
+function perfetto_view(perfetto_json_contents; name = "$(Time(now())) RxInfer trace")
 	b64 = Base64.base64encode(perfetto_json_contents)
 
 	id = String(rand('a':'z', 10))
@@ -621,11 +610,11 @@ function view_with_perfetto(perfetto_json_contents; name = "RxInfer trace")
 	</div>
 	"""
 
-	HTML(file) |> PlutoUI.WideCell
+	HTML(file)
 end
 
 # ╔═╡ 5287b97c-2148-4186-a8d5-127a396132f9
-function open_with_perfetto(perfetto_json_contents; name = "RxInfer trace")
+function perfetto_open(perfetto_json_contents; name = "$(Time(now())) RxInfer trace")
 	b64 = Base64.base64encode(perfetto_json_contents)
 
 	file = """
@@ -682,6 +671,29 @@ function open_with_perfetto(perfetto_json_contents; name = "RxInfer trace")
         @info("Open this in your browser: $filename")
     end
 end
+
+# ╔═╡ 49ec3adb-f830-46a9-9868-e9d9ce2b933a
+import JSON
+
+# ╔═╡ 673f532b-1aae-4196-824f-c51ad4aef2e2
+result_perfetto = sprint() do io
+	JSON.json(io, perfetto)
+end
+
+# ╔═╡ 265bd35e-2832-4a80-830b-6029ee4f2688
+"$(round(length(result_perfetto) / 1e6, digits=2)) MB" |> Text
+
+# ╔═╡ cb5b75b5-2224-45cc-98ae-b0b5f9c0cf64
+PlutoUI.DownloadButton(result_perfetto, "result_perfetto.json")
+
+# ╔═╡ 9f438e0a-6b2f-4d06-a66c-517d5ba85c16
+perfetto_view(result_perfetto) |> PlutoUI.WideCell 
+
+# ╔═╡ 04c281bc-5029-48ca-93c1-84d96adf2160
+# RxInfer.perfetto_view(after_marginal_events)
+
+# ╔═╡ 5cfdea9a-716b-472e-baa0-b6cdf67c0e0e
+# RxInfer.perfetto_open(after_marginal_events)
 
 # ╔═╡ Cell order:
 # ╟─18d21cb8-e14f-4cbd-b679-7c696eac8b21
@@ -772,5 +784,9 @@ end
 # ╠═bf6b7471-7ccb-4884-bc4e-a82eb18dcd46
 # ╠═9f438e0a-6b2f-4d06-a66c-517d5ba85c16
 # ╟─a26e8294-fb5d-4b4c-a9c1-b8780d809a37
+# ╠═d51dcb7a-820d-4728-b2d8-f9f3850f0774
 # ╠═fad878e1-bf48-4d91-8f1b-3f9c93a69463
 # ╠═5287b97c-2148-4186-a8d5-127a396132f9
+# ╠═49ec3adb-f830-46a9-9868-e9d9ce2b933a
+# ╠═04c281bc-5029-48ca-93c1-84d96adf2160
+# ╠═5cfdea9a-716b-472e-baa0-b6cdf67c0e0e
