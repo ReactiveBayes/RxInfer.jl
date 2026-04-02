@@ -15,10 +15,10 @@ RxInfer needs to match these API changes so it works with the new ReactiveMP rel
 
 ## Files to modify
 
-### 1. `src/model/model.jl` (line 12) — TODO
+### 1. `src/model/model.jl` (line 12) — DONE
 - Change `import ReactiveMP: getaddons, AbstractFactorNode` to `import ReactiveMP: getannotations, AbstractFactorNode`
 
-### 2. `src/model/plugins/reactivemp_inference.jl` — TODO
+### 2. `src/model/plugins/reactivemp_inference.jl` — DONE
 This is the most impacted file.
 
 **Struct `ReactiveMPInferenceOptions` (line 39-46):**
