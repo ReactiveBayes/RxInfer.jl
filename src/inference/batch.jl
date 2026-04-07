@@ -241,10 +241,10 @@ function batch_inference(;
 
     infer_check_dicttype(:predictvars, predictvars)
 
-    model_creation_trace_id = uuid4()
-    invoke_callback(callbacks, BeforeModelCreationEvent(model_creation_trace_id))
+    model_creation_span_id = generate_span_id(callbacks)
+    invoke_callback(callbacks, BeforeModelCreationEvent(model_creation_span_id))
     fmodel = create_model(_model | data)
-    invoke_callback(callbacks, AfterModelCreationEvent(fmodel, model_creation_trace_id))
+    invoke_callback(callbacks, AfterModelCreationEvent(fmodel, model_creation_span_id))
     vardict = getvardict(fmodel)
     vardict = GraphPPL.variables(vardict) # TODO bvdmitri, should work recursively as well
 
@@ -360,8 +360,8 @@ function batch_inference(;
             end
         end
 
-        inference_trace_id = uuid4()
-        invoke_callback(callbacks, BeforeInferenceEvent(fmodel, inference_trace_id))
+        inference_span_id = generate_span_id(callbacks)
+        invoke_callback(callbacks, BeforeInferenceEvent(fmodel, inference_span_id))
 
         fdata = filter(pairs(data)) do pair
             hk      = haskey(vardict, first(pair))
@@ -379,22 +379,23 @@ function batch_inference(;
         ))
 
         for iteration in 1:_iterations
+            iteration_span_id = generate_span_id(callbacks)
             before_iteration_event = invoke_callback(
                 callbacks,
-                BeforeIterationEvent(fmodel, iteration),
+                BeforeIterationEvent(fmodel, iteration, iteration_span_id),
             )
             if before_iteration_event.stop_iteration
                 break
             end
-            data_update_trace_id = uuid4()
+            data_update_span_id = generate_span_id(callbacks)
             invoke_callback(
-                callbacks, BeforeDataUpdateEvent(fmodel, data, data_update_trace_id)
+                callbacks, BeforeDataUpdateEvent(fmodel, data, data_update_span_id)
             )
             for (key, value) in fdata
                 update!(cacheddatavars[key], get_data(value))
             end
             invoke_callback(
-                callbacks, AfterDataUpdateEvent(fmodel, data, data_update_trace_id)
+                callbacks, AfterDataUpdateEvent(fmodel, data, data_update_span_id)
             )
 
             # Check that all requested marginals have been updated and unset the `updated` flag
@@ -409,7 +410,7 @@ function batch_inference(;
 
             after_iteration_event = invoke_callback(
                 callbacks,
-                AfterIterationEvent(fmodel, iteration, before_iteration_event.trace_id),
+                AfterIterationEvent(fmodel, iteration, iteration_span_id),
             )
             if after_iteration_event.stop_iteration
                 break
@@ -421,7 +422,7 @@ function batch_inference(;
             unsubscribe!(subscription)
         end
 
-        invoke_callback(callbacks, AfterInferenceEvent(fmodel, inference_trace_id))
+        invoke_callback(callbacks, AfterInferenceEvent(fmodel, inference_span_id))
     catch error
         potential_error = inference_process_error(
             error;
