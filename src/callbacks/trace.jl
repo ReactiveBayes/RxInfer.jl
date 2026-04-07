@@ -134,3 +134,5 @@ function ReactiveMP.handle_event(
     push!(callbacks.events, TracedEvent(event, time_ns()))
     return nothing
 end
+
+function convert_to_tensorboard end # This function is implemented in the external module `TensorBoardLoggerExt` to avoid adding a hard dependency on TensorBoardLogger.jl for users who don't need it.
