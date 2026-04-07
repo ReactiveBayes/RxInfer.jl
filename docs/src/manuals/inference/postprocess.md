@@ -24,21 +24,21 @@ You can always override the default by passing `postprocess = ...` explicitly to
 
 ```@docs
 inference_postprocess
+DefaultPostprocess
 UnpackMarginalPostprocess
 NoopPostprocess
 ```
 
 ## [Custom postprocessing step](@id user-guide-inference-postprocess-custom)
 
-To implement a custom postprocessing strategy, define a new type and implement the 
-[`inference_postprocess`](@ref) method for it:
+In order to implement a custom postprocessing strategy simply implement the [`inference_postprocess`](@ref) method:
 
 ```@example custom-postprocessing
 using RxInfer
 
 struct CustomPostprocess end
 
-# For demonstration purposes our postprocessing step simply stringifies the result
+# For demonstration purposes out postprocessing step simply stringifyes the result
 RxInfer.inference_postprocess(::CustomPostprocess, result::Marginal) = string(ReactiveMP.getdata(result))
 ```
 

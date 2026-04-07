@@ -551,9 +551,9 @@ function streaming_inference(;
     allow_node_contraction = false,
     autostart = true,
     events = nothing,
-    annotations = nothing,
+    addons = nothing,
     callbacks = nothing,
-    postprocess = nothing,
+    postprocess = DefaultPostprocess(),
     uselock = false,
     warn = true,
 )
@@ -583,17 +583,12 @@ function streaming_inference(;
         _options = setwarn(_options, warn)
     end
 
-    # Override `options` annotations if the `annotations` keyword argument is present
-    if !isnothing(annotations)
-        if warn && !isnothing(getannotations(_options))
-            @warn "Both `annotations = ...` and `options = (annotations = ..., )` specify a value for the `annotations`. Ignoring the `options` setting. Set `warn = false` to supress this warning."
+    # Override `options` addons if the `addons` keyword argument is present 
+    if !isnothing(addons)
+        if warn && !isnothing(getaddons(_options))
+            @warn "Both `addons = ...` and `options = (addons = ..., )` specify a value for the `addons`. Ignoring the `options` setting. Set `warn = false` to supress this warning."
         end
-        _options = setannotations(_options, annotations)
-    end
-
-    # Determine the default postprocessing strategy based on annotations
-    if isnothing(postprocess)
-        postprocess = isnothing(getannotations(_options)) ? UnpackMarginalPostprocess() : NoopPostprocess()
+        _options = setaddons(_options, addons)
     end
 
     # Set ReactiveMP event handler if `callbacks` are set
@@ -651,10 +646,10 @@ function streaming_inference(;
         autoupdates_data_handlers(autoupdates),
     )
 
-    model_creation_trace_id = uuid4()
-    invoke_callback(callbacks, BeforeModelCreationEvent(model_creation_trace_id))
+    model_creation_span_id = generate_span_id(callbacks)
+    invoke_callback(callbacks, BeforeModelCreationEvent(model_creation_span_id))
     fmodel = create_model(_model | _condition_on)
-    invoke_callback(callbacks, AfterModelCreationEvent(fmodel, model_creation_trace_id))
+    invoke_callback(callbacks, AfterModelCreationEvent(fmodel, model_creation_span_id))
 
     vardict = getvardict(fmodel)
     vardict = GraphPPL.variables(vardict) # TODO: Should work recursively as well
@@ -828,10 +823,10 @@ function streaming_inference(;
     )
 
     if autostart
-        autostart_trace_id = uuid4()
-        invoke_callback(callbacks, BeforeAutostartEvent(engine, autostart_trace_id))
+        autostart_span_id = generate_span_id(callbacks)
+        invoke_callback(callbacks, BeforeAutostartEvent(engine, autostart_span_id))
         start(engine)
-        invoke_callback(callbacks, AfterAutostartEvent(engine, autostart_trace_id))
+        invoke_callback(callbacks, AfterAutostartEvent(engine, autostart_span_id))
     end
 
     return engine

@@ -1,5 +1,5 @@
 export inference_postprocess,
-    UnpackMarginalPostprocess, NoopPostprocess
+    DefaultPostprocess, UnpackMarginalPostprocess, NoopPostprocess
 
 """
     inference_postprocess(strategy, result)
@@ -19,15 +19,25 @@ See [Inference results postprocessing](@ref user-guide-inference-postprocess) fo
 """
 function inference_postprocess end
 
-"""
-    UnpackMarginalPostprocess
+"""`DefaultPostprocess` picks the most suitable postprocessing step automatically."""
+struct DefaultPostprocess end
 
-A postprocessing strategy that removes the `Marginal` wrapper type from the inference result,
-returning the underlying distribution directly. This is the default strategy when no
-annotations are enabled, since the `Marginal` wrapper carries no extra information in that case.
+inference_postprocess(::DefaultPostprocess, result::Marginal) = inference_postprocess(
+    DefaultPostprocess(), result, ReactiveMP.getaddons(result)
+)
+inference_postprocess(::DefaultPostprocess, result::AbstractArray) = map(
+    (element) -> inference_postprocess(DefaultPostprocess(), element), result
+)
 
-See also: [`NoopPostprocess`](@ref), [`inference_postprocess`](@ref)
-"""
+# Default postprocessing step removes Marginal type wrapper if no addons are present, and keeps the Marginal type wrapper otherwise
+inference_postprocess(::DefaultPostprocess, result, addons::Nothing) = inference_postprocess(
+    UnpackMarginalPostprocess(), result
+)
+inference_postprocess(::DefaultPostprocess, result, addons::Any) = inference_postprocess(
+    NoopPostprocess(), result
+)
+
+"""This postprocessing step removes the `Marginal` wrapper type from the result."""
 struct UnpackMarginalPostprocess end
 
 inference_postprocess(::UnpackMarginalPostprocess, result::Marginal) = getdata(
@@ -38,15 +48,7 @@ inference_postprocess(::UnpackMarginalPostprocess, result::AbstractArray) = map(
     result,
 )
 
-"""
-    NoopPostprocess
-
-A postprocessing strategy that preserves the inference result as-is, keeping the `Marginal`
-wrapper intact. This is the default strategy when annotations are enabled, so that annotation
-data attached to each marginal remains accessible via `ReactiveMP.getannotations`.
-
-See also: [`UnpackMarginalPostprocess`](@ref), [`inference_postprocess`](@ref)
-"""
+"""This postprocessing step does nothing."""
 struct NoopPostprocess end
 
 inference_postprocess(::NoopPostprocess, result) = result
