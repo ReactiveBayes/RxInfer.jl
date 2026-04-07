@@ -30,7 +30,7 @@ end
 @testitem "__infer_create_factor_graph_model" begin
     @model function simple_model_for_infer_create_model(y, a, b)
         x ~ Beta(a, b)
-        y ~ Normal(mean = x, var = 1.0)
+        y ~ Normal(; mean = x, var = 1.0)
     end
 
     import RxInfer:
@@ -45,7 +45,7 @@ end
         getcontext
 
     @testset let model = __infer_create_factor_graph_model(
-            simple_model_for_infer_create_model(a = 1, b = 2), (y = 3,)
+            simple_model_for_infer_create_model(; a = 1, b = 2), (y = 3,)
         )
         @test model isa ProbabilisticModel
         graphicalmodel = getmodel(model)
@@ -341,14 +341,14 @@ end
     # A simple model for testing that resembles a simple kalman filter with
     # random walk state transition and unknown observational noise
     @model function test_model1(y)
-        τ ~ Gamma(shape = 1.0, rate = 1.0)
+        τ ~ Gamma(; shape = 1.0, rate = 1.0)
 
-        x[1] ~ Normal(mean = 0.0, variance = 1.0)
-        y[1] ~ Normal(mean = x[1], precision = τ)
+        x[1] ~ Normal(; mean = 0.0, variance = 1.0)
+        y[1] ~ Normal(; mean = x[1], precision = τ)
 
         for i in 2:length(y)
-            x[i] ~ Normal(mean = x[i - 1], variance = 1.0)
-            y[i] ~ Normal(mean = x[i], precision = τ)
+            x[i] ~ Normal(; mean = x[i - 1], variance = 1.0)
+            y[i] ~ Normal(; mean = x[i], precision = τ)
         end
 
         return length(y), 2, 3.0, "hello world" # test returnval
@@ -364,7 +364,7 @@ end
 
     @testset "returnval should be set properly" begin
         for n in 2:5
-            result = infer(
+            result = infer(;
                 model = test_model1(),
                 constraints = test_model1_constraints(),
                 data = (y = rand(n),),
@@ -378,7 +378,7 @@ end
         observations = rand(10)
 
         # Case #0: no errors at all
-        result = infer(
+        result = infer(;
             model = test_model1(),
             constraints = test_model1_constraints(),
             data = (y = observations,),
@@ -420,7 +420,7 @@ end
             ),
         )
 
-        result_with_error = infer(
+        result_with_error = infer(;
             model = test_model1(),
             constraints = test_model1_constraints(),
             data = (y = observations,),
@@ -462,7 +462,7 @@ end
         observations = rand(10)
 
         # Case #1: no halting
-        results1 = infer(
+        results1 = infer(;
             model = test_model1(),
             constraints = test_model1_constraints(),
             data = (y = observations,),
@@ -477,7 +477,7 @@ end
         @test length(results1.posteriors[:τ]) === 10
 
         # Case #2: halt before iteration starts
-        results2 = infer(
+        results2 = infer(;
             model = test_model1(),
             constraints = test_model1_constraints(),
             data = (y = observations,),
@@ -501,7 +501,7 @@ end
         @test length(results2.posteriors[:τ]) === 4
 
         # Case #3: halt after iteration ends
-        results3 = infer(
+        results3 = infer(;
             model = test_model1(),
             constraints = test_model1_constraints(),
             data = (y = observations,),
@@ -543,14 +543,13 @@ end
     @model function gcv(y, x, z, κ, ω)
         log_σ := κ * z + ω
         σ := exp(log_σ)
-        y ~ Normal(mean = x, precision = σ)
+        y ~ Normal(; mean = x, precision = σ)
     end
 
     @node typeof(gcv) Stochastic [y, x, z, κ, ω]
 
-    RxInfer.ReactiveMP.default_meta(::typeof(gcv)) = RxInfer.ReactiveMP.default_meta(
-        GCV
-    )
+    RxInfer.ReactiveMP.default_meta(::typeof(gcv)) =
+        RxInfer.ReactiveMP.default_meta(GCV)
 
     @rule typeof(gcv)(:y, Marginalisation) (
         q_x::Any, q_z::Any, q_κ::Any, q_ω::Any, meta::Any
@@ -619,12 +618,12 @@ end
         κ ~ NormalMeanVariance(1, 1)
         x_0 ~ NormalMeanVariance(0, 1)
         z[1] ~ NormalMeanVariance(0, 1)
-        x[1] ~ gcv(x = x_0, z = z[1], κ = κ, ω = ω)
+        x[1] ~ gcv(; x = x_0, z = z[1], κ = κ, ω = ω)
         y[1] ~ NormalMeanVariance(x[1], 1)
 
         for i in 2:length(y)
             z[i] ~ NormalMeanPrecision(z[i - 1], 1)
-            x[i] ~ gcv(x = x[i - 1], z = z[i], κ = κ, ω = ω)
+            x[i] ~ gcv(; x = x[i - 1], z = z[i], κ = κ, ω = ω)
             y[i] ~ NormalMeanVariance(x[i], 1)
         end
     end
@@ -636,7 +635,7 @@ end
         q(x) = NormalMeanVariance(0, 1)
     end
 
-    result_1 = infer(
+    result_1 = infer(;
         model = hgf_1(),
         data = (y = dataset,),
         initialization = hgf_1_initialization(),
@@ -664,8 +663,8 @@ end
         # Specify generative model
         for i in 2:(length(y))
             x_3[i] ~ NormalMeanPrecision(x_3[i - 1], 1)
-            x_2[i] ~ gcv(x = x_2[i - 1], z = x_3[i], κ = κ_2, ω = ω_2)
-            x_1[i] ~ gcv(x = x_1[i - 1], z = x_2[i], κ = κ_1, ω = ω_1)
+            x_2[i] ~ gcv(; x = x_2[i - 1], z = x_3[i], κ = κ_2, ω = ω_2)
+            x_1[i] ~ gcv(; x = x_1[i - 1], z = x_2[i], κ = κ_1, ω = ω_1)
             y[i] ~ NormalMeanVariance(x_1[i], 1)
         end
     end
@@ -680,7 +679,7 @@ end
         q(x_3) = vague(NormalMeanVariance)
     end
 
-    result_2 = infer(
+    result_2 = infer(;
         model = hgf_2(),
         data = (y = dataset,),
         initialization = hgf_2_initialization(),
@@ -724,18 +723,18 @@ end
 @testitem "Invalid data size error" begin
     @model function test_model1(y)
         n = length(y)
-        τ ~ Gamma(shape = 1.0, rate = 1.0)
+        τ ~ Gamma(; shape = 1.0, rate = 1.0)
 
-        x[1] ~ Normal(mean = 0.0, variance = 1.0)
-        y[1] ~ Normal(mean = x[1], precision = τ)
+        x[1] ~ Normal(; mean = 0.0, variance = 1.0)
+        y[1] ~ Normal(; mean = x[1], precision = τ)
 
         for i in 2:(n - 1)
-            x[i] ~ Normal(mean = x[i - 1], variance = 1.0)
-            y[i] ~ Normal(mean = x[i], precision = τ)
+            x[i] ~ Normal(; mean = x[i - 1], variance = 1.0)
+            y[i] ~ Normal(; mean = x[i], precision = τ)
         end
         # y_n is unused intentionally
-        x[n] ~ Normal(mean = x[n - 1], variance = 1.0)
-        y[n - 1] ~ Normal(mean = x[n], precision = τ)
+        x[n] ~ Normal(; mean = x[n - 1], variance = 1.0)
+        y[n - 1] ~ Normal(; mean = x[n], precision = τ)
     end
 
     init = @initialization begin
@@ -763,11 +762,11 @@ end
     # A simple model for testing that resembles a simple kalman filter with
     # random walk state transition and unknown observational noise
     @model function test_model1(x_t_min_mean, x_t_min_var, τ_shape, τ_rate, y)
-        x_t_min ~ Normal(mean = x_t_min_mean, variance = x_t_min_var)
-        τ ~ Gamma(shape = τ_shape, rate = τ_rate)
+        x_t_min ~ Normal(; mean = x_t_min_mean, variance = x_t_min_var)
+        τ ~ Gamma(; shape = τ_shape, rate = τ_rate)
         # State transition
-        x_t ~ Normal(mean = x_t_min, precision = 1.0)
-        y ~ Normal(mean = x_t, precision = τ)
+        x_t ~ Normal(; mean = x_t_min, precision = 1.0)
+        y ~ Normal(; mean = x_t, precision = τ)
         return 2, 3.0, "hello world" # test returnval
     end
 
@@ -807,7 +806,7 @@ end
                 nothing
             end
 
-            engine = infer(
+            engine = infer(;
                 model = test_model1(),
                 constraints = MeanField(),
                 data = (y = observedy,),
@@ -880,7 +879,7 @@ end
     @testset "Check callbacks usage: autostart enabled" begin
         callbacksdata = []
 
-        engine = infer(
+        engine = infer(;
             model = test_model1(),
             constraints = MeanField(),
             data = (y = observedy,),
@@ -919,7 +918,7 @@ end
     @testset "Check callbacks usage: autostart disabled" begin
         callbacksdata = []
 
-        engine = infer(
+        engine = infer(;
             model = test_model1(),
             constraints = MeanField(),
             data = (y = observedy,),
@@ -958,7 +957,7 @@ end
         @test_logs (
             :warn,
             r"Unknown callback specification.*hello_world.*Available callbacks.*",
-        ) result = infer(
+        ) result = infer(;
             model = test_model1(),
             constraints = MeanField(),
             data = (y = observedy,),
@@ -991,7 +990,7 @@ end
         end
 
         for iterations in (2, 3), keephistory in (0, 1)
-            engine = infer(
+            engine = infer(;
                 model = test_model1(),
                 constraints = MeanField(),
                 data = (y = observedy,),
@@ -1100,7 +1099,7 @@ end
                     filter(
                         event ->
                             event isa RxInferenceEvent{:before_iteration} ||
-                            event isa RxInferenceEvent{:after_iteration},
+                                event isa RxInferenceEvent{:after_iteration},
                         events,
                     ),
                 ) == repeat([:before_iteration, :after_iteration], iterations)
@@ -1158,7 +1157,7 @@ end
                     filter(
                         event ->
                             event isa RxInferenceEvent{:before_auto_update} ||
-                            event isa RxInferenceEvent{:after_auto_update},
+                                event isa RxInferenceEvent{:after_auto_update},
                         events,
                     ),
                 ) == repeat(
@@ -1218,7 +1217,7 @@ end
                     filter(
                         event ->
                             event isa RxInferenceEvent{:before_data_update} ||
-                            event isa RxInferenceEvent{:after_data_update},
+                                event isa RxInferenceEvent{:after_data_update},
                         events,
                     ),
                 ) == repeat(
@@ -1297,7 +1296,7 @@ end
     end
 
     @testset "Check postprocess usage: UnpackMarginalPostprocess" begin
-        engine = infer(
+        engine = infer(;
             model = test_model1(),
             constraints = MeanField(),
             data = (y = observedy,),
@@ -1317,25 +1316,23 @@ end
     end
 
     @testset "Check postprocess usage: NoopPostprocess & nothing" begin
-        for postprocess in (RxInfer.NoopPostprocess(), nothing)
-            engine = infer(
-                model = test_model1(),
-                constraints = MeanField(),
-                data = (y = observedy,),
-                initialization = init,
-                autoupdates = autoupdates,
-                postprocess = postprocess,
-                historyvars = (τ = KeepLast(),),
-                iterations = 10,
-                keephistory = 100,
-                autostart = true,
-            )
+        engine = infer(;
+            model = test_model1(),
+            constraints = MeanField(),
+            data = (y = observedy,),
+            initialization = init,
+            autoupdates = autoupdates,
+            postprocess = NoopPostprocess(),
+            historyvars = (τ = KeepLast(),),
+            iterations = 10,
+            keephistory = 100,
+            autostart = true,
+        )
 
-            # Check that the result is of type `Marginal`
-            @test all(
-                data -> typeof(data) <: ReactiveMP.Marginal, engine.history[:τ]
-            )
-        end
+        # Check that the result is of type `Marginal`
+        @test all(
+            data -> typeof(data) <: ReactiveMP.Marginal, engine.history[:τ]
+        )
     end
 
     @testset "Check the event creation and unrolling syntax" begin
@@ -1382,7 +1379,7 @@ end
         vx = foo(q(my))
     end
 
-    engine = infer(
+    engine = infer(;
         model = test_model_for_vector_of_inputs_in_streaming_inference(),
         datastream = datastream,
         autoupdates = autoupdates,
@@ -1421,7 +1418,7 @@ end
         @test_throws "Keyword argument `data` expects either `Dict` or `NamedTuple` as an input" infer(
             model = rolling_die(), data = (y = observations)
         )
-        result = infer(model = rolling_die(), data = (y = observations,))
+        result = infer(; model = rolling_die(), data = (y = observations,))
         @test isequal(
             first(mean(result.posteriors[:θ])),
             last(mean(result.posteriors[:θ])),
@@ -1441,7 +1438,7 @@ end
     end
 
     @testset "Test callbacks with NamedTuple" begin
-        result = infer(
+        result = infer(;
             model = rolling_die(),
             data = (y = observations,),
             callbacks = (before_model_creation = (event) -> nothing,),
@@ -1457,7 +1454,7 @@ end
         ReactiveMP.handle_event(
             ::TestCustomCallbackHandler, ::ReactiveMP.Event
         ) = nothing
-        result = infer(
+        result = infer(;
             model = rolling_die(),
             data = (y = observations,),
             callbacks = TestCustomCallbackHandler(),
@@ -1619,7 +1616,7 @@ end
     end
     ```
     Refer to the documentation for more details on functional form constraints.
-    """ result = infer(
+    """ result = infer(;
         model = invalid_product_posterior(),
         data = (out = 1.0,),
         disable_inference_error_hint = true,
@@ -1651,7 +1648,7 @@ end
     end
     ```
     Refer to the documentation for more details on functional form constraints.
-    """ result = infer(
+    """ result = infer(;
         model = invalid_product_message(),
         data = (out = 1.0,),
         returnvars = (θ = KeepEach(),),
@@ -1681,8 +1678,8 @@ end
         q(B) = q_B
     end
 
-    result = infer(
-        model = pred_model(
+    result = infer(;
+        model = pred_model(;
             A = diageye(4),
             goal = [0, 1, 0, 0],
             p_B = DirichletCollection(ones(4, 4)),
@@ -1709,8 +1706,8 @@ end
         q(s, B) = q(s)q(B)
         q(y[1], s) = q(y[1])q(s)
     end
-    result = infer(
-        model = pred_model(
+    result = infer(;
+        model = pred_model(;
             A = diageye(4),
             goal = [0, 0, 1, 0],
             p_B = DirichletCollection(ones(4, 4)),
@@ -1736,15 +1733,15 @@ end
 
     # Create a simple model for testing
     @model function simple_model(y)
-        x ~ Normal(mean = 0.0, var = 1.0)
-        y ~ Normal(mean = x, var = 1.0)
+        x ~ Normal(; mean = 0.0, var = 1.0)
+        y ~ Normal(; mean = x, var = 1.0)
     end
 
     # Create test data
     test_data = (y = 1.0,)
 
     # Run inference inside session `session`
-    result = infer(model = simple_model(), data = test_data)
+    result = infer(; model = simple_model(), data = test_data)
 
     session = RxInfer.default_session()
 
@@ -1776,7 +1773,7 @@ end
     @test saved_data_properties.type === Float64
 
     custom_session = RxInfer.create_session()
-    result = infer(
+    result = infer(;
         model = simple_model(), data = test_data, session = custom_session
     )
     custom_stats = RxInfer.get_session_stats(custom_session, :inference)
@@ -1801,15 +1798,15 @@ end
 
     # Create a simple model for testing
     @model function simple_model(y)
-        x ~ Normal(mean = 0.0, var = 1.0)
-        y ~ Normal(mean = x, var = 1.0)
+        x ~ Normal(; mean = 0.0, var = 1.0)
+        y ~ Normal(; mean = x, var = 1.0)
     end
 
     # Create test data
     test_data = (y = 1.0,)
 
     # Run inference inside session `session`
-    result = infer(
+    result = infer(;
         model = simple_model(),
         data = test_data,
         iterations = 10,
@@ -1864,8 +1861,8 @@ end
     f(a, M) = a * M
 
     @model function simple_model_missing_data(y)
-        a ~ Normal(mean = 0.0, variance = 1.0)
-        M ~ Normal(mean = 0.0, variance = 1.0)
+        a ~ Normal(; mean = 0.0, variance = 1.0)
+        M ~ Normal(; mean = 0.0, variance = 1.0)
         y := f(a, M)
     end
 
@@ -1873,7 +1870,7 @@ end
         f() -> Linearization()
     end
 
-    result = infer(
+    result = infer(;
         model = simple_model_missing_data(),
         predictvars = (y = KeepEach(),),
         meta = meta,
@@ -1910,9 +1907,9 @@ end
 
 @testitem "Session statistics should be able to handle reactive infer call" begin
     @model function state_space_model_one_time_step(y, x_prev_mean, x_prev_var)
-        x_prev ~ Normal(mean = x_prev_mean, var = x_prev_var)
-        x_next ~ Normal(mean = x_prev, var = 1.0)
-        y ~ Normal(mean = x_next, var = 1.0)
+        x_prev ~ Normal(; mean = x_prev_mean, var = x_prev_var)
+        x_next ~ Normal(; mean = x_prev, var = 1.0)
+        y ~ Normal(; mean = x_next, var = 1.0)
     end
 
     datastream = from([(y = 1,), (y = 2,), (y = 3,)])
@@ -1927,7 +1924,7 @@ end
 
     session = RxInfer.create_session()
 
-    engine = infer(
+    engine = infer(;
         model = state_space_model_one_time_step(),
         datastream = datastream,
         autoupdates = autoupdates,
@@ -1943,9 +1940,9 @@ end
 
 @testitem "Session statistics should save constraints" begin
     @model function iid(y)
-        m ~ Normal(mean = 0.0, var = 1.0)
-        t ~ Gamma(shape = 1.0, rate = 1.0)
-        y ~ Normal(mean = m, prec = t)
+        m ~ Normal(; mean = 0.0, var = 1.0)
+        t ~ Gamma(; shape = 1.0, rate = 1.0)
+        y ~ Normal(; mean = m, prec = t)
     end
     @constraints function iidconstraints()
         q(m, t) = q(m) * q(t)
@@ -1954,7 +1951,7 @@ end
         q(t) = vague(Gamma)
     end
     session = RxInfer.create_session()
-    result = infer(
+    result = infer(;
         model = iid(),
         data = (y = 1.0,),
         constraints = iidconstraints(),
@@ -1975,14 +1972,14 @@ end
 @testitem "Session statistics should save meta" begin
     f(a) = a + 1
     @model function simple_nonlinear_model(y)
-        m ~ Normal(mean = 0.0, var = 1.0)
-        y ~ Normal(mean = f(m), prec = 1.0)
+        m ~ Normal(; mean = 0.0, var = 1.0)
+        y ~ Normal(; mean = f(m), prec = 1.0)
     end
     @meta function model_meta()
         f() -> Linearization()
     end
     session = RxInfer.create_session()
-    result = infer(
+    result = infer(;
         model = simple_nonlinear_model(),
         data = (y = 1.0,),
         meta = model_meta(),
@@ -1999,15 +1996,15 @@ end
 
 @testitem "Session statistics should save initialization" begin
     @model function simple_model(y)
-        x ~ Normal(mean = 0.0, var = 1.0)
-        y ~ Normal(mean = x, var = 1.0)
+        x ~ Normal(; mean = 0.0, var = 1.0)
+        y ~ Normal(; mean = x, var = 1.0)
     end
 
     initialization = @initialization begin
         q(x) = vague(NormalMeanVariance)
     end
     session = RxInfer.create_session()
-    result = infer(
+    result = infer(;
         model = simple_model(),
         data = (y = 1.0,),
         initialization = initialization,
@@ -2022,8 +2019,8 @@ end
 
 @testitem "Session statistics should save @autoupdates" begin
     @model function simple_model(y, x_mean, x_var)
-        x ~ Normal(mean = x_mean, var = x_var)
-        y ~ Normal(mean = x, var = 1.0)
+        x ~ Normal(; mean = x_mean, var = x_var)
+        y ~ Normal(; mean = x, var = 1.0)
     end
 
     initialization = @initialization begin
@@ -2033,7 +2030,7 @@ end
         x_mean, x_var = mean_var(q(x))
     end
     session = RxInfer.create_session()
-    result = infer(
+    result = infer(;
         model = simple_model(),
         data = (y = 1.0,),
         autoupdates = autoupdates,
@@ -2075,18 +2072,20 @@ end
 
     meta = CountingMeta(0)
 
-    result = infer(model = test_model(meta = meta), data = (A = diageye(2),))
+    result = infer(;
+        model = test_model(; meta = meta), data = (A = diageye(2),)
+    )
     @test meta.count == 0
 
-    result = infer(
-        model = test_model(meta = meta),
+    result = infer(;
+        model = test_model(; meta = meta),
         data = (A = diageye(2),),
         options = (force_marginal_computation = true,),
     )
     @test meta.count == 1
 
-    result = infer(
-        model = test_model(meta = meta),
+    result = infer(;
+        model = test_model(; meta = meta),
         data = (A = diageye(2),),
         options = (force_marginal_computation = true,),
         iterations = 10,
@@ -2117,8 +2116,8 @@ end
         from(static_observations) |>
         map(NamedTuple{(:A,), Tuple{Matrix{Float64}}}, (d) -> (A = d,))
 
-    result = infer(
-        model = streaming_test_model(meta = meta),
+    result = infer(;
+        model = streaming_test_model(; meta = meta),
         datastream = datastream,
         autoupdates = autoupdates,
         initialization = init,
@@ -2129,8 +2128,8 @@ end
     datastream =
         from(static_observations) |>
         map(NamedTuple{(:A,), Tuple{Matrix{Float64}}}, (d) -> (A = d,))
-    engine = infer(
-        model = streaming_test_model(meta = meta),
+    engine = infer(;
+        model = streaming_test_model(; meta = meta),
         datastream = datastream,
         autoupdates = autoupdates,
         initialization = init,
@@ -2142,12 +2141,12 @@ end
 
     # Test deterministic nodes
     @model function test_model_for_force_marginal_computations(y)
-        x1 ~ Normal(mean = 0.0, variance = 1.0)
-        x2 ~ Normal(mean = 0.0, variance = 1.0)
-        y ~ Normal(mean = x1 + x2, variance = 1.0)
+        x1 ~ Normal(; mean = 0.0, variance = 1.0)
+        x2 ~ Normal(; mean = 0.0, variance = 1.0)
+        y ~ Normal(; mean = x1 + x2, variance = 1.0)
     end
 
-    result = infer(
+    result = infer(;
         model = test_model_for_force_marginal_computations(),
         data = (y = 1.0,),
         options = (force_marginal_computation = true,),
@@ -2170,7 +2169,7 @@ end
         y ~ Bernoulli(θ)
     end
 
-    result = infer(
+    result = infer(;
         model = my_model_with_error(),
         data = (y = 1.0,),
         catch_exception = true,
