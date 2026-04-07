@@ -167,7 +167,7 @@ However, once you receive the message `Variables [x, y, z] have not been updated
 
 John proceeds to derive the factor graph for his problem where he identifies where the loops are:
 
-![linear_regression_model](../../assets/img/linear_regresion_model.png)
+![Addons_messages](../../assets/img/linear_regresion_model.png)
 
 He does note that there is a loop in his model, namely all $a$ and $b$ variables are connected over all observations, therefore he needs to initialize one of the messages and run multiple iterations for the loopy belief propagation algorithm. Note that loopy belief propagation is not guaranteed to converge in general and might be highly influenced by the choice of the initial messages in the `initialization` argument. He is going to evaluate the convergency performance of the algorithm with the `free_energy = true` option:
  

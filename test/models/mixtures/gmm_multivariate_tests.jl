@@ -52,7 +52,7 @@
 
             push!(
                 minitmarginals,
-                MvNormalMeanCovariance(mean_mean_prior, mean_mean_cov),
+                MvNormalMeanCovariance(mean_mean_prior, mean_mean_cov)
             )
             push!(winitmarginals, Wishart(3, [1e2 0.0; 0.0 1e2]))
         end
@@ -72,7 +72,7 @@
             returnvars = KeepEach(),
             free_energy = Float64,
             iterations = viters,
-            initialization = init,
+            initialization = init
         )
     end
 
@@ -114,7 +114,7 @@
     results = map(
         (specs) ->
             inference_multivariate(specs[1], L, nmixtures, y, 25, specs[2]),
-        [(StableRNG(42), MeanField()), (StableRNG(42), constraints)],
+        [(StableRNG(42), MeanField()), (StableRNG(42), constraints)]
     )
 
     fresult = results[begin]
@@ -167,7 +167,7 @@
                 range(-2L, 2L, step = 0.25),
                 (x, y) -> pdf(gaussian, [x, y]),
                 levels = 7,
-                colorbar = false,
+                colorbar = false
             )
         end
 

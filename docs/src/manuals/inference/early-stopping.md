@@ -1,12 +1,10 @@
 # [Early stopping](@id manual-inference-early-stopping)
 
-
 ```@meta
 CurrentModule = RxInfer
 ```
 
-`RxInfer` supports early stopping as an opt-in callback via [`StopEarlyIterationStrategy`](@ref).
-For a general overview of the callbacks system, see the [Callbacks](@ref manual-inference-callbacks) section.
+`RxInfer` supports early stopping as an opt-in callback via `StopEarlyIterationStrategy`.
 
 ## Constructors
 
@@ -22,18 +20,14 @@ RxInfer.StopEarlyIterationStrategy(rtol::Real)
 RxInfer.StopEarlyIterationStrategy(atol::Real, rtol::Real)
 ```
 
-## Early stopping mechanism
+## Example
 
-The [`BeforeIterationEvent`](@ref) and [`AfterIterationEvent`](@ref) carry a mutable `stop_iteration::Bool` field (default `false`).
-Any callback can set `event.stop_iteration = true` to signal the inference engine to stop iterating.
-The [`StopEarlyIterationStrategy`](@ref) uses this mechanism internally — when the free energy has converged, it sets `event.stop_iteration = true`.
-
+To use the [`RxInfer.StopEarlyIterationStrategy`](@ref) we need to pass it to the 
+`after_iteration` field of the `callbacks` argument of the [`infer`](@ref) function. 
 Check out more about callbacks for static inference [here](@ref manual-static-inference-callbacks).
 
-Note that in this case we still have to specify the `iterations`, which
+Note that in this case we still have to specify the `iterations`, which 
 in the case of early stopping specifies _maximum_ number of iterations.
-
-## Example
 
 ```@example early-stopping
 using RxInfer
@@ -68,6 +62,6 @@ result = infer(
 length(result.free_energy)
 ```
 
-As you can see the total number of `free_energy` evaluations is less than
+As you can see the total number of `free_energy` evaluations is less than 
 `max_iterations`.
 

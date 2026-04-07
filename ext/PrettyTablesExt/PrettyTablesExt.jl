@@ -25,12 +25,12 @@ function PrettyTables.pretty_table(
     default_header = (["Operation", "Min", "Max", "Mean", "Median", "Std"],)
     default_highlighter = Highlighter(
         (data, i, j) -> (j == 3) && (data[i, j] > 10 * data[i, j - 1]),
-        crayon"red bold",
+        crayon"red bold"
     )
 
     print(
         io,
-        "RxInfer inference benchmark statistics: $(length(callbacks.before_model_creation_ts)) evaluations \n",
+        "RxInfer inference benchmark statistics: $(length(callbacks.before_model_creation_ts)) evaluations \n"
     )
     if !isempty(callbacks)
         benchmark_data = RxInfer.get_benchmark_stats(callbacks)
@@ -42,7 +42,7 @@ function PrettyTables.pretty_table(
             header_crayon = crayon"yellow bold",
             tf = tf_unicode_rounded,
             highlighters = default_highlighter,
-            kwargs...,
+            kwargs...
         )
     end
 end

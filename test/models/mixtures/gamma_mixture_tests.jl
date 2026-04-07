@@ -74,7 +74,7 @@
         initialization = ginit,
         returnvars = greturnvars,
         free_energy = true,
-        iterations = 50,
+        iterations = 50
     )
 
     # extract inferred parameters
@@ -99,19 +99,19 @@
             normalize = :pdf,
             label = "data",
             title = "Generated mixtures",
-            opacity = 0.3,
+            opacity = 0.3
         )
         p1 = plot!(
             range(0.0, 1.0, length = 100),
             (x) -> mixing[1] * pdf(mixtures[1], x),
             label = "component 1",
-            linewidth = 3.0,
+            linewidth = 3.0
         )
         p1 = plot!(
             range(0.0, 1.0, length = 100),
             (x) -> mixing[2] * pdf(mixtures[2], x),
             label = "component 2",
-            linewidth = 3.0,
+            linewidth = 3.0
         )
 
         p2 = histogram(
@@ -121,19 +121,19 @@
             normalize = :pdf,
             label = "data",
             title = "Inferred mixtures",
-            opacity = 0.3,
+            opacity = 0.3
         )
         p2 = plot!(
             range(0.0, 1.0, length = 100),
             (x) -> _mixing[1] * pdf(_dists[1], x),
             label = "component 1",
-            linewidth = 3.0,
+            linewidth = 3.0
         )
         p2 = plot!(
             range(0.0, 1.0, length = 100),
             (x) -> _mixing[2] * pdf(_dists[2], x),
             label = "component 2",
-            linewidth = 3.0,
+            linewidth = 3.0
         )
 
         # evaluate the convergence of the algorithm by monitoring the BFE
@@ -141,14 +141,14 @@
             gresult.free_energy,
             label = false,
             xlabel = "iterations",
-            title = "Bethe FE",
+            title = "Bethe FE"
         )
 
         plot(
             plot(p1, p2, layout = @layout([a; b])),
             plot(p3),
             layout = @layout([a b]),
-            size = (800, 400),
+            size = (800, 400)
         )
     end
 end

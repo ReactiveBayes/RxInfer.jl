@@ -25,24 +25,24 @@
                 model = beta_bernoulli_single(a = a, b = b),
                 data = (y = missing,),
                 predictvars = (y = option,),
-                iterations = iterations,
+                iterations = iterations
             )
             result_missing_data_explicitly_specified_2 = infer(
                 model = beta_bernoulli_single(a = a, b = b),
                 data = (y = missing,),
                 predictvars = option,
-                iterations = iterations,
+                iterations = iterations
             )
             result_data_is_not_explicitly_specified = infer(
                 model = beta_bernoulli_single(a = a, b = b),
                 predictvars = (y = option,),
-                iterations = iterations,
+                iterations = iterations
             )
 
             results = [
                 result_missing_data_explicitly_specified_1,
                 result_missing_data_explicitly_specified_2,
-                result_data_is_not_explicitly_specified,
+                result_data_is_not_explicitly_specified
             ]
 
             for result in results
@@ -75,24 +75,24 @@
                     model = beta_bernoulli_multiple(a = a, b = b, n = n),
                     data = (y = missing,),
                     predictvars = (y = option,),
-                    iterations = iterations,
+                    iterations = iterations
                 )
                 result_missing_data_explicitly_specified_2 = infer(
                     model = beta_bernoulli_multiple(a = a, b = b, n = n),
                     data = (y = missing,),
                     predictvars = option,
-                    iterations = iterations,
+                    iterations = iterations
                 )
                 result_data_is_not_explicitly_specified = infer(
                     model = beta_bernoulli_multiple(a = a, b = b, n = n),
                     predictvars = (y = option,),
-                    iterations = iterations,
+                    iterations = iterations
                 )
 
                 results = [
                     result_missing_data_explicitly_specified_1,
                     result_missing_data_explicitly_specified_2,
-                    result_data_is_not_explicitly_specified,
+                    result_data_is_not_explicitly_specified
                 ]
 
                 for result in results
@@ -126,19 +126,19 @@
     @testset "Predict vars is specified implicitly without data provided, should error" begin
         @test_throws "Make sure to provide `data` or specify `predictvars` explicitly." infer(
             model = beta_bernoulli_single(a = 1, b = 1),
-            predictvars = KeepEach(),
+            predictvars = KeepEach()
         )
         @test_throws "Make sure to provide `data` or specify `predictvars` explicitly." infer(
             model = beta_bernoulli_single(a = 1, b = 1),
-            predictvars = KeepLast(),
+            predictvars = KeepLast()
         )
         @test_throws "Make sure to provide `data` or specify `predictvars` explicitly." infer(
             model = beta_bernoulli_multiple(a = 1, b = 1, n = 10),
-            predictvars = KeepEach(),
+            predictvars = KeepEach()
         )
         @test_throws "Make sure to provide `data` or specify `predictvars` explicitly." infer(
             model = beta_bernoulli_multiple(a = 1, b = 1, n = 10),
-            predictvars = KeepLast(),
+            predictvars = KeepLast()
         )
     end
 end
@@ -181,7 +181,7 @@ end
     result = infer(
         model = simple_model(),
         data = (y = missing, x = 1.0),
-        predictvars = (x = KeepLast(),),
+        predictvars = (x = KeepLast(),)
     )
 
     @test haskey(result.predictions, :y)
@@ -215,7 +215,7 @@ end
     @testset "test #1 (array with missing + KeepLast predictvars)" begin
         for data in [
                 (y = [1.0, -500.0, missing, 100.0],),
-                (y = [1.0, -500.0, missing, 100.0, missing, missing],),
+                (y = [1.0, -500.0, missing, 100.0, missing, missing],)
             ],
             iterations in (10, 20)
 
@@ -223,7 +223,7 @@ end
                 model = model_1(),
                 iterations = iterations,
                 data = data,
-                predictvars = (o = KeepLast(),),
+                predictvars = (o = KeepLast(),)
             )
 
             @test haskey(result.predictions, :o)
@@ -252,7 +252,7 @@ end
     @testset "test #1.1 (KeepEach predictvars)" begin
         for data in [
                 (y = [1.0, -500.0, 1.0, 100.0],),
-                (y = [1.0, -500.0, 3.0, 100.0, 4.0, 5.0],),
+                (y = [1.0, -500.0, 3.0, 100.0, 4.0, 5.0],)
             ],
             iterations in (10, 20)
 
@@ -260,7 +260,7 @@ end
                 model = model_1(),
                 iterations = iterations,
                 data = data,
-                predictvars = (o = KeepEach(),),
+                predictvars = (o = KeepEach(),)
             )
 
             @test haskey(result.predictions, :o)
@@ -299,14 +299,14 @@ end
                 model = model_2(),
                 iterations = iterations,
                 data = data,
-                predictvars = (o = KeepEach(), y = KeepLast()),
+                predictvars = (o = KeepEach(), y = KeepLast())
             )
 
             # note we used KeepEach for variable o with BP algorithm (10 iterations), 
             # we expect all predicted variables to be equal (because of the beleif propagation)
             @test all(
                 prediction -> prediction == result.predictions[:o][1],
-                result.predictions[:o],
+                result.predictions[:o]
             )
 
             # predictions for `y` are saved for the last iteration
@@ -338,7 +338,7 @@ end
             model = model_3(),
             iterations = 10,
             data = data,
-            predictvars = (o = KeepLast(),),
+            predictvars = (o = KeepLast(),)
         )
 
         @test !haskey(result.predictions, :y)
@@ -401,7 +401,7 @@ end
             initialization = init,
             iterations = 10,
             returnvars = (γ = KeepEach(),),
-            predictvars = (o = KeepEach(),),
+            predictvars = (o = KeepEach(),)
         )
 
         @test haskey(result.predictions, :o)

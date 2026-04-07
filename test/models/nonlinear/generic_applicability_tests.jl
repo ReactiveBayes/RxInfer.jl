@@ -29,7 +29,7 @@
         DeltaMeta(method = Linearization()),
         DeltaMeta(method = Unscented()),
         Linearization(),
-        Unscented(),
+        Unscented()
     )
 
     results = map(metas) do meta
@@ -37,7 +37,7 @@
             model = delta_1input(meta = meta),
             data = (y = 1.0,),
             free_energy = true,
-            iterations = 10,
+            iterations = 10
         )
     end
 
@@ -77,7 +77,7 @@ end
         DeltaMeta(method = Linearization()),
         DeltaMeta(method = Unscented()),
         Linearization(),
-        Unscented(),
+        Unscented()
     )
 
     results = map(metas) do meta
@@ -85,7 +85,7 @@ end
             model = delta_2inputs(meta = meta),
             data = (y = 1.0,),
             free_energy = true,
-            iterations = 10,
+            iterations = 10
         )
     end
 
@@ -116,7 +116,7 @@ end
         DeltaMeta(method = Linearization()),
         DeltaMeta(method = Unscented()),
         Linearization(),
-        Unscented(),
+        Unscented()
     )
 
     results = map(metas) do meta
@@ -124,7 +124,7 @@ end
             model = delta_3inputs(meta = meta),
             data = (y = 1.0,),
             free_energy = true,
-            iterations = 10,
+            iterations = 10
         )
     end
 
@@ -154,7 +154,7 @@ end
         DeltaMeta(method = Linearization()),
         DeltaMeta(method = Unscented()),
         Linearization(),
-        Unscented(),
+        Unscented()
     )
 
     results = map(metas) do meta
@@ -162,7 +162,7 @@ end
             model = delta_2input_1d2d(meta = meta),
             data = (y = 1.0,),
             free_energy = true,
-            iterations = 10,
+            iterations = 10
         )
     end
 
@@ -189,7 +189,7 @@ end
     results = infer(
         model = test_model(),
         data = (z = [1, 2], y = [1, 2]),
-        meta = test_meta(),
+        meta = test_meta()
     )
 
     @test results isa RxInfer.InferenceResult

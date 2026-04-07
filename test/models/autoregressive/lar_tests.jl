@@ -64,7 +64,7 @@
                 c = c,
                 τ = τ,
                 order = order,
-                stype = stype,
+                stype = stype
             )
             x_prev = x[i]
         end
@@ -93,7 +93,7 @@
         order = order,
         c = c,
         stype = stype,
-        τ = τ,
+        τ = τ
     )
     lar_make_model(::Type{Univariate}, c, τ, stype, order) = lar_model(
         θprior = lar_univariate_θ_prior,
@@ -102,7 +102,7 @@
         order = order,
         c = c,
         stype = stype,
-        τ = τ,
+        τ = τ
     )
 
     function lar_inference(data, order, artype, stype, τ, iterations)
@@ -114,7 +114,7 @@
             returnvars     = (γ = KeepEach(), θ = KeepEach(), x = KeepLast()),
             constraints    = lar_constraints(),
             iterations     = iterations,
-            free_energy    = Float64,
+            free_energy    = Float64
         )
     end
 
@@ -124,7 +124,7 @@
         -0.5237303489793305,
         0.3068897071844715,
         -0.17232255282458891,
-        0.13323964347539288,
+        0.13323964347539288
     ]
 
     function generate_lar_data(rng, n, θ, γ, τ)
@@ -215,14 +215,14 @@
             first.(mean.(xs)),
             ribbon = sqrt.(first.(var.(xs))),
             label = "Inferred states",
-            legend = :bottomright,
+            legend = :bottomright
         )
 
         p2 = plot(
             mean.(γ),
             ribbon = std.(γ),
             label = "Inferred transition precision",
-            legend = :bottomright,
+            legend = :bottomright
         )
         p2 = plot!(
             [real_γ], seriestype = :hline, label = "Real transition precision"

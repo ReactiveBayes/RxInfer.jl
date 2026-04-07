@@ -20,7 +20,7 @@
             data = (y = data,),
             iterations = 10,
             returnvars = KeepLast(),
-            free_energy = Float64,
+            free_energy = Float64
         )
     end
 
@@ -53,7 +53,7 @@
         Y = range(-5, 5, length = 200)
 
         p = plot(
-            title = "MvIID experiment / Covariance parametrisation with known mean",
+            title = "MvIID experiment / Covariance parametrisation with known mean"
         )
         p = contour!(
             p,
@@ -61,16 +61,16 @@
             Y,
             (x, y) -> pdf(
                 MvNormalMeanCovariance(m, mean(result_km.posteriors[:C])),
-                [x, y],
+                [x, y]
             ),
-            label = "Estimated",
+            label = "Estimated"
         )
         p = contour!(
             p,
             X,
             Y,
             (x, y) -> pdf(MvNormalMeanCovariance(m, C), [x, y]),
-            label = "Real",
+            label = "Real"
         )
     end
 

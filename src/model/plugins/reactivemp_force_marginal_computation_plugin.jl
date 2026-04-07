@@ -25,8 +25,7 @@ struct MarginalComputationOptions{S, M}
 end
 
 MarginalComputationOptions() = MarginalComputationOptions(
-    MarginalComputationDefaultSkipStrategy,
-    MarginalComputationDefaultScheduler,
+    MarginalComputationDefaultSkipStrategy, MarginalComputationDefaultScheduler
 )
 
 get_skip_strategy(options::MarginalComputationOptions) = options.skip_strategy
@@ -41,8 +40,7 @@ end
 
 getoptions(plugin::ReactiveMPForceMarginalComputationPlugin) = plugin.options
 
-GraphPPL.plugin_type(::ReactiveMPForceMarginalComputationPlugin) =
-    GraphPPL.FactorNodePlugin()
+GraphPPL.plugin_type(::ReactiveMPForceMarginalComputationPlugin) = GraphPPL.FactorNodePlugin()
 
 function GraphPPL.preprocess_plugin(
     ::ReactiveMPForceMarginalComputationPlugin,
@@ -50,7 +48,7 @@ function GraphPPL.preprocess_plugin(
     ::Context,
     label::NodeLabel,
     nodedata::NodeData,
-    ::NodeCreationOptions,
+    ::NodeCreationOptions
 )
     return label, nodedata
 end
@@ -64,7 +62,7 @@ end
 function GraphPPL.postprocess_plugin(
     plugin::ReactiveMPForceMarginalComputationPlugin,
     options::MarginalComputationOptions,
-    model::Model,
+    model::Model
 )
     skip_strategy = get_skip_strategy(options)
     scheduler     = get_scheduler(options)
@@ -93,7 +91,7 @@ function create_marginals_stream(
     node::ReactiveMP.AbstractFactorNode,
     meta,
     skip_strategy,
-    scheduler,
+    scheduler
 )
     fnstream = let skip_strategy = skip_strategy, scheduler = scheduler
         (interface) ->
@@ -124,10 +122,11 @@ function create_marginals_stream(
                         nothing,
                         nothing,
                         meta,
-                        node,
+                        node
                     ),
                     false,
                     false,
+                    nothing
                 )
                 return nothing
             end
@@ -137,11 +136,11 @@ function create_marginals_stream(
     return subscribe!(
         s,
         lambda(
-            Nothing;
+            Nothing,
             on_next = (d) -> nothing,
             on_error = (e) -> error(e),
-            on_complete = () -> println("Completed"),
-        ),
+            on_complete = () -> println("Completed")
+        )
     )
 end
 
@@ -150,7 +149,7 @@ function create_marginals_stream(
     node::ReactiveMP.AbstractFactorNode,
     meta,
     skip_strategy,
-    scheduler,
+    scheduler
 )
     fnstream = let skip_strategy = skip_strategy, scheduler = scheduler
         (localmarginal) ->
@@ -173,10 +172,10 @@ function create_marginals_stream(
     return subscribe!(
         s,
         lambda(
-            Nothing;
+            Nothing,
             on_next = (d) -> nothing,
             on_error = (e) -> error(e),
-            on_complete = () -> println("Completed"),
-        ),
+            on_complete = () -> println("Completed")
+        )
     )
 end

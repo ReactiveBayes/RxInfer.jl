@@ -39,17 +39,17 @@ function parse_autoupdates(options, expression)
     for optionarg in optionargs
         if @capture(optionarg, warn = val_)
             val isa Bool || error(
-                "Invalid value for `warn` option. Expected `true` or `false`.",
+                "Invalid value for `warn` option. Expected `true` or `false`."
             )
             warn = val::Bool
         elseif @capture(optionarg, strict = val_)
             val isa Bool || error(
-                "Invalid value for `strict` option. Expected `true` or `false`.",
+                "Invalid value for `strict` option. Expected `true` or `false`."
             )
             strict = val::Bool
         else
             error(
-                "Unknown option for `@autoupdates`: $optionarg. Supported options are [ `warn`, `strict` ].",
+                "Unknown option for `@autoupdates`: $optionarg. Supported options are [ `warn`, `strict` ]."
             )
         end
     end
@@ -66,7 +66,7 @@ function parse_autoupdates(options, expression)
 
     if !(block isa Expr) || block.head !== :block
         error(
-            "Autoupdates requires a block of code `begin ... end` or a full function definition as an input",
+            "Autoupdates requires a block of code `begin ... end` or a full function definition as an input"
         )
     end
 
@@ -77,7 +77,7 @@ function parse_autoupdates(options, expression)
         let $specification = RxInfer.AutoUpdateSpecification($warn, $strict, ())
             $code
             isempty($specification) && error(
-                "`@autoupdates` did not find any auto-updates specifications. Check the documentation for more information.",
+                "`@autoupdates` did not find any auto-updates specifications. Check the documentation for more information."
             )
             $specification
         end
@@ -101,7 +101,7 @@ function autoupdate_check_reserved_expressions(block)
     return MacroTools.postwalk(block) do subexpr
         if @capture(subexpr, (q(_) = _) | (μ(_) = _))
             error(
-                "Cannot evaluate the following subexpression $(subexpr). q(x) and μ(x) are reserved functions",
+                "Cannot evaluate the following subexpression $(subexpr). q(x) and μ(x) are reserved functions"
             )
         end
         return subexpr
@@ -138,18 +138,18 @@ function autoupdate_convert_mapping_expr(expr)
                     f = Symbol(string(f)[2:end]) # Strip of the `.` from broadcasted functions like `.+`
                     return :(RxInfer.AutoUpdateMapping(
                         Base.Broadcast.BroadcastFunction($f),
-                        ($(map(autoupdate_convert_mapping_arg_expr, args)...),),
+                        ($(map(autoupdate_convert_mapping_arg_expr, args)...),)
                     ))
                 else
                     return :(RxInfer.AutoUpdateMapping(
                         $f,
-                        ($(map(autoupdate_convert_mapping_arg_expr, args)...),),
+                        ($(map(autoupdate_convert_mapping_arg_expr, args)...),)
                     ))
                 end
             elseif @capture(subexpr, f_.(args__))
                 return :(RxInfer.AutoUpdateMapping(
                     Base.Broadcast.BroadcastFunction($f),
-                    ($(map(autoupdate_convert_mapping_arg_expr, args)...),),
+                    ($(map(autoupdate_convert_mapping_arg_expr, args)...),)
                 ))
             else
                 error("Invalid autoupdate mapping expression: $subexpr")
@@ -263,12 +263,12 @@ function addspecification(
     specification::AutoUpdateSpecification,
     specifications::Tuple,
     labels,
-    mapping,
+    mapping
 )
     return AutoUpdateSpecification(
         is_autoupdates_warn(specification),
         is_autoupdates_strict(specification),
-        (specifications..., IndividualAutoUpdateSpecification(labels, mapping)),
+        (specifications..., IndividualAutoUpdateSpecification(labels, mapping))
     )
 end
 
@@ -282,7 +282,7 @@ function getvarlabels(specification::AutoUpdateSpecification)
         getvarlabels,
         __reducevarlabels,
         getspecifications(specification);
-        init = (),
+        init = ()
     )
 end
 # These functions are used to reduce the individual auto-update specifications to the list of variable labels
@@ -355,7 +355,7 @@ Base.show(io::IO, specification::AutoUpdateVariableLabel) =
             getlabel(specification),
             "[",
             join(getindex(specification), ", "),
-            "]",
+            "]"
         )
     end
 
@@ -405,7 +405,7 @@ Base.show(io::IO, argument::AutoUpdateFetchMarginalArgument) =
             getlabel(argument),
             "[",
             join(getindex(argument), ", "),
-            "])",
+            "])"
         )
     end
 
@@ -432,7 +432,7 @@ Base.show(io::IO, argument::AutoUpdateFetchMessageArgument) =
             getlabel(argument),
             "[",
             join(getindex(argument), ", "),
-            "])",
+            "])"
         )
     end
 
@@ -480,7 +480,7 @@ function prepare_autoupdates_for_model(autoupdates, model)
     return map(
         (autoupdate) ->
             prepare_individual_autoupdate_for_model(autoupdate, model, vardict),
-        autoupdates,
+        autoupdates
     )
 end
 function prepare_individual_autoupdate_for_model(
@@ -516,14 +516,14 @@ function prepare_varlabels_autoupdate_for_model(
 )
     return map(
         (l) -> prepare_varlabels_autoupdate_for_model(l, model, vardict),
-        varlabels,
+        varlabels
     )
 end
 function prepare_varlabels_autoupdate_for_model(
     label::Symbol, index::Tuple{}, model, vardict
 )
     haskey(vardict, label) || error(
-        lazy"The `autoupdate` specification defines an update for `$(label)`, but the model has no variable named `$(label)`",
+        lazy"The `autoupdate` specification defines an update for `$(label)`, but the model has no variable named `$(label)`"
     )
     return getvariable(vardict[label])
 end
@@ -531,7 +531,7 @@ function prepare_varlabels_autoupdate_for_model(
     label::Symbol, index::Tuple, model, vardict
 )
     haskey(vardict, label) || error(
-        lazy"The `autoupdate` specification defines an update for `$(label)`, but the model has no variable named `$(label)`",
+        lazy"The `autoupdate` specification defines an update for `$(label)`, but the model has no variable named `$(label)`"
     )
     return getvariable(vardict[label][index...])
 end
@@ -541,7 +541,7 @@ function prepare_mapping_autoupdate_for_model(
 )
     prepared_arguments = map(
         (a) -> prepare_mapping_argument_for_model(a, model, vardict),
-        getarguments(mapping),
+        getarguments(mapping)
     )
     return AutoUpdateMapping(getmappingfn(mapping), prepared_arguments)
 end
@@ -578,7 +578,7 @@ function prepare_mapping_argument_for_model(
     label = getlabel(marginal)
     if !haskey(vardict, label)
         error(
-            lazy"The `autoupdate` specification defines an update from `q($(label))`, but the model has no variable named `$(label)`",
+            lazy"The `autoupdate` specification defines an update from `q($(label))`, but the model has no variable named `$(label)`"
         )
     end
     index = getindex(marginal)
@@ -597,7 +597,7 @@ function prepare_mapping_argument_for_model(
     label = getlabel(message)
     if !haskey(vardict, label)
         error(
-            lazy"The `autoupdate` specification defines an update from `μ($(label))`, but the model has no variable named `$(label)`",
+            lazy"The `autoupdate` specification defines an update from `μ($(label))`, but the model has no variable named `$(label)`"
         )
     end
     index = getindex(message)
@@ -627,19 +627,19 @@ autoupdate_mapping_fetch(argument::FetchRecentArgument) = autoupdate_mapping_fet
 )
 autoupdate_mapping_fetch(argument::FetchRecentArgument, something) = something
 autoupdate_mapping_fetch(argument::FetchRecentArgument, ::Nothing) = error(
-    "The initial value for `$(getlabel(argument))` has not been specified, but is required in the `@autoupdates`.",
+    "The initial value for `$(getlabel(argument))` has not been specified, but is required in the `@autoupdates`."
 )
 
 function run_autoupdate!(autoupdates::AutoUpdateSpecification)
     return run_autoupdate!(
         getspecifications(autoupdates),
-        map(fetch, getspecifications(autoupdates)),
+        map(fetch, getspecifications(autoupdates))
     )
 end
 
 function run_autoupdate!(specifications::Tuple, prefetched::Tuple)
     length(specifications) === length(prefetched) || error(
-        "Cannot execute autoupdate. The number of specifications and prefetched values must be equal.",
+        "Cannot execute autoupdate. The number of specifications and prefetched values must be equal."
     )
     foreach(zip(specifications, prefetched)) do (specification, update)
         varlabels = getvarlabels(specification)
@@ -648,7 +648,7 @@ function run_autoupdate!(specifications::Tuple, prefetched::Tuple)
 
         if !isequal(length(varlabels_tupled), length(update_tupled))
             error(
-                "Couldn't run autoupdate. The update provides `$(length(update_tupled))` values, but `$(length(varlabels_tupled))` are needed.",
+                "Couldn't run autoupdate. The update provides `$(length(update_tupled))` values, but `$(length(varlabels_tupled))` are needed."
             )
         end
 

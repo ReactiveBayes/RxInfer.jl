@@ -15,8 +15,8 @@
         lambda(
             on_next = (data) -> push!(events, float(data)),
             on_error = (err) -> push!(events, err),
-            on_complete = () -> push!(events, "completed"),
-        ),
+            on_complete = () -> push!(events, "completed")
+        )
     )
 
     # First value is ok
@@ -53,8 +53,8 @@ end
         lambda(
             on_next = (data) -> push!(events, float(data)),
             on_error = (err) -> push!(events, err),
-            on_complete = () -> push!(events, "completed"),
-        ),
+            on_complete = () -> push!(events, "completed")
+        )
     )
 
     # First value is ok
@@ -89,8 +89,8 @@ end
         lambda(
             on_next = (data) -> push!(events, float(data)),
             on_error = (err) -> push!(events, err),
-            on_complete = () -> push!(events, "completed"),
-        ),
+            on_complete = () -> push!(events, "completed")
+        )
     )
 
     # First value is ok

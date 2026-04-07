@@ -37,7 +37,7 @@ set_hard_depth!(scheduler::LimitStackScheduler, v) = scheduler.props.hard_depth 
 
 Base.show(io::IO, scheduler::LimitStackScheduler) = print(
     io,
-    "LimitStackScheduler(soft_limit = $(get_soft_limit(scheduler)), hard_limit = $(get_hard_limit(scheduler)))",
+    "LimitStackScheduler(soft_limit = $(get_soft_limit(scheduler)), hard_limit = $(get_hard_limit(scheduler)))"
 )
 
 Base.similar(scheduler::LimitStackScheduler) = LimitStackScheduler(
