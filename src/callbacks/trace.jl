@@ -18,6 +18,8 @@ struct TracedEvent
     time_ns::UInt64
 end
 
+TracedEvent(event::Event) = TracedEvent(event, time_ns())
+
 Base.summary(io::IO, te::TracedEvent) =
     print(io, "TracedEvent(:$(event_name(typeof(te.event))))")
 
@@ -115,7 +117,7 @@ import ReactiveMP: handle_event, Event, event_name
 
 # Catch-all: trace every event
 function ReactiveMP.handle_event(callbacks::RxInferTraceCallbacks, event::Event)
-    push!(callbacks.events, TracedEvent(event, time_ns()))
+    push!(callbacks.events, TracedEvent(event))
     return nothing
 end
 
@@ -131,6 +133,6 @@ function ReactiveMP.handle_event(
         )
     end
     event.model.metadata[:trace] = callbacks
-    push!(callbacks.events, TracedEvent(event, time_ns()))
+    push!(callbacks.events, TracedEvent(event))
     return nothing
 end

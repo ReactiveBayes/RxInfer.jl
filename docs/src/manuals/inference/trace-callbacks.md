@@ -42,9 +42,10 @@ events = RxInfer.tracedevents(trace)
 @test all(e -> e isa TracedEvent, events) #hide
 
 println("Recorded $(length(events)) events")
-for event in events
-    println("  ", event)
+for i in 1:10
+    println("  ", events[i])
 end
+println("...")
 ```
 
 ## Using `trace = true`
@@ -89,7 +90,8 @@ result = infer(
 @test result.model.metadata[:trace] isa RxInferTraceCallbacks #hide
 
 trace = result.model.metadata[:trace]
-println(trace)
+events = RxInfer.tracedevents(trace)
+println("Recorded $(length(events)) events via trace = true")
 ```
 
 ## Inspecting traced events
@@ -127,8 +129,8 @@ result = infer(
 @test haskey(result.model.metadata, :trace) #hide
 @test haskey(result.model.metadata, :benchmark) #hide
 
-println("Trace: ", result.model.metadata[:trace])
-println("Benchmark: ", result.model.metadata[:benchmark])
+println("Trace included: ", haskey(result.model.metadata, :trace))
+println("Benchmark included: ", haskey(result.model.metadata, :benchmark))
 ```
 
 ## API Reference
