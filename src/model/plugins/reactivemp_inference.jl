@@ -55,7 +55,12 @@ ReactiveMPInferenceOptions(scheduler, annotations, warn, force_marginal_computat
     scheduler, annotations, warn, force_marginal_computation, nothing, nothing
 )
 ReactiveMPInferenceOptions(scheduler, annotations, warn, force_marginal_computation, rulefallback) = ReactiveMPInferenceOptions(
-    scheduler, annotations, warn, force_marginal_computation, rulefallback, nothing
+    scheduler,
+    annotations,
+    warn,
+    force_marginal_computation,
+    rulefallback,
+    nothing,
 )
 
 setscheduler(options::ReactiveMPInferenceOptions, scheduler) = ReactiveMPInferenceOptions(
@@ -179,10 +184,12 @@ ReactiveMP.getannotations(options::ReactiveMPInferenceOptions) = ReactiveMP.geta
 ReactiveMP.getannotations(options::ReactiveMPInferenceOptions, annotations::ReactiveMP.AbstractAnnotations) = (
     annotations,
 ) # ReactiveMP expects annotations to be of type tuple
-ReactiveMP.getannotations(options::ReactiveMPInferenceOptions, annotations::Nothing) =
-    annotations                     # Do nothing if annotations is `nothing`
-ReactiveMP.getannotations(options::ReactiveMPInferenceOptions, annotations::Tuple) =
-    annotations                       # Do nothing if annotations is a `Tuple`
+ReactiveMP.getannotations(
+    options::ReactiveMPInferenceOptions, annotations::Nothing
+) = annotations                     # Do nothing if annotations is `nothing`
+ReactiveMP.getannotations(
+    options::ReactiveMPInferenceOptions, annotations::Tuple
+) = annotations                       # Do nothing if annotations is a `Tuple`
 ReactiveMP.getrulefallback(options::ReactiveMPInferenceOptions) =
     options.rulefallback
 ReactiveMP.getcallbacks(options::ReactiveMPInferenceOptions) = options.callbacks

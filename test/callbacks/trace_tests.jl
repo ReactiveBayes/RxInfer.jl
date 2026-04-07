@@ -24,7 +24,7 @@
         event_names = [event_name(typeof(e.event)) for e in events]
         @test :before_model_creation in event_names
         @test :after_model_creation in event_names
-        
+
         span_ids = map(events) do e
             hasfield(typeof(e.event), :span_id) ? e.event.span_id : nothing
         end
@@ -32,8 +32,8 @@
         @test length(span_ids) >= 10
         # They should be matched: before and after. I'll test this by checking that all IDs appear exactly twice.
         found_ids = filter(!isnothing, span_ids)
-        @test sort(found_ids) == sort([unique(found_ids)..., unique(found_ids)...])
-        
+        @test sort(found_ids) ==
+            sort([unique(found_ids)..., unique(found_ids)...])
     end
 
     @model function trace_iter_model(y)

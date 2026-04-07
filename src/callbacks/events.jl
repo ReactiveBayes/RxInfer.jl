@@ -92,8 +92,9 @@ mutable struct BeforeIterationEvent{M, S} <: Event{:before_iteration}
     span_id::S
 end
 
-BeforeIterationEvent(model::M, iteration::Int, span_id) where {M} =
-    BeforeIterationEvent(model, iteration, false, span_id)
+BeforeIterationEvent(model::M, iteration::Int, span_id) where {M} = BeforeIterationEvent(
+    model, iteration, false, span_id
+)
 
 """
     AfterIterationEvent{M, S} <: ReactiveMP.Event{:after_iteration}
@@ -115,8 +116,9 @@ mutable struct AfterIterationEvent{M, S} <: Event{:after_iteration}
     span_id::S
 end
 
-AfterIterationEvent(model::M, iteration::Int, span_id) where {M} =
-    AfterIterationEvent(model, iteration, false, span_id)
+AfterIterationEvent(model::M, iteration::Int, span_id) where {M} = AfterIterationEvent(
+    model, iteration, false, span_id
+)
 
 """
     BeforeDataUpdateEvent{M, D, S} <: ReactiveMP.Event{:before_data_update}

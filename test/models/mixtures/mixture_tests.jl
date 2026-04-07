@@ -89,8 +89,10 @@ using Base: annotations
             getdata(resultswitch.posteriors[:θ]).weights
 
         # check free energies
-        @test -result1.free_energy[1] ≈ getlogscale(getannotations(result1.posteriors[:θ]))
-        @test -result2.free_energy[1] ≈ getlogscale(getannotations(result2.posteriors[:θ]))
+        @test -result1.free_energy[1] ≈
+            getlogscale(getannotations(result1.posteriors[:θ]))
+        @test -result2.free_energy[1] ≈
+            getlogscale(getannotations(result2.posteriors[:θ]))
         @test getlogscale(getannotations(resultswitch.posteriors[:in1])) ≈
             log(0.3) - result1.free_energy[1]
         @test getlogscale(getannotations(resultswitch.posteriors[:in2])) ≈
@@ -103,7 +105,8 @@ using Base: annotations
             0.3 * exp(-result1.free_energy[1]) +
             0.7 * exp(-result2.free_energy[1]),
         ) ≈ getlogscale(getannotations(resultswitch.posteriors[:θ]))
-        @test getlogscale(getannotations(resultswitch.posteriors[:θ])) ≈ getlogscale(getannotations(resultswitch.posteriors[:selector]))
+        @test getlogscale(getannotations(resultswitch.posteriors[:θ])) ≈
+            getlogscale(getannotations(resultswitch.posteriors[:selector]))
 
         ## Create output plots
         @test_plot "models" "switch" begin

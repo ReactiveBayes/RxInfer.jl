@@ -25,8 +25,7 @@ struct MarginalComputationOptions{S, M}
 end
 
 MarginalComputationOptions() = MarginalComputationOptions(
-    MarginalComputationDefaultSkipStrategy,
-    MarginalComputationDefaultScheduler,
+    MarginalComputationDefaultSkipStrategy, MarginalComputationDefaultScheduler
 )
 
 get_skip_strategy(options::MarginalComputationOptions) = options.skip_strategy
@@ -41,8 +40,7 @@ end
 
 getoptions(plugin::ReactiveMPForceMarginalComputationPlugin) = plugin.options
 
-GraphPPL.plugin_type(::ReactiveMPForceMarginalComputationPlugin) =
-    GraphPPL.FactorNodePlugin()
+GraphPPL.plugin_type(::ReactiveMPForceMarginalComputationPlugin) = GraphPPL.FactorNodePlugin()
 
 function GraphPPL.preprocess_plugin(
     ::ReactiveMPForceMarginalComputationPlugin,

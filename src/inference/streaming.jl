@@ -296,12 +296,14 @@ import Rocket: Actor, on_next!, on_error!, on_complete!
 struct RxInferenceEventExecutor{T, E} <: Actor{T}
     engine::E
 
-    RxInferenceEventExecutor(::Type{T}, engine::E) where {T, E} =
-        new{T, E}(engine)
+    RxInferenceEventExecutor(::Type{T}, engine::E) where {T, E} = new{T, E}(
+        engine
+    )
 end
 
-Base.show(io::IO, ::RxInferenceEventExecutor) =
-    print(io, "RxInferenceEventExecutor")
+Base.show(io::IO, ::RxInferenceEventExecutor) = print(
+    io, "RxInferenceEventExecutor"
+)
 
 rxexecutorlock(fn::F, ::Nothing) where {F} = fn()
 rxexecutorlock(fn::F, locker) where {F}    = lock(fn, locker)
@@ -514,8 +516,9 @@ end
 
 event_name(::RxInferenceEvent{T}) where {T} = T
 
-Base.show(io::IO, ::RxInferenceEvent{T}) where {T} =
-    print(io, "RxInferenceEvent(:", T, ")")
+Base.show(io::IO, ::RxInferenceEvent{T}) where {T} = print(
+    io, "RxInferenceEvent(:", T, ")"
+)
 
 Base.iterate(event::RxInferenceEvent)        = iterate(event.data)
 Base.iterate(event::RxInferenceEvent, state) = iterate(event.data, state)

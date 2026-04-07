@@ -1,5 +1,4 @@
-export inference_postprocess,
-    UnpackMarginalPostprocess, NoopPostprocess
+export inference_postprocess, UnpackMarginalPostprocess, NoopPostprocess
 
 """
     inference_postprocess(strategy, result)
