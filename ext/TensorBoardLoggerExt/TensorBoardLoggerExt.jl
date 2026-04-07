@@ -1,6 +1,5 @@
 module TensorBoardLoggerExt
     using RxInfer
-    using Logging
     using Dates
     using ReactiveMP: event_name
     using TensorBoardLogger
@@ -19,10 +18,7 @@ module TensorBoardLoggerExt
 
     # Description
     This function processes all traced events and creates proper TensorFlow event files using TensorBoardLogger, which can be directly imported and visualized in TensorBoard. Outputs include:
-    - Event log file in Protocol Buffer format
-    - Text summaries with event type information
-    - Scalar metrics for timing analysis
-    - Complete trace data
+    - Text summaries with event type information and counts
 
     The output directory can be directly opened in TensorBoard's web interface for visualization and analysis.
 
@@ -44,41 +40,31 @@ module TensorBoardLoggerExt
     """
 
     function RxInfer.convert_to_tensorboard(trace::RxInferTraceCallbacks; output_file::Union{String, Nothing} = nothing)
-        
+
         # Determine output directory
         if isnothing(output_file)
             timestamp = Dates.format(Dates.now(), "yyyy-mm-dd_HH-MM-SS")
             output_file = joinpath(pwd(), "tensorboard_logs", timestamp)
         end
-        
+
         mkpath(output_file)
-        
-        # Create file writer (equivalent to: file_writer = tf.summary.create_file_writer(logdir))
-        logger = TBLogger(output_file)
-        
-        # Collect all events with their types
-        all_events = []
-        for field_name in fieldnames(typeof(trace))
-            event_data = getfield(trace, field_name)
-            if !isempty(event_data)
-                for single_event in event_data
-                    push!(all_events, (type=field_name, event=single_event))
-                end
-            end
-        end
-        
-        if isempty(all_events)
+
+        events = RxInfer.tracedevents(trace)
+
+        if isempty(events)
             @warn "No events recorded in trace"
             return nothing
         end
-        
-        @info "Collected $(length(all_events)) events from trace"
-        
+
+        @info "Collected $(length(events)) events from trace"
+
+        # Create file writer
+        logger = TBLogger(output_file)
+
         # Log each event individually under "Events" and its specific event type tag
         counts = Dict{Symbol, Int}()
-        for (idx, event_entry) in enumerate(all_events)
-            single_event = event_entry.event
-            event_type = event_name(single_event.event)
+        for (idx, traced_event) in enumerate(events)
+            event_type = event_name(typeof(traced_event.event))
             counts[event_type] = get(counts, event_type, 0) + 1
 
             event_text = "Step $idx: $(event_type)"
@@ -90,15 +76,15 @@ module TensorBoardLoggerExt
         for (event_type, count) in counts
             TensorBoardLogger.log_text(logger, "EventCounts", "$(event_type): $(count)"; step=1)
         end
-        
+
         close(logger)
-        
+
         @info "TensorBoard logs exported to: $output_file"
-        @info "Total events logged: $(length(all_events))"
+        @info "Total events logged: $(length(events))"
         @info ""
         @info "To view in TensorBoard, run:"
         @info "  tensorboard --logdir=\"$output_file\""
-        
+
         return output_file
     end
 
