@@ -273,48 +273,25 @@ RxInfer.iserror
 
 - ### `callbacks`
 
-The inference function has its own lifecycle. The user is free to provide some (or none) of the callbacks to inject some extra logging or other procedures in the inference function, e.g.
+The inference function and underlying reactive message passing procedure both have their own lifecycle. The user is free to provide some (or none) of the callbacks to inject extra logic during the inference procedure. Callbacks can be a `NamedTuple`, `Dict`, or any custom structure that implements `ReactiveMP.handle_event`. For example:
 
 ```julia
 result = infer(
     ...,
     callbacks = (
-        on_marginal_update = (model, name, update) -> println("\$(name) has been updated: \$(update)"),
-        after_inference    = (args...) -> println("Inference has been completed")
+        on_marginal_update = (event) -> println("\$(event.variable_name) has been updated: \$(event.update)"),
+        after_inference    = (event) -> println("Inference has been completed")
     )
 )
 ```
 
-The `callbacks` keyword argument accepts a named-tuple of 'name = callback' pairs. 
-The list of all possible callbacks for different inference setting (batch or streamline) and their arguments is present below:
+For the full list of available events, supported callback types, model metadata, and built-in callback handlers, see the [Callbacks](@ref manual-inference-callbacks) section.
+See also [Early stopping](@ref manual-inference-early-stopping) and [Benchmark callbacks](@ref manual-inference-benchmark-callbacks).
 
-- `before_model_creation()`
-- `after_model_creation(model::ProbabilisticModel)`
+- ### `annotations`
 
-**Exlusive for batch inference**
+Sets a tuple of annotation processors that attach extra information to messages and marginals during inference. For example, `annotations = LogScaleAnnotations()` tracks log-scale normalization constants, which is useful for computing Bayes factors and model evidence in mixture models. When annotations are enabled, the inference results preserve the `Marginal` wrapper type so that annotation data remains accessible via `ReactiveMP.getannotations`. See `ReactiveMP.jl` documentation for available annotation types and how to implement custom annotation processors.
 
-- `on_marginal_update(model::ProbabilisticModel, name::Symbol, update)`
-- `before_inference(model::ProbabilisticModel)`
-- `before_iteration(model::ProbabilisticModel, iteration::Int)::Bool`
-- `before_data_update(model::ProbabilisticModel, data)`
-- `after_data_update(model::ProbabilisticModel, data)`
-- `after_iteration(model::ProbabilisticModel, iteration::Int)::Bool`
-- `after_inference(model::ProbabilisticModel)`
-
-!!! note
-    `before_iteration` and `after_iteration` callbacks are allowed to return `true/false` value. `true` indicates that iterations must be halted and no further inference should be made.
-
-**Exlusive for streamline inference**
-
-- `before_autostart(engine::RxInferenceEngine)`
-- `after_autostart(engine::RxInferenceEngine)`
-
-See [Early stopping](@ref manual-inference-early-stopping) for an opt-in callback example, which implements early stopping criterion for Free Energy.
-See [Benchmarking RxInfer via callbacks](@ref user-guide-debugging-benchmark-callbacks) for another examples demonstrating how to benchmark inference via callbacks.
-
-- ### `addons`
-
-The `addons` field extends the default message computation rules with some extra information, e.g. computing log-scaling factors of messages or saving debug-information. Accepts a single addon or a tuple of addons. 
 Automatically changes the default value of the `postprocess` argument to `NoopPostprocess`.
 
 - ### `postprocess`
@@ -322,9 +299,9 @@ Automatically changes the default value of the `postprocess` argument to `NoopPo
 Also read the [Inference results postprocessing](@ref user-guide-inference-postprocess) section.
 
 The `postprocess` keyword argument controls whether the inference results must be modified in some way before exiting the `inference` function.
-By default, the inference function uses the `DefaultPostprocess` strategy, which by default removes the `Marginal` wrapper type from the results.
-Change this setting to `NoopPostprocess` if you would like to keep the `Marginal` wrapper type, which might be useful in the combination with the `addons` argument.
-If the `addons` argument has been used, automatically changes the default strategy value to `NoopPostprocess`.
+By default, the inference function removes the `Marginal` wrapper type from the results.
+Change this setting to `NoopPostprocess` if you would like to keep the `Marginal` wrapper type.
+If the `annotations` argument has been used, automatically changes the default strategy value to `NoopPostprocess`.
 
 - ### Error hints
 

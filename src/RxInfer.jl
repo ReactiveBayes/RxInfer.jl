@@ -25,7 +25,9 @@ include("constraints/form/form_fixed_marginal.jl")
 include("constraints/form/form_point_mass.jl")
 include("constraints/form/form_sample_list.jl")
 
-include("callbacks/benchmarkcallbacks.jl")
+include("callbacks/events.jl")
+include("callbacks/benchmark.jl")
+include("callbacks/trace.jl")
 include("callbacks/stop_early.jl")
 
 include("inference/postprocess.jl")

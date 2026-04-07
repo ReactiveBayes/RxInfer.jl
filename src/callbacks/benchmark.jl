@@ -1,4 +1,3 @@
-
 using DataStructures: CircularBuffer
 
 export RxInferBenchmarkCallbacks
@@ -23,6 +22,10 @@ The structure uses circular buffers with a default capacity of $(DEFAULT_BENCHMA
 which helps to limit memory usage in long-running applications. Use `RxInferBenchmarkCallbacks(; capacity = N)` to change the buffer capacity.
 See also [`RxInfer.get_benchmark_stats(callbacks)`](@ref).
 
+After model creation, the benchmark callbacks instance is automatically saved into the model's metadata
+under the `:benchmark` key (i.e., `model.metadata[:benchmark]`), making it accessible from the inference result via
+`result.model.metadata[:benchmark]`.
+
 # Fields
 - `before_model_creation_ts`: CircularBuffer of timestamps before model creation
 - `after_model_creation_ts`: CircularBuffer of timestamps after model creation
@@ -40,12 +43,15 @@ callbacks = RxInferBenchmarkCallbacks()
 
 # Run inference multiple times to gather statistics
 for _ in 1:10
-    infer(
+    result = infer(
         model = my_model(),
         data = my_data,
         callbacks = callbacks
     )
 end
+
+# Access the benchmark callbacks from the inference result
+result.model.metadata[:benchmark] === callbacks # true
 
 # Display the timing statistics (you need to install `PrettyTables.jl` to use `pretty_table` function)
 using PrettyTables
@@ -75,42 +81,80 @@ function RxInferBenchmarkCallbacks(;
         CircularBuffer{Vector{UInt64}}(capacity),
         CircularBuffer{Vector{UInt64}}(capacity),
         CircularBuffer{UInt64}(capacity),
-        CircularBuffer{UInt64}(capacity)
+        CircularBuffer{UInt64}(capacity),
     )
 end
-
-check_available_callbacks(
-    warn, callbacks::RxInferBenchmarkCallbacks, ::Val{AvailableCallbacks}
-) where {AvailableCallbacks} = nothing
-inference_get_callback(callbacks::RxInferBenchmarkCallbacks, name::Symbol) =
-    nothing
 
 Base.isempty(callbacks::RxInferBenchmarkCallbacks) = isempty(
     callbacks.before_model_creation_ts
 )
 
-function inference_invoke_callback(
-    callbacks::RxInferBenchmarkCallbacks, name::Symbol, args...
+import ReactiveMP: handle_event, Event
+
+# Fallback: ignore unhandled events
+function ReactiveMP.handle_event(
+    callbacks::RxInferBenchmarkCallbacks, ::Event
 )
-    if name === :before_model_creation
-        push!(callbacks.before_model_creation_ts, time_ns())
-        push!(callbacks.before_iteration_ts, UInt64[])
-        push!(callbacks.after_iteration_ts, UInt64[])
-    elseif name === :after_model_creation
-        push!(callbacks.after_model_creation_ts, time_ns())
-    elseif name === :before_inference
-        push!(callbacks.before_inference_ts, time_ns())
-    elseif name === :after_inference
-        push!(callbacks.after_inference_ts, time_ns())
-    elseif name === :before_iteration
-        push!(last(callbacks.before_iteration_ts), time_ns())
-    elseif name === :after_iteration
-        push!(last(callbacks.after_iteration_ts), time_ns())
-    elseif name === :before_autostart
-        push!(callbacks.before_autostart_ts, time_ns())
-    elseif name === :after_autostart
-        push!(callbacks.after_autostart_ts, time_ns())
+    return nothing
+end
+
+function ReactiveMP.handle_event(
+    callbacks::RxInferBenchmarkCallbacks, ::BeforeModelCreationEvent
+)
+    push!(callbacks.before_model_creation_ts, time_ns())
+    push!(callbacks.before_iteration_ts, UInt64[])
+    push!(callbacks.after_iteration_ts, UInt64[])
+end
+
+function ReactiveMP.handle_event(
+    callbacks::RxInferBenchmarkCallbacks,
+    event::AfterModelCreationEvent,
+)
+    if haskey(event.model.metadata, :benchmark)
+        error(
+            "The model's metadata already contains a `:benchmark` key. " *
+            "This can happen if you pass `benchmark = true` while also providing " *
+            "`RxInferBenchmarkCallbacks` in the `callbacks` argument. Use one or the other, not both.",
+        )
     end
+    event.model.metadata[:benchmark] = callbacks
+    push!(callbacks.after_model_creation_ts, time_ns())
+end
+
+function ReactiveMP.handle_event(
+    callbacks::RxInferBenchmarkCallbacks, ::BeforeInferenceEvent
+)
+    push!(callbacks.before_inference_ts, time_ns())
+end
+
+function ReactiveMP.handle_event(
+    callbacks::RxInferBenchmarkCallbacks, ::AfterInferenceEvent
+)
+    push!(callbacks.after_inference_ts, time_ns())
+end
+
+function ReactiveMP.handle_event(
+    callbacks::RxInferBenchmarkCallbacks, ::BeforeIterationEvent
+)
+    push!(last(callbacks.before_iteration_ts), time_ns())
+end
+
+function ReactiveMP.handle_event(
+    callbacks::RxInferBenchmarkCallbacks, ::AfterIterationEvent
+)
+    push!(last(callbacks.after_iteration_ts), time_ns())
+end
+
+function ReactiveMP.handle_event(
+    callbacks::RxInferBenchmarkCallbacks, ::BeforeAutostartEvent
+)
+    push!(callbacks.before_autostart_ts, time_ns())
+end
+
+function ReactiveMP.handle_event(
+    callbacks::RxInferBenchmarkCallbacks, ::AfterAutostartEvent
+)
+    push!(callbacks.after_autostart_ts, time_ns())
 end
 
 """
@@ -169,14 +213,14 @@ function Base.show(io::IO, callbacks::RxInferBenchmarkCallbacks)
     if isempty(callbacks)
         return print(
             io,
-            "RxInferBenchmarkCallbacks (empty, use `pretty_table` from `PrettyTables.jl` to display the statistics in a tabular format)"
+            "RxInferBenchmarkCallbacks (empty, use `pretty_table` from `PrettyTables.jl` to display the statistics in a tabular format)",
         )
     else
         return print(
             io,
             "RxInferBenchmarkCallbacks (",
             length(callbacks.before_model_creation_ts),
-            "evaluations, use `pretty_table` from `PrettyTables.jl` to display the statistics in a tabular format)"
+            "evaluations, use `pretty_table` from `PrettyTables.jl` to display the statistics in a tabular format)",
         )
     end
 end

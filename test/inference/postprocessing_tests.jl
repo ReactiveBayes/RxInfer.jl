@@ -1,31 +1,25 @@
-@testitem "Default postprocessing" begin
-
-    # Default postprocessing step removes Marginal type wrapper if no addons are present, 
-    # and keeps the Marginal type wrapper otherwise
-    @test inference_postprocess(
-        DefaultPostprocess(), Marginal(1.0, false, false, nothing)
-    ) == 1.0
-    @test inference_postprocess(
-        DefaultPostprocess(), Marginal(1.0, false, false, 1)
-    ) == Marginal(1.0, false, false, 1)
-end
-
 @testitem "UnpackMarginal postprocessing" begin
     @test inference_postprocess(
-        UnpackMarginalPostprocess(), Marginal(1.0, false, false, nothing)
+        UnpackMarginalPostprocess(), Marginal(1.0, false, false)
     ) == 1.0
+
+    ann = ReactiveMP.AnnotationDict()
+    ReactiveMP.annotate!(ann, :test, 1)
     @test inference_postprocess(
-        UnpackMarginalPostprocess(), Marginal(1.0, false, false, 1)
+        UnpackMarginalPostprocess(), Marginal(1.0, false, false, ann)
     ) == 1.0
 end
 
 @testitem "Noop postprocessing" begin
     @test inference_postprocess(
-        NoopPostprocess(), Marginal(1.0, false, false, nothing)
-    ) == Marginal(1.0, false, false, nothing)
+        NoopPostprocess(), Marginal(1.0, false, false)
+    ) == Marginal(1.0, false, false)
+
+    ann = ReactiveMP.AnnotationDict()
+    ReactiveMP.annotate!(ann, :test, 1)
     @test inference_postprocess(
-        NoopPostprocess(), Marginal(1.0, false, false, 1)
-    ) == Marginal(1.0, false, false, 1)
+        NoopPostprocess(), Marginal(1.0, false, false, ann)
+    ) == Marginal(1.0, false, false, ann)
 end
 
 @testitem "Custom postprocessing" begin
@@ -43,7 +37,7 @@ end
     result = infer(
         model = beta_bernoulli(),
         data = (y = 1.0,),
-        postprocess = CustomPostprocess()
+        postprocess = CustomPostprocess(),
     )
 
     @test occursin("Beta{Float64}(α=2.0, β=1.0)", result.posteriors[:θ])
@@ -78,7 +72,7 @@ end
         data = (y = 1.0,),
         postprocess = CustomPostprocessShouldNotBeInvoked(),
         catch_exception = true,
-        disable_inference_error_hint = true
+        disable_inference_error_hint = true,
     )
 
     @test result.error[1] isa ErrorException

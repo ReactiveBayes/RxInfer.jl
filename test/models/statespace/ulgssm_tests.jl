@@ -19,7 +19,7 @@
         return infer(
             model = univariate_lgssm_model(x0 = x0, c = c, P = P),
             data = (y = data,),
-            free_energy = true
+            free_energy = true,
         )
     end
 
@@ -41,7 +41,7 @@
     @test all(
         (mean.(x_estimated) .- 3 .* std.(x_estimated)) .<
         hidden .<
-        (mean.(x_estimated) .+ 3 .* std.(x_estimated))
+        (mean.(x_estimated) .+ 3 .* std.(x_estimated)),
     )
     @test all(var.(x_estimated) .> 0.0)
     @test length(fe) === 1
