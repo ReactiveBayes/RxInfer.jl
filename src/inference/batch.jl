@@ -130,10 +130,10 @@ function batch_inference(;
     showprogress = false,
     # Inference cycle callbacks
     callbacks = nothing,
-    # Addons specification
-    addons = nothing,
+    # Annotations specification
+    annotations = nothing,
     # Inference postprocessing option
-    postprocess = DefaultPostprocess(),
+    postprocess = nothing,
     # warn, optional, defaults to true
     warn = true,
     # catch exceptions during the inference procedure, optional, defaults to false
@@ -147,12 +147,21 @@ function batch_inference(;
         _options = setwarn(_options, warn)
     end
 
-    # Override `options` addons if the `addons` keyword argument is present 
-    if !isnothing(addons)
-        if warn && !isnothing(getaddons(_options))
-            @warn "Both `addons = ...` and `options = (addons = ..., )` specify a value for the `addons`. Ignoring the `options` setting. Set `warn = false` to supress this warning."
+    # Override `options` annotations if the `annotations` keyword argument is present
+    if !isnothing(annotations)
+        if warn && !isnothing(getannotations(_options))
+            @warn "Both `annotations = ...` and `options = (annotations = ..., )` specify a value for the `annotations`. Ignoring the `options` setting. Set `warn = false` to supress this warning."
         end
-        _options = setaddons(_options, addons)
+        _options = setannotations(_options, annotations)
+    end
+
+    # Determine the default postprocessing strategy based on annotations
+    if isnothing(postprocess)
+        postprocess = if isnothing(getannotations(_options))
+            UnpackMarginalPostprocess()
+        else
+            NoopPostprocess()
+        end
     end
 
     # Set ReactiveMP event handler if `callbacks` are set
@@ -244,7 +253,9 @@ function batch_inference(;
     model_creation_span_id = generate_span_id(callbacks)
     invoke_callback(callbacks, BeforeModelCreationEvent(model_creation_span_id))
     fmodel = create_model(_model | data)
-    invoke_callback(callbacks, AfterModelCreationEvent(fmodel, model_creation_span_id))
+    invoke_callback(
+        callbacks, AfterModelCreationEvent(fmodel, model_creation_span_id)
+    )
     vardict = getvardict(fmodel)
     vardict = GraphPPL.variables(vardict) # TODO bvdmitri, should work recursively as well
 
@@ -361,7 +372,9 @@ function batch_inference(;
         end
 
         inference_span_id = generate_span_id(callbacks)
-        invoke_callback(callbacks, BeforeInferenceEvent(fmodel, inference_span_id))
+        invoke_callback(
+            callbacks, BeforeInferenceEvent(fmodel, inference_span_id)
+        )
 
         fdata = filter(pairs(data)) do pair
             hk      = haskey(vardict, first(pair))
@@ -389,13 +402,15 @@ function batch_inference(;
             end
             data_update_span_id = generate_span_id(callbacks)
             invoke_callback(
-                callbacks, BeforeDataUpdateEvent(fmodel, data, data_update_span_id)
+                callbacks,
+                BeforeDataUpdateEvent(fmodel, data, data_update_span_id),
             )
             for (key, value) in fdata
                 update!(cacheddatavars[key], get_data(value))
             end
             invoke_callback(
-                callbacks, AfterDataUpdateEvent(fmodel, data, data_update_span_id)
+                callbacks,
+                AfterDataUpdateEvent(fmodel, data, data_update_span_id),
             )
 
             # Check that all requested marginals have been updated and unset the `updated` flag
@@ -422,7 +437,9 @@ function batch_inference(;
             unsubscribe!(subscription)
         end
 
-        invoke_callback(callbacks, AfterInferenceEvent(fmodel, inference_span_id))
+        invoke_callback(
+            callbacks, AfterInferenceEvent(fmodel, inference_span_id)
+        )
     catch error
         potential_error = inference_process_error(
             error;
