@@ -10,7 +10,6 @@ import GraphPPL: ModelGenerator, create_model
 
 import ReactiveMP: israndom, isdata, isconst
 import ReactiveMP: CountingReal
-import ReactiveMP: Event, event_name
 
 import ProgressMeter
 
@@ -74,20 +73,27 @@ Rocket.on_next!(updated::MarginalHasBeenUpdated, anything) = set_updated!(update
 Rocket.on_error!(updated::MarginalHasBeenUpdated, err)     = begin end
 Rocket.on_complete!(updated::MarginalHasBeenUpdated)       = begin end
 
-# This creates a `tap` operator that will set the `updated` flag to true.
+# This creates a `tap` operator that will set the `updated` flag to true. 
 # Later on we check flags and `unset!` them after the `update!` procedure
 ensure_update(
     model::ProbabilisticModel,
-    callbacks,
+    callback,
     variable_name::Symbol,
-    updated::MarginalHasBeenUpdated,
+    updated::MarginalHasBeenUpdated
 ) =
     tap() do update
         set_updated!(updated)
-        invoke_callback(
-            callbacks,
-            OnMarginalUpdateEvent(model, variable_name, update),
-        )
+        callback(model, variable_name, update)
+    end
+
+ensure_update(
+    model::ProbabilisticModel,
+    ::Nothing,
+    variable_name::Symbol,
+    updated::MarginalHasBeenUpdated
+) =
+    tap() do _
+        set_updated!(updated) # If `callback` is nothing we simply set updated flag
     end
 
 function check_and_reset_updated!(updates)
@@ -101,7 +107,7 @@ function check_and_reset_updated!(updates)
             Variables [ $(names) ] have not been updated after an update event. 
             Therefore, make sure to initialize all required marginals and messages. See `initialization` keyword argument for the inference function. 
             See documentation: https://docs.rxinfer.com/stable/manuals/inference/initialization/ .
-            """,
+            """
         )
     end
 end
@@ -134,7 +140,7 @@ log_data_entry(name::Union{Symbol, String}, ::Base.HasShape, data) = InferenceLo
     name,
     typeof(data),
     log_data_entry_size(data),
-    isempty(data) ? () : log_data_entry_size(first(data)),
+    isempty(data) ? () : log_data_entry_size(first(data))
 )
 
 log_data_entry_size(data) = log_data_entry_size(Base.IteratorSize(data), data)
@@ -169,7 +175,7 @@ function Base.show(io::IO, entry::InferenceLoggedDataEntry)
         entry.size,
         ", elsize=",
         entry.elsize,
-        ")",
+        ")"
     )
 end
 
@@ -206,15 +212,15 @@ function summarize_invokes(io::IO, ::Val{:inference}, invokes; n_last = 5)
     if !isempty(invokes)
         println(
             io,
-            "\nLast $n_last invokes, use `n_last` keyword argument to see more or less.",
+            "\nLast $n_last invokes, use `n_last` keyword argument to see more or less."
         )
         println(
             io,
-            "*  Note that benchmarking with `BenchmarkTools` or similar will pollute the session with test invokes.",
+            "*  Note that benchmarking with `BenchmarkTools` or similar will pollute the session with test invokes."
         )
         println(
             io,
-            "   It is advised to explicitly pass `session = nothing` when benchmarking code involving the `infer` function.",
+            "   It is advised to explicitly pass `session = nothing` when benchmarking code involving the `infer` function."
         )
 
         println(io, "\nLegend:")
@@ -234,9 +240,9 @@ function summarize_invokes(io::IO, ::Val{:inference}, invokes; n_last = 5)
                 Dates.value(
                     Dates.Millisecond(
                         invoke.execution_end - invoke.execution_start
-                    ),
-                );
-                digits = 2,
+                    )
+                ),
+                digits = 2
             )
             model = get(invoke.context, :model_name, nothing)
             model = model === nothing ? "N/A" : string(model)
@@ -280,7 +286,7 @@ function summarize_invokes(io::IO, ::Val{:inference}, invokes; n_last = 5)
             "Meta",
             "Init",
             "Data",
-            "Error",
+            "Error"
         ],)
         summarize_invokes_pretty_table(
             summarize_invokes,
@@ -289,7 +295,7 @@ function summarize_invokes(io::IO, ::Val{:inference}, invokes; n_last = 5)
             header = header,
             maximum_columns_width = [12, 6, 10, 25, 6, 6, 6, 20, 6],
             autowrap = true,
-            linebreaks = true,
+            linebreaks = true
         )
     end
 end
@@ -298,7 +304,7 @@ end
 function summarize_invokes_pretty_table(f::Any, io::IO, data; kwargs...)
     print(
         io,
-        "\n !! PrettyTables.jl is not installed, skipping the pretty table output.       !! \n !! Install the `PrettyTables.jl` package to see the nicely formatted output. !! \n",
+        "\n !! PrettyTables.jl is not installed, skipping the pretty table output.       !! \n !! Install the `PrettyTables.jl` package to see the nicely formatted output. !! \n"
     )
     println(io)
     if haskey(kwargs, :header)
@@ -420,7 +426,7 @@ function inference_check_itertype(keyword::Symbol, ::T) where {T}
         Note: Julia's parser interprets `(something)` and (something, ) differently. 
             The first expression simply ignores parenthesis around `something`. 
             The second expression defines `Tuple`with `something` as a first (and the last) entry.
-        """,
+        """
     )
 end
 
@@ -428,7 +434,7 @@ function infer_check_dicttype(
     ::Symbol,
     ::Union{
         Nothing, NamedTuple, Dict, GraphPPL.VarDict, RxInferBenchmarkCallbacks
-    },
+    }
 )
     # This function check is the second argument is of type `Nothing`, `NamedTuple`, `Dict` or `VarDict`. 
     # Does nothing is true, throws an error otherwise (see the second method below)
@@ -443,7 +449,7 @@ function infer_check_dicttype(keyword::Symbol, ::T) where {T}
         Note: Julia's parser interprets `(x = something)` and (x = something, ) differently. 
             The first expression defines (or **overwrites!**) the local/global variable named `x` with `something` as a content. 
             The second expression defines `NamedTuple` with `x` as a key and `something` as a value.
-        """,
+        """
     )
 end
 
@@ -457,10 +463,16 @@ inference_fill_predictions(s::Symbol, d::DataVariable) = NamedTuple{Tuple([s])}(
     missing
 ])
 
-# RxInfer uses and extends ReactiveMP's callback functionality
-# Custom callback handlers should implement `ReactiveMP.handle_event` for the events they want to handle
-# `invoke_callback` dispatches to `handle_event` and always returns the event itself
-import ReactiveMP: invoke_callback, handle_event, merge_callbacks
+inference_invoke_callback(callbacks::T, name, args...) where {T} = _inference_invoke_callback(
+    inference_get_callback(callbacks, name), args...
+)
+inference_invoke_callback(::Nothing, name, args...) = nothing
+
+_inference_invoke_callback(callback::T, args...) where {T} = callback(args...)
+_inference_invoke_callback(::Nothing, args...) = nothing
+
+inference_get_callback(callbacks, name) = get(() -> nothing, callbacks, name)
+inference_get_callback(::Nothing, name) = nothing
 
 unwrap_free_energy_option(option::Bool)                      = (option, Real)
 unwrap_free_energy_option(option::Type{T}) where {T <: Real} = (true, T)
@@ -472,25 +484,12 @@ function check_available_callbacks(
     warn, callbacks, ::Val{AvailableCallbacks}
 ) where {AvailableCallbacks}
     if warn && !isnothing(callbacks)
-        _check_available_callback_keys(warn, callbacks, AvailableCallbacks)
-    end
-end
-
-# For NamedTuples and Dicts we can check the keys against the available callbacks
-function _check_available_callback_keys(
-    warn, callbacks::Union{NamedTuple, Dict}, available_callbacks
-)
-    for key in keys(callbacks)
-        if key ∉ available_callbacks
-            @warn "Unknown callback specification: $(key). Available callbacks: $(available_callbacks). Set `warn = false` to supress this warning."
+        for key in keys(callbacks)
+            if warn && key ∉ AvailableCallbacks
+                @warn "Unknown callback specification: $(key). Available callbacks: $(AvailableCallbacks). Set `warn = false` to supress this warning."
+            end
         end
     end
-end
-
-# For arbitrary callback structures (custom structs, etc.) we skip the key check
-# since they use `ReactiveMP.handle_event` dispatch instead
-function _check_available_callback_keys(warn, callbacks, available_callbacks)
-    return nothing
 end
 
 function check_available_events(
@@ -535,15 +534,13 @@ include("streaming.jl")
         free_energy_diagnostics = DefaultObjectiveDiagnosticChecks,
         showprogress = false,
         callbacks = nothing,
-        annotations = nothing,
-        postprocess = nothing,
+        addons = nothing,
+        postprocess = DefaultPostprocess(),
         warn = true,
         events = nothing,
         uselock = false,
         autostart = true,
         catch_exception = false,
-        benchmark = false,
-        trace = false,
         session = RxInfer.default_session()
     )
 
@@ -573,16 +570,15 @@ Check the official documentation for more information about some of the argument
 - `free_energy = false`: compute the Bethe free energy, optional, defaults to false. Can be passed a floating point type, e.g. `Float64`, for better efficiency, but disables automatic differentiation packages, such as ForwardDiff.jl
 - `free_energy_diagnostics = DefaultObjectiveDiagnosticChecks`: free energy diagnostic checks, optional, by default checks for possible `NaN`s and `Inf`s. `nothing` disables all checks.
 - `showprogress = false`: show progress module, optional, defaults to false (exclusive for batch inference)
-- `catch_exception`  specifies whether exceptions during the inference procedure should be caught, optional, defaults to false (exclusive for batch inference)
-- `callbacks = nothing`: inference cycle callbacks, optional. Can be a `NamedTuple`, `Dict`, or any custom structure that implements `ReactiveMP.handle_event`. See [Callbacks](@ref manual-inference-callbacks) for a comprehensive overview, [Benchmark callbacks](@ref manual-inference-benchmark-callbacks) for performance analysis, [Trace callbacks](@ref manual-inference-trace-callbacks) for event tracing, and [Early stopping](@ref manual-inference-early-stopping) for an opt-in callback example.
-- `annotations = nothing`: a tuple of annotation processors that attach extra information to messages and marginals during inference. For example, `annotations = LogScaleAnnotations()` tracks log-scale normalization constants, which is useful for computing Bayes factors and model evidence in mixture models. When annotations are enabled, the inference results preserve the `Marginal` wrapper type so that annotation data remains accessible via `ReactiveMP.getannotations`. See `ReactiveMP.jl` documentation for available annotation types and how to implement custom annotation processors.
-- `postprocess = nothing`: inference results postprocessing step, optional. By default, uses [`UnpackMarginalPostprocess`](@ref) when `annotations` is `nothing` (strips the `Marginal` wrapper), and [`NoopPostprocess`](@ref) when annotations are enabled (preserves the wrapper). See [Inference results postprocessing](@ref user-guide-inference-postprocess) for details on implementing custom strategies.
+- `catch_exception`: specifies whether exceptions during the inference procedure should be caught, optional, defaults to false (exclusive for batch inference)
+- `disable_inference_error_hint`: specifies whether the error hint should be printed whether inference error occurs.
+- `callbacks = nothing`: inference cycle callbacks, optional. See [Early stopping](@ref manual-inference-early-stopping) for an opt-in callback example.
+- `addons = nothing`: inject and send extra computation information along messages
+- `postprocess = DefaultPostprocess()`: inference results postprocessing step, optional
 - `events = nothing`: inference cycle events, optional (exclusive for streamline inference)
 - `uselock = false`: specifies either to use the lock structure for the inference or not, if set to true uses `Base.Threads.SpinLock`. Accepts custom `AbstractLock`. (exclusive for streamline inference)
 - `autostart = true`: specifies whether to call `RxInfer.start` on the created engine automatically or not (exclusive for streamline inference)
 - `warn = true`: enables/disables warnings
-- `benchmark = false`: when set to `true`, automatically merges a [`RxInferBenchmarkCallbacks`](@ref) instance with the user-provided `callbacks`. The benchmark results are accessible via `result.model.metadata[:benchmark]`. See [Benchmark callbacks](@ref manual-inference-benchmark-callbacks).
-- `trace = false`: when set to `true`, automatically merges a [`RxInferTraceCallbacks`](@ref) instance with the user-provided `callbacks`. The trace results are accessible via `result.model.metadata[:trace]`. See [Trace callbacks](@ref manual-inference-trace-callbacks).
 - `session = RxInfer.default_session()`: current logging session for the RxInfer invokes, see `Session` for more details, pass `nothing` to disable logging
 
 ## Error hints
@@ -618,15 +614,13 @@ function infer(;
     catch_exception = false, # batch specific
     disable_inference_error_hint = false, # batch specific
     callbacks = nothing,
-    annotations = nothing,
-    postprocess = nothing,
+    addons = nothing,
+    postprocess = DefaultPostprocess(),
     events = nothing, # streamline specific
     uselock = false, # streamline  specific
     autostart = true, # streamline specific
     warn = true,
-    benchmark = false,
-    trace = false,
-    session = RxInfer.default_session(),
+    session = RxInfer.default_session()
 )
     if isnothing(model)
         error(
@@ -634,37 +628,24 @@ function infer(;
         )
     elseif !isa(model, GraphPPL.ModelGenerator)
         error(
-            "The `model` keyword argument must be of type `GraphPPL.ModelGenerator`.",
+            "The `model` keyword argument must be of type `GraphPPL.ModelGenerator`."
         )
     elseif !isnothing(data) && !isnothing(datastream)
         error(
-            """`data` and `datastream` keyword arguments cannot be used together. """,
+            """`data` and `datastream` keyword arguments cannot be used together. """
         )
     elseif isnothing(data) && isnothing(predictvars) && isnothing(datastream)
         error(
-            """One of the keyword arguments `data` or `predictvars` or `datastream` must be specified""",
+            """One of the keyword arguments `data` or `predictvars` or `datastream` must be specified"""
         )
     elseif !isnothing(initmessages) || !isnothing(initmarginals)
         error(
-            """`initmessages` and `initmarginals` keyword arguments have been deprecated and removed. Use the `@initialization` macro and the `initialization` keyword instead.""",
+            """`initmessages` and `initmarginals` keyword arguments have been deprecated and removed. Use the `@initialization` macro and the `initialization` keyword instead."""
         )
     end
 
+    infer_check_dicttype(:callbacks, callbacks)
     infer_check_dicttype(:data, data)
-
-    if benchmark
-        callbacks = merge_callbacks(
-            callbacks,
-            RxInferBenchmarkCallbacks(),
-        )
-    end
-
-    if trace
-        callbacks = merge_callbacks(
-            callbacks,
-            RxInferTraceCallbacks(),
-        )
-    end
 
     return with_session(session, :inference) do invoke
         append_invoke_context(invoke) do ctx
@@ -692,7 +673,7 @@ function infer(;
             ctx[:catch_exception] = catch_exception
 
             ctx[:callbacks] = log_dictnt_entries(callbacks)
-            ctx[:annotations] = log_dictnt_entries(annotations)
+            ctx[:addons] = log_dictnt_entries(addons)
             ctx[:options] = log_dictnt_entries(options)
         end
 
@@ -703,7 +684,7 @@ function infer(;
             check_available_events(
                 warn, events, available_events(batch_inference)
             )
-            batch_inference(;
+            batch_inference(
                 model = model,
                 data = data,
                 initialization = initialization,
@@ -718,11 +699,11 @@ function infer(;
                 allow_node_contraction = allow_node_contraction,
                 showprogress = showprogress,
                 callbacks = callbacks,
-                annotations = annotations,
+                addons = addons,
                 postprocess = postprocess,
                 warn = warn,
                 catch_exception = catch_exception,
-                disable_inference_error_hint = disable_inference_error_hint,
+                disable_inference_error_hint = disable_inference_error_hint
             )
         else
             check_available_callbacks(
@@ -731,7 +712,7 @@ function infer(;
             check_available_events(
                 warn, events, available_events(streaming_inference)
             )
-            streaming_inference(;
+            streaming_inference(
                 model = model,
                 data = data,
                 datastream = datastream,
@@ -749,11 +730,11 @@ function infer(;
                 allow_node_contraction = allow_node_contraction,
                 autostart = autostart,
                 callbacks = callbacks,
-                annotations = annotations,
+                addons = addons,
                 postprocess = postprocess,
                 warn = warn,
                 events = events,
-                uselock = uselock,
+                uselock = uselock
             )
         end
     end

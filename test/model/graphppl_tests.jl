@@ -147,19 +147,19 @@ end
         backend,
         GraphPPL.Atomic(),
         CustomStochasticNodeForGraphPPLTests1,
-        (1, 2, 3),
+        (1, 2, 3)
     ) === (x = 1, y = 2, z = 3)
     @test_throws ErrorException GraphPPL.default_parametrization(
         backend,
         GraphPPL.Atomic(),
         CustomStochasticNodeForGraphPPLTests1,
-        (1, 2),
+        (1, 2)
     )
     @test_throws ErrorException GraphPPL.default_parametrization(
         backend,
         GraphPPL.Atomic(),
         CustomStochasticNodeForGraphPPLTests1,
-        (1, 2, 3, 4),
+        (1, 2, 3, 4)
     )
 
     function f_for_graphppl_tests1 end
@@ -230,19 +230,19 @@ end
         backend,
         GraphPPL.Atomic(),
         CustomStochasticNodeForGraphPPLTests2,
-        (1, 2, 3),
+        (1, 2, 3)
     ) === (x = 1, y = 2, z = 3)
     @test_throws ErrorException GraphPPL.default_parametrization(
         backend,
         GraphPPL.Atomic(),
         CustomStochasticNodeForGraphPPLTests2,
-        (1, 2),
+        (1, 2)
     )
     @test_throws ErrorException GraphPPL.default_parametrization(
         backend,
         GraphPPL.Atomic(),
         CustomStochasticNodeForGraphPPLTests2,
-        (1, 2, 3, 4),
+        (1, 2, 3, 4)
     )
 
     function f_for_graphppl_tests2 end
@@ -290,6 +290,6 @@ end
     @test GraphPPL.NodeType(
         ReactiveMPGraphPPLBackend(Static.True()),
         ReactiveMP.UndefinedNodeFunctionalForm(),
-        sum,
+        sum
     ) == GraphPPL.Atomic()
 end

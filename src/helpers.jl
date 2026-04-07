@@ -6,6 +6,11 @@ fields(::Type{<:NamedTuple{F}}) where {F} = F
 nthasfield(field::Symbol, ntuple::NamedTuple)         = field ∈ fields(ntuple)
 nthasfield(field::Symbol, ntuple::Type{<:NamedTuple}) = field ∈ fields(ntuple)
 
+# Bool helpers
+
+ensure_bool_or_nothing(value::Bool) = value
+ensure_bool_or_nothing(anything_else) = nothing
+
 # Tuple helpers
 
 as_tuple(something)    = (something,)

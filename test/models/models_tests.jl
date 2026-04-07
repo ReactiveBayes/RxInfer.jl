@@ -28,17 +28,17 @@
 
     @test_throws "`datavar`, `constvar` and `randomvar` syntax has been removed" infer(
         model = coin_model_1_error_datavar(n = 50, a = 2.0, b = 7.0),
-        data = (y = dataset,),
+        data = (y = dataset,)
     )
 
     @test_throws "`datavar`, `constvar` and `randomvar` syntax has been removed" infer(
         model = coin_model_2_error_constvar(a = 2.0, b = 7.0),
-        data = (y = dataset,),
+        data = (y = dataset,)
     )
 
     @test_throws "`datavar`, `constvar` and `randomvar` syntax has been removed" infer(
         model = coin_model_3_error_randomvar(a = 2.0, b = 7.0),
-        data = (y = dataset,),
+        data = (y = dataset,)
     )
 end
 
@@ -71,16 +71,16 @@ end
             testsets = [
                 (
                     prior = Beta(4.0, 8.0),
-                    answer = Beta(4 + count_trues, 8 + count_falses),
+                    answer = Beta(4 + count_trues, 8 + count_falses)
                 ),
                 (
                     prior = Beta(54.0, 1.0),
-                    answer = Beta(54 + count_trues, 1 + count_falses),
+                    answer = Beta(54 + count_trues, 1 + count_falses)
                 ),
                 (
                     prior = Beta(1.0, 12.0),
-                    answer = Beta(1 + count_trues, 12 + count_falses),
-                ),
+                    answer = Beta(1 + count_trues, 12 + count_falses)
+                )
             ]
 
             for ts in testsets
@@ -89,7 +89,7 @@ end
                     returnvars = KeepLast(),
                     data = (y = data,),
                     iterations = 10,
-                    free_energy = true,
+                    free_energy = true
                 )
                 result_with_params_as_input = infer(
                     model = beta_bernoulli_params(
@@ -98,14 +98,14 @@ end
                     returnvars = KeepLast(),
                     data = (y = data,),
                     iterations = 10,
-                    free_energy = true,
+                    free_energy = true
                 )
 
                 @test result_with_prior_as_input.posteriors[:θ] == ts[:answer]
                 @test result_with_params_as_input.posteriors[:θ] == ts[:answer]
                 @test all(
                     result_with_prior_as_input.free_energy .≈
-                    result_with_params_as_input.free_energy,
+                    result_with_params_as_input.free_energy
                 )
             end
         end
@@ -142,16 +142,16 @@ end
             testsets = [
                 (
                     prior_for_μ = NormalMeanVariance(4.0, 8.0),
-                    prior_for_τ = Gamma(4.0, 8.0),
+                    prior_for_τ = Gamma(4.0, 8.0)
                 ),
                 (
                     prior_for_μ = NormalMeanVariance(54.0, 1.0),
-                    prior_for_τ = Gamma(54.0, 1.0),
+                    prior_for_τ = Gamma(54.0, 1.0)
                 ),
                 (
                     prior_for_μ = NormalMeanVariance(1.0, 12.0),
-                    prior_for_τ = Gamma(1.0, 12.0),
-                ),
+                    prior_for_τ = Gamma(1.0, 12.0)
+                )
             ]
 
             init = @initialization begin
@@ -163,28 +163,28 @@ end
                 result_with_prior_as_input = infer(
                     model = iid_gaussians_priors(
                         prior_for_μ = ts[:prior_for_μ],
-                        prior_for_τ = ts[:prior_for_τ],
+                        prior_for_τ = ts[:prior_for_τ]
                     ),
                     returnvars = KeepLast(),
                     initialization = init,
                     constraints = constraints,
                     data = (y = data,),
                     iterations = 10,
-                    free_energy = true,
+                    free_energy = true
                 )
                 result_with_params_as_input = infer(
                     model = iid_gaussians_params(
                         mean = mean(ts[:prior_for_μ]),
                         variance = var(ts[:prior_for_μ]),
                         shape = shape(ts[:prior_for_τ]),
-                        scale = scale(ts[:prior_for_τ]),
+                        scale = scale(ts[:prior_for_τ])
                     ),
                     returnvars = KeepLast(),
                     initialization = init,
                     constraints = constraints,
                     data = (y = data,),
                     iterations = 10,
-                    free_energy = true,
+                    free_energy = true
                 )
 
                 @test result_with_prior_as_input.posteriors[:μ] ==
@@ -193,7 +193,7 @@ end
                     result_with_params_as_input.posteriors[:τ]
                 @test all(
                     result_with_prior_as_input.free_energy .≈
-                    result_with_params_as_input.free_energy,
+                    result_with_params_as_input.free_energy
                 )
             end
         end
@@ -243,7 +243,7 @@ end
             model = modelfn(),
             data = (a = 2.0, b = 1.0, y = 0.0),
             returnvars = (x = KeepLast(),),
-            free_energy = true,
+            free_energy = true
         )
         model = result.model
         xres = result.posteriors[:x]
@@ -274,7 +274,7 @@ end
             model = modelfn(),
             data = (v = [1.0, 2.0], y = 0.0),
             returnvars = (x = KeepLast(),),
-            free_energy = true,
+            free_energy = true
         )
         model = result.model
         xres = result.posteriors[:x]
@@ -296,7 +296,7 @@ end
             model = ratio_datavars_as_gaussian_mean(),
             data = (a = 2.0, b = 1.0, y = 0.0),
             returnvars = (x = KeepLast(),),
-            free_energy = true,
+            free_energy = true
         )
         model = result.model
         xres = result.posteriors[:x]
@@ -323,7 +323,7 @@ end
             model = idx_datavars_as_gaussian_mean(),
             data = (a = A_data, b = B_data, y = 0.0),
             returnvars = (x = KeepLast(),),
-            free_energy = true,
+            free_energy = true
         )
         model = result.model
         xres = result.posteriors[:x]

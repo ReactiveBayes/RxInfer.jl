@@ -328,7 +328,7 @@ plot(results.free_energy, label = "Bethe Free Energy")
 
 ## [Callbacks](@id manual-static-inference-callbacks)
 
-The [`infer`](@ref) function has its own lifecycle, consisting of multiple steps. A user is free to inject some extra logic during the inference procedure, e.g. for [debugging purposes](@ref user-guide-debugging-callbacks) or [performance analysis](@ref manual-inference-benchmark-callbacks). By supplying callbacks, users can inject custom logic on specific moments during the inference procedure. Callbacks can be a `NamedTuple`, `Dict`, or any custom structure that implements `ReactiveMP.handle_event`. For a comprehensive overview of the callbacks system, including custom callback structures and model metadata, see the [Callbacks](@ref manual-inference-callbacks) section. Here are available callbacks that can be used together with the static datasets:
+The [`infer`](@ref) function has its own lifecycle, consisting of multiple steps. A user is free to inject some extra logic during the inference procedure, e.g. for [debugging purposes](@ref user-guide-debugging-callbacks) or [performance analysis](@ref user-guide-debugging-benchmark-callbacks). By supplying callbacks, users can inject custom logic on specific moments during the inference procedure. Here are available callbacks that can be used together with the static datasets:
 ```@eval
 using RxInfer, Test, Markdown
 # Update the documentation below if this test does not pass
@@ -341,24 +341,12 @@ using RxInfer, Test, Markdown
     :before_data_update,
     :after_data_update,
     :after_iteration,
-    :after_inference,
-    :before_message_rule_call,
-    :after_message_rule_call,
-    :before_product_of_two_messages,
-    :after_product_of_two_messages,
-    :before_product_of_messages,
-    :after_product_of_messages,
-    :before_form_constraint_applied,
-    :after_form_constraint_applied,
-    :before_marginal_computation,
-    :after_marginal_computation
+    :after_inference
 )) 
 nothing
 ```
 
 ---
-
-Below we list `RxInfer` specific callbacks. In addition to these, `ReactiveMP` provides lower-level callbacks for the message passing procedure itself, such as `before_message_rule_call`, `after_message_rule_call`, `before_product_of_messages`, `after_product_of_messages`, `before_marginal_computation`, `after_marginal_computation`, and others. For a full list and detailed descriptions of these callbacks, refer to the official documentation of `ReactiveMP`.
 
 ```julia
 before_model_creation()
@@ -420,14 +408,13 @@ before_data_update_called = Ref(false) #hide
 after_data_update_called = Ref(false) #hide
 on_marginal_update_called = Ref(false) #hide
 
-function before_model_creation(event::BeforeModelCreationEvent)
+function before_model_creation()
     before_model_creation_called[] = true #hide
     println("The model is about to be created")
 end
 
-function after_model_creation(event::AfterModelCreationEvent)
+function after_model_creation(model::ProbabilisticModel)
     after_model_creation_called[] = true #hide
-    model = event.model
     println("The model has been created")
     println("  The number of factor nodes is: ", length(RxInfer.getfactornodes(model)))
     println("  The number of latent states is: ", length(RxInfer.getrandomvars(model)))
@@ -435,39 +422,39 @@ function after_model_creation(event::AfterModelCreationEvent)
     println("  The number of constants is: ", length(RxInfer.getconstantvars(model)))
 end
 
-function before_inference(event::BeforeInferenceEvent)
+function before_inference(model::ProbabilisticModel)
     before_inference_called[] = true #hide
     println("The inference procedure is about to start")
 end
 
-function after_inference(event::AfterInferenceEvent)
+function after_inference(model::ProbabilisticModel)
     after_inference_called[] = true #hide
     println("The inference procedure has ended")
 end
 
-function before_iteration(event::BeforeIterationEvent)
+function before_iteration(model::ProbabilisticModel, iteration::Int)
     before_iteration_called[] = true #hide
-    println("The iteration ", event.iteration, " is about to start")
+    println("The iteration ", iteration, " is about to start")
 end
 
-function after_iteration(event::AfterIterationEvent)
+function after_iteration(model::ProbabilisticModel, iteration::Int)
     after_iteration_called[] = true #hide
-    println("The iteration ", event.iteration, " has ended")
+    println("The iteration ", iteration, " has ended")
 end
 
-function before_data_update(event::BeforeDataUpdateEvent)
+function before_data_update(model::ProbabilisticModel, data)
     before_data_update_called[] = true #hide
     println("The data is about to be processed")
 end
 
-function after_data_update(event::AfterDataUpdateEvent)
+function after_data_update(model::ProbabilisticModel, data)
     after_data_update_called[] = true #hide
     println("The data has been processed")
 end
 
-function on_marginal_update(event::OnMarginalUpdateEvent)
+function on_marginal_update(model::ProbabilisticModel, name, update)
     on_marginal_update_called[] = true #hide
-    println("New marginal update for ", event.variable_name, " ", event.update)
+    println("New marginal update for ", name, " ", update)
 end
 ```
 

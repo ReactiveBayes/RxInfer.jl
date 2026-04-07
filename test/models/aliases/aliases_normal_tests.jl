@@ -37,7 +37,7 @@
         data = (d = 1.0,),
         returnvars = (x1 = KeepLast(),),
         iterations = 10,
-        free_energy = true,
+        free_energy = true
     )
     # Here we simply test that it ran and gave some output 
     @test first(mean(result.posteriors[:x1])) ≈ 0.010554034251599802
@@ -55,7 +55,7 @@ end
         model = normal_by_itself(),
         data = (d = 1.0,),
         iterations = 1,
-        free_energy = false,
+        free_energy = false
     )
 end
 
@@ -68,6 +68,6 @@ end
         model = mvnormal_by_itself(),
         data = (d = 1.0,),
         iterations = 1,
-        free_energy = false,
+        free_energy = false
     )
 end

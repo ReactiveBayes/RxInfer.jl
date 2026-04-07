@@ -39,7 +39,7 @@
             free_energy = true,
             initialization = init,
             iterations = vmp_iters,
-            returnvars = (s = KeepEach(), A = KeepEach(), B = KeepEach()),
+            returnvars = (s = KeepEach(), A = KeepEach(), B = KeepEach())
         )
     end
 

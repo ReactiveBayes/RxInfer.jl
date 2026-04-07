@@ -9,7 +9,7 @@ export getmodel,
     getfactornodes
 
 import Base: push!, show, getindex, haskey, firstindex, lastindex
-import ReactiveMP: getannotations, AbstractFactorNode
+import ReactiveMP: getaddons, AbstractFactorNode
 import GraphPPL: ModelGenerator, getmodel, getkwargs, create_model
 import Rocket: getscheduler
 
@@ -31,19 +31,10 @@ end
 get_data(x) = x
 get_data(x::UnfactorizedData) = x.data
 
-"""
-A structure that holds the factor graph representation of a probabilistic model.
-
-# Fields
-- `model::M`: The underlying factor graph model.
-- `metadata::Dict{Any, Any}`: A dictionary for storing arbitrary metadata during inference, e.g. from callbacks.
-"""
+"A structure that holds the factor graph representation of a probabilistic model."
 struct ProbabilisticModel{M}
     model::M
-    metadata::Dict{Any, Any}
 end
-
-ProbabilisticModel(model) = ProbabilisticModel(model, Dict{Any, Any}())
 
 "Returns the underlying factor graph model."
 getmodel(model::ProbabilisticModel) = model.model
@@ -129,10 +120,10 @@ function Base.show(io::IO, generator::ConditionedModelGenerator)
         join(
             Iterators.map(
                 kv -> string(kv[1], " = ", kv[2]),
-                getkwargs(getgenerator(generator)),
+                getkwargs(getgenerator(generator))
             ),
-            ", ",
-        ),
+            ", "
+        )
     )
     print(io, ")")
     if !isnothing(getconditioned_on(generator))
@@ -157,7 +148,7 @@ end
 
 function __infer_create_factor_graph_model(::ModelGenerator, conditioned_on)
     error(
-        "Cannot create a factor graph model from a `ModelGenerator` object. The `data` object must be a `NamedTuple` or a `Dict`. Got `$(typeof(conditioned_on))` instead.",
+        "Cannot create a factor graph model from a `ModelGenerator` object. The `data` object must be a `NamedTuple` or a `Dict`. Got `$(typeof(conditioned_on))` instead."
     )
 end
 
@@ -196,9 +187,9 @@ function __infer_create_data_interface(
     return GraphPPL.datalabel(
         model,
         context,
-        GraphPPL.NodeCreationOptions(; kind = :data, factorized = true),
+        GraphPPL.NodeCreationOptions(kind = :data, factorized = true),
         key,
-        GraphPPL.MissingCollection(),
+        GraphPPL.MissingCollection()
     )
 end
 
@@ -209,9 +200,9 @@ function __infer_create_data_interface(
     return GraphPPL.datalabel(
         model,
         context,
-        GraphPPL.NodeCreationOptions(; kind = :data, factorized = false),
+        GraphPPL.NodeCreationOptions(kind = :data, factorized = false),
         key,
-        get_data(data),
+        get_data(data)
     )
 end
 
@@ -220,9 +211,9 @@ function __infer_create_data_interface(model, context, key::Symbol, data)
     return GraphPPL.datalabel(
         model,
         context,
-        GraphPPL.NodeCreationOptions(; kind = :data, factorized = true),
+        GraphPPL.NodeCreationOptions(kind = :data, factorized = true),
         key,
-        data,
+        data
     )
 end
 

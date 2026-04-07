@@ -16,10 +16,10 @@ overwrite = commandline_args["overwrite"]
 formatted = all(
     map(
         folder -> JuliaFormatter.format(
-            folder; overwrite = overwrite, verbose = true
+            folder, overwrite = overwrite, verbose = true
         ),
-        folders_to_format,
-    ),
+        folders_to_format
+    )
 )
 
 if !formatted && !overwrite

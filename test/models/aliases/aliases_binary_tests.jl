@@ -21,7 +21,7 @@
             model = binary_aliases(aliases = aliases),
             data = (y = 0.5,),
             iterations = 100,
-            free_energy = true,
+            free_energy = true
         )
     end
 

@@ -73,7 +73,7 @@
         @test isapprox(
             mean(constrain_form(constraint, arbitrary_dist_3)),
             -10.0,
-            atol = 0.1,
+            atol = 0.1
         )
         @test_throws ErrorException constrain_form(constraint, arbitrary_dist_2)
 
@@ -84,12 +84,12 @@
         @test isapprox(
             mean(constrain_form(gopt_constraint, arbitrary_dist_4)),
             10,
-            atol = 0.1,
+            atol = 0.1
         )
         @test isapprox(
             mean(constrain_form(gopt_constraint, arbitrary_dist_5)),
             1,
-            atol = 0.1,
+            atol = 0.1
         )
 
         bm_constraint = PointMassFormConstraint(
@@ -131,7 +131,7 @@
         for _ in 1:3
             constraint = PointMassFormConstraint(
                 boundaries = (args...) -> (0.0, Inf),
-                starting_point = (args...) -> [1.0],
+                starting_point = (args...) -> [1.0]
             )
 
             d1 = Gamma(10rand(irng) + 1, 10rand(irng) + 1)
@@ -190,14 +190,14 @@
             prior in [
                 Beta(2.0, 2.0),
                 Truncated(Normal(0.5, 1.0), 0.0, 1.0),
-                Truncated(Gamma(10.0, 10.0), 0.0, 1.0),
+                Truncated(Gamma(10.0, 10.0), 0.0, 1.0)
             ]
 
             dataset = float.(rand(StableRNG(42), Bernoulli(p), 500))
             result = infer(
                 model = beta_bernoulli(prior = prior),
                 data = (y = dataset,),
-                constraints = constraints,
+                constraints = constraints
             )
             @test result.posteriors[:θ] isa PointMass
             @test mean(result.posteriors[:θ]) ≈ p atol = 1e-1

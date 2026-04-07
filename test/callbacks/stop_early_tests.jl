@@ -1,5 +1,5 @@
 @testitem "Tests for `StopEarlyIterationStrategy`" begin
-    using RxInfer, Rocket, UUIDs
+    using RxInfer, Rocket
 
     strategy = StopEarlyIterationStrategy(1e-3)
     strategy_with_atol = StopEarlyIterationStrategy(1e-5, 1e-3)
@@ -22,19 +22,13 @@
 
     # Push a free energy value
     next!(fe_subject, 100.0)
-    event1 = AfterIterationEvent(mock, 1, uuid4())
-    strategy(event1)
-    @test event1.stop_iteration === false
+    @test strategy(mock, 1) == false
 
     # Free energy value is close to the previous one, should stop
     next!(fe_subject, 100.0)
-    event2 = AfterIterationEvent(mock, 2, uuid4())
-    strategy(event2)
-    @test event2.stop_iteration === true
+    @test strategy(mock, 2) == true
 
     # Free energy value is not close to the previous one, should not stop
     next!(fe_subject, 110.0)
-    event3 = AfterIterationEvent(mock, 3, uuid4())
-    strategy(event3)
-    @test event3.stop_iteration === false
+    @test strategy(mock, 3) == false
 end

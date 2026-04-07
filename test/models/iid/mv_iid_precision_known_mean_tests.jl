@@ -20,7 +20,7 @@
             data = (y = data,),
             iterations = 10,
             returnvars = KeepLast(),
-            free_energy = Float64,
+            free_energy = Float64
         )
     end
 
@@ -62,16 +62,16 @@
             Y,
             (x, y) -> pdf(
                 MvNormalMeanPrecision(m, mean(result_km.posteriors[:P])),
-                [x, y],
+                [x, y]
             ),
-            label = "Estimated",
+            label = "Estimated"
         )
         p = contour!(
             p,
             X,
             Y,
             (x, y) -> pdf(MvNormalMeanPrecision(m, P), [x, y]),
-            label = "Real",
+            label = "Real"
         )
     end
 

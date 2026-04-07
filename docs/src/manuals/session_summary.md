@@ -146,7 +146,7 @@ For the `:inference` label, each invocation records:
   - Exception catching settings
 - **Additional Settings**:
   - Callbacks configuration
-  - Annotations configuration
+  - Addons configuration
   - Options configuration
 
 !!! note

@@ -25,7 +25,7 @@
     @rule Halfspace(:σ2, Marginalisation) (
         q_out::UnivariateNormalDistributionsFamily,
         q_a::PointMass,
-        q_γ::PointMass,
+        q_γ::PointMass
     ) = begin
         return ForcePointMass(
             1 / mean(q_γ) * sqrt(abs2(mean(q_out) - mean(q_a)) + var(q_out))
@@ -98,7 +98,7 @@
             # agent 1: start at (0,0) with 0 velocity, end at (0, 50) with 0 velocity
             [[0, 0, 0, 0], [0, 0, 50, 0]],
             # agent 2: start at (0,50) with 0 velocity, end at (0, 0) with 0 velocity
-            [[0, 0, 50, 0], [0, 0, 0, 0]],
+            [[0, 0, 50, 0], [0, 0, 0, 0]]
         ]...
     )
 
@@ -124,7 +124,7 @@
             iterations     = 100,
             returnvars     = KeepLast(),
             showprogress   = false,
-            options        = (limit_stack_depth = 100,),
+            options        = (limit_stack_depth = 100,)
         )
         @test mean(result.posteriors[:x][1, 1]) ≈ [0, 0, 0, 0] atol = 5e-1
         @test mean(result.posteriors[:x][1, nr_steps]) ≈ [0, 0, 50, 0] atol =
