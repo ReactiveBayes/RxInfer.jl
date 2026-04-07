@@ -9,7 +9,7 @@ whether these wrappers are preserved or stripped from the final result.
 
 ## Default behavior
 
-The default postprocessing strategy in [`infer`](@ref) depends on whether the `annotations = ` is specified or not:
+The default postprocessing strategy depends on whether [annotations](@ref) are enabled:
 
 - **Without annotations** (`annotations = nothing`, the default): the strategy is [`UnpackMarginalPostprocess`](@ref). 
   Since no annotation data is attached, the `Marginal` wrapper is removed and the result 
@@ -24,21 +24,21 @@ You can always override the default by passing `postprocess = ...` explicitly to
 
 ```@docs
 inference_postprocess
-DefaultPostprocess
 UnpackMarginalPostprocess
 NoopPostprocess
 ```
 
 ## [Custom postprocessing step](@id user-guide-inference-postprocess-custom)
 
-In order to implement a custom postprocessing strategy simply implement the [`inference_postprocess`](@ref) method:
+To implement a custom postprocessing strategy, define a new type and implement the 
+[`inference_postprocess`](@ref) method for it:
 
 ```@example custom-postprocessing
 using RxInfer
 
 struct CustomPostprocess end
 
-# For demonstration purposes out postprocessing step simply stringifyes the result
+# For demonstration purposes our postprocessing step simply stringifies the result
 RxInfer.inference_postprocess(::CustomPostprocess, result::Marginal) = string(ReactiveMP.getdata(result))
 ```
 

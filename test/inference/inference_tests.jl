@@ -1763,9 +1763,9 @@ end
     @test occursin(latest_invoke.context[:model_name], "simple_model")
     @test occursin("function simple_model", latest_invoke.context[:model])
     @test occursin(
-        "Normal(mean = 0.0, var = 1.0)", latest_invoke.context[:model]
+        "Normal(; mean = 0.0, var = 1.0)", latest_invoke.context[:model]
     )
-    @test occursin("Normal(mean = x, var = 1.0)", latest_invoke.context[:model])
+    @test occursin("Normal(; mean = x, var = 1.0)", latest_invoke.context[:model])
     @test length(latest_invoke.context[:data]) === 1
 
     # Check saved properties of the passed data `y`
