@@ -460,7 +460,7 @@ inference_fill_predictions(s::Symbol, d::DataVariable) = NamedTuple{Tuple([s])}(
 # RxInfer uses and extends ReactiveMP's callback functionality
 # Custom callback handlers should implement `ReactiveMP.handle_event` for the events they want to handle
 # `invoke_callback` dispatches to `handle_event` and always returns the event itself
-import ReactiveMP: invoke_callback, handle_event, merge_callbacks
+import ReactiveMP: invoke_callback, handle_event, merge_callbacks, generate_span_id
 
 unwrap_free_energy_option(option::Bool)                      = (option, Real)
 unwrap_free_energy_option(option::Type{T}) where {T <: Real} = (true, T)
