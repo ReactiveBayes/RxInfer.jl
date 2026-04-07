@@ -220,3 +220,89 @@ end
     # Test summary
     @test sprint(summary, te) == "TracedEvent(:before_model_creation)"
 end
+
+@testitem "trace = (symbols...) should only record the requested event types" begin
+    using RxInfer
+    using ReactiveMP: event_name
+
+    # Single-latent model: used where iteration events are not needed.
+    @model function trace_filter_simple_model(y)
+        τ ~ Gamma(; shape = 1.0, rate = 1.0)
+        y .~ Normal(; mean = 0.0, precision = τ)
+    end
+
+    # Two-latent mean-field model: ensures before/after_iteration events fire.
+    @model function trace_filter_iter_model(y)
+        τ ~ Gamma(; shape = 1.0, rate = 1.0)
+        x ~ Normal(; mean = 0.0, variance = 1.0)
+        y .~ Normal(; mean = x, precision = τ)
+    end
+
+    @constraints function trace_filter_iter_constraints()
+        q(x, τ) = q(x)q(τ)
+    end
+
+    iter_init = @initialization begin
+        q(τ) = Gamma(1.0, 1.0)
+    end
+
+    @testset "Only model-creation events are recorded when requested" begin
+        result = infer(;
+            model = trace_filter_simple_model(),
+            data = (y = [1.0, 2.0, 3.0],),
+            trace = (:before_model_creation, :after_model_creation),
+        )
+
+        trace = result.model.metadata[:trace]
+        @test trace isa RxInferTraceCallbacks
+
+        events = RxInfer.tracedevents(trace)
+        event_names = [event_name(typeof(e.event)) for e in events]
+
+        # Only the requested events should be present
+        @test all(n -> n in (:before_model_creation, :after_model_creation), event_names)
+        @test :before_model_creation in event_names
+        @test :after_model_creation in event_names
+
+        # Unrelated events must NOT appear
+        @test :before_inference ∉ event_names
+        @test :after_inference ∉ event_names
+    end
+
+    @testset "Only iteration events are recorded when requested" begin
+        result = infer(;
+            model = trace_filter_iter_model(),
+            data = (y = [1.0, 2.0, 3.0],),
+            iterations = 4,
+            initialization = iter_init,
+            constraints = trace_filter_iter_constraints(),
+            trace = (:before_iteration, :after_iteration),
+        )
+
+        trace = result.model.metadata[:trace]
+        events = RxInfer.tracedevents(trace)
+        event_names = [event_name(typeof(e.event)) for e in events]
+
+        # Only iteration events should be present
+        @test all(n -> n in (:before_iteration, :after_iteration), event_names)
+        @test count(==(:before_iteration), event_names) == 4
+        @test count(==(:after_iteration), event_names) == 4
+
+        # Model-creation and inference-level events must NOT appear
+        @test :before_model_creation ∉ event_names
+        @test :after_model_creation ∉ event_names
+        @test :before_inference ∉ event_names
+        @test :after_inference ∉ event_names
+    end
+
+    @testset "Empty tuple records no events" begin
+        result = infer(;
+            model = trace_filter_simple_model(),
+            data = (y = [1.0, 2.0, 3.0],),
+            trace = (),
+        )
+
+        trace = result.model.metadata[:trace]
+        @test isempty(RxInfer.tracedevents(trace))
+    end
+end

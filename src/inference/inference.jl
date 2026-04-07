@@ -582,7 +582,7 @@ Check the official documentation for more information about some of the argument
 - `autostart = true`: specifies whether to call `RxInfer.start` on the created engine automatically or not (exclusive for streamline inference)
 - `warn = true`: enables/disables warnings
 - `benchmark = false`: when set to `true`, automatically merges a [`RxInferBenchmarkCallbacks`](@ref) instance with the user-provided `callbacks`. The benchmark results are accessible via `result.model.metadata[:benchmark]`. See [Benchmark callbacks](@ref manual-inference-benchmark-callbacks).
-- `trace = false`: when set to `true`, automatically merges a [`RxInferTraceCallbacks`](@ref) instance with the user-provided `callbacks`. The trace results are accessible via `result.model.metadata[:trace]`. See [Trace callbacks](@ref manual-inference-trace-callbacks).
+- `trace = false`: when set to `true`, automatically merges a [`RxInferTraceCallbacks`](@ref) instance with the user-provided `callbacks`. Can also be a `Tuple` of `Symbol`s to trace only specific event types (e.g., `trace = (:before_iteration, :after_iteration)`). The trace results are accessible via `result.model.metadata[:trace]`. See [Trace callbacks](@ref manual-inference-trace-callbacks).
 - `session = RxInfer.default_session()`: current logging session for the RxInfer invokes, see `Session` for more details, pass `nothing` to disable logging
 
 ## Error hints
@@ -659,11 +659,9 @@ function infer(;
         )
     end
 
-    if trace
-        callbacks = merge_callbacks(
-            callbacks,
-            RxInferTraceCallbacks(),
-        )
+    if trace !== false
+        trace_callbacks = trace === true ? RxInferTraceCallbacks() : RxInferTraceCallbacks(trace)
+        callbacks = merge_callbacks(callbacks, trace_callbacks)
     end
 
     return with_session(session, :inference) do invoke
