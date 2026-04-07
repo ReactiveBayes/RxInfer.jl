@@ -126,7 +126,6 @@ function create_marginals_stream(
                     ),
                     false,
                     false,
-                    nothing,
                 )
                 return nothing
             end

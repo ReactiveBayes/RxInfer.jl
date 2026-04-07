@@ -288,9 +288,10 @@ result = infer(
 For the full list of available events, supported callback types, model metadata, and built-in callback handlers, see the [Callbacks](@ref manual-inference-callbacks) section.
 See also [Early stopping](@ref manual-inference-early-stopping) and [Benchmark callbacks](@ref manual-inference-benchmark-callbacks).
 
-- ### `addons`
+- ### `annotations`
 
-The `addons` field extends the default message computation rules with some extra information, e.g. computing log-scaling factors of messages or saving debug-information. Accepts a single addon or a tuple of addons. 
+Sets a tuple of annotation processors that attach extra information to messages and marginals during inference. For example, `annotations = LogScaleAnnotations()` tracks log-scale normalization constants, which is useful for computing Bayes factors and model evidence in mixture models. When annotations are enabled, the inference results preserve the `Marginal` wrapper type so that annotation data remains accessible via `ReactiveMP.getannotations`. See `ReactiveMP.jl` documentation for available annotation types and how to implement custom annotation processors.
+
 Automatically changes the default value of the `postprocess` argument to `NoopPostprocess`.
 
 - ### `postprocess`
@@ -298,9 +299,9 @@ Automatically changes the default value of the `postprocess` argument to `NoopPo
 Also read the [Inference results postprocessing](@ref user-guide-inference-postprocess) section.
 
 The `postprocess` keyword argument controls whether the inference results must be modified in some way before exiting the `inference` function.
-By default, the inference function uses the `DefaultPostprocess` strategy, which by default removes the `Marginal` wrapper type from the results.
-Change this setting to `NoopPostprocess` if you would like to keep the `Marginal` wrapper type, which might be useful in the combination with the `addons` argument.
-If the `addons` argument has been used, automatically changes the default strategy value to `NoopPostprocess`.
+By default, the inference function removes the `Marginal` wrapper type from the results.
+Change this setting to `NoopPostprocess` if you would like to keep the `Marginal` wrapper type.
+If the `annotations` argument has been used, automatically changes the default strategy value to `NoopPostprocess`.
 
 - ### Error hints
 

@@ -64,7 +64,10 @@ makedocs(;
             "Debugging" => "manuals/debugging.md",
             "Session summary" => "manuals/session_summary.md",
             "Sharing sessions & telemetry" => "manuals/telemetry.md",
-            "Migration from v2 to v3" => "manuals/migration-guide-v2-v3.md",
+            "Migration guides" => [
+                "Migration from v2 to v3" => "manuals/migration/v2-to-v3.md",
+                "Migration from v4 to v5" => "manuals/migration/v4-to-v5.md",
+            ],
             "Sharp bits of RxInfer" => [
                 "Overview" => "manuals/sharpbits/overview.md",
                 "Rule Not Found Error" => "manuals/sharpbits/rule-not-found.md",

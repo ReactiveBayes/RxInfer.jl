@@ -1,30 +1,30 @@
 @testitem "ReactiveMPInferenceOptions can be constructed" begin
     import RxInfer: ReactiveMPInferenceOptions
-    import ReactiveMP: AbstractAddon
+    import ReactiveMP: AbstractAnnotations
 
     struct MyScheduler end
     struct MyAnotherScheduler end
-    struct MyAddons <: AbstractAddon end
-    struct MyAnotherAddons <: AbstractAddon end
+    struct MyAnnotations <: AbstractAnnotations end
+    struct MyAnotherAnnotations <: AbstractAnnotations end
 
-    options = ReactiveMPInferenceOptions(MyScheduler(), MyAddons())
+    options = ReactiveMPInferenceOptions(MyScheduler(), MyAnnotations())
 
     @test RxInfer.getscheduler(options) === MyScheduler()
-    @test RxInfer.getaddons(options) === (MyAddons(),)
+    @test RxInfer.getannotations(options) === (MyAnnotations(),)
     @test RxInfer.getrulefallback(options) === nothing
     @test RxInfer.getcallbacks(options) === nothing
 
     options = RxInfer.setscheduler(options, MyAnotherScheduler())
 
     @test RxInfer.getscheduler(options) === MyAnotherScheduler()
-    @test RxInfer.getaddons(options) === (MyAddons(),)
+    @test RxInfer.getannotations(options) === (MyAnnotations(),)
     @test RxInfer.getrulefallback(options) === nothing
     @test RxInfer.getcallbacks(options) === nothing
 
-    options = RxInfer.setaddons(options, MyAnotherAddons())
+    options = RxInfer.setannotations(options, MyAnotherAnnotations())
 
     @test RxInfer.getscheduler(options) === MyAnotherScheduler()
-    @test RxInfer.getaddons(options) === (MyAnotherAddons(),)
+    @test RxInfer.getannotations(options) === (MyAnotherAnnotations(),)
     @test RxInfer.getrulefallback(options) === nothing
     @test RxInfer.getcallbacks(options) === nothing
 
@@ -32,7 +32,7 @@
     options = RxInfer.setrulefallback(options, rulefallback)
 
     @test RxInfer.getscheduler(options) === MyAnotherScheduler()
-    @test RxInfer.getaddons(options) === (MyAnotherAddons(),)
+    @test RxInfer.getannotations(options) === (MyAnotherAnnotations(),)
     @test RxInfer.getrulefallback(options) === rulefallback
     @test RxInfer.getcallbacks(options) === nothing
 
@@ -40,7 +40,7 @@
     options = RxInfer.setcallbacks(options, callbacks)
 
     @test RxInfer.getscheduler(options) === MyAnotherScheduler()
-    @test RxInfer.getaddons(options) === (MyAnotherAddons(),)
+    @test RxInfer.getannotations(options) === (MyAnotherAnnotations(),)
     @test RxInfer.getrulefallback(options) === rulefallback
     @test RxInfer.getcallbacks(options) === callbacks
 end

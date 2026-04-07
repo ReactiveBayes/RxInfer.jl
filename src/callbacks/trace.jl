@@ -18,8 +18,11 @@ struct TracedEvent
     time_ns::UInt64
 end
 
-Base.summary(io::IO, te::TracedEvent) =
-    print(io, "TracedEvent(:$(event_name(typeof(te.event))))")
+TracedEvent(event::Event) = TracedEvent(event, time_ns())
+
+Base.summary(io::IO, te::TracedEvent) = print(
+    io, "TracedEvent(:$(event_name(typeof(te.event))))"
+)
 
 """
     RxInferTraceCallbacks()
@@ -76,8 +79,9 @@ Returns the vector of [`TracedEvent`](@ref) recorded by the trace callbacks filt
 
 See also: [`RxInferTraceCallbacks`](@ref).
 """
-tracedevents(event::Symbol, callbacks::RxInferTraceCallbacks) =
-    filter(e -> event_name(typeof(e.event)) == event, callbacks.events)
+tracedevents(event::Symbol, callbacks::RxInferTraceCallbacks) = filter(
+    e -> event_name(typeof(e.event)) == event, callbacks.events
+)
 
 Base.isempty(callbacks::RxInferTraceCallbacks) = isempty(callbacks.events)
 
@@ -115,7 +119,7 @@ import ReactiveMP: handle_event, Event, event_name
 
 # Catch-all: trace every event
 function ReactiveMP.handle_event(callbacks::RxInferTraceCallbacks, event::Event)
-    push!(callbacks.events, TracedEvent(event, time_ns()))
+    push!(callbacks.events, TracedEvent(event))
     return nothing
 end
 
@@ -131,7 +135,7 @@ function ReactiveMP.handle_event(
         )
     end
     event.model.metadata[:trace] = callbacks
-    push!(callbacks.events, TracedEvent(event, time_ns()))
+    push!(callbacks.events, TracedEvent(event))
     return nothing
 end
 

@@ -85,8 +85,7 @@ ensure_update(
     tap() do update
         set_updated!(updated)
         invoke_callback(
-            callbacks,
-            OnMarginalUpdateEvent(model, variable_name, update),
+            callbacks, OnMarginalUpdateEvent(model, variable_name, update)
         )
     end
 
@@ -535,8 +534,8 @@ include("streaming.jl")
         free_energy_diagnostics = DefaultObjectiveDiagnosticChecks,
         showprogress = false,
         callbacks = nothing,
-        addons = nothing,
-        postprocess = DefaultPostprocess(),
+        annotations = nothing,
+        postprocess = nothing,
         warn = true,
         events = nothing,
         uselock = false,
@@ -575,8 +574,8 @@ Check the official documentation for more information about some of the argument
 - `showprogress = false`: show progress module, optional, defaults to false (exclusive for batch inference)
 - `catch_exception`  specifies whether exceptions during the inference procedure should be caught, optional, defaults to false (exclusive for batch inference)
 - `callbacks = nothing`: inference cycle callbacks, optional. Can be a `NamedTuple`, `Dict`, or any custom structure that implements `ReactiveMP.handle_event`. See [Callbacks](@ref manual-inference-callbacks) for a comprehensive overview, [Benchmark callbacks](@ref manual-inference-benchmark-callbacks) for performance analysis, [Trace callbacks](@ref manual-inference-trace-callbacks) for event tracing, and [Early stopping](@ref manual-inference-early-stopping) for an opt-in callback example.
-- `addons = nothing`: inject and send extra computation information along messages
-- `postprocess = DefaultPostprocess()`: inference results postprocessing step, optional
+- `annotations = nothing`: a tuple of annotation processors that attach extra information to messages and marginals during inference. For example, `annotations = LogScaleAnnotations()` tracks log-scale normalization constants, which is useful for computing Bayes factors and model evidence in mixture models. When annotations are enabled, the inference results preserve the `Marginal` wrapper type so that annotation data remains accessible via `ReactiveMP.getannotations`. See `ReactiveMP.jl` documentation for available annotation types and how to implement custom annotation processors.
+- `postprocess = nothing`: inference results postprocessing step, optional. By default, uses [`UnpackMarginalPostprocess`](@ref) when `annotations` is `nothing` (strips the `Marginal` wrapper), and [`NoopPostprocess`](@ref) when annotations are enabled (preserves the wrapper). See [Inference results postprocessing](@ref user-guide-inference-postprocess) for details on implementing custom strategies.
 - `events = nothing`: inference cycle events, optional (exclusive for streamline inference)
 - `uselock = false`: specifies either to use the lock structure for the inference or not, if set to true uses `Base.Threads.SpinLock`. Accepts custom `AbstractLock`. (exclusive for streamline inference)
 - `autostart = true`: specifies whether to call `RxInfer.start` on the created engine automatically or not (exclusive for streamline inference)
@@ -618,8 +617,8 @@ function infer(;
     catch_exception = false, # batch specific
     disable_inference_error_hint = false, # batch specific
     callbacks = nothing,
-    addons = nothing,
-    postprocess = DefaultPostprocess(),
+    annotations = nothing,
+    postprocess = nothing,
     events = nothing, # streamline specific
     uselock = false, # streamline  specific
     autostart = true, # streamline specific
@@ -653,17 +652,11 @@ function infer(;
     infer_check_dicttype(:data, data)
 
     if benchmark
-        callbacks = merge_callbacks(
-            callbacks,
-            RxInferBenchmarkCallbacks(),
-        )
+        callbacks = merge_callbacks(callbacks, RxInferBenchmarkCallbacks())
     end
 
     if trace
-        callbacks = merge_callbacks(
-            callbacks,
-            RxInferTraceCallbacks(),
-        )
+        callbacks = merge_callbacks(callbacks, RxInferTraceCallbacks())
     end
 
     return with_session(session, :inference) do invoke
@@ -692,7 +685,7 @@ function infer(;
             ctx[:catch_exception] = catch_exception
 
             ctx[:callbacks] = log_dictnt_entries(callbacks)
-            ctx[:addons] = log_dictnt_entries(addons)
+            ctx[:annotations] = log_dictnt_entries(annotations)
             ctx[:options] = log_dictnt_entries(options)
         end
 
@@ -718,7 +711,7 @@ function infer(;
                 allow_node_contraction = allow_node_contraction,
                 showprogress = showprogress,
                 callbacks = callbacks,
-                addons = addons,
+                annotations = annotations,
                 postprocess = postprocess,
                 warn = warn,
                 catch_exception = catch_exception,
@@ -749,7 +742,7 @@ function infer(;
                 allow_node_contraction = allow_node_contraction,
                 autostart = autostart,
                 callbacks = callbacks,
-                addons = addons,
+                annotations = annotations,
                 postprocess = postprocess,
                 warn = warn,
                 events = events,
