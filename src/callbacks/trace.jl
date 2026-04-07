@@ -24,8 +24,11 @@ Base.summary(io::IO, te::TracedEvent) =
 """
     RxInferTraceCallbacks()
 
-A callback structure that records all callback events during the inference procedure.
+A callback structure that records callback events during the inference procedure.
 Each event is stored as a [`TracedEvent`](@ref) wrapping the original event object.
+
+When constructed with no arguments (or `trace = true`), all events are recorded.
+When constructed with a tuple of `Symbol`s, only events whose names are in that tuple are recorded.
 
 After model creation, the trace callbacks instance is automatically saved into the model's metadata
 under the `:trace` key (i.e., `model.metadata[:trace]`), making it accessible from the inference result via
@@ -35,8 +38,11 @@ Use `RxInfer.tracedevents(callbacks)` to retrieve the vector of traced events.
 
 # Example
 ```julia
-# Create a trace callbacks instance
+# Create a trace callbacks instance that records all events
 trace = RxInferTraceCallbacks()
+
+# Or record only specific events
+trace = RxInferTraceCallbacks((:before_iteration, :after_iteration))
 
 result = infer(
     model = my_model(),
@@ -56,9 +62,11 @@ result.model.metadata[:trace] === trace # true
 """
 struct RxInferTraceCallbacks
     events::Vector{TracedEvent}
+    filter::Union{Nothing, Set{Symbol}}
 end
 
-RxInferTraceCallbacks() = RxInferTraceCallbacks(TracedEvent[])
+RxInferTraceCallbacks() = RxInferTraceCallbacks(TracedEvent[], nothing)
+RxInferTraceCallbacks(filter::Tuple{Vararg{Symbol}}) = RxInferTraceCallbacks(TracedEvent[], Set{Symbol}(filter))
 
 """
     tracedevents(callbacks::RxInferTraceCallbacks)
@@ -113,9 +121,11 @@ end
 
 import ReactiveMP: handle_event, Event, event_name
 
-# Catch-all: trace every event
+# Catch-all: trace every event (respects optional filter)
 function ReactiveMP.handle_event(callbacks::RxInferTraceCallbacks, event::Event)
-    push!(callbacks.events, TracedEvent(event, time_ns()))
+    if isnothing(callbacks.filter) || event_name(typeof(event)) in callbacks.filter
+        push!(callbacks.events, TracedEvent(event, time_ns()))
+    end
     return nothing
 end
 
@@ -126,11 +136,13 @@ function ReactiveMP.handle_event(
     if haskey(event.model.metadata, :trace)
         error(
             "The model's metadata already contains a `:trace` key. " *
-            "This can happen if you pass `trace = true` while also providing " *
+            "This can happen if you pass `trace = true` (or a tuple of event names) while also providing " *
             "`RxInferTraceCallbacks` in the `callbacks` argument. Use one or the other, not both.",
         )
     end
     event.model.metadata[:trace] = callbacks
-    push!(callbacks.events, TracedEvent(event, time_ns()))
+    if isnothing(callbacks.filter) || event_name(typeof(event)) in callbacks.filter
+        push!(callbacks.events, TracedEvent(event, time_ns()))
+    end
     return nothing
 end
