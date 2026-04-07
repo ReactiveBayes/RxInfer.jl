@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- **Breaking:** Addons have been renamed to annotations to match the new ReactiveMP API. This affects the `infer` function and related types:
+  - The `addons` keyword argument in `infer()`, `batch_inference()`, and `streaming_inference()` has been renamed to `annotations`. Update `infer(..., addons = AddonLogScale())` to `infer(..., annotations = LogScaleAnnotations())`.
+  - In NamedTuple-based options, `options = (addons = ...,)` is now `options = (annotations = ...,)`.
+  - `AddonLogScale` has been renamed to `LogScaleAnnotations` (from ReactiveMP).
+  - `AddonMemory` has been renamed to `InputArgumentsAnnotations` (from ReactiveMP).
+  - `getaddons` / `setaddons` on `ReactiveMPInferenceOptions` have been renamed to `getannotations` / `setannotations`.
+  - The `Marginal` constructor changed: `Marginal(data, is_point, is_clamped, addons)` is now `Marginal(data, is_point, is_clamped)` (3-arg) or `Marginal(data, is_point, is_clamped, annotation_dict)` with a `ReactiveMP.AnnotationDict`. The `Marginal` type no longer has a type parameter for addons (`Marginal{D}` instead of `Marginal{D, A}`).
+  - See the ReactiveMP documentation for the new annotation processor API and how to implement custom annotations.
+- **Breaking:** `DefaultPostprocess` has been removed. The `postprocess` keyword in `infer()` now defaults to `nothing`, and the strategy is selected automatically based on the `annotations` keyword: `UnpackMarginalPostprocess()` when `annotations` is `nothing` (the default), and `NoopPostprocess()` when annotations are enabled. If you previously passed `postprocess = DefaultPostprocess()` explicitly, simply remove it. Custom postprocessing strategies passed via `postprocess = ...` continue to work unchanged.
 - **Breaking:** The callback system has been refactored to use event structs instead of dispatch with positional arguments. All callback events are now concrete structs subtyping `ReactiveMP.Event{E}` with named fields. Callbacks receive a single event object instead of positional arguments.
   - **NamedTuple/Dict callbacks**: Functions now receive a single event object instead of positional args. E.g. `(model, iteration) -> ...` becomes `(event) -> println(event.model, event.iteration)`.
   - **Custom callback structs**: The `callbacks` field of `infer` function now accepts custom structs that implement `ReactiveMP.handle_event(::MyCustomCallbacksHandler, event::SomeEvent)`.

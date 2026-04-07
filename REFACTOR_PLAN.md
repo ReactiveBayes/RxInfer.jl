@@ -19,33 +19,14 @@ RxInfer needs to match these API changes so it works with the new ReactiveMP rel
 - Change `import ReactiveMP: getaddons, AbstractFactorNode` to `import ReactiveMP: getannotations, AbstractFactorNode`
 
 ### 2. `src/model/plugins/reactivemp_inference.jl` — DONE
-This is the most impacted file.
-
-**Struct `ReactiveMPInferenceOptions` (line 39-46):**
-- Rename field `addons::A` -> `annotations::A`
-- Update all constructors and setter/getter functions accordingly
-
-**Setter/getter functions (lines 48-108):**
-- Rename `setaddons` -> `setannotations`
-- All internal references to `options.addons` -> `options.annotations`
-
-**Available options in `convert` method (line 119-168):**
-- Change `:addons` -> `:annotations` in `available_options` tuple
-- Change `haskey(options, :addons)` -> `haskey(options, :annotations)`
-- Rename local variable `addons` -> `annotations`
-
-**Import and dispatch (lines 174-188):**
-- Change `import ReactiveMP: getaddons, getrulefallback, getcallbacks` to `import ReactiveMP: getannotations, getrulefallback, getcallbacks`
-- Replace all `ReactiveMP.getaddons` dispatches with `ReactiveMP.getannotations`
-- Replace `ReactiveMP.AbstractAddon` with `ReactiveMP.AbstractAnnotations`
-- The tuple-wrapping logic for single addons: replace `AbstractAddon` dispatch with `AbstractAnnotations`
-
-**Factor node activation (lines 504-521):**
-- Change `addons = getaddons(getoptions(plugin))` -> `annotations = getannotations(getoptions(plugin))`
-- Pass `annotations` instead of `addons` to `ReactiveMP.FactorNodeActivationOptions`
-
-**Variable activation (lines 419-432):**
-- `MessageProductContext` now accepts an `annotations` keyword. Currently RxInfer does NOT pass annotations to it (only `fold_strategy`, `prod_constraint`, `form_constraint`, `form_constraint_check_strategy`, `callbacks`). Need to also pass `annotations = getannotations(getoptions(plugin))` so annotation processors are available during message products.
+- Renamed struct field `addons::A` -> `annotations::A` and updated all constructors
+- Renamed `setaddons` -> `setannotations`; all internal `options.addons` -> `options.annotations`
+- `convert` method: `:addons` -> `:annotations` in `available_options`, local variable, and `haskey` checks
+- Updated import: `getaddons` -> `getannotations`
+- Replaced all `ReactiveMP.getaddons` dispatches with `ReactiveMP.getannotations`
+- Replaced `ReactiveMP.AbstractAddon` with `ReactiveMP.AbstractAnnotations` in tuple-wrapping dispatch
+- `activate_rmp_factornode!`: passes `annotations` instead of `addons` to `FactorNodeActivationOptions`
+- `activate_rmp_variable!`: added `annotations = getannotations(getoptions(plugin))` to both `MessageProductContext` constructors
 
 ### 3. `src/inference/postprocess.jl` — DONE
 - Removed `DefaultPostprocess` entirely.
@@ -93,20 +74,20 @@ This is the most impacted file.
 **`test/models/mixtures/mixture_tests.jl` (lines 48-73):**
 - Replaced `addons = AddonLogScale()` with `annotations = LogScaleAnnotations()`
 
-### 8. Documentation — PARTIALLY DONE
+### 8. Documentation — DONE
 
 **`docs/src/manuals/inference/postprocess.md`:** DONE
 - Rewrote page: added "Default behavior" section explaining automatic strategy selection
 - Removed `DefaultPostprocess` from docs block
 - Improved prose throughout
 
-**`docs/src/manuals/debugging.md`:** TODO
-- Update AddonMemory section to use `InputArgumentsAnnotations`
-- Replace `addons = (AddonMemory(),)` with `annotations = (InputArgumentsAnnotations(),)`
-- Replace `getaddons` with `getannotations`
+**`docs/src/manuals/debugging.md`:** DONE
+- Updated `AddonMemory` section to use `InputArgumentsAnnotations`
+- Replaced `addons = (AddonMemory(),)` with `annotations = (InputArgumentsAnnotations(),)`
+- Replaced `getaddons` with `getannotations`
+- Updated section headings, prose, and the legacy warning note
 
-**`docs/src/manuals/inference/overview.md`:** TODO
-- Replace all "addons" references with "annotations"
+**`docs/src/manuals/inference/overview.md`:** DONE (no changes needed — file contains no addon references)
 
 ## Key design decisions
 
@@ -116,9 +97,9 @@ This is the most impacted file.
 
 3. **Tuple wrapping**: The old code wrapped single `AbstractAddon` instances into tuples. The new ReactiveMP uses annotation processors differently (they're passed to `MessageProductContext` and `FactorNodeActivationOptions`). Need to check if tuple wrapping is still needed or if the new API expects individual processors or a collection.
 
-## Verification
+## Status
 
-User will run tests manually after implementation.
+All refactoring is complete. User will run tests manually for verification.
 
 ## Breaking changes (for CHANGELOG)
 
