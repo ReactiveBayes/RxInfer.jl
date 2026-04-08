@@ -63,6 +63,22 @@ module TensorBoardLoggerExt
 
         counts = Dict{Symbol, Int}()
 
+        # Pre-compute iteration durations from matched before/after pairs via span_id
+        iteration_durations = Dict{Int, Float64}()  # iteration number => elapsed ms
+        before_times = Dict{Any, Tuple{Int, UInt64}}()  # span_id => (iteration, time_ns)
+        for traced_event in events
+            ev = traced_event.event
+            et = event_name(typeof(ev))
+            if et === :before_iteration
+                before_times[ev.span_id] = (ev.iteration, traced_event.time_ns)
+            elseif et === :after_iteration
+                if haskey(before_times, ev.span_id)
+                    (iter, t0) = before_times[ev.span_id]
+                    iteration_durations[iter] = (traced_event.time_ns - t0) / 1e6
+                end
+            end
+        end
+
         for (idx, traced_event) in enumerate(events)
             ev = traced_event.event
             event_type = event_name(typeof(ev))
@@ -92,6 +108,9 @@ module TensorBoardLoggerExt
                     "model: $(ev.model) | iteration: $(ev.iteration) | stop_iteration: $(ev.stop_iteration) | span_id: $(ev.span_id)"; step=ev.iteration)
 
             elseif event_type === :after_iteration
+                if haskey(iteration_durations, ev.iteration)
+                    TensorBoardLogger.log_value(logger, "iteration_time_ms", iteration_durations[ev.iteration]; step=ev.iteration)
+                end
                 TensorBoardLogger.log_text(logger, "after_iteration",
                     "model: $(ev.model) | iteration: $(ev.iteration) | stop_iteration: $(ev.stop_iteration) | span_id: $(ev.span_id)"; step=ev.iteration)
 
