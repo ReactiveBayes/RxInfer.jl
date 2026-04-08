@@ -1,7 +1,6 @@
 import ReactiveMP:
     getlocalclusters,
     apply_skip_filter,
-    schedule_on,
     sdtype,
     getinterfaces,
     name,
@@ -14,22 +13,19 @@ import ReactiveMP:
 
 const MarginalComputationDefaultSkipStrategy = IncludeAll()
 
-const MarginalComputationDefaultScheduler = AsapScheduler()
 const ReactiveMPExtraMarginalStreamKey = GraphPPL.NodeDataExtraKey{
     :marginal_stream, Any
 }()
 
-struct MarginalComputationOptions{S, M}
+struct MarginalComputationOptions{M}
     skip_strategy::M
-    scheduler::S
 end
 
 MarginalComputationOptions() = MarginalComputationOptions(
-    MarginalComputationDefaultSkipStrategy, MarginalComputationDefaultScheduler
+    MarginalComputationDefaultSkipStrategy
 )
 
 get_skip_strategy(options::MarginalComputationOptions) = options.skip_strategy
-get_scheduler(options::MarginalComputationOptions) = options.scheduler
 
 """
 A plugin for GraphPPL graph engine that forces the computation of marginal distributions for every node in the graph.
@@ -65,13 +61,12 @@ function GraphPPL.postprocess_plugin(
     model::Model,
 )
     skip_strategy = get_skip_strategy(options)
-    scheduler     = get_scheduler(options)
 
     factor_nodes(model) do _, node
         factornode = getextra(node, ReactiveMPExtraFactorNodeKey)
         metadata = getextra(node, GraphPPL.MetaExtraKey, nothing)
         subscription = create_marginals_stream(
-            factornode, metadata, skip_strategy, scheduler
+            factornode, metadata, skip_strategy
         )
         setextra!(node, ReactiveMPExtraMarginalStreamKey, subscription)
     end
@@ -79,10 +74,10 @@ function GraphPPL.postprocess_plugin(
 end
 
 function create_marginals_stream(
-    node::ReactiveMP.AbstractFactorNode, meta, skip_strategy, scheduler
+    node::ReactiveMP.AbstractFactorNode, meta, skip_strategy
 )
     return create_marginals_stream(
-        sdtype(node), node, meta, skip_strategy, scheduler
+        sdtype(node), node, meta, skip_strategy
     )
 end
 
@@ -91,12 +86,9 @@ function create_marginals_stream(
     node::ReactiveMP.AbstractFactorNode,
     meta,
     skip_strategy,
-    scheduler,
 )
-    fnstream = let skip_strategy = skip_strategy, scheduler = scheduler
-        (interface) ->
-            apply_skip_filter(messagein(interface), skip_strategy) |>
-            schedule_on(scheduler)
+    fnstream = let skip_strategy = skip_strategy
+        (interface) -> apply_skip_filter(messagein(interface), skip_strategy)
     end
 
     tinterfaces = Tuple(getinterfaces(node))
@@ -148,12 +140,9 @@ function create_marginals_stream(
     node::ReactiveMP.AbstractFactorNode,
     meta,
     skip_strategy,
-    scheduler,
 )
-    fnstream = let skip_strategy = skip_strategy, scheduler = scheduler
-        (localmarginal) ->
-            apply_skip_filter(getmarginal(localmarginal), skip_strategy) |>
-            schedule_on(scheduler)
+    fnstream = let skip_strategy = skip_strategy
+        (localmarginal) -> apply_skip_filter(getmarginal(localmarginal), skip_strategy)
     end
 
     localmarginals = getmarginals(getlocalclusters(node))

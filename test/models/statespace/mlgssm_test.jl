@@ -62,7 +62,6 @@
             model = model(x0 = x0, A = A, B = B, Q = Q, P = P),
             data = (y = data,),
             free_energy = true,
-            options = (limit_stack_depth = 500,),
         )
     end
 

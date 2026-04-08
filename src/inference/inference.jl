@@ -353,8 +353,7 @@ function inference_process_error(
         Stack overflow error detected during inference. This can happen with large model graphs 
         due to recursive message updates.
 
-        Possible solution:
-        Try using the `limit_stack_depth` inference option. If this does not resolve the issue,
+        If this issue persists,
         please open a GitHub issue at https://github.com/ReactiveBayes/RxInfer.jl/issues and we'll help investigate.
 
         For more details:

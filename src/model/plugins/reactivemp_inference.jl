@@ -25,19 +25,16 @@ Creates model inference options object. The list of available options is present
 
 ### Options
 
-- `limit_stack_depth`: limits the stack depth for computing messages, helps with `StackOverflowError` for some huge models, but reduces the performance of inference backend. Accepts integer as an argument that specifies the maximum number of recursive depth. Lower is better for stack overflow error, but worse for performance.
 - `warn`: (optional) flag to suppress warnings. Warnings are not displayed if set to `false`. Defaults to `true`.
 - `force_marginal_computation`: (optional) flag to force computation of marginals even when not explicitly requested. Defaults to `false`.
 
 ### Advanced options
 
-- `scheduler`: changes the scheduler of reactive streams, see Rocket.jl for more info, defaults to `AsapScheduler`.
 - `rulefallback`: specifies a global message update rule fallback for cases when a specific message update rule is not available. Consult `ReactiveMP` documentation for the list of available callbacks.
 
 See also: [`infer`](@ref)
 """
-struct ReactiveMPInferenceOptions{S, A, R, E}
-    scheduler::S
+struct ReactiveMPInferenceOptions{A, R, E}
     annotations::A
     warn::Bool
     force_marginal_computation::Bool
@@ -45,34 +42,7 @@ struct ReactiveMPInferenceOptions{S, A, R, E}
     callbacks::E
 end
 
-ReactiveMPInferenceOptions(scheduler, annotations) = ReactiveMPInferenceOptions(
-    scheduler, annotations, true, false, nothing, nothing
-)
-ReactiveMPInferenceOptions(scheduler, annotations, warn) = ReactiveMPInferenceOptions(
-    scheduler, annotations, warn, false, nothing, nothing
-)
-ReactiveMPInferenceOptions(scheduler, annotations, warn, force_marginal_computation) = ReactiveMPInferenceOptions(
-    scheduler, annotations, warn, force_marginal_computation, nothing, nothing
-)
-ReactiveMPInferenceOptions(scheduler, annotations, warn, force_marginal_computation, rulefallback) = ReactiveMPInferenceOptions(
-    scheduler,
-    annotations,
-    warn,
-    force_marginal_computation,
-    rulefallback,
-    nothing,
-)
-
-setscheduler(options::ReactiveMPInferenceOptions, scheduler) = ReactiveMPInferenceOptions(
-    scheduler,
-    options.annotations,
-    options.warn,
-    options.force_marginal_computation,
-    options.rulefallback,
-    options.callbacks,
-)
 setannotations(options::ReactiveMPInferenceOptions, annotations) = ReactiveMPInferenceOptions(
-    options.scheduler,
     annotations,
     options.warn,
     options.force_marginal_computation,
@@ -80,7 +50,6 @@ setannotations(options::ReactiveMPInferenceOptions, annotations) = ReactiveMPInf
     options.callbacks,
 )
 setwarn(options::ReactiveMPInferenceOptions, warn) = ReactiveMPInferenceOptions(
-    options.scheduler,
     options.annotations,
     warn,
     options.force_marginal_computation,
@@ -88,7 +57,6 @@ setwarn(options::ReactiveMPInferenceOptions, warn) = ReactiveMPInferenceOptions(
     options.callbacks,
 )
 setforce_marginal_computation(options::ReactiveMPInferenceOptions, force_marginal_computation) = ReactiveMPInferenceOptions(
-    options.scheduler,
     options.annotations,
     options.warn,
     force_marginal_computation,
@@ -96,7 +64,6 @@ setforce_marginal_computation(options::ReactiveMPInferenceOptions, force_margina
     options.callbacks,
 )
 setrulefallback(options::ReactiveMPInferenceOptions, rulefallback) = ReactiveMPInferenceOptions(
-    options.scheduler,
     options.annotations,
     options.warn,
     options.force_marginal_computation,
@@ -104,7 +71,6 @@ setrulefallback(options::ReactiveMPInferenceOptions, rulefallback) = ReactiveMPI
     options.callbacks,
 )
 setcallbacks(options::ReactiveMPInferenceOptions, callbacks) = ReactiveMPInferenceOptions(
-    options.scheduler,
     options.annotations,
     options.warn,
     options.force_marginal_computation,
@@ -122,8 +88,6 @@ function Base.convert(
     ::Type{ReactiveMPInferenceOptions}, options::NamedTuple{keys}
 ) where {keys}
     available_options = (
-        :scheduler,
-        :limit_stack_depth,
         :annotations,
         :warn,
         :rulefallback,
@@ -148,22 +112,7 @@ function Base.convert(
     end
     callbacks = haskey(options, :callbacks) ? options.callbacks : nothing
 
-    if warn &&
-        haskey(options, :scheduler) &&
-        haskey(options, :limit_stack_depth)
-        @warn "Inference options have `scheduler` and `limit_stack_depth` options specified together. Ignoring `limit_stack_depth`. Use `warn = false` option in `ModelInferenceOptions` to suppress this warning."
-    end
-
-    scheduler = if haskey(options, :scheduler)
-        options[:scheduler]
-    elseif haskey(options, :limit_stack_depth)
-        LimitStackScheduler(options[:limit_stack_depth]...)
-    else
-        nothing
-    end
-
     return ReactiveMPInferenceOptions(
-        scheduler,
         annotations,
         warn,
         force_marginal_computation,
@@ -171,10 +120,6 @@ function Base.convert(
         callbacks,
     )
 end
-
-Rocket.getscheduler(options::ReactiveMPInferenceOptions) = something(
-    options.scheduler, AsapScheduler()
-)
 
 import ReactiveMP: getannotations, getrulefallback, getcallbacks
 
@@ -213,9 +158,6 @@ const ReactiveMPExtraVariableKey = GraphPPL.NodeDataExtraKey{
 const ReactiveMPExtraDependenciesKey = GraphPPL.NodeDataExtraKey{
     :dependencies, ReactiveMP.Any
 }()
-const ReactiveMPExtraPipelineKey = GraphPPL.NodeDataExtraKey{
-    :pipeline, ReactiveMP.Any
-}()
 
 GraphPPL.plugin_type(::ReactiveMPInferencePlugin) = FactorAndVariableNodesPlugin()
 
@@ -251,13 +193,6 @@ function GraphPPL.preprocess_plugin(
             nodedata,
             ReactiveMPExtraDependenciesKey,
             options[GraphPPL.getkey(ReactiveMPExtraDependenciesKey)],
-        )
-    end
-    if haskey(options, GraphPPL.getkey(ReactiveMPExtraPipelineKey))
-        setextra!(
-            nodedata,
-            ReactiveMPExtraPipelineKey,
-            options[GraphPPL.getkey(ReactiveMPExtraPipelineKey)],
         )
     end
     return nothing
@@ -422,7 +357,7 @@ function activate_rmp_variable!(
             :marginal_form_constraint_check_strategy,
             ReactiveMP.default_form_check_strategy(marginal_form_constraint),
         )
-        # Create the activation options for the random variable which consists of the messages and marginal product functions and a scheduler
+        # Create the activation options for the random variable which consists of the messages and marginal product functions
         prod_context_for_messages_computation = ReactiveMP.MessageProductContext(;
             fold_strategy = messages_fold_strategy,
             prod_constraint = messages_prod_constraint,
@@ -440,7 +375,6 @@ function activate_rmp_variable!(
             annotations = getannotations(getoptions(plugin)),
         )
         options = ReactiveMP.RandomVariableActivationOptions(
-            Rocket.getscheduler(getoptions(plugin)),
             prod_context_for_messages_computation,
             prod_context_for_marginal_computation,
         )
@@ -508,9 +442,7 @@ function activate_rmp_factornode!(
 )
     metadata = getextra(nodedata, GraphPPL.MetaExtraKey, nothing)
     dependencies = getextra(nodedata, ReactiveMPExtraDependenciesKey, nothing)
-    pipeline = getextra(nodedata, ReactiveMPExtraPipelineKey, nothing)
 
-    scheduler = getscheduler(getoptions(plugin))
     annotations = getannotations(getoptions(plugin))
     rulefallback = getrulefallback(getoptions(plugin))
     callbacks = getcallbacks(getoptions(plugin))
@@ -518,9 +450,7 @@ function activate_rmp_factornode!(
     options = ReactiveMP.FactorNodeActivationOptions(
         metadata,
         dependencies,
-        pipeline,
         annotations,
-        scheduler,
         rulefallback,
         callbacks,
     )

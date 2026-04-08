@@ -53,7 +53,6 @@
             data = (X = X, y = y, n_trials = n_trials),
             iterations = iterations,
             free_energy = true,
-            options = (limit_stack_depth = 100,),
         )
     end
 

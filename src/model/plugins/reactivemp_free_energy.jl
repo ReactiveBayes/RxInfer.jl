@@ -2,45 +2,36 @@ import BayesBase: CountingReal
 import ReactiveMP: score
 
 """
-    BetheFreeEnergy(skip_strategy, scheduler)
+    BetheFreeEnergy(skip_strategy)
 
-Implements a reactive stream for Bethe Free Energy values. 
-Must be used in combination with the `score` function of `ReactiveMP.jl`. 
+Implements a reactive stream for Bethe Free Energy values.
+Must be used in combination with the `score` function of `ReactiveMP.jl`.
 
 # Arguments
 - `::Type{T}`: a type of the counting real number, e.g. `Float64`. Set to `Real` by default, otherwise the inference procedure is not automatically differentiable.
 - `skip_strategy`: a strategy that defines which posterior marginals to skip, e.g. `SkipInitial()`.
-- `scheduler`: a scheduler for the underlying stream, e.g. `AsapScheduler()`.
 """
-struct BetheFreeEnergy{T, M, S}
+struct BetheFreeEnergy{T, M}
     skip_strategy::M
-    scheduler::S
 
     function BetheFreeEnergy(
-        ::Type{T}, skip_strategy::M, scheduler::S
-    ) where {T, M, S}
-        return new{T, M, S}(skip_strategy, scheduler)
+        ::Type{T}, skip_strategy::M
+    ) where {T, M}
+        return new{T, M}(skip_strategy)
     end
 end
 
 """
-Default marginal skip strategy for the Bethe Free Energy objective. 
+Default marginal skip strategy for the Bethe Free Energy objective.
 """
 const BetheFreeEnergyDefaultMarginalSkipStrategy = SkipInitial()
-
-"""
-Default scheduler for the Bethe Free Energy objective.
-"""
-const BetheFreeEnergyDefaultScheduler = AsapScheduler()
 
 BetheFreeEnergy(::Type{T}) where {T} = BetheFreeEnergy(
     T,
     BetheFreeEnergyDefaultMarginalSkipStrategy,
-    BetheFreeEnergyDefaultScheduler,
 )
 
 get_skip_strategy(objective::BetheFreeEnergy) = objective.skip_strategy
-get_scheduler(objective::BetheFreeEnergy)     = objective.scheduler
 
 """
 A plugin for GraphPPL graph engine that adds the Bethe Free Energy objective computation to the nodes of the model.
@@ -78,7 +69,6 @@ function GraphPPL.postprocess_plugin(
     ::ReactiveMPFreeEnergyPlugin, objective::BetheFreeEnergy{T}, model::Model
 ) where {T}
     skip_strategy = get_skip_strategy(objective)
-    scheduler     = get_scheduler(objective)
 
     factor_nodes(model) do _, node
         factornode = getextra(node, ReactiveMPExtraFactorNodeKey)
@@ -89,7 +79,6 @@ function GraphPPL.postprocess_plugin(
             factornode,
             metadata,
             skip_strategy,
-            scheduler,
         )
         setextra!(node, ReactiveMPExtraBetheFreeEnergyStreamKey, bfe_stream)
     end
@@ -103,7 +92,6 @@ function GraphPPL.postprocess_plugin(
                 VariableBoundEntropy(),
                 variable,
                 skip_strategy,
-                scheduler,
             )
             setextra!(node, ReactiveMPExtraBetheFreeEnergyStreamKey, bfe_stream)
         end

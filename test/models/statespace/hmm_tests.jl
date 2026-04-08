@@ -35,7 +35,6 @@
             model = hidden_markov_model(),
             constraints = hidden_markov_constraints,
             data = (x = data,),
-            options = (limit_stack_depth = 500,),
             free_energy = true,
             initialization = init,
             iterations = vmp_iters,

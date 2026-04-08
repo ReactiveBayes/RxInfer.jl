@@ -109,7 +109,6 @@ end
             returnvars = KeepLast(),
             iterations = 5,
             free_energy = true,
-            options = (limit_stack_depth = 500,),
         )
 
         @test mean(result.posteriors[:r]) ≈ realr atol = 1e-2
@@ -130,7 +129,6 @@ end
             returnvars = KeepLast(),
             iterations = 5,
             free_energy = true,
-            options = (limit_stack_depth = 500,),
         )
         p1 = plot(
             0.0:0.01:1.0,
@@ -272,7 +270,7 @@ end
         data = (y = dataset,),
         free_energy = true,
         options = (
-            rulefallback = NodeFunctionRuleFallback(), limit_stack_depth = 500
+            rulefallback = NodeFunctionRuleFallback()
         ),
     )
 

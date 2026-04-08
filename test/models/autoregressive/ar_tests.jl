@@ -37,7 +37,6 @@
             model          = ar_model(order = order),
             data           = (x = inputs, y = outputs),
             constraints    = constraints,
-            options        = (limit_stack_depth = 500,),
             initialization = init,
             returnvars     = (γ = KeepEach(), θ = KeepEach()),
             iterations     = niter,
