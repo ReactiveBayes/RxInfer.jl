@@ -161,10 +161,13 @@ module TensorBoardLoggerExt
             end
         end
 
-        # Log per-type counts as text
-        for (event_type, count) in counts
-            TensorBoardLogger.log_text(logger, "EventCounts", "$(event_type): $(count)"; step=1)
-        end
+        # Log per-type counts as a single-column list
+        sorted_counts = sort(collect(counts), by=first)
+        counts_table = reshape(
+            vcat(["$(k): $(v)" for (k, v) in sorted_counts], ["total: $(sum(values(counts)))"]),
+            :, 1
+        )
+        TensorBoardLogger.log_text(logger, "EventCounts", counts_table; step=1)
 
         close(logger)
 
