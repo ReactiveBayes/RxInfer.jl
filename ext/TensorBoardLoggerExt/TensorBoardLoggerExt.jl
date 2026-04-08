@@ -61,15 +61,104 @@ module TensorBoardLoggerExt
         # Create file writer
         logger = TBLogger(output_file)
 
-        # Log each event individually under "Events" and its specific event type tag
         counts = Dict{Symbol, Int}()
+
         for (idx, traced_event) in enumerate(events)
-            event_type = event_name(typeof(traced_event.event))
+            ev = traced_event.event
+            event_type = event_name(typeof(ev))
             counts[event_type] = get(counts, event_type, 0) + 1
 
-            event_text = "Step $idx: $(event_type)"
-            TensorBoardLogger.log_text(logger, "Events", event_text; step=idx)
-            TensorBoardLogger.log_text(logger, string(event_type), event_text; step=idx)
+            # Log all events together in a single "Events" tag
+            TensorBoardLogger.log_text(logger, "Events", "Step $idx: $(event_type)"; step=idx)
+
+            if event_type === :before_model_creation
+                TensorBoardLogger.log_text(logger, "before_model_creation",
+                    "span_id: $(ev.span_id)"; step=idx)
+
+            elseif event_type === :after_model_creation
+                TensorBoardLogger.log_text(logger, "after_model_creation",
+                    "model: $(ev.model) | span_id: $(ev.span_id)"; step=idx)
+
+            elseif event_type === :before_inference
+                TensorBoardLogger.log_text(logger, "before_inference",
+                    "model: $(ev.model) | span_id: $(ev.span_id)"; step=idx)
+
+            elseif event_type === :after_inference
+                TensorBoardLogger.log_text(logger, "after_inference",
+                    "model: $(ev.model) | span_id: $(ev.span_id)"; step=idx)
+
+            elseif event_type === :before_iteration
+                TensorBoardLogger.log_text(logger, "before_iteration",
+                    "model: $(ev.model) | iteration: $(ev.iteration) | stop_iteration: $(ev.stop_iteration) | span_id: $(ev.span_id)"; step=ev.iteration)
+
+            elseif event_type === :after_iteration
+                TensorBoardLogger.log_text(logger, "after_iteration",
+                    "model: $(ev.model) | iteration: $(ev.iteration) | stop_iteration: $(ev.stop_iteration) | span_id: $(ev.span_id)"; step=ev.iteration)
+
+            elseif event_type === :before_data_update
+                TensorBoardLogger.log_text(logger, "before_data_update",
+                    "model: $(ev.model) | data: $(ev.data) | span_id: $(ev.span_id)"; step=idx)
+
+            elseif event_type === :after_data_update
+                TensorBoardLogger.log_text(logger, "after_data_update",
+                    "model: $(ev.model) | data: $(ev.data) | span_id: $(ev.span_id)"; step=idx)
+
+            elseif event_type === :on_marginal_update
+                TensorBoardLogger.log_text(logger, "on_marginal_update/$(ev.variable_name)",
+                    "model: $(ev.model) | variable: $(ev.variable_name) | update: $(ev.update)"; step=idx)
+
+            elseif event_type === :before_autostart
+                TensorBoardLogger.log_text(logger, "before_autostart",
+                    "engine: $(ev.engine) | span_id: $(ev.span_id)"; step=idx)
+
+            elseif event_type === :after_autostart
+                TensorBoardLogger.log_text(logger, "after_autostart",
+                    "engine: $(ev.engine) | span_id: $(ev.span_id)"; step=idx)
+
+            elseif event_type === :before_message_rule_call
+                TensorBoardLogger.log_text(logger, "before_message_rule_call",
+                    "mapping: $(ev.mapping) | messages: $(ev.messages) | marginals: $(ev.marginals) | span_id: $(ev.span_id)"; step=idx)
+
+            elseif event_type === :after_message_rule_call
+                TensorBoardLogger.log_text(logger, "after_message_rule_call",
+                    "mapping: $(ev.mapping) | messages: $(ev.messages) | marginals: $(ev.marginals) | result: $(ev.result) | annotations: $(ev.annotations) | span_id: $(ev.span_id)"; step=idx)
+
+            elseif event_type === :before_product_of_messages
+                TensorBoardLogger.log_text(logger, "before_product_of_messages",
+                    "variable: $(ev.variable) | context: $(ev.context) | messages: $(ev.messages) | span_id: $(ev.span_id)"; step=idx)
+
+            elseif event_type === :after_product_of_messages
+                TensorBoardLogger.log_text(logger, "after_product_of_messages",
+                    "variable: $(ev.variable) | context: $(ev.context) | messages: $(ev.messages) | result: $(ev.result) | span_id: $(ev.span_id)"; step=idx)
+
+            elseif event_type === :before_product_of_two_messages
+                TensorBoardLogger.log_text(logger, "before_product_of_two_messages",
+                    "variable: $(ev.variable) | context: $(ev.context) | left: $(ev.left) | right: $(ev.right) | span_id: $(ev.span_id)"; step=idx)
+
+            elseif event_type === :after_product_of_two_messages
+                TensorBoardLogger.log_text(logger, "after_product_of_two_messages",
+                    "variable: $(ev.variable) | context: $(ev.context) | left: $(ev.left) | right: $(ev.right) | result: $(ev.result) | annotations: $(ev.annotations) | span_id: $(ev.span_id)"; step=idx)
+
+            elseif event_type === :before_marginal_computation
+                TensorBoardLogger.log_text(logger, "before_marginal_computation",
+                    "variable: $(ev.variable) | context: $(ev.context) | messages: $(ev.messages) | span_id: $(ev.span_id)"; step=idx)
+
+            elseif event_type === :after_marginal_computation
+                TensorBoardLogger.log_text(logger, "after_marginal_computation",
+                    "variable: $(ev.variable) | context: $(ev.context) | messages: $(ev.messages) | result: $(ev.result) | span_id: $(ev.span_id)"; step=idx)
+
+            elseif event_type === :before_form_constraint_applied
+                TensorBoardLogger.log_text(logger, "before_form_constraint_applied",
+                    "variable: $(ev.variable) | context: $(ev.context) | strategy: $(ev.strategy) | distribution: $(ev.distribution) | span_id: $(ev.span_id)"; step=idx)
+
+            elseif event_type === :after_form_constraint_applied
+                TensorBoardLogger.log_text(logger, "after_form_constraint_applied",
+                    "variable: $(ev.variable) | context: $(ev.context) | strategy: $(ev.strategy) | distribution: $(ev.distribution) | result: $(ev.result) | span_id: $(ev.span_id)"; step=idx)
+
+            else
+                TensorBoardLogger.log_text(logger, "unknown_events",
+                    "event_type: $(event_type)"; step=idx)
+            end
         end
 
         # Log per-type counts as text
