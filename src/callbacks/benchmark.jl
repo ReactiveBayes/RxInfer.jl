@@ -92,9 +92,7 @@ Base.isempty(callbacks::RxInferBenchmarkCallbacks) = isempty(
 import ReactiveMP: handle_event, Event
 
 # Fallback: ignore unhandled events
-function ReactiveMP.handle_event(
-    callbacks::RxInferBenchmarkCallbacks, ::Event
-)
+function ReactiveMP.handle_event(callbacks::RxInferBenchmarkCallbacks, ::Event)
     return nothing
 end
 
@@ -107,8 +105,7 @@ function ReactiveMP.handle_event(
 end
 
 function ReactiveMP.handle_event(
-    callbacks::RxInferBenchmarkCallbacks,
-    event::AfterModelCreationEvent,
+    callbacks::RxInferBenchmarkCallbacks, event::AfterModelCreationEvent
 )
     if haskey(event.model.metadata, :benchmark)
         error(

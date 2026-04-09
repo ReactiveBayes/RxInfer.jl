@@ -8,10 +8,12 @@
     events = []
 
     callbacks = (
-        before_message_rule_call = (event) ->
-            push!(events, (event_name = :before_message_rule_call, event = event)),
-        after_message_rule_call = (event) ->
-            push!(events, (event_name = :after_message_rule_call, event = event)),
+        before_message_rule_call = (event) -> push!(
+            events, (event_name = :before_message_rule_call, event = event)
+        ),
+        after_message_rule_call = (event) -> push!(
+            events, (event_name = :after_message_rule_call, event = event)
+        ),
     )
 
     result = infer(;
@@ -68,11 +70,13 @@ end
     end
 
     function ReactiveMP.handle_event(
-        ::ArbitraryCallbackHandler,
-        event::OnMarginalUpdateEvent,
+        ::ArbitraryCallbackHandler, event::OnMarginalUpdateEvent
     )
         saved_context = get!(() -> [], event.model.metadata, :saved_context)
-        push!(saved_context, (event.variable_name, RxInfer.ReactiveMP.getdata(event.update)))
+        push!(
+            saved_context,
+            (event.variable_name, RxInfer.ReactiveMP.getdata(event.update)),
+        )
     end
 
     result = infer(;
@@ -105,11 +109,15 @@ end
         return nothing
     end
 
-    function ReactiveMP.handle_event(handler::ConcreteTypeHandler, event::BeforeIterationEvent)
+    function ReactiveMP.handle_event(
+        handler::ConcreteTypeHandler, event::BeforeIterationEvent
+    )
         push!(handler.log, (:before_iteration, event.iteration))
     end
 
-    function ReactiveMP.handle_event(handler::ConcreteTypeHandler, event::AfterIterationEvent)
+    function ReactiveMP.handle_event(
+        handler::ConcreteTypeHandler, event::AfterIterationEvent
+    )
         push!(handler.log, (:after_iteration, event.iteration))
     end
 
@@ -122,11 +130,15 @@ end
         return nothing
     end
 
-    function ReactiveMP.handle_event(handler::EventNameHandler, event::ReactiveMP.Event{:before_iteration})
+    function ReactiveMP.handle_event(
+        handler::EventNameHandler, event::ReactiveMP.Event{:before_iteration}
+    )
         push!(handler.log, (:before_iteration, event.iteration))
     end
 
-    function ReactiveMP.handle_event(handler::EventNameHandler, event::ReactiveMP.Event{:after_iteration})
+    function ReactiveMP.handle_event(
+        handler::EventNameHandler, event::ReactiveMP.Event{:after_iteration}
+    )
         push!(handler.log, (:after_iteration, event.iteration))
     end
 
