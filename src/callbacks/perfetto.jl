@@ -47,13 +47,17 @@ end
     struct_field_names = fieldnames(x)
     # This is a very optimised function because this is performance critical.
     # It is a generated function that compiles down to a literal named tuple with field names matching the struct fields.
-    Expr(
-        :tuple,
-        (
-            Expr(Symbol("="), field_name, :(_to_observability_string(getfield(x, $(QuoteNode(field_name))), $(QuoteNode(field_name)))))
-            for field_name in struct_field_names# if field_name !== :trace_id
-        )...
-    )
+    if isempty(struct_field_names)
+        :((;))
+    else
+        Expr(
+            :tuple,
+            (
+                Expr(Symbol("="), field_name, :(_to_observability_string(getfield(x, $(QuoteNode(field_name))), $(QuoteNode(field_name)))))
+                for field_name in struct_field_names# if field_name !== :trace_id
+            )...
+        )
+    end
     
     ## Less optimized version using Dict:
     # quote
@@ -107,8 +111,25 @@ _to_observability_string(::ProbabilisticModel, _keyname::Symbol) = "<omitted>"
 
 
 
+"""
+    _time_ns_to_datetime(t::UInt64) -> Dates.DateTime
+
+Converts a `time_ns()` timestamp to a wall-clock `DateTime` by computing the
+drift between Julia's monotonic clock and the Unix epoch at the moment of the call.
+"""
+function _time_ns_to_datetime(t::UInt64)::Dates.DateTime
+    now_real_ns = round(Int64, Dates.datetime2unix(Dates.now()) * 1e9)
+    drift = now_real_ns - Int64(time_ns())
+    return Dates.unix2datetime((Int64(t) + drift) / 1e9)
+end
+
+function _default_trace_name(traces::Vector{TracedEvent})
+    isempty(traces) && return "RxInfer trace"
+    return "$(Dates.Time(_time_ns_to_datetime(traces[1].time_ns))) RxInfer trace"
+end
+
 @generated function _event_phase(e::ReactiveMP.Event)
-    name = string(typeof(e).name.name)
+    name = string(e.name.name)
     startswith(name, "Before") && return "B"
     startswith(name, "After") && return "E"
     return "X"
@@ -168,7 +189,7 @@ _Pluto tip: combine this with `PlutoUI.WideCell` for a bigger view, so `perfetto
 """
 function perfetto_view(
     traces::Vector{TracedEvent};
-    name::String = "$(Dates.Time(Dates.now())) RxInfer trace",
+    name::String = _default_trace_name(traces),
 )
     json_contents = _traces_to_perfetto_json(traces)
     b64 = Base64.base64encode(json_contents)
@@ -220,7 +241,7 @@ perfetto_open(traces)
 """
 function perfetto_open(
     traces::Vector{TracedEvent};
-    name::String = "$(Dates.Time(Dates.now())) RxInfer trace",
+    name::String = _default_trace_name(traces),
 )
     json_contents = _traces_to_perfetto_json(traces)
     b64 = Base64.base64encode(json_contents)
