@@ -85,8 +85,7 @@ ensure_update(
     tap() do update
         set_updated!(updated)
         invoke_callback(
-            callbacks,
-            OnMarginalUpdateEvent(model, variable_name, update),
+            callbacks, OnMarginalUpdateEvent(model, variable_name, update)
         )
     end
 
@@ -653,17 +652,11 @@ function infer(;
     infer_check_dicttype(:data, data)
 
     if benchmark
-        callbacks = merge_callbacks(
-            callbacks,
-            RxInferBenchmarkCallbacks(),
-        )
+        callbacks = merge_callbacks(callbacks, RxInferBenchmarkCallbacks())
     end
 
     if trace
-        callbacks = merge_callbacks(
-            callbacks,
-            RxInferTraceCallbacks(),
-        )
+        callbacks = merge_callbacks(callbacks, RxInferTraceCallbacks())
     end
 
     return with_session(session, :inference) do invoke
