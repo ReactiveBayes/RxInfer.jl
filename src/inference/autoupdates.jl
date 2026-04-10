@@ -653,7 +653,7 @@ function run_autoupdate!(specifications::Tuple, prefetched::Tuple)
         end
 
         foreach(zip(varlabels_tupled, update_tupled)) do (var, val)
-            update!(var, val)
+            new_observation!(var, val)
         end
     end
 end

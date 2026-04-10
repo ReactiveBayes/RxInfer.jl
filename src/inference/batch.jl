@@ -406,7 +406,7 @@ function batch_inference(;
                 BeforeDataUpdateEvent(fmodel, data, data_update_span_id),
             )
             for (key, value) in fdata
-                update!(cacheddatavars[key], get_data(value))
+                new_observation!(cacheddatavars[key], get_data(value))
             end
             invoke_callback(
                 callbacks,

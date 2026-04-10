@@ -384,7 +384,7 @@ function Rocket.on_next!(
                 event,
             )
             for (datavar, value) in zip(_datavars, values(event))
-                update!(datavar, value)
+                new_observation!(datavar, value)
             end
             inference_fire_event(
                 Val(:after_data_update),
