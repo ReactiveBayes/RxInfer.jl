@@ -105,7 +105,7 @@ For a quick overview of _which_ events fired and in what order, use [`RxInferTra
 
 ```@example debugging-with-callbacks
 using RxInfer
-using ReactiveMP: event_name
+using RxInfer.ReactiveMP: event_name
 
 result = infer(
     model = vectorized_model(),

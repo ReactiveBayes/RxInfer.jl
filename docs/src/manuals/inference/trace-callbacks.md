@@ -102,7 +102,7 @@ Each [`TracedEvent`](@ref) has a single field:
 You can retrieve the event name via `ReactiveMP.event_name(typeof(traced_event.event))` and access event-specific fields directly on `traced_event.event`.
 
 ```@example manual-inference-trace-callbacks
-using ReactiveMP: event_name
+using RxInfer.ReactiveMP: event_name
 events = RxInfer.tracedevents(trace)
 
 # Filter for specific events
