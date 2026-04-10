@@ -48,23 +48,13 @@ end
 ReactiveMPInferenceOptions(scheduler, annotations) = ReactiveMPInferenceOptions(
     scheduler, annotations, true, false, nothing, nothing
 )
-ReactiveMPInferenceOptions(scheduler, annotations, warn) =
-    ReactiveMPInferenceOptions(
-        scheduler, annotations, warn, false, nothing, nothing
-    )
-ReactiveMPInferenceOptions(
-    scheduler, annotations, warn, force_marginal_computation
-) = ReactiveMPInferenceOptions(
-    scheduler,
-    annotations,
-    warn,
-    force_marginal_computation,
-    nothing,
-    nothing,
+ReactiveMPInferenceOptions(scheduler, annotations, warn) = ReactiveMPInferenceOptions(
+    scheduler, annotations, warn, false, nothing, nothing
 )
-ReactiveMPInferenceOptions(
-    scheduler, annotations, warn, force_marginal_computation, rulefallback
-) = ReactiveMPInferenceOptions(
+ReactiveMPInferenceOptions(scheduler, annotations, warn, force_marginal_computation) = ReactiveMPInferenceOptions(
+    scheduler, annotations, warn, force_marginal_computation, nothing, nothing
+)
+ReactiveMPInferenceOptions(scheduler, annotations, warn, force_marginal_computation, rulefallback) = ReactiveMPInferenceOptions(
     scheduler,
     annotations,
     warn,
@@ -73,24 +63,22 @@ ReactiveMPInferenceOptions(
     nothing,
 )
 
-setscheduler(options::ReactiveMPInferenceOptions, scheduler) =
-    ReactiveMPInferenceOptions(
-        scheduler,
-        options.annotations,
-        options.warn,
-        options.force_marginal_computation,
-        options.rulefallback,
-        options.callbacks,
-    )
-setannotations(options::ReactiveMPInferenceOptions, annotations) =
-    ReactiveMPInferenceOptions(
-        options.scheduler,
-        annotations,
-        options.warn,
-        options.force_marginal_computation,
-        options.rulefallback,
-        options.callbacks,
-    )
+setscheduler(options::ReactiveMPInferenceOptions, scheduler) = ReactiveMPInferenceOptions(
+    scheduler,
+    options.annotations,
+    options.warn,
+    options.force_marginal_computation,
+    options.rulefallback,
+    options.callbacks,
+)
+setannotations(options::ReactiveMPInferenceOptions, annotations) = ReactiveMPInferenceOptions(
+    options.scheduler,
+    annotations,
+    options.warn,
+    options.force_marginal_computation,
+    options.rulefallback,
+    options.callbacks,
+)
 setwarn(options::ReactiveMPInferenceOptions, warn) = ReactiveMPInferenceOptions(
     options.scheduler,
     options.annotations,
@@ -99,9 +87,7 @@ setwarn(options::ReactiveMPInferenceOptions, warn) = ReactiveMPInferenceOptions(
     options.rulefallback,
     options.callbacks,
 )
-setforce_marginal_computation(
-    options::ReactiveMPInferenceOptions, force_marginal_computation
-) = ReactiveMPInferenceOptions(
+setforce_marginal_computation(options::ReactiveMPInferenceOptions, force_marginal_computation) = ReactiveMPInferenceOptions(
     options.scheduler,
     options.annotations,
     options.warn,
@@ -109,24 +95,22 @@ setforce_marginal_computation(
     options.rulefallback,
     options.callbacks,
 )
-setrulefallback(options::ReactiveMPInferenceOptions, rulefallback) =
-    ReactiveMPInferenceOptions(
-        options.scheduler,
-        options.annotations,
-        options.warn,
-        options.force_marginal_computation,
-        rulefallback,
-        options.callbacks,
-    )
-setcallbacks(options::ReactiveMPInferenceOptions, callbacks) =
-    ReactiveMPInferenceOptions(
-        options.scheduler,
-        options.annotations,
-        options.warn,
-        options.force_marginal_computation,
-        options.rulefallback,
-        callbacks,
-    )
+setrulefallback(options::ReactiveMPInferenceOptions, rulefallback) = ReactiveMPInferenceOptions(
+    options.scheduler,
+    options.annotations,
+    options.warn,
+    options.force_marginal_computation,
+    rulefallback,
+    options.callbacks,
+)
+setcallbacks(options::ReactiveMPInferenceOptions, callbacks) = ReactiveMPInferenceOptions(
+    options.scheduler,
+    options.annotations,
+    options.warn,
+    options.force_marginal_computation,
+    options.rulefallback,
+    callbacks,
+)
 
 import Base: convert
 
@@ -188,17 +172,18 @@ function Base.convert(
     )
 end
 
-Rocket.getscheduler(options::ReactiveMPInferenceOptions) =
-    something(options.scheduler, AsapScheduler())
+Rocket.getscheduler(options::ReactiveMPInferenceOptions) = something(
+    options.scheduler, AsapScheduler()
+)
 
 import ReactiveMP: getannotations, getrulefallback, getcallbacks
 
-ReactiveMP.getannotations(options::ReactiveMPInferenceOptions) =
-    ReactiveMP.getannotations(options, options.annotations)
-ReactiveMP.getannotations(
-    options::ReactiveMPInferenceOptions,
-    annotations::ReactiveMP.AbstractAnnotations,
-) = (annotations,) # ReactiveMP expects annotations to be of type tuple
+ReactiveMP.getannotations(options::ReactiveMPInferenceOptions) = ReactiveMP.getannotations(
+    options, options.annotations
+)
+ReactiveMP.getannotations(options::ReactiveMPInferenceOptions, annotations::ReactiveMP.AbstractAnnotations) = (
+    annotations,
+) # ReactiveMP expects annotations to be of type tuple
 ReactiveMP.getannotations(
     options::ReactiveMPInferenceOptions, annotations::Nothing
 ) = annotations                     # Do nothing if annotations is `nothing`
@@ -232,8 +217,7 @@ const ReactiveMPExtraPipelineKey = GraphPPL.NodeDataExtraKey{
     :pipeline, ReactiveMP.Any
 }()
 
-GraphPPL.plugin_type(::ReactiveMPInferencePlugin) =
-    FactorAndVariableNodesPlugin()
+GraphPPL.plugin_type(::ReactiveMPInferencePlugin) = FactorAndVariableNodesPlugin()
 
 function GraphPPL.preprocess_plugin(
     plugin::ReactiveMPInferencePlugin,
@@ -556,13 +540,15 @@ getlabel(ref::GraphVariableRef) = ref.label
 getvariable(ref::GraphVariableRef) = ref.variable
 getname(ref::GraphVariableRef) = GraphPPL.getname(getlabel(ref))
 
-GraphPPL.is_data(collection::AbstractArray{GraphVariableRef}) =
-    all(GraphPPL.is_data, collection)
+GraphPPL.is_data(collection::AbstractArray{GraphVariableRef}) = all(
+    GraphPPL.is_data, collection
+)
 
 GraphPPL.is_data(ref::GraphVariableRef) = GraphPPL.is_data(ref.properties)
 GraphPPL.is_random(ref::GraphVariableRef) = GraphPPL.is_random(ref.properties)
-GraphPPL.is_constant(ref::GraphVariableRef) =
-    GraphPPL.is_constant(ref.properties)
+GraphPPL.is_constant(ref::GraphVariableRef) = GraphPPL.is_constant(
+    ref.properties
+)
 
 function GraphVariableRef(model::GraphPPL.Model, label::GraphPPL.NodeLabel)
     nodedata = model[label]::GraphPPL.NodeData
@@ -581,13 +567,16 @@ function getvardict(model::GraphPPL.Model)
     )
 end
 
-getvarref(model::GraphPPL.Model, label::GraphPPL.NodeLabel) =
-    GraphVariableRef(model, label)
-getvarref(model::GraphPPL.Model, container::AbstractArray) =
-    map(element -> getvarref(model, element), container)
+getvarref(model::GraphPPL.Model, label::GraphPPL.NodeLabel) = GraphVariableRef(
+    model, label
+)
+getvarref(model::GraphPPL.Model, container::AbstractArray) = map(
+    element -> getvarref(model, element), container
+)
 
-getvariable(nodedata::GraphPPL.NodeData) =
-    getextra(nodedata, ReactiveMPExtraVariableKey)
+getvariable(nodedata::GraphPPL.NodeData) = getextra(
+    nodedata, ReactiveMPExtraVariableKey
+)
 getvariable(container::AbstractArray) = map(getvariable, container)
 
 function getrandomvars(model::GraphPPL.Model)
@@ -621,27 +610,32 @@ end
 obtain_prediction(ref::GraphVariableRef) =
     ReactiveMP.get_stream_of_predictions(ref.variable) |>
     ReactiveMP.skip_initial()
-obtain_prediction(refs::AbstractArray) =
-    collectLatest(map(obtain_prediction, refs))
+obtain_prediction(refs::AbstractArray) = collectLatest(
+    map(obtain_prediction, refs)
+)
 
 obtain_marginal(ref::GraphVariableRef) =
     ReactiveMP.get_stream_of_marginals(ref.variable) |>
     ReactiveMP.skip_initial()
 obtain_marginal(refs::AbstractArray) = collectLatest(map(obtain_marginal, refs))
 
-ReactiveMP.israndom(collection::AbstractArray{GraphVariableRef}) =
-    all(ReactiveMP.israndom, collection)
-ReactiveMP.isdata(collection::AbstractArray{GraphVariableRef}) =
-    all(ReactiveMP.isdata, collection)
-ReactiveMP.isconst(collection::AbstractArray{GraphVariableRef}) =
-    all(ReactiveMP.isconst, collection)
+ReactiveMP.israndom(collection::AbstractArray{GraphVariableRef}) = all(
+    ReactiveMP.israndom, collection
+)
+ReactiveMP.isdata(collection::AbstractArray{GraphVariableRef}) = all(
+    ReactiveMP.isdata, collection
+)
+ReactiveMP.isconst(collection::AbstractArray{GraphVariableRef}) = all(
+    ReactiveMP.isconst, collection
+)
 
 ReactiveMP.israndom(ref::GraphVariableRef) = GraphPPL.is_random(ref.properties)
 ReactiveMP.isdata(ref::GraphVariableRef) = GraphPPL.is_data(ref.properties)
 ReactiveMP.isconst(ref::GraphVariableRef) = GraphPPL.is_constant(ref.properties)
 
-isanonymous(collection::AbstractArray{GraphVariableRef}) =
-    all(isanonymous, collection)
+isanonymous(collection::AbstractArray{GraphVariableRef}) = all(
+    isanonymous, collection
+)
 isanonymous(ref::GraphVariableRef) = GraphPPL.is_anonymous(ref.properties)
 
 # Form constraint preprocessing 

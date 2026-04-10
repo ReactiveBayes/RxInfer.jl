@@ -585,7 +585,7 @@ function prepare_mapping_argument_for_model(
     var   = isempty(index) ? vardict[label] : vardict[label][index...]
     return FetchRecentArgument(label, _marginal_argument(getvariable(var)))
 end
-_marginal_argument(variable) = getmarginal(variable, IncludeAll())
+_marginal_argument(variable) = ReactiveMP.get_stream_of_marginals(variable)
 _marginal_argument(variables::AbstractArray) = map(
     _marginal_argument, variables
 )

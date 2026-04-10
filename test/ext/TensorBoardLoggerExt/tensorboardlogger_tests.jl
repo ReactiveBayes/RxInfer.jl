@@ -4,8 +4,8 @@
     # A simple IID model: observations are drawn from a Normal with unknown mean and precision.
     # Mean-field constraints decouple q(μ) and q(τ) for variational inference.
     @model function iid_estimation(y)
-        μ  ~ Normal(mean = 0.0, precision = 0.1)
-        τ  ~ Gamma(shape = 1.0, rate = 1.0)
+        μ ~ Normal(mean = 0.0, precision = 0.1)
+        τ ~ Gamma(shape = 1.0, rate = 1.0)
         y .~ Normal(mean = μ, precision = τ)
     end
 
@@ -19,9 +19,9 @@
     end
 
     # Generate synthetic observations from a known distribution so the test is reproducible.
-    hidden_μ       = 3.1415
-    hidden_τ       = 2.7182
-    dataset        = rand(StableRNG(42), NormalMeanPrecision(hidden_μ, hidden_τ), 25)
+    hidden_μ = 3.1415
+    hidden_τ = 2.7182
+    dataset   = rand(StableRNG(42), NormalMeanPrecision(hidden_μ, hidden_τ), 25)
 
     # Run inference with `trace = true` so all internal events are recorded.
     # The trace is stored in the model metadata under the `:trace` key.

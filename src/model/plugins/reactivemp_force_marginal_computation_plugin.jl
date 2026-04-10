@@ -21,8 +21,9 @@ struct MarginalComputationOptions{S}
     scheduler::S
 end
 
-MarginalComputationOptions() =
-    MarginalComputationOptions(MarginalComputationDefaultScheduler)
+MarginalComputationOptions() = MarginalComputationOptions(
+    MarginalComputationDefaultScheduler
+)
 
 get_scheduler(options::MarginalComputationOptions) = options.scheduler
 
@@ -35,8 +36,7 @@ end
 
 getoptions(plugin::ReactiveMPForceMarginalComputationPlugin) = plugin.options
 
-GraphPPL.plugin_type(::ReactiveMPForceMarginalComputationPlugin) =
-    GraphPPL.FactorNodePlugin()
+GraphPPL.plugin_type(::ReactiveMPForceMarginalComputationPlugin) = GraphPPL.FactorNodePlugin()
 
 function GraphPPL.preprocess_plugin(
     ::ReactiveMPForceMarginalComputationPlugin,

@@ -23,17 +23,20 @@ struct KeepLast end
 make_actor(::Any, ::KeepEach) = keep(Marginal)
 make_actor(x::AbstractArray, ::KeepEach) = keep(typeof(similar(x, Marginal)))
 
-make_actor(::Any, ::KeepEach, capacity::Integer) =
-    circularkeep(Marginal, capacity)
-make_actor(x::AbstractArray, ::KeepEach, capacity::Integer) =
-    circularkeep(typeof(similar(x, Marginal)), capacity)
+make_actor(::Any, ::KeepEach, capacity::Integer) = circularkeep(
+    Marginal, capacity
+)
+make_actor(x::AbstractArray, ::KeepEach, capacity::Integer) = circularkeep(
+    typeof(similar(x, Marginal)), capacity
+)
 
 make_actor(::Any, ::KeepLast) = storage(Marginal)
 make_actor(x::AbstractArray, ::KeepLast) = buffer(Marginal, size(x))
 
 make_actor(::Any, ::KeepLast, capacity::Integer) = storage(Marginal)
-make_actor(x::AbstractArray, ::KeepLast, capacity::Integer) =
-    buffer(Marginal, size(x))
+make_actor(x::AbstractArray, ::KeepLast, capacity::Integer) = buffer(
+    Marginal, size(x)
+)
 
 ## Inference ensure update
 
@@ -92,23 +95,26 @@ struct InferenceLoggedDataEntry
 end
 
 # Very safe by default, logging should not crash if we don't know how to parse the data entry
-log_data_entry(data) =
-    InferenceLoggedDataEntry(:unknown, :unknown, :unknown, :unknown)
+log_data_entry(data) = InferenceLoggedDataEntry(
+    :unknown, :unknown, :unknown, :unknown
+)
 log_data_entry(data::Pair) = log_data_entry(first(data), last(data))
 
-log_data_entry(name::Union{Symbol, String}, data) =
-    log_data_entry(name, Base.IteratorSize(data), data)
-log_data_entry(name::Union{Symbol, String}, _, data) =
-    InferenceLoggedDataEntry(name, typeof(data), :unknown, :unknown)
-log_data_entry(name::Union{Symbol, String}, ::Base.HasShape{0}, data) =
-    InferenceLoggedDataEntry(name, typeof(data), (), ())
-log_data_entry(name::Union{Symbol, String}, ::Base.HasShape, data) =
-    InferenceLoggedDataEntry(
-        name,
-        typeof(data),
-        log_data_entry_size(data),
-        isempty(data) ? () : log_data_entry_size(first(data)),
-    )
+log_data_entry(name::Union{Symbol, String}, data) = log_data_entry(
+    name, Base.IteratorSize(data), data
+)
+log_data_entry(name::Union{Symbol, String}, _, data) = InferenceLoggedDataEntry(
+    name, typeof(data), :unknown, :unknown
+)
+log_data_entry(name::Union{Symbol, String}, ::Base.HasShape{0}, data) = InferenceLoggedDataEntry(
+    name, typeof(data), (), ()
+)
+log_data_entry(name::Union{Symbol, String}, ::Base.HasShape, data) = InferenceLoggedDataEntry(
+    name,
+    typeof(data),
+    log_data_entry_size(data),
+    isempty(data) ? () : log_data_entry_size(first(data)),
+)
 
 log_data_entry_size(data) = log_data_entry_size(Base.IteratorSize(data), data)
 log_data_entry_size(::Base.HasShape, data) = size(data)
@@ -117,16 +123,19 @@ log_data_entry_size(_, data) = ()
 # Julia has `Base.HasLength` by default, which is quite bad because it fallbacks here 
 # for structures that has nothing to do with being iterators nor implement `length`, 
 # Better to be safe here and simply return :unknown
-log_data_entry(name::Union{Symbol, String}, ::Base.HasLength, data) =
-    InferenceLoggedDataEntry(name, typeof(data), :unknown, :unknown)
+log_data_entry(name::Union{Symbol, String}, ::Base.HasLength, data) = InferenceLoggedDataEntry(
+    name, typeof(data), :unknown, :unknown
+)
 
 # Very safe by default, logging should not crash if we don't know how to parse the data entry
 log_data_entries(data) = :unknown
 
-log_data_entries(data::Union{NamedTuple, Dict}) =
-    log_data_entries_from_pairs(pairs(data))
-log_data_entries_from_pairs(pairs) =
-    collect(Iterators.map(log_data_entry, pairs))
+log_data_entries(data::Union{NamedTuple, Dict}) = log_data_entries_from_pairs(
+    pairs(data)
+)
+log_data_entries_from_pairs(pairs) = collect(
+    Iterators.map(log_data_entry, pairs)
+)
 
 function Base.show(io::IO, entry::InferenceLoggedDataEntry)
     print(
@@ -151,10 +160,12 @@ end
 # Very safe by default, logging should not crash if we don't know how to parse the dict/nt entry
 log_dictnt_entries(data) = string(typeof(data))
 
-log_dictnt_entries(data::Dict) =
-    InferenceLoggedDictNTEntries(:Dict, log_data_entries(data))
-log_dictnt_entries(data::NamedTuple) =
-    InferenceLoggedDictNTEntries(:NamedTuple, log_data_entries(data))
+log_dictnt_entries(data::Dict) = InferenceLoggedDictNTEntries(
+    :Dict, log_data_entries(data)
+)
+log_dictnt_entries(data::NamedTuple) = InferenceLoggedDictNTEntries(
+    :NamedTuple, log_data_entries(data)
+)
 
 function Base.show(io::IO, entry::InferenceLoggedDictNTEntries)
     entries_str = join(map(e -> "$(e.name)::$(e.type)", entry.entries), ", ")
@@ -418,10 +429,12 @@ end
 inference_check_dataismissing(d) = (ismissing(d) || any(ismissing, d))
 
 # Return NamedTuple for predictions
-inference_fill_predictions(s::Symbol, d::AbstractArray) =
-    NamedTuple{Tuple([s])}([repeat([missing], length(d))])
-inference_fill_predictions(s::Symbol, d::DataVariable) =
-    NamedTuple{Tuple([s])}([missing])
+inference_fill_predictions(s::Symbol, d::AbstractArray) = NamedTuple{
+    Tuple([s])
+}([repeat([missing], length(d))])
+inference_fill_predictions(s::Symbol, d::DataVariable) = NamedTuple{Tuple([s])}([
+    missing
+])
 
 # RxInfer uses and extends ReactiveMP's callback functionality
 # Custom callback handlers should implement `ReactiveMP.handle_event` for the events they want to handle
