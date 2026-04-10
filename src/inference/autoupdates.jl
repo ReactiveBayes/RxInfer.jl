@@ -604,7 +604,7 @@ function prepare_mapping_argument_for_model(
     var   = isempty(index) ? vardict[label] : vardict[label][index...]
     return FetchRecentArgument(label, _message_argument(getvariable(var)))
 end
-_message_argument(variable) = ReactiveMP.messageout(
+_message_argument(variable) = ReactiveMP.get_stream_of_outbound_messages(
     variable, ReactiveMP.degree(variable)
 )
 _message_argument(variables::AbstractArray) = map(_message_argument, variables)

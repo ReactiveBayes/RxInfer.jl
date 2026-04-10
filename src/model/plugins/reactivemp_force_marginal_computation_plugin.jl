@@ -5,7 +5,7 @@ import ReactiveMP:
     sdtype,
     getinterfaces,
     name,
-    messagein,
+    get_stream_of_inbound_messages,
     getinboundinterfaces,
     functionalform,
     Marginal,
@@ -81,7 +81,8 @@ function create_marginals_stream(
     ::Deterministic, node::ReactiveMP.AbstractFactorNode, meta, scheduler
 )
     fnstream = let scheduler = scheduler
-        (interface) -> messagein(interface) |> schedule_on(scheduler)
+        (interface) ->
+            get_stream_of_inbound_messages(interface) |> schedule_on(scheduler)
     end
 
     tinterfaces = Tuple(getinterfaces(node))
