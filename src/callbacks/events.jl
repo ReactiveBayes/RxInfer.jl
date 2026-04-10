@@ -562,13 +562,13 @@ function enrich(trace, idx::GraphIndex)::Vector{EnrichedEvent}
         end
         summary = if d === nothing
             (
-            mean = NaN,
-            var = NaN,
-            has_nan = false,
-            has_inf = false,
-            is_vague = false,
-            dist_type = "—",
-        )
+                mean = NaN,
+                var = NaN,
+                has_nan = false,
+                has_inf = false,
+                is_vague = false,
+                dist_type = "—",
+            )
         else
             _safe_stats(d)
         end
@@ -900,7 +900,8 @@ function build_report(events, diagnostics, results, idx::GraphIndex)
     fe = try
         results.free_energy
     catch
-        ; nothing
+        ;
+        nothing
     end
     if fe !== nothing
         println(io, "- Free energy: ", join(round.(fe; sigdigits = 5), ", "))

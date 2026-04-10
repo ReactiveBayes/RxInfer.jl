@@ -136,7 +136,7 @@ function create_marginals_stream(
             get_stream_of_marginals(localmarginal) |> schedule_on(scheduler)
     end
 
-    localmarginals = get_node_local_marginals(getlocalclusters(node))
+    localmarginals = ReactiveMP.get_node_local_marginals(getlocalclusters(node))
     stream = combineLatest(map(fnstream, localmarginals), PushNew())
 
     mapping =
