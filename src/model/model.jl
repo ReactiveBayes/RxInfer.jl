@@ -11,7 +11,6 @@ export getmodel,
 import Base: push!, show, getindex, haskey, firstindex, lastindex
 import ReactiveMP: getannotations, AbstractFactorNode
 import GraphPPL: ModelGenerator, getmodel, getkwargs, create_model
-import Rocket: getscheduler
 
 """
     UnfactorizedData{D}

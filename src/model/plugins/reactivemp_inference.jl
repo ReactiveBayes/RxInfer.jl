@@ -31,13 +31,13 @@ Creates model inference options object. The list of available options is present
 
 ### Advanced options
 
-- `scheduler`: changes the scheduler of reactive streams, see Rocket.jl for more info, defaults to `AsapScheduler`.
+- `stream_postprocessors`: changes the postprocessor of reactive streams, see ReactiveMP.jl for more info, defaults to `ReactiveMP.NoopStreamPostprocessor`, unless the `limit_stack_depth` option is set, in which case will be set to `ReactiveMP.ScheduleOnStreamPostprocessor` together with `RxInfer.LimitStackScheduler`.
 - `rulefallback`: specifies a global message update rule fallback for cases when a specific message update rule is not available. Consult `ReactiveMP` documentation for the list of available callbacks.
 
 See also: [`infer`](@ref)
 """
 struct ReactiveMPInferenceOptions{S, A, R, E}
-    scheduler::S
+    stream_postprocessors::S
     annotations::A
     warn::Bool
     force_marginal_computation::Bool
@@ -45,17 +45,32 @@ struct ReactiveMPInferenceOptions{S, A, R, E}
     callbacks::E
 end
 
-ReactiveMPInferenceOptions(scheduler, annotations) = ReactiveMPInferenceOptions(
-    scheduler, annotations, true, false, nothing, nothing
+ReactiveMPInferenceOptions(stream_postprocessors, annotations) =
+    ReactiveMPInferenceOptions(
+        stream_postprocessors, annotations, true, false, nothing, nothing
+    )
+ReactiveMPInferenceOptions(stream_postprocessors, annotations, warn) =
+    ReactiveMPInferenceOptions(
+        stream_postprocessors, annotations, warn, false, nothing, nothing
+    )
+ReactiveMPInferenceOptions(
+    stream_postprocessors, annotations, warn, force_marginal_computation
+) = ReactiveMPInferenceOptions(
+    stream_postprocessors,
+    annotations,
+    warn,
+    force_marginal_computation,
+    nothing,
+    nothing,
 )
-ReactiveMPInferenceOptions(scheduler, annotations, warn) = ReactiveMPInferenceOptions(
-    scheduler, annotations, warn, false, nothing, nothing
-)
-ReactiveMPInferenceOptions(scheduler, annotations, warn, force_marginal_computation) = ReactiveMPInferenceOptions(
-    scheduler, annotations, warn, force_marginal_computation, nothing, nothing
-)
-ReactiveMPInferenceOptions(scheduler, annotations, warn, force_marginal_computation, rulefallback) = ReactiveMPInferenceOptions(
-    scheduler,
+ReactiveMPInferenceOptions(
+    stream_postprocessors,
+    annotations,
+    warn,
+    force_marginal_computation,
+    rulefallback,
+) = ReactiveMPInferenceOptions(
+    stream_postprocessors,
     annotations,
     warn,
     force_marginal_computation,
@@ -63,54 +78,60 @@ ReactiveMPInferenceOptions(scheduler, annotations, warn, force_marginal_computat
     nothing,
 )
 
-setscheduler(options::ReactiveMPInferenceOptions, scheduler) = ReactiveMPInferenceOptions(
-    scheduler,
-    options.annotations,
-    options.warn,
-    options.force_marginal_computation,
-    options.rulefallback,
-    options.callbacks,
-)
-setannotations(options::ReactiveMPInferenceOptions, annotations) = ReactiveMPInferenceOptions(
-    options.scheduler,
-    annotations,
-    options.warn,
-    options.force_marginal_computation,
-    options.rulefallback,
-    options.callbacks,
-)
+setpostprocessor(options::ReactiveMPInferenceOptions, stream_postprocessors) =
+    ReactiveMPInferenceOptions(
+        stream_postprocessors,
+        options.annotations,
+        options.warn,
+        options.force_marginal_computation,
+        options.rulefallback,
+        options.callbacks,
+    )
+setannotations(options::ReactiveMPInferenceOptions, annotations) =
+    ReactiveMPInferenceOptions(
+        options.stream_postprocessors,
+        annotations,
+        options.warn,
+        options.force_marginal_computation,
+        options.rulefallback,
+        options.callbacks,
+    )
 setwarn(options::ReactiveMPInferenceOptions, warn) = ReactiveMPInferenceOptions(
-    options.scheduler,
+    options.stream_postprocessors,
     options.annotations,
     warn,
     options.force_marginal_computation,
     options.rulefallback,
     options.callbacks,
 )
-setforce_marginal_computation(options::ReactiveMPInferenceOptions, force_marginal_computation) = ReactiveMPInferenceOptions(
-    options.scheduler,
+setforce_marginal_computation(
+    options::ReactiveMPInferenceOptions, force_marginal_computation
+) = ReactiveMPInferenceOptions(
+    options.stream_postprocessors,
     options.annotations,
     options.warn,
     force_marginal_computation,
     options.rulefallback,
     options.callbacks,
 )
-setrulefallback(options::ReactiveMPInferenceOptions, rulefallback) = ReactiveMPInferenceOptions(
-    options.scheduler,
-    options.annotations,
-    options.warn,
-    options.force_marginal_computation,
-    rulefallback,
-    options.callbacks,
-)
-setcallbacks(options::ReactiveMPInferenceOptions, callbacks) = ReactiveMPInferenceOptions(
-    options.scheduler,
-    options.annotations,
-    options.warn,
-    options.force_marginal_computation,
-    options.rulefallback,
-    callbacks,
-)
+setrulefallback(options::ReactiveMPInferenceOptions, rulefallback) =
+    ReactiveMPInferenceOptions(
+        options.stream_postprocessors,
+        options.annotations,
+        options.warn,
+        options.force_marginal_computation,
+        rulefallback,
+        options.callbacks,
+    )
+setcallbacks(options::ReactiveMPInferenceOptions, callbacks) =
+    ReactiveMPInferenceOptions(
+        options.stream_postprocessors,
+        options.annotations,
+        options.warn,
+        options.force_marginal_computation,
+        options.rulefallback,
+        callbacks,
+    )
 
 import Base: convert
 
@@ -122,7 +143,7 @@ function Base.convert(
     ::Type{ReactiveMPInferenceOptions}, options::NamedTuple{keys}
 ) where {keys}
     available_options = (
-        :scheduler,
+        :stream_postprocessors,
         :limit_stack_depth,
         :annotations,
         :warn,
@@ -149,21 +170,23 @@ function Base.convert(
     callbacks = haskey(options, :callbacks) ? options.callbacks : nothing
 
     if warn &&
-        haskey(options, :scheduler) &&
+        haskey(options, :stream_postprocessors) &&
         haskey(options, :limit_stack_depth)
-        @warn "Inference options have `scheduler` and `limit_stack_depth` options specified together. Ignoring `limit_stack_depth`. Use `warn = false` option in `ModelInferenceOptions` to suppress this warning."
+        @warn "Inference options have `stream_postprocessors` and `limit_stack_depth` options specified together. Ignoring `limit_stack_depth`. Use `warn = false` option in `ModelInferenceOptions` to suppress this warning."
     end
 
-    scheduler = if haskey(options, :scheduler)
-        options[:scheduler]
+    stream_postprocessors = if haskey(options, :stream_postprocessors)
+        options[:stream_postprocessors]
     elseif haskey(options, :limit_stack_depth)
-        LimitStackScheduler(options[:limit_stack_depth]...)
+        ReactiveMP.ScheduleOnStreamPostprocessor(
+            LimitStackScheduler(options[:limit_stack_depth]...)
+        )
     else
         nothing
     end
 
     return ReactiveMPInferenceOptions(
-        scheduler,
+        stream_postprocessors,
         annotations,
         warn,
         force_marginal_computation,
@@ -172,18 +195,15 @@ function Base.convert(
     )
 end
 
-Rocket.getscheduler(options::ReactiveMPInferenceOptions) = something(
-    options.scheduler, AsapScheduler()
-)
+import ReactiveMP:
+    getannotations, getrulefallback, getcallbacks, getpostprocessor
 
-import ReactiveMP: getannotations, getrulefallback, getcallbacks
-
-ReactiveMP.getannotations(options::ReactiveMPInferenceOptions) = ReactiveMP.getannotations(
-    options, options.annotations
-)
-ReactiveMP.getannotations(options::ReactiveMPInferenceOptions, annotations::ReactiveMP.AbstractAnnotations) = (
-    annotations,
-) # ReactiveMP expects annotations to be of type tuple
+ReactiveMP.getannotations(options::ReactiveMPInferenceOptions) =
+    ReactiveMP.getannotations(options, options.annotations)
+ReactiveMP.getannotations(
+    options::ReactiveMPInferenceOptions,
+    annotations::ReactiveMP.AbstractAnnotations,
+) = (annotations,) # ReactiveMP expects annotations to be of type tuple
 ReactiveMP.getannotations(
     options::ReactiveMPInferenceOptions, annotations::Nothing
 ) = annotations                     # Do nothing if annotations is `nothing`
@@ -193,6 +213,8 @@ ReactiveMP.getannotations(
 ReactiveMP.getrulefallback(options::ReactiveMPInferenceOptions) =
     options.rulefallback
 ReactiveMP.getcallbacks(options::ReactiveMPInferenceOptions) = options.callbacks
+ReactiveMP.getpostprocessor(options::ReactiveMPInferenceOptions) =
+    options.stream_postprocessors
 
 # Get the force_marginal_computation setting
 getforce_marginal_computation(options::ReactiveMPInferenceOptions) =
@@ -213,11 +235,12 @@ const ReactiveMPExtraVariableKey = GraphPPL.NodeDataExtraKey{
 const ReactiveMPExtraDependenciesKey = GraphPPL.NodeDataExtraKey{
     :dependencies, ReactiveMP.Any
 }()
-const ReactiveMPExtraPipelineKey = GraphPPL.NodeDataExtraKey{
-    :pipeline, ReactiveMP.Any
+const ReactiveMPExtraStreamPostprocessorsKey = GraphPPL.NodeDataExtraKey{
+    :stream_postprocessors, ReactiveMP.Any
 }()
 
-GraphPPL.plugin_type(::ReactiveMPInferencePlugin) = FactorAndVariableNodesPlugin()
+GraphPPL.plugin_type(::ReactiveMPInferencePlugin) =
+    FactorAndVariableNodesPlugin()
 
 function GraphPPL.preprocess_plugin(
     plugin::ReactiveMPInferencePlugin,
@@ -253,11 +276,11 @@ function GraphPPL.preprocess_plugin(
             options[GraphPPL.getkey(ReactiveMPExtraDependenciesKey)],
         )
     end
-    if haskey(options, GraphPPL.getkey(ReactiveMPExtraPipelineKey))
+    if haskey(options, GraphPPL.getkey(ReactiveMPExtraStreamPostprocessorsKey))
         setextra!(
             nodedata,
-            ReactiveMPExtraPipelineKey,
-            options[GraphPPL.getkey(ReactiveMPExtraPipelineKey)],
+            ReactiveMPExtraStreamPostprocessorsKey,
+            options[GraphPPL.getkey(ReactiveMPExtraStreamPostprocessorsKey)],
         )
     end
     return nothing
@@ -422,7 +445,7 @@ function activate_rmp_variable!(
             :marginal_form_constraint_check_strategy,
             ReactiveMP.default_form_check_strategy(marginal_form_constraint),
         )
-        # Create the activation options for the random variable which consists of the messages and marginal product functions and a scheduler
+        # Create the activation options for the random variable which consists of the messages and marginal product functions and stream postprocessor
         prod_context_for_messages_computation = ReactiveMP.MessageProductContext(;
             fold_strategy = messages_fold_strategy,
             prod_constraint = messages_prod_constraint,
@@ -440,7 +463,7 @@ function activate_rmp_variable!(
             annotations = getannotations(getoptions(plugin)),
         )
         options = ReactiveMP.RandomVariableActivationOptions(
-            Rocket.getscheduler(getoptions(plugin)),
+            getpostprocessor(getoptions(plugin)),
             prod_context_for_messages_computation,
             prod_context_for_marginal_computation,
         )
@@ -508,9 +531,11 @@ function activate_rmp_factornode!(
 )
     metadata = getextra(nodedata, GraphPPL.MetaExtraKey, nothing)
     dependencies = getextra(nodedata, ReactiveMPExtraDependenciesKey, nothing)
-    pipeline = getextra(nodedata, ReactiveMPExtraPipelineKey, nothing)
+    stream_postprocessors = getextra(
+        nodedata, ReactiveMPExtraStreamPostprocessorsKey, nothing
+    )
 
-    scheduler = getscheduler(getoptions(plugin))
+    stream_postprocessors = getpostprocessor(getoptions(plugin))
     annotations = getannotations(getoptions(plugin))
     rulefallback = getrulefallback(getoptions(plugin))
     callbacks = getcallbacks(getoptions(plugin))
@@ -518,9 +543,8 @@ function activate_rmp_factornode!(
     options = ReactiveMP.FactorNodeActivationOptions(
         metadata,
         dependencies,
-        pipeline,
+        stream_postprocessors,
         annotations,
-        scheduler,
         rulefallback,
         callbacks,
     )
@@ -540,15 +564,13 @@ getlabel(ref::GraphVariableRef) = ref.label
 getvariable(ref::GraphVariableRef) = ref.variable
 getname(ref::GraphVariableRef) = GraphPPL.getname(getlabel(ref))
 
-GraphPPL.is_data(collection::AbstractArray{GraphVariableRef}) = all(
-    GraphPPL.is_data, collection
-)
+GraphPPL.is_data(collection::AbstractArray{GraphVariableRef}) =
+    all(GraphPPL.is_data, collection)
 
 GraphPPL.is_data(ref::GraphVariableRef) = GraphPPL.is_data(ref.properties)
 GraphPPL.is_random(ref::GraphVariableRef) = GraphPPL.is_random(ref.properties)
-GraphPPL.is_constant(ref::GraphVariableRef) = GraphPPL.is_constant(
-    ref.properties
-)
+GraphPPL.is_constant(ref::GraphVariableRef) =
+    GraphPPL.is_constant(ref.properties)
 
 function GraphVariableRef(model::GraphPPL.Model, label::GraphPPL.NodeLabel)
     nodedata = model[label]::GraphPPL.NodeData
@@ -567,16 +589,13 @@ function getvardict(model::GraphPPL.Model)
     )
 end
 
-getvarref(model::GraphPPL.Model, label::GraphPPL.NodeLabel) = GraphVariableRef(
-    model, label
-)
-getvarref(model::GraphPPL.Model, container::AbstractArray) = map(
-    element -> getvarref(model, element), container
-)
+getvarref(model::GraphPPL.Model, label::GraphPPL.NodeLabel) =
+    GraphVariableRef(model, label)
+getvarref(model::GraphPPL.Model, container::AbstractArray) =
+    map(element -> getvarref(model, element), container)
 
-getvariable(nodedata::GraphPPL.NodeData) = getextra(
-    nodedata, ReactiveMPExtraVariableKey
-)
+getvariable(nodedata::GraphPPL.NodeData) =
+    getextra(nodedata, ReactiveMPExtraVariableKey)
 getvariable(container::AbstractArray) = map(getvariable, container)
 
 function getrandomvars(model::GraphPPL.Model)
@@ -610,32 +629,27 @@ end
 obtain_prediction(ref::GraphVariableRef) =
     ReactiveMP.get_stream_of_predictions(ref.variable) |>
     ReactiveMP.skip_initial()
-obtain_prediction(refs::AbstractArray) = collectLatest(
-    map(obtain_prediction, refs)
-)
+obtain_prediction(refs::AbstractArray) =
+    collectLatest(map(obtain_prediction, refs))
 
 obtain_marginal(ref::GraphVariableRef) =
     ReactiveMP.get_stream_of_marginals(ref.variable) |>
     ReactiveMP.skip_initial()
 obtain_marginal(refs::AbstractArray) = collectLatest(map(obtain_marginal, refs))
 
-ReactiveMP.israndom(collection::AbstractArray{GraphVariableRef}) = all(
-    ReactiveMP.israndom, collection
-)
-ReactiveMP.isdata(collection::AbstractArray{GraphVariableRef}) = all(
-    ReactiveMP.isdata, collection
-)
-ReactiveMP.isconst(collection::AbstractArray{GraphVariableRef}) = all(
-    ReactiveMP.isconst, collection
-)
+ReactiveMP.israndom(collection::AbstractArray{GraphVariableRef}) =
+    all(ReactiveMP.israndom, collection)
+ReactiveMP.isdata(collection::AbstractArray{GraphVariableRef}) =
+    all(ReactiveMP.isdata, collection)
+ReactiveMP.isconst(collection::AbstractArray{GraphVariableRef}) =
+    all(ReactiveMP.isconst, collection)
 
 ReactiveMP.israndom(ref::GraphVariableRef) = GraphPPL.is_random(ref.properties)
 ReactiveMP.isdata(ref::GraphVariableRef) = GraphPPL.is_data(ref.properties)
 ReactiveMP.isconst(ref::GraphVariableRef) = GraphPPL.is_constant(ref.properties)
 
-isanonymous(collection::AbstractArray{GraphVariableRef}) = all(
-    isanonymous, collection
-)
+isanonymous(collection::AbstractArray{GraphVariableRef}) =
+    all(isanonymous, collection)
 isanonymous(ref::GraphVariableRef) = GraphPPL.is_anonymous(ref.properties)
 
 # Form constraint preprocessing 

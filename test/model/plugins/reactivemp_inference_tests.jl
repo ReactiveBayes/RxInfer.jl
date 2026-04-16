@@ -2,28 +2,30 @@
     import RxInfer: ReactiveMPInferenceOptions
     import ReactiveMP: AbstractAnnotations
 
-    struct MyScheduler end
-    struct MyAnotherScheduler end
+    struct MyStreamPostprocessor end
+    struct MyAnotherStreamPostprocessor end
     struct MyAnnotations <: AbstractAnnotations end
     struct MyAnotherAnnotations <: AbstractAnnotations end
 
-    options = ReactiveMPInferenceOptions(MyScheduler(), MyAnnotations())
+    options = ReactiveMPInferenceOptions(
+        MyStreamPostprocessor(), MyAnnotations()
+    )
 
-    @test RxInfer.getscheduler(options) === MyScheduler()
+    @test RxInfer.getpostprocessor(options) === MyStreamPostprocessor()
     @test RxInfer.getannotations(options) === (MyAnnotations(),)
     @test RxInfer.getrulefallback(options) === nothing
     @test RxInfer.getcallbacks(options) === nothing
 
-    options = RxInfer.setscheduler(options, MyAnotherScheduler())
+    options = RxInfer.setpostprocessor(options, MyAnotherStreamPostprocessor())
 
-    @test RxInfer.getscheduler(options) === MyAnotherScheduler()
+    @test RxInfer.getpostprocessor(options) === MyAnotherStreamPostprocessor()
     @test RxInfer.getannotations(options) === (MyAnnotations(),)
     @test RxInfer.getrulefallback(options) === nothing
     @test RxInfer.getcallbacks(options) === nothing
 
     options = RxInfer.setannotations(options, MyAnotherAnnotations())
 
-    @test RxInfer.getscheduler(options) === MyAnotherScheduler()
+    @test RxInfer.getpostprocessor(options) === MyAnotherStreamPostprocessor()
     @test RxInfer.getannotations(options) === (MyAnotherAnnotations(),)
     @test RxInfer.getrulefallback(options) === nothing
     @test RxInfer.getcallbacks(options) === nothing
@@ -31,7 +33,7 @@
     rulefallback = (args...) -> print(args)
     options = RxInfer.setrulefallback(options, rulefallback)
 
-    @test RxInfer.getscheduler(options) === MyAnotherScheduler()
+    @test RxInfer.getpostprocessor(options) === MyAnotherStreamPostprocessor()
     @test RxInfer.getannotations(options) === (MyAnotherAnnotations(),)
     @test RxInfer.getrulefallback(options) === rulefallback
     @test RxInfer.getcallbacks(options) === nothing
@@ -39,7 +41,7 @@
     callbacks = (args...) -> print(args...)
     options = RxInfer.setcallbacks(options, callbacks)
 
-    @test RxInfer.getscheduler(options) === MyAnotherScheduler()
+    @test RxInfer.getpostprocessor(options) === MyAnotherStreamPostprocessor()
     @test RxInfer.getannotations(options) === (MyAnotherAnnotations(),)
     @test RxInfer.getrulefallback(options) === rulefallback
     @test RxInfer.getcallbacks(options) === callbacks
@@ -48,14 +50,18 @@ end
 @testitem "ReactiveMPInferenceOptions can be converted from NamedTuple" begin
     import RxInfer: ReactiveMPInferenceOptions
 
-    struct MySchedulerForNamedTuple end
+    struct MyStreamPostprocessorForNamedTuple end
 
     callbacks = (args...) -> nothing
-    nt = (scheduler = MySchedulerForNamedTuple(), callbacks = callbacks)
+    nt = (
+        stream_postprocessors = MyStreamPostprocessorForNamedTuple(),
+        callbacks = callbacks,
+    )
 
     options = convert(ReactiveMPInferenceOptions, nt)
 
-    @test RxInfer.getscheduler(options) === MySchedulerForNamedTuple()
+    @test RxInfer.getpostprocessor(options) ===
+        MyStreamPostprocessorForNamedTuple()
     @test RxInfer.getcallbacks(options) === callbacks
 
     bad_nt = (blahblah = 1,)

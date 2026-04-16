@@ -2,33 +2,19 @@ import BayesBase: CountingReal
 import ReactiveMP: score
 
 """
-    BetheFreeEnergy( scheduler)
+    BetheFreeEnergy(T)
 
 Implements a reactive stream for Bethe Free Energy values. 
 Must be used in combination with the `score` function of `ReactiveMP.jl`. 
 
 # Arguments
 - `::Type{T}`: a type of the counting real number, e.g. `Float64`. Set to `Real` by default, otherwise the inference procedure is not automatically differentiable.
-- `scheduler`: a scheduler for the underlying stream, e.g. `AsapScheduler()`.
 """
-struct BetheFreeEnergy{T, S}
-    scheduler::S
-
-    function BetheFreeEnergy(::Type{T}, scheduler::S) where {T, S}
-        return new{T, S}(scheduler)
+struct BetheFreeEnergy{T}
+    function BetheFreeEnergy(::Type{T}) where {T}
+        return new{T}()
     end
 end
-
-"""
-Default scheduler for the Bethe Free Energy objective.
-"""
-const BetheFreeEnergyDefaultScheduler = AsapScheduler()
-
-BetheFreeEnergy(::Type{T}) where {T} = BetheFreeEnergy(
-    T, BetheFreeEnergyDefaultScheduler
-)
-
-get_scheduler(objective::BetheFreeEnergy) = objective.scheduler
 
 """
 A plugin for GraphPPL graph engine that adds the Bethe Free Energy objective computation to the nodes of the model.
@@ -43,7 +29,8 @@ const ReactiveMPExtraBetheFreeEnergyStreamKey = GraphPPL.NodeDataExtraKey{
     :bfe_stream, Any
 }()
 
-GraphPPL.plugin_type(::ReactiveMPFreeEnergyPlugin) = FactorAndVariableNodesPlugin()
+GraphPPL.plugin_type(::ReactiveMPFreeEnergyPlugin) =
+    FactorAndVariableNodesPlugin()
 
 function GraphPPL.preprocess_plugin(
     ::ReactiveMPFreeEnergyPlugin,
@@ -65,7 +52,6 @@ end
 function GraphPPL.postprocess_plugin(
     ::ReactiveMPFreeEnergyPlugin, objective::BetheFreeEnergy{T}, model::Model
 ) where {T}
-    scheduler = get_scheduler(objective)
 
     factor_nodes(model) do _, node
         factornode = getextra(node, ReactiveMPExtraFactorNodeKey)
@@ -75,7 +61,7 @@ function GraphPPL.postprocess_plugin(
             FactorBoundFreeEnergy(),
             factornode,
             metadata,
-            scheduler,
+            ReactiveMP.NoopStreamPostprocessor(),
         )
         setextra!(node, ReactiveMPExtraBetheFreeEnergyStreamKey, bfe_stream)
     end
@@ -88,7 +74,7 @@ function GraphPPL.postprocess_plugin(
                 __as_counting_real_type(T),
                 VariableBoundEntropy(),
                 variable,
-                scheduler,
+                ReactiveMP.NoopStreamPostprocessor(),
             )
             setextra!(node, ReactiveMPExtraBetheFreeEnergyStreamKey, bfe_stream)
         end
@@ -107,7 +93,8 @@ function score(
     end
 
     variable_bound_entropies = map(getrandomvars(model)) do nodedata
-        nodeproperties = getproperties(nodedata)::GraphPPL.VariableNodeProperties
+        nodeproperties =
+            getproperties(nodedata)::GraphPPL.VariableNodeProperties
         stream = getextra(nodedata, ReactiveMPExtraBetheFreeEnergyStreamKey)
         return apply_diagnostic_check(diagnostic_checks, nodeproperties, stream)
     end
