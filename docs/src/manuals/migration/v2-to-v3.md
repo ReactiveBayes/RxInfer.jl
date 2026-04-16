@@ -116,8 +116,7 @@ end
 ```
 However, their type has changed to internal data structures from the `GraphPPL` package. To access the `ReactiveMP` data structures (e.g., to retrieve the messages or marginals streams), use `RxInfer.getvarref` along with `RxInfer.getvariable`:
 ```@example migration-guide
-using ReactiveMP, Rocket
-using RxInfer.ReactiveMP
+using RxInfer.ReactiveMP, Rocket
 result = infer(
     model = test_model(a = 1.0, b = 1.0),
     data  = (y = 1, )
