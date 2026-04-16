@@ -43,7 +43,7 @@ RxInfer exploits **conjugate likelihood-prior pairs** for exact analytical poste
 
 To explore factor graphs in more depth:
 
-- **[ReactiveMP.jl Factor Graphs]**(https://reactivebayes.github.io/ReactiveMP.jl/) — Low-level engine perspective on variable and factor node types
-- **[GraphPPL.jl Documentation]**(https://reactivebayes.github.io/GraphPPL.jl/stable/) — Model specification syntax and visualization tools
-- **[The Factor Graph Approach to Model-Based Signal Processing]**(https://ieeexplore.ieee.org/document/4282128/) — Introduction to message passing and Forney factor graphs
-- **[RxInfer Examples]**(https://examples.rxinfer.com/)
+- **[ReactiveMP.jl Factor Graphs](https://reactivebayes.github.io/ReactiveMP.jl/)** — Low-level engine perspective on variable and factor node types
+- **[GraphPPL.jl Documentation](https://reactivebayes.github.io/GraphPPL.jl/stable/)** — Model specification syntax and visualization tools
+- **[The Factor Graph Approach to Model-Based Signal Processing](https://ieeexplore.ieee.org/document/4282128/)** — Introduction to message passing and Forney factor graphs
+- **[RxInfer Examples](https://examples.rxinfer.com/)**

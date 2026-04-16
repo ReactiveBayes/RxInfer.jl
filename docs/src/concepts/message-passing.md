@@ -92,9 +92,9 @@ Read more about reactive message passing and its implementation [here](https://r
 
 To explore message passing in more depth:
 
-- **[ReactiveMP.jl Message Passing]**(@ref https://reactivebayes.github.io/ReactiveMP.jl/stable/) — Low-level engine perspective on VMP algorithm and reactive computation model
-- **[Rocket.jl Documentation]**(https://github.com/ReactiveBayes/Rocket.jl) — Reactive programming with observables, streams, and triggers underlying RxInfer's message propagation
-- **[Variational Message Passing and Local Constraint Manipulation in Factor Graphs]**(https://doi.org/10.3390/e23070807) — Theoretical aspects of VMP and constraint handling
-- **[Reactive Message Passing for Scalable Bayesian Inference]**(https://doi.org/10.48550/arXiv.2112.13251) — Implementation details and benchmark comparisons
+- **[ReactiveMP.jl Message Passing](https://reactivebayes.github.io/ReactiveMP.jl/stable/)** — Low-level engine perspective on VMP algorithm and reactive computation model
+- **[Rocket.jl Documentation](https://github.com/ReactiveBayes/Rocket.jl)** — Reactive programming with observables, streams, and triggers underlying RxInfer's message propagation
+- **[Variational Message Passing and Local Constraint Manipulation in Factor Graphs](https://doi.org/10.3390/e23070807)** — Theoretical aspects of VMP and constraint handling
+- **[Reactive Message Passing for Scalable Bayesian Inference](https://doi.org/10.48550/arXiv.2112.13251)** — Implementation details and benchmark comparisons
 
 For understanding how RxInfer achieves superior accuracy over HMC methods, see the [PhD dissertation](https://pure.tue.nl/ws/portalfiles/portal/313860204/20231219_Bagaev_hf.pdf) outlining core principles behind reactive probabilistic programming.

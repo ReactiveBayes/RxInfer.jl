@@ -75,8 +75,8 @@ RxInfer builds on these primitives: each factor and variable node holds `Message
 
 To explore reactive programming in more depth:
 
-- **[Rocket.jl Documentation]**(https://github.com/ReactiveBayes/Rocket.jl) — Low-level mechanics of observables, and reactive streams in Julia. Essential for understanding RxInfer's reactive machinery
-- **[ReactiveMP.jl Reactive Message Passing]**(https://reactivebayes.github.io/ReactiveMP.jl/stable/) — Engine perspective on how messages are scheduled via reactive streams
-- **[RxInfer Examples: Real-Time Inference]**(https://examples.rxinfer.com) — Practical applications of reactive message passing in streaming scenarios
+- **[Rocket.jl Documentation](https://github.com/ReactiveBayes/Rocket.jl)** — Low-level mechanics of observables, and reactive streams in Julia. Essential for understanding RxInfer's reactive machinery
+- **[ReactiveMP.jl Reactive Message Passing](https://reactivebayes.github.io/ReactiveMP.jl/stable/)** — Engine perspective on how messages are scheduled via reactive streams
+- **[RxInfer Examples: Real-Time Inference](https://examples.rxinfer.com)** — Practical applications of reactive message passing in streaming scenarios
 
 For understanding the broader paradigm, see [Reactive Probabilistic Programming for Scalable Bayesian Inference](https://pure.tue.nl/ws/portalfiles/portal/313860204/20231219_Bagaev_hf.pdf)—the PhD dissertation outlining core ideas behind RxInfer's reactive approach.
