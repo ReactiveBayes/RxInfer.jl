@@ -127,14 +127,17 @@ result = infer(
 θvar    = RxInfer.getvariable(θvarref)
 @test θvar isa RxInfer.ReactiveMP.RandomVariable #hide
 qθ_test = [] #hide
-subscribe!(RxInfer.ReactiveMP.getmarginal(θvar) |> take(1), (qθ) -> push!(qθ_test, qθ)) #hide
+subscribe!(RxInfer.ReactiveMP.get_stream_of_marginals(θvar) |> take(1), (qθ) -> push!(qθ_test, qθ)) #hide
 @test length(qθ_test) === 1 #hide
 @test first(RxInfer.ReactiveMP.getdata(qθ_test)) == Beta(2.0, 1.0) #hide
 
 # `|> take(1)` ensures automatic unsubscription 
-θmarginals_subscription = subscribe!(RxInfer.ReactiveMP.getmarginal(θvar) |> take(1), (qθ) -> println(qθ))
+θmarginals_subscription = subscribe!(RxInfer.ReactiveMP.get_stream_of_marginals(θvar) |> take(1), (qθ) -> println(qθ))
 nothing #hide
 ```
+
+!!! note
+    Prior to ReactiveMP v6, `ReactiveMP.get_stream_of_marginals` was called `ReactiveMP.getmarginal`. This change is unrelated to breaking change in RxInfer from v2 to v3, but is reflected here in order for this example to work during the documentation build.
 
 ## Initialization
 
