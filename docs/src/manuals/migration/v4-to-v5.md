@@ -5,6 +5,7 @@ This guide explains how to migrate your code from `RxInfer` version 4.x to 5.x. 
 1. **Addons** have been renamed to **annotations** (propagated from the new `ReactiveMP` v6 release).
 2. The **callback system** has been refactored to use event structs instead of dispatch on positional arguments.
 3. The default postprocessing strategy has been simplified.
+4. **Pipeline stages** and the per-node **scheduler** argument have been replaced by a unified **stream postprocessor** API (propagated from `ReactiveMP` v6).
 
 ## Addons have been renamed to annotations
 
@@ -232,6 +233,69 @@ Custom postprocessing strategies (any user-defined type that implements [`infere
 
 See [Inference results postprocessing](@ref user-guide-inference-postprocess) for more details on the postprocessing system.
 
+## Pipeline stages and the node-level scheduler have been replaced by stream postprocessors
+
+In `ReactiveMP` v6, the `AbstractPipelineStage` hierarchy and the per-node `scheduler` argument have been unified into a single `ReactiveMP.AbstractStreamPostprocessor` abstraction that postprocesses outbound message streams, marginal streams, and score streams uniformly. `RxInfer` exposes this through the `stream_postprocessors` option instead of the old `pipeline` / `scheduler` options.
+
+### The `where { pipeline = ... }` node clause has been removed
+
+Attaching pipeline stages per node via the `where { pipeline = ... }` clause is no longer supported — the API it depended on (`AbstractPipelineStage`, `LoggerPipelineStage`, `AsyncPipelineStage`, `DiscontinuePipelineStage`, `ScheduleOnPipelineStage`, `EmptyPipelineStage`, `CompositePipelineStage`, `apply_pipeline_stage`, `schedule_updates`, ...) was removed in `ReactiveMP` v6.
+
+**Before (v4.x):**
+```julia
+@model function my_model(y)
+    μ ~ Normal(mean = 0.0, variance = 100.0)
+    γ ~ Gamma(shape = 1.0, rate = 1.0)
+    y .~ Normal(mean = μ, precision = γ) where { pipeline = LoggerPipelineStage() }
+end
+```
+
+**After (v5.x):**
+
+`LoggerPipelineStage` has no direct replacement — use the new [Callbacks](@ref manual-inference-callbacks) system (e.g. `before_message_rule_call` / `after_message_rule_call`) to observe every message computation without subscribing to the reactive streams. See [Tracing individual message computations](@ref user-guide-debugging-message-computations) and [Trace callbacks](@ref manual-inference-trace-callbacks).
+
+### The `options = (scheduler = ...,)` keyword is now `stream_postprocessors`
+
+The `scheduler` option under `infer(..., options = ...)` has been renamed to `stream_postprocessors` and now expects a `ReactiveMP.AbstractStreamPostprocessor` (or `nothing`) rather than a Rocket.jl scheduler. To reproduce the old `schedule_on(scheduler)` behaviour, wrap the scheduler in a `ReactiveMP.ScheduleOnStreamPostprocessor`:
+
+**Before (v4.x):**
+```julia
+infer(
+    model = my_model(),
+    data  = (y = dataset,),
+    options = (scheduler = PendingScheduler(),),
+)
+```
+
+**After (v5.x):**
+```julia
+infer(
+    model = my_model(),
+    data  = (y = dataset,),
+    options = (stream_postprocessors = ReactiveMP.ScheduleOnStreamPostprocessor(PendingScheduler()),),
+)
+```
+
+The default is now `nothing` (no-op pass-through) instead of `AsapScheduler()`. This matches the `RandomVariableActivationOptions` / `FactorNodeActivationOptions` default in `ReactiveMP` v6.
+
+### The `limit_stack_depth` option is unchanged
+
+`options = (limit_stack_depth = N,)` still works exactly as before. Internally it is now expanded to `ReactiveMP.ScheduleOnStreamPostprocessor(RxInfer.LimitStackScheduler(N))` instead of being passed through as a scheduler directly. The behaviour is identical; you only need to change your code if you combined `limit_stack_depth` with an explicit `scheduler` (replace the latter with `stream_postprocessors`).
+
+### Pipeline stage replacements
+
+| v4.x                                   | v5.x                                                                                                 |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `LoggerPipelineStage`                  | [Callbacks](@ref manual-inference-callbacks) (`before_message_rule_call` / `after_message_rule_call`) |
+| `AsyncPipelineStage`                   | `ReactiveMP.ScheduleOnStreamPostprocessor(AsyncScheduler())`                                         |
+| `ScheduleOnPipelineStage(sched)`       | `ReactiveMP.ScheduleOnStreamPostprocessor(sched)`                                                    |
+| `DiscontinuePipelineStage`             | Removed (was unused); implement a custom `AbstractStreamPostprocessor` if needed                      |
+| `EmptyPipelineStage()`                 | `nothing`                                                                                            |
+| `CompositePipelineStage(stages)`       | `ReactiveMP.CompositeStreamPostprocessor(stages)`                                                    |
+| `schedule_updates(vars; pipeline_stage = ...)` | Pass a `ReactiveMP.ScheduleOnStreamPostprocessor` through the activation options instead       |
+
+See the `ReactiveMP` v5→v6 migration guide and the `Stream postprocessors` page in the `ReactiveMP` documentation for the full low-level API.
+
 ## Summary of breaking changes
 
 **Annotations:**
@@ -250,5 +314,11 @@ See [Inference results postprocessing](@ref user-guide-inference-postprocess) fo
 
 **Postprocessing:**
 - `DefaultPostprocess` removed; `postprocess` defaults to `nothing` and is auto-selected based on `annotations`
+
+**Pipeline stages and scheduler:**
+- `where { pipeline = ... }` node clause removed; pipeline-stage types (`LoggerPipelineStage`, `AsyncPipelineStage`, `ScheduleOnPipelineStage`, `DiscontinuePipelineStage`, `EmptyPipelineStage`, `CompositePipelineStage`, `AbstractPipelineStage`) no longer exist
+- `options = (scheduler = ...,)` → `options = (stream_postprocessors = ReactiveMP.ScheduleOnStreamPostprocessor(...),)`; default changed from `AsapScheduler()` to `nothing`
+- `LoggerPipelineStage` has no direct replacement — use `before_message_rule_call` / `after_message_rule_call` callbacks instead
+- `limit_stack_depth` continues to work unchanged
 
 For a deeper dive into the new annotation processor system and how to implement custom annotations, see the `ReactiveMP.jl` documentation.

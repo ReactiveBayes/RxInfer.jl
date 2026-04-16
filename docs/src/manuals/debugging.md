@@ -133,54 +133,14 @@ before_iters = RxInfer.tracedevents(:before_iteration, trace)
 println("Number of before_iteration events: ", length(before_iters))
 ```
 
-## Using `LoggerPipelineStage`
+## [Tracing individual message computations](@id user-guide-debugging-message-computations)
 
-`ReactiveMP` allows attaching extra computations to the default computational pipeline of message passing.
-Read more about pipelines in the corresponding section of `ReactiveMP`. Here we show how to use `LoggerPipelineStage` to trace the order of message passing updates for debugging purposes.
+The `on_marginal_update` callback shown above reports posteriors as they become available. To trace finer-grained events — every individual rule invocation, message product, or marginal computation — use the lower-level message-passing callbacks such as `before_message_rule_call` and `after_message_rule_call`. See the [Callbacks](@ref manual-inference-callbacks) page for the full list of available events and their fields.
 
-```@example debugging-with-callbacks
-using RxInfer
+For a drop-in solution that records every event (iteration boundaries, rule calls, marginal updates, ...) into a structured log you can filter and inspect after inference, use [`RxInferTraceCallbacks`](@ref) or pass `trace = true` to [`infer`](@ref). See [Trace callbacks](@ref manual-inference-trace-callbacks) for details.
 
-@model function iid_normal_with_pipeline(y)
-    μ  ~ Normal(mean = 0.0, variance = 100.0)
-    γ  ~ Gamma(shape = 1.0, rate = 1.0)
-    y .~ Normal(mean = μ, precision = γ) where { pipeline = LoggerPipelineStage() }
-end
-```
-
-Next, let us define a synthetic dataset:
-
-```@example debugging-with-callbacks
-# We use less data points in the dataset to reduce the amount of text printed
-# during the inference
-dataset = rand(NormalMeanPrecision(3.1415, 30.0), 5)
-nothing #hide
-```
-
-Now, we can call the [`infer`](@ref) function. We combine the pipeline logger stage with the callbacks, which were introduced in the [previous section](@ref user-guide-debugging-callbacks):
-
-```@example debugging-with-callbacks
-init = @initialization begin
-    q(μ) = vague(NormalMeanVariance)
-end
-
-result = infer(
-    model = iid_normal_with_pipeline(),
-    data  = (y = dataset, ),
-    constraints = MeanField(),
-    iterations = 5,
-    initialization = init,
-    returnvars = KeepLast(),
-    callbacks = (
-        on_marginal_update = on_marginal_update_callback,
-        before_iteration   = before_iteration_callback,
-        after_iteration    = after_iteration_callback
-    )
-)
-nothing #hide
-```
-
-We can see the order of message update events. Note that `ReactiveMP` may decide to compute messages lazily, in which case the actual computation of the value of a message will be deferred until a later moment. In this case, `LoggerPipelineStage` will report _DeferredMessage_.
+!!! note
+    Earlier versions of RxInfer exposed a `LoggerPipelineStage` attached via the `where { pipeline = ... }` node clause. That API was removed together with `ReactiveMP`'s `AbstractPipelineStage` hierarchy in v6; the callback mechanism above subsumes its functionality without subscribing to the reactive streams.
 
 ## [Using `RxInferBenchmarkCallbacks` for performance analysis](@id user-guide-debugging-benchmark-callbacks)
 

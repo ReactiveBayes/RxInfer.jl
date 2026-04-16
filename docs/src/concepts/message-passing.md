@@ -32,7 +32,7 @@ Under a **mean-field factorization** assumption `q(x, y) = q(x)q(y)`, the VMP me
 \mu_{f \to x}(x) = \exp \left( \int q(y) \, q(z) \log f(x, y, z) \; \mathrm{d}y \; \mathrm{d}z \right)
 ```
 
-Key difference from BP: VMP uses *marginals* `q(y)` and `q(z)` rather than messages. RxInfer tracks this distinction through its functional dependencies pipeline, automatically selecting the correct rule based on model constraints.
+Key difference from BP: VMP uses *marginals* `q(y)` and `q(z)` rather than messages. RxInfer tracks this distinction through its functional dependencies policy, automatically selecting the correct rule based on model constraints.
 
 ### Mean-Field vs Structured Factorization
 
