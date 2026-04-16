@@ -9,7 +9,7 @@ whether these wrappers are preserved or stripped from the final result.
 
 ## Default behavior
 
-The default postprocessing strategy depends on whether [annotations](@ref) are enabled:
+The default postprocessing strategy depends on whether [annotations](@ref RxInfer.infer) are enabled:
 
 - **Without annotations** (`annotations = nothing`, the default): the strategy is [`UnpackMarginalPostprocess`](@ref). 
   Since no annotation data is attached, the `Marginal` wrapper is removed and the result 
