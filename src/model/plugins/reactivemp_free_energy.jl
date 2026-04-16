@@ -52,7 +52,6 @@ end
 function GraphPPL.postprocess_plugin(
     ::ReactiveMPFreeEnergyPlugin, objective::BetheFreeEnergy{T}, model::Model
 ) where {T}
-
     factor_nodes(model) do _, node
         factornode = getextra(node, ReactiveMPExtraFactorNodeKey)
         metadata = getextra(node, GraphPPL.MetaExtraKey, nothing)
@@ -61,7 +60,7 @@ function GraphPPL.postprocess_plugin(
             FactorBoundFreeEnergy(),
             factornode,
             metadata,
-            ReactiveMP.NoopStreamPostprocessor(),
+            nothing,
         )
         setextra!(node, ReactiveMPExtraBetheFreeEnergyStreamKey, bfe_stream)
     end
@@ -74,7 +73,7 @@ function GraphPPL.postprocess_plugin(
                 __as_counting_real_type(T),
                 VariableBoundEntropy(),
                 variable,
-                ReactiveMP.NoopStreamPostprocessor(),
+                nothing,
             )
             setextra!(node, ReactiveMPExtraBetheFreeEnergyStreamKey, bfe_stream)
         end

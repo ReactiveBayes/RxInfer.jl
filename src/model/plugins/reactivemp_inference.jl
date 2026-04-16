@@ -31,7 +31,7 @@ Creates model inference options object. The list of available options is present
 
 ### Advanced options
 
-- `stream_postprocessors`: changes the postprocessor of reactive streams, see ReactiveMP.jl for more info, defaults to `ReactiveMP.NoopStreamPostprocessor`, unless the `limit_stack_depth` option is set, in which case will be set to `ReactiveMP.ScheduleOnStreamPostprocessor` together with `RxInfer.LimitStackScheduler`.
+- `stream_postprocessors`: changes the postprocessor of reactive streams, see ReactiveMP.jl for more info, defaults to `nothing`, unless the `limit_stack_depth` option is set, in which case will be set to `ReactiveMP.ScheduleOnStreamPostprocessor` together with `RxInfer.LimitStackScheduler`.
 - `rulefallback`: specifies a global message update rule fallback for cases when a specific message update rule is not available. Consult `ReactiveMP` documentation for the list of available callbacks.
 
 See also: [`infer`](@ref)
