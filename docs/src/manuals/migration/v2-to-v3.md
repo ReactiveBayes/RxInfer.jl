@@ -117,6 +117,7 @@ end
 However, their type has changed to internal data structures from the `GraphPPL` package. To access the `ReactiveMP` data structures (e.g., to retrieve the messages or marginals streams), use `RxInfer.getvarref` along with `RxInfer.getvariable`:
 ```@example migration-guide
 using ReactiveMP, Rocket
+using RxInfer.ReactiveMP
 result = infer(
     model = test_model(a = 1.0, b = 1.0),
     data  = (y = 1, )
@@ -125,14 +126,14 @@ result = infer(
 θlabel  = RxInfer.getreturnval(result.model)
 θvarref = RxInfer.getvarref(result.model, θlabel)
 θvar    = RxInfer.getvariable(θvarref)
-@test θvar isa ReactiveMP.RandomVariable #hide
+@test θvar isa RxInfer.ReactiveMP.RandomVariable #hide
 qθ_test = [] #hide
-subscribe!(ReactiveMP.getmarginal(θvar) |> take(1), (qθ) -> push!(qθ_test, qθ)) #hide
+subscribe!(RxInfer.ReactiveMP.getmarginal(θvar) |> take(1), (qθ) -> push!(qθ_test, qθ)) #hide
 @test length(qθ_test) === 1 #hide
-@test first(ReactiveMP.getdata(qθ_test)) == Beta(2.0, 1.0) #hide
+@test first(RxInfer.ReactiveMP.getdata(qθ_test)) == Beta(2.0, 1.0) #hide
 
 # `|> take(1)` ensures automatic unsubscription 
-θmarginals_subscription = subscribe!(ReactiveMP.getmarginal(θvar) |> take(1), (qθ) -> println(qθ))
+θmarginals_subscription = subscribe!(RxInfer.ReactiveMP.getmarginal(θvar) |> take(1), (qθ) -> println(qθ))
 nothing #hide
 ```
 
