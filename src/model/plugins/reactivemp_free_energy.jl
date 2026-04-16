@@ -29,8 +29,7 @@ const ReactiveMPExtraBetheFreeEnergyStreamKey = GraphPPL.NodeDataExtraKey{
     :bfe_stream, Any
 }()
 
-GraphPPL.plugin_type(::ReactiveMPFreeEnergyPlugin) =
-    FactorAndVariableNodesPlugin()
+GraphPPL.plugin_type(::ReactiveMPFreeEnergyPlugin) = FactorAndVariableNodesPlugin()
 
 function GraphPPL.preprocess_plugin(
     ::ReactiveMPFreeEnergyPlugin,
@@ -92,8 +91,7 @@ function score(
     end
 
     variable_bound_entropies = map(getrandomvars(model)) do nodedata
-        nodeproperties =
-            getproperties(nodedata)::GraphPPL.VariableNodeProperties
+        nodeproperties = getproperties(nodedata)::GraphPPL.VariableNodeProperties
         stream = getextra(nodedata, ReactiveMPExtraBetheFreeEnergyStreamKey)
         return apply_diagnostic_check(diagnostic_checks, nodeproperties, stream)
     end

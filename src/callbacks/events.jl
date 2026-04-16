@@ -205,4 +205,3 @@ struct AfterAutostartEvent{E, S} <: Event{:after_autostart}
     engine::E
     span_id::S
 end
-

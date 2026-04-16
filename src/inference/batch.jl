@@ -189,10 +189,7 @@ function batch_inference(;
     end
 
     if getforce_marginal_computation(_options)
-        modelplugins =
-            modelplugins + ReactiveMPForceMarginalComputationPlugin(
-                MarginalComputationOptions()
-            )
+        modelplugins = modelplugins + ReactiveMPForceMarginalComputationPlugin()
     end
 
     # The `_model` here still must be a `ModelGenerator`

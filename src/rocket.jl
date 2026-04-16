@@ -40,8 +40,9 @@ Base.show(io::IO, scheduler::LimitStackScheduler) = print(
     "LimitStackScheduler(soft_limit = $(get_soft_limit(scheduler)), hard_limit = $(get_hard_limit(scheduler)))",
 )
 
-Base.similar(scheduler::LimitStackScheduler) =
-    LimitStackScheduler(get_soft_limit(scheduler), get_hard_limit(scheduler))
+Base.similar(scheduler::LimitStackScheduler) = LimitStackScheduler(
+    get_soft_limit(scheduler), get_hard_limit(scheduler)
+)
 
 Rocket.makeinstance(::Type, scheduler::LimitStackScheduler) = scheduler
 
@@ -78,8 +79,7 @@ struct LimitStackSubscription <: Teardown
     subscription :: Teardown
 end
 
-Rocket.as_teardown(::Type{<:LimitStackSubscription}) =
-    UnsubscribableTeardownLogic()
+Rocket.as_teardown(::Type{<:LimitStackSubscription}) = UnsubscribableTeardownLogic()
 
 Rocket.on_unsubscribe!(scheduler::LimitStackSubscription) = limitstack(
     () -> Rocket.unsubscribe!(scheduler.subscription), scheduler.instance
