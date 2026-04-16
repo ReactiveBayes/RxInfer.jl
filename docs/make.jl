@@ -7,29 +7,34 @@ using Dates
 ## https://gr-framework.org/workstations.html#no-output
 ENV["GKSwstype"] = "100"
 
-DocMeta.setdocmeta!(RxInfer, :DocTestSetup, :(using RxInfer); recursive = true)
+DocMeta.setdocmeta!(RxInfer, :DocTestSetup, :(using RxInfer); recursive=true)
 
 draft = get(ENV, "DOCS_DRAFT", "false") == "true"
 
 makedocs(;
-    draft = draft,
-    warnonly = draft,
-    modules = [RxInfer],
-    authors = "Bagaev Dmitry <d.v.bagaev@tue.nl> and contributors",
-    sitename = "RxInfer.jl",
-    format = Documenter.HTML(;
-        prettyurls = get(ENV, "CI", "false") == "true",
-        canonical = "https://docs.rxinfer.com/stable",
-        edit_link = "main",
-        warn_outdated = true,
-        sidebar_sitename = false,
-        assets = ["assets/theme.css", "assets/header.css", "assets/header.js", "assets/chat.js", "assets/favicon.ico"],
-        analytics = "G-X4PH160GMF",
-        description = "Julia package for automated Bayesian inference on a factor graph with reactive message passing",
-        footer = "Created in [BIASlab](https://biaslab.github.io/), maintained by [ReactiveBayes](https://github.com/ReactiveBayes), powered by [Documenter.jl](https://github.com/JuliaDocs/Documenter.jl) and the [Julia Programming Language](https://julialang.org/)."
+    draft=draft,
+    warnonly=draft,
+    modules=[RxInfer],
+    authors="Bagaev Dmitry <d.v.bagaev@tue.nl> and contributors",
+    sitename="RxInfer.jl",
+    format=Documenter.HTML(;
+        prettyurls=get(ENV, "CI", "false") == "true",
+        canonical="https://docs.rxinfer.com/stable",
+        edit_link="main",
+        warn_outdated=true,
+        sidebar_sitename=false,
+        assets=["assets/theme.css", "assets/header.css", "assets/header.js", "assets/chat.js", "assets/favicon.ico"],
+        analytics="G-X4PH160GMF",
+        description="Julia package for automated Bayesian inference on a factor graph with reactive message passing",
+        footer="Created in [BIASlab](https://biaslab.github.io/), maintained by [ReactiveBayes](https://github.com/ReactiveBayes), powered by [Documenter.jl](https://github.com/JuliaDocs/Documenter.jl) and the [Julia Programming Language](https://julialang.org/)."
     ),
-    pages = [
+    pages=[
         "Home" => "index.md",
+        "Concepts" => [
+            "concepts/factor-graphs.md",
+            "concepts/message-passing.md",
+            "concepts/reactive-programming.md",
+        ],
         "User guide" => [
             "Getting started" => "manuals/getting-started.md",
             "RxInfer.jl vs. Others" => "manuals/comparison.md",
@@ -168,4 +173,4 @@ end
 inject_keywords_meta()
 generate_sitemap()
 
-deploydocs(; repo = "github.com/ReactiveBayes/RxInfer.jl", devbranch = "main", forcepush = true, cname = "docs.rxinfer.com")
+deploydocs(; repo="github.com/ReactiveBayes/RxInfer.jl", devbranch="main", forcepush=true, cname="docs.rxinfer.com")

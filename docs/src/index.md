@@ -99,6 +99,9 @@ Explore different [examples](@ref examples-overview) in this documentation, and 
 
 ```@contents
 Pages = [
+  "concepts/factor-graphs.md",
+  "concepts/message-passing.md",
+  "concepts/reactive-programming.md",
   "manuals/comparison.md",
   "manuals/getting-started.md",
   "manuals/model-specification.md",
@@ -121,6 +124,16 @@ Pages = [
 ]
 Depth = 2
 ```
+
+## Concepts Overview
+
+Before diving into practical usage, explore the foundational concepts underlying RxInfer:
+
+- **[Factor Graphs]**(@ref concepts-factor-graphs) — Graphical representation of probabilistic models, variables and factors nodes
+- **[Message Passing]**(@ref concepts-message-passing) — VMP/BP algorithms for Bayesian inference on factor graphs
+- **[Reactive Programming Model]**(@ref concepts-reactive-programming) — Streams mental model enabling real-time inference
+
+These concept pages provide deeper theoretical understanding than the practical manuals. For quick-start usage, head to [Getting started](@ref user-guide-getting-started).
 
 ## References
 
