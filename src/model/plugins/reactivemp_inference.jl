@@ -517,8 +517,10 @@ function activate_rmp_factornode!(
     stream_postprocessors = getextra(
         nodedata, ReactiveMPExtraStreamPostprocessorsKey, nothing
     )
-
-    stream_postprocessors = getpostprocessor(getoptions(plugin))
+    # if per-node setting is `nothing`, set the global one from the options
+    if isnothing(stream_postprocessors)
+        stream_postprocessors = getpostprocessor(getoptions(plugin))
+    end
     annotations = getannotations(getoptions(plugin))
     rulefallback = getrulefallback(getoptions(plugin))
     callbacks = getcallbacks(getoptions(plugin))
