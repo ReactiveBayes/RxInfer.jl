@@ -7,29 +7,38 @@ using Dates
 ## https://gr-framework.org/workstations.html#no-output
 ENV["GKSwstype"] = "100"
 
-DocMeta.setdocmeta!(RxInfer, :DocTestSetup, :(using RxInfer); recursive = true)
+DocMeta.setdocmeta!(RxInfer, :DocTestSetup, :(using RxInfer); recursive=true)
 
 draft = get(ENV, "DOCS_DRAFT", "false") == "true"
 
 makedocs(;
-    draft = draft,
-    warnonly = draft,
-    modules = [RxInfer],
-    authors = "Bagaev Dmitry <d.v.bagaev@tue.nl> and contributors",
-    sitename = "RxInfer.jl",
-    format = Documenter.HTML(;
-        prettyurls = get(ENV, "CI", "false") == "true",
-        canonical = "https://docs.rxinfer.com/stable",
-        edit_link = "main",
-        warn_outdated = true,
-        sidebar_sitename = false,
-        assets = ["assets/theme.css", "assets/header.css", "assets/header.js", "assets/chat.js", "assets/favicon.ico"],
-        analytics = "G-X4PH160GMF",
-        description = "Julia package for automated Bayesian inference on a factor graph with reactive message passing",
-        footer = "Created in [BIASlab](https://biaslab.github.io/), maintained by [ReactiveBayes](https://github.com/ReactiveBayes), powered by [Documenter.jl](https://github.com/JuliaDocs/Documenter.jl) and the [Julia Programming Language](https://julialang.org/)."
+    draft=draft,
+    warnonly=draft,
+    modules=[RxInfer],
+    authors="Bagaev Dmitry <d.v.bagaev@tue.nl> and contributors",
+    sitename="RxInfer.jl",
+    format=Documenter.HTML(;
+        prettyurls=get(ENV, "CI", "false") == "true",
+        canonical="https://docs.rxinfer.com/stable",
+        edit_link="main",
+        warn_outdated=true,
+        sidebar_sitename=false,
+        assets=["assets/theme.css", "assets/header.css", "assets/header.js", "assets/chat.js", "assets/favicon.ico"],
+        analytics="G-X4PH160GMF",
+        description="Julia package for automated Bayesian inference on a factor graph with reactive message passing",
+        footer="Created in [BIASlab](https://biaslab.github.io/), maintained by [ReactiveBayes](https://github.com/ReactiveBayes), powered by [Documenter.jl](https://github.com/JuliaDocs/Documenter.jl) and the [Julia Programming Language](https://julialang.org/)."
     ),
-    pages = [
+    pages=[
         "Home" => "index.md",
+        "Concepts" => [
+            "concepts/probability-distributions.md",
+            "concepts/bayesian-inference.md",
+            "concepts/factor-graphs.md",
+            "concepts/message-passing.md",
+            "concepts/variational-inference.md",
+            "concepts/constraints-specification.md",
+            "concepts/reactive-programming.md",
+        ],
         "User guide" => [
             "Getting started" => "manuals/getting-started.md",
             "RxInfer.jl vs. Others" => "manuals/comparison.md",
@@ -49,6 +58,9 @@ makedocs(;
                 "Initialization" => "manuals/inference/initialization.md",
                 "Meta specification" => "manuals/inference/meta-specification.md",
                 "Auto-updates" => "manuals/inference/autoupdates.md",
+                "Callbacks" => "manuals/inference/callbacks.md",
+                "Benchmark callbacks" => "manuals/inference/benchmark-callbacks.md",
+                "Trace callbacks" => "manuals/inference/trace-callbacks.md",
                 "Early stopping" => "manuals/inference/early-stopping.md",
                 "Deterministic nodes" => "manuals/inference/delta-node.md",
                 "Non-conjugate inference" => "manuals/inference/nonconjugate.md",
@@ -61,7 +73,10 @@ makedocs(;
             "Debugging" => "manuals/debugging.md",
             "Session summary" => "manuals/session_summary.md",
             "Sharing sessions & telemetry" => "manuals/telemetry.md",
-            "Migration from v2 to v3" => "manuals/migration-guide-v2-v3.md",
+            "Migration guides" => [
+                "Migration from v2 to v3" => "manuals/migration/v2-to-v3.md",
+                "Migration from v4 to v5" => "manuals/migration/v4-to-v5.md",
+            ],
             "Sharp bits of RxInfer" => [
                 "Overview" => "manuals/sharpbits/overview.md",
                 "Rule Not Found Error" => "manuals/sharpbits/rule-not-found.md",
@@ -162,4 +177,4 @@ end
 inject_keywords_meta()
 generate_sitemap()
 
-deploydocs(; repo = "github.com/ReactiveBayes/RxInfer.jl", devbranch = "main", forcepush = true, cname = "docs.rxinfer.com")
+deploydocs(; repo="github.com/ReactiveBayes/RxInfer.jl", devbranch="main", forcepush=true, cname="docs.rxinfer.com")

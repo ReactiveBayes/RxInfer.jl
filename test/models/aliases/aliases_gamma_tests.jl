@@ -36,7 +36,7 @@
         constraints = constraints,
         iterations = 100,
         initialization = init,
-        free_energy = true
+        free_energy = true,
     )
 
     # Here we simply test that it ran and gave some output 
@@ -60,6 +60,6 @@ end
 
     @test occursin(
         "'Gamma' and 'GammaShapeScale' without keywords are constructed with parameters (Shape, Scale)",
-        String(take!(io))
+        String(take!(io)),
     )
 end

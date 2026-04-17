@@ -56,7 +56,7 @@
             returnvars = (z = KeepLast(),),
             constraints = constraints,
             meta = model_meta(rng, 600, 600, 0.01),
-            initialization = init
+            initialization = init,
         )
     end
 
@@ -87,14 +87,14 @@
         sum(
             (mean.(mz) .- 4 .* std.(mz)) .<
             hidden .<
-            (mean.(mz) .+ 4 .* std.(mz))
+            (mean.(mz) .+ 4 .* std.(mz)),
         ) / T
     ) > 0.95
     @test (
         sum(
             (mean.(mz) .- 3 .* std.(mz)) .<
             hidden .<
-            (mean.(mz) .+ 3 .* std.(mz))
+            (mean.(mz) .+ 3 .* std.(mz)),
         ) / T
     ) > 0.90
 
@@ -112,7 +112,7 @@
             px,
             map(mean, res.posteriors[:z]),
             label = "Estimated signal location",
-            color = :orange
+            color = :orange,
         )
         px = plot!(
             px,
@@ -120,7 +120,7 @@
             ribbon = (9 .* var.(res.posteriors[:z])) .|> sqrt,
             fillalpha = 0.5,
             label = "Estimated Signal confidence",
-            color = :blue
+            color = :blue,
         )
         pf = plot(fe, label = "Bethe Free Energy")
 

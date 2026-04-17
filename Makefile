@@ -32,7 +32,7 @@ format: scripts_init ## Code formating run
 .PHONY: docs
 
 doc_init:
-	julia --project=docs -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate(); Pkg.precompile();'
+	julia --project=docs -e 'using Pkg; Pkg.instantiate(); Pkg.precompile();'
 
 dev_doc_init:
 	julia --startup-file=no --project=docs -e 'using Pkg; Pkg.rm([ "RxInfer", "BayesBase", "ExponentialFamily", "ReactiveMP", "GraphPPL", "Rocket" ])'

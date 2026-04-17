@@ -16,7 +16,7 @@
         zt_min_var,
         xt_min_mean,
         xt_min_var,
-        y
+        y,
     )
         zt_min ~ Normal(mean = zt_min_mean, var = zt_min_var)
         xt_min ~ Normal(mean = xt_min_mean, var = xt_min_var)
@@ -64,7 +64,7 @@
             initialization = init,
             iterations     = vmp_iters,
             free_energy    = true,
-            autostart      = true
+            autostart      = true,
         )
     end
 
@@ -144,7 +144,7 @@
             mean.(mz),
             ribbon = std.(mz),
             label = "estimated z_i",
-            color = :teal
+            color = :teal,
         )
 
         plot!(px, 1:n, x, label = "x_i", color = :green)
@@ -154,7 +154,7 @@
             mean.(mx),
             ribbon = std.(mx),
             label = "estimated x_i",
-            color = :violet
+            color = :violet,
         )
 
         pf = plot(fe, label = "Bethe Free Energy")

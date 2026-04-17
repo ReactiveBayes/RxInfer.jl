@@ -40,14 +40,14 @@
             DeltaMeta(method = Linearization()),
             DeltaMeta(method = Unscented()),
             Linearization(),
-            Unscented()
+            Unscented(),
         )
 
         datavar_based = map(metas) do meta
             return infer(
                 model = delta_2inputs_θ_fixed(meta = meta),
                 data = (y = data, θ = θ),
-                free_energy = true
+                free_energy = true,
             )
         end
 
@@ -55,7 +55,7 @@
             return infer(
                 model = delta_2inputs_θ_fixed(meta = meta, θ = θ),
                 data = (y = data,),
-                free_energy = true
+                free_energy = true,
             )
         end
 
@@ -73,14 +73,14 @@
             DeltaMeta(method = Linearization()),
             DeltaMeta(method = Unscented()),
             Linearization(),
-            Unscented()
+            Unscented(),
         )
 
         datavar_based = map(metas) do meta
             return infer(
                 model = delta_2inputs_x_fixed(meta = meta),
                 data = (y = data, x = x),
-                free_energy = true
+                free_energy = true,
             )
         end
 
@@ -88,7 +88,7 @@
             return infer(
                 model = delta_2inputs_x_fixed(meta = meta, x = x),
                 data = (y = data,),
-                free_energy = true
+                free_energy = true,
             )
         end
 

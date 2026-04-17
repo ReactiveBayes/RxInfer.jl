@@ -71,8 +71,6 @@ unless specified explicitly. The [`infer`](@ref) function has `free_energy` flag
 
 ```@docs
 RxInfer.BetheFreeEnergy
-RxInfer.BetheFreeEnergyDefaultMarginalSkipStrategy
-RxInfer.BetheFreeEnergyDefaultScheduler
 RxInfer.ReactiveMPFreeEnergyPlugin
 ```
 
