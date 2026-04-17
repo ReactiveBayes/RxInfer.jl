@@ -239,7 +239,9 @@ log_dir = convert_to_tensorboard(trace)
 ```
 """
 function RxInfer.convert_to_tensorboard(
-    trace::RxInferTraceCallbacks; output_file::Union{String, Nothing} = nothing
+    trace::RxInferTraceCallbacks;
+    output_file::Union{String, Nothing} = nothing,
+    verbose = true,
 )
     if isnothing(output_file)
         timestamp = Dates.format(Dates.now(), "yyyy-mm-dd_HH-MM-SS")
@@ -255,7 +257,9 @@ function RxInfer.convert_to_tensorboard(
         return nothing
     end
 
-    @info "Collected $(length(events)) events from trace"
+    if verbose
+        @info "Collected $(length(events)) events from trace"
+    end
 
     logger = TBLogger(output_file)
 
@@ -312,11 +316,13 @@ function RxInfer.convert_to_tensorboard(
 
     close(logger)
 
-    @info "TensorBoard logs exported to: $output_file"
-    @info "Total events logged: $(length(events))"
-    @info ""
-    @info "To view in TensorBoard, run:"
-    @info "  tensorboard --logdir=\"$output_file\""
+    if verbose
+        @info "TensorBoard logs exported to: $output_file"
+        @info "Total events logged: $(length(events))"
+        @info ""
+        @info "To view in TensorBoard, run:"
+        @info "  tensorboard --logdir=\"$output_file\""
+    end
 
     return output_file
 end
