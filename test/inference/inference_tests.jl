@@ -2140,7 +2140,6 @@ end
         options = (force_marginal_computation = true,),
     )
     @test meta.count == 10
-    RxInfer.stop(engine)
 
     # Test deterministic nodes
     @model function test_model_for_force_marginal_computations(y)
