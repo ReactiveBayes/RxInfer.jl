@@ -1,82 +1,55 @@
-# [Reactive Programming Model](@id concepts-reactive-programming)
+# [Reactive Programming](@id concepts-reactive-programming)
 
-`RxInfer` is built on a **reactive programming** paradigm. Unlike traditional inference engines that follow pre-defined, static computation schedules (e.g., performing forward and backward passes), RxInfer operates by **reacting to changes** in underlying data. This paradigm enables real-time Bayesian inference with minimal computational overhead.
+`RxInfer` is built around a **reactive programming** paradigm: inference is not a batch procedure you invoke, but a *graph of dependencies* that continuously reacts to new information. This is what gives RxInfer its characteristic strengths — real-time updates, streaming data support, and schedule-free execution — and what most clearly sets it apart from sampling- or autodiff-based inference engines.
 
-## [The Mental Model: Streams vs Values](@id concepts-reactive-programming-mental)
+If you have used reactive frameworks such as RxJS, SwiftUI or Rocket.jl, the mental model will feel familiar. If not, the key shift is summarised on this page.
 
-To use RxInfer effectively, shift your thinking from **"static values"** to **"dynamic streams"**. This mental model is fundamental to understanding how messages propagate through the factor graph.
+## [Streams, not values](@id concepts-reactive-programming-streams)
 
-### 1. Observables as Information Streams
-
-In traditional algorithms, a message is just a piece of data at a specific point in time. In `RxInfer`, messages and marginals are treated as **Observables**—dynamic streams of information:
+In a classical inference engine, a "message" or "marginal" is a *value* you compute at a specific moment. In `RxInfer`, it is a **stream of values over time** — an observable.
 
 ```
-Think of an Observable not as:
-❌ A single number (e.g., mean = 3.14)
-
-Think of it as:
-✅ A stream of values over time [3.14, 3.15, 3.12, 3.16, ...]
+Classical view               ┆  Reactive view
+────────────────────────────  ┆  ─────────────────────────────────────────
+message = compute(...)       ┆  message_stream : [m₀, m₁, m₂, m₃, ...]
+(one snapshot, recompute)    ┆  (keeps emitting as inputs change)
 ```
 
-Whenever a node performs computation and produces a new result, it **"emits"** this value into the stream. Any downstream node listening to this stream automatically receives the update.
+Every variable and factor node in the [factor graph](@ref concepts-factor-graphs) owns such a stream. When a stream emits a new value, all downstream nodes subscribed to it react — re-running the local [message passing](@ref concepts-message-passing) update and, in turn, emitting into their own streams. Posteriors update automatically as long as new observations keep arriving.
 
-### 2. Dependency-Driven Execution
+## [Dependency-driven execution](@id concepts-reactive-programming-execution)
 
-Because nodes are connected via streams, the graph handles its own execution. You don't manually trigger "message passing steps":
+Because the graph is a web of subscriptions, *you do not schedule inference*. The data flow decides what gets recomputed and when:
 
-```
-External event occurs (new observation added)
-    ↓
-Change triggers specific node update
-    ↓
-Node's output changes → notifies all connected neighbors
-    ↓
-Change propagates through graph structure
-    ↓
-Only nodes actually affected by the update recompute
-```
+1. A new observation is pushed into the graph.
+2. Only the nodes whose inputs actually changed fire their update rules.
+3. Changes propagate outward, hop by hop, through subscribed neighbours.
+4. Nodes unaffected by the update stay idle — zero wasted work.
 
-This **dependency-driven execution** ensures minimum computation necessary to keep beliefs up-to-date. Nodes disconnected from the changed variable remain untouched—no wasted computation.
+The outcome is two-fold. You get **incremental updates** (no full recomputation when a single observation arrives) and **schedule-free execution** (no forward/backward pass to plan in advance). Both are essential for the real-time and streaming workloads RxInfer targets — see [Streaming (online) inference](@ref manual-online-inference) for the streaming inference API.
 
-## [Real-Time Inference Benefits](@id concepts-reactive-programming-benefits)
+## [What reactivity enables](@id concepts-reactive-programming-benefits)
 
-The reactive paradigm enables capabilities impractical with traditional engines:
+Practical capabilities that come almost for free out of the reactive model:
 
-### Incremental Updates
+- **Real-time inference** — sensor readings, signal processing, robotics control: observations flow in, posteriors flow out.
+- **Online learning** — long-running models that keep refining themselves as data arrives, without periodic re-fitting.
+- **Selective updates** — only the part of the graph touched by new data recomputes, which matters a lot on large state-space models.
+- **Natural support for auto-updates** — posteriors from one time step can be wired as priors for the next through [autoupdates](@ref autoupdates-guide).
 
-When new observations arrive, RxInfer performs **incremental updates** rather than full recomputation.
-This makes RxInfer ideal for:
-- **Streaming data** (sensor readings, real-time signals)
-- **Online learning** (continuously updating models)
-- **Real-time applications** (autonomous vehicles, audio processing)
+## [Rocket.jl under the hood](@id concepts-reactive-programming-rocket)
 
-### Schedule-Free Execution
+The reactive machinery comes from [`Rocket.jl`](https://github.com/ReactiveBayes/Rocket.jl), Julia's library for observables and streams. RxInfer and [ReactiveMP](https://github.com/ReactiveBayes/ReactiveMP.jl) wrap Rocket's primitives — observables, subscribers, operators — into the domain-specific streams used by inference:
 
-Traditional engines build explicit schedules before inference:
-```
-Build schedule → Execute forward pass → Execute backward pass → Repeat
-```
+- `MessageObservable` — a stream of messages flowing along one direction of an edge.
+- `MarginalObservable` — a stream of posterior marginals at a variable node.
 
-RxInfer has **no pre-built schedule**. Propagation order determined by graph structure at runtime. This flexibility enables:
-- Adaptive computation based on actual changes
-- No overhead for scheduling unused nodes
-- Natural support for dynamic model structures
+You rarely touch these directly, but they are what make the whole system tick. Browsing the Rocket documentation is the fastest way to build a deep intuition for how RxInfer actually executes.
 
-## [Rocket.jl Integration](@id concepts-reactive-programming-rocket)
+## [For deeper understanding](@id concepts-reactive-programming-deeper)
 
-The reactive machinery underlying RxInfer comes from [`Rocket.jl`](https://github.com/ReactiveBayes/Rocket.jl)—a Julia library for reactive programming with observables. Rocket provides:
-- **Observables** — streams that emit values over time
-- **Subscribers** — nodes listening to observable changes
-- **Operators** — transformations on streams (map, filter, reduce)
-
-RxInfer builds on these primitives: each factor and variable node holds `MessageObservable` or `MarginalObservable` streams from ReactiveMP (which is also built on top of Rocket). When new data arrives, Rocket's reactive engine automatically propagates changes through subscribed nodes.
-
-## [For Deeper Understanding](@id concepts-reactive-programming-deeper)
-
-To explore reactive programming in more depth:
-
-- **[Rocket.jl Documentation](https://github.com/ReactiveBayes/Rocket.jl)** — Low-level mechanics of observables, and reactive streams in Julia. Essential for understanding RxInfer's reactive machinery
-- **[ReactiveMP.jl Reactive Message Passing](https://reactivebayes.github.io/ReactiveMP.jl/stable/)** — Engine perspective on how messages are scheduled via reactive streams
-- **[RxInfer Examples: Real-Time Inference](https://examples.rxinfer.com)** — Practical applications of reactive message passing in streaming scenarios
-
-For understanding the broader paradigm, see [Reactive Probabilistic Programming for Scalable Bayesian Inference](https://pure.tue.nl/ws/portalfiles/portal/313860204/20231219_Bagaev_hf.pdf)—the PhD dissertation outlining core ideas behind RxInfer's reactive approach.
+- **[Rocket.jl](https://github.com/ReactiveBayes/Rocket.jl)** — the reactive-programming foundation.
+- **[ReactiveMP.jl](https://reactivebayes.github.io/ReactiveMP.jl/stable/)** — how messages are scheduled via reactive streams.
+- **[Reactive Message Passing for Scalable Bayesian Inference](https://doi.org/10.48550/arXiv.2112.13251)** — scalability and real-time properties of the approach.
+- **[Reactive Probabilistic Programming for Scalable Bayesian Inference](https://pure.tue.nl/ws/portalfiles/portal/313860204/20231219_Bagaev_hf.pdf)** — PhD dissertation outlining the core ideas behind RxInfer's reactive approach.
+- **[Streaming (online) inference](@ref manual-online-inference)** — user-facing API for streaming and real-time scenarios.

@@ -31,8 +31,12 @@ makedocs(;
     pages=[
         "Home" => "index.md",
         "Concepts" => [
+            "concepts/probability-distributions.md",
+            "concepts/bayesian-inference.md",
             "concepts/factor-graphs.md",
             "concepts/message-passing.md",
+            "concepts/variational-inference.md",
+            "concepts/constraints-specification.md",
             "concepts/reactive-programming.md",
         ],
         "User guide" => [
