@@ -181,7 +181,7 @@ end
 See the documentation to [`GraphPPL.@model`](https://github.com/ReactiveBayes/GraphPPL.jl) for more information.
 
 ## Supported aliases in the model specification specifically for RxInfer.jl and ReactiveMP.jl
-$(begin io = IOBuffer(); RxInfer.show_tilderhs_alias(io); String(take!(io)) end)
+$(sprint(RxInfer.show_tilderhs_alias))
 """
 macro model(model_specification)
     return esc(
