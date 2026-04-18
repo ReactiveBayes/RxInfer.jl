@@ -4,6 +4,7 @@ version = "5.0.0"
 authors = ["Bagaev Dmitry <d.v.bagaev@tue.nl> and contributors"]
 
 [deps]
+Base64 = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
 BayesBase = "b4ee3484-f114-42fe-b91c-797d54a0c67e"
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
@@ -41,6 +42,7 @@ PrettyTablesExt = "PrettyTables"
 ProjectionExt = "ExponentialFamilyProjection"
 
 [compat]
+Base64 = "1"
 BayesBase = "1.5.0"
 DataStructures = "0.18"
 Dates = "1.10"
