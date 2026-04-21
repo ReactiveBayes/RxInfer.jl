@@ -385,7 +385,7 @@ end
     @testset "Warning/error if the varlabel in `autoupdates` have been reserved with constants" begin
         import RxInfer: check_model_generator_compatibility
 
-        model = beta_bernoulli(a = 1, b = 1)
+        model = beta_bernoulli(; a = 1, b = 1)
         @test_logs(
             (
                 :warn,
@@ -463,6 +463,7 @@ end
             PluginsCollection,
             with_plugins,
             getextra
+        import ReactiveMP: get_stream_of_marginals, new_observation!
 
         # Here we simply want to add some complex `autoupdates`, which are all essentially equivalent
         # The purpose is just to verify certain possibilities, even though they don't have a lot of sense in real scenarious
@@ -538,25 +539,25 @@ end
             updates_for_b = []
             updates_for_y = []
             subscription_marginal_θ = subscribe!(
-                getmarginal(variable_θ, IncludeAll()),
+                get_stream_of_marginals(variable_θ),
                 (qθ) -> push!(marginals_θ, qθ),
             )
             subscription_updates_a = subscribe!(
-                getmarginal(variable_a, IncludeAll()),
+                get_stream_of_marginals(variable_a),
                 (a) -> push!(updates_for_a, a),
             )
             subscription_updates_b = subscribe!(
-                getmarginal(variable_b, IncludeAll()),
+                get_stream_of_marginals(variable_b),
                 (b) -> push!(updates_for_b, b),
             )
             subscription_updates_y = subscribe!(
-                getmarginal(variable_y, IncludeAll()),
+                get_stream_of_marginals(variable_y),
                 (y) -> push!(updates_for_y, y),
             )
 
-            update!(variable_a, 1)
-            update!(variable_b, 2)
-            update!(variable_y, 1)
+            new_observation!(variable_a, 1)
+            new_observation!(variable_b, 2)
+            new_observation!(variable_y, 1)
 
             @test length(marginals_θ) === 1
             @test length(updates_for_a) === 1
@@ -576,7 +577,7 @@ end
                 [PointMass(2), PointMass(2.0)]
             @test ReactiveMP.getdata.(updates_for_y) == [PointMass(1)]
 
-            update!(variable_y, 0)
+            new_observation!(variable_y, 0)
 
             @test ReactiveMP.getdata.(marginals_θ) ==
                 [Beta(2.0, 2.0), Beta(2.0, 3.0)]
@@ -617,6 +618,7 @@ end
         run_autoupdate!
     import GraphPPL:
         VariationalConstraintsPlugin, PluginsCollection, with_plugins, getextra
+    import ReactiveMP: get_stream_of_marginals, new_observation!
 
     @model function beta_bernoulli_vector_based(a, b, y)
         θ[1] ~ Beta(a, b)
@@ -665,25 +667,22 @@ end
         updates_for_b = []
         updates_for_y = []
         subscription_marginal_θ = subscribe!(
-            getmarginal(variable_θ[1], IncludeAll()),
+            get_stream_of_marginals(variable_θ[1]),
             (qθ) -> push!(marginals_θ, qθ),
         )
         subscription_updates_a = subscribe!(
-            getmarginal(variable_a, IncludeAll()),
-            (a) -> push!(updates_for_a, a),
+            get_stream_of_marginals(variable_a), (a) -> push!(updates_for_a, a)
         )
         subscription_updates_b = subscribe!(
-            getmarginal(variable_b, IncludeAll()),
-            (b) -> push!(updates_for_b, b),
+            get_stream_of_marginals(variable_b), (b) -> push!(updates_for_b, b)
         )
         subscription_updates_y = subscribe!(
-            getmarginal(variable_y, IncludeAll()),
-            (y) -> push!(updates_for_y, y),
+            get_stream_of_marginals(variable_y), (y) -> push!(updates_for_y, y)
         )
 
-        update!(variable_a, 1)
-        update!(variable_b, 2)
-        update!(variable_y, 1)
+        new_observation!(variable_a, 1)
+        new_observation!(variable_b, 2)
+        new_observation!(variable_y, 1)
 
         @test length(marginals_θ) === 1
         @test length(updates_for_a) === 1
@@ -704,7 +703,7 @@ end
             [PointMass(2), PointMass(2.0)]
         @test ReactiveMP.getdata.(updates_for_y) == [PointMass(1)]
 
-        update!(variable_y, 0)
+        new_observation!(variable_y, 0)
 
         @test ReactiveMP.getdata.(marginals_θ) ==
             [Beta(2.0, 2.0), Beta(2.0, 3.0)]
@@ -743,6 +742,7 @@ end
         run_autoupdate!
     import GraphPPL:
         VariationalConstraintsPlugin, PluginsCollection, with_plugins, getextra
+    import ReactiveMP: get_stream_of_marginals, new_observation!
 
     @model function beta_bernoulli_vector_based_args(ins, y)
         θ[1, 1] ~ Beta(ins[1], ins[2])
@@ -803,20 +803,19 @@ end
         updates_for_ins = []
         updates_for_y = []
         subscription_marginal_θ = subscribe!(
-            getmarginal(variable_θ[1, 1], IncludeAll()),
+            get_stream_of_marginals(variable_θ[1, 1]),
             (qθ) -> push!(marginals_θ, qθ),
         )
         subscription_updates_ins = subscribe!(
-            getmarginals(variable_ins, IncludeAll()),
+            collectLatest(get_stream_of_marginals.(variable_ins)),
             (ins) -> push!(updates_for_ins, ins),
         )
         subscription_updates_y = subscribe!(
-            getmarginal(variable_y, IncludeAll()),
-            (y) -> push!(updates_for_y, y),
+            get_stream_of_marginals(variable_y), (y) -> push!(updates_for_y, y)
         )
 
-        update!(variable_ins, [1, 2])
-        update!(variable_y, 1)
+        new_observation!(variable_ins, [1, 2])
+        new_observation!(variable_y, 1)
 
         @test length(marginals_θ) === 1
         @test length(updates_for_ins) === 1
@@ -833,7 +832,7 @@ end
             [[PointMass(1), PointMass(2)], [PointMass(2.0), PointMass(2.0)]]
         @test ReactiveMP.getdata.(updates_for_y) == [PointMass(1)]
 
-        update!(variable_y, 0)
+        new_observation!(variable_y, 0)
 
         @test ReactiveMP.getdata.(marginals_θ) ==
             [Beta(2.0, 2.0), Beta(2.0, 3.0)]

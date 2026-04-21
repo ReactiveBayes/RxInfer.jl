@@ -105,7 +105,7 @@ For a quick overview of _which_ events fired and in what order, use [`RxInferTra
 
 ```@example debugging-with-callbacks
 using RxInfer
-using ReactiveMP: event_name
+using RxInfer.ReactiveMP: event_name
 
 result = infer(
     model = vectorized_model(),
@@ -133,54 +133,14 @@ before_iters = RxInfer.tracedevents(:before_iteration, trace)
 println("Number of before_iteration events: ", length(before_iters))
 ```
 
-## Using `LoggerPipelineStage`
+## [Tracing individual message computations](@id user-guide-debugging-message-computations)
 
-`ReactiveMP` allows attaching extra computations to the default computational pipeline of message passing.
-Read more about pipelines in the corresponding section of `ReactiveMP`. Here we show how to use `LoggerPipelineStage` to trace the order of message passing updates for debugging purposes.
+The `on_marginal_update` callback shown above reports posteriors as they become available. To trace finer-grained events — every individual rule invocation, message product, or marginal computation — use the lower-level message-passing callbacks such as `before_message_rule_call` and `after_message_rule_call`. See the [Callbacks](@ref manual-inference-callbacks) page for the full list of available events and their fields.
 
-```@example debugging-with-callbacks
-using RxInfer
+For a drop-in solution that records every event (iteration boundaries, rule calls, marginal updates, ...) into a structured log you can filter and inspect after inference, use [`RxInferTraceCallbacks`](@ref) or pass `trace = true` to [`infer`](@ref). See [Trace callbacks](@ref manual-inference-trace-callbacks) for details.
 
-@model function iid_normal_with_pipeline(y)
-    μ  ~ Normal(mean = 0.0, variance = 100.0)
-    γ  ~ Gamma(shape = 1.0, rate = 1.0)
-    y .~ Normal(mean = μ, precision = γ) where { pipeline = LoggerPipelineStage() }
-end
-```
-
-Next, let us define a synthetic dataset:
-
-```@example debugging-with-callbacks
-# We use less data points in the dataset to reduce the amount of text printed
-# during the inference
-dataset = rand(NormalMeanPrecision(3.1415, 30.0), 5)
-nothing #hide
-```
-
-Now, we can call the [`infer`](@ref) function. We combine the pipeline logger stage with the callbacks, which were introduced in the [previous section](@ref user-guide-debugging-callbacks):
-
-```@example debugging-with-callbacks
-init = @initialization begin
-    q(μ) = vague(NormalMeanVariance)
-end
-
-result = infer(
-    model = iid_normal_with_pipeline(),
-    data  = (y = dataset, ),
-    constraints = MeanField(),
-    iterations = 5,
-    initialization = init,
-    returnvars = KeepLast(),
-    callbacks = (
-        on_marginal_update = on_marginal_update_callback,
-        before_iteration   = before_iteration_callback,
-        after_iteration    = after_iteration_callback
-    )
-)
-nothing #hide
-```
-
-We can see the order of message update events. Note that `ReactiveMP` may decide to compute messages lazily, in which case the actual computation of the value of a message will be deferred until a later moment. In this case, `LoggerPipelineStage` will report _DeferredMessage_.
+!!! note
+    Earlier versions of RxInfer exposed a `LoggerPipelineStage` attached via the `where { pipeline = ... }` node clause. That API was removed together with `ReactiveMP`'s `AbstractPipelineStage` hierarchy in v6; the callback mechanism above subsumes its functionality without subscribing to the reactive streams.
 
 ## [Using `RxInferBenchmarkCallbacks` for performance analysis](@id user-guide-debugging-benchmark-callbacks)
 
@@ -239,18 +199,18 @@ The [`RxInferBenchmarkCallbacks`](@ref) structure collects timestamps at various
 
 For the full API reference, programmatic access to statistics, and model metadata integration, see the dedicated [Benchmark callbacks](@ref manual-inference-benchmark-callbacks) page.
 
-## [Legacy: Tracing message computations with `AddonMemory`](@id user-guide-debugging-memory-addon)
+## [Legacy: Tracing message computations with `InputArgumentsAnnotations`](@id user-guide-debugging-memory-addon)
 
 !!! warning "Legacy feature"
-    The `AddonMemory` system is a legacy feature from `ReactiveMP` and may be removed in a future release.
+    The `InputArgumentsAnnotations` system is a legacy feature from `ReactiveMP` and may be removed in a future release.
     For most debugging and inspection use cases, the [Trace callbacks](@ref manual-inference-trace-callbacks) system is more powerful and easier to use — it records every event (including message rule calls, product computations, form constraint applications, and marginal computations) from both RxInfer and ReactiveMP.
 
-`RxInfer` provides a way to save the history of the computations leading up to the computed messages and marginals. This history is added on top of messages and marginals and is referred to as a _Memory Addon_.
+`RxInfer` provides a way to save the history of the computations leading up to the computed messages and marginals. This history is added on top of messages and marginals and is referred to as an _Input Arguments Annotation_.
 
 !!! note
-    Addons is a feature of `ReactiveMP`. Read more about implementing custom addons in the corresponding section of the `ReactiveMP` package.
+    Annotations are a feature of `ReactiveMP`. Read more about implementing custom annotations in the corresponding section of the `ReactiveMP` package.
 
-We demonstrate the Memory Addon on the coin toss example from [earlier](@ref user-guide-getting-started-coin-flip-simulation) in the documentation. We model the binary outcome $x$ (heads or tails) using a `Bernoulli` distribution, with a parameter $\theta$ that represents the probability of landing on heads. We have a `Beta` prior distribution for the $\theta$ parameter, with a known shape $\alpha$ and rate $\beta$ parameter.
+We demonstrate the Input Arguments Annotation on the coin toss example from [earlier](@ref user-guide-getting-started-coin-flip-simulation) in the documentation. We model the binary outcome $x$ (heads or tails) using a `Bernoulli` distribution, with a parameter $\theta$ that represents the probability of landing on heads. We have a `Beta` prior distribution for the $\theta$ parameter, with a known shape $\alpha$ and rate $\beta$ parameter.
 
 $$\theta \sim \mathrm{Beta}(a, b)$$
 $$x_i \sim \mathrm{Bernoulli}(\theta)$$
@@ -285,24 +245,24 @@ plot(rθ, (rvar) -> pdf(result.posteriors[:θ], rvar), label="Infered posterior"
 vline!([θ_real], label="Real θ", title = "Inference results")
 ```
 
-We can figure out what's wrong by tracing the computation of the posterior with the Memory Addon.
-To obtain the trace, add `addons = (AddonMemory(),)` as an argument to the [`infer`](@ref) function.
-Note that the argument to the `addons` keyword argument must be a tuple, because multiple addons can be activated at the same time.
+We can figure out what's wrong by tracing the computation of the posterior with the Input Arguments Annotation.
+To obtain the trace, add `annotations = (InputArgumentsAnnotations(),)` as an argument to the [`infer`](@ref) function.
+Note that the argument to the `annotations` keyword argument must be a tuple, because multiple annotations can be activated at the same time.
 
 ```@example addoncoin
 result = infer(
     model = coin_model(),
     data  = (x = dataset, ),
-    addons = (AddonMemory(),)
+    annotations = (InputArgumentsAnnotations(),)
 )
 ```
 Now we have access to the messages that led to the marginal posterior:
 
 ```@example addoncoin
-RxInfer.ReactiveMP.getaddons(result.posteriors[:θ])
+RxInfer.ReactiveMP.getannotations(result.posteriors[:θ])
 ```
 
-![Addons_messages](../assets/img/debugging_messages.png)
+![messages_annotated_with_input_arguments](../assets/img/debugging_messages.png)
 
 The messages in the factor graph are marked in color. If you're interested in the mathematics behind these results, consider verifying them manually using the general equation for sum-product messages:
 
