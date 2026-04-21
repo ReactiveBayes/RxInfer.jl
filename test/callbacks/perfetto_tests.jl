@@ -42,7 +42,6 @@
         end
     end
 
-    
     @testset "perfetto_view renders as text/html" begin
         result = perfetto_view(traces)
         html = sprint() do io
@@ -50,7 +49,7 @@
         end
         @test occursin("ui.perfetto.dev", html)
         @test occursin("<iframe", html)
-        
+
         # The HTML should contain the Perfetto iframe
         @test occursin("ui.perfetto.dev", html)
         @test occursin("base64", html) || occursin("buffer", html)
