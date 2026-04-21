@@ -162,6 +162,17 @@ Base.show(io::IO, ::PerfettoDisplay) = print(
     "PerfettoDisplay (render in a Pluto, VS Code or Jupyter notebook to see the interactive trace)",
 )
 
+const _overlay_html = """<div id="overlay" style="
+          position:fixed;top:0;left:0;width:100vw;height:100vh;
+          background:rgba(255,255,255,0.5);
+          display:flex;align-items:center;justify-content:center;
+          transition:opacity 0.4s ease;">
+          <div style="text-align:left">
+           <span style="font:bold 3rem system-ui;white-space:nowrap">Loading...</span><br>
+           <span style="font:1rem system-ui;opacity:0.7">Click <strong>Yes</strong> in the next dialog</span>
+         </div>
+        </div>"""
+
 """
     perfetto_view(traces::Vector{TracedEvent}; name = "\$(Time(now())) RxInfer trace")
 
@@ -192,10 +203,12 @@ function perfetto_view(
         <div style="width: 100%; height: clamp(650px, 90vh, 1000px);">
         <iframe id="$id" src="https://ui.perfetto.dev"
           style="width:100%;height:100%;border:7px solid yellow;border-radius: 12px; box-sizing: border-box;"></iframe>
+          $(_overlay_html)
         <script>
         const b64 = "$b64";
         const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
         const iframe = document.getElementById('$id');
+        const overlay = document.getElementById('overlay');
 
         const interval = setInterval(() => {
           iframe.contentWindow.postMessage('PING', 'https://ui.perfetto.dev');
@@ -210,6 +223,8 @@ function perfetto_view(
               title: "$(name)",
             }
           }, 'https://ui.perfetto.dev');
+          overlay.style.opacity = '0';
+          setTimeout(() => overlay.remove(), 400);
         });
         </script>
         </div>"""
@@ -241,16 +256,7 @@ function perfetto_open(
     html = """<!DOCTYPE html><html><body style="margin:0">
         <iframe id="pf" src="https://ui.perfetto.dev"
           style="width:100vw;height:100vh;border:none;position:fixed;top:0;left:0"></iframe>
-        <div id="overlay" style="
-          position:fixed;top:0;left:0;width:100vw;height:100vh;
-          background:rgba(255,255,255,0.5);
-          display:flex;align-items:center;justify-content:center;
-          transition:opacity 0.4s ease;">
-          <div style="text-align:left">
-           <span style="font:bold 3rem system-ui;white-space:nowrap">Loading...</span><br>
-           <span style="font:1rem system-ui;opacity:0.7">Click <strong>Yes</strong> in the next dialog</span>
-         </div>
-        </div>
+        $(_overlay_html)
         <script>
         const b64 = "$b64";
         const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
