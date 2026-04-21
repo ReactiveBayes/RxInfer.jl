@@ -4,24 +4,23 @@ import JSON
 import Base64
 import Dates
 
-
 function _traces_to_perfetto_json(traces::Vector{TracedEvent})
     time_delta = isempty(traces) ? 0 : -Int64(traces[1].time_ns) # Shift all timestamps so the first event starts at t=0
-    
+
     # Convert traces to dict-like structures in Perfetto format
     perfetto_events = _to_perfetto_event.(traces; time_delta)
-    
-    return JSON.json(Dict(
-        "traceEvents" => perfetto_events,
-        "metadata" => Dict(
-            "clock-domain" => "MONO",
-            "command_line" => "RxInfer",
-            "higres-ticks" => true,
+
+    return JSON.json(
+        Dict(
+            "traceEvents" => perfetto_events,
+            "metadata" => Dict(
+                "clock-domain" => "MONO",
+                "command_line" => "RxInfer",
+                "higres-ticks" => true,
+            ),
         ),
-    ))
+    )
 end
-
-
 
 function _to_perfetto_event(te::TracedEvent; time_delta::Int64 = 0)
     e = te.event
@@ -32,16 +31,16 @@ function _to_perfetto_event(te::TracedEvent; time_delta::Int64 = 0)
         pid = 1,
         tid = 1,
         name = nice_name,
-	    # cat = "default",
+        # cat = "default",
         ph = ph,
         # Timestamps are in microseconds for Perfetto.
         # Add 1 ns to End events so zero-duration spans are visible.
-        ts = Float64(Int64(te.time_ns) + time_delta + (ph == "E" ? 1 : 0)) / 1000,
-	    # id = string(_get_trace_id(e)),
+        ts = Float64(Int64(te.time_ns) + time_delta + (ph == "E" ? 1 : 0)) /
+             1000,
+        # id = string(_get_trace_id(e)),
         args = _struct_to_simple_dict(e),
     )
 end
-
 
 @generated function _struct_to_simple_dict(x)
     struct_field_names = fieldnames(x)
@@ -53,12 +52,18 @@ end
         Expr(
             :tuple,
             (
-                Expr(Symbol("="), field_name, :(_to_observability_string(getfield(x, $(QuoteNode(field_name))), $(QuoteNode(field_name)))))
-                for field_name in struct_field_names# if field_name !== :trace_id
-            )...
+                Expr(
+                    Symbol("="),
+                    field_name,
+                    :(_to_observability_string(
+                        getfield(x, $(QuoteNode(field_name))),
+                        $(QuoteNode(field_name)),
+                    )),
+                ) for field_name in struct_field_names# if field_name !== :trace_id
+            )...,
         )
     end
-    
+
     ## Less optimized version using Dict:
     # quote
     # 	d = Dict{String,String}(
@@ -71,45 +76,36 @@ end
     # end
 end
 
-
-
-
-
 # _to_observability_string converts a field of an event object to a string to view in Perfetto. This should be high performance and give useful info.
 # The default is to call `string(...)`, but uou can add methods for fields to override their behaviour.
 
 # Default fallback
 function _to_observability_string(z::Any, _keyname::Symbol)
-	string(z)
-    
+    string(z)
+
     ## Uncomment this to find fields that take a long time to convert to string:
-	# tstart = time()
-	# result = string(z)
-	# elapsed = time() - tstart
+    # tstart = time()
+    # result = string(z)
+    # elapsed = time() - tstart
 
-	# if elapsed > 0.003
-	# 	@warn "Field took too long to render to string" elapsed typeof(z) keyname result
-	# end
+    # if elapsed > 0.003
+    # 	@warn "Field took too long to render to string" elapsed typeof(z) keyname result
+    # end
 
-	
-	# if length(result) > 2000
-	# 	@warn "String result is very long" elapsed typeof(z) keyname result
-	# end
+    # if length(result) > 2000
+    # 	@warn "String result is very long" elapsed typeof(z) keyname result
+    # end
 
-	# result
+    # result
 end
 
-_to_observability_string(z::ReactiveMP.RandomVariable, _keyname::Symbol) =
-    "ReactiveMP.RandomVariable(label=$(z.label))"
+_to_observability_string(z::ReactiveMP.RandomVariable, _keyname::Symbol) = "ReactiveMP.RandomVariable(label=$(z.label))"
 
-_to_observability_string(z::Vector{<:ReactiveMP.AbstractMessage}, _keyname::Symbol) =
-    "Vector of $(length(z)) messages."
+_to_observability_string(z::Vector{<:ReactiveMP.AbstractMessage}, _keyname::Symbol) = "Vector of $(length(z)) messages."
 
 _to_observability_string(::ReactiveMP.MessageProductContext, _keyname::Symbol) = "<omitted>"
 _to_observability_string(::ReactiveMP.MessageMapping, _keyname::Symbol) = "<omitted>"
 _to_observability_string(::ProbabilisticModel, _keyname::Symbol) = "<omitted>"
-
-
 
 """
     _time_ns_to_datetime(t::UInt64) -> Dates.DateTime
@@ -141,12 +137,7 @@ end
 # 	end
 # end
 
-
-
-
-
 ### ---- Display functionality
-
 
 """
     PerfettoDisplay
@@ -162,10 +153,10 @@ function Base.show(io::IO, ::MIME"text/html", p::PerfettoDisplay)
     print(io, p.html)
 end
 
-Base.show(io::IO, ::PerfettoDisplay) =
-    print(io, "PerfettoDisplay (render in a Pluto or Jupyter notebook to see the interactive trace)")
-
-
+Base.show(io::IO, ::PerfettoDisplay) = print(
+    io,
+    "PerfettoDisplay (render in a Pluto or Jupyter notebook to see the interactive trace)",
+)
 
 """
     perfetto_view(traces::Vector{TracedEvent}; name = "\$(Time(now())) RxInfer trace")
@@ -188,8 +179,7 @@ perfetto_view(traces)   # display in a notebook cell
 _Pluto tip: combine this with `PlutoUI.WideCell` for a bigger view, so `perfetto_view(traces) |> WideCell`._
 """
 function perfetto_view(
-    traces::Vector{TracedEvent};
-    name::String = _default_trace_name(traces),
+    traces::Vector{TracedEvent}; name::String = _default_trace_name(traces)
 )
     json_contents = _traces_to_perfetto_json(traces)
     b64 = Base64.base64encode(json_contents)
@@ -240,8 +230,7 @@ perfetto_open(traces)
 ```
 """
 function perfetto_open(
-    traces::Vector{TracedEvent};
-    name::String = _default_trace_name(traces),
+    traces::Vector{TracedEvent}; name::String = _default_trace_name(traces)
 )
     json_contents = _traces_to_perfetto_json(traces)
     b64 = Base64.base64encode(json_contents)
@@ -279,7 +268,7 @@ function perfetto_open(
         });
         </script>
         </body></html>"""
-    filename = tempname(cleanup = false) * ".html"
+    filename = tempname(; cleanup = false) * ".html"
     write(filename, html)
     if Sys.isapple()
         run(`open $filename`)
