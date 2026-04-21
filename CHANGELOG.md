@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Added Perfetto trace viewer support: `perfetto_view(trace)` converts a `RxInferTraceCallbacks` trace to Perfetto JSON, and `perfetto_open(trace)` opens it directly in the Perfetto UI in the browser.
+
 ## [5.0.0]
 
 - **Breaking:** Addons have been renamed to annotations to match the new ReactiveMP API. This affects the `infer` function and related types:

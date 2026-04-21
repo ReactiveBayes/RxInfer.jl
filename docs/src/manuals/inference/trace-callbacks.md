@@ -133,10 +133,25 @@ println("Trace included: ", haskey(result.model.metadata, :trace))
 println("Benchmark included: ", haskey(result.model.metadata, :benchmark))
 ```
 
+## Viewing traces in Perfetto
+
+A recorded trace can be inspected interactively with the [Perfetto](https://perfetto.dev/) trace viewer.
+Use [`perfetto_view`](@ref) to embed the viewer inside a Pluto, VS Code or Jupyter notebook cell, or [`perfetto_open`](@ref) to open it in your default browser.
+
+```julia
+result = infer(model = iid_normal(), data = (y = randn(10),), iterations = 3, trace = true)
+traces = RxInfer.tracedevents(result.model.metadata[:trace])
+
+perfetto_view(traces)   # show directly in your IDE (Pluto, VS Code, Jupyter)
+perfetto_open(traces)   # open in the browser
+```
+
 ## API Reference
 
 ```@docs
 RxInferTraceCallbacks
 TracedEvent
 RxInfer.tracedevents
+perfetto_view
+perfetto_open
 ```
