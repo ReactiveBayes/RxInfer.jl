@@ -180,6 +180,9 @@ Converts a vector of [`TracedEvent`](@ref)s to an embedded [Perfetto](https://ui
 trace viewer. Returns a [`PerfettoDisplay`](@ref) that renders as an interactive trace when
 displayed in a Pluto, VS Code or Jupyter notebook cell.
 
+!!! warning "Experimental"
+    This feature is experimental and its API may change in future releases.
+
 See also: [`perfetto_open`](@ref), [`RxInferTraceCallbacks`](@ref).
 
 
@@ -196,6 +199,8 @@ _Pluto tip: combine this with `PlutoUI.WideCell` for a bigger view, so `perfetto
 function perfetto_view(
     traces::Vector{TracedEvent}; name::String = _default_trace_name(traces)
 )
+    @warn "`perfetto_view` is experimental and its API may change in future releases." maxlog =
+        1
     json_contents = _traces_to_perfetto_json(traces)
     b64 = Base64.base64encode(json_contents)
     id = String(rand('a':'z', 10))
@@ -239,6 +244,9 @@ default web browser using the [Perfetto](https://ui.perfetto.dev) trace viewer.
 
 Returns the path to the temporary HTML file that was opened.
 
+!!! warning "Experimental"
+    This feature is experimental and its API may change in future releases.
+
 See also: [`perfetto_view`](@ref), [`RxInferTraceCallbacks`](@ref).
 
 # Example
@@ -251,6 +259,8 @@ perfetto_open(traces)
 function perfetto_open(
     traces::Vector{TracedEvent}; name::String = _default_trace_name(traces)
 )
+    @warn "`perfetto_open` is experimental and its API may change in future releases." maxlog =
+        1
     json_contents = _traces_to_perfetto_json(traces)
     b64 = Base64.base64encode(json_contents)
     html = """<!DOCTYPE html><html><body style="margin:0">
