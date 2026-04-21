@@ -31,57 +31,21 @@ using BenchmarkTools
 # ╔═╡ 19609cfa-f124-4060-976f-40102d7cc45d
 using Profile, ProfileSVG
 
-# ╔═╡ 42f96fd4-8c47-4c41-895d-aeecbb3aa19a
-using Base64
-
 # ╔═╡ 18d21cb8-e14f-4cbd-b679-7c696eac8b21
 TableOfContents()
 
 # ╔═╡ 1e8a46ca-268c-11f1-8687-1362ac8b895a
 md"""
-# This notebook uses RxInfer 5.0
+# Perfetto & OpenTelemetry traces demo
 
-This notebook requires you to have locally installed version of RxInfer and ReactiveMP. Before running the code in this notebook make sure that:
+This notebook requires you to have locally installed version of RxInfer 5 with this branch: [https://github.com/ReactiveBayes/RxInfer.jl/pull/630](https://github.com/ReactiveBayes/RxInfer.jl/pull/630). And ReactiveMP 6.
 
-### 1. You have locally installed ReactiveMP and switched to the `release-6` branch
-
-```
-cd MyProjects # or whatever folder you're using for developing
-git clone git@github.com:ReactiveBayes/ReactiveMP.jl.git
-cd ReactiveMP
-git pull
-git checkout release-6
-```
-
-### 2. You have locally installed RxInfer and switched to the `release-5` branch
+Also install the other packages used in this notebook in your global environment. 
 
 ```
-cd MyProjects # or whatever folder you're using for developing
-git clone git@github.com:ReactiveBayes/RxInfer.jl.git
-cd RxInfer
-git pull
-git checkout release-5
+StableRNGs Plots PlutoUI Revise JSON
 ```
 
-!!! note
-	`release-5` and `release-6` is not a typo, ReactiveMP and RxInfer have different major versions.
-
-### 3. You've added local version of ReactiveMP to RxInfer dependencies
-
-```
-cd MyProjects
-cd RxInfer
-julia --project -e 'using Pkg; Pkg.develop(path="../ReactiveMP.jl/")'
-```
-
-### 4. Make sure Revise is installed globally
-
-```
-julia -e 'using Pkg; Pkg.add("Revise")'
-```
-
-!!! note
-	The notebooks also uses packages like `StableRNGs`, `Plots`. Make sure to install them globally as well.
 """
 
 # ╔═╡ c29b75a6-fdac-45e7-a69f-583dbad8c60d
@@ -115,7 +79,7 @@ begin
 	hidden_τ       = 2.7182
 	distribution   = NormalMeanPrecision(hidden_μ, hidden_τ)
 	rng            = StableRNG(42)
-	n_observations = 1000
+	n_observations = 20
 	dataset        = rand(rng, distribution, n_observations)
 end
 
@@ -467,11 +431,6 @@ end
 "$(round(length(result) / 1e6, digits=2)) MB" |> Text
   ╠═╡ =#
 
-# ╔═╡ e93851c8-15db-4f72-abee-34f23837d1e8
-#=╠═╡
-PlutoUI.DownloadButton(result, "result.json")
-  ╠═╡ =#
-
 # ╔═╡ 3498ce24-5d99-454c-ae1b-9cf7c2249b1e
 md"""
 # Perfetto export
@@ -535,162 +494,17 @@ Int64(bb - aa) / 1e3
 # ╔═╡ c53048fe-105a-4841-be9d-0173c711916c
 perfetto_traces = let
 	time_delta = -Int64(after_marginal_events[1].time_ns)
-	to_perfetto.(after_marginal_events; time_delta=time_delta)
+	@benchmark to_perfetto.(after_marginal_events; time_delta=$time_delta)
 end
 
 # ╔═╡ 2aaaddba-7bc5-41d3-b92c-2c5b3f9fe25c
 
 
-# ╔═╡ 762fdff8-ada8-42f0-9505-d0a0b86f7014
-perfetto = Dict(
-	"traceEvents" => perfetto_traces,
-	"metadata" => Dict(
-		
-		"clock-domain" => "MONO",
-		"trace-capture-datetime" => 
-		"command_line" => "RxInferBoard",
-		"higres-ticks" => true,
-	)
-)
-
-# ╔═╡ 99c68335-8a0f-440e-adaf-c23ac4f1a36f
-
-
-# ╔═╡ d8cb0743-3f42-4d3c-951b-ed22b3fca916
-filter(after_marginal_events) do te
-	get_trace_id(te.event) == Base.UUID("bab13dad-e17a-4638-b190-4dbadbea4736")
-end
-
-# ╔═╡ 91727b0d-8cf2-42c3-b1fc-c9af91b48863
-md"""
-# Open Perfetto from Julia
-Uncomment these cells to try it:
-"""
-
-# ╔═╡ bf6b7471-7ccb-4884-bc4e-a82eb18dcd46
-# perfetto_open(result_perfetto)
-
-# ╔═╡ a26e8294-fb5d-4b4c-a9c1-b8780d809a37
-
-
-# ╔═╡ d51dcb7a-820d-4728-b2d8-f9f3850f0774
-# perfetto_view(traces::Vector{TracedEvent}; name = "$(Time(now())) RxInfer trace")
-
-# ╔═╡ fad878e1-bf48-4d91-8f1b-3f9c93a69463
-function perfetto_view(perfetto_json_contents; name = "$(Time(now())) RxInfer trace")
-	b64 = Base64.base64encode(perfetto_json_contents)
-
-	id = String(rand('a':'z', 10))
-
-	file = """
-		<div style="width: 100%; height: clamp(650px, 90vh, 1000px);">
-	<iframe id=$id src="https://ui.perfetto.dev"
-	  style="width:100%;height:100%;border:7px solid yellow;border-radius: 12px;"></iframe>
-	<script>
-	const b64 = "$(b64)";
-	const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
-	const iframe = document.getElementById('$(id)');
-	
-	// Keep sending PING until Perfetto replies with PONG
-	const interval = setInterval(() => {
-	  iframe.contentWindow.postMessage('PING', 'https://ui.perfetto.dev');
-	}, 50);
-	
-	window.addEventListener('message', (e) => {
-	  if (e.data !== 'PONG') return;
-	  clearInterval(interval);
-	  iframe.contentWindow.postMessage({
-	    perfetto: { 
-	      buffer: bytes.buffer, 
-	      title: "$(name)",
-	    }
-	  }, 'https://ui.perfetto.dev');
-	});
-	</script>
-	</div>
-	"""
-
-	HTML(file)
-end
-
-# ╔═╡ 5287b97c-2148-4186-a8d5-127a396132f9
-function perfetto_open(perfetto_json_contents; name = "$(Time(now())) RxInfer trace")
-	b64 = Base64.base64encode(perfetto_json_contents)
-
-	file = """
-	<!DOCTYPE html><html><body style="margin:0">
-	<iframe id="pf" src="https://ui.perfetto.dev"
-	  style="width:100vw;height:100vh;border:none;position:fixed;top:0;left:0"></iframe>
-		
-		<div id="overlay" style="
-	  position:fixed;top:0;left:0;width:100vw;height:100vh;
-	  background:rgba(255,255,255,0.5);
-	  display:flex;align-items:center;justify-content:center;
-	  transition:opacity 0.4s ease;
-	"><span style="font:bold 3rem system-ui;white-space:nowrap">Loading...</span></div>
-	
-	<script>
-	const b64 = "$(b64)";
-	const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
-	const iframe = document.getElementById('pf');
-	const overlay = document.getElementById('overlay');
-
-	
-	// Keep sending PING until Perfetto replies with PONG
-	const interval = setInterval(() => {
-	  iframe.contentWindow.postMessage('PING', 'https://ui.perfetto.dev');
-	}, 50);
-	
-	window.addEventListener('message', (e) => {
-	  if (e.data !== 'PONG') return;
-	  clearInterval(interval);
-	  iframe.contentWindow.postMessage({
-	    perfetto: { 
-	      buffer: bytes.buffer, 
-	      title: "$(name)",
-	    }
-	  }, 'https://ui.perfetto.dev');
-		
-	  overlay.style.opacity = '0';
-	  setTimeout(() => overlay.remove(), 400);
-	});
-	</script>
-	</body></html>
-	"""
-
-	filename = tempname(cleanup=false) * ".html"
-	write(filename, file)
-
-	if Sys.isapple()
-        run(`open $filename`)
-    elseif Sys.iswindows()
-        run(`cmd /c start "" $filename`)
-    elseif Sys.islinux()
-        run(`xdg-open $filename`)
-    else
-        @info("Open this in your browser: $filename")
-    end
-end
-
 # ╔═╡ 49ec3adb-f830-46a9-9868-e9d9ce2b933a
 import JSON
 
-# ╔═╡ 673f532b-1aae-4196-824f-c51ad4aef2e2
-result_perfetto = sprint() do io
-	JSON.json(io, perfetto)
-end
-
-# ╔═╡ 265bd35e-2832-4a80-830b-6029ee4f2688
-"$(round(length(result_perfetto) / 1e6, digits=2)) MB" |> Text
-
-# ╔═╡ cb5b75b5-2224-45cc-98ae-b0b5f9c0cf64
-PlutoUI.DownloadButton(result_perfetto, "result_perfetto.json")
-
-# ╔═╡ 9f438e0a-6b2f-4d06-a66c-517d5ba85c16
-perfetto_view(result_perfetto) |> PlutoUI.WideCell 
-
 # ╔═╡ 04c281bc-5029-48ca-93c1-84d96adf2160
-# RxInfer.perfetto_view(after_marginal_events)
+RxInfer.perfetto_view(after_marginal_events)
 
 # ╔═╡ 5cfdea9a-716b-472e-baa0-b6cdf67c0e0e
 # RxInfer.perfetto_open(after_marginal_events)
@@ -758,7 +572,6 @@ perfetto_view(result_perfetto) |> PlutoUI.WideCell
 # ╠═b4802d6d-024c-41a0-9cbf-2670fa04864c
 # ╠═298fc244-24fd-4dc0-a140-a602e7170e10
 # ╠═93480c78-5e9c-4398-b2e4-414249553545
-# ╠═e93851c8-15db-4f72-abee-34f23837d1e8
 # ╟─3498ce24-5d99-454c-ae1b-9cf7c2249b1e
 # ╠═0676725a-907e-4e94-a77d-708da32524f2
 # ╠═9e475912-b6d7-4086-a092-59787f014917
@@ -773,20 +586,6 @@ perfetto_view(result_perfetto) |> PlutoUI.WideCell
 # ╠═2aaaddba-7bc5-41d3-b92c-2c5b3f9fe25c
 # ╠═7883817d-d74d-40c8-b1a2-08904fdc0f9c
 # ╠═19609cfa-f124-4060-976f-40102d7cc45d
-# ╠═762fdff8-ada8-42f0-9505-d0a0b86f7014
-# ╠═673f532b-1aae-4196-824f-c51ad4aef2e2
-# ╠═265bd35e-2832-4a80-830b-6029ee4f2688
-# ╠═99c68335-8a0f-440e-adaf-c23ac4f1a36f
-# ╠═cb5b75b5-2224-45cc-98ae-b0b5f9c0cf64
-# ╠═d8cb0743-3f42-4d3c-951b-ed22b3fca916
-# ╠═42f96fd4-8c47-4c41-895d-aeecbb3aa19a
-# ╟─91727b0d-8cf2-42c3-b1fc-c9af91b48863
-# ╠═bf6b7471-7ccb-4884-bc4e-a82eb18dcd46
-# ╠═9f438e0a-6b2f-4d06-a66c-517d5ba85c16
-# ╟─a26e8294-fb5d-4b4c-a9c1-b8780d809a37
-# ╠═d51dcb7a-820d-4728-b2d8-f9f3850f0774
-# ╠═fad878e1-bf48-4d91-8f1b-3f9c93a69463
-# ╠═5287b97c-2148-4186-a8d5-127a396132f9
 # ╠═49ec3adb-f830-46a9-9868-e9d9ce2b933a
 # ╠═04c281bc-5029-48ca-93c1-84d96adf2160
 # ╠═5cfdea9a-716b-472e-baa0-b6cdf67c0e0e

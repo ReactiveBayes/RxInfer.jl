@@ -152,7 +152,7 @@ end
     PerfettoDisplay
 
 Returned by [`perfetto_view`](@ref). Renders as an embedded [Perfetto](https://ui.perfetto.dev)
-trace viewer when displayed in a Pluto or Jupyter notebook cell.
+trace viewer when displayed in a Pluto, VS Code or Jupyter notebook cell.
 """
 struct PerfettoDisplay
     html::String
@@ -162,8 +162,13 @@ function Base.show(io::IO, ::MIME"text/html", p::PerfettoDisplay)
     print(io, p.html)
 end
 
+
+function Base.show(io::IO, ::MIME"juliavscode/html", p::PerfettoDisplay)
+    show(io, MIME"text/html"(), p)
+end
+
 Base.show(io::IO, ::PerfettoDisplay) =
-    print(io, "PerfettoDisplay (render in a Pluto or Jupyter notebook to see the interactive trace)")
+    print(io, "PerfettoDisplay (render in a Pluto, VS Code or Jupyter notebook to see the interactive trace)")
 
 
 
@@ -172,7 +177,7 @@ Base.show(io::IO, ::PerfettoDisplay) =
 
 Converts a vector of [`TracedEvent`](@ref)s to an embedded [Perfetto](https://ui.perfetto.dev)
 trace viewer. Returns a [`PerfettoDisplay`](@ref) that renders as an interactive trace when
-displayed in a Pluto or Jupyter notebook cell.
+displayed in a Pluto, VS Code or Jupyter notebook cell.
 
 See also: [`perfetto_open`](@ref), [`RxInferTraceCallbacks`](@ref).
 
@@ -197,7 +202,7 @@ function perfetto_view(
     html = """
         <div style="width: 100%; height: clamp(650px, 90vh, 1000px);">
         <iframe id="$id" src="https://ui.perfetto.dev"
-          style="width:100%;height:100%;border:7px solid yellow;border-radius: 12px;"></iframe>
+          style="width:100%;height:100%;border:7px solid yellow;border-radius: 12px; box-sizing: border-box;"></iframe>
         <script>
         const b64 = "$b64";
         const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
@@ -253,7 +258,10 @@ function perfetto_open(
           background:rgba(255,255,255,0.5);
           display:flex;align-items:center;justify-content:center;
           transition:opacity 0.4s ease;">
-          <span style="font:bold 3rem system-ui;white-space:nowrap">Loading...</span>
+          <div style="text-align:left">
+           <span style="font:bold 3rem system-ui;white-space:nowrap">Loading...</span><br>
+           <span style="font:1rem system-ui;opacity:0.7">Click <strong>Yes</strong> in the next dialog</span>
+         </div>
         </div>
         <script>
         const b64 = "$b64";
