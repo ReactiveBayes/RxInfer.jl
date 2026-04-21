@@ -10,24 +10,14 @@ module TensorBoardLoggerExt
     using TensorBoardLogger
 
     # ─── Distribution helpers (for log_distributions=true) ──────────────────
-    # Per-variable range used to fix bin edges across iterations. Uses mean ± 4σ,
-    # clamped to the nonnegative reals for Gamma. `nothing` means the distribution
-    # is not a supported univariate family and should be skipped.
-    function _posterior_range(d)
-        if d isa UnivariateNormalDistributionsFamily || d isa GammaDistributionsFamily
-            μ = mean(d); σ = sqrt(var(d))
-            lo = μ - 4σ; hi = μ + 4σ
-            if d isa GammaDistributionsFamily
-                lo = max(0.0, lo)
-            end
-            return (lo, hi)
-        end
-        return (nothing, nothing)
-    end
-
     # Draw deterministic samples from `dist` to populate the HistogramSummary that
     # drives both the Distributions and Histograms TB dashboards. A seeded
     # MersenneTwister keeps the visualisation reproducible across re-runs.
+    # NB: we deliberately let TensorBoardLogger auto-bin these samples via the
+    # data-only `log_histogram` overload. The tuple form `(edges, samples)` would
+    # force `HistogramProto.min/max` to the stable edges, which TB's Distributions
+    # plugin uses as the outer envelope of the percentile bands — that hides the
+    # posterior sharpening we want to visualise.
     function _posterior_samples(dist, n::Int)
         if dist isa UnivariateNormalDistributionsFamily || dist isa GammaDistributionsFamily
             return rand(MersenneTwister(1), dist, n)
@@ -152,7 +142,7 @@ module TensorBoardLoggerExt
 
     """
         convert_to_tensorboard(trace::RxInferTraceCallbacks; output_file::Union{String, Nothing} = nothing,
-                               log_distributions::Bool = false, n_bins::Int = 64)
+                               log_distributions::Bool = false, n_samples::Int = 1024)
 
     Convert trace events from inference to proper TensorFlow event files.
 
@@ -160,7 +150,7 @@ module TensorBoardLoggerExt
     - `trace::RxInferTraceCallbacks`: The trace callbacks object from inference results
     - `output_file::Union{String, Nothing}`: Optional directory path to write TensorBoard event logs. If not provided, uses a timestamped directory in the current working directory.
     - `log_distributions::Bool`: When `true`, log each univariate Normal and Gamma posterior as a per-iteration `HistogramSummary` so TensorBoard's **Distributions** tab renders a percentile-band view of the posterior across iterations. The same tag also appears in the **Histograms** tab as an offset ridgeline. Defaults to `false`.
-    - `n_bins::Int`: Number of bins used when `log_distributions=true`. Defaults to 64.
+    - `n_samples::Int`: Number of samples drawn from each posterior to build the per-iteration histogram when `log_distributions=true`. Defaults to 1024.
 
     # Returns
     - `String`: Path to the directory containing the TensorBoard event log files
@@ -193,7 +183,7 @@ module TensorBoardLoggerExt
     function RxInfer.convert_to_tensorboard(trace::RxInferTraceCallbacks;
                                             output_file::Union{String, Nothing} = nothing,
                                             log_distributions::Bool = false,
-                                            n_bins::Int = 64)
+                                            n_samples::Int = 1024)
 
         if isnothing(output_file)
             timestamp = Dates.format(Dates.now(), "yyyy-mm-dd_HH-MM-SS")
@@ -228,34 +218,6 @@ module TensorBoardLoggerExt
                     iteration_durations[iter] = (traced_event.time_ns - t0) / 1e6
                     #println("step $idx | iteration: $iter | time_ns: $(traced_event.time_ns) | duration_ms: $(iteration_durations[iter])")
                 end
-            end
-        end
-
-        # Pre-scan for stable per-variable bin edges (only when distribution logging is enabled).
-        # Stable edges keep bin alignment consistent across iterations so TB's Distributions view
-        # shows the posterior sharpening rather than bins drifting.
-        posterior_bin_edges = Dict{Symbol, Vector{Float64}}()
-        if log_distributions
-            ranges = Dict{Symbol, Tuple{Float64, Float64}}()
-            for traced_event in events
-                ev = traced_event.event
-                ev isa OnMarginalUpdateEvent || continue
-                try
-                    dist = getdata(ev.update)
-                    (lo, hi) = _posterior_range(dist)
-                    isnothing(lo) && continue
-                    prev = get(ranges, ev.variable_name, nothing)
-                    ranges[ev.variable_name] = isnothing(prev) ? (lo, hi) : (min(prev[1], lo), max(prev[2], hi))
-                catch err
-                    @debug "Failed to compute posterior range" variable_name=ev.variable_name exception=err
-                end
-            end
-            for (name, (lo, hi)) in ranges
-                if !(hi > lo)
-                    eps_width = max(abs(lo), 1.0) * 1e-6
-                    lo, hi = lo - eps_width, hi + eps_width
-                end
-                posterior_bin_edges[name] = collect(range(lo, hi; length = n_bins + 1))
             end
         end
 
@@ -295,17 +257,20 @@ module TensorBoardLoggerExt
                 end
 
                 # Log per-iteration HistogramSummary so TB's Distributions tab renders a
-                # percentile-band view of each posterior across iterations.
-                if log_distributions && haskey(posterior_bin_edges, ev.variable_name)
+                # percentile-band view of each posterior across iterations. Uses the
+                # data-only `log_histogram` overload so TB auto-bins each iteration's
+                # samples and the HistogramProto's min/max track the actual sample
+                # extremes — this is what makes the percentile bands collapse as the
+                # posterior sharpens.
+                if log_distributions
                     try
-                        dist  = getdata(ev.update)
-                        step  = get(posterior_step, ev.variable_name, 0)
-                        edges = posterior_bin_edges[ev.variable_name]
-                        n_samples = max(512, 8 * n_bins)
+                        dist    = getdata(ev.update)
+                        step    = get(posterior_step, ev.variable_name, 0)
                         samples = _posterior_samples(dist, n_samples)
                         if !isempty(samples)
-                            TensorBoardLogger.log_histogram(logger, "posteriors/$(ev.variable_name)/distribution",
-                                (edges, samples); step = step)
+                            TensorBoardLogger.log_histogram(logger,
+                                "posteriors/$(ev.variable_name)/distribution",
+                                samples; step = step)
                         end
                     catch err
                         @debug "Failed to log posterior distribution" variable_name=ev.variable_name exception=err

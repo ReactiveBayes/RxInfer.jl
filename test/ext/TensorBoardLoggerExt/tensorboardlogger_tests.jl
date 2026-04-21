@@ -149,7 +149,7 @@ end
     mktempdir() do log_dir
         RxInfer.convert_to_tensorboard(trace; output_file = log_dir,
                                               log_distributions = true,
-                                              n_bins = 32)
+                                              n_samples = 512)
 
         all_tags = TensorBoardLogger.tags(log_dir)
 
