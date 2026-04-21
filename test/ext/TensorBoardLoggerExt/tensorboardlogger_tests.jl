@@ -45,3 +45,67 @@
         @test isdir(log_dir)     # directory was created
     end
 end
+
+@testitem "Posterior mean/precision scalars logged to TensorBoard" begin
+    using RxInfer, StableRNGs, TensorBoardLogger
+
+    # Same IID model — μ is univariate Normal, τ is Gamma.
+    # Both variables appear under `posteriors/*`, tagged with parameterization-specific names:
+    # Normal → mean/precision, Gamma → shape/rate.
+    @model function iid_estimation(y)
+        μ  ~ Normal(mean = 0.0, precision = 0.1)
+        τ  ~ Gamma(shape = 1.0, rate = 1.0)
+        y .~ Normal(mean = μ, precision = τ)
+    end
+
+    constraints = @constraints begin
+        q(μ, τ) = q(μ)q(τ)
+    end
+
+    initialization = @initialization begin
+        q(μ) = vague(NormalMeanPrecision)
+        q(τ) = vague(GammaShapeRate)
+    end
+
+    dataset = rand(StableRNG(42), NormalMeanPrecision(3.1415, 2.7182), 25)
+
+    n_iterations = 5
+    results = infer(
+        model          = iid_estimation(),
+        data           = (y = dataset,),
+        constraints    = constraints,
+        iterations     = n_iterations,
+        initialization = initialization,
+        trace          = true,
+    )
+
+    trace = results.model.metadata[:trace]
+
+    mktempdir() do log_dir
+        RxInfer.convert_to_tensorboard(trace; output_file = log_dir)
+
+        all_tags = TensorBoardLogger.tags(log_dir)
+
+        # μ is univariate Normal → should produce mean and precision scalar tags
+        @test "posteriors/μ/mean" in all_tags
+        @test "posteriors/μ/precision" in all_tags
+
+        # τ is Gamma → should produce shape and rate scalar tags
+        @test "posteriors/τ/shape" in all_tags
+        @test "posteriors/τ/rate" in all_tags
+
+        # Verify we emitted one step per iteration for μ's mean
+        mean_steps = BitSet()
+        TensorBoardLogger.map_summaries(log_dir; tags = ["posteriors/μ/mean"]) do tag, iter, val
+            push!(mean_steps, iter)
+        end
+        @test length(mean_steps) == n_iterations
+
+        # Same guard for τ's shape — one distinct step per iteration
+        shape_steps = BitSet()
+        TensorBoardLogger.map_summaries(log_dir; tags = ["posteriors/τ/shape"]) do tag, iter, val
+            push!(shape_steps, iter)
+        end
+        @test length(shape_steps) == n_iterations
+    end
+end

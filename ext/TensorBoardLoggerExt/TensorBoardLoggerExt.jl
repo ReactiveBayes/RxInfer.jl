@@ -1,7 +1,10 @@
 module TensorBoardLoggerExt
     using RxInfer
     using Dates
-    using ReactiveMP: event_name
+    using ReactiveMP: event_name, getdata
+    using ExponentialFamily: UnivariateNormalDistributionsFamily, GammaDistributionsFamily
+    using Distributions: shape, rate
+    using Statistics: mean, var
     using TensorBoardLogger
 
     # ─── Per-event-type logging methods ───────────────────────────────────────
@@ -134,6 +137,8 @@ module TensorBoardLoggerExt
     # Description
     This function processes all traced events and creates proper TensorFlow event files using TensorBoardLogger, which can be directly imported and visualized in TensorBoard. Outputs include:
     - Text summaries with event type information and counts
+    - Scalar time-series for univariate Normal (`mean`, `precision`) and Gamma (`shape`, `rate`) posteriors
+    - Scalar time-series for per-iteration wall-clock duration (`iteration_time_ms`)
 
     The output directory can be directly opened in TensorBoard's web interface for visualization and analysis.
 
@@ -176,20 +181,23 @@ module TensorBoardLoggerExt
         # Pre-compute iteration durations from matched before/after pairs via span_id
         iteration_durations = Dict{Int, Float64}()
         before_times = Dict{Any, Tuple{Int, UInt64}}()
-        for traced_event in events
+        for (idx, traced_event) in enumerate(events)
             ev = traced_event.event
             et = event_name(typeof(ev))
             if et === :before_iteration
                 before_times[ev.span_id] = (ev.iteration, traced_event.time_ns)
+                #println("step $idx | iteration: $(ev.iteration) | time_ns: $(traced_event.time_ns)")
             elseif et === :after_iteration
                 if haskey(before_times, ev.span_id)
                     (iter, t0) = before_times[ev.span_id]
                     iteration_durations[iter] = (traced_event.time_ns - t0) / 1e6
+                    #println("step $idx | iteration: $iter | time_ns: $(traced_event.time_ns) | duration_ms: $(iteration_durations[iter])")
                 end
             end
         end
 
         counts = Dict{Symbol, Int}()
+        posterior_step = Dict{Symbol, Int}()
 
         for (idx, traced_event) in enumerate(events)
             ev = traced_event.event
@@ -202,6 +210,26 @@ module TensorBoardLoggerExt
             # Log iteration wall-clock time as a scalar
             if ev isa AfterIterationEvent && haskey(iteration_durations, ev.iteration)
                 TensorBoardLogger.log_value(logger, "iteration_time_ms", iteration_durations[ev.iteration]; step=ev.iteration)
+            end
+
+            # Log univariate Normal (mean, precision) and Gamma (shape, rate) posteriors as scalars
+            if ev isa OnMarginalUpdateEvent
+                try
+                    dist = getdata(ev.update)
+                    if dist isa UnivariateNormalDistributionsFamily
+                        posterior_step[ev.variable_name] = get(posterior_step, ev.variable_name, 0) + 1
+                        step = posterior_step[ev.variable_name]
+                        TensorBoardLogger.log_value(logger, "posteriors/$(ev.variable_name)/mean", mean(dist); step=step)
+                        TensorBoardLogger.log_value(logger, "posteriors/$(ev.variable_name)/precision", inv(var(dist)); step=step)
+                    elseif dist isa GammaDistributionsFamily
+                        posterior_step[ev.variable_name] = get(posterior_step, ev.variable_name, 0) + 1
+                        step = posterior_step[ev.variable_name]
+                        TensorBoardLogger.log_value(logger, "posteriors/$(ev.variable_name)/shape", shape(dist); step=step)
+                        TensorBoardLogger.log_value(logger, "posteriors/$(ev.variable_name)/rate",  rate(dist);  step=step)
+                    end
+                catch err
+                    @debug "Failed to log posterior scalars" variable_name=ev.variable_name exception=err
+                end
             end
         end
 
