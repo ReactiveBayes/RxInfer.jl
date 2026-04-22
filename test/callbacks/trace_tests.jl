@@ -48,7 +48,7 @@
         end
 
         init = @initialization begin
-            q(τ) = Gamma(1.0, 1.0)
+            q(τ) = Gamma(; shape = 1.0, rate = 1.0)
         end
 
         trace = RxInferTraceCallbacks()
@@ -225,6 +225,14 @@ end
     using RxInfer
     using ReactiveMP: event_name
 
+    @testset "The `include` option is respected inside `is_trace_event_included`" begin
+        callbacks = RxInfer.RxInferTraceCallbacks((:event1, :event2))
+
+        @test RxInfer.is_trace_event_included(callbacks, :event1)
+        @test RxInfer.is_trace_event_included(callbacks, :event2)
+        @test !RxInfer.is_trace_event_included(callbacks, :event3)
+    end
+
     # Single-latent model: used where iteration events are not needed.
     @model function trace_filter_simple_model(y)
         τ ~ Gamma(; shape = 1.0, rate = 1.0)
@@ -243,7 +251,7 @@ end
     end
 
     iter_init = @initialization begin
-        q(τ) = Gamma(1.0, 1.0)
+        q(τ) = Gamma(; shape = 1.0, rate = 1.0)
     end
 
     @testset "Only model-creation events are recorded when requested" begin
@@ -260,7 +268,10 @@ end
         event_names = [event_name(typeof(e.event)) for e in events]
 
         # Only the requested events should be present
-        @test all(n -> n in (:before_model_creation, :after_model_creation), event_names)
+        @test all(
+            n -> n in (:before_model_creation, :after_model_creation),
+            event_names,
+        )
         @test :before_model_creation in event_names
         @test :after_model_creation in event_names
 

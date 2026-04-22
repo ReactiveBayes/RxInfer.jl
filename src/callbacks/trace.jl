@@ -65,11 +65,41 @@ result.model.metadata[:trace] === trace # true
 """
 struct RxInferTraceCallbacks
     events::Vector{TracedEvent}
-    filter::Union{Nothing, Set{Symbol}}
+    include::Union{Nothing, Set{Symbol}}
 end
 
 RxInferTraceCallbacks() = RxInferTraceCallbacks(TracedEvent[], nothing)
-RxInferTraceCallbacks(filter::Tuple{Vararg{Symbol}}) = RxInferTraceCallbacks(TracedEvent[], Set{Symbol}(filter))
+RxInferTraceCallbacks(include::NTuple{N, Symbol}) where {N} = RxInferTraceCallbacks(
+    TracedEvent[], Set{Symbol}(include)
+)
+
+"""
+    is_trace_event_included(callbacks::RxInferTraceCallbacks, event_name::Symbol)
+
+Checks whether the specified event is not filtered and should be traced.
+
+```@jldoctest 
+julia> callbacks = RxInfer.RxInferTraceCallbacks((:event1, :event2));
+
+julia> RxInfer.is_trace_event_included(callbacks, :event1)
+true
+
+julia> RxInfer.is_trace_event_included(callbacks, :event2)
+true
+
+julia> RxInfer.is_trace_event_included(callbacks, :event3)
+false
+```
+"""
+function is_trace_event_included(
+    callbacks::RxInferTraceCallbacks, event_name::Symbol
+)
+    if isnothing(callbacks.include)
+        return true
+    else
+        return event_name ∈ callbacks.include
+    end
+end
 
 """
     tracedevents(callbacks::RxInferTraceCallbacks)
@@ -127,7 +157,7 @@ import ReactiveMP: handle_event, Event, event_name
 
 # Catch-all: trace every event (respects optional filter)
 function ReactiveMP.handle_event(callbacks::RxInferTraceCallbacks, event::Event)
-    if isnothing(callbacks.filter) || event_name(typeof(event)) in callbacks.filter
+    if is_trace_event_included(callbacks, event_name(event))
         push!(callbacks.events, TracedEvent(event))
     end
     return nothing
@@ -145,7 +175,7 @@ function ReactiveMP.handle_event(
         )
     end
     event.model.metadata[:trace] = callbacks
-    if isnothing(callbacks.filter) || event_name(typeof(event)) in callbacks.filter
+    if is_trace_event_included(callbacks, event_name(event))
         push!(callbacks.events, TracedEvent(event))
     end
     return nothing

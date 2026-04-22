@@ -636,7 +636,11 @@ function infer(;
     end
 
     if trace !== false
-        trace_callbacks = trace === true ? RxInferTraceCallbacks() : RxInferTraceCallbacks(trace)
+        trace_callbacks = if trace === true
+            RxInferTraceCallbacks()
+        else
+            RxInferTraceCallbacks(trace)
+        end
         callbacks = merge_callbacks(callbacks, trace_callbacks)
     end
 

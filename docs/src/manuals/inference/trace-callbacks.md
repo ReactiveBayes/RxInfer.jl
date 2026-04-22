@@ -139,4 +139,5 @@ println("Benchmark included: ", haskey(result.model.metadata, :benchmark))
 RxInferTraceCallbacks
 TracedEvent
 RxInfer.tracedevents
+RxInfer.is_trace_event_included
 ```

@@ -42,6 +42,10 @@ struct ProbabilisticModel{M}
     metadata::Dict{Any, Any}
 end
 
+function Base.show(io::IO, model::ProbabilisticModel)
+    print(io, "ProbabilisticModel()")
+end
+
 ProbabilisticModel(model) = ProbabilisticModel(model, Dict{Any, Any}())
 
 "Returns the underlying factor graph model."
