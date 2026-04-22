@@ -217,8 +217,8 @@ end
     @test te.event isa BeforeModelCreationEvent
     @test event_name(typeof(te.event)) === :before_model_creation
 
-    # Test summary
-    @test sprint(summary, te) == "TracedEvent(:before_model_creation)"
+    # Test show
+    @test sprint(show, te) == "TracedEvent(:before_model_creation)"
 end
 
 @testitem "trace = (symbols...) should only record the requested event types" begin
