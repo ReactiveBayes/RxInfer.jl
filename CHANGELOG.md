@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+### Added
 - Added `TensorBoardLoggerExt` extension: when `TensorBoardLogger.jl` is loaded, `RxInfer.convert_to_tensorboard(trace)` exports an inference trace to TensorBoard event log files. Capabilities:
   - **Iteration timing** — wall-clock duration of each variational iteration logged as `iteration_time_ms`.
   - **Posterior scalars** — per-iteration mean/precision for `Normal` and shape/rate for `Gamma` marginals under `posteriors/<variable>/`.
