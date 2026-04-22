@@ -42,6 +42,11 @@
         end
     end
 
+    @testset "_struct_to_simple_dict on fieldless struct" begin
+        struct NoFields end
+        @test RxInfer._struct_to_simple_dict(NoFields()) === NamedTuple()
+    end
+
     @testset "perfetto_view renders as text/html" begin
         result = perfetto_view(traces)
         html = sprint() do io
