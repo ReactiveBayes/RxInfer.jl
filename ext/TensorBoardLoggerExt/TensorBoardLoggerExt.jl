@@ -5,6 +5,7 @@ using ReactiveMP: event_name, getdata
 using ExponentialFamily:
     UnivariateNormalDistributionsFamily, GammaDistributionsFamily
 using Distributions: UnivariateDistribution, shape, rate
+using Dates: now, format
 using Random: MersenneTwister
 using Statistics: mean, var
 using TensorBoardLogger
@@ -429,12 +430,9 @@ function RxInfer.convert_to_tensorboard(
 
     @info "Collected $(length(events)) events from trace"
 
-    # `tb_append` keeps the logger writing into the exact directory the caller
-    # passed. The default `tb_increment` would see the pre-existing directory
-    # (we just `mkpath`'d it, and callers like `mktempdir` create it too) and
-    # silently redirect output to `${output_file}_1`, leaving the returned path
-    # empty.
-    logger = TBLogger(output_file, tb_append)
+    log_subdir = joinpath(output_file, format(now(), "yyyy-mm-dd_HH-MM-SS"))
+    mkpath(log_subdir)
+    logger = TBLogger(log_subdir, tb_append)
     ctx    = LogContext(logger; log_distributions = log_distributions, log_text_events = log_text_events, n_samples = n_samples)
 
     for (idx, traced) in enumerate(events)
@@ -467,13 +465,13 @@ function RxInfer.convert_to_tensorboard(
     empty!(logger.all_files)
     GC.gc()
 
-    @info "TensorBoard logs exported to: $output_file"
+    @info "TensorBoard logs exported to: $log_subdir"
     @info "Total events logged: $(length(events))"
     @info ""
     @info "To view in TensorBoard, run:"
     @info "  tensorboard --logdir=\"$output_file\""
 
-    return output_file
+    return log_subdir
 end
 
 end

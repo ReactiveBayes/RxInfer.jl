@@ -43,8 +43,8 @@
     # handles that TB readers leave mapped past `close`.
     with_safe_tempdir() do log_dir
         output = RxInfer.convert_to_tensorboard(trace; output_file = log_dir)
-        @test output == log_dir  # function returns the path it wrote to
-        @test isdir(log_dir)     # directory was created
+        @test startswith(output, log_dir)  # returned path is a subdirectory of log_dir
+        @test isdir(output)                # timestamped subdirectory was created
     end
 end
 
