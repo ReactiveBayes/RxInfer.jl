@@ -260,7 +260,10 @@ end
         event_names = [event_name(typeof(e.event)) for e in events]
 
         # Only the requested events should be present
-        @test all(n -> n in (:before_model_creation, :after_model_creation), event_names)
+        @test all(
+            n -> n in (:before_model_creation, :after_model_creation),
+            event_names,
+        )
         @test :before_model_creation in event_names
         @test :after_model_creation in event_names
 

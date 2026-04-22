@@ -69,7 +69,9 @@ struct RxInferTraceCallbacks
 end
 
 RxInferTraceCallbacks() = RxInferTraceCallbacks(TracedEvent[], nothing)
-RxInferTraceCallbacks(filter::Tuple{Vararg{Symbol}}) = RxInferTraceCallbacks(TracedEvent[], Set{Symbol}(filter))
+RxInferTraceCallbacks(filter::Tuple{Vararg{Symbol}}) = RxInferTraceCallbacks(
+    TracedEvent[], Set{Symbol}(filter)
+)
 
 """
     tracedevents(callbacks::RxInferTraceCallbacks)
@@ -127,7 +129,8 @@ import ReactiveMP: handle_event, Event, event_name
 
 # Catch-all: trace every event (respects optional filter)
 function ReactiveMP.handle_event(callbacks::RxInferTraceCallbacks, event::Event)
-    if isnothing(callbacks.filter) || event_name(typeof(event)) in callbacks.filter
+    if isnothing(callbacks.filter) ||
+        event_name(typeof(event)) in callbacks.filter
         push!(callbacks.events, TracedEvent(event))
     end
     return nothing
@@ -145,7 +148,8 @@ function ReactiveMP.handle_event(
         )
     end
     event.model.metadata[:trace] = callbacks
-    if isnothing(callbacks.filter) || event_name(typeof(event)) in callbacks.filter
+    if isnothing(callbacks.filter) ||
+        event_name(typeof(event)) in callbacks.filter
         push!(callbacks.events, TracedEvent(event))
     end
     return nothing
