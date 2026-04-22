@@ -85,9 +85,9 @@ end
     trace = results.model.metadata[:trace]
 
     with_safe_tempdir() do log_dir
-        RxInfer.convert_to_tensorboard(trace; output_file = log_dir)
+        run_dir = RxInfer.convert_to_tensorboard(trace; output_file = log_dir)
 
-        all_tags = read_tags(log_dir)
+        all_tags = read_tags(run_dir)
 
         # μ is univariate Normal → should produce mean and precision scalar tags
         @test "posteriors/μ/mean" in all_tags
@@ -98,9 +98,9 @@ end
         @test "posteriors/τ/rate" in all_tags
 
         # Verify we emitted one step per iteration for μ's mean and τ's shape.
-        @test length(steps_for_tag(log_dir, "posteriors/μ/mean")) ==
+        @test length(steps_for_tag(run_dir, "posteriors/μ/mean")) ==
             n_iterations
-        @test length(steps_for_tag(log_dir, "posteriors/τ/shape")) ==
+        @test length(steps_for_tag(run_dir, "posteriors/τ/shape")) ==
             n_iterations
     end
 end
@@ -143,23 +143,23 @@ end
     trace = results.model.metadata[:trace]
 
     with_safe_tempdir() do log_dir
-        RxInfer.convert_to_tensorboard(
+        run_dir = RxInfer.convert_to_tensorboard(
             trace;
             output_file = log_dir,
             log_distributions = true,
             n_samples = 512,
         )
 
-        all_tags = read_tags(log_dir)
+        all_tags = read_tags(run_dir)
 
         # Distribution tags should exist for both the Normal and Gamma posteriors.
         @test "posteriors/μ/distribution" in all_tags
         @test "posteriors/τ/distribution" in all_tags
 
         # One HistogramSummary per iteration for each variable.
-        @test length(steps_for_tag(log_dir, "posteriors/μ/distribution")) ==
+        @test length(steps_for_tag(run_dir, "posteriors/μ/distribution")) ==
             n_iterations
-        @test length(steps_for_tag(log_dir, "posteriors/τ/distribution")) ==
+        @test length(steps_for_tag(run_dir, "posteriors/τ/distribution")) ==
             n_iterations
 
         # Scalar tags must still be present — distributions complement, not replace, scalars.
@@ -203,8 +203,8 @@ end
     trace = results.model.metadata[:trace]
 
     with_safe_tempdir() do log_dir
-        RxInfer.convert_to_tensorboard(trace; output_file = log_dir)
-        all_tags = read_tags(log_dir)
+        run_dir = RxInfer.convert_to_tensorboard(trace; output_file = log_dir)
+        all_tags = read_tags(run_dir)
         @test !("posteriors/μ/distribution" in all_tags)
         @test !("posteriors/τ/distribution" in all_tags)
     end
@@ -249,8 +249,8 @@ end
     # Default: per-event text breadcrumbs are suppressed; scalars still flow.
     # `EventCounts` is always emitted as a compact run summary, regardless of the flag.
     with_safe_tempdir() do log_dir
-        RxInfer.convert_to_tensorboard(trace; output_file = log_dir)
-        all_tags = read_tags(log_dir)
+        run_dir = RxInfer.convert_to_tensorboard(trace; output_file = log_dir)
+        all_tags = read_tags(run_dir)
         @test !("Events" in all_tags)
         @test !("before_iteration" in all_tags)
         @test !("after_iteration" in all_tags)
@@ -261,10 +261,10 @@ end
 
     # Opt-in: the full narrative layer comes back.
     with_safe_tempdir() do log_dir
-        RxInfer.convert_to_tensorboard(
+        run_dir = RxInfer.convert_to_tensorboard(
             trace; output_file = log_dir, log_text_events = true
         )
-        all_tags = read_tags(log_dir)
+        all_tags = read_tags(run_dir)
         @test "Events" in all_tags
         @test "EventCounts" in all_tags
         @test "before_iteration" in all_tags
