@@ -166,14 +166,9 @@ log_dir = RxInfer.convert_to_tensorboard(trace; log_distributions = true)
 | Per-iteration histogram of posterior samples | Distributions / Histograms | `log_distributions = true` |
 | Event breadcrumbs and `EventCounts` table | Text | `log_text_events = true` (counts always written) |
 
-### Options
-
-| Keyword | Default | Description |
-|---------|---------|-------------|
-| `output_file` | `"tensorboard_logs/"` in `pwd()` | Directory to write event files into |
-| `log_distributions` | `false` | Log posterior histograms (one per iteration per variable) |
-| `log_text_events` | `false` | Emit per-event text breadcrumbs to the Text tab |
-| `n_samples` | `1024` | Samples drawn per posterior to build each histogram |
+```@docs 
+RxInfer.convert_to_tensorboard
+```
 
 ## API Reference
 

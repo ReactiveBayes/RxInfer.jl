@@ -139,4 +139,52 @@ function ReactiveMP.handle_event(
     return nothing
 end
 
-function convert_to_tensorboard end # This function is implemented in the external module `TensorBoardLoggerExt` to avoid adding a hard dependency on TensorBoardLogger.jl for users who don't need it.
+"""
+    convert_to_tensorboard(trace::RxInferTraceCallbacks; output_file::Union{String, Nothing} = nothing,
+                           log_distributions::Bool = false, log_text_events::Bool = false,
+                           n_samples::Int = 1024)
+
+Convert trace events from inference to proper TensorFlow event files. Note that this function will not work 
+unless `TensorBoardLogger.jl` is loaded in the present Julia session.
+
+# Arguments
+- `trace::RxInferTraceCallbacks`: The trace callbacks object from inference results
+- `output_file::Union{String, Nothing}`: Optional directory path to write TensorBoard event logs. If not provided, writes to `tensorboard_logs/` in the current working directory.
+- `log_distributions::Bool`: When `true`, log each univariate Normal and Gamma posterior as a per-iteration `HistogramSummary` so TensorBoard's **Distributions** tab renders a percentile-band view of the posterior across iterations. The same tag also appears in the **Histograms** tab as an offset ridgeline. Defaults to `false`.
+- `log_text_events::Bool`: When `true`, emit a per-event text breadcrumb (e.g. `before_iteration`, `after_marginal_computation`, and the `Events` step timeline) into the **Text** tab. The `EventCounts` summary is always written regardless of this flag. Scalar and histogram outputs are unaffected. Defaults to `false`.
+- `n_samples::Int`: Number of samples drawn from each posterior to build the per-iteration histogram when `log_distributions=true`. Defaults to 1024.
+
+# Returns
+- `String`: Path to the directory containing the TensorBoard event log files
+
+# Description
+This function processes all traced events and creates proper TensorFlow event files using TensorBoardLogger, which can be directly imported and visualized in TensorBoard. Outputs include:
+- Text summaries with event type information and counts
+- Scalar time-series for univariate Normal (`mean`, `precision`) and Gamma (`shape`, `rate`) posteriors
+- Scalar time-series for per-iteration wall-clock duration (`iteration_time_ms`)
+- When `log_distributions=true`: per-iteration `HistogramSummary` under `posteriors/<var>/distribution`, rendered primarily in TensorBoard's Distributions tab
+
+The output directory can be directly opened in TensorBoard's web interface for visualization and analysis.
+
+# Example
+```julia
+results = infer(
+    model = my_model(),
+    data = my_data,
+    trace = true
+)
+
+trace = results.model.metadata[:trace]
+
+# Create TensorBoard logs (writes to tensorboard_logs/ in the current directory)
+log_dir = convert_to_tensorboard(trace; log_distributions = true)
+
+# Then run: tensorboard --logdir=\$log_dir
+```
+"""
+function convert_to_tensorboard(args...)
+    # This function is implemented in the external module `TensorBoardLoggerExt` to avoid adding a hard dependency on TensorBoardLogger.jl for users who don't need it.
+    error(
+        "`convert_to_tensorboard` method with the specified arguments were not found. Did you load the `TensorBoardLogger.jl` in the current session? Otherwise consult the documentation.",
+    )
+end
