@@ -13,14 +13,15 @@ using TensorBoardLogger: TensorBoardLogger
 # budget we leave the directory behind (the OS temp sweeper will reclaim
 # it) rather than failing the test.
 function with_safe_tempdir(fn)
-    log_dir = mktempdir(; cleanup=false)
+    log_dir = mktempdir(; cleanup = false)
     try
         fn(log_dir)
     finally
         for attempt in 1:40
             try
-                GC.gc(); GC.gc()
-                rm(log_dir; recursive=true, force=true)
+                GC.gc();
+                GC.gc()
+                rm(log_dir; recursive = true, force = true)
                 break
             catch
                 attempt == 40 || sleep(0.05)
