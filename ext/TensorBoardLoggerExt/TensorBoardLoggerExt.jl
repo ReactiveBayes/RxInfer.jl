@@ -371,6 +371,7 @@ function RxInfer.convert_to_tensorboard(
     log_distributions::Bool = false,
     log_text_events::Bool = false,
     n_samples::Int = 1024,
+    verbose = true,
 )
     if isnothing(output_file)
         output_file = joinpath(pwd(), "tensorboard_logs")
@@ -385,7 +386,9 @@ function RxInfer.convert_to_tensorboard(
         return nothing
     end
 
-    @info "Collected $(length(events)) events from trace"
+    if verbose
+        @info "Collected $(length(events)) events from trace"
+    end
 
     log_subdir = joinpath(output_file, format(now(), "yyyy-mm-dd_HH-MM-SS"))
     mkpath(log_subdir)
@@ -422,11 +425,13 @@ function RxInfer.convert_to_tensorboard(
     empty!(logger.all_files)
     GC.gc()
 
-    @info "TensorBoard logs exported to: $log_subdir"
-    @info "Total events logged: $(length(events))"
-    @info ""
-    @info "To view in TensorBoard, run:"
-    @info "  tensorboard --logdir=\"$output_file\""
+    if verbose
+        @info "TensorBoard logs exported to: $log_subdir"
+        @info "Total events logged: $(length(events))"
+        @info ""
+        @info "To view in TensorBoard, run:"
+        @info "  tensorboard --logdir=\"$output_file\""
+    end
 
     return log_subdir
 end

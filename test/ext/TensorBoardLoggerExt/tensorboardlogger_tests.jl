@@ -5,9 +5,9 @@
     # A simple IID model: observations are drawn from a Normal with unknown mean and precision.
     # Mean-field constraints decouple q(μ) and q(τ) for variational inference.
     @model function iid_estimation(y)
-        μ ~ Normal(mean = 0.0, precision = 0.1)
-        τ ~ Gamma(shape = 1.0, rate = 1.0)
-        y .~ Normal(mean = μ, precision = τ)
+        μ ~ Normal(; mean = 0.0, precision = 0.1)
+        τ ~ Gamma(; shape = 1.0, rate = 1.0)
+        y .~ Normal(; mean = μ, precision = τ)
     end
 
     constraints = @constraints begin
@@ -22,11 +22,11 @@
     # Generate synthetic observations from a known distribution so the test is reproducible.
     hidden_μ = 3.1415
     hidden_τ = 2.7182
-    dataset   = rand(StableRNG(42), NormalMeanPrecision(hidden_μ, hidden_τ), 25)
+    dataset = rand(StableRNG(42), NormalMeanPrecision(hidden_μ, hidden_τ), 25)
 
     # Run inference with `trace = true` so all internal events are recorded.
     # The trace is stored in the model metadata under the `:trace` key.
-    results = infer(
+    results = infer(;
         model          = iid_estimation(),
         data           = (y = dataset,),
         constraints    = constraints,
@@ -42,7 +42,9 @@
     # retry-cleaned after the test — avoiding Windows EBUSY on `.tfevents`
     # handles that TB readers leave mapped past `close`.
     with_safe_tempdir() do log_dir
-        output = RxInfer.convert_to_tensorboard(trace; output_file = log_dir)
+        output = RxInfer.convert_to_tensorboard(
+            trace; output_file = log_dir, verbose = false
+        )
         @test startswith(output, log_dir)  # returned path is a subdirectory of log_dir
         @test isdir(output)                # timestamped subdirectory was created
     end
@@ -56,9 +58,9 @@ end
     # Both variables appear under `posteriors/*`, tagged with parameterization-specific names:
     # Normal → mean/precision, Gamma → shape/rate.
     @model function iid_estimation(y)
-        μ ~ Normal(mean = 0.0, precision = 0.1)
-        τ ~ Gamma(shape = 1.0, rate = 1.0)
-        y .~ Normal(mean = μ, precision = τ)
+        μ ~ Normal(; mean = 0.0, precision = 0.1)
+        τ ~ Gamma(; shape = 1.0, rate = 1.0)
+        y .~ Normal(; mean = μ, precision = τ)
     end
 
     constraints = @constraints begin
@@ -73,7 +75,7 @@ end
     dataset = rand(StableRNG(42), NormalMeanPrecision(3.1415, 2.7182), 25)
 
     n_iterations = 5
-    results = infer(
+    results = infer(;
         model          = iid_estimation(),
         data           = (y = dataset,),
         constraints    = constraints,
@@ -85,7 +87,9 @@ end
     trace = results.model.metadata[:trace]
 
     with_safe_tempdir() do log_dir
-        run_dir = RxInfer.convert_to_tensorboard(trace; output_file = log_dir)
+        run_dir = RxInfer.convert_to_tensorboard(
+            trace; output_file = log_dir, verbose = false
+        )
 
         all_tags = read_tags(run_dir)
 
@@ -114,9 +118,9 @@ end
     # `posteriors/<var>/distribution`, which TensorBoard renders in both the
     # Distributions (percentile-band) and Histograms (ridgeline) dashboards.
     @model function iid_estimation(y)
-        μ ~ Normal(mean = 0.0, precision = 0.1)
-        τ ~ Gamma(shape = 1.0, rate = 1.0)
-        y .~ Normal(mean = μ, precision = τ)
+        μ ~ Normal(; mean = 0.0, precision = 0.1)
+        τ ~ Gamma(; shape = 1.0, rate = 1.0)
+        y .~ Normal(; mean = μ, precision = τ)
     end
 
     constraints = @constraints begin
@@ -131,7 +135,7 @@ end
     dataset = rand(StableRNG(42), NormalMeanPrecision(3.1415, 2.7182), 25)
 
     n_iterations = 4
-    results = infer(
+    results = infer(;
         model          = iid_estimation(),
         data           = (y = dataset,),
         constraints    = constraints,
@@ -148,6 +152,7 @@ end
             output_file = log_dir,
             log_distributions = true,
             n_samples = 512,
+            verbose = false,
         )
 
         all_tags = read_tags(run_dir)
@@ -175,9 +180,9 @@ end
     # Guard-rail: with the default `log_distributions=false`, the new code path must be
     # inert — no `posteriors/*/distribution` tags should appear in the log.
     @model function iid_estimation(y)
-        μ ~ Normal(mean = 0.0, precision = 0.1)
-        τ ~ Gamma(shape = 1.0, rate = 1.0)
-        y .~ Normal(mean = μ, precision = τ)
+        μ ~ Normal(; mean = 0.0, precision = 0.1)
+        τ ~ Gamma(; shape = 1.0, rate = 1.0)
+        y .~ Normal(; mean = μ, precision = τ)
     end
 
     constraints = @constraints begin
@@ -191,7 +196,7 @@ end
 
     dataset = rand(StableRNG(42), NormalMeanPrecision(3.1415, 2.7182), 10)
 
-    results = infer(
+    results = infer(;
         model          = iid_estimation(),
         data           = (y = dataset,),
         constraints    = constraints,
@@ -203,7 +208,9 @@ end
     trace = results.model.metadata[:trace]
 
     with_safe_tempdir() do log_dir
-        run_dir = RxInfer.convert_to_tensorboard(trace; output_file = log_dir)
+        run_dir = RxInfer.convert_to_tensorboard(
+            trace; output_file = log_dir, verbose = false
+        )
         all_tags = read_tags(run_dir)
         @test !("posteriors/μ/distribution" in all_tags)
         @test !("posteriors/τ/distribution" in all_tags)
@@ -219,9 +226,9 @@ end
     # `EventCounts`) should appear. Flipping it to `true` must reinstate them
     # without disturbing scalar outputs (`iteration_time_ms`, `posteriors/*/*`).
     @model function iid_estimation(y)
-        μ ~ Normal(mean = 0.0, precision = 0.1)
-        τ ~ Gamma(shape = 1.0, rate = 1.0)
-        y .~ Normal(mean = μ, precision = τ)
+        μ ~ Normal(; mean = 0.0, precision = 0.1)
+        τ ~ Gamma(; shape = 1.0, rate = 1.0)
+        y .~ Normal(; mean = μ, precision = τ)
     end
 
     constraints = @constraints begin
@@ -235,7 +242,7 @@ end
 
     dataset = rand(StableRNG(42), NormalMeanPrecision(3.1415, 2.7182), 10)
 
-    results = infer(
+    results = infer(;
         model          = iid_estimation(),
         data           = (y = dataset,),
         constraints    = constraints,
@@ -249,7 +256,9 @@ end
     # Default: per-event text breadcrumbs are suppressed; scalars still flow.
     # `EventCounts` is always emitted as a compact run summary, regardless of the flag.
     with_safe_tempdir() do log_dir
-        run_dir = RxInfer.convert_to_tensorboard(trace; output_file = log_dir)
+        run_dir = RxInfer.convert_to_tensorboard(
+            trace; output_file = log_dir, verbose = false
+        )
         all_tags = read_tags(run_dir)
         @test !("Events" in all_tags)
         @test !("before_iteration" in all_tags)
@@ -262,7 +271,10 @@ end
     # Opt-in: the full narrative layer comes back.
     with_safe_tempdir() do log_dir
         run_dir = RxInfer.convert_to_tensorboard(
-            trace; output_file = log_dir, log_text_events = true
+            trace;
+            output_file = log_dir,
+            log_text_events = true,
+            verbose = false,
         )
         all_tags = read_tags(run_dir)
         @test "Events" in all_tags
