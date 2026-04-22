@@ -1,5 +1,6 @@
 @testitem "IID estimation trace to TensorBoard" begin
     using RxInfer, StableRNGs, TensorBoardLogger
+    include(joinpath(@__DIR__, "helpers.jl"))
 
     # A simple IID model: observations are drawn from a Normal with unknown mean and precision.
     # Mean-field constraints decouple q(μ) and q(τ) for variational inference.
@@ -37,9 +38,10 @@
     trace = results.model.metadata[:trace]
 
     # Export the trace to TensorBoard format and verify the output.
-    # `mktempdir` ensures the log files are written to a temporary directory
-    # that is cleaned up automatically after the test, avoiding filesystem pollution.
-    mktempdir() do log_dir
+    # `with_safe_tempdir` keeps the log files in a temp directory that gets
+    # retry-cleaned after the test — avoiding Windows EBUSY on `.tfevents`
+    # handles that TB readers leave mapped past `close`.
+    with_safe_tempdir() do log_dir
         output = RxInfer.convert_to_tensorboard(trace; output_file = log_dir)
         @test output == log_dir  # function returns the path it wrote to
         @test isdir(log_dir)     # directory was created
@@ -48,6 +50,7 @@ end
 
 @testitem "Posterior mean/precision scalars logged to TensorBoard" begin
     using RxInfer, StableRNGs, TensorBoardLogger
+    include(joinpath(@__DIR__, "helpers.jl"))
 
     # Same IID model — μ is univariate Normal, τ is Gamma.
     # Both variables appear under `posteriors/*`, tagged with parameterization-specific names:
@@ -81,10 +84,10 @@ end
 
     trace = results.model.metadata[:trace]
 
-    mktempdir() do log_dir
+    with_safe_tempdir() do log_dir
         RxInfer.convert_to_tensorboard(trace; output_file = log_dir)
 
-        all_tags = TensorBoardLogger.tags(log_dir)
+        all_tags = read_tags(log_dir)
 
         # μ is univariate Normal → should produce mean and precision scalar tags
         @test "posteriors/μ/mean" in all_tags
@@ -94,24 +97,15 @@ end
         @test "posteriors/τ/shape" in all_tags
         @test "posteriors/τ/rate" in all_tags
 
-        # Verify we emitted one step per iteration for μ's mean
-        mean_steps = BitSet()
-        TensorBoardLogger.map_summaries(log_dir; tags = ["posteriors/μ/mean"]) do tag, iter, val
-            push!(mean_steps, iter)
-        end
-        @test length(mean_steps) == n_iterations
-
-        # Same guard for τ's shape — one distinct step per iteration
-        shape_steps = BitSet()
-        TensorBoardLogger.map_summaries(log_dir; tags = ["posteriors/τ/shape"]) do tag, iter, val
-            push!(shape_steps, iter)
-        end
-        @test length(shape_steps) == n_iterations
+        # Verify we emitted one step per iteration for μ's mean and τ's shape.
+        @test length(steps_for_tag(log_dir, "posteriors/μ/mean"))  == n_iterations
+        @test length(steps_for_tag(log_dir, "posteriors/τ/shape")) == n_iterations
     end
 end
 
 @testitem "Posterior distributions logged as HistogramSummary" begin
     using RxInfer, StableRNGs, TensorBoardLogger
+    include(joinpath(@__DIR__, "helpers.jl"))
 
     # Same IID model — μ is univariate Normal, τ is Gamma. With `log_distributions=true`
     # both posteriors should produce a per-iteration HistogramSummary under
@@ -146,29 +140,20 @@ end
 
     trace = results.model.metadata[:trace]
 
-    mktempdir() do log_dir
+    with_safe_tempdir() do log_dir
         RxInfer.convert_to_tensorboard(trace; output_file = log_dir,
                                               log_distributions = true,
                                               n_samples = 512)
 
-        all_tags = TensorBoardLogger.tags(log_dir)
+        all_tags = read_tags(log_dir)
 
         # Distribution tags should exist for both the Normal and Gamma posteriors.
         @test "posteriors/μ/distribution" in all_tags
         @test "posteriors/τ/distribution" in all_tags
 
         # One HistogramSummary per iteration for each variable.
-        μ_steps = BitSet()
-        TensorBoardLogger.map_summaries(log_dir; tags = ["posteriors/μ/distribution"]) do tag, iter, val
-            push!(μ_steps, iter)
-        end
-        @test length(μ_steps) == n_iterations
-
-        τ_steps = BitSet()
-        TensorBoardLogger.map_summaries(log_dir; tags = ["posteriors/τ/distribution"]) do tag, iter, val
-            push!(τ_steps, iter)
-        end
-        @test length(τ_steps) == n_iterations
+        @test length(steps_for_tag(log_dir, "posteriors/μ/distribution")) == n_iterations
+        @test length(steps_for_tag(log_dir, "posteriors/τ/distribution")) == n_iterations
 
         # Scalar tags must still be present — distributions complement, not replace, scalars.
         @test "posteriors/μ/mean" in all_tags
@@ -178,6 +163,7 @@ end
 
 @testitem "Default trace export does not emit distribution tags" begin
     using RxInfer, StableRNGs, TensorBoardLogger
+    include(joinpath(@__DIR__, "helpers.jl"))
 
     # Guard-rail: with the default `log_distributions=false`, the new code path must be
     # inert — no `posteriors/*/distribution` tags should appear in the log.
@@ -209,9 +195,9 @@ end
 
     trace = results.model.metadata[:trace]
 
-    mktempdir() do log_dir
+    with_safe_tempdir() do log_dir
         RxInfer.convert_to_tensorboard(trace; output_file = log_dir)
-        all_tags = TensorBoardLogger.tags(log_dir)
+        all_tags = read_tags(log_dir)
         @test !("posteriors/μ/distribution" in all_tags)
         @test !("posteriors/τ/distribution" in all_tags)
     end
@@ -219,6 +205,7 @@ end
 
 @testitem "Event text logging is opt-in via log_text_events" begin
     using RxInfer, StableRNGs, TensorBoardLogger
+    include(joinpath(@__DIR__, "helpers.jl"))
 
     # `log_text_events` gates every per-event text breadcrumb. With the default
     # `false`, none of the narrative tags (`Events`, `before_iteration`, …,
@@ -254,9 +241,9 @@ end
 
     # Default: per-event text breadcrumbs are suppressed; scalars still flow.
     # `EventCounts` is always emitted as a compact run summary, regardless of the flag.
-    mktempdir() do log_dir
+    with_safe_tempdir() do log_dir
         RxInfer.convert_to_tensorboard(trace; output_file = log_dir)
-        all_tags = TensorBoardLogger.tags(log_dir)
+        all_tags = read_tags(log_dir)
         @test !("Events" in all_tags)
         @test !("before_iteration" in all_tags)
         @test !("after_iteration" in all_tags)
@@ -266,9 +253,9 @@ end
     end
 
     # Opt-in: the full narrative layer comes back.
-    mktempdir() do log_dir
+    with_safe_tempdir() do log_dir
         RxInfer.convert_to_tensorboard(trace; output_file = log_dir, log_text_events = true)
-        all_tags = TensorBoardLogger.tags(log_dir)
+        all_tags = read_tags(log_dir)
         @test "Events" in all_tags
         @test "EventCounts" in all_tags
         @test "before_iteration" in all_tags

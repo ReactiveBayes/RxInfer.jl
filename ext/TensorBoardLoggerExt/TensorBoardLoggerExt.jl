@@ -304,7 +304,12 @@ module TensorBoardLoggerExt
 
         @info "Collected $(length(events)) events from trace"
 
-        logger = TBLogger(output_file)
+        # `tb_append` keeps the logger writing into the exact directory the caller
+        # passed. The default `tb_increment` would see the pre-existing directory
+        # (we just `mkpath`'d it, and callers like `mktempdir` create it too) and
+        # silently redirect output to `${output_file}_1`, leaving the returned path
+        # empty.
+        logger = TBLogger(output_file, tb_append)
         ctx    = LogContext(logger;
                             log_distributions=log_distributions,
                             log_text_events=log_text_events,
@@ -327,6 +332,12 @@ module TensorBoardLoggerExt
         TensorBoardLogger.log_text(ctx.logger, "EventCounts", counts_table; step=1)
 
         close(logger)
+        # Drop internal references to the closed IOStreams so any lingering
+        # Windows file-lock isn't held past this function's return. `mktempdir`
+        # cleanup in tests races `rm` against the OS releasing the handle, and
+        # emits an @error that VSCode's test-item runner surfaces as red.
+        empty!(logger.all_files)
+        GC.gc()
 
         @info "TensorBoard logs exported to: $output_file"
         @info "Total events logged: $(length(events))"
