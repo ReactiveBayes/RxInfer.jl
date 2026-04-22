@@ -133,6 +133,54 @@ println("Trace included: ", haskey(result.model.metadata, :trace))
 println("Benchmark included: ", haskey(result.model.metadata, :benchmark))
 ```
 
+## Exporting to TensorBoard
+
+When [`TensorBoardLogger.jl`](https://github.com/PhilipVinc/TensorBoardLogger.jl) is loaded, the `TensorBoardLoggerExt` extension activates and provides `RxInfer.convert_to_tensorboard`, which converts a recorded trace into TensorFlow event files readable by TensorBoard.
+
+```julia
+using RxInfer
+using TensorBoardLogger  # activates the extension
+
+result = infer(
+    model = iid_normal(),
+    data = (y = randn(10),),
+    constraints = MeanField(),
+    iterations = 5,
+    initialization = init,
+    trace = true,
+)
+
+trace = result.model.metadata[:trace]
+
+log_dir = RxInfer.convert_to_tensorboard(trace; log_distributions = true)
+# Then run: tensorboard --logdir="<log_dir>"
+```
+
+### What gets logged
+
+| Output | TensorBoard tab | Condition |
+|--------|----------------|-----------|
+| Per-iteration wall-clock duration (`iteration_time_ms`) | Scalars | always |
+| `mean` / `precision` for each Normal posterior | Scalars | always |
+| `shape` / `rate` for each Gamma posterior | Scalars | always |
+| Per-iteration histogram of posterior samples | Distributions / Histograms | `log_distributions = true` |
+| Event breadcrumbs and `EventCounts` table | Text | `log_text_events = true` (counts always written) |
+
+### Options
+
+| Keyword | Default | Description |
+|---------|---------|-------------|
+| `output_file` | `"tensorboard_logs/"` in `pwd()` | Directory to write event files into |
+| `log_distributions` | `false` | Log posterior histograms (one per iteration per variable) |
+| `log_text_events` | `false` | Emit per-event text breadcrumbs to the Text tab |
+| `n_samples` | `1024` | Samples drawn per posterior to build each histogram |
+
+### API Reference
+
+```@docs
+RxInfer.convert_to_tensorboard
+```
+
 ## API Reference
 
 ```@docs
