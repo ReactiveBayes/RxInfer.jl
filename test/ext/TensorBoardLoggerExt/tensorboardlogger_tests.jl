@@ -216,3 +216,65 @@ end
         @test !("posteriors/τ/distribution" in all_tags)
     end
 end
+
+@testitem "Event text logging is opt-in via log_text_events" begin
+    using RxInfer, StableRNGs, TensorBoardLogger
+
+    # `log_text_events` gates every per-event text breadcrumb. With the default
+    # `false`, none of the narrative tags (`Events`, `before_iteration`, …,
+    # `EventCounts`) should appear. Flipping it to `true` must reinstate them
+    # without disturbing scalar outputs (`iteration_time_ms`, `posteriors/*/*`).
+    @model function iid_estimation(y)
+        μ  ~ Normal(mean = 0.0, precision = 0.1)
+        τ  ~ Gamma(shape = 1.0, rate = 1.0)
+        y .~ Normal(mean = μ, precision = τ)
+    end
+
+    constraints = @constraints begin
+        q(μ, τ) = q(μ)q(τ)
+    end
+
+    initialization = @initialization begin
+        q(μ) = vague(NormalMeanPrecision)
+        q(τ) = vague(GammaShapeRate)
+    end
+
+    dataset = rand(StableRNG(42), NormalMeanPrecision(3.1415, 2.7182), 10)
+
+    results = infer(
+        model          = iid_estimation(),
+        data           = (y = dataset,),
+        constraints    = constraints,
+        iterations     = 2,
+        initialization = initialization,
+        trace          = true,
+    )
+
+    trace = results.model.metadata[:trace]
+
+    # Default: per-event text breadcrumbs are suppressed; scalars still flow.
+    # `EventCounts` is always emitted as a compact run summary, regardless of the flag.
+    mktempdir() do log_dir
+        RxInfer.convert_to_tensorboard(trace; output_file = log_dir)
+        all_tags = TensorBoardLogger.tags(log_dir)
+        @test !("Events" in all_tags)
+        @test !("before_iteration" in all_tags)
+        @test !("after_iteration" in all_tags)
+        @test "EventCounts" in all_tags
+        @test "iteration_time_ms" in all_tags
+        @test "posteriors/μ/mean" in all_tags
+    end
+
+    # Opt-in: the full narrative layer comes back.
+    mktempdir() do log_dir
+        RxInfer.convert_to_tensorboard(trace; output_file = log_dir, log_text_events = true)
+        all_tags = TensorBoardLogger.tags(log_dir)
+        @test "Events" in all_tags
+        @test "EventCounts" in all_tags
+        @test "before_iteration" in all_tags
+        @test "after_iteration" in all_tags
+        # Scalars continue to coexist with the text tags.
+        @test "iteration_time_ms" in all_tags
+        @test "posteriors/μ/mean" in all_tags
+    end
+end
