@@ -5,8 +5,8 @@
     # A simple IID model: observations are drawn from a Normal with unknown mean and precision.
     # Mean-field constraints decouple q(μ) and q(τ) for variational inference.
     @model function iid_estimation(y)
-        μ  ~ Normal(mean = 0.0, precision = 0.1)
-        τ  ~ Gamma(shape = 1.0, rate = 1.0)
+        μ ~ Normal(mean = 0.0, precision = 0.1)
+        τ ~ Gamma(shape = 1.0, rate = 1.0)
         y .~ Normal(mean = μ, precision = τ)
     end
 
@@ -20,9 +20,9 @@
     end
 
     # Generate synthetic observations from a known distribution so the test is reproducible.
-    hidden_μ       = 3.1415
-    hidden_τ       = 2.7182
-    dataset        = rand(StableRNG(42), NormalMeanPrecision(hidden_μ, hidden_τ), 25)
+    hidden_μ = 3.1415
+    hidden_τ = 2.7182
+    dataset   = rand(StableRNG(42), NormalMeanPrecision(hidden_μ, hidden_τ), 25)
 
     # Run inference with `trace = true` so all internal events are recorded.
     # The trace is stored in the model metadata under the `:trace` key.
@@ -56,8 +56,8 @@ end
     # Both variables appear under `posteriors/*`, tagged with parameterization-specific names:
     # Normal → mean/precision, Gamma → shape/rate.
     @model function iid_estimation(y)
-        μ  ~ Normal(mean = 0.0, precision = 0.1)
-        τ  ~ Gamma(shape = 1.0, rate = 1.0)
+        μ ~ Normal(mean = 0.0, precision = 0.1)
+        τ ~ Gamma(shape = 1.0, rate = 1.0)
         y .~ Normal(mean = μ, precision = τ)
     end
 
@@ -98,8 +98,10 @@ end
         @test "posteriors/τ/rate" in all_tags
 
         # Verify we emitted one step per iteration for μ's mean and τ's shape.
-        @test length(steps_for_tag(log_dir, "posteriors/μ/mean"))  == n_iterations
-        @test length(steps_for_tag(log_dir, "posteriors/τ/shape")) == n_iterations
+        @test length(steps_for_tag(log_dir, "posteriors/μ/mean")) ==
+            n_iterations
+        @test length(steps_for_tag(log_dir, "posteriors/τ/shape")) ==
+            n_iterations
     end
 end
 
@@ -112,8 +114,8 @@ end
     # `posteriors/<var>/distribution`, which TensorBoard renders in both the
     # Distributions (percentile-band) and Histograms (ridgeline) dashboards.
     @model function iid_estimation(y)
-        μ  ~ Normal(mean = 0.0, precision = 0.1)
-        τ  ~ Gamma(shape = 1.0, rate = 1.0)
+        μ ~ Normal(mean = 0.0, precision = 0.1)
+        τ ~ Gamma(shape = 1.0, rate = 1.0)
         y .~ Normal(mean = μ, precision = τ)
     end
 
@@ -141,9 +143,12 @@ end
     trace = results.model.metadata[:trace]
 
     with_safe_tempdir() do log_dir
-        RxInfer.convert_to_tensorboard(trace; output_file = log_dir,
-                                              log_distributions = true,
-                                              n_samples = 512)
+        RxInfer.convert_to_tensorboard(
+            trace;
+            output_file = log_dir,
+            log_distributions = true,
+            n_samples = 512,
+        )
 
         all_tags = read_tags(log_dir)
 
@@ -152,8 +157,10 @@ end
         @test "posteriors/τ/distribution" in all_tags
 
         # One HistogramSummary per iteration for each variable.
-        @test length(steps_for_tag(log_dir, "posteriors/μ/distribution")) == n_iterations
-        @test length(steps_for_tag(log_dir, "posteriors/τ/distribution")) == n_iterations
+        @test length(steps_for_tag(log_dir, "posteriors/μ/distribution")) ==
+            n_iterations
+        @test length(steps_for_tag(log_dir, "posteriors/τ/distribution")) ==
+            n_iterations
 
         # Scalar tags must still be present — distributions complement, not replace, scalars.
         @test "posteriors/μ/mean" in all_tags
@@ -168,8 +175,8 @@ end
     # Guard-rail: with the default `log_distributions=false`, the new code path must be
     # inert — no `posteriors/*/distribution` tags should appear in the log.
     @model function iid_estimation(y)
-        μ  ~ Normal(mean = 0.0, precision = 0.1)
-        τ  ~ Gamma(shape = 1.0, rate = 1.0)
+        μ ~ Normal(mean = 0.0, precision = 0.1)
+        τ ~ Gamma(shape = 1.0, rate = 1.0)
         y .~ Normal(mean = μ, precision = τ)
     end
 
@@ -212,8 +219,8 @@ end
     # `EventCounts`) should appear. Flipping it to `true` must reinstate them
     # without disturbing scalar outputs (`iteration_time_ms`, `posteriors/*/*`).
     @model function iid_estimation(y)
-        μ  ~ Normal(mean = 0.0, precision = 0.1)
-        τ  ~ Gamma(shape = 1.0, rate = 1.0)
+        μ ~ Normal(mean = 0.0, precision = 0.1)
+        τ ~ Gamma(shape = 1.0, rate = 1.0)
         y .~ Normal(mean = μ, precision = τ)
     end
 
@@ -254,7 +261,9 @@ end
 
     # Opt-in: the full narrative layer comes back.
     with_safe_tempdir() do log_dir
-        RxInfer.convert_to_tensorboard(trace; output_file = log_dir, log_text_events = true)
+        RxInfer.convert_to_tensorboard(
+            trace; output_file = log_dir, log_text_events = true
+        )
         all_tags = read_tags(log_dir)
         @test "Events" in all_tags
         @test "EventCounts" in all_tags
