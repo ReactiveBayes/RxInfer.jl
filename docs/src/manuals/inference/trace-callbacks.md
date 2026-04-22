@@ -175,12 +175,6 @@ log_dir = RxInfer.convert_to_tensorboard(trace; log_distributions = true)
 | `log_text_events` | `false` | Emit per-event text breadcrumbs to the Text tab |
 | `n_samples` | `1024` | Samples drawn per posterior to build each histogram |
 
-### API Reference
-
-```@docs
-RxInfer.convert_to_tensorboard
-```
-
 ## API Reference
 
 ```@docs
