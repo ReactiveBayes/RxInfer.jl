@@ -384,7 +384,7 @@ function Rocket.on_next!(
                 event,
             )
             for (datavar, value) in zip(_datavars, values(event))
-                update!(datavar, value)
+                new_observation!(datavar, value)
             end
             inference_fire_event(
                 Val(:after_data_update),
@@ -551,9 +551,9 @@ function streaming_inference(;
     allow_node_contraction = false,
     autostart = true,
     events = nothing,
-    addons = nothing,
+    annotations = nothing,
     callbacks = nothing,
-    postprocess = DefaultPostprocess(),
+    postprocess = nothing,
     uselock = false,
     warn = true,
 )
@@ -583,12 +583,21 @@ function streaming_inference(;
         _options = setwarn(_options, warn)
     end
 
-    # Override `options` addons if the `addons` keyword argument is present 
-    if !isnothing(addons)
-        if warn && !isnothing(getaddons(_options))
-            @warn "Both `addons = ...` and `options = (addons = ..., )` specify a value for the `addons`. Ignoring the `options` setting. Set `warn = false` to supress this warning."
+    # Override `options` annotations if the `annotations` keyword argument is present
+    if !isnothing(annotations)
+        if warn && !isnothing(getannotations(_options))
+            @warn "Both `annotations = ...` and `options = (annotations = ..., )` specify a value for the `annotations`. Ignoring the `options` setting. Set `warn = false` to supress this warning."
         end
-        _options = setaddons(_options, addons)
+        _options = setannotations(_options, annotations)
+    end
+
+    # Determine the default postprocessing strategy based on annotations
+    if isnothing(postprocess)
+        postprocess = if isnothing(getannotations(_options))
+            UnpackMarginalPostprocess()
+        else
+            NoopPostprocess()
+        end
     end
 
     # Set ReactiveMP event handler if `callbacks` are set
@@ -616,10 +625,7 @@ function streaming_inference(;
     end
 
     if getforce_marginal_computation(_options)
-        modelplugins =
-            modelplugins + ReactiveMPForceMarginalComputationPlugin(
-                MarginalComputationOptions()
-            )
+        modelplugins = modelplugins + ReactiveMPForceMarginalComputationPlugin()
     end
 
     # The `_model` here still must be a `ModelGenerator`
@@ -646,10 +652,12 @@ function streaming_inference(;
         autoupdates_data_handlers(autoupdates),
     )
 
-    model_creation_trace_id = uuid4()
-    invoke_callback(callbacks, BeforeModelCreationEvent(model_creation_trace_id))
+    model_creation_span_id = generate_span_id(callbacks)
+    invoke_callback(callbacks, BeforeModelCreationEvent(model_creation_span_id))
     fmodel = create_model(_model | _condition_on)
-    invoke_callback(callbacks, AfterModelCreationEvent(fmodel, model_creation_trace_id))
+    invoke_callback(
+        callbacks, AfterModelCreationEvent(fmodel, model_creation_span_id)
+    )
 
     vardict = getvardict(fmodel)
     vardict = GraphPPL.variables(vardict) # TODO: Should work recursively as well
@@ -823,10 +831,14 @@ function streaming_inference(;
     )
 
     if autostart
-        autostart_trace_id = uuid4()
-        invoke_callback(callbacks, BeforeAutostartEvent(engine, autostart_trace_id))
+        autostart_span_id = generate_span_id(callbacks)
+        invoke_callback(
+            callbacks, BeforeAutostartEvent(engine, autostart_span_id)
+        )
         start(engine)
-        invoke_callback(callbacks, AfterAutostartEvent(engine, autostart_trace_id))
+        invoke_callback(
+            callbacks, AfterAutostartEvent(engine, autostart_span_id)
+        )
     end
 
     return engine

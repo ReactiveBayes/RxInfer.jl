@@ -20,8 +20,9 @@ end
 
 TracedEvent(event::Event) = TracedEvent(event, time_ns())
 
-Base.summary(io::IO, te::TracedEvent) =
-    print(io, "TracedEvent(:$(event_name(typeof(te.event))))")
+Base.summary(io::IO, te::TracedEvent) = print(
+    io, "TracedEvent(:$(event_name(typeof(te.event))))"
+)
 
 """
     RxInferTraceCallbacks()
@@ -86,8 +87,9 @@ Returns the vector of [`TracedEvent`](@ref) recorded by the trace callbacks filt
 
 See also: [`RxInferTraceCallbacks`](@ref).
 """
-tracedevents(event::Symbol, callbacks::RxInferTraceCallbacks) =
-    filter(e -> event_name(typeof(e.event)) == event, callbacks.events)
+tracedevents(event::Symbol, callbacks::RxInferTraceCallbacks) = filter(
+    e -> event_name(typeof(e.event)) == event, callbacks.events
+)
 
 Base.isempty(callbacks::RxInferTraceCallbacks) = isempty(callbacks.events)
 
@@ -126,7 +128,7 @@ import ReactiveMP: handle_event, Event, event_name
 # Catch-all: trace every event (respects optional filter)
 function ReactiveMP.handle_event(callbacks::RxInferTraceCallbacks, event::Event)
     if isnothing(callbacks.filter) || event_name(typeof(event)) in callbacks.filter
-        push!(callbacks.events, TracedEvent(event, time_ns()))
+        push!(callbacks.events, TracedEvent(event))
     end
     return nothing
 end
@@ -144,7 +146,9 @@ function ReactiveMP.handle_event(
     end
     event.model.metadata[:trace] = callbacks
     if isnothing(callbacks.filter) || event_name(typeof(event)) in callbacks.filter
-        push!(callbacks.events, TracedEvent(event, time_ns()))
+        push!(callbacks.events, TracedEvent(event))
     end
     return nothing
 end
+
+function convert_to_tensorboard end # This function is implemented in the external module `TensorBoardLoggerExt` to avoid adding a hard dependency on TensorBoardLogger.jl for users who don't need it.
