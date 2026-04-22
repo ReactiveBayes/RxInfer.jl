@@ -32,7 +32,7 @@ For development purposes, it's recommended to use the `dev` command from the Jul
 The `dev` command clones `RxInfer` to `~/.julia/dev/RxInfer`. All local changes to `RxInfer` code will be reflected in imported code.
 
 !!! note
-    It is also might be useful to install [Revise.jl](https://github.com/timholy/Revise.jl) package as it allows you to modify code and use the changes without restarting Julia.
+    It might also be useful to install [Revise.jl](https://github.com/timholy/Revise.jl) package as it allows you to modify code and use the changes without restarting Julia.
 
 ### Core dependencies
 
@@ -55,13 +55,13 @@ Before opening a pull request, ensure all tests pass without errors.
 We use the default [Julia style guide](https://docs.julialang.org/en/v1/manual/style-guide/index.html). There are a couple of important points modifications to the Julia style guide to take into account:
 
 - Use 4 spaces for indentation
-- Type names use `UpperCamelCase`. For example: `AbstractFactorNode`, `RandomVariable`, etc..
-- Function names are `lowercase` with underscores, when necessary. For example: `activate!`, `randomvar`, `as_variable`, etc..
+- Type names use `UpperCamelCase`. For example: `AbstractFactorNode`, `RandomVariable`, etc.
+- Function names are `lowercase` with underscores, when necessary. For example: `activate!`, `randomvar`, `as_variable`, etc.
 - Variable names and function arguments use `snake_case`
 - The name of a method that modifies its argument(s) must end in `!`
 
 !!! note
-    The `RxInfer` repository contains scripts to automatically format code according to our guidelines. Use `make format` command to fix code style. This command overwrites files. Use `make lint` to run a linting procedure without overwriting the actual source files.
+    The `RxInfer` repository contains scripts to automatically format code according to our guidelines. Use `make format` command to fix codestyle. This command overwrites files. Use `make lint` to run a linting procedure without overwriting the actual source files.
 
 ### Unit tests
 
@@ -102,3 +102,14 @@ make test
 
 !!! note
     Core packages include `ReactiveMP.jl`, `GraphPPL.jl` and `Rocket.jl`. When using any of the `dev` commands from the `Makefile` those packages must be present in the `Pkg.devdir()` directory.
+
+## CHANGELOG.md
+
+This project uses a `CHANGELOG.md` to document all user-visible changes. Regardless of the contribution type or size, please include a concise, descriptive entry for your changes in the CHANGELOG before merging. This ensures a clear upgrade path for users and helps maintainers track the evolution of features, fixes, and improvements in a consistent way.
+
+### Opting out
+
+Not all changes need a changelog entry, some are not user-visible, like changing CI or some internal refactoring. For those it is possible to disable the check.
+
+To do so, apply the `no changelog` label to the PR. Then the changelog check will re-run and succeed automatically. This label can also be applied directly when opening the PR so the check will be automatically omitted.
+

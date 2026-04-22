@@ -30,7 +30,14 @@
         q(γ) = vague(GammaShapeRate)
     end
 
-    results = infer(model = gamma_aliases(), data = (y = 10.0,), constraints = constraints, iterations = 100, initialization = init, free_energy = true)
+    results = infer(
+        model = gamma_aliases(),
+        data = (y = 10.0,),
+        constraints = constraints,
+        iterations = 100,
+        initialization = init,
+        free_energy = true,
+    )
 
     # Here we simply test that it ran and gave some output 
     @test mean(results.posteriors[:s][end]) ≈ 9.468846338832027
@@ -39,11 +46,20 @@
 end
 
 @testitem "`Gamma` by itself cannot be used as a node" begin
+    using Logging
+
     @model function gamma_by_itself(d)
-        x ~ Gamma(1.0, 1.0)
-        d ~ Gamma(x, 1.0)
+        d ~ Gamma(1.0, 1.0)
     end
-    @test_throws "`Gamma` cannot be constructed without keyword arguments. Use `Gamma(shape = ..., rate = ...)` or `Gamma(shape = ..., scale = ...)`." infer(
-        model = gamma_by_itself(), data = (d = 1.0,), iterations = 1, free_energy = false
+
+    io = IOBuffer()
+
+    Logging.with_logger(Logging.SimpleLogger(io)) do
+        infer(model = gamma_by_itself(), data = (d = 1.0,))
+    end
+
+    @test occursin(
+        "'Gamma' and 'GammaShapeScale' without keywords are constructed with parameters (Shape, Scale)",
+        String(take!(io)),
     )
 end

@@ -1,0 +1,170 @@
+# Changelog
+
+All notable changes to RxInfer.jl will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+## [5.0.0]
+
+- **Breaking:** Addons have been renamed to annotations to match the new ReactiveMP API. This affects the `infer` function and related types:
+  - The `addons` keyword argument in `infer()`, `batch_inference()`, and `streaming_inference()` has been renamed to `annotations`. Update `infer(..., addons = AddonLogScale())` to `infer(..., annotations = LogScaleAnnotations())`.
+  - In NamedTuple-based options, `options = (addons = ...,)` is now `options = (annotations = ...,)`.
+  - `AddonLogScale` has been renamed to `LogScaleAnnotations` (from ReactiveMP).
+  - `AddonMemory` has been renamed to `InputArgumentsAnnotations` (from ReactiveMP).
+  - `getaddons` / `setaddons` on `ReactiveMPInferenceOptions` have been renamed to `getannotations` / `setannotations`.
+  - The `Marginal` constructor changed: `Marginal(data, is_point, is_clamped, addons)` is now `Marginal(data, is_point, is_clamped)` (3-arg) or `Marginal(data, is_point, is_clamped, annotation_dict)` with a `ReactiveMP.AnnotationDict`. The `Marginal` type no longer has a type parameter for addons (`Marginal{D}` instead of `Marginal{D, A}`).
+  - See the ReactiveMP documentation for the new annotation processor API and how to implement custom annotations.
+- **Breaking:** `DefaultPostprocess` has been removed. The `postprocess` keyword in `infer()` now defaults to `nothing`, and the strategy is selected automatically based on the `annotations` keyword: `UnpackMarginalPostprocess()` when `annotations` is `nothing` (the default), and `NoopPostprocess()` when annotations are enabled. If you previously passed `postprocess = DefaultPostprocess()` explicitly, simply remove it. Custom postprocessing strategies passed via `postprocess = ...` continue to work unchanged.
+- **Breaking:** The callback system has been refactored to use event structs instead of dispatch with positional arguments. All callback events are now concrete structs subtyping `ReactiveMP.Event{E}` with named fields. Callbacks receive a single event object instead of positional arguments.
+  - **NamedTuple/Dict callbacks**: Functions now receive a single event object instead of positional args. E.g. `(model, iteration) -> ...` becomes `(event) -> println(event.model, event.iteration)`.
+  - **Custom callback structs**: The `callbacks` field of `infer` function now accepts custom structs that implement `ReactiveMP.handle_event(::MyCustomCallbacksHandler, event::SomeEvent)`.
+  - **ReactiveMP events**: It is possible now to add callbacks to the events happening in ReactiveMP inference engine. See the documentation of ReactiveMP for the available events.
+  - **`StopEarlyIterationStrategy`**: Now receives an `AfterIterationEvent` instead of `(model, iteration)`.
+  - New RxInfer-level event types: `BeforeModelCreationEvent`, `AfterModelCreationEvent`, `BeforeInferenceEvent`, `AfterInferenceEvent`, `BeforeIterationEvent`, `AfterIterationEvent`, `BeforeDataUpdateEvent`, `AfterDataUpdateEvent`, `OnMarginalUpdateEvent`, `BeforeAutostartEvent`, `AfterAutostartEvent`.
+  - Migration is straightforward: replace positional arguments with named field access on the event object. See the Callbacks section in the documentation for details.
+- The `callbacks` argument in the `infer` function now accepts any custom structure that implements `ReactiveMP.handle_event`, in addition to `NamedTuple` and `Dict`. The available callbacks list now also includes ReactiveMP-level callbacks such as `before_message_rule_call`, `after_message_rule_call`, `before_product_of_messages`, `after_product_of_messages`, `before_marginal_computation`, `after_marginal_computation`, and others.
+- **Breaking:** `before_iteration` and `after_iteration` callbacks now use a mutable `stop_iteration::Bool` field on the event (default `false`). Set `event.stop_iteration = true` from a callback to halt iterations early instead of returning `true`. The `StopEarlyIterationStrategy` has been updated accordingly.
+- **Breaking:** Pipeline stages and the per-node `scheduler` argument have been replaced by the unified `ReactiveMP.AbstractStreamPostprocessor` abstraction (propagated from ReactiveMP v6).
+  - The `where { pipeline = ... }` node clause has been removed together with `AbstractPipelineStage`, `LoggerPipelineStage`, `AsyncPipelineStage`, `ScheduleOnPipelineStage`, `DiscontinuePipelineStage`, `EmptyPipelineStage`, `CompositePipelineStage`, `apply_pipeline_stage`, and `schedule_updates`.
+  - The `scheduler` option under `infer(..., options = ...)` has been renamed to `stream_postprocessors` and now expects a `ReactiveMP.AbstractStreamPostprocessor` (or `nothing`). To reproduce the old `schedule_on(scheduler)` behaviour, wrap the scheduler in a `ReactiveMP.ScheduleOnStreamPostprocessor`. The default is now `nothing` instead of `AsapScheduler()`.
+  - `LoggerPipelineStage` has no direct replacement — use the `before_message_rule_call` / `after_message_rule_call` callbacks instead.
+  - `options = (limit_stack_depth = N,)` continues to work unchanged; internally it is now expanded to `ReactiveMP.ScheduleOnStreamPostprocessor(RxInfer.LimitStackScheduler(N))`.
+- The `infer` function now accepts a `benchmark = true` keyword argument that automatically merges `RxInferBenchmarkCallbacks` with user-provided callbacks. Benchmark results are accessible via `result.model.metadata[:benchmark]`.
+- The `infer` function now accepts a `trace = true` keyword argument that automatically merges `RxInferTraceCallbacks` with user-provided callbacks. All callback events are recorded as `TracedEvent` and accessible via `result.model.metadata[:trace]`.
+- Added `TensorBoardLoggerExt` extension: when `TensorBoardLogger.jl` is loaded, `RxInfer.convert_to_tensorboard(trace)` exports inference trace events to TensorBoard event log files. The output directory can be specified via the `output_file` keyword argument. Tests are located in `test/ext/TensorBoardLoggerExt/tensorboardlogger_tests.jl`.
+- Tests are now running with `TestItemRunner` instead of `ReTestItems`
+- `infer` function got a new keyword argument `disable_inference_error_hint` that disables the inference error hint if set to `true`
+- The inference error hint now can be forced to throw an error with `THROW_ON_INFERENCE_ERROR_HINT` environment variable. This is done primarily to catch errors on CI when a test prints this unintentionally (which also confuses our developers in [$606](https://github.com/ReactiveBayes/RxInfer.jl/issues/606)). All tests or documentation examples now need to use the `disable_inference_error_hint` if the error is intentional.
+
+## [4.7.3] - 2026-03-13
+
+### Documentation
+- Added docstring for the `@initialization` macro ([603](https://github.com/ReactiveBayes/RxInfer.jl/pull/603))
+- Added `CONTRIBUTING.md`
+- Started using `CHANGELOG.md` (first few entries were auto-generated with LLM based on tag log)
+
+## [4.7.2] - 2026-03-12
+
+### Changed
+- Relaxed gamma mixture tolerance on free energy (flaky test)
+
+### Documentation
+- Added cross-reference to RxInfer examples
+
+## [4.7.1] - 2026-03-04
+
+### Fixed
+- Corrected Firestore endpoint URL construction and payload format in telemetry
+
+### Documentation
+- Updated debugging documentation with "Using callbacks in the infer function" section
+- Fixed documentation build configuration
+
+## [4.7.0] - 2026-02-16
+
+### Added
+- `StopEarlyIterationStrategy` callback for early stopping support (#595)
+
+### Changed
+- Added versioned Manifest to gitignore
+
+## [4.6.7] - 2026-01-23
+
+### Fixed
+- Resolved `MixedArguments` bug in initialization macro (#585)
+
+### Documentation
+- Updated README.md
+
+## [4.6.6] - 2025-12-18
+
+### Changed
+- Added JSON 1.0 compatibility (#589)
+
+### Fixed
+- Removed wrong source section from Project.toml
+
+## [4.6.5] - 2025-11-24
+
+### Added
+- New documentation section "What is a rule" (#582)
+
+### Changed
+- Removed vibe coded fields from issue template (#581)
+
+## [4.6.4] - 2025-11-20
+
+### Added
+- Issue templates (#568)
+- Additional full pipeline tests
+- Implemented backend-aware node alias conversion for initialization macro (#525)
+
+### Changed
+- Reimplemented kwargs init macro (#571)
+- Updated benchmarks (#576)
+- Made tags consistent (#577)
+
+### Fixed
+- Fixed documentation build (#580)
+- Select tests with `make test test_args...` and disabled Aqua with `RUN_AQUA=true make test ...` (#563)
+
+## [4.6.3] - 2025-11-04
+
+### Added
+- LiveServer as a dependency (#556)
+
+### Changed
+- Switched from CpuId to Hwloc for parallel tests (#544)
+- Differentiated RxInfer.jl documentation from RxInferExamples.jl (#511)
+
+### Fixed
+- Added special case for `PointMassFormConstraint` for `Categorical` (#546)
+- Fixed spelling and grammar mistakes in documentation (#552)
+
+## [4.6.2] - 2025-10-21
+
+### Fixed
+- Fixed multi-agent path planning (use unscented instead)
+
+### Tests
+- Updated tests (#541)
+
+## [4.6.1] - 2025-10-21
+
+### Added
+- Discord badge to README (#517)
+
+### Changed
+- Changed dispatch version of default_parametrization for GammaShapeScale (#526)
+
+### Fixed
+- Fixed test in PR526
+
+## [4.6.0] - 2025-09-23
+
+### Added
+- New documentation section about static and streamlined inferences (#503)
+- Test model for non-linear node (univariate -> multivariate) (#505)
+- Support for streaming inference without auto-updates (#510)
+
+### Changed
+- Updated dependencies (#514)
+
+---
+
+[Unreleased]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v4.7.2...HEAD
+[4.7.3]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v4.7.2...HEAD
+[4.7.2]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v4.7.1...v4.7.2
+[4.7.1]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v4.7.0...v4.7.1
+[4.7.0]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v4.6.7...v4.7.0
+[4.6.7]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v4.6.6...v4.6.7
+[4.6.6]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v4.6.5...v4.6.6
+[4.6.5]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v4.6.4...v4.6.5
+[4.6.4]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v4.6.3...v4.6.4
+[4.6.3]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v4.6.2...v4.6.3
+[4.6.2]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v4.6.1...v4.6.2
+[4.6.1]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v4.6.0...v4.6.1
+[4.6.0]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v4.5.2...v4.6.0

@@ -7,52 +7,76 @@ using Dates
 ## https://gr-framework.org/workstations.html#no-output
 ENV["GKSwstype"] = "100"
 
-DocMeta.setdocmeta!(RxInfer, :DocTestSetup, :(using RxInfer); recursive = true)
+DocMeta.setdocmeta!(RxInfer, :DocTestSetup, :(using RxInfer); recursive=true)
 
 draft = get(ENV, "DOCS_DRAFT", "false") == "true"
 
 makedocs(;
-    draft = draft,
-    warnonly = false,
-    modules = [RxInfer],
-    authors = "Bagaev Dmitry <d.v.bagaev@tue.nl> and contributors",
-    sitename = "RxInfer.jl",
-    format = Documenter.HTML(;
-        prettyurls = get(ENV, "CI", "false") == "true",
-        canonical = "https://docs.rxinfer.com/stable",
-        edit_link = "main",
-        warn_outdated = true,
-        sidebar_sitename = false,
-        assets = ["assets/theme.css", "assets/header.css", "assets/header.js", "assets/chat.js", "assets/favicon.ico"],
-        analytics = "G-X4PH160GMF",
-        description = "Julia package for automated Bayesian inference on a factor graph with reactive message passing",
-        footer = "Created in [BIASlab](https://biaslab.github.io/), maintained by [ReactiveBayes](https://github.com/ReactiveBayes), powered by [Documenter.jl](https://github.com/JuliaDocs/Documenter.jl) and the [Julia Programming Language](https://julialang.org/)."
+    draft=draft,
+    warnonly=draft,
+    modules=[RxInfer],
+    authors="Bagaev Dmitry <d.v.bagaev@tue.nl> and contributors",
+    sitename="RxInfer.jl",
+    format=Documenter.HTML(;
+        prettyurls=get(ENV, "CI", "false") == "true",
+        canonical="https://docs.rxinfer.com/stable",
+        edit_link="main",
+        warn_outdated=true,
+        sidebar_sitename=false,
+        assets=["assets/theme.css", "assets/header.css", "assets/header.js", "assets/chat.js", "assets/favicon.ico"],
+        analytics="G-X4PH160GMF",
+        description="Julia package for automated Bayesian inference on a factor graph with reactive message passing",
+        footer="Created in [BIASlab](https://biaslab.github.io/), maintained by [ReactiveBayes](https://github.com/ReactiveBayes), powered by [Documenter.jl](https://github.com/JuliaDocs/Documenter.jl) and the [Julia Programming Language](https://julialang.org/)."
     ),
-    pages = [
+    pages=[
         "Home" => "index.md",
+        "Concepts" => [
+            "concepts/probability-distributions.md",
+            "concepts/bayesian-inference.md",
+            "concepts/factor-graphs.md",
+            "concepts/message-passing.md",
+            "concepts/variational-inference.md",
+            "concepts/constraints-specification.md",
+            "concepts/reactive-programming.md",
+        ],
         "User guide" => [
             "Getting started" => "manuals/getting-started.md",
             "RxInfer.jl vs. Others" => "manuals/comparison.md",
             "Using RxInfer from Python" => "manuals/how-to-use-rxinfer-from-python.md",
             "Model specification" => "manuals/model-specification.md",
-            "Constraints specification" => "manuals/constraints-specification.md",
-            "Meta specification" => "manuals/meta-specification.md",
+            "Variational inference" => [
+                "Bethe Free Energy" => "manuals/variational/bethe-free-energy.md",
+                "Constraints specification" => "manuals/variational/constraints-specification.md",
+                "Functional form constraints" => "manuals/variational/functional-forms.md"
+            ],
+            "Understanding Rules" => "manuals/rules_and_nodes.md",
             "Inference specification" => [
                 "Overview" => "manuals/inference/overview.md",
                 "Static inference" => "manuals/inference/static.md",
                 "Streamline inference" => "manuals/inference/streamlined.md",
+                "Static vs. Streamlined" => "manuals/inference/static-vs-streamlined.md",
                 "Initialization" => "manuals/inference/initialization.md",
+                "Meta specification" => "manuals/inference/meta-specification.md",
                 "Auto-updates" => "manuals/inference/autoupdates.md",
+                "Callbacks" => "manuals/inference/callbacks.md",
+                "Benchmark callbacks" => "manuals/inference/benchmark-callbacks.md",
+                "Trace callbacks" => "manuals/inference/trace-callbacks.md",
+                "Early stopping" => "manuals/inference/early-stopping.md",
                 "Deterministic nodes" => "manuals/inference/delta-node.md",
                 "Non-conjugate inference" => "manuals/inference/nonconjugate.md",
-                "Undefined message update rules" => "manuals/inference/undefinedrules.md"
+                "Undefined message update rules" => "manuals/inference/undefinedrules.md",
+                "Inference results postprocessing" => "manuals/inference/postprocess.md",
+                "Creating your own custom nodes" => "manuals/inference/create-node.md",
             ],
-            "Inference customization" =>
-                ["Defining a custom node and rules" => "manuals/customization/custom-node.md", "Inference results postprocessing" => "manuals/customization/postprocess.md"],
+            "Performance Tips" => "manuals/performance-tips.md",
+            "FAQ" => "manuals/faq.md",
             "Debugging" => "manuals/debugging.md",
             "Session summary" => "manuals/session_summary.md",
             "Sharing sessions & telemetry" => "manuals/telemetry.md",
-            "Migration from v2 to v3" => "manuals/migration-guide-v2-v3.md",
+            "Migration guides" => [
+                "Migration from v2 to v3" => "manuals/migration/v2-to-v3.md",
+                "Migration from v4 to v5" => "manuals/migration/v4-to-v5.md",
+            ],
             "Sharp bits of RxInfer" => [
                 "Overview" => "manuals/sharpbits/overview.md",
                 "Rule Not Found Error" => "manuals/sharpbits/rule-not-found.md",
@@ -60,18 +84,13 @@ makedocs(;
                 "Using `=` instead of `:=` for deterministic nodes" => "manuals/sharpbits/usage-colon-equality.md"
             ]
         ],
-        "Library" => [
-            "Model construction" => "library/model-construction.md",
-            "Bethe Free Energy" => "library/bethe-free-energy.md",
-            "Functional form constraints" => "library/functional-forms.md",
-            "Exported methods" => "library/exported-methods.md"
-        ],
         "Examples" => "examples/overview.md",
         "Contributing" => [
             "Contribution guide" => "contributing/guide.md",
             "Contribution guidelines" => "contributing/guidelines.md",
             "Contributing to the documentation" => "contributing/new-documentation.md",
             "Contributing to the examples" => "contributing/new-example.md",
+            "Exported methods" => "contributing/exported-methods.md",
             "Publishing a new release" => "contributing/new-release.md"
         ]
     ]
@@ -158,4 +177,4 @@ end
 inject_keywords_meta()
 generate_sitemap()
 
-deploydocs(; repo = "github.com/ReactiveBayes/RxInfer.jl", devbranch = "main", forcepush = true, cname = "docs.rxinfer.com")
+deploydocs(; repo="github.com/ReactiveBayes/RxInfer.jl", devbranch="main", forcepush=true, cname="docs.rxinfer.com")

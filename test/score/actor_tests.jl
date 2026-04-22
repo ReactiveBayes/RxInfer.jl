@@ -2,7 +2,11 @@
     using Random
     using RxInfer
 
-    import RxInfer: ScoreActor, score_snapshot, score_snapshot_final, score_snapshot_iterations
+    import RxInfer:
+        ScoreActor,
+        score_snapshot,
+        score_snapshot_final,
+        score_snapshot_iterations
     import Rocket: release!
     @testset "Basic functionality #1" begin
         actor = ScoreActor(Float64, 10, 1)

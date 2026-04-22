@@ -8,7 +8,7 @@ It supports both exact and variational inference algorithms and forms an ecosyst
 
 This page provides the necessary information you need to get started with `Rxinfer`. We will show the general approach to solving inference problems with `RxInfer` by means of a running example: inferring the bias of a coin using a simple Beta-Bernoulli model.
 
-## Installation
+## [Installation](@id user-guide-getting-started-installation)
 
 `RxInfer` is an officially registered Julia package. Install `RxInfer` through the Julia package manager by using the following command from the package manager mode:
 
@@ -63,7 +63,7 @@ n_observations = 10
 # The bias of a coin used in the demonstration
 coin_bias      = 0.75
 # We assume that the outcome of each coin flip is 
-# distributed as the `Bernoulli` distrinution
+# distributed as the `Bernoulli` distribution
 distribution   = Bernoulli(coin_bias)
 # Simulated coin flips
 dataset        = rand(rng, distribution, n_observations)
@@ -178,17 +178,17 @@ For that purpose `RxInfer` uses [`RxInfer.DeferredDataHandler`](@ref) structure.
 ```@example coin
 # The only difference here is that we do not specify `a` and `b` as hyperparameters 
 # But rather indicate that the data for them will be available later during the inference
-conditioned_with_deffered_data = coin_model() | (
+conditioned_with_deferred_data = coin_model() | (
     y = [ true, false, true ], 
     a = RxInfer.DeferredDataHandler(), 
     b = RxInfer.DeferredDataHandler()
 )
 
 # The graph creation API does not change
-model_with_deffered_data = RxInfer.create_model(conditioned_with_deffered_data)
+model_with_deferred_data = RxInfer.create_model(conditioned_with_deferred_data)
 
 # We can visualise the graph with missing data handles as well
-GraphPlot.gplot(RxInfer.getmodel(model_with_deffered_data))
+GraphPlot.gplot(RxInfer.getmodel(model_with_deferred_data))
 ```
 
 From the model structure visualisation we can see now that both `a` and `b` are no longer indicated as constants.

@@ -1,0 +1,64 @@
+name: Documentation Issue
+description: Report an issue with documentation (missing, unclear, or incorrect information)
+title: "[Docs]: "
+labels: ["documentation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve RxInfer's documentation! Please fill out the form below.
+
+  - type: dropdown
+    id: issue-type
+    attributes:
+      label: Type of Documentation Issue
+      description: What kind of documentation issue is this?
+      options:
+        - "Missing documentation"
+        - "Unclear or confusing"
+        - "Incorrect information"
+        - "Broken link"
+        - "Formatting issue"
+        - "Other"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear description of the documentation issue
+      placeholder: Describe the issue...
+    validations:
+      required: true
+
+  - type: input
+    id: page-url
+    attributes:
+      label: Documentation Page URL
+      description: Link to the affected documentation page (if applicable)
+      placeholder: "https://docs.rxinfer.com/stable/..."
+
+  - type: textarea
+    id: current-content
+    attributes:
+      label: Current Content (if applicable)
+      description: What the documentation currently says (copy/paste relevant sections)
+      placeholder: Paste current documentation content here...
+
+  - type: textarea
+    id: expected-content
+    attributes:
+      label: Expected Content / Suggested Fix
+      description: What the documentation should say, or how it should be improved
+      placeholder: Describe what should be changed or added...
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Any additional context, examples, or information that would help improve the documentation
+      placeholder: Additional context...
+
