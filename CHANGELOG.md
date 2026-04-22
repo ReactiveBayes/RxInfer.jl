@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- `TensorBoardLoggerExt`: fixed `FieldError` thrown by `TensorBoardLogger 0.1.26` when reading back event logs. The package's `deserialize_tensor_summary` still accesses `summary.tensor` but the regenerated protobuf stubs store the tensor inside `summary.value.value` (`OneOf`). Test helpers now bypass the broken deserializer by iterating event files directly via `TBEventFileCollectionIterator` and reading `summary.tag` / `event.step` without deserialising tensor payloads.
+- `TensorBoardLoggerExt`: fixed `IOError: EBUSY` on Windows during test cleanup. `TBLogger` keeps the `.tfevents` file handle open after `close()`; `mktempdir`'s automatic `rm` raced against the OS releasing the handle and emitted an `@error` that VS Code's test runner surfaced as a red failure. The extension now calls `empty!(logger.all_files)` and `GC.gc()` after closing, and tests use a retry-cleanup helper (`with_safe_tempdir`) instead of plain `mktempdir`.
+- `TensorBoardLoggerExt`: fixed log output being silently redirected to a `_1`-suffixed sibling directory. `TBLogger` defaults to `tb_increment` mode, which renames the target when it already exists (including directories created by `mktempdir`). Changed to `tb_append` so logs always land in the directory passed by the caller.
+
 ## [5.0.0]
 
 - **Breaking:** Addons have been renamed to annotations to match the new ReactiveMP API. This affects the `infer` function and related types:
