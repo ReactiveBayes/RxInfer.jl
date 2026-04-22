@@ -20,8 +20,9 @@ end
 
 TracedEvent(event::Event) = TracedEvent(event, time_ns())
 
-Base.show(io::IO, te::TracedEvent) =
-    print(io, "TracedEvent(:$(event_name(typeof(te.event))))")
+Base.show(io::IO, te::TracedEvent) = print(
+    io, "TracedEvent(:$(event_name(typeof(te.event))))"
+)
 
 """
     RxInferTraceCallbacks()
@@ -68,8 +69,9 @@ struct RxInferTraceCallbacks
 end
 
 RxInferTraceCallbacks() = RxInferTraceCallbacks(TracedEvent[], nothing)
-RxInferTraceCallbacks(include::NTuple{N, Symbol}) where {N} =
-    RxInferTraceCallbacks(TracedEvent[], Set{Symbol}(include))
+RxInferTraceCallbacks(include::NTuple{N, Symbol}) where {N} = RxInferTraceCallbacks(
+    TracedEvent[], Set{Symbol}(include)
+)
 
 """
     is_trace_event_included(callbacks::RxInferTraceCallbacks, event_name::Symbol)
@@ -115,8 +117,9 @@ Returns the vector of [`TracedEvent`](@ref) recorded by the trace callbacks filt
 
 See also: [`RxInferTraceCallbacks`](@ref).
 """
-tracedevents(event::Symbol, callbacks::RxInferTraceCallbacks) =
-    filter(e -> event_name(typeof(e.event)) == event, callbacks.events)
+tracedevents(event::Symbol, callbacks::RxInferTraceCallbacks) = filter(
+    e -> event_name(typeof(e.event)) == event, callbacks.events
+)
 
 Base.isempty(callbacks::RxInferTraceCallbacks) = isempty(callbacks.events)
 
