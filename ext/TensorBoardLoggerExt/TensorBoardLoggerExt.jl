@@ -1,7 +1,6 @@
 
 module TensorBoardLoggerExt
     using RxInfer
-    using Dates
     using ReactiveMP: event_name, getdata
     using ExponentialFamily: UnivariateNormalDistributionsFamily, GammaDistributionsFamily
     using Distributions: shape, rate
@@ -251,7 +250,7 @@ module TensorBoardLoggerExt
 
     # Arguments
     - `trace::RxInferTraceCallbacks`: The trace callbacks object from inference results
-    - `output_file::Union{String, Nothing}`: Optional directory path to write TensorBoard event logs. If not provided, uses a timestamped directory in the current working directory.
+    - `output_file::Union{String, Nothing}`: Optional directory path to write TensorBoard event logs. If not provided, writes to `tensorboard_logs/` in the current working directory.
     - `log_distributions::Bool`: When `true`, log each univariate Normal and Gamma posterior as a per-iteration `HistogramSummary` so TensorBoard's **Distributions** tab renders a percentile-band view of the posterior across iterations. The same tag also appears in the **Histograms** tab as an offset ridgeline. Defaults to `false`.
     - `log_text_events::Bool`: When `true`, emit a per-event text breadcrumb (e.g. `before_iteration`, `after_marginal_computation`, and the `Events` step timeline) into the **Text** tab. The `EventCounts` summary is always written regardless of this flag. Scalar and histogram outputs are unaffected. Defaults to `false`.
     - `n_samples::Int`: Number of samples drawn from each posterior to build the per-iteration histogram when `log_distributions=true`. Defaults to 1024.
@@ -278,7 +277,7 @@ module TensorBoardLoggerExt
 
     trace = results.model.metadata[:trace]
 
-    # Create TensorBoard logs (uses timestamped directory)
+    # Create TensorBoard logs (writes to tensorboard_logs/ in the current directory)
     log_dir = convert_to_tensorboard(trace; log_distributions = true)
 
     # Then run: tensorboard --logdir=\$log_dir
@@ -291,8 +290,7 @@ module TensorBoardLoggerExt
                                             n_samples::Int = 1024)
 
         if isnothing(output_file)
-            timestamp = Dates.format(Dates.now(), "yyyy-mm-dd_HH-MM-SS")
-            output_file = joinpath(pwd(), "tensorboard_logs", timestamp)
+            output_file = joinpath(pwd(), "tensorboard_logs")
         end
 
         mkpath(output_file)
