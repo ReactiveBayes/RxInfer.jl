@@ -4,7 +4,7 @@ using RxInfer
 using ReactiveMP: event_name, getdata
 using ExponentialFamily:
     UnivariateNormalDistributionsFamily, GammaDistributionsFamily
-using Distributions: shape, rate
+using Distributions: UnivariateDistribution, shape, rate
 using Random: MersenneTwister
 using Statistics: mean, var
 using TensorBoardLogger
@@ -55,9 +55,8 @@ LogContext(logger; log_distributions::Bool, log_text_events::Bool, n_samples::In
 # reproducible across re-runs. The `::Any` fallback returns an empty vector
 # so non-univariate or unsupported marginals are silently skipped without
 # any branching at the call site.
-_posterior_samples(dist::UnivariateNormalDistributionsFamily, n::Int) = rand(MersenneTwister(1), dist, n)
-_posterior_samples(dist::GammaDistributionsFamily, n::Int)            = rand(MersenneTwister(1), dist, n)
-_posterior_samples(::Any, ::Int)                                      = Float64[]
+_posterior_samples(dist::UnivariateDistribution, n::Int) = rand(MersenneTwister(1), dist, n)
+_posterior_samples(::Any, ::Int)                         = Float64[]
 
 # Scalar-posterior logging, dispatched on the distribution family's natural
 # parameterisation. Mutates `ctx.posterior_step` so the per-variable step
@@ -91,17 +90,7 @@ _log_posterior_scalars!(::LogContext, ::Any, ::Symbol) = nothing
 # the actual sample extremes — that is what makes the Distributions plugin
 # narrow the percentile bands as the posterior sharpens.
 function _log_posterior_distribution!(
-    ctx::LogContext, dist::UnivariateNormalDistributionsFamily, name::Symbol
-)
-    samples = _posterior_samples(dist, ctx.n_samples)
-    isempty(samples) && return nothing
-    step = get(ctx.posterior_step, name, 0)
-    TensorBoardLogger.log_histogram(
-        ctx.logger, "posteriors/$(name)/distribution", samples; step = step
-    )
-end
-function _log_posterior_distribution!(
-    ctx::LogContext, dist::GammaDistributionsFamily, name::Symbol
+    ctx::LogContext, dist::UnivariateDistribution, name::Symbol
 )
     samples = _posterior_samples(dist, ctx.n_samples)
     isempty(samples) && return nothing
