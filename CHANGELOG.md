@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.1.0] - 2026-04-23
+
 ### Added
 - Added `TensorBoardLoggerExt` extension: when `TensorBoardLogger.jl` is loaded, `RxInfer.convert_to_tensorboard(trace)` exports an inference trace to TensorBoard event log files. Capabilities:
   - **Iteration timing** — wall-clock duration of each variational iteration logged as `iteration_time_ms`.
@@ -16,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Logs are written to `tensorboard_logs/` in the current working directory by default; a custom path can be supplied via `output_file`.
 
 
-## [5.0.0]
+## [5.0.0] - 2026-04-17
 
 - **Breaking:** Addons have been renamed to annotations to match the new ReactiveMP API. This affects the `infer` function and related types:
   - The `addons` keyword argument in `infer()`, `batch_inference()`, and `streaming_inference()` has been renamed to `annotations`. Update `infer(..., addons = AddonLogScale())` to `infer(..., annotations = LogScaleAnnotations())`.
@@ -164,8 +166,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v4.7.2...HEAD
-[4.7.3]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v4.7.2...HEAD
+[Unreleased]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.1.0...HEAD
+[5.1.0]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.1.0...v5.0.0
+[5.0.0]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.0.0...v4.7.3
+[4.7.3]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v4.7.3...v4.7.2
 [4.7.2]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v4.7.1...v4.7.2
 [4.7.1]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v4.7.0...v4.7.1
 [4.7.0]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v4.6.7...v4.7.0
