@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Added `TensorBoardLoggerExt` extension: when `TensorBoardLogger.jl` is loaded, `RxInfer.convert_to_tensorboard(trace)` exports an inference trace to TensorBoard event log files. Capabilities:
+  - **Iteration timing** — wall-clock duration of each variational iteration logged as `iteration_time_ms`.
+  - **Posterior scalars** — per-iteration mean/precision for `Normal` and shape/rate for `Gamma` marginals under `posteriors/<variable>/`.
+  - **Posterior distributions** — per-iteration `HistogramSummary` (ridgeline + percentile bands in TensorBoard) via `log_distributions = true` and configurable `n_samples`.
+  - **Event text breadcrumbs** — full per-event narrative (`Events`, `before_iteration`, `after_iteration`, etc.) gated behind `log_text_events = true` (off by default). `EventCounts` is always emitted as a compact run summary.
+  - Logs are written to `tensorboard_logs/` in the current working directory by default; a custom path can be supplied via `output_file`.
+
+
 ## [5.0.0]
 
 - **Breaking:** Addons have been renamed to annotations to match the new ReactiveMP API. This affects the `infer` function and related types:
