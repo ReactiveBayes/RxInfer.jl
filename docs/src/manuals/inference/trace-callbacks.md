@@ -176,4 +176,5 @@ RxInfer.convert_to_tensorboard
 RxInferTraceCallbacks
 TracedEvent
 RxInfer.tracedevents
+RxInfer.is_trace_event_included
 ```
