@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added 
+- The `trace = ...` keyword argument now accepts a tuple of symbols. In this case, 
+  only the events, whose names are present in the tuple will be traced.
+
 ## [5.1.0] - 2026-04-23
 
 ### Added
