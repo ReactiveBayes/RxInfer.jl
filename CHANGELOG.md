@@ -5,7 +5,10 @@ All notable changes to RxInfer.jl will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
 ## [Unreleased]
+
+## [5.2.0] - 2026-04-24
 
 ### Added 
 - The `trace = ...` keyword argument now accepts a tuple of symbols. In this case, 
@@ -170,7 +173,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.1.0...HEAD
+[Unreleased]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.2.0...HEAD
+[5.2.0]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.1.0...v5.2.0
 [5.1.0]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.1.0...v5.0.0
 [5.0.0]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.0.0...v4.7.3
 [4.7.3]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v4.7.3...v4.7.2
