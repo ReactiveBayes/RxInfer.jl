@@ -65,13 +65,7 @@ end
 _normalize_posteriors(p::Bool) = p
 _normalize_posteriors(v::AbstractVector) = Set{Symbol}(Symbol(x) for x in v)
 
-LogContext(
-    logger;
-    log_posteriors::Union{Bool, AbstractVector{<:Union{Symbol, AbstractString}}} = true,
-    log_distributions::Bool,
-    log_text_events::Bool,
-    n_samples::Int,
-) = LogContext(
+LogContext(logger; log_posteriors::Union{Bool, AbstractVector{<:Union{Symbol, AbstractString}}} = true, log_distributions::Bool, log_text_events::Bool, n_samples::Int) = LogContext(
     logger,
     Dict{Int, Float64}(),
     Dict{Any, Tuple{Int, UInt64}}(),
@@ -95,10 +89,11 @@ LogContext(
 # the runtime type of `log_posteriors`: `Bool` is the global on/off, and
 # `Set{Symbol}` restricts logging to an explicit allow-list of variable
 # names. Empty set behaves like `false` (logs nothing).
-@inline _should_log_posterior(ctx::LogContext, name::Symbol) =
-    _check_posterior(ctx.log_posteriors, name)
-@inline _check_posterior(flag::Bool, ::Symbol)             = flag
-@inline _check_posterior(allowed::Set{Symbol}, n::Symbol)  = n in allowed
+@inline _should_log_posterior(ctx::LogContext, name::Symbol) = _check_posterior(
+    ctx.log_posteriors, name
+)
+@inline _check_posterior(flag::Bool, ::Symbol) = flag
+@inline _check_posterior(allowed::Set{Symbol}, n::Symbol) = n in allowed
 
 # ─── Distribution-family dispatched helpers ──────────────────────────────
 # Deterministic samples via a seeded MersenneTwister keep the HistogramSummary
@@ -571,7 +566,9 @@ end
 function RxInfer.convert_to_tensorboard(
     trace::RxInferTraceCallbacks;
     output_file::Union{String, Nothing} = nothing,
-    log_posteriors::Union{Bool, AbstractVector{<:Union{Symbol, AbstractString}}} = true,
+    log_posteriors::Union{
+        Bool, AbstractVector{<:Union{Symbol, AbstractString}}
+    } = true,
     log_distributions::Bool = false,
     log_text_events::Bool = false,
     n_samples::Int = 1024,

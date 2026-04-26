@@ -591,7 +591,7 @@ end
         # Stage 2 — append Binomial predictive scalars in the same run dir.
         n_trials = 20
         logger   = TBLogger(run_dir, tb_append)
-        ctx      = ext.LogContext(logger; log_distributions = false, log_text_events   = false, n_samples         = 0)
+        ctx      = ext.LogContext(logger; log_distributions = false, log_text_events = false, n_samples = 0)
         for θ_post in results.posteriors[:θ]
             ext._log_posterior_scalars!(
                 ctx, Binomial(n_trials, mean(θ_post)), :y_pred
@@ -1180,16 +1180,16 @@ end
 
         # Every posterior tag is suppressed, including the histogram path
         # that `log_distributions=true` would otherwise enable.
-        @test !("posteriors/μ/mean"         in all_tags)
-        @test !("posteriors/μ/precision"    in all_tags)
+        @test !("posteriors/μ/mean" in all_tags)
+        @test !("posteriors/μ/precision" in all_tags)
         @test !("posteriors/μ/distribution" in all_tags)
-        @test !("posteriors/τ/shape"        in all_tags)
-        @test !("posteriors/τ/rate"         in all_tags)
+        @test !("posteriors/τ/shape" in all_tags)
+        @test !("posteriors/τ/rate" in all_tags)
         @test !("posteriors/τ/distribution" in all_tags)
 
         # Non-posterior outputs are unaffected.
         @test "iteration_time_ms" in all_tags
-        @test "EventCounts"       in all_tags
+        @test "EventCounts" in all_tags
     end
 end
 
@@ -1237,10 +1237,10 @@ end
         )
         all_tags = read_tags(run_dir)
 
-        @test "posteriors/μ/mean"      in all_tags
+        @test "posteriors/μ/mean" in all_tags
         @test "posteriors/μ/precision" in all_tags
-        @test "posteriors/τ/shape"     in all_tags
-        @test "posteriors/τ/rate"      in all_tags
+        @test "posteriors/τ/shape" in all_tags
+        @test "posteriors/τ/rate" in all_tags
 
         @test length(steps_for_tag(run_dir, "posteriors/μ/mean")) ==
             n_iterations
@@ -1298,11 +1298,11 @@ end
         )
         all_tags = read_tags(run_dir)
 
-        @test "posteriors/μ/mean"         in all_tags
-        @test "posteriors/μ/precision"    in all_tags
+        @test "posteriors/μ/mean" in all_tags
+        @test "posteriors/μ/precision" in all_tags
         @test "posteriors/μ/distribution" in all_tags
-        @test !("posteriors/τ/shape"        in all_tags)
-        @test !("posteriors/τ/rate"         in all_tags)
+        @test !("posteriors/τ/shape" in all_tags)
+        @test !("posteriors/τ/rate" in all_tags)
         @test !("posteriors/τ/distribution" in all_tags)
 
         @test length(steps_for_tag(run_dir, "posteriors/μ/mean")) ==
@@ -1319,10 +1319,10 @@ end
         )
         all_tags = read_tags(run_dir)
 
-        @test "posteriors/μ/mean"      in all_tags
+        @test "posteriors/μ/mean" in all_tags
         @test "posteriors/μ/precision" in all_tags
         @test !("posteriors/τ/shape" in all_tags)
-        @test !("posteriors/τ/rate"  in all_tags)
+        @test !("posteriors/τ/rate" in all_tags)
     end
 
     # Empty allow-list is the moral equivalent of `false`: nothing logged.
@@ -1334,7 +1334,7 @@ end
             verbose        = false,
         )
         all_tags = read_tags(run_dir)
-        @test !("posteriors/μ/mean"  in all_tags)
+        @test !("posteriors/μ/mean" in all_tags)
         @test !("posteriors/τ/shape" in all_tags)
         @test "iteration_time_ms" in all_tags
     end
