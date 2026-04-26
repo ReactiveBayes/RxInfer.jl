@@ -4,7 +4,7 @@ using RxInfer
 using ReactiveMP: event_name, getdata
 using ExponentialFamily:
     UnivariateNormalDistributionsFamily, GammaDistributionsFamily
-using Distributions: UnivariateDistribution, Beta, Bernoulli, Binomial, InverseGamma, Poisson, Geometric, NegativeBinomial, Exponential, VonMises, Weibull, shape, rate, scale, params, succprob, ntrials
+using Distributions: UnivariateDistribution, Beta, Bernoulli, Binomial, InverseGamma, Poisson, Geometric, NegativeBinomial, Exponential, VonMises, Weibull, LogNormal, shape, rate, scale, params, succprob, ntrials
 using Dates: now, format
 using Random: MersenneTwister
 using Statistics: mean, var
@@ -186,6 +186,18 @@ function _log_posterior_scalars!(
     )
     TensorBoardLogger.log_value(
         ctx.logger, "posteriors/$(name)/scale", scale(dist); step = step
+    )
+end
+function _log_posterior_scalars!(
+    ctx::LogContext, dist::LogNormal, name::Symbol
+)
+    step = (ctx.posterior_step[name] = get(ctx.posterior_step, name, 0) + 1)
+    meanlog, stdlog = params(dist)
+    TensorBoardLogger.log_value(
+        ctx.logger, "posteriors/$(name)/meanlog", meanlog; step = step
+    )
+    TensorBoardLogger.log_value(
+        ctx.logger, "posteriors/$(name)/stdlog", stdlog; step = step
     )
 end
 # Generic moment fallback: any UnivariateDistribution we haven't special-cased

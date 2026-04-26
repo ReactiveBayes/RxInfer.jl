@@ -743,6 +743,46 @@ end
     end
 end
 
+@testitem "LogNormal posterior emits meanlog/stdlog scalar tags" begin
+    using RxInfer, TensorBoardLogger
+    using Distributions: LogNormal
+    include(joinpath(@__DIR__, "helpers.jl"))
+
+    # ReactiveMP has no native LogNormal message rules and no LogNormal
+    # graph node, so a LogNormal posterior would only ever arrive via a
+    # custom factor or projection. Drive the dispatch helper directly.
+    ext = Base.get_extension(RxInfer, :TensorBoardLoggerExt)
+    @test ext !== nothing
+
+    with_safe_tempdir() do log_dir
+        logger = TBLogger(log_dir, tb_append)
+        ctx = ext.LogContext(
+            logger;
+            log_distributions = false,
+            log_text_events   = false,
+            n_samples         = 0,
+        )
+
+        ext._log_posterior_scalars!(ctx, LogNormal(0.0, 1.0), :x)
+        ext._log_posterior_scalars!(ctx, LogNormal(0.5, 0.7), :x)
+
+        close(logger)
+        empty!(logger.all_files)
+        GC.gc()
+
+        all_tags = read_tags(log_dir)
+        @test "posteriors/x/meanlog" in all_tags
+        @test "posteriors/x/stdlog"  in all_tags
+
+        # Specific LogNormal dispatch must beat the generic mean/var fallback.
+        @test !("posteriors/x/mean" in all_tags)
+        @test !("posteriors/x/var"  in all_tags)
+
+        @test length(steps_for_tag(log_dir, "posteriors/x/meanlog")) == 2
+        @test length(steps_for_tag(log_dir, "posteriors/x/stdlog"))  == 2
+    end
+end
+
 @testitem "Generic UnivariateDistribution fallback emits mean/var" begin
     using RxInfer, TensorBoardLogger
     using Distributions: Uniform
