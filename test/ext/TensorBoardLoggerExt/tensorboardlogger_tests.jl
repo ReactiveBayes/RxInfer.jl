@@ -500,12 +500,51 @@ end
     end
 end
 
-@testitem "Generic UnivariateDistribution fallback emits mean/var" begin
+@testitem "Exponential posterior emits rate scalar tag" begin
     using RxInfer, TensorBoardLogger
     using Distributions: Exponential
     include(joinpath(@__DIR__, "helpers.jl"))
 
-    # No special-case dispatch exists for `Exponential`, so it should fall
+    # Exponential is conjugate-on-rate to Gamma — the posterior over a rate
+    # parameter is Gamma, not Exponential. An Exponential marginal therefore
+    # arrives only via projection or as a predictive child of a Gamma rate.
+    # Drive the dispatch helper directly via the loaded extension module.
+    ext = Base.get_extension(RxInfer, :TensorBoardLoggerExt)
+    @test ext !== nothing
+
+    with_safe_tempdir() do log_dir
+        logger = TBLogger(log_dir, tb_append)
+        ctx = ext.LogContext(
+            logger;
+            log_distributions = false,
+            log_text_events   = false,
+            n_samples         = 0,
+        )
+
+        ext._log_posterior_scalars!(ctx, Exponential(2.0), :x)
+        ext._log_posterior_scalars!(ctx, Exponential(0.5), :x)
+
+        close(logger)
+        empty!(logger.all_files)
+        GC.gc()
+
+        all_tags = read_tags(log_dir)
+        @test "posteriors/x/rate" in all_tags
+
+        # Specific Exponential dispatch must beat the generic mean/var fallback.
+        @test !("posteriors/x/mean" in all_tags)
+        @test !("posteriors/x/var"  in all_tags)
+
+        @test length(steps_for_tag(log_dir, "posteriors/x/rate")) == 2
+    end
+end
+
+@testitem "Generic UnivariateDistribution fallback emits mean/var" begin
+    using RxInfer, TensorBoardLogger
+    using Distributions: Uniform
+    include(joinpath(@__DIR__, "helpers.jl"))
+
+    # No special-case dispatch exists for `Uniform`, so it should fall
     # through to the generic UnivariateDistribution method emitting `mean`
     # and `var`. Reach into the loaded extension module to call the helper
     # directly — engineering a model whose ReactiveMP posterior arrives as
@@ -522,9 +561,9 @@ end
             n_samples         = 0,
         )
 
-        # Exponential(λ=2.0) — no specific dispatch; falls through to
-        # the generic UnivariateDistribution method.
-        ext._log_posterior_scalars!(ctx, Exponential(2.0), :x)
+        # Uniform(0, 1) — no specific dispatch; falls through to the
+        # generic UnivariateDistribution method.
+        ext._log_posterior_scalars!(ctx, Uniform(0.0, 1.0), :x)
 
         close(logger)
         empty!(logger.all_files)
