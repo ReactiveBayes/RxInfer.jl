@@ -376,6 +376,49 @@ end
     end
 end
 
+@testitem "Poisson posterior emits rate scalar tag" begin
+    using RxInfer, TensorBoardLogger
+    using Distributions: Poisson
+    include(joinpath(@__DIR__, "helpers.jl"))
+
+    # Poisson posteriors arrive in RxInfer as predictive marginals on
+    # unobserved Poisson children (see ReactiveMP `@rule Poisson(:out, ...)`
+    # under a Gamma rate). Engineering a full predictive model just to
+    # exercise the scalar dispatch would be model-specific churn, so we call
+    # the dispatch helper directly via the loaded extension module — same
+    # pattern as the generic-fallback test below.
+    ext = Base.get_extension(RxInfer, :TensorBoardLoggerExt)
+    @test ext !== nothing
+
+    with_safe_tempdir() do log_dir
+        logger = TBLogger(log_dir, tb_append)
+        ctx = ext.LogContext(
+            logger;
+            log_distributions = false,
+            log_text_events   = false,
+            n_samples         = 0,
+        )
+
+        # Two updates so we can lock in the per-variable step counter
+        # behaviour the existing scalars rely on.
+        ext._log_posterior_scalars!(ctx, Poisson(3.0), :n)
+        ext._log_posterior_scalars!(ctx, Poisson(4.5), :n)
+
+        close(logger)
+        empty!(logger.all_files)
+        GC.gc()
+
+        all_tags = read_tags(log_dir)
+        @test "posteriors/n/rate" in all_tags
+
+        # Specific Poisson dispatch must beat the generic mean/var fallback.
+        @test !("posteriors/n/mean" in all_tags)
+        @test !("posteriors/n/var"  in all_tags)
+
+        @test length(steps_for_tag(log_dir, "posteriors/n/rate")) == 2
+    end
+end
+
 @testitem "Generic UnivariateDistribution fallback emits mean/var" begin
     using RxInfer, TensorBoardLogger
     using Distributions: Exponential
