@@ -866,6 +866,48 @@ end
     end
 end
 
+@testitem "Pareto posterior emits shape/scale scalar tags" begin
+    using RxInfer, TensorBoardLogger
+    using Distributions: Pareto
+    include(joinpath(@__DIR__, "helpers.jl"))
+
+    # Gamma is conjugate to Pareto on the *shape* parameter — the
+    # posterior over the Pareto shape is Gamma, not Pareto. ReactiveMP
+    # has no native Pareto rules or graph node, so a Pareto marginal
+    # arrives only via custom factors or projection. Drive the dispatch
+    # helper directly.
+    ext = Base.get_extension(RxInfer, :TensorBoardLoggerExt)
+    @test ext !== nothing
+
+    with_safe_tempdir() do log_dir
+        logger = TBLogger(log_dir, tb_append)
+        ctx = ext.LogContext(
+            logger;
+            log_distributions = false,
+            log_text_events   = false,
+            n_samples         = 0,
+        )
+
+        ext._log_posterior_scalars!(ctx, Pareto(2.5, 1.0), :x)
+        ext._log_posterior_scalars!(ctx, Pareto(3.0, 1.5), :x)
+
+        close(logger)
+        empty!(logger.all_files)
+        GC.gc()
+
+        all_tags = read_tags(log_dir)
+        @test "posteriors/x/shape" in all_tags
+        @test "posteriors/x/scale" in all_tags
+
+        # Specific Pareto dispatch must beat the generic mean/var fallback.
+        @test !("posteriors/x/mean" in all_tags)
+        @test !("posteriors/x/var"  in all_tags)
+
+        @test length(steps_for_tag(log_dir, "posteriors/x/shape")) == 2
+        @test length(steps_for_tag(log_dir, "posteriors/x/scale")) == 2
+    end
+end
+
 @testitem "Generic UnivariateDistribution fallback emits mean/var" begin
     using RxInfer, TensorBoardLogger
     using Distributions: Uniform
