@@ -4,7 +4,32 @@ using RxInfer
 using ReactiveMP: event_name, getdata
 using ExponentialFamily:
     UnivariateNormalDistributionsFamily, GammaDistributionsFamily
-using Distributions: UnivariateDistribution, Beta, Bernoulli, Binomial, InverseGamma, Poisson, Geometric, NegativeBinomial, Exponential, VonMises, Weibull, LogNormal, Erlang, Laplace, Pareto, Rayleigh, Chisq, shape, rate, scale, params, succprob, ntrials, location, dof
+using Distributions:
+    UnivariateDistribution,
+    Beta,
+    Bernoulli,
+    Binomial,
+    InverseGamma,
+    Poisson,
+    Geometric,
+    NegativeBinomial,
+    Exponential,
+    VonMises,
+    Weibull,
+    LogNormal,
+    Erlang,
+    Laplace,
+    Pareto,
+    Rayleigh,
+    Chisq,
+    shape,
+    rate,
+    scale,
+    params,
+    succprob,
+    ntrials,
+    location,
+    dof
 using Dates: now, format
 using Random: MersenneTwister
 using Statistics: mean, var
@@ -84,9 +109,7 @@ function _log_posterior_scalars!(
         ctx.logger, "posteriors/$(name)/rate", rate(dist); step = step
     )
 end
-function _log_posterior_scalars!(
-    ctx::LogContext, dist::Beta, name::Symbol
-)
+function _log_posterior_scalars!(ctx::LogContext, dist::Beta, name::Symbol)
     step = (ctx.posterior_step[name] = get(ctx.posterior_step, name, 0) + 1)
     α, β = params(dist)
     TensorBoardLogger.log_value(
@@ -99,17 +122,13 @@ function _log_posterior_scalars!(
         ctx.logger, "posteriors/$(name)/mean", α / (α + β); step = step
     )
 end
-function _log_posterior_scalars!(
-    ctx::LogContext, dist::Bernoulli, name::Symbol
-)
+function _log_posterior_scalars!(ctx::LogContext, dist::Bernoulli, name::Symbol)
     step = (ctx.posterior_step[name] = get(ctx.posterior_step, name, 0) + 1)
     TensorBoardLogger.log_value(
         ctx.logger, "posteriors/$(name)/succprob", succprob(dist); step = step
     )
 end
-function _log_posterior_scalars!(
-    ctx::LogContext, dist::Binomial, name::Symbol
-)
+function _log_posterior_scalars!(ctx::LogContext, dist::Binomial, name::Symbol)
     step = (ctx.posterior_step[name] = get(ctx.posterior_step, name, 0) + 1)
     TensorBoardLogger.log_value(
         ctx.logger, "posteriors/$(name)/ntrials", ntrials(dist); step = step
@@ -129,17 +148,13 @@ function _log_posterior_scalars!(
         ctx.logger, "posteriors/$(name)/scale", scale(dist); step = step
     )
 end
-function _log_posterior_scalars!(
-    ctx::LogContext, dist::Poisson, name::Symbol
-)
+function _log_posterior_scalars!(ctx::LogContext, dist::Poisson, name::Symbol)
     step = (ctx.posterior_step[name] = get(ctx.posterior_step, name, 0) + 1)
     TensorBoardLogger.log_value(
         ctx.logger, "posteriors/$(name)/rate", rate(dist); step = step
     )
 end
-function _log_posterior_scalars!(
-    ctx::LogContext, dist::Geometric, name::Symbol
-)
+function _log_posterior_scalars!(ctx::LogContext, dist::Geometric, name::Symbol)
     step = (ctx.posterior_step[name] = get(ctx.posterior_step, name, 0) + 1)
     TensorBoardLogger.log_value(
         ctx.logger, "posteriors/$(name)/succprob", succprob(dist); step = step
@@ -165,9 +180,7 @@ function _log_posterior_scalars!(
         ctx.logger, "posteriors/$(name)/rate", rate(dist); step = step
     )
 end
-function _log_posterior_scalars!(
-    ctx::LogContext, dist::VonMises, name::Symbol
-)
+function _log_posterior_scalars!(ctx::LogContext, dist::VonMises, name::Symbol)
     step = (ctx.posterior_step[name] = get(ctx.posterior_step, name, 0) + 1)
     μ, κ = params(dist)
     TensorBoardLogger.log_value(
@@ -177,9 +190,7 @@ function _log_posterior_scalars!(
         ctx.logger, "posteriors/$(name)/concentration", κ; step = step
     )
 end
-function _log_posterior_scalars!(
-    ctx::LogContext, dist::Weibull, name::Symbol
-)
+function _log_posterior_scalars!(ctx::LogContext, dist::Weibull, name::Symbol)
     step = (ctx.posterior_step[name] = get(ctx.posterior_step, name, 0) + 1)
     TensorBoardLogger.log_value(
         ctx.logger, "posteriors/$(name)/shape", shape(dist); step = step
@@ -188,9 +199,7 @@ function _log_posterior_scalars!(
         ctx.logger, "posteriors/$(name)/scale", scale(dist); step = step
     )
 end
-function _log_posterior_scalars!(
-    ctx::LogContext, dist::LogNormal, name::Symbol
-)
+function _log_posterior_scalars!(ctx::LogContext, dist::LogNormal, name::Symbol)
     step = (ctx.posterior_step[name] = get(ctx.posterior_step, name, 0) + 1)
     meanlog, stdlog = params(dist)
     TensorBoardLogger.log_value(
@@ -200,9 +209,7 @@ function _log_posterior_scalars!(
         ctx.logger, "posteriors/$(name)/stdlog", stdlog; step = step
     )
 end
-function _log_posterior_scalars!(
-    ctx::LogContext, dist::Erlang, name::Symbol
-)
+function _log_posterior_scalars!(ctx::LogContext, dist::Erlang, name::Symbol)
     step = (ctx.posterior_step[name] = get(ctx.posterior_step, name, 0) + 1)
     TensorBoardLogger.log_value(
         ctx.logger, "posteriors/$(name)/shape", shape(dist); step = step
@@ -211,9 +218,7 @@ function _log_posterior_scalars!(
         ctx.logger, "posteriors/$(name)/scale", scale(dist); step = step
     )
 end
-function _log_posterior_scalars!(
-    ctx::LogContext, dist::Laplace, name::Symbol
-)
+function _log_posterior_scalars!(ctx::LogContext, dist::Laplace, name::Symbol)
     step = (ctx.posterior_step[name] = get(ctx.posterior_step, name, 0) + 1)
     TensorBoardLogger.log_value(
         ctx.logger, "posteriors/$(name)/location", location(dist); step = step
@@ -222,9 +227,7 @@ function _log_posterior_scalars!(
         ctx.logger, "posteriors/$(name)/scale", scale(dist); step = step
     )
 end
-function _log_posterior_scalars!(
-    ctx::LogContext, dist::Pareto, name::Symbol
-)
+function _log_posterior_scalars!(ctx::LogContext, dist::Pareto, name::Symbol)
     step = (ctx.posterior_step[name] = get(ctx.posterior_step, name, 0) + 1)
     TensorBoardLogger.log_value(
         ctx.logger, "posteriors/$(name)/shape", shape(dist); step = step
@@ -233,17 +236,13 @@ function _log_posterior_scalars!(
         ctx.logger, "posteriors/$(name)/scale", scale(dist); step = step
     )
 end
-function _log_posterior_scalars!(
-    ctx::LogContext, dist::Rayleigh, name::Symbol
-)
+function _log_posterior_scalars!(ctx::LogContext, dist::Rayleigh, name::Symbol)
     step = (ctx.posterior_step[name] = get(ctx.posterior_step, name, 0) + 1)
     TensorBoardLogger.log_value(
         ctx.logger, "posteriors/$(name)/scale", scale(dist); step = step
     )
 end
-function _log_posterior_scalars!(
-    ctx::LogContext, dist::Chisq, name::Symbol
-)
+function _log_posterior_scalars!(ctx::LogContext, dist::Chisq, name::Symbol)
     step = (ctx.posterior_step[name] = get(ctx.posterior_step, name, 0) + 1)
     TensorBoardLogger.log_value(
         ctx.logger, "posteriors/$(name)/dof", dof(dist); step = step

@@ -275,7 +275,7 @@ end
     # Normal–InverseGamma model: σ² is variance with a GammaInverse prior, so
     # its posterior arrives as `InverseGamma` (alias of `Distributions.InverseGamma`).
     @model function iid_invgamma(y)
-        μ  ~ Normal(mean = 0.0, variance = 100.0)
+        μ ~ Normal(mean = 0.0, variance = 100.0)
         σ² ~ GammaInverse(α = 2.0, θ = 1.0)
         y .~ Normal(mean = μ, variance = σ²)
     end
@@ -285,7 +285,7 @@ end
     end
 
     initialization = @initialization begin
-        q(μ)  = vague(NormalMeanVariance)
+        q(μ) = vague(NormalMeanVariance)
         q(σ²) = vague(GammaInverse)
     end
 
@@ -329,7 +329,7 @@ end
     include(joinpath(@__DIR__, "helpers.jl"))
 
     @model function iid_invgamma(y)
-        μ  ~ Normal(mean = 0.0, variance = 100.0)
+        μ ~ Normal(mean = 0.0, variance = 100.0)
         σ² ~ GammaInverse(α = 2.0, θ = 1.0)
         y .~ Normal(mean = μ, variance = σ²)
     end
@@ -339,7 +339,7 @@ end
     end
 
     initialization = @initialization begin
-        q(μ)  = vague(NormalMeanVariance)
+        q(μ) = vague(NormalMeanVariance)
         q(σ²) = vague(GammaInverse)
     end
 
@@ -413,7 +413,7 @@ end
 
         # Specific Poisson dispatch must beat the generic mean/var fallback.
         @test !("posteriors/n/mean" in all_tags)
-        @test !("posteriors/n/var"  in all_tags)
+        @test !("posteriors/n/var" in all_tags)
 
         @test length(steps_for_tag(log_dir, "posteriors/n/rate")) == 2
     end
@@ -452,7 +452,7 @@ end
 
         # Specific Geometric dispatch must beat the generic mean/var fallback.
         @test !("posteriors/k/mean" in all_tags)
-        @test !("posteriors/k/var"  in all_tags)
+        @test !("posteriors/k/var" in all_tags)
 
         @test length(steps_for_tag(log_dir, "posteriors/k/succprob")) == 2
     end
@@ -488,14 +488,14 @@ end
         GC.gc()
 
         all_tags = read_tags(log_dir)
-        @test "posteriors/k/r"        in all_tags
+        @test "posteriors/k/r" in all_tags
         @test "posteriors/k/succprob" in all_tags
 
         # Specific NegativeBinomial dispatch must beat the generic fallback.
         @test !("posteriors/k/mean" in all_tags)
-        @test !("posteriors/k/var"  in all_tags)
+        @test !("posteriors/k/var" in all_tags)
 
-        @test length(steps_for_tag(log_dir, "posteriors/k/r"))        == 2
+        @test length(steps_for_tag(log_dir, "posteriors/k/r")) == 2
         @test length(steps_for_tag(log_dir, "posteriors/k/succprob")) == 2
     end
 end
@@ -529,14 +529,14 @@ end
         GC.gc()
 
         all_tags = read_tags(log_dir)
-        @test "posteriors/k/ntrials"  in all_tags
+        @test "posteriors/k/ntrials" in all_tags
         @test "posteriors/k/succprob" in all_tags
 
         # Specific Binomial dispatch must beat the generic mean/var fallback.
         @test !("posteriors/k/mean" in all_tags)
-        @test !("posteriors/k/var"  in all_tags)
+        @test !("posteriors/k/var" in all_tags)
 
-        @test length(steps_for_tag(log_dir, "posteriors/k/ntrials"))  == 2
+        @test length(steps_for_tag(log_dir, "posteriors/k/ntrials")) == 2
         @test length(steps_for_tag(log_dir, "posteriors/k/succprob")) == 2
     end
 end
@@ -591,12 +591,7 @@ end
         # Stage 2 — append Binomial predictive scalars in the same run dir.
         n_trials = 20
         logger   = TBLogger(run_dir, tb_append)
-        ctx      = ext.LogContext(
-            logger;
-            log_distributions = false,
-            log_text_events   = false,
-            n_samples         = 0,
-        )
+        ctx      = ext.LogContext(logger; log_distributions = false, log_text_events   = false, n_samples         = 0)
         for θ_post in results.posteriors[:θ]
             ext._log_posterior_scalars!(
                 ctx, Binomial(n_trials, mean(θ_post)), :y_pred
@@ -609,11 +604,11 @@ end
         all_tags = read_tags(run_dir)
 
         # Beta posterior tags from stage 1.
-        @test "posteriors/θ/alpha"   in all_tags
-        @test "posteriors/θ/beta"    in all_tags
+        @test "posteriors/θ/alpha" in all_tags
+        @test "posteriors/θ/beta" in all_tags
 
         # Binomial predictive tags from stage 2.
-        @test "posteriors/y_pred/ntrials"  in all_tags
+        @test "posteriors/y_pred/ntrials" in all_tags
         @test "posteriors/y_pred/succprob" in all_tags
 
         @test length(steps_for_tag(run_dir, "posteriors/y_pred/ntrials")) ==
@@ -654,7 +649,7 @@ end
 
         # Specific Exponential dispatch must beat the generic mean/var fallback.
         @test !("posteriors/x/mean" in all_tags)
-        @test !("posteriors/x/var"  in all_tags)
+        @test !("posteriors/x/var" in all_tags)
 
         @test length(steps_for_tag(log_dir, "posteriors/x/rate")) == 2
     end
@@ -690,14 +685,14 @@ end
         GC.gc()
 
         all_tags = read_tags(log_dir)
-        @test "posteriors/θ/location"      in all_tags
+        @test "posteriors/θ/location" in all_tags
         @test "posteriors/θ/concentration" in all_tags
 
         # Specific VonMises dispatch must beat the generic mean/var fallback.
         @test !("posteriors/θ/mean" in all_tags)
-        @test !("posteriors/θ/var"  in all_tags)
+        @test !("posteriors/θ/var" in all_tags)
 
-        @test length(steps_for_tag(log_dir, "posteriors/θ/location"))      == 2
+        @test length(steps_for_tag(log_dir, "posteriors/θ/location")) == 2
         @test length(steps_for_tag(log_dir, "posteriors/θ/concentration")) == 2
     end
 end
@@ -736,7 +731,7 @@ end
 
         # Specific Weibull dispatch must beat the generic mean/var fallback.
         @test !("posteriors/t/mean" in all_tags)
-        @test !("posteriors/t/var"  in all_tags)
+        @test !("posteriors/t/var" in all_tags)
 
         @test length(steps_for_tag(log_dir, "posteriors/t/shape")) == 2
         @test length(steps_for_tag(log_dir, "posteriors/t/scale")) == 2
@@ -772,14 +767,14 @@ end
 
         all_tags = read_tags(log_dir)
         @test "posteriors/x/meanlog" in all_tags
-        @test "posteriors/x/stdlog"  in all_tags
+        @test "posteriors/x/stdlog" in all_tags
 
         # Specific LogNormal dispatch must beat the generic mean/var fallback.
         @test !("posteriors/x/mean" in all_tags)
-        @test !("posteriors/x/var"  in all_tags)
+        @test !("posteriors/x/var" in all_tags)
 
         @test length(steps_for_tag(log_dir, "posteriors/x/meanlog")) == 2
-        @test length(steps_for_tag(log_dir, "posteriors/x/stdlog"))  == 2
+        @test length(steps_for_tag(log_dir, "posteriors/x/stdlog")) == 2
     end
 end
 
@@ -819,7 +814,7 @@ end
 
         # Specific Erlang dispatch must beat the generic mean/var fallback.
         @test !("posteriors/t/mean" in all_tags)
-        @test !("posteriors/t/var"  in all_tags)
+        @test !("posteriors/t/var" in all_tags)
 
         @test length(steps_for_tag(log_dir, "posteriors/t/shape")) == 2
         @test length(steps_for_tag(log_dir, "posteriors/t/scale")) == 2
@@ -855,14 +850,14 @@ end
 
         all_tags = read_tags(log_dir)
         @test "posteriors/x/location" in all_tags
-        @test "posteriors/x/scale"    in all_tags
+        @test "posteriors/x/scale" in all_tags
 
         # Specific Laplace dispatch must beat the generic mean/var fallback.
         @test !("posteriors/x/mean" in all_tags)
-        @test !("posteriors/x/var"  in all_tags)
+        @test !("posteriors/x/var" in all_tags)
 
         @test length(steps_for_tag(log_dir, "posteriors/x/location")) == 2
-        @test length(steps_for_tag(log_dir, "posteriors/x/scale"))    == 2
+        @test length(steps_for_tag(log_dir, "posteriors/x/scale")) == 2
     end
 end
 
@@ -901,7 +896,7 @@ end
 
         # Specific Pareto dispatch must beat the generic mean/var fallback.
         @test !("posteriors/x/mean" in all_tags)
-        @test !("posteriors/x/var"  in all_tags)
+        @test !("posteriors/x/var" in all_tags)
 
         @test length(steps_for_tag(log_dir, "posteriors/x/shape")) == 2
         @test length(steps_for_tag(log_dir, "posteriors/x/scale")) == 2
@@ -942,7 +937,7 @@ end
 
         # Specific Rayleigh dispatch must beat the generic mean/var fallback.
         @test !("posteriors/r/mean" in all_tags)
-        @test !("posteriors/r/var"  in all_tags)
+        @test !("posteriors/r/var" in all_tags)
 
         @test length(steps_for_tag(log_dir, "posteriors/r/scale")) == 2
     end
@@ -981,7 +976,7 @@ end
 
         # Specific Chisq dispatch must beat the generic mean/var fallback.
         @test !("posteriors/x/mean" in all_tags)
-        @test !("posteriors/x/var"  in all_tags)
+        @test !("posteriors/x/var" in all_tags)
 
         @test length(steps_for_tag(log_dir, "posteriors/x/dof")) == 2
     end
@@ -1019,7 +1014,7 @@ end
 
         all_tags = read_tags(log_dir)
         @test "posteriors/x/mean" in all_tags
-        @test "posteriors/x/var"  in all_tags
+        @test "posteriors/x/var" in all_tags
     end
 end
 

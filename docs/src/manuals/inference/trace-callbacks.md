@@ -161,10 +161,37 @@ log_dir = RxInfer.convert_to_tensorboard(trace; log_distributions = true)
 | Output | TensorBoard tab | Condition |
 |--------|----------------|-----------|
 | Per-iteration wall-clock duration (`iteration_time_ms`) | Scalars | always |
-| `mean` / `precision` for each Normal posterior | Scalars | always |
-| `shape` / `rate` for each Gamma posterior | Scalars | always |
-| Per-iteration histogram of posterior samples | Distributions / Histograms | `log_distributions = true` |
+| Parameterisation-aware scalar tags for each posterior (see table below) | Scalars | always |
+| Per-iteration histogram of posterior samples (`posteriors/<var>/distribution`) | Distributions / Histograms | `log_distributions = true` |
 | Event breadcrumbs and `EventCounts` table | Text | `log_text_events = true` (counts always written) |
+
+#### Posterior scalar tags by family
+
+Each posterior is logged under `posteriors/<variable>/<tag>` with one step per inference iteration. Specific dispatch is selected by the marginal's distribution type — the most-specific method wins, with the generic `mean`/`var` fallback catching anything not listed.
+
+| Distribution family | Emitted tags |
+|---|---|
+| `Normal` (any of the `UnivariateNormalDistributionsFamily` aliases) | `mean`, `precision` |
+| `Gamma` (any of the `GammaDistributionsFamily` aliases) | `shape`, `rate` |
+| `Beta` | `alpha`, `beta`, `mean` |
+| `Bernoulli` | `succprob` |
+| `Binomial` | `ntrials`, `succprob` |
+| `InverseGamma` (a.k.a. `GammaInverse`) | `shape`, `scale` |
+| `Poisson` | `rate` |
+| `Geometric` | `succprob` |
+| `NegativeBinomial` | `r`, `succprob` |
+| `Exponential` | `rate` |
+| `VonMises` | `location`, `concentration` |
+| `Weibull` | `shape`, `scale` |
+| `LogNormal` | `meanlog`, `stdlog` |
+| `Erlang` | `shape`, `scale` |
+| `Laplace` | `location`, `scale` |
+| `Pareto` | `shape`, `scale` |
+| `Rayleigh` | `scale` |
+| `Chisq` | `dof` |
+| any other `UnivariateDistribution` (fallback) | `mean`, `var` |
+
+Marginals that are not univariate (e.g. multivariate Normal, matrix-variate posteriors) are silently skipped on the scalar path and produce no `posteriors/...` scalar tags. The histogram path is also gated on `<: UnivariateDistribution`, so the same families above are the ones that contribute to the Distributions / Histograms tabs when `log_distributions = true`.
 
 ```@docs 
 RxInfer.convert_to_tensorboard
