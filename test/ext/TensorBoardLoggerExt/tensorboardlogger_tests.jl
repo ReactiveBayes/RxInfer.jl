@@ -419,6 +419,45 @@ end
     end
 end
 
+@testitem "Geometric posterior emits succprob scalar tag" begin
+    using RxInfer, TensorBoardLogger
+    using Distributions: Geometric
+    include(joinpath(@__DIR__, "helpers.jl"))
+
+    # ReactiveMP has no native Geometric message rules, so a Geometric
+    # posterior would only ever arrive via a custom factor or projection.
+    # Drive the dispatch helper directly via the loaded extension module —
+    # same pattern as the Poisson and generic-fallback tests.
+    ext = Base.get_extension(RxInfer, :TensorBoardLoggerExt)
+    @test ext !== nothing
+
+    with_safe_tempdir() do log_dir
+        logger = TBLogger(log_dir, tb_append)
+        ctx = ext.LogContext(
+            logger;
+            log_distributions = false,
+            log_text_events   = false,
+            n_samples         = 0,
+        )
+
+        ext._log_posterior_scalars!(ctx, Geometric(0.3), :k)
+        ext._log_posterior_scalars!(ctx, Geometric(0.6), :k)
+
+        close(logger)
+        empty!(logger.all_files)
+        GC.gc()
+
+        all_tags = read_tags(log_dir)
+        @test "posteriors/k/succprob" in all_tags
+
+        # Specific Geometric dispatch must beat the generic mean/var fallback.
+        @test !("posteriors/k/mean" in all_tags)
+        @test !("posteriors/k/var"  in all_tags)
+
+        @test length(steps_for_tag(log_dir, "posteriors/k/succprob")) == 2
+    end
+end
+
 @testitem "Generic UnivariateDistribution fallback emits mean/var" begin
     using RxInfer, TensorBoardLogger
     using Distributions: Exponential
