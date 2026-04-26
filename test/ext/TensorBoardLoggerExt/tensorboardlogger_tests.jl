@@ -276,7 +276,7 @@ end
     # its posterior arrives as `InverseGamma` (alias of `Distributions.InverseGamma`).
     @model function iid_invgamma(y)
         μ  ~ Normal(mean = 0.0, variance = 100.0)
-        σ² ~ GammaInverse(shape = 2.0, scale = 1.0)
+        σ² ~ GammaInverse(α = 2.0, θ = 1.0)
         y .~ Normal(mean = μ, variance = σ²)
     end
 
@@ -330,7 +330,7 @@ end
 
     @model function iid_invgamma(y)
         μ  ~ Normal(mean = 0.0, variance = 100.0)
-        σ² ~ GammaInverse(shape = 2.0, scale = 1.0)
+        σ² ~ GammaInverse(α = 2.0, θ = 1.0)
         y .~ Normal(mean = μ, variance = σ²)
     end
 
