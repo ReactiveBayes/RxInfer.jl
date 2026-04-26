@@ -702,6 +702,47 @@ end
     end
 end
 
+@testitem "Weibull posterior emits shape/scale scalar tags" begin
+    using RxInfer, TensorBoardLogger
+    using Distributions: Weibull
+    include(joinpath(@__DIR__, "helpers.jl"))
+
+    # ReactiveMP has no native Weibull message rules and no Weibull
+    # graph node, so a Weibull posterior would only ever arrive via a
+    # custom factor or projection. Drive the dispatch helper directly via
+    # the loaded extension module.
+    ext = Base.get_extension(RxInfer, :TensorBoardLoggerExt)
+    @test ext !== nothing
+
+    with_safe_tempdir() do log_dir
+        logger = TBLogger(log_dir, tb_append)
+        ctx = ext.LogContext(
+            logger;
+            log_distributions = false,
+            log_text_events   = false,
+            n_samples         = 0,
+        )
+
+        ext._log_posterior_scalars!(ctx, Weibull(1.5, 2.0), :t)
+        ext._log_posterior_scalars!(ctx, Weibull(2.5, 1.2), :t)
+
+        close(logger)
+        empty!(logger.all_files)
+        GC.gc()
+
+        all_tags = read_tags(log_dir)
+        @test "posteriors/t/shape" in all_tags
+        @test "posteriors/t/scale" in all_tags
+
+        # Specific Weibull dispatch must beat the generic mean/var fallback.
+        @test !("posteriors/t/mean" in all_tags)
+        @test !("posteriors/t/var"  in all_tags)
+
+        @test length(steps_for_tag(log_dir, "posteriors/t/shape")) == 2
+        @test length(steps_for_tag(log_dir, "posteriors/t/scale")) == 2
+    end
+end
+
 @testitem "Generic UnivariateDistribution fallback emits mean/var" begin
     using RxInfer, TensorBoardLogger
     using Distributions: Uniform
