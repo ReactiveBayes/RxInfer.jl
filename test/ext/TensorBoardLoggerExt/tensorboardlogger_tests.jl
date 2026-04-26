@@ -660,6 +660,48 @@ end
     end
 end
 
+@testitem "VonMises posterior emits location/concentration scalar tags" begin
+    using RxInfer, TensorBoardLogger
+    using Distributions: VonMises
+    include(joinpath(@__DIR__, "helpers.jl"))
+
+    # ReactiveMP has no native VonMises message rules and no VonMises
+    # graph node, so a VonMises posterior would only ever arrive via a
+    # custom factor or projection. Drive the dispatch helper directly via
+    # the loaded extension module — same pattern as Geometric and the
+    # other no-rule distributions.
+    ext = Base.get_extension(RxInfer, :TensorBoardLoggerExt)
+    @test ext !== nothing
+
+    with_safe_tempdir() do log_dir
+        logger = TBLogger(log_dir, tb_append)
+        ctx = ext.LogContext(
+            logger;
+            log_distributions = false,
+            log_text_events   = false,
+            n_samples         = 0,
+        )
+
+        ext._log_posterior_scalars!(ctx, VonMises(0.0, 2.0), :θ)
+        ext._log_posterior_scalars!(ctx, VonMises(0.5, 5.0), :θ)
+
+        close(logger)
+        empty!(logger.all_files)
+        GC.gc()
+
+        all_tags = read_tags(log_dir)
+        @test "posteriors/θ/location"      in all_tags
+        @test "posteriors/θ/concentration" in all_tags
+
+        # Specific VonMises dispatch must beat the generic mean/var fallback.
+        @test !("posteriors/θ/mean" in all_tags)
+        @test !("posteriors/θ/var"  in all_tags)
+
+        @test length(steps_for_tag(log_dir, "posteriors/θ/location"))      == 2
+        @test length(steps_for_tag(log_dir, "posteriors/θ/concentration")) == 2
+    end
+end
+
 @testitem "Generic UnivariateDistribution fallback emits mean/var" begin
     using RxInfer, TensorBoardLogger
     using Distributions: Uniform
