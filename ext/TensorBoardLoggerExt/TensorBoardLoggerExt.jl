@@ -101,8 +101,9 @@ LogContext(logger; log_posteriors::Union{Bool, AbstractVector{<:Union{Symbol, Ab
 # Events that need `ev.variable.label` or a renamed label (e.g.
 # `OnMarginalUpdateEvent`'s `variable: $(ev.variable_name)`) build the
 # string inline.
-@inline _format_fields(ev, fields::NTuple{N, Symbol}) where {N} =
-    join(("$(f): $(getfield(ev, f))" for f in fields), " | ")
+@inline _format_fields(ev, fields::NTuple{N, Symbol}) where {N} = join(
+    ("$(f): $(getfield(ev, f))" for f in fields), " | "
+)
 
 # ─── Distribution-family dispatched helpers ──────────────────────────────
 # Deterministic samples via a seeded MersenneTwister keep the HistogramSummary
@@ -121,11 +122,13 @@ _posterior_samples(::Any, ::Int)                         = Float64[]
 # shows convergence behaviour in TensorBoard).
 _posterior_tags(::Any) = nothing
 
-_posterior_tags(d::UnivariateNormalDistributionsFamily) =
-    (mean = mean(d), precision = inv(var(d)))
+_posterior_tags(d::UnivariateNormalDistributionsFamily) = (
+    mean = mean(d), precision = inv(var(d))
+)
 
-_posterior_tags(d::GammaDistributionsFamily) =
-    (shape = shape(d), rate = rate(d))
+_posterior_tags(d::GammaDistributionsFamily) = (
+    shape = shape(d), rate = rate(d)
+)
 
 function _posterior_tags(d::Beta)
     α, β = params(d)
@@ -204,7 +207,8 @@ _log_posterior_distribution!(::LogContext, ::Any, ::Symbol) = nothing
 
 function log_event(ctx::LogContext, ev::BeforeModelCreationEvent, idx)
     _log_text!(
-        ctx, "before_model_creation",
+        ctx,
+        "before_model_creation",
         _format_fields(ev, (:span_id,));
         step = idx,
     )
@@ -212,7 +216,8 @@ end
 
 function log_event(ctx::LogContext, ev::AfterModelCreationEvent, idx)
     _log_text!(
-        ctx, "after_model_creation",
+        ctx,
+        "after_model_creation",
         _format_fields(ev, (:model, :span_id));
         step = idx,
     )
@@ -220,7 +225,8 @@ end
 
 function log_event(ctx::LogContext, ev::BeforeInferenceEvent, idx)
     _log_text!(
-        ctx, "before_inference",
+        ctx,
+        "before_inference",
         _format_fields(ev, (:model, :span_id));
         step = idx,
     )
@@ -228,7 +234,8 @@ end
 
 function log_event(ctx::LogContext, ev::AfterInferenceEvent, idx)
     _log_text!(
-        ctx, "after_inference",
+        ctx,
+        "after_inference",
         _format_fields(ev, (:model, :span_id));
         step = idx,
     )
@@ -239,7 +246,8 @@ end
 # in-line as events stream by, via `ctx.current_time_ns`.
 function log_event(ctx::LogContext, ev::BeforeIterationEvent, _idx)
     _log_text!(
-        ctx, "before_iteration",
+        ctx,
+        "before_iteration",
         _format_fields(ev, (:model, :iteration, :stop_iteration, :span_id));
         step = ev.iteration,
     )
@@ -250,7 +258,8 @@ end
 # `span_id` to compute and log the iteration's wall-clock duration.
 function log_event(ctx::LogContext, ev::AfterIterationEvent, _idx)
     _log_text!(
-        ctx, "after_iteration",
+        ctx,
+        "after_iteration",
         _format_fields(ev, (:model, :iteration, :stop_iteration, :span_id));
         step = ev.iteration,
     )
@@ -266,7 +275,8 @@ end
 
 function log_event(ctx::LogContext, ev::BeforeDataUpdateEvent, idx)
     _log_text!(
-        ctx, "before_data_update",
+        ctx,
+        "before_data_update",
         _format_fields(ev, (:model, :data, :span_id));
         step = idx,
     )
@@ -274,7 +284,8 @@ end
 
 function log_event(ctx::LogContext, ev::AfterDataUpdateEvent, idx)
     _log_text!(
-        ctx, "after_data_update",
+        ctx,
+        "after_data_update",
         _format_fields(ev, (:model, :data, :span_id));
         step = idx,
     )
@@ -321,7 +332,8 @@ end
 
 function log_event(ctx::LogContext, ev::BeforeAutostartEvent, idx)
     _log_text!(
-        ctx, "before_autostart",
+        ctx,
+        "before_autostart",
         _format_fields(ev, (:engine, :span_id));
         step = idx,
     )
@@ -329,7 +341,8 @@ end
 
 function log_event(ctx::LogContext, ev::AfterAutostartEvent, idx)
     _log_text!(
-        ctx, "after_autostart",
+        ctx,
+        "after_autostart",
         _format_fields(ev, (:engine, :span_id));
         step = idx,
     )
@@ -339,7 +352,8 @@ function log_event(
     ctx::LogContext, ev::ReactiveMP.BeforeMessageRuleCallEvent, idx
 )
     _log_text!(
-        ctx, "before_message_rule_call",
+        ctx,
+        "before_message_rule_call",
         _format_fields(ev, (:mapping, :messages, :marginals, :span_id));
         step = idx,
     )
@@ -349,7 +363,8 @@ function log_event(
     ctx::LogContext, ev::ReactiveMP.AfterMessageRuleCallEvent, idx
 )
     _log_text!(
-        ctx, "after_message_rule_call",
+        ctx,
+        "after_message_rule_call",
         _format_fields(
             ev,
             (:mapping, :messages, :marginals, :result, :annotations, :span_id),
@@ -449,7 +464,8 @@ end
 # Fallback for unknown event types
 function log_event(ctx::LogContext, ev::ReactiveMP.Event, idx)
     _log_text!(
-        ctx, "unknown_events",
+        ctx,
+        "unknown_events",
         "event_type: $(event_name(typeof(ev)))";
         step = idx,
     )
