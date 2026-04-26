@@ -4,7 +4,7 @@ using RxInfer
 using ReactiveMP: event_name, getdata
 using ExponentialFamily:
     UnivariateNormalDistributionsFamily, GammaDistributionsFamily
-using Distributions: UnivariateDistribution, Beta, Bernoulli, shape, rate, params, succprob
+using Distributions: UnivariateDistribution, Beta, Bernoulli, InverseGamma, shape, rate, scale, params, succprob
 using Dates: now, format
 using Random: MersenneTwister
 using Statistics: mean, var
@@ -105,6 +105,31 @@ function _log_posterior_scalars!(
     step = (ctx.posterior_step[name] = get(ctx.posterior_step, name, 0) + 1)
     TensorBoardLogger.log_value(
         ctx.logger, "posteriors/$(name)/succprob", succprob(dist); step = step
+    )
+end
+function _log_posterior_scalars!(
+    ctx::LogContext, dist::InverseGamma, name::Symbol
+)
+    step = (ctx.posterior_step[name] = get(ctx.posterior_step, name, 0) + 1)
+    TensorBoardLogger.log_value(
+        ctx.logger, "posteriors/$(name)/shape", shape(dist); step = step
+    )
+    TensorBoardLogger.log_value(
+        ctx.logger, "posteriors/$(name)/scale", scale(dist); step = step
+    )
+end
+# Generic moment fallback: any UnivariateDistribution we haven't special-cased
+# still gets `mean`/`var` tags so TensorBoard shows convergence behaviour
+# instead of going silent. More-specific methods above take precedence.
+function _log_posterior_scalars!(
+    ctx::LogContext, dist::UnivariateDistribution, name::Symbol
+)
+    step = (ctx.posterior_step[name] = get(ctx.posterior_step, name, 0) + 1)
+    TensorBoardLogger.log_value(
+        ctx.logger, "posteriors/$(name)/mean", mean(dist); step = step
+    )
+    TensorBoardLogger.log_value(
+        ctx.logger, "posteriors/$(name)/var", var(dist); step = step
     )
 end
 _log_posterior_scalars!(::LogContext, ::Any, ::Symbol) = nothing

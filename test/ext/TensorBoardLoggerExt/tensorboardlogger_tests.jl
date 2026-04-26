@@ -268,6 +268,150 @@ end
     end
 end
 
+@testitem "InverseGamma posterior emits shape/scale scalar tags" begin
+    using RxInfer, StableRNGs, TensorBoardLogger
+    include(joinpath(@__DIR__, "helpers.jl"))
+
+    # Normal–InverseGamma model: σ² is variance with a GammaInverse prior, so
+    # its posterior arrives as `InverseGamma` (alias of `Distributions.InverseGamma`).
+    @model function iid_invgamma(y)
+        μ  ~ Normal(mean = 0.0, variance = 100.0)
+        σ² ~ GammaInverse(shape = 2.0, scale = 1.0)
+        y .~ Normal(mean = μ, variance = σ²)
+    end
+
+    constraints = @constraints begin
+        q(μ, σ²) = q(μ)q(σ²)
+    end
+
+    initialization = @initialization begin
+        q(μ)  = vague(NormalMeanVariance)
+        q(σ²) = vague(GammaInverse)
+    end
+
+    dataset = rand(StableRNG(42), NormalMeanVariance(3.1415, 1.0 / 2.7182), 25)
+
+    n_iterations = 4
+    results = infer(;
+        model          = iid_invgamma(),
+        data           = (y = dataset,),
+        constraints    = constraints,
+        iterations     = n_iterations,
+        initialization = initialization,
+        trace          = true,
+    )
+
+    trace = results.model.metadata[:trace]
+
+    with_safe_tempdir() do log_dir
+        run_dir = RxInfer.convert_to_tensorboard(
+            trace; output_file = log_dir, verbose = false
+        )
+
+        all_tags = read_tags(run_dir)
+
+        # σ² is InverseGamma → shape and scale scalar tags.
+        @test "posteriors/σ²/shape" in all_tags
+        @test "posteriors/σ²/scale" in all_tags
+
+        # μ stays in the existing Normal family branch.
+        @test "posteriors/μ/mean" in all_tags
+        @test "posteriors/μ/precision" in all_tags
+
+        # One step per iteration on σ²/shape.
+        @test length(steps_for_tag(run_dir, "posteriors/σ²/shape")) ==
+            n_iterations
+    end
+end
+
+@testitem "InverseGamma posterior distribution logged as HistogramSummary" begin
+    using RxInfer, StableRNGs, TensorBoardLogger
+    include(joinpath(@__DIR__, "helpers.jl"))
+
+    @model function iid_invgamma(y)
+        μ  ~ Normal(mean = 0.0, variance = 100.0)
+        σ² ~ GammaInverse(shape = 2.0, scale = 1.0)
+        y .~ Normal(mean = μ, variance = σ²)
+    end
+
+    constraints = @constraints begin
+        q(μ, σ²) = q(μ)q(σ²)
+    end
+
+    initialization = @initialization begin
+        q(μ)  = vague(NormalMeanVariance)
+        q(σ²) = vague(GammaInverse)
+    end
+
+    dataset = rand(StableRNG(42), NormalMeanVariance(3.1415, 1.0 / 2.7182), 25)
+
+    n_iterations = 3
+    results = infer(;
+        model          = iid_invgamma(),
+        data           = (y = dataset,),
+        constraints    = constraints,
+        iterations     = n_iterations,
+        initialization = initialization,
+        trace          = true,
+    )
+
+    trace = results.model.metadata[:trace]
+
+    with_safe_tempdir() do log_dir
+        run_dir = RxInfer.convert_to_tensorboard(
+            trace;
+            output_file = log_dir,
+            log_distributions = true,
+            n_samples = 256,
+            verbose = false,
+        )
+
+        all_tags = read_tags(run_dir)
+
+        @test "posteriors/σ²/distribution" in all_tags
+        @test length(steps_for_tag(run_dir, "posteriors/σ²/distribution")) ==
+            n_iterations
+        @test "posteriors/σ²/shape" in all_tags
+        @test "posteriors/σ²/scale" in all_tags
+    end
+end
+
+@testitem "Generic UnivariateDistribution fallback emits mean/var" begin
+    using RxInfer, TensorBoardLogger
+    using Distributions: Exponential
+    include(joinpath(@__DIR__, "helpers.jl"))
+
+    # No special-case dispatch exists for `Exponential`, so it should fall
+    # through to the generic UnivariateDistribution method emitting `mean`
+    # and `var`. Reach into the loaded extension module to call the helper
+    # directly — engineering a model whose ReactiveMP posterior arrives as
+    # a non-conjugate Distributions.jl type would be model-specific churn.
+    ext = Base.get_extension(RxInfer, :TensorBoardLoggerExt)
+    @test ext !== nothing
+
+    with_safe_tempdir() do log_dir
+        logger = TBLogger(log_dir, tb_append)
+        ctx = ext.LogContext(
+            logger;
+            log_distributions = false,
+            log_text_events   = false,
+            n_samples         = 0,
+        )
+
+        # Exponential(λ=2.0) — no specific dispatch; falls through to
+        # the generic UnivariateDistribution method.
+        ext._log_posterior_scalars!(ctx, Exponential(2.0), :x)
+
+        close(logger)
+        empty!(logger.all_files)
+        GC.gc()
+
+        all_tags = read_tags(log_dir)
+        @test "posteriors/x/mean" in all_tags
+        @test "posteriors/x/var"  in all_tags
+    end
+end
+
 @testitem "Default trace export does not emit distribution tags" begin
     using RxInfer, StableRNGs, TensorBoardLogger
     include(joinpath(@__DIR__, "helpers.jl"))
