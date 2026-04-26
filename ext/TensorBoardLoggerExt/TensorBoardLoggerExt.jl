@@ -4,7 +4,7 @@ using RxInfer
 using ReactiveMP: event_name, getdata
 using ExponentialFamily:
     UnivariateNormalDistributionsFamily, GammaDistributionsFamily
-using Distributions: UnivariateDistribution, Beta, Bernoulli, InverseGamma, Poisson, Geometric, NegativeBinomial, Exponential, shape, rate, scale, params, succprob
+using Distributions: UnivariateDistribution, Beta, Bernoulli, Binomial, InverseGamma, Poisson, Geometric, NegativeBinomial, Exponential, shape, rate, scale, params, succprob, ntrials
 using Dates: now, format
 using Random: MersenneTwister
 using Statistics: mean, var
@@ -103,6 +103,17 @@ function _log_posterior_scalars!(
     ctx::LogContext, dist::Bernoulli, name::Symbol
 )
     step = (ctx.posterior_step[name] = get(ctx.posterior_step, name, 0) + 1)
+    TensorBoardLogger.log_value(
+        ctx.logger, "posteriors/$(name)/succprob", succprob(dist); step = step
+    )
+end
+function _log_posterior_scalars!(
+    ctx::LogContext, dist::Binomial, name::Symbol
+)
+    step = (ctx.posterior_step[name] = get(ctx.posterior_step, name, 0) + 1)
+    TensorBoardLogger.log_value(
+        ctx.logger, "posteriors/$(name)/ntrials", ntrials(dist); step = step
+    )
     TensorBoardLogger.log_value(
         ctx.logger, "posteriors/$(name)/succprob", succprob(dist); step = step
     )

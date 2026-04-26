@@ -500,6 +500,127 @@ end
     end
 end
 
+@testitem "Binomial posterior emits ntrials/succprob scalar tags" begin
+    using RxInfer, TensorBoardLogger
+    using Distributions: Binomial
+    include(joinpath(@__DIR__, "helpers.jl"))
+
+    # Beta is conjugate to Binomial on the success probability — the posterior
+    # over θ is Beta, not Binomial. A Binomial marginal therefore arrives only
+    # via projection or as a predictive child. Drive the dispatch helper
+    # directly via the loaded extension module.
+    ext = Base.get_extension(RxInfer, :TensorBoardLoggerExt)
+    @test ext !== nothing
+
+    with_safe_tempdir() do log_dir
+        logger = TBLogger(log_dir, tb_append)
+        ctx = ext.LogContext(
+            logger;
+            log_distributions = false,
+            log_text_events   = false,
+            n_samples         = 0,
+        )
+
+        ext._log_posterior_scalars!(ctx, Binomial(10, 0.4), :k)
+        ext._log_posterior_scalars!(ctx, Binomial(20, 0.6), :k)
+
+        close(logger)
+        empty!(logger.all_files)
+        GC.gc()
+
+        all_tags = read_tags(log_dir)
+        @test "posteriors/k/ntrials"  in all_tags
+        @test "posteriors/k/succprob" in all_tags
+
+        # Specific Binomial dispatch must beat the generic mean/var fallback.
+        @test !("posteriors/k/mean" in all_tags)
+        @test !("posteriors/k/var"  in all_tags)
+
+        @test length(steps_for_tag(log_dir, "posteriors/k/ntrials"))  == 2
+        @test length(steps_for_tag(log_dir, "posteriors/k/succprob")) == 2
+    end
+end
+
+@testitem "Beta-Binomial conjugate workflow emits Binomial predictive tags" begin
+    using RxInfer, StableRNGs, TensorBoardLogger
+    using Distributions: Binomial
+    using Statistics: mean
+    include(joinpath(@__DIR__, "helpers.jl"))
+
+    # End-to-end Beta–Binomial: run real RxInfer inference under a Beta
+    # prior + Bernoulli likelihood (RxInfer has native rules for those),
+    # then turn each iteration's Beta posterior over θ into a Binomial
+    # predictive over a count of n_trials future flips and log it via the
+    # new Binomial dispatch. This locks in the workflow the dev script in
+    # `src/tensorboard_binomial_beta.jl` demonstrates.
+    @model function coin_toss(y)
+        θ ~ Beta(1.0, 1.0)
+        y .~ Bernoulli(θ)
+    end
+
+    initialization = @initialization begin
+        q(θ) = vague(Beta)
+    end
+
+    dataset = rand(StableRNG(42), Bernoulli(0.7), 25)
+
+    n_iterations = 4
+    results = infer(;
+        model          = coin_toss(),
+        data           = (y = dataset,),
+        iterations     = n_iterations,
+        initialization = initialization,
+        returnvars     = (θ = KeepEach(),),
+        trace          = true,
+    )
+
+    @test length(results.posteriors[:θ]) == n_iterations
+
+    ext = Base.get_extension(RxInfer, :TensorBoardLoggerExt)
+    @test ext !== nothing
+
+    with_safe_tempdir() do log_dir
+        # Stage 1 — standard trace export to populate the Beta scalars.
+        run_dir = RxInfer.convert_to_tensorboard(
+            results.model.metadata[:trace];
+            output_file       = log_dir,
+            log_distributions = false,
+            verbose           = false,
+        )
+
+        # Stage 2 — append Binomial predictive scalars in the same run dir.
+        n_trials = 20
+        logger   = TBLogger(run_dir, tb_append)
+        ctx      = ext.LogContext(
+            logger;
+            log_distributions = false,
+            log_text_events   = false,
+            n_samples         = 0,
+        )
+        for θ_post in results.posteriors[:θ]
+            ext._log_posterior_scalars!(
+                ctx, Binomial(n_trials, mean(θ_post)), :y_pred
+            )
+        end
+        close(logger)
+        empty!(logger.all_files)
+        GC.gc()
+
+        all_tags = read_tags(run_dir)
+
+        # Beta posterior tags from stage 1.
+        @test "posteriors/θ/alpha"   in all_tags
+        @test "posteriors/θ/beta"    in all_tags
+
+        # Binomial predictive tags from stage 2.
+        @test "posteriors/y_pred/ntrials"  in all_tags
+        @test "posteriors/y_pred/succprob" in all_tags
+
+        @test length(steps_for_tag(run_dir, "posteriors/y_pred/ntrials")) ==
+            n_iterations
+    end
+end
+
 @testitem "Exponential posterior emits rate scalar tag" begin
     using RxInfer, TensorBoardLogger
     using Distributions: Exponential
