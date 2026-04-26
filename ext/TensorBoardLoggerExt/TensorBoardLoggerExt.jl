@@ -95,6 +95,15 @@ LogContext(logger; log_posteriors::Union{Bool, AbstractVector{<:Union{Symbol, Ab
 @inline _check_posterior(flag::Bool, ::Symbol) = flag
 @inline _check_posterior(allowed::Set{Symbol}, n::Symbol) = n in allowed
 
+# Pipe-delimited `"k1: v1 | k2: v2 | ..."` formatter for text-event
+# breadcrumbs. Reads each named field via `getfield(ev, f)`, so this helper
+# only fits events where every logged value is a direct field access.
+# Events that need `ev.variable.label` or a renamed label (e.g.
+# `OnMarginalUpdateEvent`'s `variable: $(ev.variable_name)`) build the
+# string inline.
+@inline _format_fields(ev, fields::NTuple{N, Symbol}) where {N} =
+    join(("$(f): $(getfield(ev, f))" for f in fields), " | ")
+
 # ─── Distribution-family dispatched helpers ──────────────────────────────
 # Deterministic samples via a seeded MersenneTwister keep the HistogramSummary
 # reproducible across re-runs. The `::Any` fallback returns an empty vector
@@ -103,185 +112,77 @@ LogContext(logger; log_posteriors::Union{Bool, AbstractVector{<:Union{Symbol, Ab
 _posterior_samples(dist::UnivariateDistribution, n::Int) = rand(MersenneTwister(1), dist, n)
 _posterior_samples(::Any, ::Int)                         = Float64[]
 
-# Scalar-posterior logging, dispatched on the distribution family's natural
-# parameterisation. Mutates `ctx.posterior_step` so the per-variable step
-# counter stays aligned with the distribution-summary step.
-function _log_posterior_scalars!(
-    ctx::LogContext, dist::UnivariateNormalDistributionsFamily, name::Symbol
-)
-    step = (ctx.posterior_step[name] = get(ctx.posterior_step, name, 0) + 1)
-    TensorBoardLogger.log_value(
-        ctx.logger, "posteriors/$(name)/mean", mean(dist); step = step
-    )
-    TensorBoardLogger.log_value(
-        ctx.logger, "posteriors/$(name)/precision", inv(var(dist)); step = step
-    )
+# Per-distribution scalar tag table. Returns a `NamedTuple` of
+# `(tag => value)` pairs to log under `posteriors/<name>/<tag>`.
+# `nothing` means "skip this variable" — distinct from an empty NamedTuple,
+# which would still bump the step counter. Family-specific methods take
+# precedence over the `UnivariateDistribution` generic fallback (which
+# logs `mean` and `var` so any unspecialised univariate marginal still
+# shows convergence behaviour in TensorBoard).
+_posterior_tags(::Any) = nothing
+
+_posterior_tags(d::UnivariateNormalDistributionsFamily) =
+    (mean = mean(d), precision = inv(var(d)))
+
+_posterior_tags(d::GammaDistributionsFamily) =
+    (shape = shape(d), rate = rate(d))
+
+function _posterior_tags(d::Beta)
+    α, β = params(d)
+    return (alpha = α, beta = β, mean = α / (α + β))
 end
-function _log_posterior_scalars!(
-    ctx::LogContext, dist::GammaDistributionsFamily, name::Symbol
-)
-    step = (ctx.posterior_step[name] = get(ctx.posterior_step, name, 0) + 1)
-    TensorBoardLogger.log_value(
-        ctx.logger, "posteriors/$(name)/shape", shape(dist); step = step
-    )
-    TensorBoardLogger.log_value(
-        ctx.logger, "posteriors/$(name)/rate", rate(dist); step = step
-    )
+
+_posterior_tags(d::Bernoulli) = (succprob = succprob(d),)
+_posterior_tags(d::Binomial) = (ntrials = ntrials(d), succprob = succprob(d))
+_posterior_tags(d::InverseGamma) = (shape = shape(d), scale = scale(d))
+_posterior_tags(d::Poisson) = (rate = rate(d),)
+_posterior_tags(d::Geometric) = (succprob = succprob(d),)
+
+function _posterior_tags(d::NegativeBinomial)
+    r, _ = params(d)
+    return (r = r, succprob = succprob(d))
 end
-function _log_posterior_scalars!(ctx::LogContext, dist::Beta, name::Symbol)
-    step = (ctx.posterior_step[name] = get(ctx.posterior_step, name, 0) + 1)
-    α, β = params(dist)
-    TensorBoardLogger.log_value(
-        ctx.logger, "posteriors/$(name)/alpha", α; step = step
-    )
-    TensorBoardLogger.log_value(
-        ctx.logger, "posteriors/$(name)/beta", β; step = step
-    )
-    TensorBoardLogger.log_value(
-        ctx.logger, "posteriors/$(name)/mean", α / (α + β); step = step
-    )
+
+_posterior_tags(d::Exponential) = (rate = rate(d),)
+
+function _posterior_tags(d::VonMises)
+    μ, κ = params(d)
+    return (location = μ, concentration = κ)
 end
-function _log_posterior_scalars!(ctx::LogContext, dist::Bernoulli, name::Symbol)
-    step = (ctx.posterior_step[name] = get(ctx.posterior_step, name, 0) + 1)
-    TensorBoardLogger.log_value(
-        ctx.logger, "posteriors/$(name)/succprob", succprob(dist); step = step
-    )
+
+_posterior_tags(d::Weibull) = (shape = shape(d), scale = scale(d))
+
+function _posterior_tags(d::LogNormal)
+    meanlog, stdlog = params(d)
+    return (meanlog = meanlog, stdlog = stdlog)
 end
-function _log_posterior_scalars!(ctx::LogContext, dist::Binomial, name::Symbol)
+
+_posterior_tags(d::Erlang) = (shape = shape(d), scale = scale(d))
+_posterior_tags(d::Laplace) = (location = location(d), scale = scale(d))
+_posterior_tags(d::Pareto) = (shape = shape(d), scale = scale(d))
+_posterior_tags(d::Rayleigh) = (scale = scale(d),)
+_posterior_tags(d::Chisq) = (dof = dof(d),)
+
+# Generic moment fallback: any UnivariateDistribution we haven't
+# special-cased still gets `mean`/`var` tags so TensorBoard shows
+# convergence behaviour instead of going silent.
+_posterior_tags(d::UnivariateDistribution) = (mean = mean(d), var = var(d))
+
+# Scalar-posterior logging delegates to `_posterior_tags(dist)` and writes
+# each `(tag => value)` pair under `posteriors/<name>/<tag>`. The step
+# counter is bumped only when there is at least one tag to log, so
+# unsupported distributions don't desync the per-variable step.
+function _log_posterior_scalars!(ctx::LogContext, dist, name::Symbol)
+    tags = _posterior_tags(dist)
+    tags === nothing && return nothing
     step = (ctx.posterior_step[name] = get(ctx.posterior_step, name, 0) + 1)
-    TensorBoardLogger.log_value(
-        ctx.logger, "posteriors/$(name)/ntrials", ntrials(dist); step = step
-    )
-    TensorBoardLogger.log_value(
-        ctx.logger, "posteriors/$(name)/succprob", succprob(dist); step = step
-    )
+    for (tag, value) in pairs(tags)
+        TensorBoardLogger.log_value(
+            ctx.logger, "posteriors/$(name)/$(tag)", value; step = step
+        )
+    end
+    return nothing
 end
-function _log_posterior_scalars!(
-    ctx::LogContext, dist::InverseGamma, name::Symbol
-)
-    step = (ctx.posterior_step[name] = get(ctx.posterior_step, name, 0) + 1)
-    TensorBoardLogger.log_value(
-        ctx.logger, "posteriors/$(name)/shape", shape(dist); step = step
-    )
-    TensorBoardLogger.log_value(
-        ctx.logger, "posteriors/$(name)/scale", scale(dist); step = step
-    )
-end
-function _log_posterior_scalars!(ctx::LogContext, dist::Poisson, name::Symbol)
-    step = (ctx.posterior_step[name] = get(ctx.posterior_step, name, 0) + 1)
-    TensorBoardLogger.log_value(
-        ctx.logger, "posteriors/$(name)/rate", rate(dist); step = step
-    )
-end
-function _log_posterior_scalars!(ctx::LogContext, dist::Geometric, name::Symbol)
-    step = (ctx.posterior_step[name] = get(ctx.posterior_step, name, 0) + 1)
-    TensorBoardLogger.log_value(
-        ctx.logger, "posteriors/$(name)/succprob", succprob(dist); step = step
-    )
-end
-function _log_posterior_scalars!(
-    ctx::LogContext, dist::NegativeBinomial, name::Symbol
-)
-    step = (ctx.posterior_step[name] = get(ctx.posterior_step, name, 0) + 1)
-    r, _ = params(dist)
-    TensorBoardLogger.log_value(
-        ctx.logger, "posteriors/$(name)/r", r; step = step
-    )
-    TensorBoardLogger.log_value(
-        ctx.logger, "posteriors/$(name)/succprob", succprob(dist); step = step
-    )
-end
-function _log_posterior_scalars!(
-    ctx::LogContext, dist::Exponential, name::Symbol
-)
-    step = (ctx.posterior_step[name] = get(ctx.posterior_step, name, 0) + 1)
-    TensorBoardLogger.log_value(
-        ctx.logger, "posteriors/$(name)/rate", rate(dist); step = step
-    )
-end
-function _log_posterior_scalars!(ctx::LogContext, dist::VonMises, name::Symbol)
-    step = (ctx.posterior_step[name] = get(ctx.posterior_step, name, 0) + 1)
-    μ, κ = params(dist)
-    TensorBoardLogger.log_value(
-        ctx.logger, "posteriors/$(name)/location", μ; step = step
-    )
-    TensorBoardLogger.log_value(
-        ctx.logger, "posteriors/$(name)/concentration", κ; step = step
-    )
-end
-function _log_posterior_scalars!(ctx::LogContext, dist::Weibull, name::Symbol)
-    step = (ctx.posterior_step[name] = get(ctx.posterior_step, name, 0) + 1)
-    TensorBoardLogger.log_value(
-        ctx.logger, "posteriors/$(name)/shape", shape(dist); step = step
-    )
-    TensorBoardLogger.log_value(
-        ctx.logger, "posteriors/$(name)/scale", scale(dist); step = step
-    )
-end
-function _log_posterior_scalars!(ctx::LogContext, dist::LogNormal, name::Symbol)
-    step = (ctx.posterior_step[name] = get(ctx.posterior_step, name, 0) + 1)
-    meanlog, stdlog = params(dist)
-    TensorBoardLogger.log_value(
-        ctx.logger, "posteriors/$(name)/meanlog", meanlog; step = step
-    )
-    TensorBoardLogger.log_value(
-        ctx.logger, "posteriors/$(name)/stdlog", stdlog; step = step
-    )
-end
-function _log_posterior_scalars!(ctx::LogContext, dist::Erlang, name::Symbol)
-    step = (ctx.posterior_step[name] = get(ctx.posterior_step, name, 0) + 1)
-    TensorBoardLogger.log_value(
-        ctx.logger, "posteriors/$(name)/shape", shape(dist); step = step
-    )
-    TensorBoardLogger.log_value(
-        ctx.logger, "posteriors/$(name)/scale", scale(dist); step = step
-    )
-end
-function _log_posterior_scalars!(ctx::LogContext, dist::Laplace, name::Symbol)
-    step = (ctx.posterior_step[name] = get(ctx.posterior_step, name, 0) + 1)
-    TensorBoardLogger.log_value(
-        ctx.logger, "posteriors/$(name)/location", location(dist); step = step
-    )
-    TensorBoardLogger.log_value(
-        ctx.logger, "posteriors/$(name)/scale", scale(dist); step = step
-    )
-end
-function _log_posterior_scalars!(ctx::LogContext, dist::Pareto, name::Symbol)
-    step = (ctx.posterior_step[name] = get(ctx.posterior_step, name, 0) + 1)
-    TensorBoardLogger.log_value(
-        ctx.logger, "posteriors/$(name)/shape", shape(dist); step = step
-    )
-    TensorBoardLogger.log_value(
-        ctx.logger, "posteriors/$(name)/scale", scale(dist); step = step
-    )
-end
-function _log_posterior_scalars!(ctx::LogContext, dist::Rayleigh, name::Symbol)
-    step = (ctx.posterior_step[name] = get(ctx.posterior_step, name, 0) + 1)
-    TensorBoardLogger.log_value(
-        ctx.logger, "posteriors/$(name)/scale", scale(dist); step = step
-    )
-end
-function _log_posterior_scalars!(ctx::LogContext, dist::Chisq, name::Symbol)
-    step = (ctx.posterior_step[name] = get(ctx.posterior_step, name, 0) + 1)
-    TensorBoardLogger.log_value(
-        ctx.logger, "posteriors/$(name)/dof", dof(dist); step = step
-    )
-end
-# Generic moment fallback: any UnivariateDistribution we haven't special-cased
-# still gets `mean`/`var` tags so TensorBoard shows convergence behaviour
-# instead of going silent. More-specific methods above take precedence.
-function _log_posterior_scalars!(
-    ctx::LogContext, dist::UnivariateDistribution, name::Symbol
-)
-    step = (ctx.posterior_step[name] = get(ctx.posterior_step, name, 0) + 1)
-    TensorBoardLogger.log_value(
-        ctx.logger, "posteriors/$(name)/mean", mean(dist); step = step
-    )
-    TensorBoardLogger.log_value(
-        ctx.logger, "posteriors/$(name)/var", var(dist); step = step
-    )
-end
-_log_posterior_scalars!(::LogContext, ::Any, ::Symbol) = nothing
 
 # Per-iteration HistogramSummary. The data-only `log_histogram` overload
 # lets TB auto-bin each iteration's samples so HistogramProto.min/max track
@@ -303,33 +204,32 @@ _log_posterior_distribution!(::LogContext, ::Any, ::Symbol) = nothing
 
 function log_event(ctx::LogContext, ev::BeforeModelCreationEvent, idx)
     _log_text!(
-        ctx, "before_model_creation", "span_id: $(ev.span_id)"; step = idx
+        ctx, "before_model_creation",
+        _format_fields(ev, (:span_id,));
+        step = idx,
     )
 end
 
 function log_event(ctx::LogContext, ev::AfterModelCreationEvent, idx)
     _log_text!(
-        ctx,
-        "after_model_creation",
-        "model: $(ev.model) | span_id: $(ev.span_id)";
+        ctx, "after_model_creation",
+        _format_fields(ev, (:model, :span_id));
         step = idx,
     )
 end
 
 function log_event(ctx::LogContext, ev::BeforeInferenceEvent, idx)
     _log_text!(
-        ctx,
-        "before_inference",
-        "model: $(ev.model) | span_id: $(ev.span_id)";
+        ctx, "before_inference",
+        _format_fields(ev, (:model, :span_id));
         step = idx,
     )
 end
 
 function log_event(ctx::LogContext, ev::AfterInferenceEvent, idx)
     _log_text!(
-        ctx,
-        "after_inference",
-        "model: $(ev.model) | span_id: $(ev.span_id)";
+        ctx, "after_inference",
+        _format_fields(ev, (:model, :span_id));
         step = idx,
     )
 end
@@ -339,9 +239,8 @@ end
 # in-line as events stream by, via `ctx.current_time_ns`.
 function log_event(ctx::LogContext, ev::BeforeIterationEvent, _idx)
     _log_text!(
-        ctx,
-        "before_iteration",
-        "model: $(ev.model) | iteration: $(ev.iteration) | stop_iteration: $(ev.stop_iteration) | span_id: $(ev.span_id)";
+        ctx, "before_iteration",
+        _format_fields(ev, (:model, :iteration, :stop_iteration, :span_id));
         step = ev.iteration,
     )
     ctx.before_times[ev.span_id] = (ev.iteration, ctx.current_time_ns)
@@ -351,9 +250,8 @@ end
 # `span_id` to compute and log the iteration's wall-clock duration.
 function log_event(ctx::LogContext, ev::AfterIterationEvent, _idx)
     _log_text!(
-        ctx,
-        "after_iteration",
-        "model: $(ev.model) | iteration: $(ev.iteration) | stop_iteration: $(ev.stop_iteration) | span_id: $(ev.span_id)";
+        ctx, "after_iteration",
+        _format_fields(ev, (:model, :iteration, :stop_iteration, :span_id));
         step = ev.iteration,
     )
     if haskey(ctx.before_times, ev.span_id)
@@ -368,18 +266,16 @@ end
 
 function log_event(ctx::LogContext, ev::BeforeDataUpdateEvent, idx)
     _log_text!(
-        ctx,
-        "before_data_update",
-        "model: $(ev.model) | data: $(ev.data) | span_id: $(ev.span_id)";
+        ctx, "before_data_update",
+        _format_fields(ev, (:model, :data, :span_id));
         step = idx,
     )
 end
 
 function log_event(ctx::LogContext, ev::AfterDataUpdateEvent, idx)
     _log_text!(
-        ctx,
-        "after_data_update",
-        "model: $(ev.model) | data: $(ev.data) | span_id: $(ev.span_id)";
+        ctx, "after_data_update",
+        _format_fields(ev, (:model, :data, :span_id));
         step = idx,
     )
 end
@@ -425,18 +321,16 @@ end
 
 function log_event(ctx::LogContext, ev::BeforeAutostartEvent, idx)
     _log_text!(
-        ctx,
-        "before_autostart",
-        "engine: $(ev.engine) | span_id: $(ev.span_id)";
+        ctx, "before_autostart",
+        _format_fields(ev, (:engine, :span_id));
         step = idx,
     )
 end
 
 function log_event(ctx::LogContext, ev::AfterAutostartEvent, idx)
     _log_text!(
-        ctx,
-        "after_autostart",
-        "engine: $(ev.engine) | span_id: $(ev.span_id)";
+        ctx, "after_autostart",
+        _format_fields(ev, (:engine, :span_id));
         step = idx,
     )
 end
@@ -445,9 +339,8 @@ function log_event(
     ctx::LogContext, ev::ReactiveMP.BeforeMessageRuleCallEvent, idx
 )
     _log_text!(
-        ctx,
-        "before_message_rule_call",
-        "mapping: $(ev.mapping) | messages: $(ev.messages) | marginals: $(ev.marginals) | span_id: $(ev.span_id)";
+        ctx, "before_message_rule_call",
+        _format_fields(ev, (:mapping, :messages, :marginals, :span_id));
         step = idx,
     )
 end
@@ -456,9 +349,11 @@ function log_event(
     ctx::LogContext, ev::ReactiveMP.AfterMessageRuleCallEvent, idx
 )
     _log_text!(
-        ctx,
-        "after_message_rule_call",
-        "mapping: $(ev.mapping) | messages: $(ev.messages) | marginals: $(ev.marginals) | result: $(ev.result) | annotations: $(ev.annotations) | span_id: $(ev.span_id)";
+        ctx, "after_message_rule_call",
+        _format_fields(
+            ev,
+            (:mapping, :messages, :marginals, :result, :annotations, :span_id),
+        );
         step = idx,
     )
 end
@@ -554,8 +449,7 @@ end
 # Fallback for unknown event types
 function log_event(ctx::LogContext, ev::ReactiveMP.Event, idx)
     _log_text!(
-        ctx,
-        "unknown_events",
+        ctx, "unknown_events",
         "event_type: $(event_name(typeof(ev)))";
         step = idx,
     )
