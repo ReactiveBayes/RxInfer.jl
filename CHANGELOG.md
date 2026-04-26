@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `TensorBoardLoggerExt` posterior scalar logging now covers more univariate families. In addition to `Normal` (mean/precision) and `Gamma` (shape/rate), it now emits parameterisation-aware tags for `Beta` (alpha/beta/mean), `Bernoulli` (succprob), and `InverseGamma` / `GammaInverse` (shape/scale). Any remaining `UnivariateDistribution` falls back to generic `mean` and `var` tags so unknown posteriors still produce visible convergence traces.
+
 ## [5.2.0] - 2026-04-24
 
 ### Added 
