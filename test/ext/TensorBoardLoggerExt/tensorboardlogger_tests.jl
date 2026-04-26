@@ -908,6 +908,46 @@ end
     end
 end
 
+@testitem "Rayleigh posterior emits scale scalar tag" begin
+    using RxInfer, TensorBoardLogger
+    using Distributions: Rayleigh
+    include(joinpath(@__DIR__, "helpers.jl"))
+
+    # InverseGamma is conjugate to Rayleigh on σ² — the posterior over
+    # the squared scale is InverseGamma, not Rayleigh. ReactiveMP has
+    # no native Rayleigh rules or graph node, so a Rayleigh marginal
+    # arrives only via custom factors or projection. Drive the dispatch
+    # helper directly.
+    ext = Base.get_extension(RxInfer, :TensorBoardLoggerExt)
+    @test ext !== nothing
+
+    with_safe_tempdir() do log_dir
+        logger = TBLogger(log_dir, tb_append)
+        ctx = ext.LogContext(
+            logger;
+            log_distributions = false,
+            log_text_events   = false,
+            n_samples         = 0,
+        )
+
+        ext._log_posterior_scalars!(ctx, Rayleigh(1.0), :r)
+        ext._log_posterior_scalars!(ctx, Rayleigh(2.0), :r)
+
+        close(logger)
+        empty!(logger.all_files)
+        GC.gc()
+
+        all_tags = read_tags(log_dir)
+        @test "posteriors/r/scale" in all_tags
+
+        # Specific Rayleigh dispatch must beat the generic mean/var fallback.
+        @test !("posteriors/r/mean" in all_tags)
+        @test !("posteriors/r/var"  in all_tags)
+
+        @test length(steps_for_tag(log_dir, "posteriors/r/scale")) == 2
+    end
+end
+
 @testitem "Generic UnivariateDistribution fallback emits mean/var" begin
     using RxInfer, TensorBoardLogger
     using Distributions: Uniform
