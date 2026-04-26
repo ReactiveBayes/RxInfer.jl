@@ -173,6 +173,101 @@ end
     end
 end
 
+@testitem "Beta posterior emits alpha/beta/mean scalar tags" begin
+    using RxInfer, StableRNGs, TensorBoardLogger
+    include(joinpath(@__DIR__, "helpers.jl"))
+
+    # Beta–Bernoulli coin toss. θ has a Beta posterior; the conjugate update
+    # produces α/β scalars per iteration.
+    @model function coin_toss(y)
+        θ ~ Beta(1.0, 1.0)
+        y .~ Bernoulli(θ)
+    end
+
+    initialization = @initialization begin
+        q(θ) = vague(Beta)
+    end
+
+    dataset = rand(StableRNG(42), Bernoulli(0.7), 25)
+
+    n_iterations = 4
+    results = infer(;
+        model          = coin_toss(),
+        data           = (y = dataset,),
+        iterations     = n_iterations,
+        initialization = initialization,
+        trace          = true,
+    )
+
+    trace = results.model.metadata[:trace]
+
+    with_safe_tempdir() do log_dir
+        run_dir = RxInfer.convert_to_tensorboard(
+            trace; output_file = log_dir, verbose = false
+        )
+
+        all_tags = read_tags(run_dir)
+
+        # θ is Beta → should produce alpha, beta, and mean scalar tags.
+        @test "posteriors/θ/alpha" in all_tags
+        @test "posteriors/θ/beta" in all_tags
+        @test "posteriors/θ/mean" in all_tags
+
+        # One step per iteration on the canonical α tag.
+        @test length(steps_for_tag(run_dir, "posteriors/θ/alpha")) ==
+            n_iterations
+    end
+end
+
+@testitem "Beta posterior distribution logged as HistogramSummary" begin
+    using RxInfer, StableRNGs, TensorBoardLogger
+    include(joinpath(@__DIR__, "helpers.jl"))
+
+    # With `log_distributions = true`, the Beta posterior must produce a
+    # per-iteration HistogramSummary alongside the α/β scalar tags.
+    @model function coin_toss(y)
+        θ ~ Beta(1.0, 1.0)
+        y .~ Bernoulli(θ)
+    end
+
+    initialization = @initialization begin
+        q(θ) = vague(Beta)
+    end
+
+    dataset = rand(StableRNG(42), Bernoulli(0.7), 25)
+
+    n_iterations = 3
+    results = infer(;
+        model          = coin_toss(),
+        data           = (y = dataset,),
+        iterations     = n_iterations,
+        initialization = initialization,
+        trace          = true,
+    )
+
+    trace = results.model.metadata[:trace]
+
+    with_safe_tempdir() do log_dir
+        run_dir = RxInfer.convert_to_tensorboard(
+            trace;
+            output_file = log_dir,
+            log_distributions = true,
+            n_samples = 256,
+            verbose = false,
+        )
+
+        all_tags = read_tags(run_dir)
+
+        @test "posteriors/θ/distribution" in all_tags
+        @test length(steps_for_tag(run_dir, "posteriors/θ/distribution")) ==
+            n_iterations
+
+        # Scalars must still coexist with the histogram tag.
+        @test "posteriors/θ/alpha" in all_tags
+        @test "posteriors/θ/beta" in all_tags
+    end
+end
+
 @testitem "Default trace export does not emit distribution tags" begin
     using RxInfer, StableRNGs, TensorBoardLogger
     include(joinpath(@__DIR__, "helpers.jl"))
