@@ -161,8 +161,8 @@ log_dir = RxInfer.convert_to_tensorboard(trace; log_distributions = true)
 | Output | TensorBoard tab | Condition |
 |--------|----------------|-----------|
 | Per-iteration wall-clock duration (`iteration_time_ms`) | Scalars | always |
-| Parameterisation-aware scalar tags for each posterior (see table below) | Scalars | always |
-| Per-iteration histogram of posterior samples (`posteriors/<var>/distribution`) | Distributions / Histograms | `log_distributions = true` |
+| Parameterisation-aware scalar tags for each posterior (see table below) | Scalars | `log_posteriors` admits the variable (see [Filtering posteriors](@ref tensorboard-log-posteriors)) |
+| Per-iteration histogram of posterior samples (`posteriors/<var>/distribution`) | Distributions / Histograms | `log_distributions = true` **and** `log_posteriors` admits the variable |
 | Event breadcrumbs and `EventCounts` table | Text | `log_text_events = true` (counts always written) |
 
 #### Posterior scalar tags by family
@@ -192,6 +192,32 @@ Each posterior is logged under `posteriors/<variable>/<tag>` with one step per i
 | any other `UnivariateDistribution` (fallback) | `mean`, `var` |
 
 Marginals that are not univariate (e.g. multivariate Normal, matrix-variate posteriors) are silently skipped on the scalar path and produce no `posteriors/...` scalar tags. The histogram path is also gated on `<: UnivariateDistribution`, so the same families above are the ones that contribute to the Distributions / Histograms tabs when `log_distributions = true`.
+
+### [Filtering posteriors](@id tensorboard-log-posteriors)
+
+The `log_posteriors` keyword controls **which** marginals reach the `posteriors/<var>/*` tags. It is independent of `log_distributions`, which controls **what** is emitted (scalars only vs. scalars + per-iteration histogram). Think of `log_posteriors` as the row filter and `log_distributions` as the column filter.
+
+| `log_posteriors` value | Effect |
+|---|---|
+| `true` *(default)* | Log every marginal the model produces. |
+| `false` | Suppress every `posteriors/*` tag (both scalars and histograms). Iteration timing, event counts, and event-text breadcrumbs are unaffected. |
+| `Vector{String}` or `Vector{Symbol}` | Log only marginals whose name appears in the list. Both `["μ", "θ"]` and `[:μ, :θ]` are accepted. An empty list behaves like `false`. |
+
+```julia
+trace = result.model.metadata[:trace]
+
+# Log only μ (the τ posterior is skipped on both scalar and histogram paths).
+RxInfer.convert_to_tensorboard(
+    trace;
+    log_posteriors    = ["μ"],
+    log_distributions = true,
+)
+
+# Suppress every posterior tag while keeping iteration timing visible.
+RxInfer.convert_to_tensorboard(trace; log_posteriors = false)
+```
+
+When `log_posteriors` is an allow-list, the per-event text breadcrumb under `on_marginal_update/<var>` (gated by `log_text_events`) still fires for every variable — so you can keep visibility on which marginals updated without paying the scalar/histogram cost.
 
 ```@docs 
 RxInfer.convert_to_tensorboard

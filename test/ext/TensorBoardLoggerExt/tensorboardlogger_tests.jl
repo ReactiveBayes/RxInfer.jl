@@ -1131,3 +1131,211 @@ end
         @test "posteriors/μ/mean" in all_tags
     end
 end
+
+@testitem "log_posteriors=false suppresses every posterior tag" begin
+    using RxInfer, StableRNGs, TensorBoardLogger
+    include(joinpath(@__DIR__, "helpers.jl"))
+
+    # `log_posteriors=false` short-circuits both the scalar and histogram
+    # paths inside `OnMarginalUpdateEvent`, so no `posteriors/*` tag should
+    # appear. Iteration timing is independent and must still flow — proves
+    # the gate is scoped to posteriors and not to the whole event loop.
+    @model function iid_estimation(y)
+        μ ~ Normal(; mean = 0.0, precision = 0.1)
+        τ ~ Gamma(; shape = 1.0, rate = 1.0)
+        y .~ Normal(; mean = μ, precision = τ)
+    end
+
+    constraints = @constraints begin
+        q(μ, τ) = q(μ)q(τ)
+    end
+
+    initialization = @initialization begin
+        q(μ) = vague(NormalMeanPrecision)
+        q(τ) = vague(GammaShapeRate)
+    end
+
+    dataset = rand(StableRNG(42), NormalMeanPrecision(3.1415, 2.7182), 25)
+
+    results = infer(;
+        model          = iid_estimation(),
+        data           = (y = dataset,),
+        constraints    = constraints,
+        iterations     = 3,
+        initialization = initialization,
+        trace          = true,
+    )
+
+    trace = results.model.metadata[:trace]
+
+    with_safe_tempdir() do log_dir
+        run_dir = RxInfer.convert_to_tensorboard(
+            trace;
+            output_file       = log_dir,
+            log_posteriors    = false,
+            log_distributions = true,
+            verbose           = false,
+        )
+        all_tags = read_tags(run_dir)
+
+        # Every posterior tag is suppressed, including the histogram path
+        # that `log_distributions=true` would otherwise enable.
+        @test !("posteriors/μ/mean"         in all_tags)
+        @test !("posteriors/μ/precision"    in all_tags)
+        @test !("posteriors/μ/distribution" in all_tags)
+        @test !("posteriors/τ/shape"        in all_tags)
+        @test !("posteriors/τ/rate"         in all_tags)
+        @test !("posteriors/τ/distribution" in all_tags)
+
+        # Non-posterior outputs are unaffected.
+        @test "iteration_time_ms" in all_tags
+        @test "EventCounts"       in all_tags
+    end
+end
+
+@testitem "log_posteriors=true preserves default posterior logging" begin
+    using RxInfer, StableRNGs, TensorBoardLogger
+    include(joinpath(@__DIR__, "helpers.jl"))
+
+    # Regression guard: passing `log_posteriors=true` explicitly must
+    # produce the same posterior tags as the historical (always-on) path.
+    @model function iid_estimation(y)
+        μ ~ Normal(; mean = 0.0, precision = 0.1)
+        τ ~ Gamma(; shape = 1.0, rate = 1.0)
+        y .~ Normal(; mean = μ, precision = τ)
+    end
+
+    constraints = @constraints begin
+        q(μ, τ) = q(μ)q(τ)
+    end
+
+    initialization = @initialization begin
+        q(μ) = vague(NormalMeanPrecision)
+        q(τ) = vague(GammaShapeRate)
+    end
+
+    dataset = rand(StableRNG(42), NormalMeanPrecision(3.1415, 2.7182), 25)
+
+    n_iterations = 4
+    results = infer(;
+        model          = iid_estimation(),
+        data           = (y = dataset,),
+        constraints    = constraints,
+        iterations     = n_iterations,
+        initialization = initialization,
+        trace          = true,
+    )
+
+    trace = results.model.metadata[:trace]
+
+    with_safe_tempdir() do log_dir
+        run_dir = RxInfer.convert_to_tensorboard(
+            trace;
+            output_file    = log_dir,
+            log_posteriors = true,
+            verbose        = false,
+        )
+        all_tags = read_tags(run_dir)
+
+        @test "posteriors/μ/mean"      in all_tags
+        @test "posteriors/μ/precision" in all_tags
+        @test "posteriors/τ/shape"     in all_tags
+        @test "posteriors/τ/rate"      in all_tags
+
+        @test length(steps_for_tag(run_dir, "posteriors/μ/mean")) ==
+            n_iterations
+        @test length(steps_for_tag(run_dir, "posteriors/τ/shape")) ==
+            n_iterations
+    end
+end
+
+@testitem "log_posteriors allow-list filters scalar and histogram paths" begin
+    using RxInfer, StableRNGs, TensorBoardLogger
+    include(joinpath(@__DIR__, "helpers.jl"))
+
+    # An allow-list of variable names must restrict logging to only the
+    # named marginals, across both the scalar and histogram paths. The
+    # excluded variable's tags must be entirely absent. We also confirm
+    # that the allow-list accepts both `String` and `Symbol` element
+    # types, which is the documented dual-input contract.
+    @model function iid_estimation(y)
+        μ ~ Normal(; mean = 0.0, precision = 0.1)
+        τ ~ Gamma(; shape = 1.0, rate = 1.0)
+        y .~ Normal(; mean = μ, precision = τ)
+    end
+
+    constraints = @constraints begin
+        q(μ, τ) = q(μ)q(τ)
+    end
+
+    initialization = @initialization begin
+        q(μ) = vague(NormalMeanPrecision)
+        q(τ) = vague(GammaShapeRate)
+    end
+
+    dataset = rand(StableRNG(42), NormalMeanPrecision(3.1415, 2.7182), 25)
+
+    n_iterations = 3
+    results = infer(;
+        model          = iid_estimation(),
+        data           = (y = dataset,),
+        constraints    = constraints,
+        iterations     = n_iterations,
+        initialization = initialization,
+        trace          = true,
+    )
+
+    trace = results.model.metadata[:trace]
+
+    # String form: log only μ. τ's scalar and histogram tags must be absent.
+    with_safe_tempdir() do log_dir
+        run_dir = RxInfer.convert_to_tensorboard(
+            trace;
+            output_file       = log_dir,
+            log_posteriors    = ["μ"],
+            log_distributions = true,
+            verbose           = false,
+        )
+        all_tags = read_tags(run_dir)
+
+        @test "posteriors/μ/mean"         in all_tags
+        @test "posteriors/μ/precision"    in all_tags
+        @test "posteriors/μ/distribution" in all_tags
+        @test !("posteriors/τ/shape"        in all_tags)
+        @test !("posteriors/τ/rate"         in all_tags)
+        @test !("posteriors/τ/distribution" in all_tags)
+
+        @test length(steps_for_tag(run_dir, "posteriors/μ/mean")) ==
+            n_iterations
+    end
+
+    # Symbol form: identical filter behavior, proving String/Symbol parity.
+    with_safe_tempdir() do log_dir
+        run_dir = RxInfer.convert_to_tensorboard(
+            trace;
+            output_file    = log_dir,
+            log_posteriors = [:μ],
+            verbose        = false,
+        )
+        all_tags = read_tags(run_dir)
+
+        @test "posteriors/μ/mean"      in all_tags
+        @test "posteriors/μ/precision" in all_tags
+        @test !("posteriors/τ/shape" in all_tags)
+        @test !("posteriors/τ/rate"  in all_tags)
+    end
+
+    # Empty allow-list is the moral equivalent of `false`: nothing logged.
+    with_safe_tempdir() do log_dir
+        run_dir = RxInfer.convert_to_tensorboard(
+            trace;
+            output_file    = log_dir,
+            log_posteriors = String[],
+            verbose        = false,
+        )
+        all_tags = read_tags(run_dir)
+        @test !("posteriors/μ/mean"  in all_tags)
+        @test !("posteriors/τ/shape" in all_tags)
+        @test "iteration_time_ms" in all_tags
+    end
+end
