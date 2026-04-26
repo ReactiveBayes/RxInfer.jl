@@ -948,6 +948,45 @@ end
     end
 end
 
+@testitem "Chisq posterior emits dof scalar tag" begin
+    using RxInfer, TensorBoardLogger
+    using Distributions: Chisq
+    include(joinpath(@__DIR__, "helpers.jl"))
+
+    # Chisq is a Gamma special case (shape = ν/2, scale = 2). ReactiveMP's
+    # Gamma rules emit `Distributions.Gamma`, not Chisq, so a Chisq
+    # marginal arrives only via custom factors or projection. Drive the
+    # dispatch helper directly via the loaded extension module.
+    ext = Base.get_extension(RxInfer, :TensorBoardLoggerExt)
+    @test ext !== nothing
+
+    with_safe_tempdir() do log_dir
+        logger = TBLogger(log_dir, tb_append)
+        ctx = ext.LogContext(
+            logger;
+            log_distributions = false,
+            log_text_events   = false,
+            n_samples         = 0,
+        )
+
+        ext._log_posterior_scalars!(ctx, Chisq(3.0), :x)
+        ext._log_posterior_scalars!(ctx, Chisq(7.0), :x)
+
+        close(logger)
+        empty!(logger.all_files)
+        GC.gc()
+
+        all_tags = read_tags(log_dir)
+        @test "posteriors/x/dof" in all_tags
+
+        # Specific Chisq dispatch must beat the generic mean/var fallback.
+        @test !("posteriors/x/mean" in all_tags)
+        @test !("posteriors/x/var"  in all_tags)
+
+        @test length(steps_for_tag(log_dir, "posteriors/x/dof")) == 2
+    end
+end
+
 @testitem "Generic UnivariateDistribution fallback emits mean/var" begin
     using RxInfer, TensorBoardLogger
     using Distributions: Uniform
