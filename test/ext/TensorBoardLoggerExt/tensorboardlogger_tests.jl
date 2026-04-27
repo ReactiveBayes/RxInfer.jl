@@ -37,8 +37,10 @@ end
         @test "posteriors/τ/shape" in all_tags
         @test "posteriors/τ/rate" in all_tags
 
-        @test length(steps_for_tag(run_dir, "posteriors/μ/mean")) == n_iterations
-        @test length(steps_for_tag(run_dir, "posteriors/τ/shape")) == n_iterations
+        @test length(steps_for_tag(run_dir, "posteriors/μ/mean")) ==
+            n_iterations
+        @test length(steps_for_tag(run_dir, "posteriors/τ/shape")) ==
+            n_iterations
     end
 end
 
@@ -65,8 +67,10 @@ end
 
         @test "posteriors/μ/distribution" in all_tags
         @test "posteriors/τ/distribution" in all_tags
-        @test length(steps_for_tag(run_dir, "posteriors/μ/distribution")) == n_iterations
-        @test length(steps_for_tag(run_dir, "posteriors/τ/distribution")) == n_iterations
+        @test length(steps_for_tag(run_dir, "posteriors/μ/distribution")) ==
+            n_iterations
+        @test length(steps_for_tag(run_dir, "posteriors/τ/distribution")) ==
+            n_iterations
 
         # Scalar tags must still be present — distributions complement, not replace, scalars.
         @test "posteriors/μ/mean" in all_tags
@@ -93,7 +97,8 @@ end
         @test "posteriors/θ/alpha" in all_tags
         @test "posteriors/θ/beta" in all_tags
         @test "posteriors/θ/mean" in all_tags
-        @test length(steps_for_tag(run_dir, "posteriors/θ/alpha")) == n_iterations
+        @test length(steps_for_tag(run_dir, "posteriors/θ/alpha")) ==
+            n_iterations
     end
 end
 
@@ -118,7 +123,8 @@ end
         all_tags = read_tags(run_dir)
 
         @test "posteriors/θ/distribution" in all_tags
-        @test length(steps_for_tag(run_dir, "posteriors/θ/distribution")) == n_iterations
+        @test length(steps_for_tag(run_dir, "posteriors/θ/distribution")) ==
+            n_iterations
         @test "posteriors/θ/alpha" in all_tags
         @test "posteriors/θ/beta" in all_tags
     end
@@ -144,7 +150,8 @@ end
         @test "posteriors/σ²/scale" in all_tags
         @test "posteriors/μ/mean" in all_tags
         @test "posteriors/μ/precision" in all_tags
-        @test length(steps_for_tag(run_dir, "posteriors/σ²/shape")) == n_iterations
+        @test length(steps_for_tag(run_dir, "posteriors/σ²/shape")) ==
+            n_iterations
     end
 end
 
@@ -167,7 +174,8 @@ end
         all_tags = read_tags(run_dir)
 
         @test "posteriors/σ²/distribution" in all_tags
-        @test length(steps_for_tag(run_dir, "posteriors/σ²/distribution")) == n_iterations
+        @test length(steps_for_tag(run_dir, "posteriors/σ²/distribution")) ==
+            n_iterations
         @test "posteriors/σ²/shape" in all_tags
         @test "posteriors/σ²/scale" in all_tags
     end
@@ -175,9 +183,21 @@ end
 
 @testitem "Univariate posterior scalar dispatch coverage" begin
     using RxInfer, TensorBoardLogger
-    using Distributions: Poisson, Geometric, NegativeBinomial, Binomial,
-                         Exponential, VonMises, Weibull, LogNormal,
-                         Erlang, Laplace, Pareto, Rayleigh, Chisq, Uniform
+    using Distributions:
+        Poisson,
+        Geometric,
+        NegativeBinomial,
+        Binomial,
+        Exponential,
+        VonMises,
+        Weibull,
+        LogNormal,
+        Erlang,
+        Laplace,
+        Pareto,
+        Rayleigh,
+        Chisq,
+        Uniform
     include(joinpath(@__DIR__, "helpers.jl"))
 
     # Table-driven dispatch coverage. Each case pushes a sequence of events
@@ -191,20 +211,104 @@ end
     # full inference models. The Uniform row is the inverse case: no specific
     # dispatch exists, so it must fall through to the generic mean/var tags.
     cases = [
-        (label = "Poisson",          events = [Poisson(3.0), Poisson(4.5)],          var = :n, expected = ["rate"],                excluded = ["mean", "var"]),
-        (label = "Geometric",        events = [Geometric(0.3), Geometric(0.6)],      var = :k, expected = ["succprob"],            excluded = ["mean", "var"]),
-        (label = "NegativeBinomial", events = [NegativeBinomial(5.0, 0.4), NegativeBinomial(7.0, 0.6)], var = :k, expected = ["r", "succprob"], excluded = ["mean", "var"]),
-        (label = "Binomial",         events = [Binomial(10, 0.4), Binomial(20, 0.6)], var = :k, expected = ["ntrials", "succprob"], excluded = ["mean", "var"]),
-        (label = "Exponential",      events = [Exponential(2.0), Exponential(0.5)],  var = :x, expected = ["rate"],                excluded = ["mean", "var"]),
-        (label = "VonMises",         events = [VonMises(0.0, 2.0), VonMises(0.5, 5.0)], var = :θ, expected = ["location", "concentration"], excluded = ["mean", "var"]),
-        (label = "Weibull",          events = [Weibull(1.5, 2.0), Weibull(2.5, 1.2)], var = :t, expected = ["shape", "scale"],     excluded = ["mean", "var"]),
-        (label = "LogNormal",        events = [LogNormal(0.0, 1.0), LogNormal(0.5, 0.7)], var = :x, expected = ["meanlog", "stdlog"], excluded = ["mean", "var"]),
-        (label = "Erlang",           events = [Erlang(3, 2.0), Erlang(5, 1.5)],      var = :t, expected = ["shape", "scale"],     excluded = ["mean", "var"]),
-        (label = "Laplace",          events = [Laplace(0.0, 1.0), Laplace(0.5, 0.7)], var = :x, expected = ["location", "scale"],  excluded = ["mean", "var"]),
-        (label = "Pareto",           events = [Pareto(2.5, 1.0), Pareto(3.0, 1.5)],  var = :x, expected = ["shape", "scale"],     excluded = ["mean", "var"]),
-        (label = "Rayleigh",         events = [Rayleigh(1.0), Rayleigh(2.0)],        var = :r, expected = ["scale"],              excluded = ["mean", "var"]),
-        (label = "Chisq",            events = [Chisq(3.0), Chisq(7.0)],              var = :x, expected = ["dof"],                excluded = ["mean", "var"]),
-        (label = "Uniform (generic fallback)", events = [Uniform(0.0, 1.0)],         var = :x, expected = ["mean", "var"],        excluded = String[]),
+        (
+            label = "Poisson",
+            events = [Poisson(3.0), Poisson(4.5)],
+            var = :n,
+            expected = ["rate"],
+            excluded = ["mean", "var"],
+        ),
+        (
+            label = "Geometric",
+            events = [Geometric(0.3), Geometric(0.6)],
+            var = :k,
+            expected = ["succprob"],
+            excluded = ["mean", "var"],
+        ),
+        (
+            label = "NegativeBinomial",
+            events = [NegativeBinomial(5.0, 0.4), NegativeBinomial(7.0, 0.6)],
+            var = :k,
+            expected = ["r", "succprob"],
+            excluded = ["mean", "var"],
+        ),
+        (
+            label = "Binomial",
+            events = [Binomial(10, 0.4), Binomial(20, 0.6)],
+            var = :k,
+            expected = ["ntrials", "succprob"],
+            excluded = ["mean", "var"],
+        ),
+        (
+            label = "Exponential",
+            events = [Exponential(2.0), Exponential(0.5)],
+            var = :x,
+            expected = ["rate"],
+            excluded = ["mean", "var"],
+        ),
+        (
+            label = "VonMises",
+            events = [VonMises(0.0, 2.0), VonMises(0.5, 5.0)],
+            var = :θ,
+            expected = ["location", "concentration"],
+            excluded = ["mean", "var"],
+        ),
+        (
+            label = "Weibull",
+            events = [Weibull(1.5, 2.0), Weibull(2.5, 1.2)],
+            var = :t,
+            expected = ["shape", "scale"],
+            excluded = ["mean", "var"],
+        ),
+        (
+            label = "LogNormal",
+            events = [LogNormal(0.0, 1.0), LogNormal(0.5, 0.7)],
+            var = :x,
+            expected = ["meanlog", "stdlog"],
+            excluded = ["mean", "var"],
+        ),
+        (
+            label = "Erlang",
+            events = [Erlang(3, 2.0), Erlang(5, 1.5)],
+            var = :t,
+            expected = ["shape", "scale"],
+            excluded = ["mean", "var"],
+        ),
+        (
+            label = "Laplace",
+            events = [Laplace(0.0, 1.0), Laplace(0.5, 0.7)],
+            var = :x,
+            expected = ["location", "scale"],
+            excluded = ["mean", "var"],
+        ),
+        (
+            label = "Pareto",
+            events = [Pareto(2.5, 1.0), Pareto(3.0, 1.5)],
+            var = :x,
+            expected = ["shape", "scale"],
+            excluded = ["mean", "var"],
+        ),
+        (
+            label = "Rayleigh",
+            events = [Rayleigh(1.0), Rayleigh(2.0)],
+            var = :r,
+            expected = ["scale"],
+            excluded = ["mean", "var"],
+        ),
+        (
+            label = "Chisq",
+            events = [Chisq(3.0), Chisq(7.0)],
+            var = :x,
+            expected = ["dof"],
+            excluded = ["mean", "var"],
+        ),
+        (
+            label = "Uniform (generic fallback)",
+            events = [Uniform(0.0, 1.0)],
+            var = :x,
+            expected = ["mean", "var"],
+            excluded = String[],
+        ),
     ]
 
     @testset "$(case.label)" for case in cases
@@ -217,7 +321,8 @@ end
         for suffix in case.expected
             tag = "posteriors/$(case.var)/$(suffix)"
             @test tag in result.tags
-            @test length(get(result.steps, tag, BitSet())) == length(case.events)
+            @test length(get(result.steps, tag, BitSet())) ==
+                length(case.events)
         end
         for suffix in case.excluded
             @test !("posteriors/$(case.var)/$(suffix)" in result.tags)
@@ -237,7 +342,9 @@ end
     # predictive over `n_trials` future flips and log it via the
     # Binomial dispatch.
     n_iterations = 2
-    results = coin_toss_inference(iterations = n_iterations, returnvars = (θ = KeepEach(),))
+    results = coin_toss_inference(
+        iterations = n_iterations, returnvars = (θ = KeepEach(),)
+    )
     @test length(results.posteriors[:θ]) == n_iterations
 
     ext = Base.get_extension(RxInfer, :TensorBoardLoggerExt)
@@ -275,7 +382,8 @@ end
         @test "posteriors/y_pred/ntrials" in all_tags
         @test "posteriors/y_pred/succprob" in all_tags
 
-        @test length(steps_for_tag(run_dir, "posteriors/y_pred/ntrials")) == n_iterations
+        @test length(steps_for_tag(run_dir, "posteriors/y_pred/ntrials")) ==
+            n_iterations
     end
 end
 
@@ -400,8 +508,10 @@ end
         @test "posteriors/μ/precision" in all_tags
         @test "posteriors/τ/shape" in all_tags
         @test "posteriors/τ/rate" in all_tags
-        @test length(steps_for_tag(run_dir, "posteriors/μ/mean")) == n_iterations
-        @test length(steps_for_tag(run_dir, "posteriors/τ/shape")) == n_iterations
+        @test length(steps_for_tag(run_dir, "posteriors/μ/mean")) ==
+            n_iterations
+        @test length(steps_for_tag(run_dir, "posteriors/τ/shape")) ==
+            n_iterations
     end
 end
 
@@ -435,7 +545,8 @@ end
             @test !("posteriors/τ/shape" in all_tags)
             @test !("posteriors/τ/rate" in all_tags)
             @test !("posteriors/τ/distribution" in all_tags)
-            @test length(steps_for_tag(run_dir, "posteriors/μ/mean")) == n_iterations
+            @test length(steps_for_tag(run_dir, "posteriors/μ/mean")) ==
+                n_iterations
         end
     end
 

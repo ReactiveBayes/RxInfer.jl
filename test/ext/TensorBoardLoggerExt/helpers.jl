@@ -134,12 +134,16 @@ end
     q(μ, τ) = q(μ)q(τ)
 end
 
-function iid_normal_inference(; iterations::Int = 2, n_samples::Int = 10, seed::Int = 42, kwargs...)
+function iid_normal_inference(;
+    iterations::Int = 2, n_samples::Int = 10, seed::Int = 42, kwargs...
+)
     initialization = @initialization begin
         q(μ) = vague(NormalMeanPrecision)
         q(τ) = vague(GammaShapeRate)
     end
-    dataset = rand(StableRNG(seed), NormalMeanPrecision(3.1415, 2.7182), n_samples)
+    dataset = rand(
+        StableRNG(seed), NormalMeanPrecision(3.1415, 2.7182), n_samples
+    )
     return infer(;
         model          = iid_normal_model(),
         data           = (y = dataset,),
@@ -156,7 +160,9 @@ end
     y .~ Bernoulli(θ)
 end
 
-function coin_toss_inference(; iterations::Int = 2, n_samples::Int = 10, seed::Int = 42, kwargs...)
+function coin_toss_inference(;
+    iterations::Int = 2, n_samples::Int = 10, seed::Int = 42, kwargs...
+)
     initialization = @initialization begin
         q(θ) = vague(Beta)
     end
@@ -181,12 +187,16 @@ end
     q(μ, σ²) = q(μ)q(σ²)
 end
 
-function iid_invgamma_inference(; iterations::Int = 2, n_samples::Int = 10, seed::Int = 42, kwargs...)
+function iid_invgamma_inference(;
+    iterations::Int = 2, n_samples::Int = 10, seed::Int = 42, kwargs...
+)
     initialization = @initialization begin
         q(μ) = vague(NormalMeanVariance)
         q(σ²) = vague(GammaInverse)
     end
-    dataset = rand(StableRNG(seed), NormalMeanVariance(3.1415, 1.0 / 2.7182), n_samples)
+    dataset = rand(
+        StableRNG(seed), NormalMeanVariance(3.1415, 1.0 / 2.7182), n_samples
+    )
     return infer(;
         model          = iid_invgamma_model(),
         data           = (y = dataset,),
