@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.2.1] - 2026-04-27
+
 ### Added
 - `TensorBoardLoggerExt` posterior scalar logging now covers more univariate families. In addition to `Normal` (mean/precision) and `Gamma` (shape/rate), it now emits parameterisation-aware tags for `Beta` (alpha/beta/mean), `Bernoulli` (succprob), `Binomial` (ntrials/succprob), `InverseGamma` / `GammaInverse` (shape/scale), `Poisson` (rate), `Geometric` (succprob), `NegativeBinomial` (r/succprob), `Exponential` (rate), `VonMises` (location/concentration), `Weibull` (shape/scale), `LogNormal` (meanlog/stdlog), and `Erlang` (shape/scale), `Laplace` (location/scale), `Pareto` (shape/scale), `Rayleigh` (scale), and `Chisq` (dof). Any remaining `UnivariateDistribution` falls back to generic `mean` and `var` tags so unknown posteriors still produce visible convergence traces.
 - `RxInfer.convert_to_tensorboard` accepts a new `log_posteriors` keyword that filters which marginals reach the `posteriors/*` tags. Pass `false` to suppress every posterior tag (scalars and histograms), `true` (default) to keep current behaviour, or a `Vector{String}` / `Vector{Symbol}` allow-list (e.g. `["μ"]` or `[:μ]`) to log only the named variables. Iteration timing, event counts, and event-text breadcrumbs are unaffected by the filter.
@@ -177,7 +179,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.2.0...HEAD
+[Unreleased]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.2.1...HEAD
+[5.2.1]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.2.0..v5.2.1
 [5.2.0]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.1.0...v5.2.0
 [5.1.0]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.1.0...v5.0.0
 [5.0.0]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.0.0...v4.7.3
