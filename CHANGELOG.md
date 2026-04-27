@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `TensorBoardLoggerExt` now emits a `Summary` text tag alongside `EventCounts` with a single-snapshot timing rollup of the inference run: `model_build` (wall-clock between `BeforeModelCreationEvent` and `AfterModelCreationEvent`), `inference` (between `BeforeInferenceEvent` and `AfterInferenceEvent`), `total_wall` (first-to-last traced event), and per-iteration aggregates (`n_iterations`, `iter_total`, `iter_mean`, `iter_min`, `iter_max`). Lines are skipped silently when the corresponding measurement is missing — runs that bypass model creation or have no variational iterations still produce a useful Summary instead of an empty or misleading-zero table. The existing `iteration_time_ms` per-iteration scalar series is unchanged.
 
+### Changed
+- Refactored `test/ext/TensorBoardLoggerExt/tensorboardlogger_tests.jl` for efficiency and maintainability. The 14 per-distribution scalar-dispatch tests (Poisson, Geometric, NegativeBinomial, Binomial, Exponential, VonMises, Weibull, LogNormal, Erlang, Laplace, Pareto, Rayleigh, Chisq, Uniform-fallback) collapse into a single table-driven `@testitem` with one `@testset` per row, and the three Summary-writer subtests collapse into a single `@testitem` with three `@testset`s. Shared `@model` / `@constraints` / `@initialization` boilerplate for the IID Normal, coin-toss, and IID InverseGamma fixtures moves into `helpers.jl` as `iid_normal_inference`, `coin_toss_inference`, and `iid_invgamma_inference` factories, plus a `with_dispatch_logger` helper that snapshots `(tags, steps)` after closing the TBLogger so the Windows EBUSY retry in `with_safe_tempdir` still applies. Net: ~30 → 17 testitems; ~1490 → ~480 lines; per-concern parallelism and failure granularity preserved via `@testset`. No behavioural change to extension code.
+
 ## [5.2.1] - 2026-04-27
 
 ### Added
