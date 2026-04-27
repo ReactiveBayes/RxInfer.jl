@@ -5,7 +5,7 @@ export BeforeDataUpdateEvent, AfterDataUpdateEvent
 export OnMarginalUpdateEvent
 export BeforeAutostartEvent, AfterAutostartEvent
 
-import ReactiveMP: Event, event_name, generate_span_id
+import ReactiveMP: Event, event_name, generate_span_id, getdata
 
 ## RxInfer-level callback event types
 ## These events subtype `ReactiveMP.Event{E}` and carry relevant data as fields.
@@ -204,4 +204,98 @@ See also: [`BeforeAutostartEvent`](@ref), [Callbacks](@ref manual-inference-call
 struct AfterAutostartEvent{E, S} <: Event{:after_autostart}
     engine::E
     span_id::S
+end
+
+## Compact `Base.show` methods for Tier A callback events. Format: single-line
+## `EventName(k=v, ...)`. Span identifiers are truncated to a 4-character prefix
+## so trace output (e.g. TBLogger Text tab) stays readable.
+
+# Render a span identifier as a short 4-character prefix.
+function _show_span(io::IO, span_id)
+    s = string(span_id)
+    if length(s) >= 4
+        print(io, SubString(s, 1, 4), "…")
+    else
+        print(io, s)
+    end
+end
+
+_show_model(io::IO, model) = print(io, nameof(typeof(model)))
+
+function Base.show(io::IO, ev::BeforeModelCreationEvent)
+    print(io, "BeforeModelCreationEvent(span=")
+    _show_span(io, ev.span_id)
+    print(io, ")")
+end
+
+function Base.show(io::IO, ev::AfterModelCreationEvent)
+    print(io, "AfterModelCreationEvent(model=")
+    _show_model(io, ev.model)
+    print(io, ", span=")
+    _show_span(io, ev.span_id)
+    print(io, ")")
+end
+
+function Base.show(io::IO, ev::BeforeInferenceEvent)
+    print(io, "BeforeInferenceEvent(model=")
+    _show_model(io, ev.model)
+    print(io, ", span=")
+    _show_span(io, ev.span_id)
+    print(io, ")")
+end
+
+function Base.show(io::IO, ev::AfterInferenceEvent)
+    print(io, "AfterInferenceEvent(model=")
+    _show_model(io, ev.model)
+    print(io, ", span=")
+    _show_span(io, ev.span_id)
+    print(io, ")")
+end
+
+function Base.show(io::IO, ev::BeforeIterationEvent)
+    print(io, "BeforeIterationEvent(iter=", ev.iteration)
+    ev.stop_iteration && print(io, ", stop=true")
+    print(io, ", span=")
+    _show_span(io, ev.span_id)
+    print(io, ")")
+end
+
+function Base.show(io::IO, ev::AfterIterationEvent)
+    print(io, "AfterIterationEvent(iter=", ev.iteration)
+    ev.stop_iteration && print(io, ", stop=true")
+    print(io, ", span=")
+    _show_span(io, ev.span_id)
+    print(io, ")")
+end
+
+function Base.show(io::IO, ev::BeforeDataUpdateEvent)
+    print(io, "BeforeDataUpdateEvent(data=", collect(keys(ev.data)))
+    print(io, ", span=")
+    _show_span(io, ev.span_id)
+    print(io, ")")
+end
+
+function Base.show(io::IO, ev::AfterDataUpdateEvent)
+    print(io, "AfterDataUpdateEvent(data=", collect(keys(ev.data)))
+    print(io, ", span=")
+    _show_span(io, ev.span_id)
+    print(io, ")")
+end
+
+function Base.show(io::IO, ev::OnMarginalUpdateEvent)
+    print(io, "OnMarginalUpdateEvent(var=:", ev.variable_name, ", update=")
+    show(io, getdata(ev.update))
+    print(io, ")")
+end
+
+function Base.show(io::IO, ev::BeforeAutostartEvent)
+    print(io, "BeforeAutostartEvent(engine=", nameof(typeof(ev.engine)), ", span=")
+    _show_span(io, ev.span_id)
+    print(io, ")")
+end
+
+function Base.show(io::IO, ev::AfterAutostartEvent)
+    print(io, "AfterAutostartEvent(engine=", nameof(typeof(ev.engine)), ", span=")
+    _show_span(io, ev.span_id)
+    print(io, ")")
 end
