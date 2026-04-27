@@ -56,6 +56,21 @@ mutable struct LogContext{L}
     log_text_events::Bool
     n_samples::Int
     current_time_ns::UInt64
+    # ─── Tier 1 timing summary ───────────────────────────────────────────
+    # Singleton spans (one model-creation, one inference per `infer` call) so
+    # we don't need a span_id-keyed dict — just remember the start `time_ns`
+    # and compute the wall-clock delta on the matching `After*` event.
+    # `0` means "the matching Before* event has not been seen", `NaN` ms
+    # means "duration not measured" — both are encoded as separate fields so
+    # the summary writer can distinguish missing vs. zero-duration runs.
+    model_build_start_ns::UInt64
+    model_build_ms::Float64
+    inference_start_ns::UInt64
+    inference_ms::Float64
+    # First/last `time_ns` across all traced events — drives the run-wide
+    # wall-clock figure in the Summary text tag.
+    first_event_ns::UInt64
+    last_event_ns::UInt64
 end
 
 # Normalize the user-facing `log_posteriors` value to the internal
@@ -75,6 +90,12 @@ LogContext(logger; log_posteriors::Union{Bool, AbstractVector{<:Union{Symbol, Ab
     log_distributions,
     log_text_events,
     n_samples,
+    zero(UInt64),
+    zero(UInt64),
+    NaN,
+    zero(UInt64),
+    NaN,
+    zero(UInt64),
     zero(UInt64),
 )
 
@@ -203,9 +224,46 @@ function _log_posterior_distribution!(
 end
 _log_posterior_distribution!(::LogContext, ::Any, ::Symbol) = nothing
 
+# ─── Run summary writer ───────────────────────────────────────────────────
+# Emits a single text tag (`Summary`) at step 1 with a one-column table of
+# `key: value` lines — same render layout as `EventCounts`. Lines that
+# correspond to unmeasured fields (no matching Before/After event seen,
+# or no iteration durations recorded) are silently skipped so the table
+# never advertises misleading zero-duration values for missing data.
+@inline _fmt_ms(x::Float64) = string(round(x; digits = 3), " ms")
+
+function _log_summary!(ctx::LogContext)
+    lines = String[]
+    if !isnan(ctx.model_build_ms)
+        push!(lines, "model_build: $(_fmt_ms(ctx.model_build_ms))")
+    end
+    if !isnan(ctx.inference_ms)
+        push!(lines, "inference: $(_fmt_ms(ctx.inference_ms))")
+    end
+    if ctx.first_event_ns != zero(UInt64) &&
+        ctx.last_event_ns >= ctx.first_event_ns
+        wall_ms = (ctx.last_event_ns - ctx.first_event_ns) / 1e6
+        push!(lines, "total_wall: $(_fmt_ms(wall_ms))")
+    end
+    if !isempty(ctx.iteration_durations)
+        durations = collect(values(ctx.iteration_durations))
+        push!(lines, "n_iterations: $(length(durations))")
+        push!(lines, "iter_total: $(_fmt_ms(sum(durations)))")
+        push!(lines, "iter_mean: $(_fmt_ms(sum(durations) / length(durations)))")
+        push!(lines, "iter_min: $(_fmt_ms(minimum(durations)))")
+        push!(lines, "iter_max: $(_fmt_ms(maximum(durations)))")
+    end
+    isempty(lines) && return nothing
+    TensorBoardLogger.log_text(
+        ctx.logger, "Summary", reshape(lines, :, 1); step = 1
+    )
+    return nothing
+end
+
 # ─── Per-event-type logging methods ───────────────────────────────────────
 
 function log_event(ctx::LogContext, ev::BeforeModelCreationEvent, idx)
+    ctx.model_build_start_ns = ctx.current_time_ns
     _log_text!(
         ctx,
         "before_model_creation",
@@ -215,6 +273,10 @@ function log_event(ctx::LogContext, ev::BeforeModelCreationEvent, idx)
 end
 
 function log_event(ctx::LogContext, ev::AfterModelCreationEvent, idx)
+    if ctx.model_build_start_ns != zero(UInt64)
+        ctx.model_build_ms =
+            (ctx.current_time_ns - ctx.model_build_start_ns) / 1e6
+    end
     _log_text!(
         ctx,
         "after_model_creation",
@@ -224,6 +286,7 @@ function log_event(ctx::LogContext, ev::AfterModelCreationEvent, idx)
 end
 
 function log_event(ctx::LogContext, ev::BeforeInferenceEvent, idx)
+    ctx.inference_start_ns = ctx.current_time_ns
     _log_text!(
         ctx,
         "before_inference",
@@ -233,6 +296,10 @@ function log_event(ctx::LogContext, ev::BeforeInferenceEvent, idx)
 end
 
 function log_event(ctx::LogContext, ev::AfterInferenceEvent, idx)
+    if ctx.inference_start_ns != zero(UInt64)
+        ctx.inference_ms =
+            (ctx.current_time_ns - ctx.inference_start_ns) / 1e6
+    end
     _log_text!(
         ctx,
         "after_inference",
@@ -511,6 +578,10 @@ function RxInfer.convert_to_tensorboard(
         ev_sym              = event_name(typeof(ev))
         ctx.counts[ev_sym]  = get(ctx.counts, ev_sym, 0) + 1
         ctx.current_time_ns = traced.time_ns
+        if ctx.first_event_ns == zero(UInt64)
+            ctx.first_event_ns = traced.time_ns
+        end
+        ctx.last_event_ns = traced.time_ns
         _log_text!(ctx, "Events", "Step $idx: $(ev_sym)"; step = idx)
         log_event(ctx, ev, idx)
     end
@@ -527,6 +598,8 @@ function RxInfer.convert_to_tensorboard(
     TensorBoardLogger.log_text(
         ctx.logger, "EventCounts", counts_table; step = 1
     )
+
+    _log_summary!(ctx)
 
     close(logger)
     # Drop internal references to the closed IOStreams so any lingering

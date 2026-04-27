@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `TensorBoardLoggerExt` now emits a `Summary` text tag alongside `EventCounts` with a single-snapshot timing rollup of the inference run: `model_build` (wall-clock between `BeforeModelCreationEvent` and `AfterModelCreationEvent`), `inference` (between `BeforeInferenceEvent` and `AfterInferenceEvent`), `total_wall` (first-to-last traced event), and per-iteration aggregates (`n_iterations`, `iter_total`, `iter_mean`, `iter_min`, `iter_max`). Lines are skipped silently when the corresponding measurement is missing — runs that bypass model creation or have no variational iterations still produce a useful Summary instead of an empty or misleading-zero table. The existing `iteration_time_ms` per-iteration scalar series is unchanged.
+
 ## [5.2.1] - 2026-04-27
 
 ### Added

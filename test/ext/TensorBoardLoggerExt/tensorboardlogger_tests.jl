@@ -1339,3 +1339,151 @@ end
         @test "iteration_time_ms" in all_tags
     end
 end
+
+@testitem "Summary tag is emitted on real inference runs" begin
+    using RxInfer, StableRNGs, TensorBoardLogger
+    include(joinpath(@__DIR__, "helpers.jl"))
+
+    # End-to-end: a real `infer` call exercises every Tier 1 source — model
+    # creation, inference span, and per-iteration timing — so the Summary
+    # tag must appear alongside `EventCounts` in the export.
+    @model function iid_estimation(y)
+        μ ~ Normal(; mean = 0.0, precision = 0.1)
+        τ ~ Gamma(; shape = 1.0, rate = 1.0)
+        y .~ Normal(; mean = μ, precision = τ)
+    end
+
+    constraints = @constraints begin
+        q(μ, τ) = q(μ)q(τ)
+    end
+
+    initialization = @initialization begin
+        q(μ) = vague(NormalMeanPrecision)
+        q(τ) = vague(GammaShapeRate)
+    end
+
+    dataset = rand(StableRNG(42), NormalMeanPrecision(3.1415, 2.7182), 25)
+
+    results = infer(;
+        model          = iid_estimation(),
+        data           = (y = dataset,),
+        constraints    = constraints,
+        iterations     = 3,
+        initialization = initialization,
+        trace          = true,
+    )
+
+    trace = results.model.metadata[:trace]
+
+    with_safe_tempdir() do log_dir
+        run_dir = RxInfer.convert_to_tensorboard(
+            trace; output_file = log_dir, verbose = false
+        )
+        all_tags = read_tags(run_dir)
+
+        @test "Summary" in all_tags
+        @test "EventCounts" in all_tags
+        # Summary must coexist with the existing scalar tags it does not
+        # replace. Iteration timing remains the per-iteration scalar series;
+        # `Summary` aggregates it into a single text snapshot.
+        @test "iteration_time_ms" in all_tags
+    end
+end
+
+@testitem "Summary writer skips unmeasured timing fields" begin
+    using RxInfer, TensorBoardLogger
+    include(joinpath(@__DIR__, "helpers.jl"))
+
+    # An empty LogContext (no events processed, no iteration durations) must
+    # not emit a Summary tag at all — every line in the table corresponds to
+    # a measurement, so a fully empty context has nothing to log. This guards
+    # against a misleading "all-zero" Summary appearing in degenerate runs.
+    ext = Base.get_extension(RxInfer, :TensorBoardLoggerExt)
+    @test ext !== nothing
+
+    with_safe_tempdir() do log_dir
+        logger = TBLogger(log_dir, tb_append)
+        ctx = ext.LogContext(
+            logger;
+            log_distributions = false,
+            log_text_events   = false,
+            n_samples         = 0,
+        )
+
+        ext._log_summary!(ctx)
+
+        close(logger)
+        empty!(logger.all_files)
+        GC.gc()
+
+        @test !("Summary" in read_tags(log_dir))
+    end
+end
+
+@testitem "Summary writer emits tag when iteration durations are present" begin
+    using RxInfer, TensorBoardLogger
+    include(joinpath(@__DIR__, "helpers.jl"))
+
+    # Drive `_log_summary!` directly with a minimal populated context — only
+    # iteration durations, no model/inference spans. The Summary tag must
+    # still be emitted (n_iterations + iter_* lines) so partial coverage
+    # (e.g. a streaming/autostart run that bypasses the inference span)
+    # still surfaces useful timing information.
+    ext = Base.get_extension(RxInfer, :TensorBoardLoggerExt)
+    @test ext !== nothing
+
+    with_safe_tempdir() do log_dir
+        logger = TBLogger(log_dir, tb_append)
+        ctx = ext.LogContext(
+            logger;
+            log_distributions = false,
+            log_text_events   = false,
+            n_samples         = 0,
+        )
+        ctx.iteration_durations[1] = 12.5
+        ctx.iteration_durations[2] = 8.0
+        ctx.iteration_durations[3] = 15.0
+
+        ext._log_summary!(ctx)
+
+        close(logger)
+        empty!(logger.all_files)
+        GC.gc()
+
+        @test "Summary" in read_tags(log_dir)
+    end
+end
+
+@testitem "Summary writer emits tag when only span timings are present" begin
+    using RxInfer, TensorBoardLogger
+    include(joinpath(@__DIR__, "helpers.jl"))
+
+    # Iteration durations may be absent (e.g. a single-pass run with no
+    # variational iterations) yet the model_build/inference spans should
+    # still produce a Summary table. Drive `_log_summary!` with only the
+    # span fields populated to lock that in.
+    ext = Base.get_extension(RxInfer, :TensorBoardLoggerExt)
+    @test ext !== nothing
+
+    with_safe_tempdir() do log_dir
+        logger = TBLogger(log_dir, tb_append)
+        ctx = ext.LogContext(
+            logger;
+            log_distributions = false,
+            log_text_events   = false,
+            n_samples         = 0,
+        )
+        ctx.model_build_ms = 4.2
+        ctx.inference_ms = 17.3
+        ctx.first_event_ns = UInt64(1_000_000_000)
+        ctx.last_event_ns = UInt64(1_025_000_000)
+
+        ext._log_summary!(ctx)
+
+        close(logger)
+        empty!(logger.all_files)
+        GC.gc()
+
+        @test "Summary" in read_tags(log_dir)
+    end
+end
