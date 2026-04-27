@@ -249,7 +249,9 @@ function _log_summary!(ctx::LogContext)
         durations = collect(values(ctx.iteration_durations))
         push!(lines, "n_iterations: $(length(durations))")
         push!(lines, "iter_total: $(_fmt_ms(sum(durations)))")
-        push!(lines, "iter_mean: $(_fmt_ms(sum(durations) / length(durations)))")
+        push!(
+            lines, "iter_mean: $(_fmt_ms(sum(durations) / length(durations)))"
+        )
         push!(lines, "iter_min: $(_fmt_ms(minimum(durations)))")
         push!(lines, "iter_max: $(_fmt_ms(maximum(durations)))")
     end
@@ -297,8 +299,7 @@ end
 
 function log_event(ctx::LogContext, ev::AfterInferenceEvent, idx)
     if ctx.inference_start_ns != zero(UInt64)
-        ctx.inference_ms =
-            (ctx.current_time_ns - ctx.inference_start_ns) / 1e6
+        ctx.inference_ms = (ctx.current_time_ns - ctx.inference_start_ns) / 1e6
     end
     _log_text!(
         ctx,
