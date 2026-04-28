@@ -106,6 +106,15 @@ LogContext(logger; log_posteriors::Union{Bool, AbstractVector{<:Union{Symbol, Ab
     ctx.log_text_events &&
     TensorBoardLogger.log_text(ctx.logger, tag, msg; step = step)
 
+# Render an event in compact form (`IOContext(:compact => true)`). This is
+# strictly cheaper than `repr(ev)`: `repr` goes through the no-context path,
+# which the new event `Base.show` methods treat as the *full* form
+# (`messages=(Message(0.1), …)`, full UUID), so on a large trace `repr` would
+# allocate the full distribution data per event for every Text-tag entry.
+# `sprint` with the compact flag yields the short `nmsgs=N` / 4-char span
+# form that fits one log line.
+@inline _compact_repr(ev) = sprint(show, ev; context = :compact => true)
+
 # Per-variable gate for posterior scalar + histogram logging. Dispatches on
 # the runtime type of `log_posteriors`: `Bool` is the global on/off, and
 # `Set{Symbol}` restricts logging to an explicit allow-list of variable
@@ -256,7 +265,7 @@ end
 
 function log_event(ctx::LogContext, ev::BeforeModelCreationEvent, idx)
     ctx.model_build_start_ns = ctx.current_time_ns
-    _log_text!(ctx, "before_model_creation", repr(ev); step = idx)
+    _log_text!(ctx, "before_model_creation", _compact_repr(ev); step = idx)
 end
 
 function log_event(ctx::LogContext, ev::AfterModelCreationEvent, idx)
@@ -264,33 +273,33 @@ function log_event(ctx::LogContext, ev::AfterModelCreationEvent, idx)
         ctx.model_build_ms =
             (ctx.current_time_ns - ctx.model_build_start_ns) / 1e6
     end
-    _log_text!(ctx, "after_model_creation", repr(ev); step = idx)
+    _log_text!(ctx, "after_model_creation", _compact_repr(ev); step = idx)
 end
 
 function log_event(ctx::LogContext, ev::BeforeInferenceEvent, idx)
     ctx.inference_start_ns = ctx.current_time_ns
-    _log_text!(ctx, "before_inference", repr(ev); step = idx)
+    _log_text!(ctx, "before_inference", _compact_repr(ev); step = idx)
 end
 
 function log_event(ctx::LogContext, ev::AfterInferenceEvent, idx)
     if ctx.inference_start_ns != zero(UInt64)
         ctx.inference_ms = (ctx.current_time_ns - ctx.inference_start_ns) / 1e6
     end
-    _log_text!(ctx, "after_inference", repr(ev); step = idx)
+    _log_text!(ctx, "after_inference", _compact_repr(ev); step = idx)
 end
 
 # BeforeIterationEvent absorbs the start-of-iteration timing bookkeeping
 # that previously lived in a pre-scan loop — we now stash the start time
 # in-line as events stream by, via `ctx.current_time_ns`.
 function log_event(ctx::LogContext, ev::BeforeIterationEvent, _idx)
-    _log_text!(ctx, "before_iteration", repr(ev); step = ev.iteration)
+    _log_text!(ctx, "before_iteration", _compact_repr(ev); step = ev.iteration)
     ctx.before_times[ev.span_id] = (ev.iteration, ctx.current_time_ns)
 end
 
 # AfterIterationEvent pairs with the matching BeforeIterationEvent via
 # `span_id` to compute and log the iteration's wall-clock duration.
 function log_event(ctx::LogContext, ev::AfterIterationEvent, _idx)
-    _log_text!(ctx, "after_iteration", repr(ev); step = ev.iteration)
+    _log_text!(ctx, "after_iteration", _compact_repr(ev); step = ev.iteration)
     if haskey(ctx.before_times, ev.span_id)
         (iter, t0) = ctx.before_times[ev.span_id]
         duration_ms = (ctx.current_time_ns - t0) / 1e6
@@ -302,11 +311,11 @@ function log_event(ctx::LogContext, ev::AfterIterationEvent, _idx)
 end
 
 function log_event(ctx::LogContext, ev::BeforeDataUpdateEvent, idx)
-    _log_text!(ctx, "before_data_update", repr(ev); step = idx)
+    _log_text!(ctx, "before_data_update", _compact_repr(ev); step = idx)
 end
 
 function log_event(ctx::LogContext, ev::AfterDataUpdateEvent, idx)
-    _log_text!(ctx, "after_data_update", repr(ev); step = idx)
+    _log_text!(ctx, "after_data_update", _compact_repr(ev); step = idx)
 end
 
 # OnMarginalUpdateEvent carries text, scalar, and distribution logging for
@@ -319,7 +328,7 @@ function log_event(ctx::LogContext, ev::OnMarginalUpdateEvent, idx)
     _log_text!(
         ctx,
         "on_marginal_update/$(ev.variable_name)",
-        repr(ev);
+        _compact_repr(ev);
         step = idx,
     )
     _should_log_posterior(ctx, ev.variable_name) || return nothing
@@ -349,71 +358,71 @@ function log_event(ctx::LogContext, ev::OnMarginalUpdateEvent, idx)
 end
 
 function log_event(ctx::LogContext, ev::BeforeAutostartEvent, idx)
-    _log_text!(ctx, "before_autostart", repr(ev); step = idx)
+    _log_text!(ctx, "before_autostart", _compact_repr(ev); step = idx)
 end
 
 function log_event(ctx::LogContext, ev::AfterAutostartEvent, idx)
-    _log_text!(ctx, "after_autostart", repr(ev); step = idx)
+    _log_text!(ctx, "after_autostart", _compact_repr(ev); step = idx)
 end
 
 function log_event(
     ctx::LogContext, ev::ReactiveMP.BeforeMessageRuleCallEvent, idx
 )
-    _log_text!(ctx, "before_message_rule_call", repr(ev); step = idx)
+    _log_text!(ctx, "before_message_rule_call", _compact_repr(ev); step = idx)
 end
 
 function log_event(
     ctx::LogContext, ev::ReactiveMP.AfterMessageRuleCallEvent, idx
 )
-    _log_text!(ctx, "after_message_rule_call", repr(ev); step = idx)
+    _log_text!(ctx, "after_message_rule_call", _compact_repr(ev); step = idx)
 end
 
 function log_event(
     ctx::LogContext, ev::ReactiveMP.BeforeProductOfMessagesEvent, idx
 )
-    _log_text!(ctx, "before_product_of_messages", repr(ev); step = idx)
+    _log_text!(ctx, "before_product_of_messages", _compact_repr(ev); step = idx)
 end
 
 function log_event(
     ctx::LogContext, ev::ReactiveMP.AfterProductOfMessagesEvent, idx
 )
-    _log_text!(ctx, "after_product_of_messages", repr(ev); step = idx)
+    _log_text!(ctx, "after_product_of_messages", _compact_repr(ev); step = idx)
 end
 
 function log_event(
     ctx::LogContext, ev::ReactiveMP.BeforeProductOfTwoMessagesEvent, idx
 )
-    _log_text!(ctx, "before_product_of_two_messages", repr(ev); step = idx)
+    _log_text!(ctx, "before_product_of_two_messages", _compact_repr(ev); step = idx)
 end
 
 function log_event(
     ctx::LogContext, ev::ReactiveMP.AfterProductOfTwoMessagesEvent, idx
 )
-    _log_text!(ctx, "after_product_of_two_messages", repr(ev); step = idx)
+    _log_text!(ctx, "after_product_of_two_messages", _compact_repr(ev); step = idx)
 end
 
 function log_event(
     ctx::LogContext, ev::ReactiveMP.BeforeMarginalComputationEvent, idx
 )
-    _log_text!(ctx, "before_marginal_computation", repr(ev); step = idx)
+    _log_text!(ctx, "before_marginal_computation", _compact_repr(ev); step = idx)
 end
 
 function log_event(
     ctx::LogContext, ev::ReactiveMP.AfterMarginalComputationEvent, idx
 )
-    _log_text!(ctx, "after_marginal_computation", repr(ev); step = idx)
+    _log_text!(ctx, "after_marginal_computation", _compact_repr(ev); step = idx)
 end
 
 function log_event(
     ctx::LogContext, ev::ReactiveMP.BeforeFormConstraintAppliedEvent, idx
 )
-    _log_text!(ctx, "before_form_constraint_applied", repr(ev); step = idx)
+    _log_text!(ctx, "before_form_constraint_applied", _compact_repr(ev); step = idx)
 end
 
 function log_event(
     ctx::LogContext, ev::ReactiveMP.AfterFormConstraintAppliedEvent, idx
 )
-    _log_text!(ctx, "after_form_constraint_applied", repr(ev); step = idx)
+    _log_text!(ctx, "after_form_constraint_applied", _compact_repr(ev); step = idx)
 end
 
 # Fallback for unknown event types
