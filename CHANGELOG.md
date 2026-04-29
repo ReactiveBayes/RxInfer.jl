@@ -5,11 +5,35 @@ All notable changes to RxInfer.jl will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
 ## [Unreleased]
 
 - Added Perfetto trace viewer support: `perfetto_view(trace)` converts a `RxInferTraceCallbacks` trace to Perfetto JSON, and `perfetto_open(trace)` opens it directly in the Perfetto UI in the browser.
 
-## [5.0.0]
+## [5.2.1] - 2026-04-27
+
+### Added
+- `TensorBoardLoggerExt` posterior scalar logging now covers more univariate families. In addition to `Normal` (mean/precision) and `Gamma` (shape/rate), it now emits parameterisation-aware tags for `Beta` (alpha/beta/mean), `Bernoulli` (succprob), `Binomial` (ntrials/succprob), `InverseGamma` / `GammaInverse` (shape/scale), `Poisson` (rate), `Geometric` (succprob), `NegativeBinomial` (r/succprob), `Exponential` (rate), `VonMises` (location/concentration), `Weibull` (shape/scale), `LogNormal` (meanlog/stdlog), and `Erlang` (shape/scale), `Laplace` (location/scale), `Pareto` (shape/scale), `Rayleigh` (scale), and `Chisq` (dof). Any remaining `UnivariateDistribution` falls back to generic `mean` and `var` tags so unknown posteriors still produce visible convergence traces.
+- `RxInfer.convert_to_tensorboard` accepts a new `log_posteriors` keyword that filters which marginals reach the `posteriors/*` tags. Pass `false` to suppress every posterior tag (scalars and histograms), `true` (default) to keep current behaviour, or a `Vector{String}` / `Vector{Symbol}` allow-list (e.g. `["μ"]` or `[:μ]`) to log only the named variables. Iteration timing, event counts, and event-text breadcrumbs are unaffected by the filter.
+
+## [5.2.0] - 2026-04-24
+
+### Added 
+- The `trace = ...` keyword argument now accepts a tuple of symbols. In this case, 
+  only the events, whose names are present in the tuple will be traced.
+
+## [5.1.0] - 2026-04-23
+
+### Added
+- Added `TensorBoardLoggerExt` extension: when `TensorBoardLogger.jl` is loaded, `RxInfer.convert_to_tensorboard(trace)` exports an inference trace to TensorBoard event log files. Capabilities:
+  - **Iteration timing** — wall-clock duration of each variational iteration logged as `iteration_time_ms`.
+  - **Posterior scalars** — per-iteration mean/precision for `Normal` and shape/rate for `Gamma` marginals under `posteriors/<variable>/`.
+  - **Posterior distributions** — per-iteration `HistogramSummary` (ridgeline + percentile bands in TensorBoard) via `log_distributions = true` and configurable `n_samples`.
+  - **Event text breadcrumbs** — full per-event narrative (`Events`, `before_iteration`, `after_iteration`, etc.) gated behind `log_text_events = true` (off by default). `EventCounts` is always emitted as a compact run summary.
+  - Logs are written to `tensorboard_logs/` in the current working directory by default; a custom path can be supplied via `output_file`.
+
+
+## [5.0.0] - 2026-04-17
 
 - **Breaking:** Addons have been renamed to annotations to match the new ReactiveMP API. This affects the `infer` function and related types:
   - The `addons` keyword argument in `infer()`, `batch_inference()`, and `streaming_inference()` has been renamed to `annotations`. Update `infer(..., addons = AddonLogScale())` to `infer(..., annotations = LogScaleAnnotations())`.
@@ -157,8 +181,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v4.7.2...HEAD
-[4.7.3]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v4.7.2...HEAD
+[Unreleased]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.2.1...HEAD
+[5.2.1]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.2.0..v5.2.1
+[5.2.0]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.1.0...v5.2.0
+[5.1.0]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.1.0...v5.0.0
+[5.0.0]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.0.0...v4.7.3
+[4.7.3]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v4.7.3...v4.7.2
 [4.7.2]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v4.7.1...v4.7.2
 [4.7.1]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v4.7.0...v4.7.1
 [4.7.0]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v4.6.7...v4.7.0
