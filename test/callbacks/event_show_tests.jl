@@ -142,6 +142,8 @@ end
 
     # `leading_sep = false` for the only-field-on-the-line case.
     buf = IOBuffer()
-    RxInfer._show_span(IOContext(buf, :compact => true), "abcd1234"; leading_sep = false)
+    RxInfer._show_span(
+        IOContext(buf, :compact => true), "abcd1234"; leading_sep = false
+    )
     @test String(take!(buf)) == "span=abcd…"
 end
