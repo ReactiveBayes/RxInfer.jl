@@ -152,7 +152,10 @@ perfetto_open(traces)   # open in the browser
 
 In the screenshot above, the first `ProductOfMessages` event is selected, showing the event details in the bottom panel. Here you see the duration (5ms), and the event arguments, including the `result` distribution.
 
-The Perfetto functionality is still experimental, and we would value your feedback! Let us know if you encounter any issues or have suggestions for improvement.
+If you are interested in debugging the performance of your inference call, take note that runtimes can vary greatly between runs due to Julia features like GC and JIT compilation. Try running your inference multiple times to get a better picture. You can also try to use Julia's built-in profiler.
+
+!!! hint "Experimental feature"
+    The Perfetto functionality is still experimental, and we would value your feedback! Let us know if you encounter any issues or have suggestions for improvement.
 
 ## API Reference
 
