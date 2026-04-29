@@ -107,12 +107,9 @@ _to_observability_string(::ReactiveMP.MessageProductContext, _keyname::Symbol) =
 _to_observability_string(::ReactiveMP.MessageMapping, _keyname::Symbol) = "<omitted>"
 _to_observability_string(::ProbabilisticModel, _keyname::Symbol) = "<omitted>"
 
-"""
-    _time_ns_to_datetime(t::UInt64) -> Dates.DateTime
 
-Converts a `time_ns()` timestamp to a wall-clock `DateTime` by computing the
-drift between Julia's monotonic clock and the Unix epoch at the moment of the call.
-"""
+# Converts a `time_ns()` timestamp to a wall-clock `DateTime` by computing the
+# drift between Julia's monotonic clock and the Unix epoch at the moment of the call.
 function _time_ns_to_datetime(t::UInt64)::Dates.DateTime
     now_real_ns = round(Int64, Dates.datetime2unix(Dates.now()) * 1e9)
     drift = now_real_ns - Int64(time_ns())

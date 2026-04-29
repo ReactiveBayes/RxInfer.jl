@@ -160,6 +160,7 @@ If you are interested in debugging the performance of your inference call, take 
 ```@docs 
 perfetto_view
 perfetto_open
+RxInfer.PerfettoDisplay
 ```
 
 ## Exporting to TensorBoard
