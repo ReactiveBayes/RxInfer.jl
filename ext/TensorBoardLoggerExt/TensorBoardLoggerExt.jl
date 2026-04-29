@@ -392,19 +392,25 @@ end
 function log_event(
     ctx::LogContext, ev::ReactiveMP.BeforeProductOfTwoMessagesEvent, idx
 )
-    _log_text!(ctx, "before_product_of_two_messages", _compact_repr(ev); step = idx)
+    _log_text!(
+        ctx, "before_product_of_two_messages", _compact_repr(ev); step = idx
+    )
 end
 
 function log_event(
     ctx::LogContext, ev::ReactiveMP.AfterProductOfTwoMessagesEvent, idx
 )
-    _log_text!(ctx, "after_product_of_two_messages", _compact_repr(ev); step = idx)
+    _log_text!(
+        ctx, "after_product_of_two_messages", _compact_repr(ev); step = idx
+    )
 end
 
 function log_event(
     ctx::LogContext, ev::ReactiveMP.BeforeMarginalComputationEvent, idx
 )
-    _log_text!(ctx, "before_marginal_computation", _compact_repr(ev); step = idx)
+    _log_text!(
+        ctx, "before_marginal_computation", _compact_repr(ev); step = idx
+    )
 end
 
 function log_event(
@@ -416,13 +422,17 @@ end
 function log_event(
     ctx::LogContext, ev::ReactiveMP.BeforeFormConstraintAppliedEvent, idx
 )
-    _log_text!(ctx, "before_form_constraint_applied", _compact_repr(ev); step = idx)
+    _log_text!(
+        ctx, "before_form_constraint_applied", _compact_repr(ev); step = idx
+    )
 end
 
 function log_event(
     ctx::LogContext, ev::ReactiveMP.AfterFormConstraintAppliedEvent, idx
 )
-    _log_text!(ctx, "after_form_constraint_applied", _compact_repr(ev); step = idx)
+    _log_text!(
+        ctx, "after_form_constraint_applied", _compact_repr(ev); step = idx
+    )
 end
 
 # Fallback for unknown event types

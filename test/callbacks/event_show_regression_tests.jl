@@ -31,8 +31,8 @@
     )
 
     infer(;
-        model     = tiny_for_event_show_regression(),
-        data      = (y = 1,),
+        model = tiny_for_event_show_regression(),
+        data = (y = 1,),
         callbacks = callbacks,
         iterations = 2,
     )
