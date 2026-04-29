@@ -138,6 +138,8 @@ println("Benchmark included: ", haskey(result.model.metadata, :benchmark))
 A recorded trace can be inspected interactively with the [Perfetto](https://perfetto.dev/) trace viewer.
 Use [`perfetto_view`](@ref) to embed the viewer inside a Pluto, VS Code or Jupyter notebook cell, or [`perfetto_open`](@ref) to open it in your default browser.
 
+Inside Perfetto, you can navigate (zoom and pan) using the `WASD` keys. You can select with the mouse, and inspect individual events. **Press `?` for a quick help menu.**
+
 ```julia
 result = infer(model = iid_normal(), data = (y = randn(10),), iterations = 3, trace = true)
 traces = RxInfer.tracedevents(result.model.metadata[:trace])
@@ -145,6 +147,12 @@ traces = RxInfer.tracedevents(result.model.metadata[:trace])
 perfetto_view(traces)   # show directly in your IDE (Pluto, VS Code, Jupyter)
 perfetto_open(traces)   # open in the browser
 ```
+
+![screenshot of the perfetto viewer inspecting traces](../../assets/img/rxinfer_perfetto_trace.png)
+
+In the screenshot above, the first `ProductOfMessages` event is selected, showing the event details in the bottom panel. Here you see the duration (5ms), and the event arguments, including the `result` distribution.
+
+The Perfetto functionality is still experimental, and we would value your feedback! Let us know if you encounter any issues or have suggestions for improvement.
 
 ## API Reference
 
