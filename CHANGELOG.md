@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Added Perfetto trace viewer support: `perfetto_view(trace)` converts a `RxInferTraceCallbacks` trace to Perfetto JSON, and `perfetto_open(trace)` opens it directly in the Perfetto UI in the browser.
+
 ## [5.2.1] - 2026-04-27
 
 ### Added
