@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.3.1] - 2026-05-05
+
+- Relax `[compat]` entry for ReactiveMP.jl dependency, allowing any version in the `[6.0.0, 7.0.0)` range. Previously was too strict, allowing only versions `[6.0.0, 6.1.0)`.
+
 ## [5.3.0] - 2026-05-04
 
 - Added Perfetto trace viewer support: `perfetto_view(trace)` converts a `RxInferTraceCallbacks` trace to Perfetto JSON, and `perfetto_open(trace)` opens it directly in the Perfetto UI in the browser.
@@ -183,7 +187,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.3.0...HEAD
+[Unreleased]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.3.1...HEAD
+[5.3.1]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.3.0...v5.3.1
 [5.3.0]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.2.1...v5.3.0
 [5.2.1]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.2.0...v5.2.1
 [5.2.0]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.1.0...v5.2.0
