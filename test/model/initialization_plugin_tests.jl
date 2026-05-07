@@ -1271,6 +1271,75 @@ end
     end)
 end
 
+@testitem "inline initialization on submodel calls" begin
+    using RxInfer
+    import GraphPPL: create_model, with_plugins, getcontext, getextra, hasextra, context_options
+    import RxInfer: InitMarExtraKey, InitSpecification
+
+    @model function inline_init_inner(x, m, v)
+        x ~ Normal(mean = m, var = v)
+    end
+
+    @model function inline_init_middle(y)
+        y ~ inline_init_inner(m = 1.0, v = 1.0) where {
+            initialization = @initialization begin
+                q(x) = NormalMeanVariance(2.0, 3.0)
+            end
+        }
+    end
+
+    @model function inline_init_outer()
+        y ~ inline_init_inner(m = 1.0, v = 1.0) where {
+            initialization = @initialization begin
+                q(x) = NormalMeanVariance(2.0, 3.0)
+            end
+        }
+    end
+
+    @model function nested_inline_init_outer()
+        y ~ inline_init_middle()
+    end
+
+    model = create_model(
+        with_plugins(
+            inline_init_outer(),
+            GraphPPL.PluginsCollection(RxInfer.InitializationPlugin()),
+        ),
+    )
+    context = getcontext(model)
+    inner_context = context[inline_init_inner, 1]
+    @test get(context_options(inner_context), :initialization, nothing) isa InitSpecification
+    @test getextra(model[GraphPPL.unroll(inner_context[:x])], InitMarExtraKey) ==
+        NormalMeanVariance(2.0, 3.0)
+
+    model = create_model(
+        with_plugins(
+            nested_inline_init_outer(),
+            GraphPPL.PluginsCollection(RxInfer.InitializationPlugin()),
+        ),
+    )
+    context = getcontext(model)
+    inner_context = context[inline_init_middle, 1][inline_init_inner, 1]
+    @test getextra(model[GraphPPL.unroll(inner_context[:x])], InitMarExtraKey) ==
+        NormalMeanVariance(2.0, 3.0)
+
+    external_init = @initialization begin
+        for init in inline_init_inner
+            q(x) = NormalMeanVariance(5.0, 6.0)
+        end
+    end
+    model = create_model(
+        with_plugins(
+            inline_init_outer(),
+            GraphPPL.PluginsCollection(RxInfer.InitializationPlugin(external_init)),
+        ),
+    )
+    context = getcontext(model)
+    inner_context = context[inline_init_inner, 1]
+    @test getextra(model[GraphPPL.unroll(inner_context[:x])], InitMarExtraKey) ==
+        NormalMeanVariance(5.0, 6.0)
+end
+
 @testitem "@initialization macro creates working InitSpecification in all forms" begin
     using RxInfer
     import GraphPPL: create_model, with_plugins, getcontext, getextra, hasextra

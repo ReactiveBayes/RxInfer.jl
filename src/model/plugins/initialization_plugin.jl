@@ -4,7 +4,7 @@ export @initialization
 
 using GraphPPL
 import GraphPPL:
-    IndexedVariable, unroll, children, fform, Model, Context, NodeLabel
+    IndexedVariable, unroll, children, fform, Model, Context, NodeLabel, context_options
 using MacroTools
 
 struct InitMessage end
@@ -152,11 +152,14 @@ function apply_init!(model::Model, context::Context, init::InitSpecification)
         apply_init!(model, context, init_obj)
     end
     for (factor_id, child) in pairs(children(context))
+        inline_init = get(context_options(child), :initialization, nothing)
         if (submodel = getspecificsubmodelinit(init, factor_id)) !== nothing
             apply_init!(model, child, getinitobjects(submodel))
         elseif (submodel = getgeneralsubmodelinit(init, fform(factor_id))) !==
             nothing
             apply_init!(model, child, getinitobjects(submodel))
+        elseif inline_init !== nothing
+            apply_init!(model, child, inline_init)
         else
             apply_init!(model, child, default_init(fform(factor_id)))
         end
