@@ -1296,6 +1296,16 @@ end
         }
     end
 
+    @initialization function make_inline_init(distribution)
+        q(x) = distribution
+    end
+
+    @model function inline_init_function_outer()
+        y ~ inline_init_inner(m = 1.0, v = 1.0) where {
+            initialization = make_inline_init(NormalMeanVariance(4.0, 5.0))
+        }
+    end
+
     @model function nested_inline_init_outer()
         y ~ inline_init_middle()
     end
@@ -1311,6 +1321,18 @@ end
     @test get(context_options(inner_context), :initialization, nothing) isa InitSpecification
     @test getextra(model[GraphPPL.unroll(inner_context[:x])], InitMarExtraKey) ==
         NormalMeanVariance(2.0, 3.0)
+
+    model = create_model(
+        with_plugins(
+            inline_init_function_outer(),
+            GraphPPL.PluginsCollection(RxInfer.InitializationPlugin()),
+        ),
+    )
+    context = getcontext(model)
+    inner_context = context[inline_init_inner, 1]
+    @test get(context_options(inner_context), :initialization, nothing) isa InitSpecification
+    @test getextra(model[GraphPPL.unroll(inner_context[:x])], InitMarExtraKey) ==
+        NormalMeanVariance(4.0, 5.0)
 
     model = create_model(
         with_plugins(
