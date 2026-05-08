@@ -1273,7 +1273,13 @@ end
 
 @testitem "inline initialization on submodel calls" begin
     using RxInfer
-    import GraphPPL: create_model, with_plugins, getcontext, getextra, hasextra, context_options
+    import GraphPPL:
+        create_model,
+        with_plugins,
+        getcontext,
+        getextra,
+        hasextra,
+        context_options
     import RxInfer: InitMarExtraKey, InitSpecification
 
     @model function inline_init_inner(x, m, v)
@@ -1281,19 +1287,19 @@ end
     end
 
     @model function inline_init_middle(y)
-        y ~ inline_init_inner(m = 1.0, v = 1.0) where {
-            initialization = @initialization begin
-                q(x) = NormalMeanVariance(2.0, 3.0)
-            end
-        }
+        y ~ inline_init_inner(
+            m = 1.0, v = 1.0
+        ) where {initialization = @initialization begin
+            q(x) = NormalMeanVariance(2.0, 3.0)
+        end}
     end
 
     @model function inline_init_outer()
-        y ~ inline_init_inner(m = 1.0, v = 1.0) where {
-            initialization = @initialization begin
-                q(x) = NormalMeanVariance(2.0, 3.0)
-            end
-        }
+        y ~ inline_init_inner(
+            m = 1.0, v = 1.0
+        ) where {initialization = @initialization begin
+            q(x) = NormalMeanVariance(2.0, 3.0)
+        end}
     end
 
     @initialization function make_inline_init(distribution)
@@ -1301,7 +1307,9 @@ end
     end
 
     @model function inline_init_function_outer()
-        y ~ inline_init_inner(m = 1.0, v = 1.0) where {
+        y ~ inline_init_inner(
+            m = 1.0, v = 1.0
+        ) where {
             initialization = make_inline_init(NormalMeanVariance(4.0, 5.0))
         }
     end
@@ -1318,9 +1326,11 @@ end
     )
     context = getcontext(model)
     inner_context = context[inline_init_inner, 1]
-    @test get(context_options(inner_context), :initialization, nothing) isa InitSpecification
-    @test getextra(model[GraphPPL.unroll(inner_context[:x])], InitMarExtraKey) ==
-        NormalMeanVariance(2.0, 3.0)
+    @test get(context_options(inner_context), :initialization, nothing) isa
+        InitSpecification
+    @test getextra(
+        model[GraphPPL.unroll(inner_context[:x])], InitMarExtraKey
+    ) == NormalMeanVariance(2.0, 3.0)
 
     model = create_model(
         with_plugins(
@@ -1330,9 +1340,11 @@ end
     )
     context = getcontext(model)
     inner_context = context[inline_init_inner, 1]
-    @test get(context_options(inner_context), :initialization, nothing) isa InitSpecification
-    @test getextra(model[GraphPPL.unroll(inner_context[:x])], InitMarExtraKey) ==
-        NormalMeanVariance(4.0, 5.0)
+    @test get(context_options(inner_context), :initialization, nothing) isa
+        InitSpecification
+    @test getextra(
+        model[GraphPPL.unroll(inner_context[:x])], InitMarExtraKey
+    ) == NormalMeanVariance(4.0, 5.0)
 
     model = create_model(
         with_plugins(
@@ -1342,8 +1354,9 @@ end
     )
     context = getcontext(model)
     inner_context = context[inline_init_middle, 1][inline_init_inner, 1]
-    @test getextra(model[GraphPPL.unroll(inner_context[:x])], InitMarExtraKey) ==
-        NormalMeanVariance(2.0, 3.0)
+    @test getextra(
+        model[GraphPPL.unroll(inner_context[:x])], InitMarExtraKey
+    ) == NormalMeanVariance(2.0, 3.0)
 
     external_init = @initialization begin
         for init in inline_init_inner
@@ -1353,13 +1366,16 @@ end
     model = create_model(
         with_plugins(
             inline_init_outer(),
-            GraphPPL.PluginsCollection(RxInfer.InitializationPlugin(external_init)),
+            GraphPPL.PluginsCollection(
+                RxInfer.InitializationPlugin(external_init)
+            ),
         ),
     )
     context = getcontext(model)
     inner_context = context[inline_init_inner, 1]
-    @test getextra(model[GraphPPL.unroll(inner_context[:x])], InitMarExtraKey) ==
-        NormalMeanVariance(5.0, 6.0)
+    @test getextra(
+        model[GraphPPL.unroll(inner_context[:x])], InitMarExtraKey
+    ) == NormalMeanVariance(5.0, 6.0)
 end
 
 @testitem "inline constraints and initialization on the same submodel call" begin
@@ -1382,20 +1398,24 @@ end
 
     @model function inline_options_outer()
         x ~ Normal(mean = 0.0, var = 1.0)
-        y ~ inline_options_inner(x = x) where {
+        y ~ inline_options_inner(
+            x = x
+        ) where {
             constraints = (@constraints begin
                 q(x, y, theta) = MeanField()
             end),
             initialization = (@initialization begin
                 q(theta) = NormalMeanVariance(2.0, 3.0)
-            end)
+            end),
         }
     end
 
     model = create_model(
         with_plugins(
             inline_options_outer(),
-            PluginsCollection(VariationalConstraintsPlugin(), RxInfer.InitializationPlugin()),
+            PluginsCollection(
+                VariationalConstraintsPlugin(), RxInfer.InitializationPlugin()
+            ),
         ),
     )
     context = getcontext(model)
@@ -1405,9 +1425,11 @@ end
     @test haskey(context_options(inner_context), :constraints)
     @test haskey(context_options(inner_context), :initialization)
     @test hasextra(model[node], :factorization_constraint_indices)
-    @test Tuple.(getextra(model[node], :factorization_constraint_indices)) == ((1,), (2,), (3,))
-    @test getextra(model[GraphPPL.unroll(inner_context[:theta])], InitMarExtraKey) ==
-        NormalMeanVariance(2.0, 3.0)
+    @test Tuple.(getextra(model[node], :factorization_constraint_indices)) ==
+        ((1,), (2,), (3,))
+    @test getextra(
+        model[GraphPPL.unroll(inner_context[:theta])], InitMarExtraKey
+    ) == NormalMeanVariance(2.0, 3.0)
 end
 
 @testitem "@initialization macro creates working InitSpecification in all forms" begin

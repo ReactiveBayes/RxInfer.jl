@@ -4,7 +4,14 @@ export @initialization
 
 using GraphPPL
 import GraphPPL:
-    IndexedVariable, unroll, children, fform, Model, Context, NodeLabel, context_options
+    IndexedVariable,
+    unroll,
+    children,
+    fform,
+    Model,
+    Context,
+    NodeLabel,
+    context_options
 using MacroTools
 
 struct InitMessage end
