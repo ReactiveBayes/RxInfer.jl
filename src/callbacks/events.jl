@@ -5,7 +5,7 @@ export BeforeDataUpdateEvent, AfterDataUpdateEvent
 export OnMarginalUpdateEvent
 export BeforeAutostartEvent, AfterAutostartEvent
 
-import ReactiveMP: Event, event_name, generate_span_id
+import ReactiveMP: Event, event_name, generate_span_id, getdata
 
 ## RxInfer-level callback event types
 ## These events subtype `ReactiveMP.Event{E}` and carry relevant data as fields.
@@ -204,4 +204,146 @@ See also: [`BeforeAutostartEvent`](@ref), [Callbacks](@ref manual-inference-call
 struct AfterAutostartEvent{E, S} <: Event{:after_autostart}
     engine::E
     span_id::S
+end
+
+## `Base.show` methods for Tier A callback events. Honor the `:compact`
+## `IOContext` flag (Julia stdlib convention):
+##
+##   * `:compact => true`  — short, single-line form intended for trace
+##     loggers like `TensorBoardLoggerExt`. Span ids are truncated to a
+##     4-char prefix and model/engine references are summarised by their
+##     type name.
+##   * `:compact => false` (default — REPL, Pluto, Jupyter)  — full form
+##     with the canonical event-struct constructor name and full UUID
+##     span ids.
+##
+## When the `span_id` is `nothing` (callbacks generated outside the normal
+## trace path) the span field is omitted entirely.
+
+# Render the span field. `leading_sep` controls whether a `, ` separator is
+# emitted before the field; pass `false` when this is the first field of the
+# event. When the span id is `nothing` the helper writes nothing — so events
+# generated with callbacks disabled do not surface a trailing `span=nothing`.
+function _show_span(io::IO, span_id; leading_sep::Bool = true)
+    if isnothing(span_id)
+        return nothing
+    end
+    leading_sep && print(io, ", ")
+    if get(io, :compact, false)
+        s = string(span_id)
+        if length(s) >= 4
+            print(io, "span=", SubString(s, 1, 4), "…")
+        else
+            print(io, "span=", s)
+        end
+    else
+        print(io, "span_id=", span_id)
+    end
+    return nothing
+end
+
+# `:compact => true` keeps the trace summary readable by collapsing
+# model/engine references to their type name; the full form delegates to
+# the value's own `show` method.
+function _show_typed_value(io::IO, value)
+    if get(io, :compact, false)
+        print(io, nameof(typeof(value)))
+    else
+        show(io, value)
+    end
+    return nothing
+end
+
+function Base.show(io::IO, ev::BeforeModelCreationEvent)
+    print(io, "BeforeModelCreationEvent(")
+    _show_span(io, ev.span_id; leading_sep = false)
+    print(io, ")")
+    return nothing
+end
+
+function Base.show(io::IO, ev::AfterModelCreationEvent)
+    print(io, "AfterModelCreationEvent(model=")
+    _show_typed_value(io, ev.model)
+    _show_span(io, ev.span_id)
+    print(io, ")")
+    return nothing
+end
+
+function Base.show(io::IO, ev::BeforeInferenceEvent)
+    print(io, "BeforeInferenceEvent(model=")
+    _show_typed_value(io, ev.model)
+    _show_span(io, ev.span_id)
+    print(io, ")")
+    return nothing
+end
+
+function Base.show(io::IO, ev::AfterInferenceEvent)
+    print(io, "AfterInferenceEvent(model=")
+    _show_typed_value(io, ev.model)
+    _show_span(io, ev.span_id)
+    print(io, ")")
+    return nothing
+end
+
+function Base.show(io::IO, ev::BeforeIterationEvent)
+    print(io, "BeforeIterationEvent(iter=", ev.iteration)
+    ev.stop_iteration && print(io, ", stop=true")
+    _show_span(io, ev.span_id)
+    print(io, ")")
+    return nothing
+end
+
+function Base.show(io::IO, ev::AfterIterationEvent)
+    print(io, "AfterIterationEvent(iter=", ev.iteration)
+    ev.stop_iteration && print(io, ", stop=true")
+    _show_span(io, ev.span_id)
+    print(io, ")")
+    return nothing
+end
+
+function Base.show(io::IO, ev::BeforeDataUpdateEvent)
+    print(io, "BeforeDataUpdateEvent(data=")
+    if get(io, :compact, false)
+        print(io, collect(keys(ev.data)))
+    else
+        show(io, ev.data)
+    end
+    _show_span(io, ev.span_id)
+    print(io, ")")
+    return nothing
+end
+
+function Base.show(io::IO, ev::AfterDataUpdateEvent)
+    print(io, "AfterDataUpdateEvent(data=")
+    if get(io, :compact, false)
+        print(io, collect(keys(ev.data)))
+    else
+        show(io, ev.data)
+    end
+    _show_span(io, ev.span_id)
+    print(io, ")")
+    return nothing
+end
+
+function Base.show(io::IO, ev::OnMarginalUpdateEvent)
+    print(io, "OnMarginalUpdateEvent(var=:", ev.variable_name, ", update=")
+    show(io, getdata(ev.update))
+    print(io, ")")
+    return nothing
+end
+
+function Base.show(io::IO, ev::BeforeAutostartEvent)
+    print(io, "BeforeAutostartEvent(engine=")
+    _show_typed_value(io, ev.engine)
+    _show_span(io, ev.span_id)
+    print(io, ")")
+    return nothing
+end
+
+function Base.show(io::IO, ev::AfterAutostartEvent)
+    print(io, "AfterAutostartEvent(engine=")
+    _show_typed_value(io, ev.engine)
+    _show_span(io, ev.span_id)
+    print(io, ")")
+    return nothing
 end
