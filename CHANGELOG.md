@@ -16,6 +16,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `TensorBoardLoggerExt` per-event text breadcrumbs now render via `sprint(show, ev; context = :compact => true)` (a small `_compact_repr` helper) instead of `repr(ev)`. After the event `Base.show` rework, `repr` returns the full interactive form (actual messages, full UUID); the `:compact => true` context yields the short trace-friendly form one log line wide. The previous bespoke `"k1: v1 | k2: v2 | …"` strings (and the now-removed `_format_fields` helper, ~110 LOC) are replaced by direct delegation to the event's own `show` method. ([#638](https://github.com/ReactiveBayes/RxInfer.jl/issues/638))
 - Refactored `test/ext/TensorBoardLoggerExt/tensorboardlogger_tests.jl` for efficiency and maintainability. The 14 per-distribution scalar-dispatch tests (Poisson, Geometric, NegativeBinomial, Binomial, Exponential, VonMises, Weibull, LogNormal, Erlang, Laplace, Pareto, Rayleigh, Chisq, Uniform-fallback) collapse into a single table-driven `@testitem` with one `@testset` per row, and the three Summary-writer subtests collapse into a single `@testitem` with three `@testset`s. Shared `@model` / `@constraints` / `@initialization` boilerplate for the IID Normal, coin-toss, and IID InverseGamma fixtures moves into `helpers.jl` as `iid_normal_inference`, `coin_toss_inference`, and `iid_invgamma_inference` factories, plus a `with_dispatch_logger` helper that snapshots `(tags, steps)` after closing the TBLogger so the Windows EBUSY retry in `with_safe_tempdir` still applies. Net: ~30 → 17 testitems; ~1490 → ~480 lines; per-concern parallelism and failure granularity preserved via `@testset`. No behavioural change to extension code.
 
+## [5.3.1] - 2026-05-05
+
+- Relax `[compat]` entry for ReactiveMP.jl dependency, allowing any version in the `[6.0.0, 7.0.0)` range. Previously was too strict, allowing only versions `[6.0.0, 6.1.0)`.
+
+## [5.3.0] - 2026-05-04
+
+- Added Perfetto trace viewer support: `perfetto_view(trace)` converts a `RxInferTraceCallbacks` trace to Perfetto JSON, and `perfetto_open(trace)` opens it directly in the Perfetto UI in the browser.
+
 ## [5.2.1] - 2026-04-27
 
 ### Added
@@ -187,8 +195,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.2.1...HEAD
-[5.2.1]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.2.0..v5.2.1
+[Unreleased]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.3.1...HEAD
+[5.3.1]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.3.0...v5.3.1
+[5.3.0]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.2.1...v5.3.0
+[5.2.1]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.2.0...v5.2.1
 [5.2.0]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.1.0...v5.2.0
 [5.1.0]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.1.0...v5.0.0
 [5.0.0]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.0.0...v4.7.3

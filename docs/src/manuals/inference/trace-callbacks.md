@@ -133,6 +133,36 @@ println("Trace included: ", haskey(result.model.metadata, :trace))
 println("Benchmark included: ", haskey(result.model.metadata, :benchmark))
 ```
 
+## Viewing traces in Perfetto
+
+A recorded trace can be inspected interactively with the [Perfetto](https://perfetto.dev/) trace viewer.
+Use [`perfetto_view`](@ref) to embed the viewer inside a Pluto, VS Code or Jupyter notebook cell, or [`perfetto_open`](@ref) to open it in your default browser.
+
+Inside Perfetto, you can navigate (zoom and pan) using the `WASD` keys. You can select with the mouse, and inspect individual events. **Press `?` for a quick help menu.**
+
+```julia
+result = infer(model = iid_normal(), data = (y = randn(10),), iterations = 3, trace = true)
+traces = RxInfer.tracedevents(result.model.metadata[:trace])
+
+perfetto_view(traces)   # show directly in your IDE (Pluto, VS Code, Jupyter)
+perfetto_open(traces)   # open in the browser
+```
+
+![screenshot of the perfetto viewer inspecting traces](../../assets/img/rxinfer_perfetto_trace.png)
+
+In the screenshot above, the first `ProductOfMessages` event is selected, showing the event details in the bottom panel. Here you see the duration (5ms), and the event arguments, including the `result` distribution.
+
+If you are interested in debugging the performance of your inference call, take note that runtimes can vary greatly between runs due to Julia features like GC and JIT compilation. Try running your inference multiple times to get a better picture. You can also try to use Julia's built-in profiler.
+
+!!! hint "Experimental feature"
+    The Perfetto functionality is still experimental, and we would value your feedback! Let us know if you encounter any issues or have suggestions for improvement.
+    
+```@docs 
+perfetto_view
+perfetto_open
+RxInfer.PerfettoDisplay
+```
+
 ## Exporting to TensorBoard
 
 When [`TensorBoardLogger.jl`](https://github.com/PhilipVinc/TensorBoardLogger.jl) is loaded, the `TensorBoardLoggerExt` extension activates and provides `RxInfer.convert_to_tensorboard`, which converts a recorded trace into TensorFlow event files readable by TensorBoard.
