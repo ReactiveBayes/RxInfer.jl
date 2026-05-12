@@ -193,7 +193,9 @@ log_dir = RxInfer.convert_to_tensorboard(trace; log_distributions = true)
 | Per-iteration wall-clock duration (`iteration_time_ms`) | Scalars | always |
 | Parameterisation-aware scalar tags for each posterior (see table below) | Scalars | `log_posteriors` admits the variable (see [Filtering posteriors](@ref tensorboard-log-posteriors)) |
 | Per-iteration histogram of posterior samples (`posteriors/<var>/distribution`) | Distributions / Histograms | `log_distributions = true` **and** `log_posteriors` admits the variable |
-| Event breadcrumbs and `EventCounts` table | Text | `log_text_events = true` (counts always written) |
+| `EventCounts` per-event-type table | Text | always |
+| `Summary` run-timing rollup (see [Run summary](@ref tensorboard-run-summary)) | Text | always |
+| Per-event narrative breadcrumbs (`Events`, `before_iteration`, …) | Text | `log_text_events = true` |
 
 #### Posterior scalar tags by family
 
@@ -222,6 +224,20 @@ Each posterior is logged under `posteriors/<variable>/<tag>` with one step per i
 | any other `UnivariateDistribution` (fallback) | `mean`, `var` |
 
 Marginals that are not univariate (e.g. multivariate Normal, matrix-variate posteriors) are silently skipped on the scalar path and produce no `posteriors/...` scalar tags. The histogram path is also gated on `<: UnivariateDistribution`, so the same families above are the ones that contribute to the Distributions / Histograms tabs when `log_distributions = true`.
+
+### [Run summary](@id tensorboard-run-summary)
+
+The `Summary` text tag is a one-shot snapshot of the run, written at step `1` alongside `EventCounts`. Each row is a `key: value` line; rows whose underlying measurement is missing (no matching `Before*`/`After*` event seen, or no iteration durations recorded) are silently skipped, so partial runs still produce a useful table instead of zero-valued placeholders.
+
+| Row | Meaning | Source |
+|---|---|---|
+| `model_build` | Wall-clock between `BeforeModelCreationEvent` and `AfterModelCreationEvent`. | Paired event timestamps. |
+| `inference` | Wall-clock between `BeforeInferenceEvent` and `AfterInferenceEvent`. | Paired event timestamps. |
+| `total_wall` | First-to-last traced event timestamp — covers the whole `infer` call, including any time before model creation or after inference. | First and last `TracedEvent.time_ns`. |
+| `n_iterations` | Number of paired iteration spans observed. | Length of the per-iteration duration map. |
+| `iter_total`, `iter_mean`, `iter_min`, `iter_max` | Aggregates over per-iteration wall-clock durations (sum, mean, min, max). | Same per-iteration durations that drive the `iteration_time_ms` scalar. |
+
+`Summary` complements rather than replaces existing outputs: per-iteration durations remain in the `iteration_time_ms` scalar series, and the per-event-type breakdown stays in `EventCounts`. The Summary tag is always emitted for any trace that contains at least one event — it is not gated by `log_text_events`, `log_posteriors`, or `log_distributions`.
 
 ### [Filtering posteriors](@id tensorboard-log-posteriors)
 

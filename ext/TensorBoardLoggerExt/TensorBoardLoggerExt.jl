@@ -56,6 +56,21 @@ mutable struct LogContext{L}
     log_text_events::Bool
     n_samples::Int
     current_time_ns::UInt64
+    # ─── Tier 1 timing summary ───────────────────────────────────────────
+    # Singleton spans (one model-creation, one inference per `infer` call) so
+    # we don't need a span_id-keyed dict — just remember the start `time_ns`
+    # and compute the wall-clock delta on the matching `After*` event.
+    # `0` means "the matching Before* event has not been seen", `NaN` ms
+    # means "duration not measured" — both are encoded as separate fields so
+    # the summary writer can distinguish missing vs. zero-duration runs.
+    model_build_start_ns::UInt64
+    model_build_ms::Float64
+    inference_start_ns::UInt64
+    inference_ms::Float64
+    # First/last `time_ns` across all traced events — drives the run-wide
+    # wall-clock figure in the Summary text tag.
+    first_event_ns::UInt64
+    last_event_ns::UInt64
 end
 
 # Normalize the user-facing `log_posteriors` value to the internal
@@ -76,6 +91,12 @@ LogContext(logger; log_posteriors::Union{Bool, AbstractVector{<:Union{Symbol, Ab
     log_text_events,
     n_samples,
     zero(UInt64),
+    zero(UInt64),
+    NaN,
+    zero(UInt64),
+    NaN,
+    zero(UInt64),
+    zero(UInt64),
 )
 
 # Central gate for all narrative/event text summaries. Scalar and
@@ -84,6 +105,15 @@ LogContext(logger; log_posteriors::Union{Bool, AbstractVector{<:Union{Symbol, Ab
 @inline _log_text!(ctx::LogContext, tag, msg; step) =
     ctx.log_text_events &&
     TensorBoardLogger.log_text(ctx.logger, tag, msg; step = step)
+
+# Render an event in compact form (`IOContext(:compact => true)`). This is
+# strictly cheaper than `repr(ev)`: `repr` goes through the no-context path,
+# which the new event `Base.show` methods treat as the *full* form
+# (`messages=(Message(0.1), …)`, full UUID), so on a large trace `repr` would
+# allocate the full distribution data per event for every Text-tag entry.
+# `sprint` with the compact flag yields the short `nmsgs=N` / 4-char span
+# form that fits one log line.
+@inline _compact_repr(ev) = sprint(show, ev; context = :compact => true)
 
 # Per-variable gate for posterior scalar + histogram logging. Dispatches on
 # the runtime type of `log_posteriors`: `Bool` is the global on/off, and
@@ -94,16 +124,6 @@ LogContext(logger; log_posteriors::Union{Bool, AbstractVector{<:Union{Symbol, Ab
 )
 @inline _check_posterior(flag::Bool, ::Symbol) = flag
 @inline _check_posterior(allowed::Set{Symbol}, n::Symbol) = n in allowed
-
-# Pipe-delimited `"k1: v1 | k2: v2 | ..."` formatter for text-event
-# breadcrumbs. Reads each named field via `getfield(ev, f)`, so this helper
-# only fits events where every logged value is a direct field access.
-# Events that need `ev.variable.label` or a renamed label (e.g.
-# `OnMarginalUpdateEvent`'s `variable: $(ev.variable_name)`) build the
-# string inline.
-@inline _format_fields(ev, fields::NTuple{N, Symbol}) where {N} = join(
-    ("$(f): $(getfield(ev, f))" for f in fields), " | "
-)
 
 # ─── Distribution-family dispatched helpers ──────────────────────────────
 # Deterministic samples via a seeded MersenneTwister keep the HistogramSummary
@@ -203,66 +223,83 @@ function _log_posterior_distribution!(
 end
 _log_posterior_distribution!(::LogContext, ::Any, ::Symbol) = nothing
 
+# ─── Run summary writer ───────────────────────────────────────────────────
+# Emits a single text tag (`Summary`) at step 1 with a one-column table of
+# `key: value` lines — same render layout as `EventCounts`. Lines that
+# correspond to unmeasured fields (no matching Before/After event seen,
+# or no iteration durations recorded) are silently skipped so the table
+# never advertises misleading zero-duration values for missing data.
+@inline _fmt_ms(x::Float64) = string(round(x; digits = 3), " ms")
+
+function _log_summary!(ctx::LogContext)
+    lines = String[]
+    if !isnan(ctx.model_build_ms)
+        push!(lines, "model_build: $(_fmt_ms(ctx.model_build_ms))")
+    end
+    if !isnan(ctx.inference_ms)
+        push!(lines, "inference: $(_fmt_ms(ctx.inference_ms))")
+    end
+    if ctx.first_event_ns != zero(UInt64) &&
+        ctx.last_event_ns >= ctx.first_event_ns
+        wall_ms = (ctx.last_event_ns - ctx.first_event_ns) / 1e6
+        push!(lines, "total_wall: $(_fmt_ms(wall_ms))")
+    end
+    if !isempty(ctx.iteration_durations)
+        durations = collect(values(ctx.iteration_durations))
+        push!(lines, "n_iterations: $(length(durations))")
+        push!(lines, "iter_total: $(_fmt_ms(sum(durations)))")
+        push!(
+            lines, "iter_mean: $(_fmt_ms(sum(durations) / length(durations)))"
+        )
+        push!(lines, "iter_min: $(_fmt_ms(minimum(durations)))")
+        push!(lines, "iter_max: $(_fmt_ms(maximum(durations)))")
+    end
+    isempty(lines) && return nothing
+    TensorBoardLogger.log_text(
+        ctx.logger, "Summary", reshape(lines, :, 1); step = 1
+    )
+    return nothing
+end
+
 # ─── Per-event-type logging methods ───────────────────────────────────────
 
 function log_event(ctx::LogContext, ev::BeforeModelCreationEvent, idx)
-    _log_text!(
-        ctx,
-        "before_model_creation",
-        _format_fields(ev, (:span_id,));
-        step = idx,
-    )
+    ctx.model_build_start_ns = ctx.current_time_ns
+    _log_text!(ctx, "before_model_creation", _compact_repr(ev); step = idx)
 end
 
 function log_event(ctx::LogContext, ev::AfterModelCreationEvent, idx)
-    _log_text!(
-        ctx,
-        "after_model_creation",
-        _format_fields(ev, (:model, :span_id));
-        step = idx,
-    )
+    if ctx.model_build_start_ns != zero(UInt64)
+        ctx.model_build_ms =
+            (ctx.current_time_ns - ctx.model_build_start_ns) / 1e6
+    end
+    _log_text!(ctx, "after_model_creation", _compact_repr(ev); step = idx)
 end
 
 function log_event(ctx::LogContext, ev::BeforeInferenceEvent, idx)
-    _log_text!(
-        ctx,
-        "before_inference",
-        _format_fields(ev, (:model, :span_id));
-        step = idx,
-    )
+    ctx.inference_start_ns = ctx.current_time_ns
+    _log_text!(ctx, "before_inference", _compact_repr(ev); step = idx)
 end
 
 function log_event(ctx::LogContext, ev::AfterInferenceEvent, idx)
-    _log_text!(
-        ctx,
-        "after_inference",
-        _format_fields(ev, (:model, :span_id));
-        step = idx,
-    )
+    if ctx.inference_start_ns != zero(UInt64)
+        ctx.inference_ms = (ctx.current_time_ns - ctx.inference_start_ns) / 1e6
+    end
+    _log_text!(ctx, "after_inference", _compact_repr(ev); step = idx)
 end
 
 # BeforeIterationEvent absorbs the start-of-iteration timing bookkeeping
 # that previously lived in a pre-scan loop — we now stash the start time
 # in-line as events stream by, via `ctx.current_time_ns`.
 function log_event(ctx::LogContext, ev::BeforeIterationEvent, _idx)
-    _log_text!(
-        ctx,
-        "before_iteration",
-        _format_fields(ev, (:model, :iteration, :stop_iteration, :span_id));
-        step = ev.iteration,
-    )
+    _log_text!(ctx, "before_iteration", _compact_repr(ev); step = ev.iteration)
     ctx.before_times[ev.span_id] = (ev.iteration, ctx.current_time_ns)
 end
 
 # AfterIterationEvent pairs with the matching BeforeIterationEvent via
 # `span_id` to compute and log the iteration's wall-clock duration.
 function log_event(ctx::LogContext, ev::AfterIterationEvent, _idx)
-    _log_text!(
-        ctx,
-        "after_iteration",
-        _format_fields(ev, (:model, :iteration, :stop_iteration, :span_id));
-        step = ev.iteration,
-    )
+    _log_text!(ctx, "after_iteration", _compact_repr(ev); step = ev.iteration)
     if haskey(ctx.before_times, ev.span_id)
         (iter, t0) = ctx.before_times[ev.span_id]
         duration_ms = (ctx.current_time_ns - t0) / 1e6
@@ -274,21 +311,11 @@ function log_event(ctx::LogContext, ev::AfterIterationEvent, _idx)
 end
 
 function log_event(ctx::LogContext, ev::BeforeDataUpdateEvent, idx)
-    _log_text!(
-        ctx,
-        "before_data_update",
-        _format_fields(ev, (:model, :data, :span_id));
-        step = idx,
-    )
+    _log_text!(ctx, "before_data_update", _compact_repr(ev); step = idx)
 end
 
 function log_event(ctx::LogContext, ev::AfterDataUpdateEvent, idx)
-    _log_text!(
-        ctx,
-        "after_data_update",
-        _format_fields(ev, (:model, :data, :span_id));
-        step = idx,
-    )
+    _log_text!(ctx, "after_data_update", _compact_repr(ev); step = idx)
 end
 
 # OnMarginalUpdateEvent carries text, scalar, and distribution logging for
@@ -301,7 +328,7 @@ function log_event(ctx::LogContext, ev::OnMarginalUpdateEvent, idx)
     _log_text!(
         ctx,
         "on_marginal_update/$(ev.variable_name)",
-        "model: $(ev.model) | variable: $(ev.variable_name) | update: $(ev.update)";
+        _compact_repr(ev);
         step = idx,
     )
     _should_log_posterior(ctx, ev.variable_name) || return nothing
@@ -331,78 +358,42 @@ function log_event(ctx::LogContext, ev::OnMarginalUpdateEvent, idx)
 end
 
 function log_event(ctx::LogContext, ev::BeforeAutostartEvent, idx)
-    _log_text!(
-        ctx,
-        "before_autostart",
-        _format_fields(ev, (:engine, :span_id));
-        step = idx,
-    )
+    _log_text!(ctx, "before_autostart", _compact_repr(ev); step = idx)
 end
 
 function log_event(ctx::LogContext, ev::AfterAutostartEvent, idx)
-    _log_text!(
-        ctx,
-        "after_autostart",
-        _format_fields(ev, (:engine, :span_id));
-        step = idx,
-    )
+    _log_text!(ctx, "after_autostart", _compact_repr(ev); step = idx)
 end
 
 function log_event(
     ctx::LogContext, ev::ReactiveMP.BeforeMessageRuleCallEvent, idx
 )
-    _log_text!(
-        ctx,
-        "before_message_rule_call",
-        _format_fields(ev, (:mapping, :messages, :marginals, :span_id));
-        step = idx,
-    )
+    _log_text!(ctx, "before_message_rule_call", _compact_repr(ev); step = idx)
 end
 
 function log_event(
     ctx::LogContext, ev::ReactiveMP.AfterMessageRuleCallEvent, idx
 )
-    _log_text!(
-        ctx,
-        "after_message_rule_call",
-        _format_fields(
-            ev,
-            (:mapping, :messages, :marginals, :result, :annotations, :span_id),
-        );
-        step = idx,
-    )
+    _log_text!(ctx, "after_message_rule_call", _compact_repr(ev); step = idx)
 end
 
 function log_event(
     ctx::LogContext, ev::ReactiveMP.BeforeProductOfMessagesEvent, idx
 )
-    _log_text!(
-        ctx,
-        "before_product_of_messages",
-        "variable: $(ev.variable.label) | context: $(ev.context) | messages: $(ev.messages) | span_id: $(ev.span_id)";
-        step = idx,
-    )
+    _log_text!(ctx, "before_product_of_messages", _compact_repr(ev); step = idx)
 end
 
 function log_event(
     ctx::LogContext, ev::ReactiveMP.AfterProductOfMessagesEvent, idx
 )
-    _log_text!(
-        ctx,
-        "after_product_of_messages",
-        "variable: $(ev.variable.label) | context: $(ev.context) | messages: $(ev.messages) | result: $(ev.result) | span_id: $(ev.span_id)";
-        step = idx,
-    )
+    _log_text!(ctx, "after_product_of_messages", _compact_repr(ev); step = idx)
 end
 
 function log_event(
     ctx::LogContext, ev::ReactiveMP.BeforeProductOfTwoMessagesEvent, idx
 )
     _log_text!(
-        ctx,
-        "before_product_of_two_messages",
-        "variable: $(ev.variable.label) | context: $(ev.context) | left: $(ev.left) | right: $(ev.right) | span_id: $(ev.span_id)";
-        step = idx,
+        ctx, "before_product_of_two_messages", _compact_repr(ev); step = idx
     )
 end
 
@@ -410,10 +401,7 @@ function log_event(
     ctx::LogContext, ev::ReactiveMP.AfterProductOfTwoMessagesEvent, idx
 )
     _log_text!(
-        ctx,
-        "after_product_of_two_messages",
-        "variable: $(ev.variable.label) | context: $(ev.context) | left: $(ev.left) | right: $(ev.right) | result: $(ev.result) | annotations: $(ev.annotations) | span_id: $(ev.span_id)";
-        step = idx,
+        ctx, "after_product_of_two_messages", _compact_repr(ev); step = idx
     )
 end
 
@@ -421,32 +409,21 @@ function log_event(
     ctx::LogContext, ev::ReactiveMP.BeforeMarginalComputationEvent, idx
 )
     _log_text!(
-        ctx,
-        "before_marginal_computation",
-        "variable: $(ev.variable.label) | context: $(ev.context) | messages: $(ev.messages) | span_id: $(ev.span_id)";
-        step = idx,
+        ctx, "before_marginal_computation", _compact_repr(ev); step = idx
     )
 end
 
 function log_event(
     ctx::LogContext, ev::ReactiveMP.AfterMarginalComputationEvent, idx
 )
-    _log_text!(
-        ctx,
-        "after_marginal_computation",
-        "variable: $(ev.variable.label) | context: $(ev.context) | messages: $(ev.messages) | result: $(ev.result) | span_id: $(ev.span_id)";
-        step = idx,
-    )
+    _log_text!(ctx, "after_marginal_computation", _compact_repr(ev); step = idx)
 end
 
 function log_event(
     ctx::LogContext, ev::ReactiveMP.BeforeFormConstraintAppliedEvent, idx
 )
     _log_text!(
-        ctx,
-        "before_form_constraint_applied",
-        "variable: $(ev.variable.label) | context: $(ev.context) | strategy: $(ev.strategy) | distribution: $(ev.distribution) | span_id: $(ev.span_id)";
-        step = idx,
+        ctx, "before_form_constraint_applied", _compact_repr(ev); step = idx
     )
 end
 
@@ -454,10 +431,7 @@ function log_event(
     ctx::LogContext, ev::ReactiveMP.AfterFormConstraintAppliedEvent, idx
 )
     _log_text!(
-        ctx,
-        "after_form_constraint_applied",
-        "variable: $(ev.variable.label) | context: $(ev.context) | strategy: $(ev.strategy) | distribution: $(ev.distribution) | result: $(ev.result) | span_id: $(ev.span_id)";
-        step = idx,
+        ctx, "after_form_constraint_applied", _compact_repr(ev); step = idx
     )
 end
 
@@ -511,6 +485,10 @@ function RxInfer.convert_to_tensorboard(
         ev_sym              = event_name(typeof(ev))
         ctx.counts[ev_sym]  = get(ctx.counts, ev_sym, 0) + 1
         ctx.current_time_ns = traced.time_ns
+        if ctx.first_event_ns == zero(UInt64)
+            ctx.first_event_ns = traced.time_ns
+        end
+        ctx.last_event_ns = traced.time_ns
         _log_text!(ctx, "Events", "Step $idx: $(ev_sym)"; step = idx)
         log_event(ctx, ev, idx)
     end
@@ -527,6 +505,8 @@ function RxInfer.convert_to_tensorboard(
     TensorBoardLogger.log_text(
         ctx.logger, "EventCounts", counts_table; step = 1
     )
+
+    _log_summary!(ctx)
 
     close(logger)
     # Drop internal references to the closed IOStreams so any lingering
