@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.3.2] - 2026-05-12
+
 ### Added
 - `TensorBoardLoggerExt` now emits a `Summary` text tag alongside `EventCounts` with a single-snapshot timing rollup of the inference run: `model_build` (wall-clock between `BeforeModelCreationEvent` and `AfterModelCreationEvent`), `inference` (between `BeforeInferenceEvent` and `AfterInferenceEvent`), `total_wall` (first-to-last traced event), and per-iteration aggregates (`n_iterations`, `iter_total`, `iter_mean`, `iter_min`, `iter_max`). Lines are skipped silently when the corresponding measurement is missing — runs that bypass model creation or have no variational iterations still produce a useful Summary instead of an empty or misleading-zero table. The existing `iteration_time_ms` per-iteration scalar series is unchanged.
 - `Base.show` methods for every Tier A callback event (`Before/AfterModelCreationEvent`, `Before/AfterInferenceEvent`, `Before/AfterIterationEvent`, `Before/AfterDataUpdateEvent`, `OnMarginalUpdateEvent`, `Before/AfterAutostartEvent`), so trace breadcrumbs in TBLogger's Text tab no longer dump raw struct contents ([#638](https://github.com/ReactiveBayes/RxInfer.jl/issues/638)). The methods honor the `IOContext` `:compact` flag: trace loggers pass `:compact => true` to get the short `EventName(model=Type, span=ab12…)` form, while REPL/Pluto/Jupyter sees the full form with the canonical struct constructor name and full UUID span id. The `_show_span` helper omits the field entirely when the span id is `nothing` (callbacks disabled). Pairs with the matching ReactiveMP-side work for `MessageMapping`, `MessageProductContext`, `AnnotationDict`, `FormConstraintCheck*`, and the Tier B events.
@@ -195,7 +197,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.3.1...HEAD
+[Unreleased]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.3.2...HEAD
+[5.3.2]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.3.1...v5.3.2
 [5.3.1]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.3.0...v5.3.1
 [5.3.0]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.2.1...v5.3.0
 [5.2.1]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.2.0...v5.2.1
