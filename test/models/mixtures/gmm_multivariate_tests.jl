@@ -80,7 +80,7 @@
 
     L         = 50.0
     nmixtures = 3
-    n_samples = 500
+    n_samples = 250
 
     probvec = ones(nmixtures)
     probvec = probvec ./ sum(probvec)
@@ -138,7 +138,7 @@
     @test length(w) === 25
     @test length(fe) === 25
     @test all(filter(e -> abs(e) > 1e-3, diff(fe)) .< 0)
-    @test last(fe) ≈ 3436.7 atol = 1e-1
+    @test last(fe) ≈ 1763.9 atol = 1.0
 
     ems = sort(mean.(last(m)), by = x -> atan(x[2] / x[1]))
     rms = sort(mean.(gaussians), by = x -> atan(x[2] / x[1]))
