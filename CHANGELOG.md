@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Support for inline specification of submodel initializations. Instead of a for-loop at the top level to specify initialization for variables in submodels, you can now specify the initialization inline with the submodel calls.
+
 ## [5.3.2] - 2026-05-12
 
 ### Added
