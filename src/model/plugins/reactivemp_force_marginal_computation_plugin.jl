@@ -20,7 +20,8 @@ A plugin for GraphPPL graph engine that forces the computation of marginal distr
 """
 struct ReactiveMPForceMarginalComputationPlugin end
 
-GraphPPL.plugin_type(::ReactiveMPForceMarginalComputationPlugin) = GraphPPL.FactorNodePlugin()
+GraphPPL.plugin_type(::ReactiveMPForceMarginalComputationPlugin) =
+    GraphPPL.FactorNodePlugin()
 
 function GraphPPL.preprocess_plugin(
     ::ReactiveMPForceMarginalComputationPlugin,

@@ -230,15 +230,12 @@ function __infer_create_data_interface(model, context, key::Symbol, data)
 end
 
 merge_data_handlers(data::Dict, newdata::Dict) = merge(data, newdata)
-merge_data_handlers(data::Dict, newdata::NamedTuple) = merge(
-    data, convert(Dict, newdata)
-)
-merge_data_handlers(data::NamedTuple, newdata::Dict) = merge(
-    convert(Dict, data), newdata
-)
-merge_data_handlers(data::NamedTuple, newdata::NamedTuple) = merge(
-    data, newdata
-)
+merge_data_handlers(data::Dict, newdata::NamedTuple) =
+    merge(data, convert(Dict, newdata))
+merge_data_handlers(data::NamedTuple, newdata::Dict) =
+    merge(convert(Dict, data), newdata)
+merge_data_handlers(data::NamedTuple, newdata::NamedTuple) =
+    merge(data, newdata)
 
 # This function creates a named tuple of `DeferredDataHandler` objects from a tuple of symbols
 function create_deferred_data_handlers(symbols::NTuple{N, Symbol}) where {N}
