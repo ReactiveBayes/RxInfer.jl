@@ -80,7 +80,15 @@ end
 _normalize_posteriors(p::Bool) = p
 _normalize_posteriors(v::AbstractVector) = Set{Symbol}(Symbol(x) for x in v)
 
-LogContext(logger; log_posteriors::Union{Bool, AbstractVector{<:Union{Symbol, AbstractString}}} = true, log_distributions::Bool, log_text_events::Bool, n_samples::Int) = LogContext(
+LogContext(
+    logger;
+    log_posteriors::Union{
+        Bool, AbstractVector{<:Union{Symbol, AbstractString}}
+    } = true,
+    log_distributions::Bool,
+    log_text_events::Bool,
+    n_samples::Int,
+) = LogContext(
     logger,
     Dict{Int, Float64}(),
     Dict{Any, Tuple{Int, UInt64}}(),
@@ -119,9 +127,8 @@ LogContext(logger; log_posteriors::Union{Bool, AbstractVector{<:Union{Symbol, Ab
 # the runtime type of `log_posteriors`: `Bool` is the global on/off, and
 # `Set{Symbol}` restricts logging to an explicit allow-list of variable
 # names. Empty set behaves like `false` (logs nothing).
-@inline _should_log_posterior(ctx::LogContext, name::Symbol) = _check_posterior(
-    ctx.log_posteriors, name
-)
+@inline _should_log_posterior(ctx::LogContext, name::Symbol) =
+    _check_posterior(ctx.log_posteriors, name)
 @inline _check_posterior(flag::Bool, ::Symbol) = flag
 @inline _check_posterior(allowed::Set{Symbol}, n::Symbol) = n in allowed
 
@@ -142,13 +149,11 @@ _posterior_samples(::Any, ::Int)                         = Float64[]
 # shows convergence behaviour in TensorBoard).
 _posterior_tags(::Any) = nothing
 
-_posterior_tags(d::UnivariateNormalDistributionsFamily) = (
-    mean = mean(d), precision = inv(var(d))
-)
+_posterior_tags(d::UnivariateNormalDistributionsFamily) =
+    (mean = mean(d), precision = inv(var(d)))
 
-_posterior_tags(d::GammaDistributionsFamily) = (
-    shape = shape(d), rate = rate(d)
-)
+_posterior_tags(d::GammaDistributionsFamily) =
+    (shape = shape(d), rate = rate(d))
 
 function _posterior_tags(d::Beta)
     α, β = params(d)

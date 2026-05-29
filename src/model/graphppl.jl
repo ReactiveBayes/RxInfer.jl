@@ -347,27 +347,30 @@ GraphPPL.factor_alias(
     ::Type{Normal},
     ::GraphPPL.StaticInterfaces{(:μ, :τ)},
 ) = ExponentialFamily.NormalMeanPrecision
-GraphPPL.default_parametrization(::ReactiveMPGraphPPLBackend, ::GraphPPL.Atomic, ::Type{Normal}, rhs) = error(
+GraphPPL.default_parametrization(
+    ::ReactiveMPGraphPPLBackend, ::GraphPPL.Atomic, ::Type{Normal}, rhs
+) = error(
     "`Normal` cannot be constructed without keyword arguments. Use `Normal(mean = ..., var = ...)` or `Normal(mean = ..., precision = ...)`.",
 )
 
 # GraphPPL.interfaces(::ReactiveMPGraphPPLBackend, ::Type{<:ExponentialFamily.NormalMeanVariance}, _) = GraphPPL.StaticInterfaces((:out, :μ, :v))
 # GraphPPL.interfaces(::ReactiveMPGraphPPLBackend, ::Type{<:ExponentialFamily.NormalMeanPrecision}, _) = GraphPPL.StaticInterfaces((:out, :μ, :τ))
 
-GraphPPL.interface_aliases(::ReactiveMPGraphPPLBackend, ::Type{Normal}) = GraphPPL.StaticInterfaceAliases((
-    (:mean, :μ),
-    (:m, :μ),
-    (:variance, :v),
-    (:var, :v),
-    (:τ⁻¹, :v),
-    (:σ², :v),
-    (:precision, :τ),
-    (:prec, :τ),
-    (:p, :τ),
-    (:w, :τ),
-    (:σ⁻², :τ),
-    (:γ, :τ),
-))
+GraphPPL.interface_aliases(::ReactiveMPGraphPPLBackend, ::Type{Normal}) =
+    GraphPPL.StaticInterfaceAliases((
+        (:mean, :μ),
+        (:m, :μ),
+        (:variance, :v),
+        (:var, :v),
+        (:τ⁻¹, :v),
+        (:σ², :v),
+        (:precision, :τ),
+        (:prec, :τ),
+        (:p, :τ),
+        (:w, :τ),
+        (:σ⁻², :τ),
+        (:γ, :τ),
+    ))
 
 GraphPPL.factor_alias(
     ::ReactiveMPGraphPPLBackend,
@@ -379,22 +382,25 @@ GraphPPL.factor_alias(
     ::Type{MvNormal},
     ::GraphPPL.StaticInterfaces{(:μ, :Λ)},
 ) = ExponentialFamily.MvNormalMeanPrecision
-GraphPPL.default_parametrization(::ReactiveMPGraphPPLBackend, ::GraphPPL.Atomic, ::Type{MvNormal}, rhs) = error(
+GraphPPL.default_parametrization(
+    ::ReactiveMPGraphPPLBackend, ::GraphPPL.Atomic, ::Type{MvNormal}, rhs
+) = error(
     "`MvNormal` cannot be constructed without keyword arguments. Use `MvNormal(mean = ..., covariance = ...)` or `MvNormal(mean = ..., precision = ...)`.",
 )
 
-GraphPPL.interface_aliases(::ReactiveMPGraphPPLBackend, ::Type{MvNormal}) = GraphPPL.StaticInterfaceAliases((
-    (:mean, :μ),
-    (:m, :μ),
-    (:covariance, :Σ),
-    (:cov, :Σ),
-    (:Λ⁻¹, :Σ),
-    (:V, :Σ),
-    (:precision, :Λ),
-    (:prec, :Λ),
-    (:W, :Λ),
-    (:Σ⁻¹, :Λ),
-))
+GraphPPL.interface_aliases(::ReactiveMPGraphPPLBackend, ::Type{MvNormal}) =
+    GraphPPL.StaticInterfaceAliases((
+        (:mean, :μ),
+        (:m, :μ),
+        (:covariance, :Σ),
+        (:cov, :Σ),
+        (:Λ⁻¹, :Σ),
+        (:V, :Σ),
+        (:precision, :Λ),
+        (:prec, :Λ),
+        (:W, :Λ),
+        (:Σ⁻¹, :Λ),
+    ))
 
 GraphPPL.factor_alias(
     ::ReactiveMPGraphPPLBackend,
@@ -418,6 +424,12 @@ GraphPPL.default_parametrization(
     )
 end
 
-GraphPPL.interface_aliases(::ReactiveMPGraphPPLBackend, ::Type{Gamma}) = GraphPPL.StaticInterfaceAliases((
-    (:a, :α), (:shape, :α), (:β⁻¹, :θ), (:scale, :θ), (:θ⁻¹, :β), (:rate, :β)
-))
+GraphPPL.interface_aliases(::ReactiveMPGraphPPLBackend, ::Type{Gamma}) =
+    GraphPPL.StaticInterfaceAliases((
+        (:a, :α),
+        (:shape, :α),
+        (:β⁻¹, :θ),
+        (:scale, :θ),
+        (:θ⁻¹, :β),
+        (:rate, :β),
+    ))

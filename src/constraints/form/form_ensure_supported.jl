@@ -8,9 +8,11 @@ struct EnsureSupportedFunctionalForm <: AbstractFormConstraint
     index::Any
 end
 
-ReactiveMP.default_form_check_strategy(::EnsureSupportedFunctionalForm) = FormConstraintCheckLast()
+ReactiveMP.default_form_check_strategy(::EnsureSupportedFunctionalForm) =
+    FormConstraintCheckLast()
 
-ReactiveMP.default_prod_constraint(::EnsureSupportedFunctionalForm) = GenericProd()
+ReactiveMP.default_prod_constraint(::EnsureSupportedFunctionalForm) =
+    GenericProd()
 
 function ReactiveMP.constrain_form(
     constraint::EnsureSupportedFunctionalForm, something
