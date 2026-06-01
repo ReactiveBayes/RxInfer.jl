@@ -28,7 +28,7 @@ jobs:
     name: Paper Preview
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: openjournals/openjournals-draft-action@master
         with:
           journal: joss
@@ -57,8 +57,8 @@ jobs:
         arch:
           - x64
     steps:
-      - uses: actions/checkout@v4
-      - uses: julia-actions/setup-julia@v2
+      - uses: actions/checkout@v6
+      - uses: julia-actions/setup-julia@v3
         with:
           include-all-prereleases: true
           version: ${{ matrix.version }}
@@ -70,6 +70,7 @@ jobs:
           USE_DEV: "false"
           LOG_USING_RXINFER: "false"
           JULIA_FASTCHOLESKY_THROW_ERROR_NON_SYMMETRIC: 1
+          THROW_ON_INFERENCE_ERROR_HINT: "true"
       - uses: julia-actions/julia-processcoverage@v1
       - uses: codecov/codecov-action@v4
         with:
@@ -81,20 +82,22 @@ jobs:
         with:
           name: test-output-${{ matrix.version }}-${{ matrix.os }}-${{ matrix.arch }}
           path: test/_output
-  test-examples:
+  examples:
     name: Examples
     runs-on: ubuntu-latest
+    needs:
+      - test
     steps:
       - name: Checkout RxInfer
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           path: RxInfer.jl
       - name: Checkout Examples
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: ReactiveBayes/RxInferExamples.jl
           path: RxInferExamples.jl
-      - uses: julia-actions/setup-julia@v2
+      - uses: julia-actions/setup-julia@v3
       - uses: julia-actions/cache@v1
       - name: Build and test examples
         env:
@@ -109,12 +112,11 @@ jobs:
     runs-on: ubuntu-latest
     needs: 
       - test
-      - test-examples
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v2
-      - uses: julia-actions/setup-julia@v2
+      - uses: julia-actions/setup-julia@v3
       - uses: julia-actions/cache@v2
       - uses: julia-actions/julia-buildpkg@v1
       - run: make docs
@@ -122,6 +124,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           LOG_USING_RXINFER: "false"
           JULIA_FASTCHOLESKY_THROW_ERROR_NON_SYMMETRIC: 1
+          THROW_ON_INFERENCE_ERROR_HINT: "true"
   format-check:
     name: Code Format Check
     runs-on: ubuntu-latest
@@ -131,11 +134,11 @@ jobs:
       contents: write    # Needed to push commits
       pull-requests: write  # Needed to create PRs and write comments
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ github.head_ref }}
           token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: julia-actions/setup-julia@v2
+      - uses: julia-actions/setup-julia@v3
       - uses: julia-actions/cache@v2
       
       # Find existing format PR if any

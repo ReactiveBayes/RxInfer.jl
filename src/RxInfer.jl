@@ -2,7 +2,8 @@ module RxInfer
 
 using Reexport
 
-@reexport using ReactiveMP, GraphPPL, Rocket, Distributions, ExponentialFamily, BayesBase, FastCholesky
+@reexport using ReactiveMP,
+    GraphPPL, Rocket, Distributions, ExponentialFamily, BayesBase, FastCholesky
 
 include("helpers.jl")
 include("rocket.jl")
@@ -13,19 +14,24 @@ include("score/actor.jl")
 include("score/diagnostics.jl")
 
 include("model/model.jl")
+include("model/graphppl.jl")
 include("model/plugins/reactivemp_inference.jl")
 include("model/plugins/reactivemp_free_energy.jl")
 include("model/plugins/reactivemp_force_marginal_computation_plugin.jl")
 include("model/plugins/initialization_plugin.jl")
-include("model/graphppl.jl")
 
 include("constraints/form/form_ensure_supported.jl")
 include("constraints/form/form_fixed_marginal.jl")
 include("constraints/form/form_point_mass.jl")
 include("constraints/form/form_sample_list.jl")
 
+include("callbacks/events.jl")
+include("callbacks/benchmark.jl")
+include("callbacks/trace.jl")
+include("callbacks/perfetto.jl")
+include("callbacks/stop_early.jl")
+
 include("inference/postprocess.jl")
-include("inference/benchmarkcallbacks.jl")
 include("inference/inference.jl")
 
 _isprecompiling() = ccall(:jl_generating_output, Cint, ()) == 1

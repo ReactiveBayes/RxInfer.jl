@@ -1,4 +1,5 @@
 **/.ipynb_checkpoints
+.claude
 
 docs/build
 docs/Manifest.toml
@@ -23,6 +24,7 @@ Coverage.ipynb
 **/.DS_Store
 
 **/Manifest.toml
+**/Manifest-v*.toml
 **/LocalPreferences.toml
 !benchmarks/Manifest.toml
 
@@ -30,3 +32,6 @@ Coverage.ipynb
 benchmark/*.json
 
 .venv
+
+AGENTS.md
+CLAUDE.md

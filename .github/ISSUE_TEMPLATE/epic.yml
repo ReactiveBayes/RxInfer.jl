@@ -1,0 +1,90 @@
+name: Epic
+description: Create an epic for a large-scale project that will be broken down into Features and Tasks
+title: "[Epic]: "
+labels: ["epic"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Epics are large-scale projects that span multiple features and tasks. Use this template to define a high-level project that will be broken down into smaller work items.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Epic Summary
+      description: A high-level summary of the epic and its goals
+      placeholder: Provide a brief overview of what this epic aims to achieve...
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation / Problem Statement
+      description: Why is this epic needed? What problem does it solve?
+      placeholder: Describe the motivation and problem this epic addresses...
+    validations:
+      required: true
+
+  - type: textarea
+    id: goals
+    attributes:
+      label: Epic Goals
+      description: What are the main goals and success criteria for this epic?
+      placeholder: |
+        - Goal 1
+        - Goal 2
+        - Success criteria
+    validations:
+      required: true
+
+  - type: textarea
+    id: features
+    attributes:
+      label: Features
+      description: |
+        List the main features that compose this epic. Each feature should be a high-level capability.
+        Features will be broken down into tasks later.
+      placeholder: |
+        ## Feature 1: [Feature Name]
+        - Description of what this feature provides
+        - Key capabilities
+        
+        ## Feature 2: [Feature Name]
+        - Description of what this feature provides
+        - Key capabilities
+    validations:
+      required: true
+
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: Are there any dependencies on other issues, PRs, or external factors?
+      placeholder: |
+        - Dependency 1
+        - Dependency 2
+
+  - type: textarea
+    id: timeline
+    attributes:
+      label: Estimated Timeline
+      description: Rough estimate of when this epic should be completed (if known)
+      placeholder: "Q1 2025, Q2 2025, etc."
+
+  - type: textarea
+    id: related
+    attributes:
+      label: Related Issues / PRs
+      description: Link to any related issues, PRs, or discussions
+      placeholder: |
+        - Related to #123
+        - Blocks #456
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any other relevant information about this epic
+      placeholder: Additional context...
+
