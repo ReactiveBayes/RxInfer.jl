@@ -78,7 +78,9 @@ macro test_expression_generating(lhs, rhs)
     end)
 end
 
-function generate_multinomial_data(; rng = StableRNG(123), N = 3, k = 3, nsamples = 5000)
+function generate_multinomial_data(;
+    rng = StableRNG(123), N = 3, k = 3, nsamples = 5000
+)
     ψ = randn(rng, k)
     p = ReactiveMP.softmax(ψ)
 

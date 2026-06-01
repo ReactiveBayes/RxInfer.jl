@@ -365,7 +365,7 @@ The `call_rule_is_node_required` function is used to instruct the inference back
     
     # By default, `germarginal` ignores marginals set in the @initialization block
     # `IncludeAll` overrides this behavior and includes all marginals
-    qθ = Rocket.getrecent(ReactiveMP.getmarginal(θv, IncludeAll()))
+    qθ = Rocket.getrecent(ReactiveMP.get_stream_of_marginals(θv))
 
     # This is a simple rule that returns a NormalMeanVariance distribution
     # It could be replaced with any other rule that returns a distribution

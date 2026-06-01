@@ -1,6 +1,7 @@
 export FixedMarginalFormConstraint
 
-import ReactiveMP: default_form_check_strategy, default_prod_constraint, constrain_form
+import ReactiveMP:
+    default_form_check_strategy, default_prod_constraint, constrain_form
 
 """
     FixedMarginalFormConstraint
@@ -17,4 +18,5 @@ ReactiveMP.default_form_check_strategy(::FixedMarginalFormConstraint) = FormCons
 
 ReactiveMP.default_prod_constraint(::FixedMarginalFormConstraint) = GenericProd()
 
-ReactiveMP.constrain_form(constraint::FixedMarginalFormConstraint, something) = constraint.fixed_value !== nothing ? constraint.fixed_value : something
+ReactiveMP.constrain_form(constraint::FixedMarginalFormConstraint, something) =
+    constraint.fixed_value !== nothing ? constraint.fixed_value : something

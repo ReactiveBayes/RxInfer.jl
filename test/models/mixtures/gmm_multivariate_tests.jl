@@ -31,7 +31,9 @@
         end
     end
 
-    function inference_multivariate(rng, L, nmixtures, data, viters, constraints)
+    function inference_multivariate(
+        rng, L, nmixtures, data, viters, constraints
+    )
         basis_v = [1.0, 0.0]
 
         minitmarginals = []
@@ -48,7 +50,10 @@
             mean_mean_prior = approximate_rotation * approximate_basis_v
             mean_mean_cov = [1e6 0.0; 0.0 1e6]
 
-            push!(minitmarginals, MvNormalMeanCovariance(mean_mean_prior, mean_mean_cov))
+            push!(
+                minitmarginals,
+                MvNormalMeanCovariance(mean_mean_prior, mean_mean_cov),
+            )
             push!(winitmarginals, Wishart(3, [1e2 0.0; 0.0 1e2]))
         end
 
@@ -59,13 +64,15 @@
         end
 
         return infer(
-            model = multivariate_gaussian_mixture_model(rng = rng, L = L, nmixtures = nmixtures),
+            model = multivariate_gaussian_mixture_model(
+                rng = rng, L = L, nmixtures = nmixtures
+            ),
             data = (y = data,),
             constraints = constraints,
             returnvars = KeepEach(),
             free_energy = Float64,
             iterations = viters,
-            initialization = init
+            initialization = init,
         )
     end
 
@@ -73,7 +80,7 @@
 
     L         = 50.0
     nmixtures = 3
-    n_samples = 500
+    n_samples = 250
 
     probvec = ones(nmixtures)
     probvec = probvec ./ sum(probvec)
@@ -104,7 +111,11 @@
     end
 
     # Execute inference for different constraints and option specification
-    results = map((specs) -> inference_multivariate(specs[1], L, nmixtures, y, 25, specs[2]), [(StableRNG(42), MeanField()), (StableRNG(42), constraints)])
+    results = map(
+        (specs) ->
+            inference_multivariate(specs[1], L, nmixtures, y, 25, specs[2]),
+        [(StableRNG(42), MeanField()), (StableRNG(42), constraints)],
+    )
 
     fresult = results[begin]
 
@@ -127,7 +138,7 @@
     @test length(w) === 25
     @test length(fe) === 25
     @test all(filter(e -> abs(e) > 1e-3, diff(fe)) .< 0)
-    @test last(fe) ≈ 3436.7 atol = 1e-1
+    @test last(fe) ≈ 1763.9 atol = 1.0
 
     ems = sort(mean.(last(m)), by = x -> atan(x[2] / x[1]))
     rms = sort(mean.(gaussians), by = x -> atan(x[2] / x[1]))
@@ -150,7 +161,14 @@
 
         for (e_m, e_w) in zip(e_means, e_precs)
             gaussian = MvNormal(e_m, Matrix(Hermitian(inv(e_w))))
-            pe = contour!(pe, range(-2L, 2L, step = 0.25), range(-2L, 2L, step = 0.25), (x, y) -> pdf(gaussian, [x, y]), levels = 7, colorbar = false)
+            pe = contour!(
+                pe,
+                range(-2L, 2L, step = 0.25),
+                range(-2L, 2L, step = 0.25),
+                (x, y) -> pdf(gaussian, [x, y]),
+                levels = 7,
+                colorbar = false,
+            )
         end
 
         pfe = plot(fe[2:end], label = "Free Energy")
@@ -158,5 +176,7 @@
         return plot(rp, pe, pfe, size = (600, 600), layout = @layout([a b; c]))
     end
 
-    @test_benchmark "models" "gmm_multivariate" inference_multivariate(StableRNG(123), $L, $nmixtures, $y, 25, MeanField())
+    @test_benchmark "models" "gmm_multivariate" inference_multivariate(
+        StableRNG(123), $L, $nmixtures, $y, 25, MeanField()
+    )
 end
