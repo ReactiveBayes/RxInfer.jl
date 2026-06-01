@@ -25,9 +25,8 @@ end
 @testitem "Custom postprocessing" begin
     struct CustomPostprocess end
 
-    RxInfer.inference_postprocess(::CustomPostprocess, result::Marginal) = string(
-        ReactiveMP.getdata(result)
-    )
+    RxInfer.inference_postprocess(::CustomPostprocess, result::Marginal) =
+        string(ReactiveMP.getdata(result))
 
     @model function beta_bernoulli(y)
         θ ~ Beta(1, 1)
@@ -58,9 +57,9 @@ end
 
     struct CustomPostprocessShouldNotBeInvoked end
 
-    RxInfer.inference_postprocess(::CustomPostprocessShouldNotBeInvoked, result::Any) = error(
-        "This should not be invoked"
-    )
+    RxInfer.inference_postprocess(
+        ::CustomPostprocessShouldNotBeInvoked, result::Any
+    ) = error("This should not be invoked")
 
     @model function my_model_with_error(y)
         θ ~ MyCustomNodeForPostprocessingTest(1)

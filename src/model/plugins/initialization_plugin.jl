@@ -77,20 +77,16 @@ end
 
 getinitobjects(m::InitSpecification) = m.init_objects
 getsubmodelinit(m::InitSpecification) = m.submodel_init
-getspecificsubmodelinit(m::InitSpecification) = filter(
-    m -> is_specificsubmodelinit(m), getsubmodelinit(m)
-)
-getgeneralsubmodelinit(m::InitSpecification) = filter(
-    m -> is_generalsubmodelinit(m), getsubmodelinit(m)
-)
+getspecificsubmodelinit(m::InitSpecification) =
+    filter(m -> is_specificsubmodelinit(m), getsubmodelinit(m))
+getgeneralsubmodelinit(m::InitSpecification) =
+    filter(m -> is_generalsubmodelinit(m), getsubmodelinit(m))
 
 # TODO experiment with `findfirst` instead of `get` in benchmarks
-getspecificsubmodelinit(m::InitSpecification, tag::Any) = get(
-    filter(m -> getsubmodel(m) == tag, getsubmodelinit(m)), 1, nothing
-)
-getgeneralsubmodelinit(m::InitSpecification, fform::Any) = get(
-    filter(m -> getsubmodel(m) == fform, getsubmodelinit(m)), 1, nothing
-)
+getspecificsubmodelinit(m::InitSpecification, tag::Any) =
+    get(filter(m -> getsubmodel(m) == tag, getsubmodelinit(m)), 1, nothing)
+getgeneralsubmodelinit(m::InitSpecification, fform::Any) =
+    get(filter(m -> getsubmodel(m) == fform, getsubmodelinit(m)), 1, nothing)
 
 struct SpecificSubModelInit
     tag::GraphPPL.FactorID
@@ -100,9 +96,8 @@ end
 getsubmodel(c::SpecificSubModelInit) = c.tag
 getinitobjects(c::SpecificSubModelInit) = c.init_objects
 Base.push!(m::SpecificSubModelInit, o) = push!(m.init_objects, o)
-SpecificSubModelInit(tag::GraphPPL.FactorID) = SpecificSubModelInit(
-    tag, InitSpecification()
-)
+SpecificSubModelInit(tag::GraphPPL.FactorID) =
+    SpecificSubModelInit(tag, InitSpecification())
 is_specificsubmodelinit(m::SpecificSubModelInit) = true
 is_specificsubmodelinit(m) = false
 getkey(m::SpecificSubModelInit) = getsubmodel(m)
@@ -115,9 +110,8 @@ end
 getsubmodel(c::GeneralSubModelInit) = c.fform
 getinitobjects(c::GeneralSubModelInit) = c.init_objects
 Base.push!(m::GeneralSubModelInit, o) = push!(m.init_objects, o)
-GeneralSubModelInit(fform::Any) = GeneralSubModelInit(
-    fform, InitSpecification()
-)
+GeneralSubModelInit(fform::Any) =
+    GeneralSubModelInit(fform, InitSpecification())
 is_generalsubmodelinit(m::GeneralSubModelInit) = true
 is_generalsubmodelinit(m) = false
 getkey(m::GeneralSubModelInit) = getsubmodel(m)
@@ -182,9 +176,12 @@ function apply_init!(
     apply_init!(model, context, init, nodes)
 end
 
-apply_init!(model::Model, context::Context, init::InitObject{S, T} where {S <: InitDescriptor, T}, node::NodeLabel) = save_init!(
-    model, node, init
-)
+apply_init!(
+    model::Model,
+    context::Context,
+    init::InitObject{S, T} where {S <: InitDescriptor, T},
+    node::NodeLabel,
+) = save_init!(model, node, init)
 
 function apply_init!(
     model::Model,
@@ -211,12 +208,14 @@ end
 const InitMsgExtraKey = GraphPPL.NodeDataExtraKey{:init_msg, Any}()
 const InitMarExtraKey = GraphPPL.NodeDataExtraKey{:init_mar, Any}()
 
-save_init!(model::Model, node::NodeLabel, init::InitObject{S, T}) where {S <: InitDescriptor{InitMessage}, T} = save_init!(
-    model, node, init, InitMsgExtraKey
-)
-save_init!(model::Model, node::NodeLabel, init::InitObject{S, T}) where {S <: InitDescriptor{InitMarginal}, T} = save_init!(
-    model, node, init, InitMarExtraKey
-)
+save_init!(
+    model::Model, node::NodeLabel, init::InitObject{S, T}
+) where {S <: InitDescriptor{InitMessage}, T} =
+    save_init!(model, node, init, InitMsgExtraKey)
+save_init!(
+    model::Model, node::NodeLabel, init::InitObject{S, T}
+) where {S <: InitDescriptor{InitMarginal}, T} =
+    save_init!(model, node, init, InitMarExtraKey)
 
 function save_init!(
     model::Model, node::NodeLabel, init::InitObject{S, T} where {S, T}, key
@@ -243,8 +242,14 @@ InitializationPlugin(::Nothing) = InitializationPlugin(NoInit())
 
 GraphPPL.plugin_type(::InitializationPlugin) = GraphPPL.VariableNodePlugin()
 
-GraphPPL.preprocess_plugin(plugin::InitializationPlugin, model::Model, context::Context, label::NodeLabel, nodedata::GraphPPL.NodeData, options::GraphPPL.NodeCreationOptions) = label,
-nodedata
+GraphPPL.preprocess_plugin(
+    plugin::InitializationPlugin,
+    model::Model,
+    context::Context,
+    label::NodeLabel,
+    nodedata::GraphPPL.NodeData,
+    options::GraphPPL.NodeCreationOptions,
+) = label, nodedata
 
 function GraphPPL.postprocess_plugin(
     plugin::InitializationPlugin{NoInit}, model::Model
@@ -346,9 +351,8 @@ function convert_init_variables(e::Expr)
     return e
 end
 
-what_walk(::typeof(convert_init_variables)) = walk_until_occurrence(
-    :(lhs_ -> rhs_)
-)
+what_walk(::typeof(convert_init_variables)) =
+    walk_until_occurrence(:(lhs_ -> rhs_))
 
 resolve_parametrization(fform, args::NamedTuple) = begin
     backend = ReactiveMPGraphPPLBackend(Static.True())
@@ -360,9 +364,8 @@ resolve_parametrization(fform, args::NamedTuple) = begin
     GraphPPL.__evaluate_fform(aliased_fform, values(args))
 end
 
-resolve_parametrization(fform, args::GraphPPL.MixedArguments) = GraphPPL.__evaluate_fform(
-    fform, args
-)
+resolve_parametrization(fform, args::GraphPPL.MixedArguments) =
+    GraphPPL.__evaluate_fform(fform, args)
 
 resolve_parametrization(fform, args) = begin
     backend = ReactiveMPGraphPPLBackend(Static.True())
