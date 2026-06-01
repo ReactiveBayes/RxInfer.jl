@@ -442,36 +442,53 @@ Nice, the history of the estimated posteriors aligns well with the real (hidden)
 
 ## [Callbacks](@id manual-online-inference-callbacks)
 
-The [`RxInferenceEngine`](@ref) has its own lifecycle. The callbacks differ a little bit from [Using callbacks with Static Inference](@ref manual-static-inference-callbacks). 
+The [`RxInferenceEngine`](@ref) has its own lifecycle. The callbacks differ a little bit from [Using callbacks with Static Inference](@ref manual-static-inference-callbacks). Callbacks can be a `NamedTuple`, `Dict`, or any custom structure that implements `ReactiveMP.handle_event`. For a comprehensive overview of the callbacks system, including custom callback structures and model metadata, see the [Callbacks](@ref manual-inference-callbacks) section.
 Here are available callbacks that can be used together with the streaming inference:
 ```@eval
 using RxInfer, Test, Markdown
 # Update the documentation below if this test does not pass
-@test RxInfer.available_callbacks(RxInfer.streaming_inference) === Val((:before_model_creation, :after_model_creation, :before_autostart, :after_autostart))
+@test RxInfer.available_callbacks(RxInfer.streaming_inference) === Val((
+    :before_model_creation,
+    :after_model_creation,
+    :before_autostart,
+    :after_autostart,
+    :before_message_rule_call,
+    :after_message_rule_call,
+    :before_product_of_two_messages,
+    :after_product_of_two_messages,
+    :before_product_of_messages,
+    :after_product_of_messages,
+    :before_form_constraint_applied,
+    :after_form_constraint_applied,
+    :before_marginal_computation,
+    :after_marginal_computation
+))
 nothing
 ```
 
 ---
 
-```julia
-before_model_creation()
-```
-Calls before the model is going to be created, does not accept any arguments.
+Below we list `RxInfer` specific callbacks. In addition to these, `ReactiveMP` provides lower-level callbacks for the message passing procedure itself, such as `before_message_rule_call`, `after_message_rule_call`, `before_product_of_messages`, `after_product_of_messages`, `before_marginal_computation`, `after_marginal_computation`, and others. For a full list and detailed descriptions of these callbacks, refer to the official documentation of `ReactiveMP`.
 
 ```julia
-after_model_creation(model::ProbabilisticModel)
+before_model_creation(event::BeforeModelCreationEvent)
 ```
-Calls right after the model has been created, accepts a single argument, the `model`.
+Calls before the model is going to be created. The event has no fields.
 
 ```julia
-before_autostart(engine::RxInferenceEngine)
+after_model_creation(event::AfterModelCreationEvent)
 ```
-Calls before the `RxInfer.start()` function, if `autostart` is set to `true`.
+Calls right after the model has been created. Access the model via `event.model`.
 
 ```julia
-after_autostart(engine::RxInferenceEngine)
+before_autostart(event::BeforeAutostartEvent)
 ```
-Calls after the `RxInfer.start()` function, if `autostart` is set to `true`.
+Calls before the `RxInfer.start()` function, if `autostart` is set to `true`. Access the engine via `event.engine`.
+
+```julia
+after_autostart(event::AfterAutostartEvent)
+```
+Calls after the `RxInfer.start()` function, if `autostart` is set to `true`. Access the engine via `event.engine`.
 
 ---
 
@@ -483,26 +500,26 @@ after_model_creation_called = Ref(false) #hide
 before_autostart_called = Ref(false) #hide
 after_autostart_called = Ref(false) #hide
 
-function before_model_creation()
+function before_model_creation(event::BeforeModelCreationEvent)
     before_model_creation_called[] = true #hide
     println("The model is about to be created")
 end
 
-function after_model_creation(model::ProbabilisticModel)
+function after_model_creation(event::AfterModelCreationEvent)
     after_model_creation_called[] = true #hide
     println("The model has been created")
-    println("  The number of factor nodes is: ", length(RxInfer.getfactornodes(model)))
-    println("  The number of latent states is: ", length(RxInfer.getrandomvars(model)))
-    println("  The number of data points is: ", length(RxInfer.getdatavars(model)))
-    println("  The number of constants is: ", length(RxInfer.getconstantvars(model)))
+    println("  The number of factor nodes is: ", length(RxInfer.getfactornodes(event.model)))
+    println("  The number of latent states is: ", length(RxInfer.getrandomvars(event.model)))
+    println("  The number of data points is: ", length(RxInfer.getdatavars(event.model)))
+    println("  The number of constants is: ", length(RxInfer.getconstantvars(event.model)))
 end
 
-function before_autostart(engine::RxInferenceEngine)
+function before_autostart(event::BeforeAutostartEvent)
     before_autostart_called[] = true #hide
     println("The reactive inference engine is about to start")
 end
 
-function after_autostart(engine::RxInferenceEngine)
+function after_autostart(event::AfterAutostartEvent)
     after_autostart_called[] = true #hide
     println("The reactive inference engine has been started")
 end

@@ -32,7 +32,7 @@ format: scripts_init ## Code formating run
 .PHONY: docs
 
 doc_init:
-	julia --project=docs -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate(); Pkg.precompile();'
+	julia --project=docs -e 'using Pkg; Pkg.instantiate(); Pkg.precompile();'
 
 dev_doc_init:
 	julia --startup-file=no --project=docs -e 'using Pkg; Pkg.rm([ "RxInfer", "BayesBase", "ExponentialFamily", "ReactiveMP", "GraphPPL", "Rocket" ])'
@@ -54,11 +54,8 @@ devdocs: dev_doc_init ## Same as `make docs` but uses `dev-ed` versions of core 
 
 .PHONY: test
 
-test: ## Run tests, use dev=true to use `dev-ed` version of core packages
-	julia -e 'ENV["USE_DEV"]="$(dev)"; import Pkg; Pkg.activate("."); Pkg.test(test_args = split("$(test_args)") .|> string)'	
-
-devtest: ## Alias for the `make test dev=true ...`
-	julia -e 'ENV["USE_DEV"]="true"; import Pkg; Pkg.activate("."); Pkg.test()'	
+test: ## Run tests
+	julia -e 'import Pkg; Pkg.activate("."); Pkg.test(test_args = split("$(test_args)") .|> string)'	
 
 clean: ## Clean documentation build, benchmark output from tests
 	$(foreach file, $(ALL_TMP_FILES), $(RM) $(file))

@@ -102,3 +102,14 @@ make test
 
 !!! note
     Core packages include `ReactiveMP.jl`, `GraphPPL.jl` and `Rocket.jl`. When using any of the `dev` commands from the `Makefile` those packages must be present in the `Pkg.devdir()` directory.
+
+## CHANGELOG.md
+
+This project uses a `CHANGELOG.md` to document all user-visible changes. Regardless of the contribution type or size, please include a concise, descriptive entry for your changes in the CHANGELOG before merging. This ensures a clear upgrade path for users and helps maintainers track the evolution of features, fixes, and improvements in a consistent way.
+
+### Opting out
+
+Not all changes need a changelog entry, some are not user-visible, like changing CI or some internal refactoring. For those it is possible to disable the check.
+
+To do so, apply the `no changelog` label to the PR. Then the changelog check will re-run and succeed automatically. This label can also be applied directly when opening the PR so the check will be automatically omitted.
+

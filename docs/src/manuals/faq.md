@@ -43,7 +43,7 @@ RxInfer supports missing data through the `missing` value in Julia. The inferenc
 
 ### How do I create custom nodes and message update rules?
 
-See [Custom Node and Rules](@ref create-node) for detailed guidance on extending RxInfer.
+See [Understanding Rules](@ref what-is-a-rule) for an explanation of what rules are and why they use different input prefixes (`m_` vs `q_`). See [Custom Node and Rules](@ref create-node) for detailed guidance on extending RxInfer.
 
 ## Inference Issues
 
