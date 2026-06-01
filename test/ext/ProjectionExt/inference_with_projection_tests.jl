@@ -278,12 +278,13 @@ end
 
     @test all(<(0), diff(result.free_energy))
 
-    test_deviation =
-        count(zip(result.posteriors[:z][end], dataset)) do (posterior_i, data_i)
-            return mean(posterior_i) - 5std(posterior_i) <
-                   data_i <
-                   mean(posterior_i) + 5std(posterior_i)
-        end
+    test_deviation = count(
+        zip(result.posteriors[:z][end], dataset)
+    ) do (posterior_i, data_i)
+        return mean(posterior_i) - 5std(posterior_i) <
+               data_i <
+               mean(posterior_i) + 5std(posterior_i)
+    end
 
     @test test_deviation / length(dataset) > 0.8
     foreach(result.posteriors[:γ]) do posteriorγ
@@ -638,9 +639,8 @@ end
     @rule NodePrior(:out, Marginalisation) (q_in::Any,) = NodePrior()
     @rule NodeLikelihood(:in, Marginalisation) (q_out::Any,) = NodeLikelihood()
 
-    BayesBase.prod(::GenericProd, ::NodePrior, ::NodeLikelihood) = convert(
-        ExponentialFamilyDistribution, Beta(1, 1)
-    )
+    BayesBase.prod(::GenericProd, ::NodePrior, ::NodeLikelihood) =
+        convert(ExponentialFamilyDistribution, Beta(1, 1))
 
     @model function mymodel(y)
         a ~ NodePrior(1)

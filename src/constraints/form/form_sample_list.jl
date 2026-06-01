@@ -46,7 +46,8 @@ Base.show(io::IO, constraint::SampleListFormConstraint) = print(
 SampleListFormConstraint(nsamples::Int, strategy::S = AutoProposal(), method::M = BootstrapImportanceSampling()) where {S, M}                           = SampleListFormConstraint(Random.GLOBAL_RNG, nsamples, strategy, method)
 SampleListFormConstraint(rng::R, nsamples::Int, strategy::S = AutoProposal(), method::M = BootstrapImportanceSampling()) where {R <: AbstractRNG, S, M} = SampleListFormConstraint{nsamples, R, S, M}(rng, strategy, method)
 
-ReactiveMP.default_form_check_strategy(::SampleListFormConstraint) = FormConstraintCheckLast()
+ReactiveMP.default_form_check_strategy(::SampleListFormConstraint) =
+    FormConstraintCheckLast()
 
 ReactiveMP.default_prod_constraint(::SampleListFormConstraint) = GenericProd()
 
