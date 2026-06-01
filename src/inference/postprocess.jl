@@ -29,11 +29,11 @@ See also: [`NoopPostprocess`](@ref), [`inference_postprocess`](@ref)
 """
 struct UnpackMarginalPostprocess end
 
-inference_postprocess(::UnpackMarginalPostprocess, result::Marginal) = getdata(
-    result
-)
+inference_postprocess(::UnpackMarginalPostprocess, result::Marginal) =
+    getdata(result)
 inference_postprocess(::UnpackMarginalPostprocess, result::AbstractArray) = map(
-    (element) -> inference_postprocess(UnpackMarginalPostprocess(), element),
+    (element) ->
+        inference_postprocess(UnpackMarginalPostprocess(), element),
     result,
 )
 

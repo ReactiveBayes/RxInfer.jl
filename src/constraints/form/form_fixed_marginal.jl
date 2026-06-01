@@ -14,9 +14,11 @@ mutable struct FixedMarginalFormConstraint <: ReactiveMP.AbstractFormConstraint
     fixed_value::Any
 end
 
-ReactiveMP.default_form_check_strategy(::FixedMarginalFormConstraint) = FormConstraintCheckLast()
+ReactiveMP.default_form_check_strategy(::FixedMarginalFormConstraint) =
+    FormConstraintCheckLast()
 
-ReactiveMP.default_prod_constraint(::FixedMarginalFormConstraint) = GenericProd()
+ReactiveMP.default_prod_constraint(::FixedMarginalFormConstraint) =
+    GenericProd()
 
 ReactiveMP.constrain_form(constraint::FixedMarginalFormConstraint, something) =
     constraint.fixed_value !== nothing ? constraint.fixed_value : something
