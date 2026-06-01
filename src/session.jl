@@ -371,9 +371,11 @@ The default label is `:inference` which gathers statistics of the `infer` functi
     You may want to additionally install `PrettyTables.jl` package to see the nicely formatted output of the `summarize_session` function.
     It is not bundled with `RxInfer` by default, but, if installed manually, it makes the output more readable.
 """
-summarize_session(session::Session = RxInfer.default_session(), label::Symbol = :inference; n_last = 5) = summarize_session(
-    stdout, session, label; n_last = n_last
-)
+summarize_session(
+    session::Session = RxInfer.default_session(),
+    label::Symbol = :inference;
+    n_last = 5,
+) = summarize_session(stdout, session, label; n_last = n_last)
 
 function summarize_session(
     io::IO,

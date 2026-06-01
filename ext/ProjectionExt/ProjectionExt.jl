@@ -8,7 +8,8 @@ using RxInfer,
     Random,
     LinearAlgebra
 
-ReactiveMP.default_form_check_strategy(::ProjectedTo) = FormConstraintCheckLast()
+ReactiveMP.default_form_check_strategy(::ProjectedTo) =
+    FormConstraintCheckLast()
 ReactiveMP.default_prod_constraint(::ProjectedTo) = GenericProd()
 
 mutable struct ProjectionContext{T}
