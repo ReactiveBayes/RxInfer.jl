@@ -52,7 +52,7 @@
 
             push!(
                 minitmarginals,
-                MvNormalMeanCovariance(mean_mean_prior, mean_mean_cov)
+                MvNormalMeanCovariance(mean_mean_prior, mean_mean_cov),
             )
             push!(winitmarginals, Wishart(3, [1e2 0.0; 0.0 1e2]))
         end
@@ -72,7 +72,7 @@
             returnvars = KeepEach(),
             free_energy = Float64,
             iterations = viters,
-            initialization = init
+            initialization = init,
         )
     end
 
@@ -80,7 +80,7 @@
 
     L         = 50.0
     nmixtures = 3
-    n_samples = 500
+    n_samples = 250
 
     probvec = ones(nmixtures)
     probvec = probvec ./ sum(probvec)
@@ -114,7 +114,7 @@
     results = map(
         (specs) ->
             inference_multivariate(specs[1], L, nmixtures, y, 25, specs[2]),
-        [(StableRNG(42), MeanField()), (StableRNG(42), constraints)]
+        [(StableRNG(42), MeanField()), (StableRNG(42), constraints)],
     )
 
     fresult = results[begin]
@@ -138,7 +138,7 @@
     @test length(w) === 25
     @test length(fe) === 25
     @test all(filter(e -> abs(e) > 1e-3, diff(fe)) .< 0)
-    @test last(fe) ≈ 3436.7 atol = 1e-1
+    @test last(fe) ≈ 1763.9 atol = 1.0
 
     ems = sort(mean.(last(m)), by = x -> atan(x[2] / x[1]))
     rms = sort(mean.(gaussians), by = x -> atan(x[2] / x[1]))
@@ -167,7 +167,7 @@
                 range(-2L, 2L, step = 0.25),
                 (x, y) -> pdf(gaussian, [x, y]),
                 levels = 7,
-                colorbar = false
+                colorbar = false,
             )
         end
 

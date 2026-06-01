@@ -468,8 +468,8 @@ This option might be useful to change message passing rules around a specific fa
 
 #### Dependencies option
 
-A user can modify default computational pipeline of a node with the `dependencies` options. 
-Read more about different options in the [`ReactiveMP.jl` documentation](https://reactivebayes.github.io/ReactiveMP.jl/stable/).
+A user can modify the default functional dependencies of a node with the `dependencies` option.
+Read more about the available policies in the [`ReactiveMP.jl` documentation](https://reactivebayes.github.io/ReactiveMP.jl/stable/).
 
 ```julia
 y[k - 1] ~ Probit(x[k]) where {

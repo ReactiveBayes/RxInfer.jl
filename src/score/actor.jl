@@ -96,7 +96,7 @@ function score_snapshot_final(actor::ScoreActor)
 end
 
 function score_snapshot_iterations(actor::ScoreActor, slice = nothing)
-    result = vec(sum(view(actor.score, :, actor.valid), dims = 2))
+    result = vec(sum(view(actor.score, :, actor.valid); dims = 2))
 
     map!(Base.Fix2(/, sum(actor.valid)), result, result)
 

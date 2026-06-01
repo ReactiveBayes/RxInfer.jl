@@ -37,7 +37,7 @@
     @test_throws "The initial value for `θ` has not been specified, but is required in the `@autoupdates`." infer(
         model = beta_bernoulli_streaming(),
         data = (y = dataset,),
-        autoupdates = autoupdates
+        autoupdates = autoupdates,
     )
 
     # A simple execution of the inference, here the model is simple enough to be solved exactly
@@ -46,7 +46,7 @@
         model = beta_bernoulli(a = 2.0, b = 7.0),
         data = (y = dataset,),
         iterations = 10,
-        free_energy = true
+        free_energy = true,
     )
 
     @test allequal(result.posteriors[:θ])
@@ -60,7 +60,7 @@
     result_with_no_iterations = infer(
         model = beta_bernoulli(a = 2.0, b = 7.0),
         data = (y = dataset,),
-        free_energy = true
+        free_energy = true,
     )
     @test length(result_with_no_iterations.free_energy) === 1
     @test all(
@@ -73,7 +73,7 @@
         constraints = MeanField(),
         data = (y = dataset,),
         iterations = 10,
-        free_energy = true
+        free_energy = true,
     )
     @test length(result_mean_field.free_energy) === 10
     @test all(v -> v ≈ 2828.0533343622483, result_mean_field.free_energy)
@@ -86,7 +86,7 @@
 
         result_for_specific_p = infer(
             model = beta_bernoulli(a = 1.0, b = 1.0),
-            data = (y = data_for_specific_p,)
+            data = (y = data_for_specific_p,),
         )
         @test mean(result_for_specific_p.posteriors[:θ]) ≈ p atol = 1e-2
         @test getreturnval(result_for_specific_p.model) === 2.0
@@ -100,7 +100,7 @@
             autoupdates = autoupdates,
             initialization = init,
             keephistory = 1, # Only keep the last one
-            autostart = false
+            autostart = false,
         )
 
         streaming_saved_result = Ref{Any}(nothing)
@@ -137,7 +137,7 @@
 
                 # Save for later checking
                 streaming_saved_result[] = new_posterior
-            end
+            end,
         )
 
         # `autostart` was set to false
@@ -169,18 +169,18 @@
             data = (y = dataset,),
             iterations = 10,
             initialization = beta_bernoulli_init(θinit),
-            free_energy = true
+            free_energy = true,
         )
 
         @test all(
             t -> t[1] == t[2],
             Iterators.zip(
                 result.posteriors[:θ], result_with_init.posteriors[:θ]
-            )
+            ),
         )
         @test all(
             t -> t[1] == t[2],
-            Iterators.zip(result.free_energy, result_with_init.free_energy)
+            Iterators.zip(result.free_energy, result_with_init.free_energy),
         )
     end
 
@@ -190,26 +190,26 @@
             model = beta_bernoulli(a = 2.0, b = 7.0),
             data = (y = dataset,),
             iterations = 10,
-            free_energy = T
+            free_energy = T,
         )
 
         @test all(
             t -> t[1] == t[2],
             Iterators.zip(
                 result.posteriors[:θ],
-                result_with_specific_free_energy_type.posteriors[:θ]
-            )
+                result_with_specific_free_energy_type.posteriors[:θ],
+            ),
         )
         @test all(
             t -> t[1] ≈ t[2],
             Iterators.zip(
                 result.free_energy,
-                result_with_specific_free_energy_type.free_energy
-            )
+                result_with_specific_free_energy_type.free_energy,
+            ),
         )
         @test all(
             value -> value isa T,
-            result_with_specific_free_energy_type.free_energy
+            result_with_specific_free_energy_type.free_energy,
         )
     end
 end

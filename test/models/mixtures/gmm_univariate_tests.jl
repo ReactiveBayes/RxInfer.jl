@@ -33,7 +33,7 @@
             returnvars     = KeepEach(),
             free_energy    = Float64,
             iterations     = n_its,
-            initialization = init
+            initialization = init,
         )
     end
     ## -------------------------------------------- ##
@@ -69,7 +69,7 @@
     # Execute inference for different constraints specifications
     results = map(
         (constraints) -> inference_univariate(y, 10, constraints),
-        [MeanField(), constraints]
+        [MeanField(), constraints],
     )
 
     fresult = results[begin]
@@ -135,7 +135,7 @@
             ribbon = std.(mw1),
             label = "w1 prediction",
             legend = :bottomleft,
-            ylim = (0, 5)
+            ylim = (0, 5),
         )
         wp = plot!(wp, [w1], seriestype = :hline, label = "real w1")
         wp = plot!(wp, mean.(mw2), ribbon = var.(mw2), label = "w2 prediction")

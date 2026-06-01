@@ -50,12 +50,13 @@ RxInfer aims to remedy these issues by running efficient Bayesian inference in s
   - Active community support through GitHub discussions
   - Optional telemetry to help guide development (see [Usage Telemetry](@ref manual-usage-telemetry))
   - Session sharing for better debugging support (see [Session Sharing](@ref manual-session-sharing))
-- Client-Server infrastructure
+- Client-Server infrastructure (third-party, see note below)
   - RESTful API support through [RxInferServer.jl](https://github.com/lazydynamics/RxInferServer)
   - OpenAPI-compliant endpoints for model management and inference
   - Python and Julia SDKs for seamless integration
-  - Real-time inference capabilities
-  - Comprehensive API documentation at [server.rxinfer.com](https://server.rxinfer.com)
+
+!!! note "About `RxInferServer.jl`"
+    `RxInferServer.jl` and its associated Python client (`RxInferClient.py`) are developed and maintained by [Lazy Dynamics](https://github.com/lazydynamics) — an **external organisation** separate from the core RxInfer team. These projects are distributed under a **different license** than `RxInfer.jl` itself and are **not actively maintained** by the ReactiveBayes / RxInfer core team. Please direct support questions and issues to the respective upstream repositories.
 
 **Curious about how RxInfer compares to other tools you might be considering?** We invite you to view a detailed [comparison](@ref comparison), where we put RxInfer head-to-head with other popular packages in the field.
 
@@ -99,6 +100,9 @@ Explore different [examples](@ref examples-overview) in this documentation, and 
 
 ```@contents
 Pages = [
+  "concepts/factor-graphs.md",
+  "concepts/message-passing.md",
+  "concepts/reactive-programming.md",
   "manuals/comparison.md",
   "manuals/getting-started.md",
   "manuals/model-specification.md",
@@ -121,6 +125,16 @@ Pages = [
 ]
 Depth = 2
 ```
+
+## Concepts Overview
+
+Before diving into practical usage, explore the foundational concepts underlying RxInfer:
+
+- **[Factor Graphs]**(@ref concepts-factor-graphs) — Graphical representation of probabilistic models, variables and factors nodes
+- **[Message Passing]**(@ref concepts-message-passing) — VMP/BP algorithms for Bayesian inference on factor graphs
+- **[Reactive Programming Model]**(@ref concepts-reactive-programming) — Streams mental model enabling real-time inference
+
+These concept pages provide deeper theoretical understanding than the practical manuals. For quick-start usage, head to [Getting started](@ref user-guide-getting-started).
 
 ## References
 

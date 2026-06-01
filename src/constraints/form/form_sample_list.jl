@@ -40,7 +40,7 @@ Base.show(io::IO, constraint::SampleListFormConstraint) = print(
     constraint.strategy,
     ", ",
     constraint.method,
-    ")"
+    ")",
 )
 
 SampleListFormConstraint(nsamples::Int, strategy::S = AutoProposal(), method::M = BootstrapImportanceSampling()) where {S, M}                           = SampleListFormConstraint(Random.GLOBAL_RNG, nsamples, strategy, method)
@@ -64,7 +64,7 @@ const AutoProposalLowPriorityCandidates = Union{
 function __approximate(
     constraint::SampleListFormConstraint{N, R, S, M},
     left::AutoProposalLowPriorityCandidates,
-    right
+    right,
 ) where {N, R, S <: AutoProposal, M}
     return BayesBase.approximate_prod_with_sample_list(
         constraint.rng, constraint.method, right, left, N
@@ -74,7 +74,7 @@ end
 function __approximate(
     constraint::SampleListFormConstraint{N, R, S, M},
     left,
-    right::AutoProposalLowPriorityCandidates
+    right::AutoProposalLowPriorityCandidates,
 ) where {N, R, S <: AutoProposal, M}
     return BayesBase.approximate_prod_with_sample_list(
         constraint.rng, constraint.method, left, right, N
@@ -84,10 +84,10 @@ end
 function __approximate(
     constraint::SampleListFormConstraint{N, R, S, M},
     left::AutoProposalLowPriorityCandidates,
-    right::AutoProposalLowPriorityCandidates
+    right::AutoProposalLowPriorityCandidates,
 ) where {N, R, S <: AutoProposal, M}
     return error(
-        "Cannot approximate the product of $(left) and $(right) as a sample list. The `AutoProposal` strategy cannot choose a proposal distribution. Use either `LeftProposal` or `RightProposal` in the sample list form constraint specification."
+        "Cannot approximate the product of $(left) and $(right) as a sample list. The `AutoProposal` strategy cannot choose a proposal distribution. Use either `LeftProposal` or `RightProposal` in the sample list form constraint specification.",
     )
 end
 

@@ -80,9 +80,9 @@ function log_using_rxinfer()
                             now(UTC), "yyyy-mm-ddTHH:MM:SS.sssZ"
                         ),
                     ),
-                    id = (stringValue = id,)
+                    id = (stringValue = id,),
                 ),
-            )
+            ),
         )
     catch e
         logged_usage[] = false
@@ -131,7 +131,7 @@ const collection_allow_patch = Dict{String, Bool}(
     "using_rxinfer" => true,
     "sessions" => true,
     "session_stats" => true,
-    "invokes" => false
+    "invokes" => false,
 )
 
 # Adds or updates a document in Firestore based on the provided id and collection.
@@ -164,7 +164,7 @@ function __add_document(id, collection, payload)
                 '/',
                 collection,
                 '/',
-                name
+                name,
             )
             # For collections that allow patching (like using_rxinfer, sessions, session_stats),
             # send a PATCH request to update the existing document with new data
@@ -291,7 +291,7 @@ function to_firestore_session(session::Session)
     return to_firestore_document((
         id = session.id,
         created_at = session.created_at,
-        environment = session.environment
+        environment = session.environment,
     ))
 end
 
@@ -321,7 +321,7 @@ function to_firestore_session_stats(stats::SessionStats, session_id::UUID)
             stats.max_duration_ms
         end,
         total_duration_ms = stats.total_duration_ms,
-        context_keys = collect(stats.context_keys)
+        context_keys = collect(stats.context_keys),
     ))
 end
 
@@ -338,7 +338,7 @@ function to_firestore_invoke(invoke::SessionInvoke, stats_id::UUID)
         status = invoke.status,
         execution_start = invoke.execution_start,
         execution_end = invoke.execution_end,
-        context = invoke.context
+        context = invoke.context,
     ))
 end
 
@@ -372,7 +372,7 @@ When `show_progress` is true (default), the function displays:
 """
 function share_session_data(
     session::Union{Session, Nothing} = RxInfer.default_session();
-    show_progress::Bool = true
+    show_progress::Bool = true,
 )
     if isnothing(preference_telemetry_endpoint)
         @warn "Cannot share session data: telemetry endpoint is not set. See `RxInfer.set_telemetry_endpoint!()`"
@@ -478,7 +478,7 @@ function share_session_data(
     stats_name = __add_document(
         string(stats.id),
         "session_stats",
-        to_firestore_session_stats(stats, session.id)
+        to_firestore_session_stats(stats, session.id),
     )
     if isnothing(stats_name)
         @warn "Unable to share statistics data" stats_id = stats.id label =
@@ -491,7 +491,7 @@ function share_session_data(
         ProgressMeter.Progress(
             length(invokes);
             desc = "Sharing runs for $(label): ",
-            color = :green
+            color = :green,
         )
     else
         nothing

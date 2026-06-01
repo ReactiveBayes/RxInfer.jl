@@ -62,8 +62,8 @@
                 AutoUpdateMapping(
                     params, (AutoUpdateFetchMarginalArgument(:θ),)
                 ),
-                1
-            )
+                1,
+            ),
         )
 
         autoupdate2 = getautoupdate(autoupdates, 2)
@@ -74,8 +74,8 @@
                 AutoUpdateMapping(
                     params, (AutoUpdateFetchMarginalArgument(:θ),)
                 ),
-                2
-            )
+                2,
+            ),
         )
     end
 
@@ -113,8 +113,8 @@
                     AutoUpdateMapping(
                         mean, (AutoUpdateFetchMarginalArgument(:θ),)
                     ),
-                    i * 2 + 3 * j
-                )
+                    i * 2 + 3 * j,
+                ),
             )
         end
     end
@@ -131,8 +131,8 @@
             (
                 AutoUpdateMapping(mean, (AutoUpdateFetchMarginalArgument(:z),)),
                 0,
-                1
-            )
+                1,
+            ),
         )
     end
 
@@ -188,8 +188,8 @@
             +,
             (
                 AutoUpdateMapping(mean, (AutoUpdateFetchMarginalArgument(:z),)),
-                "hello"
-            )
+                "hello",
+            ),
         )
     end
 
@@ -385,15 +385,15 @@ end
     @testset "Warning/error if the varlabel in `autoupdates` have been reserved with constants" begin
         import RxInfer: check_model_generator_compatibility
 
-        model = beta_bernoulli(a = 1, b = 1)
+        model = beta_bernoulli(; a = 1, b = 1)
         @test_logs(
             (
                 :warn,
-                r".*Autoupdates defines an update for `a`\, but `a` has been reserved in the model as a constant.*Use `warn = false` option to supress the warning.*Use `strict = true` option to turn the warning into an error.*"
+                r".*Autoupdates defines an update for `a`\, but `a` has been reserved in the model as a constant.*Use `warn = false` option to supress the warning.*Use `strict = true` option to turn the warning into an error.*",
             ),
             (
                 :warn,
-                r".*Autoupdates defines an update for `b`\, but `b` has been reserved in the model as a constant.*Use `warn = false` option to supress the warning.*Use `strict = true` option to turn the warning into an error.*"
+                r".*Autoupdates defines an update for `b`\, but `b` has been reserved in the model as a constant.*Use `warn = false` option to supress the warning.*Use `strict = true` option to turn the warning into an error.*",
             ),
             check_model_generator_compatibility(autoupdates, model)
         )
@@ -415,7 +415,7 @@ end
             autoupdates,
             autoupdates_nowarn,
             autoupdates_strict,
-            autoupdates_strict_nowarn
+            autoupdates_strict_nowarn,
         )
             @test @inferred(autoupdates_data_handlers(autoupdate)) ===
                 (a = DeferredDataHandler(), b = DeferredDataHandler())
@@ -437,7 +437,7 @@ end
         ) === (
             ins = DeferredDataHandler(),
             a = DeferredDataHandler(),
-            b = DeferredDataHandler()
+            b = DeferredDataHandler(),
         )
     end
 
@@ -463,6 +463,7 @@ end
             PluginsCollection,
             with_plugins,
             getextra
+        import ReactiveMP: get_stream_of_marginals, new_observation!
 
         # Here we simply want to add some complex `autoupdates`, which are all essentially equivalent
         # The purpose is just to verify certain possibilities, even though they don't have a lot of sense in real scenarious
@@ -508,7 +509,7 @@ end
             autoupdates_extra_2,
             autoupdates_extra_3,
             autoupdates_extra_4,
-            autoupdates_extra_5
+            autoupdates_extra_5,
         )
 
         for autoupdate in autoupdates_to_test
@@ -517,7 +518,7 @@ end
             options = convert(ReactiveMPInferenceOptions, (;))
             plugins = PluginsCollection(
                 VariationalConstraintsPlugin(),
-                ReactiveMPInferencePlugin(options)
+                ReactiveMPInferencePlugin(options),
             )
             model = create_model(
                 with_plugins(beta_bernoulli(), plugins) | data_handlers
@@ -538,25 +539,25 @@ end
             updates_for_b = []
             updates_for_y = []
             subscription_marginal_θ = subscribe!(
-                getmarginal(variable_θ, IncludeAll()),
-                (qθ) -> push!(marginals_θ, qθ)
+                get_stream_of_marginals(variable_θ),
+                (qθ) -> push!(marginals_θ, qθ),
             )
             subscription_updates_a = subscribe!(
-                getmarginal(variable_a, IncludeAll()),
-                (a) -> push!(updates_for_a, a)
+                get_stream_of_marginals(variable_a),
+                (a) -> push!(updates_for_a, a),
             )
             subscription_updates_b = subscribe!(
-                getmarginal(variable_b, IncludeAll()),
-                (b) -> push!(updates_for_b, b)
+                get_stream_of_marginals(variable_b),
+                (b) -> push!(updates_for_b, b),
             )
             subscription_updates_y = subscribe!(
-                getmarginal(variable_y, IncludeAll()),
-                (y) -> push!(updates_for_y, y)
+                get_stream_of_marginals(variable_y),
+                (y) -> push!(updates_for_y, y),
             )
 
-            update!(variable_a, 1)
-            update!(variable_b, 2)
-            update!(variable_y, 1)
+            new_observation!(variable_a, 1)
+            new_observation!(variable_b, 2)
+            new_observation!(variable_y, 1)
 
             @test length(marginals_θ) === 1
             @test length(updates_for_a) === 1
@@ -576,7 +577,7 @@ end
                 [PointMass(2), PointMass(2.0)]
             @test ReactiveMP.getdata.(updates_for_y) == [PointMass(1)]
 
-            update!(variable_y, 0)
+            new_observation!(variable_y, 0)
 
             @test ReactiveMP.getdata.(marginals_θ) ==
                 [Beta(2.0, 2.0), Beta(2.0, 3.0)]
@@ -591,7 +592,7 @@ end
                 subscription_marginal_θ,
                 subscription_updates_a,
                 subscription_updates_b,
-                subscription_updates_y
+                subscription_updates_y,
             ])
         end
     end
@@ -617,6 +618,7 @@ end
         run_autoupdate!
     import GraphPPL:
         VariationalConstraintsPlugin, PluginsCollection, with_plugins, getextra
+    import ReactiveMP: get_stream_of_marginals, new_observation!
 
     @model function beta_bernoulli_vector_based(a, b, y)
         θ[1] ~ Beta(a, b)
@@ -665,25 +667,22 @@ end
         updates_for_b = []
         updates_for_y = []
         subscription_marginal_θ = subscribe!(
-            getmarginal(variable_θ[1], IncludeAll()),
-            (qθ) -> push!(marginals_θ, qθ)
+            get_stream_of_marginals(variable_θ[1]),
+            (qθ) -> push!(marginals_θ, qθ),
         )
         subscription_updates_a = subscribe!(
-            getmarginal(variable_a, IncludeAll()),
-            (a) -> push!(updates_for_a, a)
+            get_stream_of_marginals(variable_a), (a) -> push!(updates_for_a, a)
         )
         subscription_updates_b = subscribe!(
-            getmarginal(variable_b, IncludeAll()),
-            (b) -> push!(updates_for_b, b)
+            get_stream_of_marginals(variable_b), (b) -> push!(updates_for_b, b)
         )
         subscription_updates_y = subscribe!(
-            getmarginal(variable_y, IncludeAll()),
-            (y) -> push!(updates_for_y, y)
+            get_stream_of_marginals(variable_y), (y) -> push!(updates_for_y, y)
         )
 
-        update!(variable_a, 1)
-        update!(variable_b, 2)
-        update!(variable_y, 1)
+        new_observation!(variable_a, 1)
+        new_observation!(variable_b, 2)
+        new_observation!(variable_y, 1)
 
         @test length(marginals_θ) === 1
         @test length(updates_for_a) === 1
@@ -704,7 +703,7 @@ end
             [PointMass(2), PointMass(2.0)]
         @test ReactiveMP.getdata.(updates_for_y) == [PointMass(1)]
 
-        update!(variable_y, 0)
+        new_observation!(variable_y, 0)
 
         @test ReactiveMP.getdata.(marginals_θ) ==
             [Beta(2.0, 2.0), Beta(2.0, 3.0)]
@@ -718,7 +717,7 @@ end
             subscription_marginal_θ,
             subscription_updates_a,
             subscription_updates_b,
-            subscription_updates_y
+            subscription_updates_y,
         ])
     end
 end
@@ -743,6 +742,7 @@ end
         run_autoupdate!
     import GraphPPL:
         VariationalConstraintsPlugin, PluginsCollection, with_plugins, getextra
+    import ReactiveMP: get_stream_of_marginals, new_observation!
 
     @model function beta_bernoulli_vector_based_args(ins, y)
         θ[1, 1] ~ Beta(ins[1], ins[2])
@@ -781,7 +781,7 @@ end
         autoupdates_3,
         autoupdates_4,
         autoupdates_5,
-        autoupdates_6
+        autoupdates_6,
     )
         extra_data_handlers = autoupdates_data_handlers(autoupdate)
         data_handlers = (y = DeferredDataHandler(), extra_data_handlers...)
@@ -791,7 +791,7 @@ end
         )
         model = create_model(
             with_plugins(beta_bernoulli_vector_based_args(), plugins) |
-            data_handlers
+            data_handlers,
         )
         variable_ins = getvariable(getindex(getvardict(model), :ins))
         variable_y = getvariable(getindex(getvardict(model), :y))
@@ -803,20 +803,19 @@ end
         updates_for_ins = []
         updates_for_y = []
         subscription_marginal_θ = subscribe!(
-            getmarginal(variable_θ[1, 1], IncludeAll()),
-            (qθ) -> push!(marginals_θ, qθ)
+            get_stream_of_marginals(variable_θ[1, 1]),
+            (qθ) -> push!(marginals_θ, qθ),
         )
         subscription_updates_ins = subscribe!(
-            getmarginals(variable_ins, IncludeAll()),
-            (ins) -> push!(updates_for_ins, ins)
+            collectLatest(get_stream_of_marginals.(variable_ins)),
+            (ins) -> push!(updates_for_ins, ins),
         )
         subscription_updates_y = subscribe!(
-            getmarginal(variable_y, IncludeAll()),
-            (y) -> push!(updates_for_y, y)
+            get_stream_of_marginals(variable_y), (y) -> push!(updates_for_y, y)
         )
 
-        update!(variable_ins, [1, 2])
-        update!(variable_y, 1)
+        new_observation!(variable_ins, [1, 2])
+        new_observation!(variable_y, 1)
 
         @test length(marginals_θ) === 1
         @test length(updates_for_ins) === 1
@@ -833,7 +832,7 @@ end
             [[PointMass(1), PointMass(2)], [PointMass(2.0), PointMass(2.0)]]
         @test ReactiveMP.getdata.(updates_for_y) == [PointMass(1)]
 
-        update!(variable_y, 0)
+        new_observation!(variable_y, 0)
 
         @test ReactiveMP.getdata.(marginals_θ) ==
             [Beta(2.0, 2.0), Beta(2.0, 3.0)]
@@ -844,7 +843,7 @@ end
         unsubscribe!([
             subscription_marginal_θ,
             subscription_updates_ins,
-            subscription_updates_y
+            subscription_updates_y,
         ])
     end
 end
@@ -871,14 +870,14 @@ end
         fetch(
             AutoUpdateMapping(
                 +, (stream_of_1, AutoUpdateMapping(+, (1, stream_of_1)))
-            )
+            ),
         )
     ) === 3
     @test @inferred(
         fetch(
             AutoUpdateMapping(
                 +, (stream_of_1, AutoUpdateMapping(+, (stream_of_1, 1)))
-            )
+            ),
         )
     ) === 3
 
@@ -899,8 +898,8 @@ end
         fetch(
             AutoUpdateMapping(
                 Base.Broadcast.BroadcastFunction(+),
-                (stream_of_1_array, stream_of_2_array)
-            )
+                (stream_of_1_array, stream_of_2_array),
+            ),
         )
     ) == [3]
     @test @inferred(
@@ -911,10 +910,10 @@ end
                     stream_of_1_array,
                     AutoUpdateMapping(
                         Base.Broadcast.BroadcastFunction(+),
-                        (1, stream_of_1_array)
-                    )
-                )
-            )
+                        (1, stream_of_1_array),
+                    ),
+                ),
+            ),
         )
     ) == [3]
     @test @inferred(
@@ -925,10 +924,10 @@ end
                     stream_of_1_array,
                     AutoUpdateMapping(
                         Base.Broadcast.BroadcastFunction(+),
-                        (stream_of_1_array, 1)
-                    )
-                )
-            )
+                        (stream_of_1_array, 1),
+                    ),
+                ),
+            ),
         )
     ) == [3]
 
@@ -936,16 +935,16 @@ end
         fetch(
             AutoUpdateMapping(
                 Base.Broadcast.BroadcastFunction(+),
-                (stream_of_1, stream_of_2_array)
-            )
+                (stream_of_1, stream_of_2_array),
+            ),
         )
     ) == [3]
     @test @inferred(
         fetch(
             AutoUpdateMapping(
                 Base.Broadcast.BroadcastFunction(+),
-                (stream_of_1_array, stream_of_2)
-            )
+                (stream_of_1_array, stream_of_2),
+            ),
         )
     ) == [3]
 end
@@ -999,12 +998,12 @@ end
     @test autoupdate_convert_mapping_expr(:(f.(q(x)))) ==
         :(RxInfer.AutoUpdateMapping(
         Base.Broadcast.BroadcastFunction(f),
-        (RxInfer.AutoUpdateFetchMarginalArgument(:x),)
+        (RxInfer.AutoUpdateFetchMarginalArgument(:x),),
     ))
     @test autoupdate_convert_mapping_expr(:(q(x) .+ 1)) ==
         :(RxInfer.AutoUpdateMapping(
         Base.Broadcast.BroadcastFunction(+),
-        (RxInfer.AutoUpdateFetchMarginalArgument(:x), 1)
+        (RxInfer.AutoUpdateFetchMarginalArgument(:x), 1),
     ))
 
     @test autoupdate_convert_mapping_expr(:(f(q(x[1])))) ==
@@ -1032,16 +1031,16 @@ end
         f,
         (
             RxInfer.AutoUpdateFetchMarginalArgument(:x),
-            RxInfer.AutoUpdateFetchMarginalArgument(:y)
-        )
+            RxInfer.AutoUpdateFetchMarginalArgument(:y),
+        ),
     ))
     @test autoupdate_convert_mapping_expr(:(f(q(x), q(y)))) ==
         :(RxInfer.AutoUpdateMapping(
         f,
         (
             RxInfer.AutoUpdateFetchMarginalArgument(:x),
-            RxInfer.AutoUpdateFetchMarginalArgument(:y)
-        )
+            RxInfer.AutoUpdateFetchMarginalArgument(:y),
+        ),
     ))
     @test autoupdate_convert_mapping_expr(:(f(q(x), 2))) ==
         :(RxInfer.AutoUpdateMapping(
@@ -1059,7 +1058,7 @@ end
             RxInfer.AutoUpdateMapping(
                 f, (RxInfer.AutoUpdateFetchMarginalArgument(:x),)
             ),
-        )
+        ),
     ))
     @test autoupdate_convert_mapping_expr(:(f(f(q(x), 1)))) ==
         :(RxInfer.AutoUpdateMapping(
@@ -1068,7 +1067,7 @@ end
             RxInfer.AutoUpdateMapping(
                 f, (RxInfer.AutoUpdateFetchMarginalArgument(:x), 1)
             ),
-        )
+        ),
     ))
     @test autoupdate_convert_mapping_expr(:(f(f(q(x)), 1))) ==
         :(RxInfer.AutoUpdateMapping(
@@ -1077,8 +1076,8 @@ end
             RxInfer.AutoUpdateMapping(
                 f, (RxInfer.AutoUpdateFetchMarginalArgument(:x),)
             ),
-            1
-        )
+            1,
+        ),
     ))
 end
 
@@ -1096,11 +1095,11 @@ end
     ))
     @test autoupdate_convert_labels_expr(:(a, b[1])) == :((
         RxInfer.AutoUpdateVariableLabel(:a),
-        RxInfer.AutoUpdateVariableLabel(:b, (1,))
+        RxInfer.AutoUpdateVariableLabel(:b, (1,)),
     ))
     @test autoupdate_convert_labels_expr(:(a, b[1, 1])) == :((
         RxInfer.AutoUpdateVariableLabel(:a),
-        RxInfer.AutoUpdateVariableLabel(:b, (1, 1))
+        RxInfer.AutoUpdateVariableLabel(:b, (1, 1)),
     ))
 
     @test_throws "Cannot create variable label from expression `a + b`" autoupdate_convert_labels_expr(
@@ -1127,11 +1126,11 @@ end
             spec,
             (
                 RxInfer.AutoUpdateVariableLabel(:a),
-                RxInfer.AutoUpdateVariableLabel(:b)
+                RxInfer.AutoUpdateVariableLabel(:b),
             ),
             RxInfer.AutoUpdateMapping(
                 params, (RxInfer.AutoUpdateFetchMarginalArgument(:x),)
-            )
+            ),
         )
     )
 end

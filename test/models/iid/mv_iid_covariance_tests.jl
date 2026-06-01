@@ -29,7 +29,7 @@
             initialization = mv_iid_inverse_wishart_init(d),
             returnvars = KeepLast(),
             iterations = 10,
-            free_energy = Float64
+            free_energy = Float64,
         )
     end
 
@@ -70,16 +70,16 @@
                 MvNormalMeanCovariance(
                     mean(result.posteriors[:m]), mean(result.posteriors[:C])
                 ),
-                [x, y]
+                [x, y],
             ),
-            label = "Estimated"
+            label = "Estimated",
         )
         p = contour!(
             p,
             X,
             Y,
             (x, y) -> pdf(MvNormalMeanCovariance(m, C), [x, y]),
-            label = "Real"
+            label = "Real",
         )
     end
 

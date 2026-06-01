@@ -36,7 +36,7 @@
             returnvars = (a = KeepLast(), b = KeepLast()),
             initialization = init,
             free_energy = true,
-            iterations = niters
+            iterations = niters,
         )
     end
 

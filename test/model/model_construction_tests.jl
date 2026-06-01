@@ -15,7 +15,7 @@
             (y = [0.0, 1.0, 0.0],)
         @test occursin(
             "beta_bernoulli(a = 1.0, b = 1.0) conditioned on: ",
-            repr(model_generator_with_data)
+            repr(model_generator_with_data),
         )
         @test occursin("y = [0.0, 1.0, 0.0]", repr(model_generator_with_data))
         @test create_model(model_generator_with_data) isa ProbabilisticModel
@@ -29,7 +29,7 @@
             (y = [0.0, 1.0, 0.0], b = 7.0)
         @test occursin(
             "beta_bernoulli(a = 2.0) conditioned on: ",
-            repr(model_generator_with_data)
+            repr(model_generator_with_data),
         )
         @test occursin("y = [0.0, 1.0, 0.0]", repr(model_generator_with_data))
         @test occursin("b = 7.0", repr(model_generator_with_data))
@@ -49,7 +49,7 @@
             (y = DeferredDataHandler(),)
         @test occursin(
             "beta_bernoulli_single(a = 1.0, b = 1.0) conditioned on: ",
-            repr(model_generator_with_data)
+            repr(model_generator_with_data),
         )
         @test occursin("y = [ deffered data ]", repr(model_generator_with_data))
         @test create_model(model_generator_with_data) isa ProbabilisticModel

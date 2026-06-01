@@ -26,7 +26,7 @@ function ReactiveMP.constrain_form(
             else
                 string('[', constraint.index, ']')
             end,
-            ')'
+            ')',
         )
         expr_noindex = string(constraint.prefix, '(', constraint.name, ')')
         error(
@@ -47,7 +47,7 @@ function ReactiveMP.constrain_form(
       end
       ```
       Refer to the documentation for more details on functional form constraints.
-      """
+      """,
         )
     end
     return something

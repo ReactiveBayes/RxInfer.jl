@@ -36,7 +36,7 @@
             model = gaussian_state_space_model(
                 x0 = NormalMeanVariance(0.0, 10.0),
                 process_var = 0.2,
-                obs_var = 0.5
+                obs_var = 0.5,
             ),
             data = (y = data,),
             constraints = MeanField(),
@@ -44,7 +44,7 @@
             iterations = max_iterations,
             free_energy = true,
             showprogress = false,
-            callbacks = (after_iteration = StopEarlyIterationStrategy(tol),)
+            callbacks = (after_iteration = StopEarlyIterationStrategy(tol),),
         )
     end
 

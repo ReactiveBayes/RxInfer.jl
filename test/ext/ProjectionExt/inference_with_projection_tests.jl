@@ -36,7 +36,7 @@
     function run_experiment(y)
         analytical = infer(
             model = simple_model_1(prior = Beta(1, 1), likelihood = Bernoulli),
-            data = (y = y,)
+            data = (y = y,),
         )
         projected = infer(
             model = simple_model_1(
@@ -44,7 +44,7 @@
             ),
             data = (y = y,),
             constraints = projection_constraints(),
-            options = (rulefallback = NodeFunctionRuleFallback(),)
+            options = (rulefallback = NodeFunctionRuleFallback(),),
         )
         return analytical, projected
     end
@@ -66,7 +66,7 @@
             (x) -> pdf(analytical.posteriors[:p], x),
             label = "analytical posterior",
             fill = 0,
-            fillalpha = 0.2
+            fillalpha = 0.2,
         )
         p = plot!(
             p,
@@ -74,7 +74,7 @@
             (x) -> pdf(projected.posteriors[:p], x),
             label = "projected posterior",
             fill = 0,
-            fillalpha = 0.2
+            fillalpha = 0.2,
         )
         return p
     end
@@ -109,7 +109,7 @@ end
             returnvars = KeepLast(),
             iterations = 5,
             free_energy = true,
-            options = (limit_stack_depth = 500,)
+            options = (limit_stack_depth = 500,),
         )
 
         @test mean(result.posteriors[:r]) ≈ realr atol = 1e-2
@@ -130,14 +130,14 @@ end
             returnvars = KeepLast(),
             iterations = 5,
             free_energy = true,
-            options = (limit_stack_depth = 500,)
+            options = (limit_stack_depth = 500,),
         )
         p1 = plot(
             0.0:0.01:1.0,
             (x) -> pdf(result.posteriors[:r], x),
             label = "q(r)",
             fill = 0,
-            fillalpha = 0.2
+            fillalpha = 0.2,
         )
         p1 = vline!([realr], label = "real r")
 
@@ -146,7 +146,7 @@ end
             (x) -> pdf(result.posteriors[:t], x),
             label = "q(t)",
             fill = 0,
-            fillalpha = 0.2
+            fillalpha = 0.2,
         )
         p2 = vline!([realt], label = "real t")
 
@@ -238,7 +238,7 @@ end
         7,
         4,
         9,
-        30
+        30,
     ]
 
     @model function gamma_ssm(y)
@@ -273,7 +273,7 @@ end
         free_energy = true,
         options = (
             rulefallback = NodeFunctionRuleFallback(), limit_stack_depth = 500
-        )
+        ),
     )
 
     @test all(<(0), diff(result.free_energy))
@@ -298,7 +298,7 @@ end
     @test_plot "projection" "sunspot" begin
         p1 = plot(
             mean.(result.posteriors[:z][end]),
-            ribbon = std.(result.posteriors[:z][end])
+            ribbon = std.(result.posteriors[:z][end]),
         )
         p1 = scatter!(p1, dataset)
 
@@ -308,13 +308,13 @@ end
             0.0:0.01:2.0,
             (x) -> pdf(result.posteriors[:γ][end], x),
             fill = 0,
-            fillalpha = 0.1
+            fillalpha = 0.1,
         )
         p4 = plot(
             0.0:0.1:40.0,
             (x) -> pdf(result.posteriors[:z₀][end], x),
             fill = 0,
-            fillalpha = 0.1
+            fillalpha = 0.1,
         )
 
         return plot(p1, p2, p3, p4)
@@ -376,7 +376,7 @@ end
             initialization = iid_with_delta_transforms_initialization(),
             iterations = 15,
             returnvars = KeepLast(),
-            free_energy = true
+            free_energy = true,
         )
 
         return ra, rb, rmean, rprecision, y, result
@@ -400,7 +400,7 @@ end
             (x) -> pdf(result.posteriors[:a], x),
             label = "inferred a",
             fill = 0,
-            fillalpha = 0.2
+            fillalpha = 0.2,
         )
         p1 = vline!([ra], label = "real a")
 
@@ -409,7 +409,7 @@ end
             (x) -> pdf(result.posteriors[:b], x),
             label = "inferred b",
             fill = 0,
-            fillalpha = 0.2
+            fillalpha = 0.2,
         )
         p2 = vline!([rb], label = "real b")
 
@@ -418,7 +418,7 @@ end
             (x) -> pdf(result.posteriors[:mean], x),
             label = "inferred mean",
             fill = 0,
-            fillalpha = 0.2
+            fillalpha = 0.2,
         )
         p3 = vline!([rmean], label = "real mean")
 
@@ -427,7 +427,7 @@ end
             (x) -> pdf(result.posteriors[:precision], x),
             label = "inferred precision",
             fill = 0,
-            fillalpha = 0.2
+            fillalpha = 0.2,
         )
         p4 = vline!([rprecision], label = "real precision")
 
@@ -482,8 +482,8 @@ end
             out_prjparams = ProjectionParameters(niterations = 500),
             in_prjparams = (
                 in_1 = ProjectionParameters(niterations = 500),
-                in_2 = ProjectionParameters(niterations = 500)
-            )
+                in_2 = ProjectionParameters(niterations = 500),
+            ),
         )
     end
 
@@ -494,7 +494,7 @@ end
         constraints = myconstraints(),
         initialization = myinitialization(),
         free_energy = true,
-        iterations = 40
+        iterations = 40,
     )
 
     conf_bound_a = 3 * std(result.posteriors[:a][end])
@@ -521,7 +521,7 @@ end
             (x) -> pdf(result.posteriors[:a][end], x),
             label = "inferred a",
             fill = 0,
-            fillalpha = 0.2
+            fillalpha = 0.2,
         )
         p1 = vline!([a], label = "real a")
 
@@ -530,7 +530,7 @@ end
             (x) -> pdf(result.posteriors[:b][end], x),
             label = "inferred b",
             fill = 0,
-            fillalpha = 0.2
+            fillalpha = 0.2,
         )
         p2 = vline!([b], label = "real b")
 
@@ -582,7 +582,7 @@ end
         foo() -> CVIProjection(
             rng = StableRNG(42),
             sampling_strategy = FullSampling(10),
-            outsamples = 5
+            outsamples = 5,
         )
     end
 
@@ -593,7 +593,7 @@ end
         constraints = myconstraints(),
         initialization = myinitialization(),
         free_energy = true,
-        iterations = 15
+        iterations = 15,
     )
 
     @test mean(result.posteriors[:a][end]) ≈ a atol = 0.05
@@ -606,7 +606,7 @@ end
             (x) -> pdf(result.posteriors[:a][end], x),
             label = "inferred a",
             fill = 0,
-            fillalpha = 0.2
+            fillalpha = 0.2,
         )
         p1 = vline!([a], label = "real a")
 
@@ -615,7 +615,7 @@ end
             (x) -> pdf(result.posteriors[:b][end], x),
             label = "inferred b",
             fill = 0,
-            fillalpha = 0.2
+            fillalpha = 0.2,
         )
         p2 = vline!([b], label = "real b")
 

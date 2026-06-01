@@ -25,7 +25,7 @@
             iterations = 10,
             returnvars = KeepLast(),
             free_energy = true,
-            disable_inference_error_hint = true
+            disable_inference_error_hint = true,
         )
     end
 
@@ -69,7 +69,7 @@
         ),
         RequireMessageFunctionalDependencies(
             in = NormalMeanPrecision(0.0, 10.0)
-        )
+        ),
     ]
         result = probit_inference(data_y, dependencies)
         @test length(result.free_energy) === 10
@@ -86,7 +86,7 @@
         data_y,
         RequireMessageFunctionalDependencies(
             in = NormalMeanPrecision(0.0, 1.0)
-        )
+        ),
     )
 
     ## Create output plots
@@ -101,7 +101,7 @@
             mean.(mx)[2:end],
             ribbon = std.(mx)[2:end],
             fillalpha = 0.2,
-            label = "x (inferred mean)"
+            label = "x (inferred mean)",
         )
 
         pf = plot(xlabel = "t", ylabel = "BFE")

@@ -42,16 +42,16 @@ StopEarlyIterationStrategy(atol::Real, rtol::Real) = StopEarlyIterationStrategy(
     Float64(atol), Float64(rtol), Inf, Float64[]
 )
 
-function (strategy::StopEarlyIterationStrategy)(model, iteration::Int)
+function (strategy::StopEarlyIterationStrategy)(event::AfterIterationEvent)
     current_fe_value = 0.0
     # Subscribe on the `BetheFreeEnergy` stream but only `take(1)` value from it
     subscribe!(
         score(
-            model,
+            event.model,
             RxInfer.BetheFreeEnergy(Real),
-            RxInfer.DefaultObjectiveDiagnosticChecks
+            RxInfer.DefaultObjectiveDiagnosticChecks,
         ) |> take(1),
-        (v) -> current_fe_value = v
+        (v) -> current_fe_value = v,
     )
     # Take the previous value from the saved history, use the large value if the first iteration
     previous_fe_value = if isempty(strategy.fe_values)
@@ -62,10 +62,13 @@ function (strategy::StopEarlyIterationStrategy)(model, iteration::Int)
     # Save the current value in the history
     push!(strategy.fe_values, current_fe_value)
     # Stop early if the previous value is close to the current
-    return isapprox(
+    if isapprox(
         current_fe_value,
         previous_fe_value;
         atol = strategy.atol,
-        rtol = strategy.rtol
+        rtol = strategy.rtol,
     )
+        event.stop_iteration = true
+    end
+    return nothing
 end

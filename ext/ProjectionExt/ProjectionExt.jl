@@ -23,7 +23,7 @@ end
 function ReactiveMP.constrain_form(
     constraint::ProjectedTo,
     context::ProjectionContext,
-    something::Union{Distribution, ExponentialFamilyDistribution}
+    something::Union{Distribution, ExponentialFamilyDistribution},
 )
     T = ExponentialFamilyProjection.get_projected_to_type(constraint)
     D = ExponentialFamily.exponential_family_typetag(something)
