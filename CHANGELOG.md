@@ -5,9 +5,56 @@ All notable changes to RxInfer.jl will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
 ## [Unreleased]
 
-## [5.0.0]
+## [5.3.3] - 2026-06-01
+
+### Changed
+- Updated `[compat]` entry for GraphPPL to `"4.7.0"` (allowing any version in the `[4.7.0, 5.0.0)` range), replacing the previous tilde-pinned `"~4.6.0"`.
+
+## [5.3.2] - 2026-05-12
+
+### Added
+- `TensorBoardLoggerExt` now emits a `Summary` text tag alongside `EventCounts` with a single-snapshot timing rollup of the inference run: `model_build` (wall-clock between `BeforeModelCreationEvent` and `AfterModelCreationEvent`), `inference` (between `BeforeInferenceEvent` and `AfterInferenceEvent`), `total_wall` (first-to-last traced event), and per-iteration aggregates (`n_iterations`, `iter_total`, `iter_mean`, `iter_min`, `iter_max`). Lines are skipped silently when the corresponding measurement is missing — runs that bypass model creation or have no variational iterations still produce a useful Summary instead of an empty or misleading-zero table. The existing `iteration_time_ms` per-iteration scalar series is unchanged.
+- `Base.show` methods for every Tier A callback event (`Before/AfterModelCreationEvent`, `Before/AfterInferenceEvent`, `Before/AfterIterationEvent`, `Before/AfterDataUpdateEvent`, `OnMarginalUpdateEvent`, `Before/AfterAutostartEvent`), so trace breadcrumbs in TBLogger's Text tab no longer dump raw struct contents ([#638](https://github.com/ReactiveBayes/RxInfer.jl/issues/638)). The methods honor the `IOContext` `:compact` flag: trace loggers pass `:compact => true` to get the short `EventName(model=Type, span=ab12…)` form, while REPL/Pluto/Jupyter sees the full form with the canonical struct constructor name and full UUID span id. The `_show_span` helper omits the field entirely when the span id is `nothing` (callbacks disabled). Pairs with the matching ReactiveMP-side work for `MessageMapping`, `MessageProductContext`, `AnnotationDict`, `FormConstraintCheck*`, and the Tier B events.
+
+### Changed
+- `TensorBoardLoggerExt` per-event text breadcrumbs now render via `sprint(show, ev; context = :compact => true)` (a small `_compact_repr` helper) instead of `repr(ev)`. After the event `Base.show` rework, `repr` returns the full interactive form (actual messages, full UUID); the `:compact => true` context yields the short trace-friendly form one log line wide. The previous bespoke `"k1: v1 | k2: v2 | …"` strings (and the now-removed `_format_fields` helper, ~110 LOC) are replaced by direct delegation to the event's own `show` method. ([#638](https://github.com/ReactiveBayes/RxInfer.jl/issues/638))
+- Refactored `test/ext/TensorBoardLoggerExt/tensorboardlogger_tests.jl` for efficiency and maintainability. The 14 per-distribution scalar-dispatch tests (Poisson, Geometric, NegativeBinomial, Binomial, Exponential, VonMises, Weibull, LogNormal, Erlang, Laplace, Pareto, Rayleigh, Chisq, Uniform-fallback) collapse into a single table-driven `@testitem` with one `@testset` per row, and the three Summary-writer subtests collapse into a single `@testitem` with three `@testset`s. Shared `@model` / `@constraints` / `@initialization` boilerplate for the IID Normal, coin-toss, and IID InverseGamma fixtures moves into `helpers.jl` as `iid_normal_inference`, `coin_toss_inference`, and `iid_invgamma_inference` factories, plus a `with_dispatch_logger` helper that snapshots `(tags, steps)` after closing the TBLogger so the Windows EBUSY retry in `with_safe_tempdir` still applies. Net: ~30 → 17 testitems; ~1490 → ~480 lines; per-concern parallelism and failure granularity preserved via `@testset`. No behavioural change to extension code.
+
+## [5.3.1] - 2026-05-05
+
+- Relax `[compat]` entry for ReactiveMP.jl dependency, allowing any version in the `[6.0.0, 7.0.0)` range. Previously was too strict, allowing only versions `[6.0.0, 6.1.0)`.
+
+## [5.3.0] - 2026-05-04
+
+- Added Perfetto trace viewer support: `perfetto_view(trace)` converts a `RxInferTraceCallbacks` trace to Perfetto JSON, and `perfetto_open(trace)` opens it directly in the Perfetto UI in the browser.
+
+## [5.2.1] - 2026-04-27
+
+### Added
+- `TensorBoardLoggerExt` posterior scalar logging now covers more univariate families. In addition to `Normal` (mean/precision) and `Gamma` (shape/rate), it now emits parameterisation-aware tags for `Beta` (alpha/beta/mean), `Bernoulli` (succprob), `Binomial` (ntrials/succprob), `InverseGamma` / `GammaInverse` (shape/scale), `Poisson` (rate), `Geometric` (succprob), `NegativeBinomial` (r/succprob), `Exponential` (rate), `VonMises` (location/concentration), `Weibull` (shape/scale), `LogNormal` (meanlog/stdlog), and `Erlang` (shape/scale), `Laplace` (location/scale), `Pareto` (shape/scale), `Rayleigh` (scale), and `Chisq` (dof). Any remaining `UnivariateDistribution` falls back to generic `mean` and `var` tags so unknown posteriors still produce visible convergence traces.
+- `RxInfer.convert_to_tensorboard` accepts a new `log_posteriors` keyword that filters which marginals reach the `posteriors/*` tags. Pass `false` to suppress every posterior tag (scalars and histograms), `true` (default) to keep current behaviour, or a `Vector{String}` / `Vector{Symbol}` allow-list (e.g. `["μ"]` or `[:μ]`) to log only the named variables. Iteration timing, event counts, and event-text breadcrumbs are unaffected by the filter.
+
+## [5.2.0] - 2026-04-24
+
+### Added 
+- The `trace = ...` keyword argument now accepts a tuple of symbols. In this case, 
+  only the events, whose names are present in the tuple will be traced.
+
+## [5.1.0] - 2026-04-23
+
+### Added
+- Added `TensorBoardLoggerExt` extension: when `TensorBoardLogger.jl` is loaded, `RxInfer.convert_to_tensorboard(trace)` exports an inference trace to TensorBoard event log files. Capabilities:
+  - **Iteration timing** — wall-clock duration of each variational iteration logged as `iteration_time_ms`.
+  - **Posterior scalars** — per-iteration mean/precision for `Normal` and shape/rate for `Gamma` marginals under `posteriors/<variable>/`.
+  - **Posterior distributions** — per-iteration `HistogramSummary` (ridgeline + percentile bands in TensorBoard) via `log_distributions = true` and configurable `n_samples`.
+  - **Event text breadcrumbs** — full per-event narrative (`Events`, `before_iteration`, `after_iteration`, etc.) gated behind `log_text_events = true` (off by default). `EventCounts` is always emitted as a compact run summary.
+  - Logs are written to `tensorboard_logs/` in the current working directory by default; a custom path can be supplied via `output_file`.
+
+
+## [5.0.0] - 2026-04-17
 
 - **Breaking:** Addons have been renamed to annotations to match the new ReactiveMP API. This affects the `infer` function and related types:
   - The `addons` keyword argument in `infer()`, `batch_inference()`, and `streaming_inference()` has been renamed to `annotations`. Update `infer(..., addons = AddonLogScale())` to `infer(..., annotations = LogScaleAnnotations())`.
@@ -155,8 +202,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v4.7.2...HEAD
-[4.7.3]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v4.7.2...HEAD
+[Unreleased]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.3.3...HEAD
+[5.3.3]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.3.2...v5.3.3
+[5.3.2]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.3.1...v5.3.2
+[5.3.1]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.3.0...v5.3.1
+[5.3.0]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.2.1...v5.3.0
+[5.2.1]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.2.0...v5.2.1
+[5.2.0]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.1.0...v5.2.0
+[5.1.0]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.1.0...v5.0.0
+[5.0.0]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.0.0...v4.7.3
+[4.7.3]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v4.7.3...v4.7.2
 [4.7.2]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v4.7.1...v4.7.2
 [4.7.1]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v4.7.0...v4.7.1
 [4.7.0]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v4.6.7...v4.7.0
