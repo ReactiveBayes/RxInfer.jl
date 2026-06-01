@@ -56,15 +56,17 @@ struct PointMassFormConstraint{F, P, B} <: AbstractFormConstraint
     boundaries     :: B
 end
 
-Base.show(io::IO, ::PointMassFormConstraint) = print(
-    io, "PointMassFormConstraint()"
-)
+Base.show(io::IO, ::PointMassFormConstraint) =
+    print(io, "PointMassFormConstraint()")
 
-PointMassFormConstraint(; optimizer = default_point_mass_form_constraint_optimizer, starting_point = default_point_mass_form_constraint_starting_point, boundaries = default_point_mass_form_constraint_boundaries) = PointMassFormConstraint(
-    optimizer, starting_point, boundaries
-)
+PointMassFormConstraint(;
+    optimizer = default_point_mass_form_constraint_optimizer,
+    starting_point = default_point_mass_form_constraint_starting_point,
+    boundaries = default_point_mass_form_constraint_boundaries,
+) = PointMassFormConstraint(optimizer, starting_point, boundaries)
 
-ReactiveMP.default_form_check_strategy(::PointMassFormConstraint) = FormConstraintCheckLast()
+ReactiveMP.default_form_check_strategy(::PointMassFormConstraint) =
+    FormConstraintCheckLast()
 
 ReactiveMP.default_prod_constraint(::PointMassFormConstraint) = GenericProd()
 
@@ -72,14 +74,13 @@ call_optimizer(pmconstraint::PointMassFormConstraint, distribution::D) where {D}
 call_boundaries(pmconstraint::PointMassFormConstraint, distribution::D) where {D}     = pmconstraint.boundaries(variate_form(D), value_support(D), pmconstraint, distribution)
 call_starting_point(pmconstraint::PointMassFormConstraint, distribution::D) where {D} = pmconstraint.starting_point(variate_form(D), value_support(D), pmconstraint, distribution)
 
-ReactiveMP.constrain_form(pmconstraint::PointMassFormConstraint, distribution) = call_optimizer(
-    pmconstraint, distribution
-)
+ReactiveMP.constrain_form(pmconstraint::PointMassFormConstraint, distribution) =
+    call_optimizer(pmconstraint, distribution)
 
 # There is no need to call the optimizer on a `Distribution` object since they should have a well defined `mode`
-ReactiveMP.constrain_form(::PointMassFormConstraint, distribution::Distribution) = PointMass(
-    mode(distribution)
-)
+ReactiveMP.constrain_form(
+    ::PointMassFormConstraint, distribution::Distribution
+) = PointMass(mode(distribution))
 
 # Categorical distribution has an exception since `mode` does not return a one-hot vector, which is required for backwards compatibility with `Categorical` marginals
 ReactiveMP.constrain_form(
@@ -170,15 +171,12 @@ function default_point_mass_form_constraint_boundaries(
     return __default_univariate_boundaries(support(distribution))
 end
 
-__default_univariate_boundaries(interval::AbstractRange) = (
-    minimum(interval), maximum(interval)
-)
-__default_univariate_boundaries(interval::Distributions.RealInterval) = (
-    minimum(interval), maximum(interval)
-)
-__default_univariate_boundaries(domain::Domain) = (
-    infimum(domain), supremum(domain)
-)
+__default_univariate_boundaries(interval::AbstractRange) =
+    (minimum(interval), maximum(interval))
+__default_univariate_boundaries(interval::Distributions.RealInterval) =
+    (minimum(interval), maximum(interval))
+__default_univariate_boundaries(domain::Domain) =
+    (infimum(domain), supremum(domain))
 
 """
     default_point_mass_form_constraint_starting_point(::Type{<:VariateType}, ::Type{<:ValueSupport}, constraint::PointMassFormConstraint, distribution)

@@ -38,9 +38,8 @@ StopEarlyIterationStrategy(rtol::Real) = StopEarlyIterationStrategy(0.0, rtol)
 Create an early-stopping strategy with explicit absolute (`atol`) and relative (`rtol`) tolerances.
 Uses `start_fe_value = Inf` by default.
 """
-StopEarlyIterationStrategy(atol::Real, rtol::Real) = StopEarlyIterationStrategy(
-    Float64(atol), Float64(rtol), Inf, Float64[]
-)
+StopEarlyIterationStrategy(atol::Real, rtol::Real) =
+    StopEarlyIterationStrategy(Float64(atol), Float64(rtol), Inf, Float64[])
 
 function (strategy::StopEarlyIterationStrategy)(event::AfterIterationEvent)
     current_fe_value = 0.0
