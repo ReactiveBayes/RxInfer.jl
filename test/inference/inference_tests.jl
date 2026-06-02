@@ -540,9 +540,8 @@ end
 
     @node typeof(gcv) Stochastic [y, x, z, κ, ω]
 
-    RxInfer.ReactiveMP.default_meta(::typeof(gcv)) = RxInfer.ReactiveMP.default_meta(
-        GCV
-    )
+    RxInfer.ReactiveMP.default_meta(::typeof(gcv)) =
+        RxInfer.ReactiveMP.default_meta(GCV)
 
     @rule typeof(gcv)(:y, Marginalisation) (
         q_x::Any, q_z::Any, q_κ::Any, q_ω::Any, meta::Any
