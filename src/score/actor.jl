@@ -10,11 +10,8 @@ mutable struct ScoreActor{L} <: Rocket.Actor{L}
 end
 
 ScoreActor(iterations::Int, keep::Int = 1) = ScoreActor(Real, iterations, keep)
-ScoreActor(::Type{L}, iterations::Int, keep::Int = 1) where {L <: Real} = ScoreActor{
-    L
-}(
-    zeros(L, iterations, keep), 1, 0, falses(keep)
-)
+ScoreActor(::Type{L}, iterations::Int, keep::Int = 1) where {L <: Real} =
+    ScoreActor{L}(zeros(L, iterations, keep), 1, 0, falses(keep))
 
 Base.show(io::IO, ::ScoreActor{L}) where {L} = print(io, "ScoreActor(", L, ")")
 Base.setindex!(actor::ScoreActor, data, frame, index) =

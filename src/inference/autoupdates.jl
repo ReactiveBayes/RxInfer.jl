@@ -286,9 +286,8 @@ function getvarlabels(specification::AutoUpdateSpecification)
     )
 end
 # These functions are used to reduce the individual auto-update specifications to the list of variable labels
-__reducevarlabels(collected, upcoming::Tuple) = (
-    collected..., map(getlabel, upcoming)...
-)
+__reducevarlabels(collected, upcoming::Tuple) =
+    (collected..., map(getlabel, upcoming)...)
 __reducevarlabels(collected, upcoming) = (collected..., getlabel(upcoming))
 
 function Base.map(f::F, specification::AutoUpdateSpecification) where {F}
@@ -326,9 +325,8 @@ getvarlabels(specification::IndividualAutoUpdateSpecification) =
 getmapping(specification::IndividualAutoUpdateSpecification) =
     specification.mapping
 
-Base.show(io::IO, specification::IndividualAutoUpdateSpecification) = print(
-    io, getvarlabels(specification), " = ", getmapping(specification)
-)
+Base.show(io::IO, specification::IndividualAutoUpdateSpecification) =
+    print(io, getvarlabels(specification), " = ", getmapping(specification))
 
 """
     AutoUpdateVariableLabel{L, I}(label, [ index = nothing ])
@@ -342,9 +340,8 @@ getlabel(::AutoUpdateVariableLabel{L, I}) where {L, I} = L
 getindex(::AutoUpdateVariableLabel{L, I}) where {L, I} = I
 
 AutoUpdateVariableLabel(label::Symbol) = AutoUpdateVariableLabel{label, ()}()
-AutoUpdateVariableLabel(label::Symbol, index::Tuple) = AutoUpdateVariableLabel{
-    label, index
-}()
+AutoUpdateVariableLabel(label::Symbol, index::Tuple) =
+    AutoUpdateVariableLabel{label, index}()
 
 Base.show(io::IO, specification::AutoUpdateVariableLabel) =
     if isempty(getindex(specification))
@@ -372,15 +369,15 @@ end
 getmappingfn(mapping::AutoUpdateMapping) = mapping.mappingFn
 getarguments(mapping::AutoUpdateMapping) = mapping.arguments
 
-Base.show(io::IO, mapping::AutoUpdateMapping) = _autoupdate_mapping_show(
-    io, mapping, getmappingfn(mapping)
-)
-_autoupdate_mapping_show(io::IO, mapping::AutoUpdateMapping, mappingfn::Base.Broadcast.BroadcastFunction) = print(
-    io, mappingfn.f, ".", "(", join(getarguments(mapping), ", "), ")"
-)
-_autoupdate_mapping_show(io::IO, mapping::AutoUpdateMapping, mappingfn::Any) = print(
-    io, mappingfn, "(", join(getarguments(mapping), ", "), ")"
-)
+Base.show(io::IO, mapping::AutoUpdateMapping) =
+    _autoupdate_mapping_show(io, mapping, getmappingfn(mapping))
+_autoupdate_mapping_show(
+    io::IO,
+    mapping::AutoUpdateMapping,
+    mappingfn::Base.Broadcast.BroadcastFunction,
+) = print(io, mappingfn.f, ".", "(", join(getarguments(mapping), ", "), ")")
+_autoupdate_mapping_show(io::IO, mapping::AutoUpdateMapping, mappingfn::Any) =
+    print(io, mappingfn, "(", join(getarguments(mapping), ", "), ")")
 
 "This autoupdate would fetch updates from the marginal of a variable"
 struct AutoUpdateFetchMarginalArgument{L, I} end
@@ -388,12 +385,10 @@ struct AutoUpdateFetchMarginalArgument{L, I} end
 getlabel(::AutoUpdateFetchMarginalArgument{L, I}) where {L, I} = L
 getindex(::AutoUpdateFetchMarginalArgument{L, I}) where {L, I} = I
 
-AutoUpdateFetchMarginalArgument(label::Symbol) = AutoUpdateFetchMarginalArgument{
-    label, ()
-}()
-AutoUpdateFetchMarginalArgument(label::Symbol, index::Tuple) = AutoUpdateFetchMarginalArgument{
-    label, index
-}()
+AutoUpdateFetchMarginalArgument(label::Symbol) =
+    AutoUpdateFetchMarginalArgument{label, ()}()
+AutoUpdateFetchMarginalArgument(label::Symbol, index::Tuple) =
+    AutoUpdateFetchMarginalArgument{label, index}()
 
 Base.show(io::IO, argument::AutoUpdateFetchMarginalArgument) =
     if isempty(getindex(argument))
@@ -415,12 +410,10 @@ struct AutoUpdateFetchMessageArgument{L, I} end
 getlabel(::AutoUpdateFetchMessageArgument{L, I}) where {L, I} = L
 getindex(::AutoUpdateFetchMessageArgument{L, I}) where {L, I} = I
 
-AutoUpdateFetchMessageArgument(label::Symbol) = AutoUpdateFetchMessageArgument{
-    label, ()
-}()
-AutoUpdateFetchMessageArgument(label::Symbol, index::Tuple) = AutoUpdateFetchMessageArgument{
-    label, index
-}()
+AutoUpdateFetchMessageArgument(label::Symbol) =
+    AutoUpdateFetchMessageArgument{label, ()}()
+AutoUpdateFetchMessageArgument(label::Symbol, index::Tuple) =
+    AutoUpdateFetchMessageArgument{label, index}()
 
 Base.show(io::IO, argument::AutoUpdateFetchMessageArgument) =
     if isempty(getindex(argument))
@@ -545,9 +538,8 @@ function prepare_mapping_autoupdate_for_model(
     )
     return AutoUpdateMapping(getmappingfn(mapping), prepared_arguments)
 end
-prepare_mapping_argument_for_model(mapping::AutoUpdateMapping, model, vardict) = prepare_mapping_autoupdate_for_model(
-    mapping, model, vardict
-)
+prepare_mapping_argument_for_model(mapping::AutoUpdateMapping, model, vardict) =
+    prepare_mapping_autoupdate_for_model(mapping, model, vardict)
 prepare_mapping_argument_for_model(any::Any, model, vardict) = any
 
 import Rocket: getrecent
@@ -556,20 +548,15 @@ struct FetchRecentArgument{L, S}
     stream::S
 end
 
-FetchRecentArgument(label::Symbol, stream::S) where {S} = FetchRecentArgument{
-    label, S
-}(
-    stream
-)
+FetchRecentArgument(label::Symbol, stream::S) where {S} =
+    FetchRecentArgument{label, S}(stream)
 
 getlabel(::FetchRecentArgument{L}) where {L} = L
-Rocket.getrecent(argument::FetchRecentArgument) = getrecent(
-    argument, argument.stream
-)
+Rocket.getrecent(argument::FetchRecentArgument) =
+    getrecent(argument, argument.stream)
 Rocket.getrecent(argument::FetchRecentArgument, stream) = getrecent(stream)
-Rocket.getrecent(argument::FetchRecentArgument, streams::AbstractArray) = map(
-    stream -> getrecent(argument, stream), streams
-)
+Rocket.getrecent(argument::FetchRecentArgument, streams::AbstractArray) =
+    map(stream -> getrecent(argument, stream), streams)
 
 # Prepare expression of `q(_)`
 function prepare_mapping_argument_for_model(
@@ -586,9 +573,8 @@ function prepare_mapping_argument_for_model(
     return FetchRecentArgument(label, _marginal_argument(getvariable(var)))
 end
 _marginal_argument(variable) = ReactiveMP.get_stream_of_marginals(variable)
-_marginal_argument(variables::AbstractArray) = map(
-    _marginal_argument, variables
-)
+_marginal_argument(variables::AbstractArray) =
+    map(_marginal_argument, variables)
 
 # Prepare expression of `μ(_)`
 function prepare_mapping_argument_for_model(
@@ -622,9 +608,8 @@ autoupdate_mapping_fetch(mapping::AutoUpdateMapping) = getmappingfn(mapping)(
     map(autoupdate_mapping_fetch, getarguments(mapping))...
 )
 autoupdate_mapping_fetch(any) = any
-autoupdate_mapping_fetch(argument::FetchRecentArgument) = autoupdate_mapping_fetch(
-    argument, Rocket.getrecent(argument)
-)
+autoupdate_mapping_fetch(argument::FetchRecentArgument) =
+    autoupdate_mapping_fetch(argument, Rocket.getrecent(argument))
 autoupdate_mapping_fetch(argument::FetchRecentArgument, something) = something
 autoupdate_mapping_fetch(argument::FetchRecentArgument, ::Nothing) = error(
     "The initial value for `$(getlabel(argument))` has not been specified, but is required in the `@autoupdates`.",
