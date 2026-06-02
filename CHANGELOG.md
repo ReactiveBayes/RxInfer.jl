@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Restored the "Search with Gemini" widget in the documentation. The Google Cloud project backing the previous Vertex AI Search `configId` no longer existed, so the widget silently stopped working. `docs/src/assets/chat.js` now points at a newly created Vertex AI Search (AI Applications) app, documents the full setup in a header comment (no API key lives in the repo — the data store, public access, and domain allowlist are configured in the GCP console; website data stores require an Enterprise-edition search app), and logs a `console.warn` instead of failing silently when the widget or the Google SDK fails to load. The same `configId` is shared with the RxInferExamples.jl documentation. ([#668](https://github.com/ReactiveBayes/RxInfer.jl/pull/668))
+
 ## [5.3.3] - 2026-06-01
 
 ### Changed
