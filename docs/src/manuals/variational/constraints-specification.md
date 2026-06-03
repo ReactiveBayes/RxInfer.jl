@@ -247,6 +247,14 @@ end
 
 Constraints can also be specified **inline** at the call site of a submodel using the `where` keyword. This is useful when you want to attach constraints to a specific invocation without modifying the outer model's `@constraints` block. For example:
 
+```@setup constraints
+using RxInfer
+
+@model function toy_model(y, z)
+    x ~ Normal(mean = y, variance = z)
+end
+```
+
 ```@example constraints
 @model function outer_toy_model(a, b, c)
     a ~ toy_model(y = b, z = c) where {
