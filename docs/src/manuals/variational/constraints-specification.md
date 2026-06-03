@@ -243,6 +243,67 @@ Factorization constraints specified in a context propagate to their child submod
 end
 ```
 
+## Inline constraints on submodel calls
+
+Constraints can also be specified **inline** at the call site of a submodel using the `where` keyword. This is useful when you want to attach constraints to a specific invocation without modifying the outer model's `@constraints` block. For example:
+
+```@setup constraints
+using RxInfer
+
+@model function toy_model(y, z)
+    x ~ Normal(mean = y, variance = z)
+end
+```
+
+```@example constraints
+@model function outer_toy_model(a, b, c)
+    a ~ toy_model(y = b, z = c) where {
+        constraints = @constraints begin
+            q(x, y, z) = q(x, y)q(z)
+            q(x) :: Normal
+        end
+    }
+end
+```
+
+The `where { constraints = ... }` syntax accepts any constraint set produced by the `@constraints` macro. Constraint sets defined with the `@constraints function` form can also be passed by reference:
+
+```@example constraints
+@constraints function my_constraints()
+    q(x, y, z) = q(x, y)q(z)
+    q(x) :: Normal
+end
+
+@model function outer_toy_model(a, b, c)
+    a ~ toy_model(y = b, z = c) where { constraints = my_constraints() }
+end
+```
+
+Inline constraints apply only to the specific submodel invocation they are attached to and propagate to any submodels nested within it. Their priority relative to other constraint sources, from highest to lowest, is:
+
+1. **External constraints** — passed at model creation via `for q in submodel` or `for q in (submodel, index)` blocks.
+2. **Inline constraints** — specified with `where { constraints = ... }` at the call site.
+3. **Default constraints** — defined via `GraphPPL.default_constraints`.
+
+This means that if external constraints also target the same submodel, they will override the inline constraints.
+
+!!! note "Combining inline constraints and initialization"
+    When specifying both `constraints` and `initialization` inline on the same submodel call, each macro expression must be wrapped in parentheses so that Julia parses the `where { ... }` block correctly:
+    ```julia
+    @model function outer_toy_model(a, b, c)
+        a ~ toy_model(y = b, z = c) where {
+            constraints = (@constraints begin
+                q(x, y, z) = q(x, y)q(z)
+                q(x) :: Normal
+            end),
+            initialization = (@initialization begin
+                q(x) = vague(NormalMeanVariance)
+            end)
+        }
+    end
+    ```
+    Without the parentheses the parser will raise a syntax error.
+
 ## Default constraints
 Sometimes, a submodel is used in multiple contexts, on multiple levels of hierarchy and in different submodels. In such cases, it becomes cumbersome to specify constraints for each instance of the submodel and track its usage throughout the model. To alleviate this, `RxInfer` allows users to specify default constraints for a submodel. These constraints will be applied to all instances of the submodel unless overridden by specific constraints. To specify default constraints for a submodel, override the `GraphPPL.default_constraints` function for the submodel:
 
