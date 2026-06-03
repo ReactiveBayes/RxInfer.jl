@@ -85,9 +85,8 @@ function RxInferBenchmarkCallbacks(;
     )
 end
 
-Base.isempty(callbacks::RxInferBenchmarkCallbacks) = isempty(
-    callbacks.before_model_creation_ts
-)
+Base.isempty(callbacks::RxInferBenchmarkCallbacks) =
+    isempty(callbacks.before_model_creation_ts)
 
 import ReactiveMP: handle_event, Event
 
