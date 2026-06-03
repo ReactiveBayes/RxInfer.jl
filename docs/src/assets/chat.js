@@ -59,7 +59,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const deepWikiLink = document.createElement('div');
         deepWikiLink.style.cssText = `
             text-align: center;
-            font-size: 0.9em;
+            font-size: 0.8em;
+            margin-bottom: 1rem;
         `;
         const deepWikiAnchor = document.createElement('a');
         deepWikiAnchor.textContent = 'or ask DeepWiki';
