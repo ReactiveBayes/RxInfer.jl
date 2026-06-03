@@ -54,9 +54,22 @@ document.addEventListener('DOMContentLoaded', function() {
         searchTrigger.classList.add('docs-search-query','input','is-rounded','is-small','is-clickable','my-2','py-1','px-2');
         
         aiSearchContainer.appendChild(searchTrigger);
-        docsSearchQuery.parentNode.insertBefore(aiSearchContainer, docsSearchQuery.nextSibling);
 
-        
+        // Add "or ask DeepWiki" link (same target as the README badge)
+        const deepWikiLink = document.createElement('div');
+        deepWikiLink.style.cssText = `
+            text-align: center;
+            font-size: 0.9em;
+        `;
+        const deepWikiAnchor = document.createElement('a');
+        deepWikiAnchor.textContent = 'or ask DeepWiki';
+        deepWikiAnchor.setAttribute('href', 'https://deepwiki.com/ReactiveBayes/RxInfer.jl');
+        deepWikiAnchor.setAttribute('target', '_blank');
+        deepWikiAnchor.setAttribute('rel', 'noopener');
+        deepWikiLink.appendChild(deepWikiAnchor);
+        aiSearchContainer.appendChild(deepWikiLink);
+
+        docsSearchQuery.parentNode.insertBefore(aiSearchContainer, docsSearchQuery.nextSibling);
     }
 
     // Load the Google Gen AI SDK
