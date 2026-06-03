@@ -389,11 +389,11 @@ end
         @test_logs(
             (
                 :warn,
-                r".*Autoupdates defines an update for `a`\, but `a` has been reserved in the model as a constant.*Use `warn = false` option to supress the warning.*Use `strict = true` option to turn the warning into an error.*",
+                r".*Autoupdates defines an update for `a`\, but `a` has been reserved in the model as a constant.*Use `warn = false` option to suppress the warning.*Use `strict = true` option to turn the warning into an error.*",
             ),
             (
                 :warn,
-                r".*Autoupdates defines an update for `b`\, but `b` has been reserved in the model as a constant.*Use `warn = false` option to supress the warning.*Use `strict = true` option to turn the warning into an error.*",
+                r".*Autoupdates defines an update for `b`\, but `b` has been reserved in the model as a constant.*Use `warn = false` option to suppress the warning.*Use `strict = true` option to turn the warning into an error.*",
             ),
             check_model_generator_compatibility(autoupdates, model)
         )
