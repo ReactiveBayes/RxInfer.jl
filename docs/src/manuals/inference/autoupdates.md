@@ -154,7 +154,7 @@ autoupdates = generate_autoupdates(mean, true)
 ## The options block
 
 Optionally, the `@autoupdates` macro accepts a set of `[ options... ]` before the main block or the full function definition. The available options are:
-- `warn = true/false`: Enables or disables warnings when with incomaptible model. Set to `true` by default.
+- `warn = true/false`: Enables or disables warnings for an incompatible model. Set to `true` by default.
 - `strict = true/false`: Turns warnings into errors. Set to `false` by default.
 
 ```@example autoupdates-examples

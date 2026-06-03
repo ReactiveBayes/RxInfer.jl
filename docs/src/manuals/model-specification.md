@@ -173,7 +173,7 @@ indicates that `x₁` is distributed as [Normal](https://en.wikipedia.org/wiki/N
 
 In probabilistic models based on graphs, factor nodes are used to define a relationship between random variables and/or constants and data variables.
 A factor node defines a probability distribution over selected latent or data variables. The `~` operator not only creates a latent variable but also 
-defines a functional relatinship of it with other variables and creates a factor node as a result.
+defines a functional relationship of it with other variables and creates a factor node as a result.
 
 In the example above
 ```julia
@@ -188,7 +188,7 @@ not only creates a latent variable `x₁` but also a factor node `Normal`.
 
 ### [Deterministic relationships](@id user-guide-model-specification-node-creation-deterministic)
 
-Unlike other probabilistic programming languages in Julia, `RxInfer` does not allow use of the `=` operator for creating deterministic relationships between (latent)variables. 
+Unlike other probabilistic programming languages in Julia, `RxInfer` does not allow use of the `=` operator for creating deterministic relationships between (latent) variables. 
 Instead, we can use the `:=` operator for this purpose. For example:
 
 ```julia
@@ -231,7 +231,7 @@ tmp2 ~ Gamma(shape = 1.0, rate = 1.0)
 y    ~ Normal(mean = tmp1, precision = tmp2)
 ```
 
-The inference backend still performs inference for anonymous latent variables, however, there it does not provide an easy way to obtain posteriors for them.
+The inference backend still performs inference for anonymous latent variables; however, it does not provide an easy way to obtain posteriors for them.
 Note that the inference backend will try to optimize deterministic function calls in the case where all arguments are known in advance.
 For example:
 ```julia
@@ -254,7 +254,7 @@ Technically, in Julia, the `x[i]` call is translated to a function call `getinde
 
 ### [Broadcasting syntax](@id user-guide-model-specification-node-creation-broadcasting)
 
-`GraphPPL` support broadcasting for the `~` operator in the exact same way as Julia itself. 
+`GraphPPL` supports broadcasting for the `~` operator in the exact same way as Julia itself. 
 A user is free to write an expression of the following form:
 ```julia
 m  ~ Normal(mean = 0.0, precision = 0.0001)
@@ -275,7 +275,7 @@ use broadcasting with [deferred data](@ref user-guide-model-specification-condit
 
 ### [`Distributions.jl` compatibility](@id user-guide-model-specification-distributions)
 
-For some factor nodes we rely on the syntax from `Distributions.jl` to make it easy to adopt `RxInfer.jl` for these users. These nodes include for example the [`Beta`](https://en.wikipedia.org/wiki/Beta_distribution) and [`Wishart`](https://en.wikipedia.org/wiki/Wishart_distribution) distributions. These nodes can be created using the `~` syntax with the arguments as specified in `Distributions.jl`. Unfortunately, we `RxInfer.jl` is not yet compatible with all possible distributions that can be used as factor nodes. If you feel that you would like to see another node implemented, please file an issue.
+For some factor nodes we rely on the syntax from `Distributions.jl` to make it easy to adopt `RxInfer.jl` for these users. These nodes include for example the [`Beta`](https://en.wikipedia.org/wiki/Beta_distribution) and [`Wishart`](https://en.wikipedia.org/wiki/Wishart_distribution) distributions. These nodes can be created using the `~` syntax with the arguments as specified in `Distributions.jl`. Unfortunately, `RxInfer.jl` is not yet compatible with all possible distributions that can be used as factor nodes. If you feel that you would like to see another node implemented, please file an issue.
 
 !!! note
     To quickly check the list of all available factor nodes that can be used in the model specification language call `?ReactiveMP.is_predefined_node` or `Base.doc(ReactiveMP.is_predefined_node)`.
@@ -283,8 +283,8 @@ For some factor nodes we rely on the syntax from `Distributions.jl` to make it e
 
 Specifically for the Gaussian/Normal case we have custom implementations that yield a higher computational efficiency and improved stability in comparison to `Distributions.jl` as these are optimized for sampling operations. Our aliases for these distributions therefore do not correspond to the implementations from `Distributions.jl`. However, our model specification language is compatible with syntax from `Distributions.jl` for normal distributions, which will be automatically converted. `RxInfer` has its own implementation because of the following 3 reasons:
 1. `Distributions.jl` constructs normal distributions by saving the corresponding covariance matrices in a `PDMat` object from `PDMats.jl`. This construction always computes the Cholesky decompositions of the covariance matrices, which is very convenient for sampling-based procedures. However, in `RxInfer.jl` we mostly base our computations on analytical expressions which do not always need to compute the Cholesky decomposition. In order to reduce the overhead that `Distributions.jl` introduces, we therefore have custom implementations.
-2. Depending on the update rules, we might favor different parameterizations of the normal distributions. `ReactiveMP.jl` has quite a variety in parameterizations that allow us to efficient computations where we convert between parameterizations as little as possible.
-3. In certain situations we value stability a lot, especially when inverting matrices. `PDMats.jl`, and hence `Distributions.jl`, is not capable to fulfill all needs that we have here. Therefore we use `PositiveFactorizations.jl` to cope with the corner-cases.
+2. Depending on the update rules, we might favor different parameterizations of the normal distributions. `ReactiveMP.jl` has quite a variety of parameterizations that allow us to perform efficient computations where we convert between parameterizations as little as possible.
+3. In certain situations we value stability a lot, especially when inverting matrices. `PDMats.jl`, and hence `Distributions.jl`, is not capable of fulfilling all the needs that we have here. Therefore we use `PositiveFactorizations.jl` to cope with the corner-cases.
 
 ## [Model structure visualisation](@id user-guide-model-specification-visualization)
 
@@ -488,7 +488,7 @@ Model creation in `RxInfer` largely depends on [`GraphPPL`](https://github.com/R
     The model creation and construction were largely refactored in `GraphPPL` v4. 
     Read [_Migration Guide_](https://reactivebayes.github.io/GraphPPL.jl/stable/migration_3_to_4/) for more details.
 
-Note, that `GraphPPL` also implements `@model` macro, but does **not** export it by default. This was a deliberate choice to allow inference backends (such as `RxInfer`) to implement [custom functionality](@ref user-guide-model-specification-pipelines) on top of the default `GraphPPL.@model` macro. This is done with a custom  _backend_ for `GraphPPL.@model` macro. Read more about backends in the corresponding section of `GraphPPL` [documentation](https://github.com/ReactiveBayes/GraphPPL.jl).
+Note, that `GraphPPL` also implements `@model` macro, but does **not** export it by default. This was a deliberate choice to allow inference backends (such as `RxInfer`) to implement [custom functionality](@ref user-guide-model-specification-pipelines) on top of the default `GraphPPL.@model` macro. This is done with a custom _backend_ for the `GraphPPL.@model` macro. Read more about backends in the corresponding section of `GraphPPL` [documentation](https://github.com/ReactiveBayes/GraphPPL.jl).
 
 ```@docs
 RxInfer.ReactiveMPGraphPPLBackend
@@ -508,10 +508,10 @@ RxInfer.inject_tilderhs_aliases
 RxInfer.ReactiveMPNodeAliases
 ```
 
-## [Getting access to an internal variable data structures](@id user-guide-model-specification-internal-variable-access)
+## [Getting access to internal variable data structures](@id user-guide-model-specification-internal-variable-access)
 
-To get an access to an internal `ReactiveMP` data structure of a variable in `RxInfer` model, it is possible to return 
-a so called _label_ of the variable from the model macro, and access it later on as the following:
+To get access to the internal `ReactiveMP` data structure of a variable in an `RxInfer` model, it is possible to return 
+a so-called _label_ of the variable from the model macro, and access it later on as follows:
 
 ```@example internal-access
 using RxInfer

@@ -16,8 +16,8 @@ import GraphPPL: ModelGenerator, getmodel, getkwargs, create_model
     UnfactorizedData{D}
 
 A wrapper struct to wrap data that should not be factorized out by default during inference.
-When performing Bayesian Inference with message passing, every factor node contains a local
-factorization constraint on the variational posterior distribution. For data, we usually regarding
+When performing Bayesian inference with message passing, every factor node contains a local
+factorization constraint on the variational posterior distribution. For data, we usually regard
 data as an independent component in the variational posterior distribution. However, in some cases,
 for example when we are predicting data, we do not want to factorize out the data. In such cases,
 we can wrap the data with `UnfactorizedData` struct to prevent the factorization and craft a custom
@@ -77,7 +77,7 @@ getvarref(model::ProbabilisticModel, label) = getvarref(getmodel(model), label)
 
 Accepts a model generator and data to condition on. 
 The `generator` must be `GraphPPL.ModelGenerator` object.
-The `conditioned_on` must be named tuple or a dictionary with keys corresponding to the names of the input arguments in the model.
+The `conditioned_on` must be a named tuple or a dictionary with keys corresponding to the names of the input arguments in the model.
 """
 struct ConditionedModelGenerator{G, D}
     generator::G
@@ -182,13 +182,13 @@ function __infer_create_factor_graph_model(
 end
 
 """
-An object that is used to condition on unknown data. That may be necessary to create a model from a `ModelGenerator` object
-for which data is not known at the time of the model creation. 
+An object that is used to condition on unknown data. This may be necessary to create a model from a `ModelGenerator` object
+for which the data is not known at the time of model creation.
 """
 struct DeferredDataHandler end
 
 function Base.show(io::IO, ::DeferredDataHandler)
-    print(io, "[ deffered data ]")
+    print(io, "[ deferred data ]")
 end
 
 # We use the `datalabel` to instantiate the data interface for the model, in case of `DeferredDataHandler`
@@ -205,7 +205,7 @@ function __infer_create_data_interface(
     )
 end
 
-# In all other cases we use the `datalabel` to instantiate the data interface for the model and the data is known at the time of the model creation
+# For `UnfactorizedData` we use the `datalabel` to instantiate the data interface for the model with factorization disabled; the data is known at the time of the model creation
 function __infer_create_data_interface(
     model, context, key::Symbol, data::UnfactorizedData{D}
 ) where {D}

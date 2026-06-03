@@ -221,7 +221,7 @@ $$\begin{aligned}
 &= -\mathrm{E}_{q(x_k)}[x_k] \mathrm{E}_{q(\pi)} [\ln(\pi)] - (1-\mathrm{E}_{q(x_k)}[x_k]) \mathrm{E}_{q(\pi)}[\ln(1-\pi)]
 \end{aligned}$$
 
-Which is what we implemented below. Note that `mean(mirrorlog, q(x))` is equal to $\mathrm{E}_{q(x)}[1-\log{x}]$.
+Which is what we implemented below. Note that `mean(mirrorlog, q(x))` is equal to $\mathrm{E}_{q(x)}[\log(1-x)]$.
 
 ```@example create-node
 @average_energy MyBernoulli (q_out::Any, q_π::Any) = -mean(q_out) * mean(log, q_π) - (1.0 - mean(q_out)) * mean(mirrorlog, q_π)
@@ -363,7 +363,7 @@ The `call_rule_is_node_required` function is used to instruct the inference back
     # Get variable object
     θv = ReactiveMP.getvariable(θi)
     
-    # By default, `germarginal` ignores marginals set in the @initialization block
+    # By default, `getmarginal` ignores marginals set in the @initialization block
     # `IncludeAll` overrides this behavior and includes all marginals
     qθ = Rocket.getrecent(ReactiveMP.get_stream_of_marginals(θv))
 
@@ -390,6 +390,6 @@ result = infer(
 nothing #hide
 ```
 
-As we can see, the print statement in the rule is executed, which means that the node reference passing is working as expected. This feature opens up possibilities for advanced inference scenarios, but should be used judiciously. Consider whether your use case truly requires access to the node object, as simpler solutions using standard message passing rules are often sufficient and more maintainable.
+The inference runs successfully, which means that the rule was able to access the node object through `getnode()` and that node reference passing is working as expected. This feature opens up possibilities for advanced inference scenarios, but should be used judiciously. Consider whether your use case truly requires access to the node object, as simpler solutions using standard message passing rules are often sufficient and more maintainable.
 
 

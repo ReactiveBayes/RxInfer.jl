@@ -219,9 +219,9 @@ end
 struct NoInit end
 
 """
-    MetaPlugin(init)
+    InitializationPlugin(init)
 
-A plugin that adds a init information to the factor nodes of the model.
+A plugin that adds initialization information to the factor nodes of the model.
 """
 struct InitializationPlugin{I}
     initialization::I
@@ -320,17 +320,14 @@ end
 """
     convert_init_variables(e::Expr)
 
-Converts all variable references on the left hand side of a init specification to IndexedVariable calls.
+Converts all variable references on the left-hand side of an init specification to IndexedVariable calls.
 
 # Arguments
 - `e::Expr`: The expression to convert.
 
 # Returns
 - `Expr`: The resulting expression with all variable references converted to IndexedVariable calls.
-
-# Examples
 """
-
 function convert_init_variables(e::Expr)
     if @capture(e, (fform_(var_) = init_obj_))
         var = GraphPPL.__convert_to_indexed_statement(var)
@@ -402,15 +399,13 @@ what_walk(::typeof(convert_init_fform)) = walk_until_occurrence(:(lhs_ -> rhs_))
 """
     convert_init_object(e::Expr)
 
-Converts a variable init or a factor init call on the left hand side of a init specification to a `GraphPPL.MetaObject`.
+Converts a variable init or a factor init call on the left-hand side of an init specification to an `RxInfer.InitObject`.
 
 # Arguments
 - `e::Expr`: The expression to convert.
 
 # Returns
-- `Expr`: The resulting expression with the variable reference or factor function call converted to a `GraphPPL.MetaObject`.
-
-# Examples
+- `Expr`: The resulting expression with the variable reference or factor function call converted to an `RxInfer.InitObject`.
 """
 function convert_init_object(e::Expr)
     if @capture(e, (fform_(var_) = init_obj_))

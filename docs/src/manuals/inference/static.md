@@ -28,7 +28,7 @@ To run inference in this model, we have to call the [`infer`](@ref) function wit
 
 ## [Dataset of observations](@id manual-static-inference-dataset)
 
-For demonstration purposes, we will use hand crafted dataset:
+For demonstration purposes, we will use a hand-crafted dataset:
 
 ```@example manual-static-inference
 using Distributions, StableRNGs
@@ -133,7 +133,7 @@ rand(result.predictions[:y][3])
 
 ## [Variational Inference with static datasets](@id manual-static-inference-variational-inference)
 
-The example above is quite simple and performs exact Bayesian inference. However, for more complex model, we may need to specify variational constraints and perform variational inference. To demonstrate this, we will use a slightly more complex model, where we need to estimate mean and the precision of IID samples drawn from the [Normal distribution](https://en.wikipedia.org/wiki/Normal_distribution):
+The example above is quite simple and performs exact Bayesian inference. However, for more complex models, we may need to specify variational constraints and perform variational inference. To demonstrate this, we will use a slightly more complex model, where we need to estimate mean and the precision of IID samples drawn from the [Normal distribution](https://en.wikipedia.org/wiki/Normal_distribution):
 
 ```@example manual-static-inference
 @model function iid_estimation(y)
@@ -147,7 +147,7 @@ In this model, we have two latent variables `μ` and `τ` and a set of observati
 that we used the broadcasting syntax, which is roughly equivalent to the manual for loop shown in the previous example. Let's try to run the inference in this model, but first, we need to create our observations:
 
 ```@example manual-static-inference
-# `ExponentialFamily` package expors different parametrizations 
+# `ExponentialFamily` package exports different parametrizations 
 # for the Normal distribution
 using ExponentialFamily
 
@@ -194,7 +194,7 @@ end
 nothing
 ```
 
-Huh? We get an error saying that the inference could not update the latent variables. This is happened because our model contain loops in its structure, therefore it requires the initialization. Read more about the initialization in the [corresponding section](@ref initialization) in the documentation.
+Huh? We get an error saying that the inference could not update the latent variables. This happened because our model contains loops in its structure, therefore it requires initialization. Read more about the initialization in the [corresponding section](@ref initialization) in the documentation.
 
 We have two options here, either we initialize the messages and perform [Loopy Belief Propagation](https://en.wikipedia.org/wiki/Belief_propagation) in this model or we break the loops with [variational constraints](@ref user-guide-constraints-specification) and perform variational inference. In this tutorial, we will choose the second option. For this we need to specify factorization constraints with the `@constraints` macro.
 
@@ -228,7 +228,7 @@ Nice! Now, we have some result. Let's for example inspect the posterior results 
 results.posteriors[:μ]
 ```
 
-In constrast to the previous example, now we have an array of posteriors for `μ`, not just a single value. Each posterior in the collection corresponds to the intermediate variational update for each variational iteration. Let's visualize how our posterior over `μ` has been changing during the variational optimization:
+In contrast to the previous example, now we have an array of posteriors for `μ`, not just a single value. Each posterior in the collection corresponds to the intermediate variational update for each variational iteration. Let's visualize how our posterior over `μ` has been changing during the variational optimization:
 
 ```@example manual-static-inference
 @gif for (i, intermediate_posterior) in enumerate(results.posteriors[:μ])
@@ -239,7 +239,7 @@ end
 ```
 
 It seems that the posterior has converged to a stable distribution pretty fast. 
-We are going to verify the converge in the [next section](@ref manual-static-inference-bfe).
+We are going to verify the convergence in the [next section](@ref manual-static-inference-bfe).
 If, for example, we are not interested in intermediate updates, but just in the final posterior, we could use the `returnvars` option in the [`infer`](@ref) function and use the [`KeepLast`](@ref) option for `μ`:
 
 ```@example manual-static-inference
@@ -253,7 +253,7 @@ results_keep_last = infer(
 )
 ```
 
-We can also verify that the got exactly the same result:
+We can also verify that we got exactly the same result:
 ```@example manual-static-inference
 @test results_keep_last.posteriors[:μ] == last(results.posteriors[:μ]) #hide
 results_keep_last.posteriors[:μ] == last(results.posteriors[:μ])
@@ -291,7 +291,7 @@ Nice result! Our posteriors are pretty close to the actual values of the paramet
 
 Read also the [Bethe Free Energy](@ref lib-bethe-free-energy) section.
 
-In contrast to Loopy Belief Propagation, the variational inference is set to converge to a stable point during variational inference. In order to verify the convergence for this particular model, we can check the convergence of the [Bethe Free Enegrgy](@ref lib-bethe-free-energy) values. By default, [`infer`](@ref) function does **not** compute the Bethe Free Energy values. In order to compute those, we must set the `free_energy` flag explicitly to `true`:
+In contrast to Loopy Belief Propagation, the variational inference is set to converge to a stable point during variational inference. In order to verify the convergence for this particular model, we can check the convergence of the [Bethe Free Energy](@ref lib-bethe-free-energy) values. By default, [`infer`](@ref) function does **not** compute the Bethe Free Energy values. In order to compute those, we must set the `free_energy` flag explicitly to `true`:
 ```@example manual-static-inference
 results = infer(
     model          = iid_estimation(),
@@ -308,7 +308,7 @@ Now, we can access the `free_energy` field of the `results` and verify if the in
 plot(results.free_energy, label = "Bethe Free Energy")
 ```
 
-Well, it seems that `100` iterations was too much for this simple problem and we could do much less iterations in order to converge to a stable point. The animation above also suggested that the posterior for `μ` has converged pretty fast to a stable point.
+Well, it seems that `100` iterations were too many for this simple problem and we could do far fewer iterations in order to converge to a stable point. The animation above also suggested that the posterior for `μ` has converged pretty fast to a stable point.
 
 ```@example manual-static-inference
 # Let's try to use only 5 iterations

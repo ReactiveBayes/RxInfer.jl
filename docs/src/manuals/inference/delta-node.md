@@ -9,7 +9,7 @@ The delta node supports several approximation methods for probabilistic inferenc
 1. **Gaussian Nodes**: For delta nodes linked to strictly multivariate or univariate Gaussian distributions, the recommended methods are `Linearization` or `Unscented` transforms.
 2. **Exponential Family Nodes**: For the delta node connected to nodes from the exponential family, the `CVIProjection` (Conjugate Variational Inference) is the method of choice.
 3. **Stacking Delta Nodes**: For scenarios where delta nodes are stacked, either `Linearization`, `Unscented` or `CVIProjection` are suitable.
-4. **Support for Inverse Functions**: For scenarious, where an inverse function is available
+4. **Support for Inverse Functions**: For scenarios where an inverse function is available.
 
 The table below summarizes the features of the delta node in RxInfer.jl, categorized by the approximation method:
 

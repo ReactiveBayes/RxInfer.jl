@@ -22,7 +22,7 @@ By following these steps, you can play an essential role in improving and expand
 
 `LiveServer.jl` is a simple and lightweight web server developed in Julia. It features live-reload capabilities, making it a valuable tool for automatically refreshing the documentation of a package while you work on its content.
 
-To use LiveServer.jl, simply follow these steps[^1]
+To use `LiveServer.jl`, simply follow these steps:[^1]
 
 [^1]: Make sure to install the `LiveServer` and `Documenter` in your current working environment.
 

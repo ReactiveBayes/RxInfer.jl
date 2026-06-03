@@ -11,15 +11,15 @@ using SparseArrays
 """
     PointMassFormConstraint
 
-One of the form constraint objects. Constraint a message to be in a form of dirac's delta point mass. 
-By default uses `Optim.jl` package to find argmin of `-logpdf(x)`. 
-Accepts custom `optimizer` callback which might be used to customise optimisation procedure with different packages 
-or different arguments for `Optim.jl` package.
+One of the form constraint objects. Constrains a message to be in the form of a Dirac delta point mass.
+By default uses the `Optim.jl` package to find the argmin of `-logpdf(x)`.
+Accepts a custom `optimizer` callback which can be used to customise the optimisation procedure with different packages
+or different arguments for the `Optim.jl` package.
 
 # Keyword arguments
 - `optimizer`: specifies a callback function for logpdf optimisation. See also: `RxInfer.default_point_mass_form_constraint_optimizer`
-- `starting_point`: specifies a callback function for initial optimisation point: See also: `RxInfer.default_point_mass_form_constraint_starting_point`
-- `boundaries`: specifies a callback function for determining optimisation boundaries: See also: `RxInfer.default_point_mass_form_constraint_boundaries`
+- `starting_point`: specifies a callback function for the initial optimisation point. See also: `RxInfer.default_point_mass_form_constraint_starting_point`
+- `boundaries`: specifies a callback function for determining optimisation boundaries. See also: `RxInfer.default_point_mass_form_constraint_boundaries`
 
 ## Custom optimizer callback interface
 
@@ -158,7 +158,7 @@ end
 """
     default_point_mass_form_constraint_boundaries(::Type{<:VariateType}, ::Type{<:ValueSupport}, constraint::PointMassFormConstraint, distribution)
 
-Defines a default boundaries for the `PointMassFormConstraint`. By default simply uses the support of the distribution.
+Defines the default boundaries for the `PointMassFormConstraint`. By default simply uses the support of the distribution.
 """
 function default_point_mass_form_constraint_boundaries end
 
@@ -181,8 +181,8 @@ __default_univariate_boundaries(domain::Domain) =
 """
     default_point_mass_form_constraint_starting_point(::Type{<:VariateType}, ::Type{<:ValueSupport}, constraint::PointMassFormConstraint, distribution)
 
-Defines a default starting point for the `PointMassFormConstraint`. By default uses the support of the distribution.
-If support is unbounded returns a zero point. Otherwise throws an error.
+Defines the default starting point for the `PointMassFormConstraint`. By default uses the support of the distribution.
+If the support is unbounded, returns a zero point. Otherwise throws an error.
 """
 function default_point_mass_form_constraint_starting_point end
 

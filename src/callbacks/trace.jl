@@ -76,7 +76,7 @@ RxInferTraceCallbacks(include::NTuple{N, Symbol}) where {N} =
 
 Checks whether the specified event is not filtered and should be traced.
 
-```@jldoctest 
+```jldoctest
 julia> callbacks = RxInfer.RxInferTraceCallbacks((:event1, :event2));
 
 julia> RxInfer.is_trace_event_included(callbacks, :event1)

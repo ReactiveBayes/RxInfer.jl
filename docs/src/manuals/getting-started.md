@@ -6,7 +6,7 @@ It supports both exact and variational inference algorithms and forms an ecosyst
 - [`GraphPPL.jl`](https://github.com/reactivebayes/GraphPPL.jl) - model and constraints specification package
 - [`Rocket.jl`](https://github.com/reactivebayes/Rocket.jl) - reactive extensions package for Julia 
 
-This page provides the necessary information you need to get started with `Rxinfer`. We will show the general approach to solving inference problems with `RxInfer` by means of a running example: inferring the bias of a coin using a simple Beta-Bernoulli model.
+This page provides the necessary information you need to get started with `RxInfer`. We will show the general approach to solving inference problems with `RxInfer` by means of a running example: inferring the bias of a coin using a simple Beta-Bernoulli model.
 
 ## [Installation](@id user-guide-getting-started-installation)
 
@@ -32,7 +32,7 @@ To add `RxInfer` package (and all associated packages) into a running Julia sess
 using RxInfer
 ```
 
-Read more about about `using` in the [Using methods from RxInfer](@ref lib-using-methods) section of the documentation.
+Read more about `using` in the [Using methods from RxInfer](@ref lib-using-methods) section of the documentation.
 
 ## Example: Inferring the bias of a coin
 
@@ -40,13 +40,13 @@ The `RxInfer` approach to solving inference problems consists of three phases:
 
 1. [Model specification](@ref getting-started-model-specification): `RxInfer` uses `GraphPPL` package for model specification part. It offers a domain-specific language to specify your probabilistic model.
 2. [Inference specification](@ref getting-started-inference-specification): `RxInfer` inference API uses `ReactiveMP` inference engine under the hood and has been designed to be as flexible as possible. It is compatible both with asynchronous infinite data streams and with static datasets. For most of the use cases it consists of the same simple building blocks. In this example we will show one of the many possible ways to infer your quantities of interest.
-3. [Inference execution](@ref user-guide-inference-execution): Given model specification and inference procedure it is pretty straightforward to use package's API to pass data to the inference backend and to run actual inference.
+3. [Inference execution](@ref user-guide-inference-execution): Given a model specification and an inference procedure, it is pretty straightforward to use the package's API to pass data to the inference backend and to run the actual inference.
 
 ### [Coin flip simulation](@id user-guide-getting-started-coin-flip-simulation)
 
-Let's start by creating some dataset. One approach could be flipping a coin N times and recording each outcome. For simplicity in this example we will use static pre-generated dataset. Each sample can be thought of as the outcome of single flip which is either heads or tails (1 or 0). We will assume that our virtual coin is biased, and lands heads up on 75% of the trials (on average).
+Let's start by creating some dataset. One approach could be flipping a coin N times and recording each outcome. For simplicity, in this example we will use a static pre-generated dataset. Each sample can be thought of as the outcome of a single flip, which is either heads or tails (1 or 0). We will assume that our virtual coin is biased, and lands heads up on 75% of the trials (on average).
 
-First let's setup our environment by importing all needed packages:
+First let's set up our environment by importing all needed packages:
 
 ```@example coin
 using Test #hide
@@ -104,7 +104,7 @@ P(y_{1:N}, θ) = P(θ) \prod_{i=1}^N P(y_i | θ).
 Now let's see how to specify this model using GraphPPL's package syntax.
 
 ```@example coin
-# GraphPPL.jl export `@model` macro for model specification
+# GraphPPL.jl exports the `@model` macro for model specification
 # It accepts a regular Julia function and builds an FFG under the hood
 @model function coin_model(y, a, b)
     # We endow θ parameter of our model with some prior
@@ -119,7 +119,7 @@ Now let's see how to specify this model using GraphPPL's package syntax.
 end
 ```
 
-As you can see, `RxInfer` offers a model specification syntax that resembles closely to the mathematical equations defined above.
+As you can see, `RxInfer` offers a model specification syntax that closely resembles the mathematical equations defined above.
 Alternatively, we could use a broadcasting syntax:
 
 ```@example coin
@@ -134,7 +134,7 @@ end
 
 ### [Conditioning on data and inspecting the model structure](@id getting-started-conditioning)
 
-Given the model specification we can construct an actual model graph and visualize it. In order to do that we can use the `|` operator to condition on data and the `RxInfer.create_model` function to create the graph. Read more about condition in the [corresponding section](@ref user-guide-model-specification-conditioning) of the documentation.
+Given the model specification we can construct an actual model graph and visualize it. In order to do that we can use the `|` operator to condition on data and the `RxInfer.create_model` function to create the graph. Read more about conditioning in the [corresponding section](@ref user-guide-model-specification-conditioning) of the documentation.
 
 ```@example coin
 conditioned = coin_model(a = 2.0, b = 7.0) | (y = [ true, false, true ], )
@@ -145,14 +145,14 @@ We can use `GraphPPL.jl` visualisation capabilities to show the structure of the
 ```@example coin
 using Cairo, GraphPlot
 
-# `Create` the actual graph of the model conditioned on the data
+# Create the actual graph of the model conditioned on the data
 model = RxInfer.create_model(conditioned)
 
 # Call `gplot` function from `GraphPlot` to visualise the structure of the graph
 GraphPlot.gplot(RxInfer.getmodel(model))
 ```
 
-In addition, we can also programatically query the structure of the graph:
+In addition, we can also programmatically query the structure of the graph:
 
 ```@example coin
 RxInfer.getrandomvars(model)
@@ -198,7 +198,7 @@ Read more about the structure of the graph in [`GraphPPL` documentation](https:/
 
 #### Automatic inference specification
 
-Once we have defined our model, the next step is to use `RxInfer` API to infer quantities of interests. To do this we can use a generic [`infer`](@ref) function that supports static datasets.
+Once we have defined our model, the next step is to use the `RxInfer` API to infer quantities of interest. To do this we can use the generic [`infer`](@ref) function that supports static datasets.
 Read more information about the [`infer`](@ref) function in the [Inference Execution](@ref user-guide-inference-execution) documentation section.
 
 ```@example coin 
@@ -208,8 +208,8 @@ result = infer(
 )
 ```
 
-As you can see we don't need to condition on the data manually, the [`infer`](@ref) function will do it automatically.
-After the inference is complete we can fetch the results from the `.posterior` field with the name of the latent state:
+As you can see we don't need to condition on the data manually; the [`infer`](@ref) function will do it automatically.
+After the inference is complete we can fetch the results from the `.posteriors` field with the name of the latent state:
 
 ```@example coin 
 θestimated = result.posteriors[:θ]
@@ -237,8 +237,8 @@ p2 = plot(rθ, (x) -> pdf(θestimated, x), title="Posterior", fillalpha=0.3, fil
 plot(p1, p2, layout = @layout([ a; b ]))
 ```
 
-In our dataset we used 10 coin flips and skewed prior to estimate the bias of a coin. 
-It resulted in a vague posterior distribution, however `RxInfer` scales very well for large models and factor graphs. 
+In our dataset we used 10 coin flips and a skewed prior to estimate the bias of a coin. 
+This resulted in a vague posterior distribution; however, `RxInfer` scales very well for large models and factor graphs. 
 We may use more coin flips in our dataset for better posterior distribution estimates:
 
 ```@example coin
@@ -255,7 +255,7 @@ nothing # hide
 nothing #hide
 ```
 
-Let's investigate how the number of observation affects the estimated posterior:
+Let's investigate how the number of observations affects the estimated posterior:
 
 ```@example coin
 p3 = plot(title = "Posterior", legend = :topleft)
@@ -266,7 +266,7 @@ p3 = plot!(p3, rθ, (x) -> pdf(θestimated_10000.posteriors[:θ], x), fillalpha 
 plot(p1, p3, layout = @layout([ a; b ]))
 ```
 
-We can see that with larger dataset our posterior marginal estimate becomes more and more accurate and represents real value of the bias of a coin.
+We can see that with a larger dataset our posterior marginal estimate becomes more and more accurate and represents the real value of the bias of a coin.
 
 ```@example coin
 println("Real bias is ", coin_bias)
@@ -305,4 +305,4 @@ result.posteriors[:θ]
 
 ## Where to go next?
 
-There are a set of [examples](@ref examples-overview) available in `RxInfer` repository that demonstrate the more advanced features of the package for various problems. Alternatively, you can head to the [Model specification](@ref user-guide-model-specification) which provides more detailed information of how to use `RxInfer` to specify probabilistic models. [Inference execution](@ref user-guide-inference-execution) section provides a documentation about `RxInfer` API for running reactive Bayesian inference. Also read the [Comparison](@ref comparison) to compare `RxInfer` with other probabilistic programming libraries. For advances use cases refer to the [Non-conjugate inference](@ref inference-nonconjugate) tutorial and inference [without defining the message update rules explicitly](@ref inference-undefinedrules).
+There are a set of [examples](@ref examples-overview) available in the `RxInfer` repository that demonstrate the more advanced features of the package for various problems. Alternatively, you can head to the [Model specification](@ref user-guide-model-specification) section, which provides more detailed information on how to use `RxInfer` to specify probabilistic models. The [Inference execution](@ref user-guide-inference-execution) section provides documentation about the `RxInfer` API for running reactive Bayesian inference. Also read the [Comparison](@ref comparison) to compare `RxInfer` with other probabilistic programming libraries. For advanced use cases refer to the [Non-conjugate inference](@ref inference-nonconjugate) tutorial and inference [without defining the message update rules explicitly](@ref inference-undefinedrules).

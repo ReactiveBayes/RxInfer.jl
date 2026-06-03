@@ -57,7 +57,7 @@ Each piece of syntax has a precise graph-level meaning:
 The full reference — including indexing rules, anonymous nodes, broadcasting and graph visualisation — lives in the [Model Specification](@ref user-guide-model-specification) manual. If you prefer to learn by example, the [Getting started](@ref user-guide-getting-started) guide walks through a complete model from scratch.
 
 !!! tip
-    Every `~` statement you write becomes one factor node. Keeping that correspondence in mind makes it much easier to reason about the resulting graph — and to understand why certain [constraints](@ref concepts-constraints-specification) or [initialisations](@ref autoupdates-guide) are required.
+    Every `~` statement you write becomes one factor node. Keeping that correspondence in mind makes it much easier to reason about the resulting graph — and to understand why certain [constraints](@ref concepts-constraints-specification) or [initialisations](@ref initialization) are required.
 
 ## [Trees, loops, and what they imply](@id concepts-factor-graphs-topology)
 

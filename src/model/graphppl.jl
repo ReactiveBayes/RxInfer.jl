@@ -27,10 +27,10 @@ function GraphPPL.model_macro_interior_pipelines(::ReactiveMPGraphPPLBackend)
 end
 
 """
-    warn_datavar_constvar_randomvar(expr::Expr)
+    error_datavar_constvar_randomvar(expr::Expr)
 
-An additional pipeline stage for the `@model` macro from `GraphPPL`. 
-Notify the user that the `datavar`, `constvar` and `randomvar` syntax has been removed and is not be supported in the current version.
+An additional pipeline stage for the `@model` macro from `GraphPPL`.
+Notifies the user that the `datavar`, `constvar` and `randomvar` syntax has been removed and is no longer supported in the current version.
 """
 function error_datavar_constvar_randomvar(e::Expr)
     if @capture(
@@ -52,7 +52,7 @@ end
 
 An additional pipeline stage for the `@model` macro from `GraphPPL`. 
 This pipeline converts simple multi-argument operators to their corresponding bracketed expression. 
-E.g. the expression `x ~ x1 + x2 + x3 + x4` becomes `x ~ ((x1 + x2) + x3) + x4)`.
+E.g. the expression `x ~ x1 + x2 + x3 + x4` becomes `x ~ ((x1 + x2) + x3) + x4`.
 The operators to compose are `+` and `*`.
 """
 function compose_simple_operators_with_brackets(e::Expr)
@@ -128,7 +128,7 @@ function inject_tilderhs_aliases(e::Expr)
 end
 
 """
-Syntaxic sugar for `ReactiveMP` nodes.
+Syntactic sugar for `ReactiveMP` nodes.
 Replaces `a || b` with `ReactiveMP.OR(a, b)`, `a && b` with `ReactiveMP.AND(a, b)`, `a -> b` with `ReactiveMP.IMPLY(a, b)` and `¬a` with `ReactiveMP.NOT(a)`.
 """
 const ReactiveMPNodeAliases = (
@@ -256,7 +256,7 @@ end
 function GraphPPL.interfaces(
     backend::ReactiveMPGraphPPLBackend, something::F, ninputs
 ) where {F}
-    # Check `interfaces` from `ReactiveMP` and fallback to the `DefaultBackend` is those are `nothing`
+    # Check `interfaces` from `ReactiveMP` and fallback to the `DefaultBackend` if those are `nothing`
     return GraphPPL.interfaces(
         backend, ReactiveMP.interfaces(something), something, ninputs
     )
@@ -296,7 +296,7 @@ end
 function GraphPPL.default_parametrization(
     backend::ReactiveMPGraphPPLBackend, nodetype, something::F, rhs
 ) where {F}
-    # First check `inputinterfaces` from `ReacticeMP` and fallback to the `DefaultBackend` is those are `nothing`
+    # First check `inputinterfaces` from `ReactiveMP` and fallback to the `DefaultBackend` if those are `nothing`
     return GraphPPL.default_parametrization(
         backend, nodetype, ReactiveMP.inputinterfaces(something), something, rhs
     )

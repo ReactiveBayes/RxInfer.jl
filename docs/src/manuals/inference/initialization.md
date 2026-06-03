@@ -1,4 +1,4 @@
-# [Understating why we need to initialize posteriors or messages in RxInfer](@id initialization)
+# [Understanding why we need to initialize posteriors or messages in RxInfer](@id initialization)
 
 In certain models, after completing the model specification step and moving on to execute the inference procedure, you may encounter the error prompting you to _initialize required marginals and messages_. 
 
@@ -93,7 +93,7 @@ ylabel!("Fuel consumption")
 
 ### Univariate regression with known noise
 
-First, he drives the car on a urban road. John enjoys driving on the well-built, wide, and flat urban roads. Urban roads also offer the advantage of precise fuel consumption measurement with minimal noise. Therefore John models the fuel consumption $y_n\in\mathbb{R}$ as a normal distribution and treats $x_n$ as a fixed hyperparameter:
+First, he drives the car on an urban road. John enjoys driving on the well-built, wide, and flat urban roads. Urban roads also offer the advantage of precise fuel consumption measurement with minimal noise. Therefore John models the fuel consumption $y_n\in\mathbb{R}$ as a normal distribution and treats $x_n$ as a fixed hyperparameter:
 
 $$\begin{aligned}
 p(y_n \mid a, b) = \mathcal{N}(y_n \mid a x_n + b , 1)
@@ -107,10 +107,10 @@ $$\begin{aligned}
 \end{aligned}$$
 
 Together they form the probabilistic model
-$$p(y, a, b) = p(a)p(b) \prod_{N=1}^N p(y_n \mid a, b),$$
+$$p(y, a, b) = p(a)p(b) \prod_{n=1}^N p(y_n \mid a, b),$$
 where the goal is to infer the posterior distributions $p(a \mid y)$ and $p(b\mid y)$.
 
-In order to estimate the two parameters with the recorded data, he uses a `RxInfer.jl` to create the above described model.
+In order to estimate the two parameters with the recorded data, he uses `RxInfer.jl` to create the model described above.
 
 ```@example init-tutorial
 using RxInfer
@@ -134,7 +134,7 @@ results = infer(
 )
 ```
 
-Oeps! Exception?
+Oops! Exception?
 
 ```
 exception =
@@ -169,7 +169,7 @@ John proceeds to derive the factor graph for his problem where he identifies whe
 
 ![linear_regression_model](../../assets/img/linear_regresion_model.png)
 
-He does note that there is a loop in his model, namely all $a$ and $b$ variables are connected over all observations, therefore he needs to initialize one of the messages and run multiple iterations for the loopy belief propagation algorithm. Note that loopy belief propagation is not guaranteed to converge in general and might be highly influenced by the choice of the initial messages in the `initialization` argument. He is going to evaluate the convergency performance of the algorithm with the `free_energy = true` option:
+He does note that there is a loop in his model, namely all $a$ and $b$ variables are connected over all observations, therefore he needs to initialize one of the messages and run multiple iterations for the loopy belief propagation algorithm. Note that loopy belief propagation is not guaranteed to converge in general and might be highly influenced by the choice of the initial messages in the `initialization` argument. He is going to evaluate the convergence performance of the algorithm with the `free_energy = true` option:
  
 
 ```@example init-tutorial

@@ -22,9 +22,9 @@ Tries to determine the proposal distribution in the SampleList approximation aut
 struct AutoProposal end
 
 """
-    SampleListFormConstraint(rng, strategy, method)
+    SampleListFormConstraint([rng], nsamples, strategy, method)
 
-One of the form constraint objects. Approximates `DistProduct` with a SampleList object. 
+One of the form constraint objects. Approximates `ProductOf` with a `SampleList` object.
 """
 struct SampleListFormConstraint{N, R, S, M} <: AbstractFormConstraint
     rng      :: R
@@ -54,7 +54,7 @@ ReactiveMP.default_prod_constraint(::SampleListFormConstraint) = GenericProd()
 __approximate(constraint::SampleListFormConstraint{N, R, S, M}, left, right) where {N, R, S <: LeftProposal, M}  = BayesBase.approximate_prod_with_sample_list(constraint.rng, constraint.method, left, right, N)
 __approximate(constraint::SampleListFormConstraint{N, R, S, M}, left, right) where {N, R, S <: RightProposal, M} = BayesBase.approximate_prod_with_sample_list(constraint.rng, constraint.method, right, left, N)
 
-# The logic here is that the `__aproximate` function will try to pick as a proposal candidate an object 
+# The logic here is that the `__approximate` function will try to pick as a proposal candidate an object
 # which is not in the `AutoProposalLowPriorityCandidates` list
 # For example if we have a product of a `Gaussian` and a `ContinuousGenericLogPdf` the `AutoProposal` strategy
 # should pick the `Gaussian` as the proposal distribution

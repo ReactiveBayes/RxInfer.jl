@@ -33,7 +33,7 @@ Yes! See our guide on [Using RxInfer from Python](@ref python-usage).
 ### What's the difference between `=` and `:=` in model specification?
 
 - `=` is a regular Julia assignment operator, use it only for regular Julia variables
-- `:=` creates a random variable node, use it to create latent variables in your model
+- `:=` creates a deterministic node, use it to define deterministic relationships between latent variables in your model
 
 See [Sharp Bits: Using `=` instead of `:=`](@ref usage-colon-equality) for details.
 
