@@ -69,6 +69,50 @@ end
 
 The result of the initialization macro can be passed to the [`infer`](@ref) function with a keyword argument called [`initialization`](@ref user-guide-inference-execution).
 
+## Inline initialization on submodel calls
+
+Initialization can also be specified **inline** at the call site of a submodel using the `where` keyword. This is useful when you want to attach initialization to a specific invocation without defining a separate `@initialization` block at the outer level. For example:
+
+```julia
+@model function outer_model(a, b)
+    a ~ inner_model(y = b) where {
+        initialization = @initialization begin
+            q(x) = vague(NormalMeanVariance)
+        end
+    }
+end
+```
+
+Initialization objects created with the `@initialization function` form can also be passed by reference:
+
+```julia
+@initialization function my_init()
+    q(x) = vague(NormalMeanVariance)
+end
+
+@model function outer_model(a, b)
+    a ~ inner_model(y = b) where { initialization = my_init() }
+end
+```
+
+Inline initialization applies only to the specific submodel invocation it is attached to. If external initialization also targets the same submodel (via `for init in submodel` blocks passed to [`infer`](@ref)), the external initialization takes priority and the inline value is ignored.
+
+!!! note "Combining inline constraints and initialization"
+    When specifying both `constraints` and `initialization` inline on the same submodel call, each macro expression must be wrapped in parentheses so that Julia parses the `where { ... }` block correctly:
+    ```julia
+    @model function outer_model(a, b, c)
+        a ~ inner_model(y = b, z = c) where {
+            constraints = (@constraints begin
+                q(x, y, z) = q(x, y)q(z)
+            end),
+            initialization = (@initialization begin
+                q(x) = vague(NormalMeanVariance)
+            end)
+        }
+    end
+    ```
+    Without the parentheses the parser will raise a syntax error.
+
 ## Part 1. Framing the problem 
 
 John has recently acquired a new car and is keenly interested in its `fuel consumption` rate. He holds the belief that this rate follows a linear relationship with the variable `speed`. To validate this hypothesis, he plans to conduct tests by driving his car on the urban roads close to his home, recording both the `fuel consumption` and `speed` data. To ascertain the fuel consumption rate, John has opted for Bayesian linear regression as his analytical method.
