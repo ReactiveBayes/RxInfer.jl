@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- A small "or ask DeepWiki" link below the "Search with Gemini" widget in the documentation sidebar, pointing to the same [DeepWiki page](https://deepwiki.com/ReactiveBayes/RxInfer.jl) as the README badge. ([#670](https://github.com/ReactiveBayes/RxInfer.jl/pull/670))
+
 ## [5.3.4] - 2026-06-03
 
 ### Fixed
