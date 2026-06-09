@@ -9,10 +9,10 @@ The return value of the `infer` function in case of streamlined inference.
 - `posteriors`: `Dict` or `NamedTuple` of 'random variable' - 'posterior stream' pairs. See the `returnvars` argument for the [`infer`](@ref).
 - `free_energy`: (optional) A stream of Bethe Free Energy values per VMP iteration. See the `free_energy` argument for the [`infer`](@ref).
 - `history`: (optional) Saves history of previous marginal updates. See the `historyvars` and `keephistory` arguments for the [`infer`](@ref).
-- `free_energy_history`: (optional) Free energy history, averaged across variational iterations value for all observations  
-- `free_energy_raw_history`: (optional) Free energy history, returns returns computed values of all variational iterations for each data event (if available)
-- `free_energy_final_only_history`: (optional) Free energy history, returns computed values of final variational iteration for each data event (if available)
-- `events`: (optional) A stream of events send by the inference engine. See the `events` argument for the [`infer`](@ref).
+- `free_energy_history`: (optional) Free energy history, averaged across variational iterations for all observations
+- `free_energy_raw_history`: (optional) Free energy history, returns the computed values of all variational iterations for each data event (if available)
+- `free_energy_final_only_history`: (optional) Free energy history, returns the computed values of the final variational iteration for each data event (if available)
+- `events`: (optional) A stream of events sent by the inference engine. See the `events` argument for the [`infer`](@ref).
 - `model`: `ProbabilisticModel` object reference.
 
 Use the `RxInfer.start(engine)` function to subscribe on the `datastream` source and start the inference procedure. 
@@ -153,22 +153,22 @@ function Base.getproperty(result::RxInferenceEngine, property::Symbol)
         return enabled_events(result)
     elseif property === :free_energy
         !isnothing(getfield(result, :fe_source)) || error(
-            "Bethe Free Energy stream has not been created. Use `free_energy = true` keyword argument for the `rxinference` function to compute Bethe Free Energy values.",
+            "Bethe Free Energy stream has not been created. Use `free_energy = true` keyword argument for the `infer` function to compute Bethe Free Energy values.",
         )
         return getfield(result, :fe_source)
     elseif property === :free_energy_history
         !isnothing(getfield(result, :fe_actor)) || error(
-            "Bethe Free Energy history has not been computed. Use `free_energy = true` keyword argument for the `rxinference` function to compute Bethe Free Energy values together with the `keephistory` argument.",
+            "Bethe Free Energy history has not been computed. Use `free_energy = true` keyword argument for the `infer` function to compute Bethe Free Energy values together with the `keephistory` argument.",
         )
         return score_snapshot_iterations(getfield(result, :fe_actor))
     elseif property === :free_energy_final_only_history
         !isnothing(getfield(result, :fe_actor)) || error(
-            "Bethe Free Energy history has not been comptued. Use `free_energy = true` keyword argument for the `rxinference` function to compute Bethe Free Energy values together with the `keephistory` argument.",
+            "Bethe Free Energy history has not been computed. Use `free_energy = true` keyword argument for the `infer` function to compute Bethe Free Energy values together with the `keephistory` argument.",
         )
         return score_snapshot_final(getfield(result, :fe_actor))
     elseif property === :free_energy_raw_history
         !isnothing(getfield(result, :fe_actor)) || error(
-            "Bethe Free Energy history has not been comptued. Use `free_energy = true` keyword argument for the `rxinference` function to compute Bethe Free Energy values together with the `keephistory` argument.",
+            "Bethe Free Energy history has not been computed. Use `free_energy = true` keyword argument for the `infer` function to compute Bethe Free Energy values together with the `keephistory` argument.",
         )
         return score_snapshot(getfield(result, :fe_actor))
     end
@@ -338,7 +338,7 @@ function Rocket.on_next!(
 
         # Before we start our iterations we 'prefetch' recent values for autoupdates
         # This is important, because the values linked to the `autoupdate` may (and most likely will) 
-        # change during the iterationd
+        # change during the iterations
         autoupdate_specs = getspecifications(_autoupdates)
         autoupdate_fetched = map(fetch, autoupdate_specs)
 
@@ -404,7 +404,7 @@ function Rocket.on_next!(
             )
         end
 
-        # `release!` on `fe_actor` ensures that free energy sumed up between iterations correctly
+        # `release!` on `fe_actor` ensures that free energy is summed up between iterations correctly
         if !isnothing(_fe_actor)
             release!(_fe_actor)
         end
@@ -467,9 +467,9 @@ end
 """
     RxInferenceEvent{T, D}
 
-The `RxInferenceEngine` sends events in a form of the `RxInferenceEvent` structure. `T` represents the type of an event, `D` represents the type of a data associated with the event.
-The type of data depends on the type of an event, but usually represents a tuple, which can be unrolled automatically with the Julia's splitting syntax, e.g. `model, iteration = event`. 
-See the documentation of the `rxinference` function for possible event types and their associated data types.
+The `RxInferenceEngine` sends events in the form of the `RxInferenceEvent` structure. `T` represents the type of an event, `D` represents the type of the data associated with the event.
+The type of data depends on the type of an event, but usually represents a tuple, which can be unrolled automatically with Julia's splatting syntax, e.g. `model, iteration = event`.
+See the documentation of the [`infer`](@ref) function for possible event types and their associated data types.
 
 The events system itself uses the `Rocket.jl` library API. For example, one may create a custom event listener in the following way:
 
@@ -583,7 +583,7 @@ function streaming_inference(;
     # Override `options` annotations if the `annotations` keyword argument is present
     if !isnothing(annotations)
         if warn && !isnothing(getannotations(_options))
-            @warn "Both `annotations = ...` and `options = (annotations = ..., )` specify a value for the `annotations`. Ignoring the `options` setting. Set `warn = false` to supress this warning."
+            @warn "Both `annotations = ...` and `options = (annotations = ..., )` specify a value for the `annotations`. Ignoring the `options` setting. Set `warn = false` to suppress this warning."
         end
         _options = setannotations(_options, annotations)
     end
@@ -600,7 +600,7 @@ function streaming_inference(;
     # Set ReactiveMP event handler if `callbacks` are set
     if !isnothing(callbacks)
         if warn && !isnothing(getcallbacks(_options))
-            @warn "Both `callbacks = ...` and `options = (callbacks = ..., )` specify a value for the `callbacks`. Ignoring the `options` setting. Set `warn = false` to supress this warning."
+            @warn "Both `callbacks = ...` and `options = (callbacks = ..., )` specify a value for the `callbacks`. Ignoring the `options` setting. Set `warn = false` to suppress this warning."
         end
         _options = setcallbacks(_options, callbacks)
     end
@@ -730,12 +730,12 @@ function streaming_inference(;
 
     inference_check_itertype(:returnvars, returnvars)
 
-    # `rxinference` by default does not keep track of marginals updates history
+    # `infer` by default does not keep track of marginal updates history
     # If user specifies `keephistory` keyword argument
     if _keephistory > 0
         if isnothing(historyvars)
             # First what we do - we check if `historyvars` is nothing 
-            # In which case we mirror the `returnvars` specication and use either `KeepLast()` or `KeepEach` (depending on the iterations spec)
+            # In which case we mirror the `returnvars` specification and use either `KeepLast()` or `KeepEach` (depending on the iterations spec)
             historyoption = _iterations[] > 1 ? KeepEach() : KeepLast()
             historyvars   = Dict(name => historyoption for name in returnvars)
         elseif historyvars === KeepEach() || historyvars === KeepLast()

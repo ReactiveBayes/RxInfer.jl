@@ -32,14 +32,14 @@ Nowadays there's plenty of probabilistic programming languages and packages avai
 - **Expressiveness**: Assesses the ability to concisely formulate intricate probabilistic models.
 - **Debugging & Visualization**: Evaluates the suite of tools for model debugging and visualization.
 - **Modularity**: Reflects the potential to create models by integrating smaller models.
-- **Inference Engines**: Pinpoints the primary inference strategy employed by the toolbox.
+- **Inference Engine**: Pinpoints the primary inference strategy employed by the toolbox.
 - **Language**: Identifies the programming language integral to the toolbox.
 - **Community & Ecosystem**: Signifies the vibrancy of the ecosystem, inclusive of tools, libraries, and community backing.
 ---
 
-# RxInfer.jl breakdown
+## RxInfer.jl breakdown
 
-- **Universality**: `RxInfer.jl` shines in formulating models derived from the exponential family distributions. The package encompasses not only commonly used distributions such as Gaussian or Bernoulli, but also specialized stochastic nodes that represents prevalent probabilistic models like Autoregressive models, Gamma Mixture models, among others. Furthermore, `RxInfer.jl` proficiently manages deterministic transformations of variables from the exponential family, see [Delta node](@ref delta-node-manual). Nevertheless, for models outside the exponential family, `RxInfer.jl` might not be the good choice. Such models would require the creation of novel nodes and corresponding rules (see [Understanding Rules](@ref what-is-a-rule)), as illustrated [in this section](@ref create-node).
+- **Universality**: `RxInfer.jl` shines in formulating models derived from the exponential family of distributions. The package encompasses not only commonly used distributions such as Gaussian or Bernoulli, but also specialized stochastic nodes that represent prevalent probabilistic models like Autoregressive models and Gamma Mixture models, among others. Furthermore, `RxInfer.jl` proficiently manages deterministic transformations of variables from the exponential family, see [Delta node](@ref delta-node-manual). Nevertheless, for models outside the exponential family, `RxInfer.jl` might not be a good choice. Such models would require the creation of novel nodes and corresponding rules (see [Understanding Rules](@ref what-is-a-rule)), as illustrated [in this section](@ref create-node).
   
 - **Efficiency**: `RxInfer.jl` distinguishes itself with its inference engine rooted in reactive message passing. This approach is supremely efficient, facilitating real-time propagation of updates across the system, supporting parallelization, interruptibility, and more. 
 

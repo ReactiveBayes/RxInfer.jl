@@ -8,8 +8,8 @@ function apply_diagnostic_check end
 """
     ObjectiveDiagnosticCheckNaNs
 
-If enabled checks that both variable and factor bound score functions in the objective computation do not return `NaN`s. 
-Throws an error if finds `NaN`. 
+If enabled, checks that both variable and factor bound score functions in the objective computation do not return `NaN`s.
+Throws an error if it finds a `NaN`.
 """
 struct ObjectiveDiagnosticCheckNaNs end
 
@@ -31,8 +31,8 @@ end
 """
     ObjectiveDiagnosticCheckInfs
 
-If enabled checks that both variable and factor bound score functions in the objective computation do not return `Inf`s. 
-Throws an error if finds `Inf`. 
+If enabled, checks that both variable and factor bound score functions in the objective computation do not return `Inf`s.
+Throws an error if it finds an `Inf`.
 """
 struct ObjectiveDiagnosticCheckInfs end
 

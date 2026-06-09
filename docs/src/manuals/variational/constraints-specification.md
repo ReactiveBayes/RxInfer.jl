@@ -8,7 +8,7 @@ Here we briefly cover the mathematical aspects of constraints specification. For
 
 $$q^* = \arg\min_{q(s) \in \mathcal{Q}}F[q](\hat{y}) = \mathbb{E}_{q(s)}\left[\log \frac{q(s)}{p(s, y=\hat{y})} \right]\,.$$
 
-The [`@model`](@ref) macro specifies generative model `p(s, y)` where `s` is a set of random variables and `y` is a set of observations. In a nutshell the goal of probabilistic programming is to find `p(s|y)`. `RxInfer` approximates `p(s|y)` with a proxy distribution `q(x)` using KL divergence and Bethe Free Energy optimisation procedure. By default there are no extra factorization constraints on `q(s)` and the optimal solution is `q(s) = p(s|y)`.
+The [`@model`](@ref) macro specifies generative model `p(s, y)` where `s` is a set of random variables and `y` is a set of observations. In a nutshell the goal of probabilistic programming is to find `p(s|y)`. `RxInfer` approximates `p(s|y)` with a proxy distribution `q(s)` using the KL divergence and the Bethe Free Energy optimisation procedure. By default there are no extra factorization constraints on `q(s)` and the optimal solution is `q(s) = p(s|y)`.
 
 For certain problems, it may be necessary to adjust the set of constraints $\mathcal{Q}$ (also known as the variational family of distributions) to either improve accuracy at the expense of computational resources or reduce accuracy to conserve computational resources. Sometimes, we are compelled to impose certain constraints because otherwise, the problem becomes too challenging to solve within a reasonable timeframe.
 
@@ -40,7 +40,7 @@ constraints = @constraints begin
 end
 ```
 
-and use the created `constraints` object to the [`infer`](@ref) function:
+and pass the created `constraints` object to the [`infer`](@ref) function:
 
 ```@example constraints-specification
 # We need to specify initial marginals, since with the constraints 
@@ -104,10 +104,10 @@ myconstraints = make_constraints(true)
     `RxInfer` exports `MeanField` and other prespecified constraints as convenient aliases that can be used directly in the `constraints` argument of [`infer`](@ref). See [Prespecified constraints](@ref prespecified-constraints) below for more details.
 
 
-## Marginal and messages form constraints
+## Marginal and message form constraints
 
-To specify marginal or messages form constraints `@constraints` macro uses the `::` operator (in somewhat similar way as Julia uses it for multiple dispatch type specification).
-Read more about available functional form constraints in the [Built-In Functional Forms](@ref lib-forms) section.
+To specify marginal or message form constraints, the `@constraints` macro uses the `::` operator (in a somewhat similar way to how Julia uses it for multiple dispatch type specification).
+Read more about available functional form constraints in the [Built-in Functional Forms](@ref lib-forms) section.
 
 As an example, the following constraint:
 
@@ -123,7 +123,7 @@ indicates that the resulting marginal of the variable (or array of variables) na
 \mathrm{approximate~} q(x) = \frac{\overrightarrow{\mu}(x)\overleftarrow{\mu}(x)}{\int \overrightarrow{\mu}(x)\overleftarrow{\mu}(x) \mathrm{d}x}\mathrm{~as~PointMass}
 ```
 
-Sometimes it might be useful to set a functional form constraint on messages too. For example if it is essential to keep a specific Gaussian parametrisation or if some messages are intractable and need approximation. To set messages form constraint `@constraints` macro uses `μ(...)` instead of `q(...)`:
+Sometimes it might be useful to set a functional form constraint on messages too, for example if it is essential to keep a specific Gaussian parametrisation or if some messages are intractable and need approximation. To set a message form constraint, the `@constraints` macro uses `μ(...)` instead of `q(...)`:
 
 ```@example manual_constraints
 @constraints begin 
@@ -134,7 +134,7 @@ Sometimes it might be useful to set a functional form constraint on messages too
 end
 ```
 
-`@constraints` macro understands "stacked" form constraints. For example the following form constraint
+The `@constraints` macro understands "stacked" form constraints. For example, the following form constraint
 
 ```@example manual_constraints
 @constraints begin 
@@ -147,7 +147,7 @@ indicates that the `q(x)` first must be approximated with a `SampleList` and in 
 !!! note
     Not all combinations of "stacked" form constraints are compatible between each other.
 
-You can find more information about built-in functional form constraint in the [Built-in Functional Forms](@ref lib-forms) section. In addition, the [ReactiveMP library documentation](https://reactivebayes.github.io/ReactiveMP.jl/stable/) explains the functional form interfaces and shows how to build a custom functional form constraint that is compatible with `RxInfer.jl` and `ReactiveMP.jl` inference engine.
+You can find more information about built-in functional form constraints in the [Built-in Functional Forms](@ref lib-forms) section. In addition, the [ReactiveMP library documentation](https://reactivebayes.github.io/ReactiveMP.jl/stable/) explains the functional form interfaces and shows how to build a custom functional form constraint that is compatible with `RxInfer.jl` and `ReactiveMP.jl` inference engine.
 
 ## Factorization constraints on posterior distribution `q`
 
@@ -159,7 +159,7 @@ As has been mentioned [above](@ref user-guide-constraints-specification-backgrou
 end
 ```
 
-specifies a so-called mean-field assumption on variables `x` and `y` in the model. Furthermore, if `x` is an array of variables in our model we may induce extra mean-field assumption on `x` in the following way.
+specifies a so-called mean-field assumption on variables `x` and `y` in the model. Furthermore, if `x` is an array of variables in our model we may induce an extra mean-field assumption on `x` in the following way.
 
 ```@example manual_constraints
 @constraints begin 
@@ -168,16 +168,16 @@ specifies a so-called mean-field assumption on variables `x` and `y` in the mode
 end
 ```
 
-These constraints specify a mean-field assumption between variables `x` and `y` (either single variable or collection of variables) and additionally specify mean-field assumption on variables $x_i$.
+These constraints specify a mean-field assumption between variables `x` and `y` (either a single variable or a collection of variables) and additionally specify a mean-field assumption on variables $x_i$.
 
 !!! note 
     `@constraints` macro does not support matrix-based collections of variables. E.g. it is not possible to write `q(x[begin, begin])..q(x[end, end])`. Use `q(x[begin])..q(x[end])` instead.
 
-Read more about the `@constraints` macro in the [official documentation](https://reactivebayes.github.io/GraphPPL.jl/stable/) of GraphPPL
+Read more about the `@constraints` macro in the [official documentation](https://reactivebayes.github.io/GraphPPL.jl/stable/) of GraphPPL.
 
 
 ## Constraints in submodels
-`RxInfer` allows you to define your generative model hierarchically, using previously defined `@model` modules as submodels in larger models. Because of this, users need to specify their constraints hierarchically as well to avoid ambiguities. Consider the following example:
+`RxInfer` allows you to define your generative model hierarchically, using previously defined `@model` definitions as submodels in larger models. Because of this, users need to specify their constraints hierarchically as well to avoid ambiguities. Consider the following example:
 
 ```@example manual_constraints
 @model function inner_inner(τ, y)
@@ -235,7 +235,7 @@ The `for q in __submodel__` applies the constraints specified in this code block
 end
 ```
 
-Factorization constraints specified in a context propagate to their child submodels. This means that we can specify factorization constraints over variables where the factor node that connects the two are in a submodel, without having to specify the factorization constraint in the submodel itself. For example, if we want to specify a factorization constraint between `w[2]` and `w[3]` in our `outer` model, we can specify it in the context of `outer`, and `RxInfer` will recognize that these variables are connected through the `Normal` node in the `inner_inner` submodel:
+Factorization constraints specified in a context propagate to their child submodels. This means that we can specify factorization constraints over variables where the factor node that connects the two is in a submodel, without having to specify the factorization constraint in the submodel itself. For example, if we want to specify a factorization constraint between `w[2]` and `w[3]` in our `outer` model, we can specify it in the context of `outer`, and `RxInfer` will recognize that these variables are connected through the `Normal` node in the `inner_inner` submodel:
 
 ```@example manual_constraints
 @constraints begin
@@ -317,7 +317,7 @@ More information can be found in the [GraphPPL documentation](https://reactiveba
 
 ## Constraints on the data
 
-By default, `RxInfer` assumes that, since the data comes into the model as observed, the posterior marginal distribution of the data is independent from other marginals and is a Dirac-delta distribution. However, this assumption breaks when we pass missing data into our model. When the data is missing, we might have a joint dependency between the data and latent variables, as the missing data essentially behaves as a latent variable. In such cases, we can wrap the data in a `UnfactorizedData`. This will notify the inference engine that the data should not be factorized out and we can specify a custom factorization constraint on these variables using the `@constraints` macro. 
+By default, `RxInfer` assumes that, since the data comes into the model as observed, the posterior marginal distribution of the data is independent from other marginals and is a Dirac-delta distribution. However, this assumption breaks when we pass missing data into our model. When the data is missing, we might have a joint dependency between the data and latent variables, as the missing data essentially behaves as a latent variable. In such cases, we can wrap the data in an `UnfactorizedData`. This will notify the inference engine that the data should not be factorized out, and we can specify a custom factorization constraint on these variables using the `@constraints` macro. 
 
 ```@docs
 UnfactorizedData

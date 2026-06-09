@@ -241,7 +241,7 @@ The model runs without errors. But when we plot the posterior distribution for $
 
 rθ = range(0, 1, length = 1000)
 
-plot(rθ, (rvar) -> pdf(result.posteriors[:θ], rvar), label="Infered posterior")
+plot(rθ, (rvar) -> pdf(result.posteriors[:θ], rvar), label="Inferred posterior")
 vline!([θ_real], label="Real θ", title = "Inference results")
 ```
 
@@ -290,7 +290,7 @@ result = infer(
 ```@example addoncoin
 rθ = range(0, 1, length = 1000)
 
-plot(rθ, (rvar) -> pdf(result.posteriors[:θ], rvar), fillalpha = 0.4, fill = 0, label="Infered posterior")
+plot(rθ, (rvar) -> pdf(result.posteriors[:θ], rvar), fillalpha = 0.4, fill = 0, label="Inferred posterior")
 vline!([θ_real], label="Real θ", title = "Inference results")
 ```
 
@@ -304,6 +304,6 @@ result = infer(
 )
 
 rθ = range(0, 1, length = 1000)
-plot(rθ, (rvar) -> pdf(result.posteriors[:θ], rvar), fillalpha = 0.4, fill = 0, label="Infered posterior (1000 observations)")
+plot(rθ, (rvar) -> pdf(result.posteriors[:θ], rvar), fillalpha = 0.4, fill = 0, label="Inferred posterior (1000 observations)")
 vline!([θ_real], label="Real θ", title = "Inference results")
 ```

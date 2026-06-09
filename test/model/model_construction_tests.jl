@@ -51,7 +51,7 @@
             "beta_bernoulli_single(a = 1.0, b = 1.0) conditioned on: ",
             repr(model_generator_with_data),
         )
-        @test occursin("y = [ deffered data ]", repr(model_generator_with_data))
+        @test occursin("y = [ deferred data ]", repr(model_generator_with_data))
         @test create_model(model_generator_with_data) isa ProbabilisticModel
     end
 end

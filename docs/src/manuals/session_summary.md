@@ -132,7 +132,7 @@ For the `:inference` label, each invocation records:
   - Model autoupdates specification (if specified)
   - Model initialization specification (if specified)
 - **Data Information**:
-  - Input data characteristics (names, types, sizes) - **no actual data is collected**`
+  - Input data characteristics (names, types, sizes) - **no actual data is collected**
   - Datastream type (for streaming inference)
   - Return variables structure
   - Predict variables structure (for batch inference)

@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for inline specification of submodel initializations. Instead of a for-loop at the top level to specify initialization for variables in submodels, you can now specify the initialization inline with the submodel calls.
 - A small "or ask DeepWiki" link below the "Search with Gemini" widget in the documentation sidebar, pointing to the same [DeepWiki page](https://deepwiki.com/ReactiveBayes/RxInfer.jl) as the README badge. ([#670](https://github.com/ReactiveBayes/RxInfer.jl/pull/670))
 
+### Changed
+- Comprehensive documentation and docstring polishing pass across all documentation pages (`docs/src/**`, `README.md`) and source docstrings (`src/**`, `ext/**`). Fixes typos and doubled words, grammar and clarity, broken/missing Documenter cross-references, and stale content — including repointing the `index.md` `@contents` block to pages that actually exist, replacing the renamed `rxinference` function name with `infer` in inference/streaming docstrings and error messages, correcting the `objective_diagnostics` keyword to `free_energy_diagnostics`, fixing `result.posterior` to `result.posteriors` in the getting-started guide, and correcting several docstring constructor signatures to match the code (`IndividualAutoUpdateSpecification`, `AutoUpdateMapping`, `with_session`, `SampleListFormConstraint`). No executable code, function signatures, or doctest outputs were changed. ([#671](https://github.com/ReactiveBayes/RxInfer.jl/pull/671))
+
 ## [5.3.4] - 2026-06-03
 
 ### Fixed

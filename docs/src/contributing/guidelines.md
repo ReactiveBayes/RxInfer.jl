@@ -52,7 +52,7 @@ Before opening a pull request, ensure all tests pass without errors.
 
 ### Style conventions
 
-We use the default [Julia style guide](https://docs.julialang.org/en/v1/manual/style-guide/index.html). There are a couple of important points modifications to the Julia style guide to take into account:
+We use the default [Julia style guide](https://docs.julialang.org/en/v1/manual/style-guide/index.html). There are a couple of important modifications to the Julia style guide to take into account:
 
 - Use 4 spaces for indentation
 - Type names use `UpperCamelCase`. For example: `AbstractFactorNode`, `RandomVariable`, etc.
@@ -61,7 +61,7 @@ We use the default [Julia style guide](https://docs.julialang.org/en/v1/manual/s
 - The name of a method that modifies its argument(s) must end in `!`
 
 !!! note
-    The `RxInfer` repository contains scripts to automatically format code according to our guidelines. Use `make format` command to fix codestyle. This command overwrites files. Use `make lint` to run a linting procedure without overwriting the actual source files.
+    The `RxInfer` repository contains scripts to automatically format code according to our guidelines. Use the `make format` command to fix codestyle. This command overwrites files. Use `make lint` to run a linting procedure without overwriting the actual source files.
 
 ### Unit tests
 
@@ -70,13 +70,13 @@ We use the test-driven development (TDD) methodology for `RxInfer` development. 
 All unit tests are located in the `/test/` directory. The `/test/` directory follows the structure of the `/src/` directory. Each test file should have the following filename format: `*_tests.jl`. Some tests are also present in `jldoctest` docs annotations directly in the source code.
 See [Julia's documentation](https://docs.julialang.org/en/v1/manual/documentation/index.html) about doctests.
 
-The tests can be evaluated by running following command in the Julia REPL:
+The tests can be evaluated by running the following command in the Julia REPL:
 
 ```
 ] test RxInfer
 ```
 
-In addition tests can be evaluated by running following command in the `RxInfer` root directory:
+In addition, tests can be evaluated by running the following command in the `RxInfer` root directory:
 
 ```bash
 make test
@@ -109,7 +109,7 @@ This project uses a `CHANGELOG.md` to document all user-visible changes. Regardl
 
 ### Opting out
 
-Not all changes need a changelog entry, some are not user-visible, like changing CI or some internal refactoring. For those it is possible to disable the check.
+Not all changes need a changelog entry; some are not user-visible, like changing CI or some internal refactoring. For those it is possible to disable the check.
 
 To do so, apply the `no changelog` label to the PR. Then the changelog check will re-run and succeed automatically. This label can also be applied directly when opening the PR so the check will be automatically omitted.
 
