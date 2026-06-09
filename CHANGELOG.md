@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.4.0] - 2026-06-09
+
 ### Added
 - Support for inline specification of submodel initializations. Instead of a for-loop at the top level to specify initialization for variables in submodels, you can now specify the initialization inline with the submodel calls.
 - A small "or ask DeepWiki" link below the "Search with Gemini" widget in the documentation sidebar, pointing to the same [DeepWiki page](https://deepwiki.com/ReactiveBayes/RxInfer.jl) as the README badge. ([#670](https://github.com/ReactiveBayes/RxInfer.jl/pull/670))
@@ -214,7 +216,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.3.4...HEAD
+[Unreleased]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.4.0...HEAD
+[5.4.0]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.3.4...v5.4.0
 [5.3.4]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.3.3...v5.3.4
 [5.3.3]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.3.2...v5.3.3
 [5.3.2]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.3.1...v5.3.2
