@@ -382,7 +382,10 @@ function Rocket.on_next!(
                 event,
             )
             for (datavar, value) in zip(_datavars, values(event))
-                new_observation!(datavar, value)
+                # `new_observation_indexed!` aligns by index, so a model that references a
+                # streamed data tensor only partially (sparse data variables) is fed
+                # correctly from the dense streamed value; dense arrays behave as before.
+                new_observation_indexed!(datavar, value)
             end
             inference_fire_event(
                 Val(:after_data_update),

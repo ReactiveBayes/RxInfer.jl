@@ -568,8 +568,10 @@ getlabel(ref::GraphVariableRef) = ref.label
 getvariable(ref::GraphVariableRef) = ref.variable
 getname(ref::GraphVariableRef) = GraphPPL.getname(getlabel(ref))
 
+# `vec` (GraphPPL's `ResizableArray` method) yields only the *assigned* entries, so these
+# predicates are well-defined for sparse containers (a sparse data tensor is still "all data").
 GraphPPL.is_data(collection::AbstractArray{GraphVariableRef}) =
-    all(GraphPPL.is_data, collection)
+    all(GraphPPL.is_data, vec(collection))
 
 GraphPPL.is_data(ref::GraphVariableRef) = GraphPPL.is_data(ref.properties)
 GraphPPL.is_random(ref::GraphVariableRef) = GraphPPL.is_random(ref.properties)
@@ -597,10 +599,59 @@ getvarref(model::GraphPPL.Model, label::GraphPPL.NodeLabel) =
     GraphVariableRef(model, label)
 getvarref(model::GraphPPL.Model, container::AbstractArray) =
     map(element -> getvarref(model, element), container)
+getvarref(model::GraphPPL.Model, container::GraphPPL.ResizableArray) =
+    _map_sparse(element -> getvarref(model, element), container)
+
+# --- Sparse variable arrays -------------------------------------------------------------
+#
+# A `GraphPPL.ResizableArray` may be *sparse*: indexed only at some positions within its
+# bounding box, leaving the rest as `#undef` holes. This arises for data tensors that are
+# conditioned on but only *partially referenced* in the model — e.g. masked / missing
+# observations, where a sub-model only touches the observed indices and the remaining
+# entries of the conditioned array are never used. GraphPPL's `iterate`/`Base.map` over
+# such an array are deliberately dense (so `length`/`collect` stay consistent) and would
+# trip over the holes with an `UndefRefError`. The helpers below iterate only the
+# *assigned* entries instead, mirroring the sparse-aware `vec`/`isassigned` API.
+
+# Whether every index within a container's bounding box is assigned. Plain `AbstractArray`s
+# (and densely-built `ResizableArray`s) are dense; only partially-indexed `ResizableArray`s
+# are sparse. Used to keep the common dense path allocation- and behaviour-identical.
+_is_densely_assigned(::AbstractArray) = true
+_is_densely_assigned(container::GraphPPL.ResizableArray) =
+    all(I -> isassigned(container, I.I...), CartesianIndices(size(container)))
+
+# Apply `f` to a (possibly sparse) `ResizableArray`, preserving its shape. Dense arrays take
+# the fast path identical to `Base.map` (returning a plain `Array`); sparse arrays map only
+# their assigned entries into a new `ResizableArray`, leaving the holes as holes.
+function _map_sparse(f::F, container::GraphPPL.ResizableArray) where {F}
+    _is_densely_assigned(container) && return map(f, container)
+    indices = filter(I -> isassigned(container, I.I...), collect(CartesianIndices(size(container))))
+    values  = [f(container[I.I...]) for I in indices]
+    result  = GraphPPL.ResizableArray(eltype(values), Val(ndims(container)))
+    for (value, I) in zip(values, indices)
+        result[I.I...] = value
+    end
+    return result
+end
 
 getvariable(nodedata::GraphPPL.NodeData) =
     getextra(nodedata, ReactiveMPExtraVariableKey)
 getvariable(container::AbstractArray) = map(getvariable, container)
+getvariable(container::GraphPPL.ResizableArray) = _map_sparse(getvariable, container)
+
+# Feed a new observation into a (possibly sparse) array of data variables, aligning by index:
+# `datavars[I]` receives `data[I]` for every *assigned* `I`. Entries of the provided `data`
+# that the model never referenced are ignored. Dense arrays defer to `ReactiveMP` as before.
+new_observation_indexed!(datavars, data) = ReactiveMP.new_observation!(datavars, data)
+function new_observation_indexed!(datavars::GraphPPL.ResizableArray, data::AbstractArray)
+    _is_densely_assigned(datavars) && return ReactiveMP.new_observation!(datavars, data)
+    for I in CartesianIndices(size(datavars))
+        if isassigned(datavars, I.I...)
+            ReactiveMP.new_observation!(datavars[I.I...], data[I])
+        end
+    end
+    return nothing
+end
 
 function getrandomvars(model::GraphPPL.Model)
     # TODO improve performance here
@@ -644,18 +695,18 @@ obtain_marginal(ref::GraphVariableRef) =
 obtain_marginal(refs::AbstractArray) = collectLatest(map(obtain_marginal, refs))
 
 ReactiveMP.israndom(collection::AbstractArray{GraphVariableRef}) =
-    all(ReactiveMP.israndom, collection)
+    all(ReactiveMP.israndom, vec(collection))
 ReactiveMP.isdata(collection::AbstractArray{GraphVariableRef}) =
-    all(ReactiveMP.isdata, collection)
+    all(ReactiveMP.isdata, vec(collection))
 ReactiveMP.isconst(collection::AbstractArray{GraphVariableRef}) =
-    all(ReactiveMP.isconst, collection)
+    all(ReactiveMP.isconst, vec(collection))
 
 ReactiveMP.israndom(ref::GraphVariableRef) = GraphPPL.is_random(ref.properties)
 ReactiveMP.isdata(ref::GraphVariableRef) = GraphPPL.is_data(ref.properties)
 ReactiveMP.isconst(ref::GraphVariableRef) = GraphPPL.is_constant(ref.properties)
 
 isanonymous(collection::AbstractArray{GraphVariableRef}) =
-    all(isanonymous, collection)
+    all(isanonymous, vec(collection))
 isanonymous(ref::GraphVariableRef) = GraphPPL.is_anonymous(ref.properties)
 
 # Form constraint preprocessing 

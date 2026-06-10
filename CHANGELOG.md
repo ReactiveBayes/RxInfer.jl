@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Support for inline specification of submodel initializations. Instead of a for-loop at the top level to specify initialization for variables in submodels, you can now specify the initialization inline with the submodel calls.
+- Support for inference over **partially-referenced (sparse) conditioned data tensors**, in both batch (`infer` with `data`) and streaming (`infer` with `datastream`) modes. When a model conditions on a data array but only references some of its indices in `~` statements (e.g. masked / missing observations, or a sub-model that touches only the observed entries), GraphPPL materializes data-variable labels only at those indices, leaving the rest of the bounding box as `#undef` holes. Result collection (`getvardict`/`getvarref`), the random/data/anonymous predicates, and the per-iteration / per-tick data feed now iterate only the *assigned* entries, and the supplied dense data is fed to the materialized variables **by index** (unreferenced entries are ignored). Dense data tensors are unaffected. See the new [Partially-referenced (sparse) data](https://docs.rxinfer.com/stable/manuals/inference/partial-data/) manual page.
 
 ## [5.3.3] - 2026-06-01
 
