@@ -16,7 +16,7 @@ to help improve the package.
 The change requires a Julia session restart to take effect.
 
 # Arguments
-- `endpoint`: The URL of the telemetry endpoint as a `String` or `nothing``
+- `endpoint`: The URL of the telemetry endpoint as a `String` or `nothing`
 """
 function set_telemetry_endpoint!(endpoint)
     @set_preferences!("telemetry_endpoint" => endpoint)

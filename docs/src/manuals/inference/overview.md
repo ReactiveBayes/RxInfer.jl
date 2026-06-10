@@ -77,8 +77,8 @@ using RxInfer #hide
 end
 ```
 and you want to condition on this argument, then the `data` field must have an `:y` key (of `Symbol` type) which holds the data. 
-The values in the `data` must have the exact same shape as its corresponding variable container. E.g. in the exampl above `y` is being used in the broadcasting 
-operation, thus it must be a collection of values. `a` and `b` arguments, however, could be just single numbers:
+The values in the `data` must have the exact same shape as its corresponding variable container. E.g. in the example above `y` is being used in the broadcasting 
+operation, thus it must be a collection of values. The `a` and `b` arguments, however, could be just single numbers:
 ```@example inference-overview-data-keyword
 result = infer(
     model = beta_bernoulli(),
@@ -214,12 +214,12 @@ result = infer(
 )
 ```
 
-- ### `keep_history`
+- ### `keephistory`
 
 Specifies the buffer size for the updates history both for the `historyvars` and the `free_energy` buffers in streamline inference.
 
 !!! note
-    The `historyvars` and `keep_history` arguments are exclusive for streamlined setting.
+    The `historyvars` and `keephistory` arguments are exclusive for streamlined setting.
 
 - ### `iterations`
 
@@ -317,4 +317,4 @@ RxInfer.enable_inference_error_hint!
 
 ## Where to go next?
 
-Read more explanation about the other keyword arguments in the [Streamlined (online) inference](@ref manual-online-inference)section or check out the [Static Inference](@ref manual-static-inference) section or check some more advanced [examples](https://examples.rxinfer.com/).
+Read more explanation about the other keyword arguments in the [Streamlined (online) inference](@ref manual-online-inference) section or check out the [Static Inference](@ref manual-static-inference) section or check some more advanced [examples](https://examples.rxinfer.com/).

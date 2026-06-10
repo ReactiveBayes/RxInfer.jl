@@ -9,8 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Support for inline specification of submodel initializations. Instead of a for-loop at the top level to specify initialization for variables in submodels, you can now specify the initialization inline with the submodel calls.
 - Support for inference over **partially-referenced (sparse) conditioned data tensors**, in both batch (`infer` with `data`) and streaming (`infer` with `datastream`) modes. When a model conditions on a data array but only references some of its indices in `~` statements (e.g. masked / missing observations, or a sub-model that touches only the observed entries), GraphPPL materializes data-variable labels only at those indices, leaving the rest of the bounding box as `#undef` holes. Result collection (`getvardict`/`getvarref`), the random/data/anonymous predicates, and the per-iteration / per-tick data feed now iterate only the *assigned* entries, and the supplied dense data is fed to the materialized variables **by index** (unreferenced entries are ignored). Dense data tensors are unaffected. See the new [Partially-referenced (sparse) data](https://docs.rxinfer.com/stable/manuals/inference/partial-data/) manual page.
+
+## [5.4.0] - 2026-06-09
+
+### Added
+- Support for inline specification of submodel initializations. Instead of a for-loop at the top level to specify initialization for variables in submodels, you can now specify the initialization inline with the submodel calls.
+- A small "or ask DeepWiki" link below the "Search with Gemini" widget in the documentation sidebar, pointing to the same [DeepWiki page](https://deepwiki.com/ReactiveBayes/RxInfer.jl) as the README badge. ([#670](https://github.com/ReactiveBayes/RxInfer.jl/pull/670))
+
+### Changed
+- Comprehensive documentation and docstring polishing pass across all documentation pages (`docs/src/**`, `README.md`) and source docstrings (`src/**`, `ext/**`). Fixes typos and doubled words, grammar and clarity, broken/missing Documenter cross-references, and stale content — including repointing the `index.md` `@contents` block to pages that actually exist, replacing the renamed `rxinference` function name with `infer` in inference/streaming docstrings and error messages, correcting the `objective_diagnostics` keyword to `free_energy_diagnostics`, fixing `result.posterior` to `result.posteriors` in the getting-started guide, and correcting several docstring constructor signatures to match the code (`IndividualAutoUpdateSpecification`, `AutoUpdateMapping`, `with_session`, `SampleListFormConstraint`). No executable code, function signatures, or doctest outputs were changed. ([#671](https://github.com/ReactiveBayes/RxInfer.jl/pull/671))
+
+## [5.3.4] - 2026-06-03
+
+### Fixed
+- Restored the "Search with Gemini" widget in the documentation. The Google Cloud project backing the previous Vertex AI Search `configId` no longer existed, so the widget silently stopped working. `docs/src/assets/chat.js` now points at a newly created Vertex AI Search (AI Applications) app, documents the full setup in a header comment (no API key lives in the repo — the data store, public access, and domain allowlist are configured in the GCP console; website data stores require an Enterprise-edition search app), and logs a `console.warn` instead of failing silently when the widget or the Google SDK fails to load. The same `configId` is shared with the RxInferExamples.jl documentation. ([#668](https://github.com/ReactiveBayes/RxInfer.jl/pull/668))
 
 ## [5.3.3] - 2026-06-01
 
@@ -206,7 +219,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.3.3...HEAD
+[Unreleased]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.4.0...HEAD
+[5.4.0]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.3.4...v5.4.0
+[5.3.4]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.3.3...v5.3.4
 [5.3.3]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.3.2...v5.3.3
 [5.3.2]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.3.1...v5.3.2
 [5.3.1]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.3.0...v5.3.1

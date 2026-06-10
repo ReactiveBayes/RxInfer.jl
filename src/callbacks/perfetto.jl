@@ -77,7 +77,7 @@ end
 end
 
 # _to_observability_string converts a field of an event object to a string to view in Perfetto. This should be high performance and give useful info.
-# The default is to call `string(...)`, but uou can add methods for fields to override their behaviour.
+# The default is to call `string(...)`, but you can add methods for fields to override their behaviour.
 
 # Default fallback
 function _to_observability_string(z::Any, _keyname::Symbol)

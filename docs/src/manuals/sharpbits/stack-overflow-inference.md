@@ -54,7 +54,7 @@ results = infer(
 !!! note
     Note the comma after `limit_stack_depth = 100`. This is important because it tells Julia that the option is placed in the named tuple `options`.
 
-Without `limit_stack_depth` enabled, the inference will fail with a `StackOverflowError`
+Without `limit_stack_depth` enabled, the inference will fail with a `StackOverflowError`:
 
 ```julia
 results = infer(

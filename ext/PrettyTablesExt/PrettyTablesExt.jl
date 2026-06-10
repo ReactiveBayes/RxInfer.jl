@@ -47,7 +47,7 @@ function PrettyTables.pretty_table(
     end
 end
 
-# Plugin into `summarize_invokes` function to use `pretty_table` if `PrettyTables.jl` is installed
+# Plug into the `summarize_invokes` function to use `pretty_table` if `PrettyTables.jl` is installed
 function RxInfer.summarize_invokes_pretty_table(
     ::typeof(RxInfer.summarize_invokes), io::IO, data; kwargs...
 )

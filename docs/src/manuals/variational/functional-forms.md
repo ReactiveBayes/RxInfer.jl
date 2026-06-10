@@ -4,7 +4,7 @@ This section describes built-in functional forms that can be used for posterior 
 
 ## [Background](@id lib-forms-background)
 
-In message passing framework, in order to compute a posterior over some latent state $q(x)$, it is necessary to compute a normalized product of two messages
+In the message passing framework, in order to compute a posterior over some latent state $q(x)$, it is necessary to compute a normalized product of two messages
 $$q(x) = \frac{\mu_1(x) \mu_2(x)}{\int \mu_1(x) \mu_2(x) \mathrm{d}x}.$$
 In some situations, when functional forms of $\mu_1(x)$ and $\mu_2(x)$ are known in advance, it is possible to compute the normalized product efficiently and analytically. It is, however, not always the case, since the messages can have arbitrary functional form and it is not always easy to compute the normalization factor.
 
@@ -29,7 +29,7 @@ nothing #hide
 
 ## [PointMassFormConstraint](@id lib-forms-point-mass-constraint)
 
-The most basic form of posterior marginal approximation is the `PointMass` function. In a few words `PointMass` represents the delta function. In the context of functional form constraints `PointMass` approximation corresponds to the MAP estimate. For a given distribution `d` - `PointMass` functional form simply finds the `argmax` of the `logpdf` of `q(x)`, thus $q(x) = F[\mu_1, \mu_2] = \delta(x - \arg\min_{x} \mu_1(x) \mu_2(x))$. This is especially useful when exact functional form of `q(x)` is not available or cannot be parametrized efficiently. 
+The most basic form of posterior marginal approximation is the `PointMass` function. In a few words `PointMass` represents the delta function. In the context of functional form constraints `PointMass` approximation corresponds to the MAP estimate. For a given distribution `d`, the `PointMass` functional form simply finds the `argmax` of the `logpdf` of `q(x)`, thus $q(x) = F[\mu_1, \mu_2] = \delta(x - \arg\max_{x} \mu_1(x) \mu_2(x))$. This is especially useful when the exact functional form of `q(x)` is not available or cannot be parametrized efficiently. 
 
 ```@example constraints-functional-forms
 @constraints begin 
@@ -51,7 +51,7 @@ RxInfer.default_point_mass_form_constraint_boundaries
 
 ## [SampleListFormConstraint](@id lib-forms-sample-list-constraint)
 
-`SampleListFormConstraints` approximates the resulting posterior marginal (product of two colliding messages) as a list of weighted samples. Hence, it requires one of the arguments to be a proper distribution (or at least the inference backend should be able to sample from it). This setting is controlled with `LeftProposal()`, `RightProposal()` or `AutoProposal()` objects. It also accepts an optional `method` object, but the only one available sampling method currently is the `BayesBase.BootstrapImportanceSampling`.
+`SampleListFormConstraint` approximates the resulting posterior marginal (product of two colliding messages) as a list of weighted samples. Hence, it requires one of the arguments to be a proper distribution (or at least the inference backend should be able to sample from it). This setting is controlled with `LeftProposal()`, `RightProposal()` or `AutoProposal()` objects. It also accepts an optional `method` object, but the only sampling method currently available is `BayesBase.BootstrapImportanceSampling`.
 
 ```@example constraints-functional-forms
 @constraints begin 

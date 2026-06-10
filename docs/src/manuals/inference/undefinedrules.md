@@ -71,7 +71,7 @@ Previously, we assumed that our dataset consists of discrete values: `true` and 
 using StableRNGs, Plots
 
 hidden_p    = 1 / 3.1415 # a value between `0` and `1`
-ndatapoints = 1_000      # number of observarions
+ndatapoints = 1_000      # number of observations
 dataset     = rand(StableRNG(42), Bernoulli(hidden_p), ndatapoints)
 
 bar(["true", "false"], [ count(==(true), dataset), count(==(false), dataset) ], label = "dataset")
@@ -79,7 +79,7 @@ bar(["true", "false"], [ count(==(true), dataset), count(==(false), dataset) ], 
 
 ## Inference with a rule fallback
 
-Now, we can run inference with `RxInfer`. Since explicit rules for our nodes have not defined, we can instruct the `ReactiveMP` backend to use fallback message update rules. Refer to the `ReactiveMP` documentation for available fallbacks. In this example, we will use the `NodeFunctionRuleFallback` structure, which uses the `logpdf` of the stochastic node to approximate messages.
+Now, we can run inference with `RxInfer`. Since explicit rules for our nodes have not been defined, we can instruct the `ReactiveMP` backend to use fallback message update rules. Refer to the `ReactiveMP` documentation for available fallbacks. In this example, we will use the `NodeFunctionRuleFallback` structure, which uses the `logpdf` of the stochastic node to approximate messages.
 
 !!! note
     `NodeFunctionRuleFallback` employs a simple approximation for outbound messages, which may significantly degrade inference accuracy. Whenever possible, it is recommended to define [proper message update rules](@ref create-node).

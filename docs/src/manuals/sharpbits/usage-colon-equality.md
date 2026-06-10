@@ -74,7 +74,7 @@ y := dot(x, θ)
 
 RxInfer creates:
 1. A deterministic factor node representing the `dot` function with `x` and `θ` as arguments (edges)
-2. Creates a node for `y` if it has not been created yet
+2. A node for `y` if it has not been created yet
 3. Proper edges connecting `x` and `θ` to this node and this node to `y`
 4. Message passing rules for propagating beliefs through this transformation
 

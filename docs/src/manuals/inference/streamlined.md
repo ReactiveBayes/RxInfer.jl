@@ -1,7 +1,7 @@
 # [Streaming (online) inference](@id manual-online-inference)
 
 This guide explains how to use the [`infer`](@ref) function for dynamic datasets. We show how `RxInfer` can continuously update beliefs asynchronously whenever a new observation arrives. We use a simple Beta-Bernoulli model as an example, which has been covered in the [Getting Started](@ref user-guide-getting-started) section, 
-however, these techniques can be applied to any model
+however, these techniques can be applied to any model.
 
 Also read about [Static Inference](@ref manual-static-inference) or checkout more complex [examples](https://examples.rxinfer.com/).
 
@@ -36,8 +36,8 @@ beta_bernoulli_autoupdates = @autoupdates begin
 end
 ```
 
-This specification instructs `RxInfer` to update `a` and `b` parameters automatically as as soon as a new posterior for `θ` is available.
-Read more about `@autoupdates` in the [Autoupdates guide](@ref autoupdates-guide)
+This specification instructs `RxInfer` to update `a` and `b` parameters automatically as soon as a new posterior for `θ` is available.
+Read more about `@autoupdates` in the [Autoupdates guide](@ref autoupdates-guide).
 
 ## [Asynchronous data stream of observations](@id manual-online-inference-async-datastream)
 
@@ -51,7 +51,7 @@ rng          = StableRNG(43)
 datastream   = RecentSubject(Bool)
 ```
 
-The [`infer`](@ref) function expects the `datastream` to emit values in the form of the `NamedTuple`s. To simplify this process, `Rocket.jl` exports `labeled` function. We also use the `combineLatest` function to convert a stream of `Bool`s to a stream of `Tuple{Bool}`s. Read more about these function in the [documentation to `Rocket.jl`](https://reactivebayes.github.io/Rocket.jl/stable/).
+The [`infer`](@ref) function expects the `datastream` to emit values in the form of the `NamedTuple`s. To simplify this process, `Rocket.jl` exports `labeled` function. We also use the `combineLatest` function to convert a stream of `Bool`s to a stream of `Tuple{Bool}`s. Read more about these functions in the [documentation to `Rocket.jl`](https://reactivebayes.github.io/Rocket.jl/stable/).
 
 ```@example manual-online-inference
 observations = labeled(Val((:y, )), combineLatest(datastream))
@@ -81,7 +81,7 @@ Nice! Our data stream produces events in a form of the `NamedTuple`s, which is c
 
 ```@example manual-online-inference
 unsubscribe!(test_subscription) #hide
-# It is important to keep track of the existing susbcriptions
+# It is important to keep track of the existing subscriptions
 # and unsubscribe to reduce the usage of computational resources
 unsubscribe!(subscription)
 ```
@@ -101,7 +101,7 @@ engine = infer(
 )
 ```
 
-In the code above, there are several notable differences compared to running inference for static datasets. Firstly, we utilized the `autoupdates` argument as discussed [previously](@ref manual-online-inference-autoupdates). Secondly, we employed the [`@initialization`](@ref) macro to initialize the posterior over `θ`. This is necessary for the `@autoupdates` macro, as it needs to initialize the `a` and `b` parameters before the data becomes available. Thirdly, we set `autostart = false` to indicate that we do not want to immediately subscribe to the datastream, but rather do so manually later using the [`RxInfer.start`](@ref) function. The `returnvars` specification differs a little from [Static Inference](@ref manual-static-inference). In reactive inference, the `returnvars = (:θ, )` must be a tuple of `Symbol`s and specifies that we would be interested to get a stream of posteriors update for `θ`. The `returnvars` specification is optional and the inference engine will create reactive streams for all latent states if ommited.
+In the code above, there are several notable differences compared to running inference for static datasets. Firstly, we utilized the `autoupdates` argument as discussed [previously](@ref manual-online-inference-autoupdates). Secondly, we employed the [`@initialization`](@ref) macro to initialize the posterior over `θ`. This is necessary for the `@autoupdates` macro, as it needs to initialize the `a` and `b` parameters before the data becomes available. Thirdly, we set `autostart = false` to indicate that we do not want to immediately subscribe to the datastream, but rather do so manually later using the [`RxInfer.start`](@ref) function. The `returnvars` specification differs a little from [Static Inference](@ref manual-static-inference). In reactive inference, the `returnvars = (:θ, )` must be a tuple of `Symbol`s and specifies that we would be interested to get a stream of posteriors update for `θ`. The `returnvars` specification is optional and the inference engine will create reactive streams for all latent states if omitted.
 
 ```@docs
 RxInferenceEngine
@@ -249,7 +249,7 @@ end
 ```
 
 !!! note
-    It is also possible to visualize the inference estimation continously with manual subscription to `engine.posteriors[:θ]`.
+    It is also possible to visualize the inference estimation continuously with manual subscription to `engine.posteriors[:θ]`.
 
 
 As previously it is important to shutdown the inference engine when it becomes unnecessary:
@@ -301,7 +301,7 @@ In this particular example, we do not perform any variational iterations and do 
 In this case the BFE values are equal to the minus log-evidence of the model given new observation. 
 We can also track history of Bethe Free Energy values with the following fields of the `engine`:
 - `free_energy_history`: free energy history, averaged across variational iterations value for all observations  
-- `free_energy_raw_history`: free energy history, returns returns computed values of all variational iterations for each data event (if available)
+- `free_energy_raw_history`: free energy history, returns computed values of all variational iterations for each data event (if available)
 - `free_energy_final_only_history`: free energy history, returns computed values of final variational iteration for each data event (if available)
 
 ```@example manual-online-inference
@@ -326,7 +326,7 @@ RxInfer.stop(engine)
 unsubscribe!(free_energy_subscription)
 ```
 
-As has been mentioned, in this particular example we do not perform variational iterations, hence, there is little different between different representations of the BFE history buffers. However, when performing variational inference with the `iterations` argument, those buffers will be different. To demonstrate this difference let's build a slightly more complex model with variational constraints:
+As has been mentioned, in this particular example we do not perform variational iterations, hence, there is little difference between the different representations of the BFE history buffers. However, when performing variational inference with the `iterations` argument, those buffers will be different. To demonstrate this difference let's build a slightly more complex model with variational constraints:
 
 ```@example manual-online-inference
 @model function iid_normal(y, mean_μ, var_μ, shape_τ, rate_τ)
@@ -552,7 +552,7 @@ nothing #hide
 
 ## [Event loop](@id manual-online-inference-event-loop)
 
-In constrast to [Static Inference](@ref manual-static-inference), the streaming version of the [`infer`](@ref) function 
+In contrast to [Static Inference](@ref manual-static-inference), the streaming version of the [`infer`](@ref) function 
 does not provide callbacks such as `on_marginal_update`, since it is possible to subscribe directly on those updates with the 
 `engine.posteriors` field. However, the reactive inference engine provides an ability to listen to its internal event loop, that also includes "pre" and "post" events for posterior updates.
 
@@ -812,7 +812,7 @@ The data is `(model::ProbabilisticModel, err::Any)`
 function Rocket.on_next!(listener::MyEventListener, event::RxInferenceEvent{ :on_error })
     (model, err) = event
     @test model isa ProbabilisticModel #hide
-    println("An error occured during the inference procedure: ", err)
+    println("An error occurred during the inference procedure: ", err)
 end
 ```
 
@@ -890,13 +890,13 @@ nothing #hide
 ```
 
 !!! note
-    The `:before_stop` and `:after_stop` events are not emmited in case of the datastream completion. Use the `:on_complete` instead.
+    The `:before_stop` and `:after_stop` events are not emitted in case of the datastream completion. Use the `:on_complete` instead.
 
 
 ## [Using `data` keyword argument with streaming inference](@id manual-online-inference-data)
 
 The streaming version does support static datasets as well. 
-Internally, it converts it to a datastream, that emits all observations in a sequntial order without any delay. As an example:
+Internally, it converts it to a datastream that emits all observations in sequential order without any delay. As an example:
 
 ```@example manual-online-inference
 staticdata = rand(rng, distribution, 1_000)

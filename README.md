@@ -19,7 +19,7 @@
 
 `RxInfer.jl` is a Julia package for automatic Bayesian inference on a factor graph with reactive message passing.
 
-Given a probabilistic model, RxInfer allows for an efficient message-passing based Bayesian inference. It uses the model structure to generate an algorithm that consists of a sequence of local computations on a factor graph representation of the model.
+Given a probabilistic model, RxInfer allows for efficient message-passing-based Bayesian inference. It uses the model structure to generate an algorithm that consists of a sequence of local computations on a factor graph representation of the model.
 
 ### Performance and scalability
 
@@ -47,7 +47,7 @@ In this example, RxInfer executes exact inference consistently and does not depe
 ### References
 
 - [rxinfer.com](https://rxinfer.com) - the official RxInfer website
-- [RxInfer: A Julia package for reactive real-time Bayesian inference](https://doi.org/10.21105/joss.05161) - a reference paper for the `RxInfer.jl` framwork.
+- [RxInfer: A Julia package for reactive real-time Bayesian inference](https://doi.org/10.21105/joss.05161) - a reference paper for the `RxInfer.jl` framework.
 - [Reactive Probabilistic Programming for Scalable Bayesian Inference](https://pure.tue.nl/ws/portalfiles/portal/313860204/20231219_Bagaev_hf.pdf) - a PhD dissertation outlining core ideas and principles behind `RxInfer` ([link2](https://research.tue.nl/nl/publications/reactive-probabilistic-programming-for-scalable-bayesian-inferenc), [link3](https://github.com/bvdmitri/phdthesis)).
 - [Variational Message Passing and Local Constraint Manipulation in Factor Graphs](https://doi.org/10.3390/e23070807) - describes theoretical aspects of the underlying Bayesian inference method.
 - [Reactive Message Passing for Scalable Bayesian Inference](https://doi.org/10.48550/arXiv.2112.13251) - describes implementation aspects of the Bayesian inference engine and performs benchmarks and accuracy comparison on various models.
@@ -74,14 +74,14 @@ For more information about `RxInfer.jl` please refer to the [documentation](http
 
 ### Coin flip simulation
 
-Here we show a simple example of how to use RxInfer.jl for Bayesian inference problems. In this example we want to estimate a bias of a coin in a form of a probability distribution in a coin flip simulation.
+Here we show a simple example of how to use RxInfer.jl for Bayesian inference problems. In this example we want to estimate the bias of a coin in the form of a probability distribution in a coin flip simulation.
 
 First let's setup our environment by importing all needed packages:
 ```julia
 using RxInfer, Random
 ```
 
-We start by creating some dataset. For simplicity in this example we will use static pre-generated dataset. Each sample can be thought of as the outcome of single flip which is either heads or tails (1 or 0). We will assume that our virtual coin is biased, and lands heads up on 75% of the trials (on average).
+We start by creating some dataset. For simplicity in this example we will use a static, pre-generated dataset. Each sample can be thought of as the outcome of a single flip, which is either heads or tails (1 or 0). We will assume that our virtual coin is biased, and lands heads up on 75% of the trials (on average).
 
 ```julia
 n = 500  # Number of coin flips
@@ -120,9 +120,9 @@ The joint probability is given by the multiplication of the likelihood and the p
 P(y_{1:N}, \theta) = P(\theta) \prod_{i=1}^N P(y_i | \theta).
 ```
 
-Now let's see how to specify this model using [GraphPPL's package](https://github.com/ReactiveBayes/GraphPPL.jl) syntax:
+Now let's see how to specify this model using the [GraphPPL](https://github.com/ReactiveBayes/GraphPPL.jl) package syntax:
 ```julia
-# GraphPPL.jl export `@model` macro for model specification
+# GraphPPL.jl exports the `@model` macro for model specification
 # It accepts a regular Julia function and builds a factor graph under the hood
 @model function coin_model(y, a, b) 
     # We endow θ parameter of our model with some prior
@@ -146,11 +146,11 @@ In short, the `@model` macro converts a textual description of a probabilistic m
 end
 ```
 
-As you can see, `RxInfer` in combination with `GraphPPL` offers a model specification syntax that resembles closely to the mathematical equations defined above. 
+As you can see, `RxInfer` in combination with `GraphPPL` offers a model specification syntax that closely resembles the mathematical equations defined above. 
 
 ### Inference specification
 
-Once we have defined our model, the next step is to use `RxInfer` API to infer quantities of interests. To do this we can use a generic `infer` function from `RxInfer.jl` that supports static datasets.
+Once we have defined our model, the next step is to use the `RxInfer` API to infer quantities of interest. To do this we can use the generic `infer` function from `RxInfer.jl` that supports static datasets.
 
 ```julia
 result = infer(
@@ -239,7 +239,7 @@ The community maintains educational content and tutorials on [Learnable Loop](ht
 
 ## JuliaCon 2023 presentation
 
-Additionally, checkout our [video from JuliaCon 2023](https://www.youtube.com/watch?v=qXrvDVm_fnE) for a high-level overview of the package
+Additionally, check out our [video from JuliaCon 2023](https://www.youtube.com/watch?v=qXrvDVm_fnE) for a high-level overview of the package.
 
 <p align="center">
     <a href="https://www.youtube.com/watch?v=qXrvDVm_fnE"><img style="width: 100%" src="https://img.youtube.com/vi/qXrvDVm_fnE/0.jpg"></a>

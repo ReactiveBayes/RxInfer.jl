@@ -307,7 +307,7 @@ function Base.show(io::IO, specification::AutoUpdateSpecification)
 end
 
 """
-    IndividualAutoUpdateSpecification(varlabels, arguments, mapping)
+    IndividualAutoUpdateSpecification(varlabels, mapping)
 
 A structure that defines how to update a single variable in the model.
 It consists of the variable labels and the mapping function.
@@ -357,9 +357,9 @@ Base.show(io::IO, specification::AutoUpdateVariableLabel) =
     end
 
 """
-    AutoUpdateMapping(arguments, mappingFn)
+    AutoUpdateMapping(mappingFn, arguments)
 
-A structure that holds the arguments and the mapping function for the individual auto-update specification.
+A structure that holds the mapping function and the arguments for the individual auto-update specification.
 """
 struct AutoUpdateMapping{F, A}
     mappingFn::F
@@ -440,7 +440,7 @@ function check_model_generator_compatibility(
     varlabels = getvarlabels(specification)
     for label in varlabels
         if label ∈ kwargskeys
-            warnmsg = lazy"Autoupdates defines an update for `$label`, but `$label` has been reserved in the model as a constant. Use `warn = false` option to supress the warning. Use `strict = true` option to turn the warning into an error."
+            warnmsg = lazy"Autoupdates defines an update for `$label`, but `$label` has been reserved in the model as a constant. Use `warn = false` option to suppress the warning. Use `strict = true` option to turn the warning into an error."
             if is_autoupdates_strict(specification)
                 error(warnmsg)
             elseif is_autoupdates_warn(specification)

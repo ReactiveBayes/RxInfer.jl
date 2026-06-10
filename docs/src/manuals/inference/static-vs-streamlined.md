@@ -276,6 +276,6 @@ The choice between static, streaming, and batched inference depends on your spec
 - **Streaming inference** excels at real-time applications with continuous data
 - **Batched inference** provides a middle ground for large datasets with memory constraints
 
-The Linear Gaussian State Space Model example demonstrates how the same underlying model can be adapted to different inference paradigms. All three approaches should produce different results and they differ significantly in their computational characteristics and use cases.
+The Linear Gaussian State Space Model example demonstrates how the same underlying model can be adapted to different inference paradigms. All three approaches should produce similar results, but they differ significantly in their computational characteristics and use cases.
 
 Remember that you can always start with static inference to validate your model and then convert to streaming or batched approaches based on your deployment requirements.

@@ -117,7 +117,7 @@ function batch_inference(;
     returnvars = nothing,
     # Prediction structure info, optional, defaults to return everything at each iteration
     predictvars = nothing,
-    # Number of iterations, defaults to 1, we do not distinguish between VMP or Loopy belief or EP iterations
+    # Number of iterations, defaults to 1, we do not distinguish between VMP, loopy belief propagation, or EP iterations
     iterations = nothing,
     # Do we compute FE, optional, defaults to false 
     # Can be passed a floating point type, e.g. `Float64`, for better efficiency, but disables automatic differentiation packages, such as ForwardDiff.jl
@@ -126,7 +126,7 @@ function batch_inference(;
     free_energy_diagnostics = DefaultObjectiveDiagnosticChecks,
     # Enables node contraction with additional implementation, optional, defaults to false.
     allow_node_contraction = false,
-    # Show progress module, optional, defaults to false
+    # Show a progress bar, optional, defaults to false
     showprogress = false,
     # Inference cycle callbacks
     callbacks = nothing,
@@ -150,7 +150,7 @@ function batch_inference(;
     # Override `options` annotations if the `annotations` keyword argument is present
     if !isnothing(annotations)
         if warn && !isnothing(getannotations(_options))
-            @warn "Both `annotations = ...` and `options = (annotations = ..., )` specify a value for the `annotations`. Ignoring the `options` setting. Set `warn = false` to supress this warning."
+            @warn "Both `annotations = ...` and `options = (annotations = ..., )` specify a value for the `annotations`. Ignoring the `options` setting. Set `warn = false` to suppress this warning."
         end
         _options = setannotations(_options, annotations)
     end
@@ -167,7 +167,7 @@ function batch_inference(;
     # Set ReactiveMP event handler if `callbacks` are set
     if !isnothing(callbacks)
         if warn && !isnothing(getcallbacks(_options))
-            @warn "Both `callbacks = ...` and `options = (callbacks = ..., )` specify a value for the `callbacks`. Ignoring the `options` setting. Set `warn = false` to supress this warning."
+            @warn "Both `callbacks = ...` and `options = (callbacks = ..., )` specify a value for the `callbacks`. Ignoring the `options` setting. Set `warn = false` to suppress this warning."
         end
         _options = setcallbacks(_options, callbacks)
     end
@@ -200,7 +200,7 @@ function batch_inference(;
 
     infer_check_dicttype(:data, data)
 
-    # If `predictvars` is specified implicitly as `KeepEach` or `KeepLast`, we replace it a the same value for each data variable
+    # If `predictvars` is specified implicitly as `KeepEach` or `KeepLast`, we replace it with the same value for each data variable
     if (predictvars === KeepEach() || predictvars === KeepLast())
         if !isnothing(data)
             predictoption = predictvars
@@ -209,15 +209,15 @@ function batch_inference(;
             )
         else # else we throw an error
             error(
-                "`predictvar` is specified as `$(predictvars)`, but `data` is not provided. Make sure to provide `data` or specify `predictvars` explicitly.",
+                "`predictvars` is specified as `$(predictvars)`, but `data` is not provided. Make sure to provide `data` or specify `predictvars` explicitly.",
             )
         end
-        # If `predictvar` is specified, but `data` is not, we initialize the `data` with missing values
+        # If `predictvars` is specified, but `data` is not, we initialize the `data` with missing values
     elseif !isnothing(predictvars) && isnothing(data)
         data = Dict(
             variable => missing for (variable, value) in pairs(predictvars)
         )
-        # If `predictvar` is not specified, but `data` is, we initialize the `predictvars` with `KeepLast` or `KeepEach` depending on the `iterations` value
+        # If `predictvars` is not specified, but `data` is, we initialize the `predictvars` with `KeepLast` or `KeepEach` depending on the `iterations` value
         # But only if the data has missing values in it
     elseif isnothing(predictvars) && !isnothing(data)
         predictoption = iterations isa Number ? KeepEach() : KeepLast()
@@ -225,7 +225,7 @@ function batch_inference(;
             variable => predictoption for (variable, value) in pairs(data) if
             inference_check_dataismissing(get_data(value))
         )
-        # If both `predictvar` and `data` are specified we double check if there are some entries in the `predictvars`
+        # If both `predictvars` and `data` are specified we double check if there are some entries in the `predictvars`
         # which are not specified in the `data` and inject them
         # We do the same the other way around for the `data` entries which are not specified in the `predictvars`
     elseif !isnothing(predictvars) && !isnothing(data)
@@ -280,7 +280,7 @@ function batch_inference(;
         return haskey_check && israndom_check
     end
 
-    # Use `__check_has_prediction` to filter out unknown predictions variables in the `predictvar` specification
+    # Use `__check_has_prediction` to filter out unknown prediction variables in the `predictvars` specification
     __check_has_prediction(vardict, variable) = begin
         haskey_check = haskey(vardict, variable)
         isdata_check = haskey_check ? isdata(vardict[variable]) : false
@@ -414,7 +414,7 @@ function batch_inference(;
             )
 
             # Check that all requested marginals have been updated and unset the `updated` flag
-            # Throws an error if some were not update
+            # Throws an error if some were not updated
             check_and_reset_updated!(updates)
 
             if !isnothing(progress_meter)

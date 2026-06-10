@@ -257,7 +257,7 @@ function update_session!(session::Session, label::Symbol, invoke::SessionInvoke)
 end
 
 """
-    with_session(f::F, session, label::Symbol = :unknown) where {F}
+    with_session(f::F, session, label::Symbol) where {F}
 
 Execute function `f` within a session context with the specified label. If `session` is provided,
 logs execution details including timing and errors, and updates the session statistics for the given label.

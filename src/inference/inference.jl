@@ -39,7 +39,7 @@ make_actor(x::AbstractArray, ::KeepLast, capacity::Integer) =
 
 import Rocket: Actor, on_next!, on_error!, on_complete!
 
-# We can use `MarginalHasBeenUpdated` both as an actor in within the `ensure_update` operator
+# We can use `MarginalHasBeenUpdated` both as an actor within the `ensure_update` operator
 mutable struct MarginalHasBeenUpdated <: Actor{Any}
     updated::Bool
 end
@@ -342,7 +342,7 @@ function inference_process_error(
         https://examples.rxinfer.com/
 
         Still stuck? We'd love to help! You can:
-        - Start a discussion for questions and help. Feedback and questions from new users is also welcome! If you are stuck, please reach out and we will solve it together.
+        - Start a discussion for questions and help. Feedback and questions from new users are also welcome! If you are stuck, please reach out and we will solve it together.
         https://github.com/ReactiveBayes/RxInfer.jl/discussions
         - Report a bug or request a feature:
         https://github.com/ReactiveBayes/RxInfer.jl/issues
@@ -358,7 +358,7 @@ function inference_process_error(
         - (Optional) If you shared your session data, please include the session ID in the issue
 
         Use `RxInfer.disable_inference_error_hint!()` to disable this message permanently (requires Julia session restart).
-        Use `infer(..., disable_inference_error_hint = true) to disable this message for specific inference run.`
+        Use `infer(..., disable_inference_error_hint = true)` to disable this message for a specific inference run.
         """
         # This normally is turned off, but is enabled on CI in order to catch 
         # bad examples or failing tests that print this error
@@ -374,8 +374,8 @@ function inference_process_error(
 end
 
 function inference_check_itertype(::Symbol, ::Union{Nothing, Tuple, Vector})
-    # This function check is the second argument is of type `Nothing`, `Tuple` or `Vector`. 
-    # Does nothing is true, throws an error otherwise (see the second method below)
+    # This function checks if the second argument is of type `Nothing`, `Tuple` or `Vector`.
+    # Does nothing if true, throws an error otherwise (see the second method below)
     nothing
 end
 
@@ -383,10 +383,10 @@ function inference_check_itertype(keyword::Symbol, ::T) where {T}
     error(
         """
         Keyword argument `$(keyword)` expects either `Tuple` or `Vector` as an input, but a value of type `$(T)` has been used.
-        If you specify a `Tuple` with a single entry - make sure you put a trailing comma at then end, e.g. `(something, )`. 
-        Note: Julia's parser interprets `(something)` and (something, ) differently. 
-            The first expression simply ignores parenthesis around `something`. 
-            The second expression defines `Tuple`with `something` as a first (and the last) entry.
+        If you specify a `Tuple` with a single entry - make sure you put a trailing comma at the end, e.g. `(something, )`.
+        Note: Julia's parser interprets `(something)` and `(something, )` differently.
+            The first expression simply ignores the parentheses around `something`.
+            The second expression defines a `Tuple` with `something` as its first (and last) entry.
         """,
     )
 end
@@ -397,8 +397,8 @@ function infer_check_dicttype(
         Nothing, NamedTuple, Dict, GraphPPL.VarDict, RxInferBenchmarkCallbacks
     },
 )
-    # This function check is the second argument is of type `Nothing`, `NamedTuple`, `Dict` or `VarDict`. 
-    # Does nothing is true, throws an error otherwise (see the second method below)
+    # This function checks if the second argument is of type `Nothing`, `NamedTuple`, `Dict` or `VarDict`.
+    # Does nothing if true, throws an error otherwise (see the second method below)
     nothing
 end
 
@@ -406,10 +406,10 @@ function infer_check_dicttype(keyword::Symbol, ::T) where {T}
     error(
         """
         Keyword argument `$(keyword)` expects either `Dict` or `NamedTuple` as an input, but a value of type `$(T)` has been used.
-        If you specify a `NamedTuple` with a single entry - make sure you put a trailing comma at then end, e.g. `(x = something, )`. 
-        Note: Julia's parser interprets `(x = something)` and (x = something, ) differently. 
-            The first expression defines (or **overwrites!**) the local/global variable named `x` with `something` as a content. 
-            The second expression defines `NamedTuple` with `x` as a key and `something` as a value.
+        If you specify a `NamedTuple` with a single entry - make sure you put a trailing comma at the end, e.g. `(x = something, )`.
+        Note: Julia's parser interprets `(x = something)` and `(x = something, )` differently.
+            The first expression defines (or **overwrites!**) the local/global variable named `x` with `something` as its content.
+            The second expression defines a `NamedTuple` with `x` as a key and `something` as a value.
         """,
     )
 end
@@ -447,7 +447,7 @@ function _check_available_callback_keys(
 )
     for key in keys(callbacks)
         if key ∉ available_callbacks
-            @warn "Unknown callback specification: $(key). Available callbacks: $(available_callbacks). Set `warn = false` to supress this warning."
+            @warn "Unknown callback specification: $(key). Available callbacks: $(available_callbacks). Set `warn = false` to suppress this warning."
         end
     end
 end
@@ -471,7 +471,7 @@ function check_available_events(
     if warn && !isnothing(events)
         for key in Events
             if key ∉ AvailableEvents
-                @warn "Unknown event type: $(key). Available events: $(AvailableEvents). Set `warn = false` to supress this warning."
+                @warn "Unknown event type: $(key). Available events: $(AvailableEvents). Set `warn = false` to suppress this warning."
             end
         end
     end
@@ -534,16 +534,16 @@ Check the official documentation for more information about some of the argument
 - `predictvars = nothing`: return structure info, optional (exclusive for batch inference)
 - `historyvars = nothing`: history structure info, optional, defaults to no history (exclusive for streamline inference)
 - `keephistory = nothing`: history buffer size, defaults to empty buffer (exclusive for streamline inference)
-- `iterations = nothing`: number of iterations, optional, defaults to `nothing`, the inference engine does not distinguish between variational message passing or Loopy belief propagation or expectation propagation iterations. See [Early stopping](@ref manual-inference-early-stopping) for an opt-in callback example, which implements early stopping.
+- `iterations = nothing`: number of iterations, optional, defaults to `nothing`, the inference engine does not distinguish between variational message passing, loopy belief propagation, or expectation propagation iterations. See [Early stopping](@ref manual-inference-early-stopping) for an opt-in callback example, which implements early stopping.
 - `free_energy = false`: compute the Bethe free energy, optional, defaults to false. Can be passed a floating point type, e.g. `Float64`, for better efficiency, but disables automatic differentiation packages, such as ForwardDiff.jl
 - `free_energy_diagnostics = DefaultObjectiveDiagnosticChecks`: free energy diagnostic checks, optional, by default checks for possible `NaN`s and `Inf`s. `nothing` disables all checks.
-- `showprogress = false`: show progress module, optional, defaults to false (exclusive for batch inference)
-- `catch_exception`  specifies whether exceptions during the inference procedure should be caught, optional, defaults to false (exclusive for batch inference)
+- `showprogress = false`: show a progress bar, optional, defaults to false (exclusive for batch inference)
+- `catch_exception`: specifies whether exceptions during the inference procedure should be caught, optional, defaults to false (exclusive for batch inference)
 - `callbacks = nothing`: inference cycle callbacks, optional. Can be a `NamedTuple`, `Dict`, or any custom structure that implements `ReactiveMP.handle_event`. See [Callbacks](@ref manual-inference-callbacks) for a comprehensive overview, [Benchmark callbacks](@ref manual-inference-benchmark-callbacks) for performance analysis, [Trace callbacks](@ref manual-inference-trace-callbacks) for event tracing, and [Early stopping](@ref manual-inference-early-stopping) for an opt-in callback example.
 - `annotations = nothing`: a tuple of annotation processors that attach extra information to messages and marginals during inference. For example, `annotations = LogScaleAnnotations()` tracks log-scale normalization constants, which is useful for computing Bayes factors and model evidence in mixture models. When annotations are enabled, the inference results preserve the `Marginal` wrapper type so that annotation data remains accessible via `ReactiveMP.getannotations`. See `ReactiveMP.jl` documentation for available annotation types and how to implement custom annotation processors.
 - `postprocess = nothing`: inference results postprocessing step, optional. By default, uses [`UnpackMarginalPostprocess`](@ref) when `annotations` is `nothing` (strips the `Marginal` wrapper), and [`NoopPostprocess`](@ref) when annotations are enabled (preserves the wrapper). See [Inference results postprocessing](@ref user-guide-inference-postprocess) for details on implementing custom strategies.
 - `events = nothing`: inference cycle events, optional (exclusive for streamline inference)
-- `uselock = false`: specifies either to use the lock structure for the inference or not, if set to true uses `Base.Threads.SpinLock`. Accepts custom `AbstractLock`. (exclusive for streamline inference)
+- `uselock = false`: specifies whether to use a lock structure for the inference; if set to `true`, uses `Base.Threads.SpinLock`. Accepts a custom `AbstractLock`. (exclusive for streamline inference)
 - `autostart = true`: specifies whether to call `RxInfer.start` on the created engine automatically or not (exclusive for streamline inference)
 - `warn = true`: enables/disables warnings
 - `benchmark = false`: when set to `true`, automatically merges a [`RxInferBenchmarkCallbacks`](@ref) instance with the user-provided `callbacks`. The benchmark results are accessible via `result.model.metadata[:benchmark]`. See [Benchmark callbacks](@ref manual-inference-benchmark-callbacks).

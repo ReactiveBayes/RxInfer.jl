@@ -56,7 +56,7 @@ $$\ln \vec{\mu}(x) \propto \mathbb{E}_{q(y)} \left[ \ln f(x, y) \right]$$
 
 **Context**: Structured constraints (variables are coupled in blocks).
 
-- **Input Prefix**: `q_ab` (Joint Marginal)
+- **Input Prefix**: `q_yz` (Joint Marginal)
 - **The Logic**: "Variables A and B are strictly coupled. I cannot look at them separately; I need a joint report on how they relate to each other."
 - **The Math**: Similar to VMP, but the expectation is taken over the joint distribution of the coupled variables:
 

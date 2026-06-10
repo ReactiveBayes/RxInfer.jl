@@ -135,8 +135,8 @@ function apply_diagnostic_check(
 )
     error_fn = let node = node
         (_) -> lazy"""
-        Failed to compute node bound free energy component. The result is `NaN`. 
-        Use `objective_diagnostics` keyword argument in the `inference` function to suppress this error.
+        Failed to compute node bound free energy component. The result is `NaN`.
+        Use `free_energy_diagnostics` keyword argument in the `inference` function to suppress this error.
         $(node)
         """
     end
@@ -150,8 +150,8 @@ function apply_diagnostic_check(
 )
     error_fn = let variable = variable
         (_) -> lazy"""
-        Failed to compute variable bound free energy component for `$(variable)` variable. The result is `NaN`. 
-        Use `objective_diagnostics` keyword argument in the `inference` function to suppress this error.
+        Failed to compute variable bound free energy component for `$(variable)` variable. The result is `NaN`.
+        Use `free_energy_diagnostics` keyword argument in the `inference` function to suppress this error.
         """
     end
     return stream |> error_if(check_isnan, error_fn)

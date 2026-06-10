@@ -25,7 +25,7 @@ Creates model inference options object. The list of available options is present
 
 ### Options
 
-- `limit_stack_depth`: limits the stack depth for computing messages, helps with `StackOverflowError` for some huge models, but reduces the performance of inference backend. Accepts integer as an argument that specifies the maximum number of recursive depth. Lower is better for stack overflow error, but worse for performance.
+- `limit_stack_depth`: limits the stack depth for computing messages; helps with `StackOverflowError` for some huge models, but reduces the performance of the inference backend. Accepts an integer argument that specifies the maximum recursion depth. Lower is better for stack overflow errors, but worse for performance.
 - `warn`: (optional) flag to suppress warnings. Warnings are not displayed if set to `false`. Defaults to `true`.
 - `force_marginal_computation`: (optional) flag to force computation of marginals even when not explicitly requested. Defaults to `false`.
 
@@ -305,7 +305,7 @@ function GraphPPL.postprocess_plugin(
         set_rmp_variable!(plugin, model, variable, properties)
     end
 
-    # The nodes must be postprocessed after all variables has been instantiated
+    # The nodes must be postprocessed after all variables have been instantiated
     factor_nodes(model) do label, factor
         set_rmp_factornode!(
             plugin, model, factor, getproperties(factor)::FactorNodeProperties
@@ -334,7 +334,7 @@ function GraphPPL.postprocess_plugin(
         end
     end
 
-    # The variable nodes must be activated after the variable nodes
+    # The factor nodes must be activated after the variable nodes
     factor_nodes(model) do label, factor
         activate_rmp_factornode!(
             plugin, model, factor, getproperties(factor)::FactorNodeProperties
@@ -392,7 +392,7 @@ function activate_rmp_variable!(
         # Fetch "form-constraint" for messages and marginals. The form-constraint usually defines the form of the resulting distribution
         # By default it is `UnspecifiedFormConstraint` which means that the form of the resulting distribution is not specified in advance
         # and follows from the computation, but users may override it with other form constraints, e.g. `PointMassFormConstraint`, which
-        # constraints the resulting distribution to be of a point mass form
+        # constrains the resulting distribution to be of a point mass form
         messages_form_constraint =
             ReactiveMP.preprocess_form_constraints(
                 plugin,
