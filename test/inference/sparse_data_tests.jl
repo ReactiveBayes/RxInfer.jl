@@ -16,7 +16,9 @@
     end
 
     # y[2] = 999.0 is supplied but never referenced; it must be ignored entirely.
-    result = infer(model = partial_1d(), data = (y = [1.0, 999.0, 3.0],), iterations = 1)
+    result = infer(
+        model = partial_1d(), data = (y = [1.0, 999.0, 3.0],), iterations = 1
+    )
     q = last(result.posteriors[:x])
 
     # x ~ N(0, 100) with two unit-variance observations 1.0 and 3.0:
@@ -62,7 +64,9 @@ end
     J, T = 2, 3
     mask = Bool[1 0 1; 0 1 0] # observed: (1,1), (2,2), (1,3)
     data = reshape(collect(1.0:6.0), J, T) # [1 3 5; 2 4 6]
-    result = infer(model = masked_chain(mask = mask), data = (y = data,), iterations = 1)
+    result = infer(
+        model = masked_chain(mask = mask), data = (y = data,), iterations = 1
+    )
     q = last(result.posteriors[:x])
 
     observed = [data[idx] for idx in findall(mask)] # 1.0, 4.0, 5.0
@@ -96,7 +100,9 @@ end
 
     # A densely-built ResizableArray is dense; `_map_sparse` matches `Base.map` (returns Array).
     dense = ResizableArray(Int, Val(1))
-    dense[1] = 1; dense[2] = 2; dense[3] = 3
+    dense[1] = 1;
+    dense[2] = 2;
+    dense[3] = 3
     @test _is_densely_assigned(dense)
     mapped = _map_sparse(x -> x + 10, dense)
     @test mapped isa Array
@@ -104,7 +110,8 @@ end
 
     # A 1-D ResizableArray with a hole (use a non-bitstype so the hole is a true `#undef`).
     sparse1 = ResizableArray(String, Val(1))
-    sparse1[1] = "a"; sparse1[3] = "c" # index 2 is a hole
+    sparse1[1] = "a";
+    sparse1[3] = "c" # index 2 is a hole
     @test !_is_densely_assigned(sparse1)
     res1 = _map_sparse(uppercase, sparse1)
     @test res1 isa ResizableArray
@@ -114,7 +121,9 @@ end
 
     # A 2-D ResizableArray with holes preserves shape and assigned positions.
     sparse2 = ResizableArray(String, Val(2))
-    sparse2[1, 1] = "x"; sparse2[2, 2] = "y"; sparse2[1, 3] = "z"
+    sparse2[1, 1] = "x";
+    sparse2[2, 2] = "y";
+    sparse2[1, 3] = "z"
     @test !_is_densely_assigned(sparse2)
     res2 = _map_sparse(uppercase, sparse2)
     @test res2 isa ResizableArray
