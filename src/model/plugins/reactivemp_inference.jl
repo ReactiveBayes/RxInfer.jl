@@ -637,14 +637,19 @@ end
 getvariable(nodedata::GraphPPL.NodeData) =
     getextra(nodedata, ReactiveMPExtraVariableKey)
 getvariable(container::AbstractArray) = map(getvariable, container)
-getvariable(container::GraphPPL.ResizableArray) = _map_sparse(getvariable, container)
+getvariable(container::GraphPPL.ResizableArray) =
+    _map_sparse(getvariable, container)
 
 # Feed a new observation into a (possibly sparse) array of data variables, aligning by index:
 # `datavars[I]` receives `data[I]` for every *assigned* `I`. Entries of the provided `data`
 # that the model never referenced are ignored. Dense arrays defer to `ReactiveMP` as before.
-new_observation_indexed!(datavars, data) = ReactiveMP.new_observation!(datavars, data)
-function new_observation_indexed!(datavars::GraphPPL.ResizableArray, data::AbstractArray)
-    _is_densely_assigned(datavars) && return ReactiveMP.new_observation!(datavars, data)
+new_observation_indexed!(datavars, data) =
+    ReactiveMP.new_observation!(datavars, data)
+function new_observation_indexed!(
+    datavars::GraphPPL.ResizableArray, data::AbstractArray
+)
+    _is_densely_assigned(datavars) &&
+        return ReactiveMP.new_observation!(datavars, data)
     for I in CartesianIndices(size(datavars))
         if isassigned(datavars, I.I...)
             ReactiveMP.new_observation!(datavars[I.I...], data[I])
