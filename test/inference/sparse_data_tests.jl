@@ -190,7 +190,9 @@ end
 
     ys = [10.0, 20.0, 30.0]
     check(model, ydata, observed) = begin
-        q = last(infer(model = model, data = (y = ydata,), iterations = 1).posteriors[:x])
+        q = last(
+            infer(model = model, data = (y = ydata,), iterations = 1).posteriors[:x],
+        )
         @test isapprox(precision(q), 1 / 100 + length(observed); atol = 1e-8)
         @test isapprox(weightedmean(q), sum(observed); atol = 1e-8)
     end
@@ -215,7 +217,9 @@ end
     end
 
     check(ydata) = begin
-        q = last(infer(model = obs_sparse(), data = (y = ydata,), iterations = 1).posteriors[:x])
+        q = last(
+            infer(model = obs_sparse(), data = (y = ydata,), iterations = 1).posteriors[:x],
+        )
         @test isapprox(precision(q), 1 / 100 + 2; atol = 1e-8)        # two observations
         @test isapprox(weightedmean(q), 10.0 + 30.0; atol = 1e-8)     # 1st and 3rd values, 2nd ignored
     end
@@ -258,7 +262,7 @@ end
         end
     end
 
-    flips  = [1.0, 0.0, 1.0, 1.0, 0.0]
+    flips = [1.0, 0.0, 1.0, 1.0, 0.0]
     offset = OffsetArray(flips, 0:4)
     has_offset_warn(logs) =
         any(l -> l.level == Logging.Warn && occursin("offset", l.message), logs)
