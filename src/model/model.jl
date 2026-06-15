@@ -215,13 +215,18 @@ function __normalize_data_indexing(data::AbstractArray)
 end
 
 # `true` exactly when `__normalize_data_indexing` would allocate a 1-based copy.
-__incurs_offset_copy(data) = data isa AbstractArray && Base.has_offset_axes(data)
+__incurs_offset_copy(data) =
+    data isa AbstractArray && Base.has_offset_axes(data)
 
 # Shared text for the (cost) warning emitted when offset data is rebased to 1-based indexing.
 # The warning itself is emitted — gated by the `warn` keyword of `infer` — at the batch and
 # streaming entry points, where the copy actually occurs (see `batch_inference` / the streaming feed).
 function __offset_data_copy_warning(name)
-    prefix = isnothing(name) ? "Conditioned data" : string("Conditioned data `", name, "`")
+    prefix = if isnothing(name)
+        "Conditioned data"
+    else
+        string("Conditioned data `", name, "`")
+    end
     return string(
         prefix,
         " uses non-standard (offset) indexing and is copied to standard 1-based indexing for ",

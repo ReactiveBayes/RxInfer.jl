@@ -59,7 +59,7 @@ mutable struct RxInferenceEngine{
     ticklock     :: J
 
     # Whether to emit non-fatal warnings during inference (mirrors `infer`'s `warn` keyword).
-    warn :: Bool
+    warn::Bool
 
     RxInferenceEngine(
         ::Type{T},
@@ -393,8 +393,8 @@ function Rocket.on_next!(
                 # A sparse data variable fed an offset value is rebased to 1-based (a per-tick
                 # copy); warn once unless `warn = false` (mirrors the batch entry point).
                 if executor.engine.warn &&
-                   datavar isa GraphPPL.ResizableArray &&
-                   __incurs_offset_copy(value)
+                    datavar isa GraphPPL.ResizableArray &&
+                    __incurs_offset_copy(value)
                     @warn __offset_data_copy_warning(nothing) maxlog = 1
                 end
                 new_observation_indexed!(datavar, value)
