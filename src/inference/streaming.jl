@@ -58,6 +58,9 @@ mutable struct RxInferenceEngine{
     error        :: Any
     ticklock     :: J
 
+    # Whether to emit non-fatal warnings during inference (mirrors `infer`'s `warn` keyword).
+    warn :: Bool
+
     RxInferenceEngine(
         ::Type{T},
         datastream::D,
@@ -77,6 +80,7 @@ mutable struct RxInferenceEngine{
         enabledevents::Val{X},
         events::E,
         ticklock::J,
+        warn::Bool = true,
     ) where {T, D, L, V, P, H, S, U, A, FA, FS, R, I, M, N, X, E, J} = begin
         return new{T, D, L, V, P, H, S, U, A, FA, FS, R, I, M, N, X, E, J}(
             datastream,
@@ -103,6 +107,7 @@ mutable struct RxInferenceEngine{
             false,
             nothing,
             ticklock,
+            warn,
         )
     end
 end
@@ -385,6 +390,13 @@ function Rocket.on_next!(
                 # `new_observation_indexed!` aligns by index, so a model that references a
                 # streamed data tensor only partially (sparse data variables) is fed
                 # correctly from the dense streamed value; dense arrays behave as before.
+                # A sparse data variable fed an offset value is rebased to 1-based (a per-tick
+                # copy); warn once unless `warn = false` (mirrors the batch entry point).
+                if executor.engine.warn &&
+                   datavar isa GraphPPL.ResizableArray &&
+                   __incurs_offset_copy(value)
+                    @warn __offset_data_copy_warning(nothing) maxlog = 1
+                end
                 new_observation_indexed!(datavar, value)
             end
             inference_fire_event(
@@ -828,6 +840,7 @@ function streaming_inference(;
         _enabledevents,
         _events,
         _ticklock,
+        warn,
     )
 
     if autostart

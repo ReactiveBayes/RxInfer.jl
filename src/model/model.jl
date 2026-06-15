@@ -191,6 +191,46 @@ function Base.show(io::IO, ::DeferredDataHandler)
     print(io, "[ deferred data ]")
 end
 
+"""
+    __normalize_data_indexing(data)
+
+Conditioned data may use non-standard (offset) indexing, e.g. an `OffsetArray` whose axes
+start at `0`. GraphPPL's variable arrays are 1-based and the model's subscripts are bounds-checked
+against the data's axes, so offset-indexed data would otherwise fail at model construction.
+
+This presents such data to the model with standard 1-based axes, preserving the values and their
+iteration order. Models therefore index 1-based (via `1:n`, `eachindex`, `axes`, …) regardless of
+the data's native axes. Standard (already 1-based) arrays — and non-array data — are returned
+unchanged, with no copy. Indexing the model with a literal offset index (e.g. `y[0]`) remains
+unsupported.
+"""
+__normalize_data_indexing(data) = data
+function __normalize_data_indexing(data::AbstractArray)
+    Base.has_offset_axes(data) || return data
+    normalized = Array{eltype(data)}(undef, size(data))
+    @inbounds for (i, value) in enumerate(data)
+        normalized[i] = value
+    end
+    return normalized
+end
+
+# `true` exactly when `__normalize_data_indexing` would allocate a 1-based copy.
+__incurs_offset_copy(data) = data isa AbstractArray && Base.has_offset_axes(data)
+
+# Shared text for the (cost) warning emitted when offset data is rebased to 1-based indexing.
+# The warning itself is emitted — gated by the `warn` keyword of `infer` — at the batch and
+# streaming entry points, where the copy actually occurs (see `batch_inference` / the streaming feed).
+function __offset_data_copy_warning(name)
+    prefix = isnothing(name) ? "Conditioned data" : string("Conditioned data `", name, "`")
+    return string(
+        prefix,
+        " uses non-standard (offset) indexing and is copied to standard 1-based indexing for ",
+        "inference — this incurs an allocation (in streaming inference the copy recurs per tick). ",
+        "Pass a 1-based array (e.g. `collect(x)` or `OffsetArrays.no_offset_view(x)`) to avoid the ",
+        "copy, or set `warn = false` to suppress this warning.",
+    )
+end
+
 # We use the `datalabel` to instantiate the data interface for the model, in case of `DeferredDataHandler`
 # the data is not known at the time of the model creation
 function __infer_create_data_interface(
@@ -214,7 +254,7 @@ function __infer_create_data_interface(
         context,
         GraphPPL.NodeCreationOptions(; kind = :data, factorized = false),
         key,
-        get_data(data),
+        __normalize_data_indexing(get_data(data)),
     )
 end
 
@@ -225,7 +265,7 @@ function __infer_create_data_interface(model, context, key::Symbol, data)
         context,
         GraphPPL.NodeCreationOptions(; kind = :data, factorized = true),
         key,
-        data,
+        __normalize_data_indexing(data),
     )
 end
 

@@ -648,6 +648,9 @@ new_observation_indexed!(datavars, data) =
 function new_observation_indexed!(
     datavars::GraphPPL.ResizableArray, data::AbstractArray
 )
+    # The label array is 1-based; normalize offset-indexed `data` so the per-index alignment
+    # below (`data[I]`, with 1-based `I`) reads the intended values (see `__normalize_data_indexing`).
+    data = __normalize_data_indexing(data)
     _is_densely_assigned(datavars) &&
         return ReactiveMP.new_observation!(datavars, data)
     for I in CartesianIndices(size(datavars))

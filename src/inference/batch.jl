@@ -247,6 +247,16 @@ function batch_inference(;
 
     infer_check_dicttype(:predictvars, predictvars)
 
+    # Offset-indexed (e.g. `OffsetArray`) data is rebased to 1-based indexing during model
+    # construction, which copies it. Warn once per offset-indexed data *input* (not per
+    # element — `pairs(data)` iterates the conditioned arguments), unless `warn = false`.
+    if warn
+        for (key, value) in pairs(data)
+            __incurs_offset_copy(get_data(value)) &&
+                @warn __offset_data_copy_warning(key)
+        end
+    end
+
     model_creation_span_id = generate_span_id(callbacks)
     invoke_callback(callbacks, BeforeModelCreationEvent(model_creation_span_id))
     fmodel = create_model(_model | data)

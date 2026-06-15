@@ -84,6 +84,7 @@ Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 ExponentialFamilyProjection = "17f509fa-9a96-44ba-99b2-1c5f01f0931b"
 InteractiveUtils = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
 Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
+OffsetArrays = "6fe1bfb0-de20-5000-8ca7-80f57d26f881"
 Optimisers = "3bd65402-5787-11e9-1adc-39752487f4e2"
 Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 PkgBenchmark = "32113eaa-f34f-5b0d-bd6c-c81e245fc73d"
@@ -96,4 +97,4 @@ TestItemRunner = "f8b46487-2199-4994-9208-9a1283c18c0a"
 TensorBoardLogger = "899adc3e-224a-11e9-021f-63837185c80f"
 
 [targets]
-test = ["Test", "Pkg", "Logging", "InteractiveUtils", "TOML", "Coverage", "Dates", "Distributed", "Documenter", "ExponentialFamilyProjection", "Plots", "BenchmarkTools", "PkgBenchmark", "Aqua", "StableRNGs", "StatsFuns", "Optimisers", "TestItemRunner", "TensorBoardLogger"]
+test = ["Test", "Pkg", "Logging", "InteractiveUtils", "TOML", "Coverage", "Dates", "Distributed", "Documenter", "ExponentialFamilyProjection", "Plots", "BenchmarkTools", "PkgBenchmark", "Aqua", "StableRNGs", "StatsFuns", "Optimisers", "TestItemRunner", "TensorBoardLogger", "OffsetArrays"]

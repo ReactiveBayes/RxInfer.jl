@@ -68,6 +68,40 @@ This applies to both batch inference (`infer` with `data`) and streaming inferen
 with `datastream`) — in the streaming case each tick's dense value is fed to the materialized
 variables by the same index alignment.
 
+## Non-standard (offset) data indexing
+
+Conditioned data may use **non-standard indexing**, such as an `OffsetArray` whose axes start
+at `0` (or at a negative index). RxInfer presents such data to the model with standard 1-based
+axes — the values and their order are preserved, only the addressing is rebased. You therefore
+write your model with ordinary 1-based indexing (`1:n`, `eachindex`, `axes`, …) regardless of
+the data's native axes, and partial/sparse referencing works exactly as above:
+
+```julia
+using RxInfer, OffsetArrays
+
+@model function partial(y)
+    x ~ NormalMeanVariance(0.0, 100.0)
+    y[1] ~ NormalMeanVariance(x, 1.0)
+    y[3] ~ NormalMeanVariance(x, 1.0)
+end
+
+# A 0-based OffsetArray is accepted; the model still indexes 1-based.
+ydata  = OffsetArray([1.0, 999.0, 3.0], 0:2)
+result = infer(model = partial(), data = (y = ydata,), iterations = 1)
+```
+
+Standard (already 1-based) arrays are passed through unchanged, with no copy. Note that
+indexing the model itself with a literal offset index (e.g. writing `y[0]` inside `@model`)
+is **not** supported — variable arrays are 1-based; only the *data*'s indexing is rebased.
+
+!!! note "Rebasing incurs a copy"
+    Rebasing offset data to 1-based indexing allocates a copy of the array (once per `infer`
+    call for batch inference; once per tick for the affected variable in streaming inference).
+    A warning is emitted when this happens, gated by the `warn` keyword of [`infer`](@ref) (set
+    `warn = false` to silence it). To avoid the copy entirely, pass a 1-based array — e.g.
+    `collect(x)` or `OffsetArrays.no_offset_view(x)`. Standard 1-based data incurs no copy and no
+    warning.
+
 ## Notes and caveats
 
 - The provided `data` array must be indexable at every referenced position, i.e. its bounding
