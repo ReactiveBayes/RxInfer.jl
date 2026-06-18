@@ -191,19 +191,17 @@ function Base.show(io::IO, ::DeferredDataHandler)
     print(io, "[ deferred data ]")
 end
 
-"""
-    __normalize_data_indexing(data)
-
-Conditioned data may use non-standard (offset) indexing, e.g. an `OffsetArray` whose axes
-start at `0`. GraphPPL's variable arrays are 1-based and the model's subscripts are bounds-checked
-against the data's axes, so offset-indexed data would otherwise fail at model construction.
-
-This presents such data to the model with standard 1-based axes, preserving the values and their
-iteration order. Models therefore index 1-based (via `1:n`, `eachindex`, `axes`, …) regardless of
-the data's native axes. Standard (already 1-based) arrays — and non-array data — are returned
-unchanged, with no copy. Indexing the model with a literal offset index (e.g. `y[0]`) remains
-unsupported.
-"""
+# __normalize_data_indexing(data)
+#
+# Conditioned data may use non-standard (offset) indexing, e.g. an `OffsetArray` whose axes
+# start at `0`. GraphPPL's variable arrays are 1-based and the model's subscripts are bounds-checked
+# against the data's axes, so offset-indexed data would otherwise fail at model construction.
+#
+# This presents such data to the model with standard 1-based axes, preserving the values and their
+# iteration order. Models therefore index 1-based (via `1:n`, `eachindex`, `axes`, …) regardless of
+# the data's native axes. Standard (already 1-based) arrays — and non-array data — are returned
+# unchanged, with no copy. Indexing the model with a literal offset index (e.g. `y[0]`) remains
+# unsupported.
 __normalize_data_indexing(data) = data
 function __normalize_data_indexing(data::AbstractArray)
     Base.has_offset_axes(data) || return data
