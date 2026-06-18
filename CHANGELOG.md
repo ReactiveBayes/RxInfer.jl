@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.5.0] - 2026-06-18
+
 ### Added
 - Support for inference over **partially-referenced (sparse) conditioned data tensors**, in both batch (`infer` with `data`) and streaming (`infer` with `datastream`) modes. When a model conditions on a data array but only references some of its indices in `~` statements (e.g. masked / missing observations, or a sub-model that touches only the observed entries), GraphPPL materializes data-variable labels only at those indices, leaving the rest of the bounding box as `#undef` holes. Result collection (`getvardict`/`getvarref`), the random/data/anonymous predicates, and the per-iteration / per-tick data feed now iterate only the *assigned* entries, and the supplied dense data is fed to the materialized variables **by index** (unreferenced entries are ignored). Dense data tensors are unaffected. See the new [Partially-referenced (sparse) data](https://docs.rxinfer.com/stable/manuals/inference/partial-data/) manual page.
 - Support for conditioning on **data with non-standard (offset) indexing**, e.g. an `OffsetArray` whose axes start at `0` (or a negative index). Such data is now presented to the model with standard 1-based axes (values and order preserved), so models index it the usual way (`1:n`, `eachindex`, `axes`, …) and partial/sparse referencing works too. Standard 1-based arrays are returned unchanged with no copy. Indexing the model with a literal offset index (e.g. `y[0]`) remains unsupported.
@@ -220,7 +222,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.4.0...HEAD
+[Unreleased]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.5.0...HEAD
+[5.5.0]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.4.0...v5.5.0
 [5.4.0]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.3.4...v5.4.0
 [5.3.4]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.3.3...v5.3.4
 [5.3.3]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.3.2...v5.3.3
