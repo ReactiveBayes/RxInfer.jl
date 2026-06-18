@@ -99,17 +99,12 @@ function _to_observability_string(z::Any, _keyname::Symbol)
     # result
 end
 
-_to_observability_string(z::ReactiveMP.RandomVariable, _keyname::Symbol) =
-    "ReactiveMP.RandomVariable(label=$(z.label))"
+_to_observability_string(z::ReactiveMP.RandomVariable, _keyname::Symbol) = "ReactiveMP.RandomVariable(label=$(z.label))"
 
-_to_observability_string(
-    z::Vector{<:ReactiveMP.AbstractMessage}, _keyname::Symbol
-) = "Vector of $(length(z)) messages."
+_to_observability_string(z::Vector{<:ReactiveMP.AbstractMessage}, _keyname::Symbol) = "Vector of $(length(z)) messages."
 
-_to_observability_string(::ReactiveMP.MessageProductContext, _keyname::Symbol) =
-    "<omitted>"
-_to_observability_string(::ReactiveMP.MessageMapping, _keyname::Symbol) =
-    "<omitted>"
+_to_observability_string(::ReactiveMP.MessageProductContext, _keyname::Symbol) = "<omitted>"
+_to_observability_string(::ReactiveMP.MessageMapping, _keyname::Symbol) = "<omitted>"
 _to_observability_string(::ProbabilisticModel, _keyname::Symbol) = "<omitted>"
 
 # Converts a `time_ns()` timestamp to a wall-clock `DateTime` by computing the

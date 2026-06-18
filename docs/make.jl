@@ -58,6 +58,8 @@ makedocs(;
                 "Initialization" => "manuals/inference/initialization.md",
                 "Meta specification" => "manuals/inference/meta-specification.md",
                 "Auto-updates" => "manuals/inference/autoupdates.md",
+                "Partially-referenced (sparse) data" =>
+                    "manuals/inference/partial-data.md",
                 "Callbacks" => "manuals/inference/callbacks.md",
                 "Benchmark callbacks" => "manuals/inference/benchmark-callbacks.md",
                 "Trace callbacks" => "manuals/inference/trace-callbacks.md",
