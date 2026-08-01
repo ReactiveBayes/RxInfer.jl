@@ -169,7 +169,7 @@ function __add_document(id, collection, payload)
             # For collections that allow patching (like using_rxinfer, sessions, session_stats),
             # send a PATCH request to update the existing document with new data
             if collection_allow_patch[collection]
-                HTTP.patch(endpoint, headers, JSON.json(data))
+                HTTP.patch(endpoint, headers, JSON.json(payload))
                 # For collections that don't allow patching (like invokes),
                 # return a fake successful response without making a request,
                 # since we don't want to update existing documents in these collections
