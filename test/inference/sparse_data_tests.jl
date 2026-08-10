@@ -189,9 +189,17 @@ end
     end
 
     ys = [10.0, 20.0, 30.0]
+    # `warn = false`: the offset-copy warning is expected here and is asserted separately in
+    # the "Offset data emits a `warn`-gated copy warning (batch)" testitem below. This testitem
+    # only checks inference correctness, so the warning is suppressed to keep CI logs clean.
     check(model, ydata, observed) = begin
         q = last(
-            infer(model = model, data = (y = ydata,), iterations = 1).posteriors[:x],
+            infer(
+                model = model,
+                data = (y = ydata,),
+                iterations = 1,
+                warn = false,
+            ).posteriors[:x],
         )
         @test isapprox(precision(q), 1 / 100 + length(observed); atol = 1e-8)
         @test isapprox(weightedmean(q), sum(observed); atol = 1e-8)
@@ -216,9 +224,16 @@ end
         y[3] ~ NormalMeanVariance(x, 1.0) # y[2] (1-based) unreferenced -> sparse
     end
 
+    # `warn = false` for the same reason as above: the offset-copy warning is intentional and
+    # asserted in the dedicated warning testitem; here we only check inference correctness.
     check(ydata) = begin
         q = last(
-            infer(model = obs_sparse(), data = (y = ydata,), iterations = 1).posteriors[:x],
+            infer(
+                model = obs_sparse(),
+                data = (y = ydata,),
+                iterations = 1,
+                warn = false,
+            ).posteriors[:x],
         )
         @test isapprox(precision(q), 1 / 100 + 2; atol = 1e-8)        # two observations
         @test isapprox(weightedmean(q), 10.0 + 30.0; atol = 1e-8)     # 1st and 3rd values, 2nd ignored
