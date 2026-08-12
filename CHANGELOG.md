@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Made Julia code formatting deterministic across CI and local runs. The `scripts/` formatter environment previously re-resolved `JuliaFormatter` to the newest version on every `make format`/`make lint` (`Pkg.update()` in `scripts_init`) and was neither compat-bounded nor run on a pinned Julia version in CI, so the same code could be formatted differently depending only on when/where the formatter ran — producing spurious "🤖 Auto-format Julia code" PRs. `scripts_init` now only instantiates the pinned `scripts/Manifest.toml` (deliberate bumps moved to a new `make scripts_update`), `scripts/Project.toml` pins `JuliaFormatter = "~2.12"`, and the `format-check` CI job pins Julia to `1.12` (JuliaFormatter's output can shift with the Julia minor version via `JuliaSyntax`). Also refreshed several GitHub Actions to their Node 24 releases (`upload-artifact` v6, `codecov-action` v5, `checkout` v6, `julia-actions/cache` v3) to clear Node 20 deprecation annotations. Includes a one-time reformat of the repository under the pinned formatter.
 
+### Fixed
+- `RxInfer.share_session_data()` no longer throws `UndefVarError: data not defined` when re-uploading an already-registered document (the PATCH branch of `__add_document`). Repeat manual sharing and automatic session sharing (which hits this path on every inference call after the first) now update the existing Firestore document correctly. Added a regression test that exercises the update branch without network access. ([#679](https://github.com/ReactiveBayes/RxInfer.jl/issues/679))
+
 ## [5.5.0] - 2026-06-18
 
 ### Added
