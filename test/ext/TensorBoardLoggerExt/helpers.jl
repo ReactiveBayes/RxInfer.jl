@@ -19,7 +19,7 @@ function with_safe_tempdir(fn)
     finally
         for attempt in 1:40
             try
-                GC.gc();
+                GC.gc()
                 GC.gc()
                 rm(log_dir; recursive = true, force = true)
                 break
