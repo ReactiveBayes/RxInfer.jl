@@ -2,3 +2,10 @@
 ArgParse = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
 JuliaFormatter = "98e50ef6-434e-11e9-1051-2b60c6c9e899"
 Weave = "44d3d7a6-8a23-5bf8-98c5-b353f8df5ec9"
+
+[compat]
+# Pinned deliberately: JuliaFormatter's output changes between minor releases, so an
+# unbounded dependency means CI and contributors can format the same code differently
+# depending only on when each of them last resolved. Bump this intentionally with
+# `make scripts_update`, and run `make format` over the whole repo in the same commit.
+JuliaFormatter = "~2.12"

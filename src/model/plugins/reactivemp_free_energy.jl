@@ -92,9 +92,8 @@ function score(
     end
 
     variable_bound_entropies = map(getrandomvars(model)) do nodedata
-        nodeproperties = getproperties(
-            nodedata
-        )::GraphPPL.VariableNodeProperties
+        nodeproperties =
+            getproperties(nodedata)::GraphPPL.VariableNodeProperties
         stream = getextra(nodedata, ReactiveMPExtraBetheFreeEnergyStreamKey)
         return apply_diagnostic_check(diagnostic_checks, nodeproperties, stream)
     end
