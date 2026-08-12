@@ -290,6 +290,42 @@ end
     @test last_invoke.context[:a] === 1
 end
 
+@testitem "id_name_mapping accessors should be safe under concurrent access (issue #683)" begin
+    using UUIDs
+
+    # `id_name_mapping` is mutated from concurrent background telemetry tasks. The
+    # locked accessors must keep bookkeeping consistent (no lost updates / corruption)
+    # when many tasks read and write concurrently. Each task uses a unique key so the
+    # final state is fully determined and can be asserted exactly.
+    ntasks = 200
+    ids = [string(uuid4()) for _ in 1:ntasks]
+
+    try
+        @sync for (i, id) in enumerate(ids)
+            Threads.@spawn begin
+                expected = "name-$i"
+                RxInfer.__set_document_name!(id, expected)
+                # Hammer the read path concurrently as well.
+                for _ in 1:50
+                    RxInfer.__get_document_name(id)
+                end
+            end
+        end
+
+        # Every write must be visible with the exact value it was written with.
+        @test all(
+            RxInfer.__get_document_name(id) == "name-$i" for
+            (i, id) in enumerate(ids)
+        )
+        # Reading an unknown id returns `nothing`.
+        @test RxInfer.__get_document_name(string(uuid4())) === nothing
+    finally
+        for id in ids
+            delete!(RxInfer.id_name_mapping, id)
+        end
+    end
+end
+
 @testitem "__add_document should PATCH an already-registered document without error (issue #679)" begin
     using UUIDs, JSON
 
