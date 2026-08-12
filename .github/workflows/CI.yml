@@ -34,7 +34,7 @@ jobs:
           journal: joss
           # This should be the path to the paper within your repo.
           paper-path: paper/paper.md
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: paper
           # This is the output path where Pandoc will write the compiled
@@ -63,7 +63,7 @@ jobs:
           include-all-prereleases: true
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
-      - uses: julia-actions/cache@v2
+      - uses: julia-actions/cache@v3
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
         env:
@@ -72,13 +72,13 @@ jobs:
           JULIA_FASTCHOLESKY_THROW_ERROR_NON_SYMMETRIC: 1
           THROW_ON_INFERENCE_ERROR_HINT: "true"
       - uses: julia-actions/julia-processcoverage@v1
-      - uses: codecov/codecov-action@v4
+      - uses: codecov/codecov-action@v5
         with:
           files: lcov.info
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       - name: Archive test artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: test-output-${{ matrix.version }}-${{ matrix.os }}-${{ matrix.arch }}
           path: test/_output
@@ -98,7 +98,7 @@ jobs:
           repository: ReactiveBayes/RxInferExamples.jl
           path: RxInferExamples.jl
       - uses: julia-actions/setup-julia@v3
-      - uses: julia-actions/cache@v1
+      - uses: julia-actions/cache@v3
       - name: Build and test examples
         env:
           LOG_USING_RXINFER: "false"
@@ -115,9 +115,9 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v6
       - uses: julia-actions/setup-julia@v3
-      - uses: julia-actions/cache@v2
+      - uses: julia-actions/cache@v3
       - uses: julia-actions/julia-buildpkg@v1
       - run: make docs
         env:
@@ -138,9 +138,16 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
           token: ${{ secrets.GITHUB_TOKEN }}
+      # Pinned deliberately. `JuliaFormatter` parses through `JuliaSyntax`, so its output can
+      # shift with the Julia minor version independently of the formatter version itself.
+      # Leaving this unpinned meant CI floated to whatever Julia was latest that day while
+      # contributors ran something else locally, producing format diffs with no code change.
+      # Keep this in step with the highest version in this file's test matrix.
       - uses: julia-actions/setup-julia@v3
-      - uses: julia-actions/cache@v2
-      
+        with:
+          version: '1.12'
+      - uses: julia-actions/cache@v3
+
       # Find existing format PR if any
       - name: Find existing format PR
         id: find_pr
