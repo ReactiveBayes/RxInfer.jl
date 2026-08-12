@@ -8,6 +8,21 @@ const preference_enable_using_rxinfer_telemetry = @load_preference(
 )
 
 """
+    preference_share_source_code
+
+Compile-time preference controlling whether the **model source code** (and the
+`constraints`/`meta` source blocks) captured in the session invoke context is
+included when session data is shared. Defaults to `true` (source code is shared).
+
+This only affects what leaves your machine during session sharing — the local
+session always keeps the full context for your own inspection. Flip it with
+[`enable_source_code_sharing!`](@ref) / [`disable_source_code_sharing!`](@ref), or
+override it per call via the `share_source_code` keyword of
+[`share_session_data`](@ref).
+"""
+const preference_share_source_code = @load_preference("share_source_code", true)
+
+"""
     set_telemetry_endpoint!(endpoint)
 
 Set the telemetry endpoint URL for RxInfer.jl at compile time. This endpoint is used for collecting anonymous usage statistics
@@ -118,6 +133,48 @@ See also: [`set_telemetry_endpoint!`](@ref), [`disable_rxinfer_using_telemetry!`
 function enable_rxinfer_using_telemetry!()
     @set_preferences!("enable_using_rxinfer_telemetry" => true)
     @info "Enabled telemetry collection on `using RxInfer`. Changes will take effect after Julia restart."
+    return nothing
+end
+
+"""
+    enable_source_code_sharing!()
+
+Enable sharing of the model source code (and the `constraints`/`meta` source blocks)
+when session data is shared, at compile time. This is the default behaviour. The change
+requires a Julia session restart to take effect.
+
+Source code is only ever transmitted when you opt in to session sharing (manually via
+[`share_session_data`](@ref) or automatically via
+[`enable_automatic_session_sharing!`](@ref)); this preference controls whether that
+shared payload includes the source code. You can also override it per call with the
+`share_source_code` keyword of [`share_session_data`](@ref).
+
+See also: [`disable_source_code_sharing!`](@ref), [`share_session_data`](@ref)
+"""
+function enable_source_code_sharing!()
+    @set_preferences!("share_source_code" => true)
+    @info "Enabled sharing of model source code when sharing session data. Changes will take effect after Julia restart."
+    return nothing
+end
+
+"""
+    disable_source_code_sharing!()
+
+Disable sharing of the model source code (and the `constraints`/`meta` source blocks)
+when session data is shared, at compile time. When disabled, these fields are replaced
+with a `"<redacted>"` marker in the shared payload while all other metadata (timing,
+status, data shape, etc.) is still shared. The local session is unaffected and keeps the
+full context for your own inspection. The change requires a Julia session restart to take
+effect.
+
+You can also override this per call with the `share_source_code` keyword of
+[`share_session_data`](@ref).
+
+See also: [`enable_source_code_sharing!`](@ref), [`share_session_data`](@ref)
+"""
+function disable_source_code_sharing!()
+    @set_preferences!("share_source_code" => false)
+    @info "Disabled sharing of model source code when sharing session data. Changes will take effect after Julia restart."
     return nothing
 end
 
@@ -326,26 +383,57 @@ function to_firestore_session_stats(stats::SessionStats, session_id::UUID)
 end
 
 """
-    to_firestore_invoke(invoke::SessionInvoke, stats_id::UUID)
+    to_firestore_invoke(invoke::SessionInvoke, stats_id::UUID; share_source_code::Bool = true)
 
 Convert a SessionInvoke object to a Firestore-compatible document format.
 Includes a reference to the parent session stats.
+
+When `share_source_code` is `false`, the source-code fields of the invoke context
+(`:model`, `:constraints`, `:meta`) are replaced with a `"<redacted>"` marker before
+conversion, so they are not included in the shared document. All other context entries
+(timing, status, data shape, etc.) are preserved. The `invoke` object itself is left
+untouched.
 """
-function to_firestore_invoke(invoke::SessionInvoke, stats_id::UUID)
+function to_firestore_invoke(
+    invoke::SessionInvoke, stats_id::UUID; share_source_code::Bool = true
+)
+    context = if share_source_code
+        invoke.context
+    else
+        __redact_source_code(invoke.context)
+    end
     return to_firestore_document((
         id = invoke.id,
         session_stats = stats_id,
         status = invoke.status,
         execution_start = invoke.execution_start,
         execution_end = invoke.execution_end,
-        context = invoke.context,
+        context = context,
     ))
+end
+
+# The invoke-context keys that carry user-authored source code (see
+# `append_invoke_context` in the inference entry points). These are the fields redacted
+# when source-code sharing is turned off.
+const SOURCE_CODE_CONTEXT_KEYS = (:model, :constraints, :meta)
+
+# Returns a shallow copy of `context` with the source-code fields replaced by a
+# `"<redacted>"` marker (only for keys that are actually present). The original context
+# is not modified, so local session inspection still sees the full source code.
+function __redact_source_code(context)
+    redacted = copy(context)
+    for key in SOURCE_CODE_CONTEXT_KEYS
+        if haskey(redacted, key)
+            redacted[key] = "<redacted>"
+        end
+    end
+    return redacted
 end
 
 import ProgressMeter
 
 """
-    share_session_data(session = RxInfer.default_session(); show_progress::Bool = true)
+    share_session_data(session = RxInfer.default_session(); show_progress::Bool = true, share_source_code = nothing)
 
 Share your session data to help improve RxInfer.jl and its community. This data helps us:
 - Understand how the package is used in practice
@@ -358,12 +446,24 @@ The data is organized in a structured way:
 2. Anonymous statistics about different types of package usage
 3. Information about individual labeled runs
 
-All data is anonymous and only used to improve the package. We discuss aggregate statistics 
+All data is anonymous and only used to improve the package. We discuss aggregate statistics
 in our public community meetings to make the development process transparent and collaborative.
+
+!!! note
+    By default the shared data includes the **model source code** captured in each run's
+    context (together with the `constraints`/`meta` source blocks). If your model source is
+    proprietary, disable this either globally via [`disable_source_code_sharing!`](@ref) or
+    per call via the `share_source_code` keyword below. The local session always keeps the
+    full context regardless of this setting.
 
 # Arguments
 - `session::Session`: The session object containing data to share
 - `show_progress::Bool = true`: Whether to display progress bars during sharing
+- `share_source_code::Union{Bool, Nothing} = nothing`: Whether to include the model source
+  code (and `constraints`/`meta`) in the shared payload. `nothing` (default) follows the
+  [`preference_share_source_code`](@ref) compile-time preference (itself `true` by default);
+  `true`/`false` overrides it for this call. When source code is not shared, those fields
+  are replaced with a `"<redacted>"` marker.
 
 # Progress Display
 When `show_progress` is true (default), the function displays:
@@ -373,6 +473,7 @@ When `show_progress` is true (default), the function displays:
 function share_session_data(
     session::Union{Session, Nothing} = RxInfer.default_session();
     show_progress::Bool = true,
+    share_source_code::Union{Bool, Nothing} = nothing,
 )
     if isnothing(preference_telemetry_endpoint)
         @warn "Cannot share session data: telemetry endpoint is not set. See `RxInfer.set_telemetry_endpoint!()`"
@@ -427,7 +528,10 @@ function share_session_data(
     # Share session statistics
     for (_, stats) in session.stats
         shared_invokes += share_session_data(
-            session, stats; show_progress = show_progress
+            session,
+            stats;
+            show_progress = show_progress,
+            share_source_code = share_source_code,
         )
         shared_stats += 1
         show_progress && ProgressMeter.next!(stats_progress)
@@ -464,16 +568,34 @@ function share_session_data(
 end
 
 function share_session_data(
-    session::Session, stats::SessionStats; show_progress::Bool = true
+    session::Session,
+    stats::SessionStats;
+    show_progress::Bool = true,
+    share_source_code::Union{Bool, Nothing} = nothing,
 )
     return share_session_data(
-        session, stats, stats.invokes; show_progress = show_progress
+        session,
+        stats,
+        stats.invokes;
+        show_progress = show_progress,
+        share_source_code = share_source_code,
     )
 end
 
 function share_session_data(
-    session::Session, stats::SessionStats, invokes; show_progress::Bool = true
+    session::Session,
+    stats::SessionStats,
+    invokes;
+    show_progress::Bool = true,
+    share_source_code::Union{Bool, Nothing} = nothing,
 )
+    # Resolve the source-code sharing behaviour: `nothing` follows the compile-time
+    # preference, an explicit `Bool` overrides it for this call.
+    resolved_share_source_code = if isnothing(share_source_code)
+        preference_share_source_code
+    else
+        share_source_code
+    end
     label = stats.label
     stats_name = __add_document(
         string(stats.id),
@@ -501,7 +623,11 @@ function share_session_data(
     invokes_shared = 0
     for invoke in invokes
         invoke_name = __add_document(
-            string(invoke.id), "invokes", to_firestore_invoke(invoke, stats.id)
+            string(invoke.id),
+            "invokes",
+            to_firestore_invoke(
+                invoke, stats.id; share_source_code = resolved_share_source_code
+            ),
         )
         if isnothing(invoke_name)
             @warn "Unable to share run data" invoke_id = invoke.id stats_id =

@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Control over whether the **model source code** is included when sharing session data. Session sharing has always included the model source (`GraphPPL.getsource`) together with the `constraints`/`meta` source blocks; this is now opt-out. A new compile-time preference (default `true` = share) can be toggled with `RxInfer.enable_source_code_sharing!()` / `RxInfer.disable_source_code_sharing!()`, and `share_session_data` gains a `share_source_code` keyword (`nothing` follows the preference, `true`/`false` overrides it). When disabled, the `model`/`constraints`/`meta` fields are replaced with a `"<redacted>"` marker in the shared payload; the local session keeps the full context. The telemetry manual now documents exactly what is transmitted. ([#682](https://github.com/ReactiveBayes/RxInfer.jl/issues/682))
+
 ## [5.5.0] - 2026-06-18
 
 ### Added
