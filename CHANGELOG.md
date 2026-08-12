@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Guarded the module-global `id_name_mapping` telemetry `Dict` against concurrent access. It was read and written directly from background telemetry tasks (`log_using_rxinfer` and automatic session sharing both dispatch via `Base.Threads.@spawn`), a latent data race that could lose updates or corrupt the `Dict` during a hash resize under multi-threading. All access now goes through locked `__get_document_name` / `__set_document_name!` accessors backed by a `ReentrantLock`. ([#683](https://github.com/ReactiveBayes/RxInfer.jl/issues/683))
+
 ## [5.5.0] - 2026-06-18
 
 ### Added
