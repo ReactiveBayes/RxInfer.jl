@@ -325,3 +325,74 @@ end
         end
     end
 end
+
+@testitem "__add_document should PATCH an already-registered document without error (issue #679)" begin
+    using UUIDs, JSON
+
+    # Stub HTTP verbs so no real network request is performed. They capture their
+    # arguments and return a minimal Firestore-like response.
+    post_calls = Ref(0)
+    patch_calls = Ref(0)
+    captured = Ref{Any}(nothing)
+
+    response = (
+        status = 200,
+        body = """{"name": "projects/x/databases/(default)/documents/sessions/generated-name"}""",
+    )
+
+    fake_post =
+        (url, headers, body) -> begin
+            post_calls[] += 1
+            captured[] = (verb = :post, url = url, body = body)
+            return response
+        end
+    fake_patch =
+        (url, headers, body) -> begin
+            patch_calls[] += 1
+            captured[] = (verb = :patch, url = url, body = body)
+            return response
+        end
+
+    endpoint = "https://example.test/documents"
+    id = string(uuid4())
+
+    try
+        # First upload of a fresh id -> POST branch, populates `id_name_mapping`.
+        payload1 = (; fields = (; x = (; stringValue = "a")))
+        name1 = RxInfer.__add_document(
+            id,
+            "sessions",
+            payload1;
+            endpoint = endpoint,
+            http_post = fake_post,
+            http_patch = fake_patch,
+        )
+        @test post_calls[] == 1
+        @test patch_calls[] == 0
+        @test name1 == "generated-name"
+        @test captured[].verb == :post
+        @test haskey(RxInfer.id_name_mapping, id)
+
+        # Second upload of the SAME id -> PATCH branch. Before the fix this threw
+        # `UndefVarError: data not defined` because the branch serialised an undefined
+        # `data` instead of the `payload` parameter.
+        payload2 = (; fields = (; x = (; stringValue = "b")))
+        name2 = RxInfer.__add_document(
+            id,
+            "sessions",
+            payload2;
+            endpoint = endpoint,
+            http_post = fake_post,
+            http_patch = fake_patch,
+        )
+        @test patch_calls[] == 1
+        @test captured[].verb == :patch
+        # The PATCH request must carry the serialised `payload`, not `data`.
+        @test captured[].body == JSON.json(payload2)
+        # The PATCH endpoint must target the previously registered document name.
+        @test endswith(captured[].url, "/sessions/generated-name")
+        @test name2 == "generated-name"
+    finally
+        delete!(RxInfer.id_name_mapping, id)
+    end
+end
