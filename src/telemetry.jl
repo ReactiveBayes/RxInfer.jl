@@ -182,6 +182,23 @@ end
 # This is used to avoid duplicate documents in Firestore
 const id_name_mapping = Dict{String, String}()
 
+# `id_name_mapping` is a module-global mutable `Dict` that is read and written from
+# concurrent background telemetry tasks (see `Base.Threads.@spawn` in `log_using_rxinfer`
+# and in automatic session sharing). A plain `Dict` is not safe under concurrent access,
+# so all reads/writes must go through the locked accessors below to avoid lost updates or
+# corruption during a hash resize.
+const id_name_mapping_lock = ReentrantLock()
+
+# Returns the Firestore document name previously registered for `id`, or `nothing`.
+function __get_document_name(id)
+    return @lock id_name_mapping_lock get(id_name_mapping, id, nothing)
+end
+
+# Registers the Firestore document `name` for `id`.
+function __set_document_name!(id, name)
+    return @lock id_name_mapping_lock (id_name_mapping[id] = name)
+end
+
 # The mapping of the collection name to the allow_patch flag
 # This is used to avoid pushing data to Firestore if the document already exists
 const collection_allow_patch = Dict{String, Bool}(
@@ -192,11 +209,23 @@ const collection_allow_patch = Dict{String, Bool}(
 )
 
 # Adds or updates a document in Firestore based on the provided id and collection.
-# If a document with the same id already exists (tracked in id_name_mapping), 
+# If a document with the same id already exists (tracked in id_name_mapping),
 # it updates that document instead of creating a new one to avoid duplicates.
 # The document name from Firestore is stored in id_name_mapping for future updates.
-function __add_document(id, collection, payload)
-    if !isnothing(preference_telemetry_endpoint)
+#
+# The `endpoint`, `http_post` and `http_patch` keyword arguments exist purely to make
+# this function testable without performing real network requests: tests inject the
+# base endpoint and stub HTTP verbs that capture their arguments. In normal operation
+# they default to the configured telemetry endpoint and the real `HTTP.post`/`HTTP.patch`.
+function __add_document(
+    id,
+    collection,
+    payload;
+    endpoint = preference_telemetry_endpoint,
+    http_post = HTTP.post,
+    http_patch = HTTP.patch,
+)
+    if !isnothing(endpoint)
         # Headers required for Firestore REST API
         headers = [
             "Accept" => "application/json", "Content-Type" => "application/json"
@@ -212,21 +241,18 @@ function __add_document(id, collection, payload)
 
         # Firestore document structure
         # See: https://firebase.google.com/docs/firestore/reference/rest/v1/projects.databases.documents
-        response = if haskey(id_name_mapping, id)
-            # If document exists, endpoint should look like:
+        existing_name = __get_document_name(id)
+        response = if !isnothing(existing_name)
+            # If document exists, request endpoint should look like:
             # "https://firestore.../using_rxinfer/abc123def456"
-            name = id_name_mapping[id]
-            endpoint = string(
-                rstrip(preference_telemetry_endpoint, '/'),
-                '/',
-                collection,
-                '/',
-                name,
+            name = existing_name
+            request_endpoint = string(
+                rstrip(endpoint, '/'), '/', collection, '/', name
             )
             # For collections that allow patching (like using_rxinfer, sessions, session_stats),
             # send a PATCH request to update the existing document with new data
             if collection_allow_patch[collection]
-                HTTP.patch(endpoint, headers, JSON.json(data))
+                http_patch(request_endpoint, headers, JSON.json(payload))
                 # For collections that don't allow patching (like invokes),
                 # return a fake successful response without making a request,
                 # since we don't want to update existing documents in these collections
@@ -234,12 +260,10 @@ function __add_document(id, collection, payload)
                 (body = """{"name": "$name"}""", status = 200)
             end
         else
-            # For new documents, endpoint would be like:
+            # For new documents, request endpoint would be like:
             # "https://firestore.../using_rxinfer"
-            endpoint = string(
-                rstrip(preference_telemetry_endpoint, '/'), '/', collection
-            )
-            HTTP.post(endpoint, headers, JSON.json(payload))
+            request_endpoint = string(rstrip(endpoint, '/'), '/', collection)
+            http_post(request_endpoint, headers, JSON.json(payload))
         end
 
         # Parse response if successful
@@ -256,7 +280,7 @@ function __add_document(id, collection, payload)
             if !isnothing(name)
                 # Extract just the document ID ("abc123def456") from the full path
                 name = split(name, "/") |> last
-                id_name_mapping[id] = name
+                __set_document_name!(id, name)
             end
             return name
         end
