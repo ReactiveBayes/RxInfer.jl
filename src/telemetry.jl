@@ -125,6 +125,23 @@ end
 # This is used to avoid duplicate documents in Firestore
 const id_name_mapping = Dict{String, String}()
 
+# `id_name_mapping` is a module-global mutable `Dict` that is read and written from
+# concurrent background telemetry tasks (see `Base.Threads.@spawn` in `log_using_rxinfer`
+# and in automatic session sharing). A plain `Dict` is not safe under concurrent access,
+# so all reads/writes must go through the locked accessors below to avoid lost updates or
+# corruption during a hash resize.
+const id_name_mapping_lock = ReentrantLock()
+
+# Returns the Firestore document name previously registered for `id`, or `nothing`.
+function __get_document_name(id)
+    return @lock id_name_mapping_lock get(id_name_mapping, id, nothing)
+end
+
+# Registers the Firestore document `name` for `id`.
+function __set_document_name!(id, name)
+    return @lock id_name_mapping_lock (id_name_mapping[id] = name)
+end
+
 # The mapping of the collection name to the allow_patch flag
 # This is used to avoid pushing data to Firestore if the document already exists
 const collection_allow_patch = Dict{String, Bool}(
@@ -155,10 +172,11 @@ function __add_document(id, collection, payload)
 
         # Firestore document structure
         # See: https://firebase.google.com/docs/firestore/reference/rest/v1/projects.databases.documents
-        response = if haskey(id_name_mapping, id)
+        existing_name = __get_document_name(id)
+        response = if !isnothing(existing_name)
             # If document exists, endpoint should look like:
             # "https://firestore.../using_rxinfer/abc123def456"
-            name = id_name_mapping[id]
+            name = existing_name
             endpoint = string(
                 rstrip(preference_telemetry_endpoint, '/'),
                 '/',
@@ -199,7 +217,7 @@ function __add_document(id, collection, payload)
             if !isnothing(name)
                 # Extract just the document ID ("abc123def456") from the full path
                 name = split(name, "/") |> last
-                id_name_mapping[id] = name
+                __set_document_name!(id, name)
             end
             return name
         end
