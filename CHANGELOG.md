@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- `RxInfer.share_session_data()` no longer throws `UndefVarError: data not defined` when re-uploading an already-registered document (the PATCH branch of `__add_document`). Repeat manual sharing and automatic session sharing (which hits this path on every inference call after the first) now update the existing Firestore document correctly. Added a regression test that exercises the update branch without network access. ([#679](https://github.com/ReactiveBayes/RxInfer.jl/issues/679))
+
 ## [5.5.0] - 2026-06-18
 
 ### Added
