@@ -290,6 +290,50 @@ end
     @test last_invoke.context[:a] === 1
 end
 
+@testitem "to_firestore_invoke should redact source code when sharing is disabled (issue #682)" begin
+    using UUIDs
+
+    invoke = RxInfer.create_invoke()
+    invoke.context[:model] = "@model function foo() ... end"
+    invoke.context[:constraints] = "q(x) :: Normal"
+    invoke.context[:meta] = "some meta"
+    invoke.context[:model_name] = "foo"
+    invoke.context[:iterations] = 10
+
+    stats_id = uuid4()
+
+    # `share_source_code = true` keeps the source-code fields verbatim.
+    fields_true =
+        RxInfer.to_firestore_invoke(invoke, stats_id; share_source_code = true).fields.context.mapValue.fields
+    @test fields_true["model"].stringValue == "@model function foo() ... end"
+    @test fields_true["constraints"].stringValue == "q(x) :: Normal"
+    @test fields_true["meta"].stringValue == "some meta"
+
+    # `share_source_code = false` replaces the source-code fields with a marker but
+    # keeps everything else intact.
+    fields_false =
+        RxInfer.to_firestore_invoke(invoke, stats_id; share_source_code = false).fields.context.mapValue.fields
+    @test fields_false["model"].stringValue == "<redacted>"
+    @test fields_false["constraints"].stringValue == "<redacted>"
+    @test fields_false["meta"].stringValue == "<redacted>"
+    @test fields_false["model_name"].stringValue == "foo"
+    @test fields_false["iterations"].integerValue == 10
+
+    # The original invoke context must not be mutated by redaction.
+    @test invoke.context[:model] == "@model function foo() ... end"
+
+    # The default follows the compile-time preference, which defaults to `true` (share).
+    @test RxInfer.preference_share_source_code == true
+    fields_default =
+        RxInfer.to_firestore_invoke(invoke, stats_id).fields.context.mapValue.fields
+    @test fields_default["model"].stringValue == "@model function foo() ... end"
+
+    # `__redact_source_code` only touches keys that are present.
+    only_iterations = Dict{Symbol, Any}(:iterations => 1)
+    @test !haskey(RxInfer.__redact_source_code(only_iterations), :model)
+    @test RxInfer.__redact_source_code(only_iterations)[:iterations] == 1
+end
+
 @testitem "id_name_mapping accessors should be safe under concurrent access (issue #683)" begin
     using UUIDs
 
