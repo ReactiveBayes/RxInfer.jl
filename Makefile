@@ -18,10 +18,18 @@ TEST_OUTPUT_FILES = _output test$(PATH_SEP)_output
 # Includes all the above
 ALL_TMP_FILES = $(DOCS_BUILD_FILES) $(TEST_OUTPUT_FILES)
 
-.PHONY: lint format
+.PHONY: lint format scripts_init scripts_update
 
+# No `Pkg.update()` in `scripts_init` on purpose: it defeated `scripts/Manifest.toml` by
+# re-resolving JuliaFormatter to the newest allowed version on every `make format` /
+# `make lint`, so which formatter you got depended only on when you last ran it -- and
+# CI and contributors would then format the same code differently with no code change.
+# Use `make scripts_update` to bump deliberately.
 scripts_init:
-	julia --startup-file=no --project=scripts/ -e 'using Pkg; Pkg.instantiate(); Pkg.update(); Pkg.precompile();'
+	julia --startup-file=no --project=scripts/ -e 'using Pkg; Pkg.instantiate(); Pkg.precompile();'
+
+scripts_update: ## Re-resolve scripts/Manifest.toml (bumps JuliaFormatter within its compat bound)
+	julia --startup-file=no --project=scripts/ -e 'using Pkg; Pkg.update(); Pkg.precompile();'
 
 lint: scripts_init ## Code formating check
 	julia --startup-file=no --project=scripts/ scripts/format.jl

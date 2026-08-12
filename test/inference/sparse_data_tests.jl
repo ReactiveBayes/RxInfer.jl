@@ -100,8 +100,8 @@ end
 
     # A densely-built ResizableArray is dense; `_map_sparse` matches `Base.map` (returns Array).
     dense = ResizableArray(Int, Val(1))
-    dense[1] = 1;
-    dense[2] = 2;
+    dense[1] = 1
+    dense[2] = 2
     dense[3] = 3
     @test _is_densely_assigned(dense)
     mapped = _map_sparse(x -> x + 10, dense)
@@ -110,7 +110,7 @@ end
 
     # A 1-D ResizableArray with a hole (use a non-bitstype so the hole is a true `#undef`).
     sparse1 = ResizableArray(String, Val(1))
-    sparse1[1] = "a";
+    sparse1[1] = "a"
     sparse1[3] = "c" # index 2 is a hole
     @test !_is_densely_assigned(sparse1)
     res1 = _map_sparse(uppercase, sparse1)
@@ -121,8 +121,8 @@ end
 
     # A 2-D ResizableArray with holes preserves shape and assigned positions.
     sparse2 = ResizableArray(String, Val(2))
-    sparse2[1, 1] = "x";
-    sparse2[2, 2] = "y";
+    sparse2[1, 1] = "x"
+    sparse2[2, 2] = "y"
     sparse2[1, 3] = "z"
     @test !_is_densely_assigned(sparse2)
     res2 = _map_sparse(uppercase, sparse2)

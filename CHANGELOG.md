@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Made Julia code formatting deterministic across CI and local runs. The `scripts/` formatter environment previously re-resolved `JuliaFormatter` to the newest version on every `make format`/`make lint` (`Pkg.update()` in `scripts_init`) and was neither compat-bounded nor run on a pinned Julia version in CI, so the same code could be formatted differently depending only on when/where the formatter ran — producing spurious "🤖 Auto-format Julia code" PRs. `scripts_init` now only instantiates the pinned `scripts/Manifest.toml` (deliberate bumps moved to a new `make scripts_update`), `scripts/Project.toml` pins `JuliaFormatter = "~2.12"`, and the `format-check` CI job pins Julia to `1.12` (JuliaFormatter's output can shift with the Julia minor version via `JuliaSyntax`). Also refreshed several GitHub Actions to their Node 24 releases (`upload-artifact` v6, `codecov-action` v5, `checkout` v6, `julia-actions/cache` v3) to clear Node 20 deprecation annotations. Includes a one-time reformat of the repository under the pinned formatter.
+
 ### Fixed
 - Guarded the module-global `id_name_mapping` telemetry `Dict` against concurrent access. It was read and written directly from background telemetry tasks (`log_using_rxinfer` and automatic session sharing both dispatch via `Base.Threads.@spawn`), a latent data race that could lose updates or corrupt the `Dict` during a hash resize under multi-threading. All access now goes through locked `__get_document_name` / `__set_document_name!` accessors backed by a `ReentrantLock`. ([#683](https://github.com/ReactiveBayes/RxInfer.jl/issues/683))
 
