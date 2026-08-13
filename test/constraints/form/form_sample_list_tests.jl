@@ -62,4 +62,22 @@
         q = constrain_form(constraint, prod(GenericProd(), left, right))
         @test q isa SampleList
     end
+
+    @testset "AutoProposal raises a helpful error when neither operand is a low-priority candidate (issue #681)" begin
+        import BayesBase: ProductOf
+
+        # Two non-low-priority operands (neither is an `AbstractContinuousGenericLogPdf`
+        # nor a `LinearizedProductOf`), so `AutoProposal` cannot pick a proposal side.
+        left = NormalMeanVariance(0.0, 1.0)
+        right = NormalMeanVariance(1.0, 2.0)
+        product = ProductOf(left, right)
+
+        constraint = SampleListFormConstraint(100) # defaults to `AutoProposal`
+
+        # Previously this fell through to a cryptic `MethodError`; it must now raise the
+        # actionable error pointing the user at `LeftProposal`/`RightProposal`.
+        @test_throws "The `AutoProposal` strategy cannot choose a proposal distribution" constrain_form(
+            constraint, product
+        )
+    end
 end
