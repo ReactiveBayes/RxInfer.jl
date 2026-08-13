@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Replaced the tautological `@test true` placeholder at the end of the nonlinear static-inputs model test with meaningful assertions. The inference helpers now return their collected results, and the test asserts each run produced finite posterior means/variances and finite free energy. ([#680](https://github.com/ReactiveBayes/RxInfer.jl/issues/680))
+
 ## [5.5.1] - 2026-08-12
 
 ### Added

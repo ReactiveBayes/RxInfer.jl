@@ -66,6 +66,8 @@
             @test mean(d.posteriors[:x]) ≈ mean(c.posteriors[:x])
             @test d.free_energy == c.free_energy
         end
+
+        return (datavar_based, constvar_based)
     end
 
     function inference_2inputs_x_fixed(data, x)
@@ -99,13 +101,21 @@
             @test mean(d.posteriors[:θ]) ≈ mean(c.posteriors[:θ])
             @test d.free_energy == c.free_energy
         end
+
+        return (datavar_based, constvar_based)
     end
 
-    # Inference execution
-    inference_2inputs_θ_fixed(4.0, [1.0, 2.0])
-    inference_2inputs_x_fixed(4.0, [1.0, 2.0])
+    # Inference execution. Each helper runs its own internal `@test` comparisons
+    # (datavar- vs constvar-based models) and returns the collected results so we
+    # can additionally assert the inference produced finite, sane posteriors.
+    results_θ_fixed = inference_2inputs_θ_fixed(4.0, [1.0, 2.0])
+    results_x_fixed = inference_2inputs_x_fixed(4.0, [1.0, 2.0])
 
-    # All models have been created and runned extra tests inside. 
-    # The inference finished without errors
-    @test true
+    for (datavar_based, constvar_based) in (results_θ_fixed, results_x_fixed)
+        for result in Iterators.flatten((datavar_based, constvar_based))
+            @test all(isfinite, mean(result.posteriors[:z]))
+            @test all(isfinite, var(result.posteriors[:z]))
+            @test all(isfinite, result.free_energy)
+        end
+    end
 end
