@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- `SampleListFormConstraint` now defaults its random number generator to `Random.default_rng()` instead of the legacy `Random.GLOBAL_RNG`, and the `rng` argument (with reproducibility guidance) is now documented in the docstring. Users can still pass an explicit seeded generator as the first constructor argument for reproducible sample-list approximations. ([#684](https://github.com/ReactiveBayes/RxInfer.jl/issues/684))
+- 
 ### Fixed
 - `SampleListFormConstraint` with the `AutoProposal` strategy now raises an actionable error (pointing the user at `LeftProposal`/`RightProposal`) when neither operand of the product is a low-priority proposal candidate, instead of falling through to a cryptic `MethodError`. Added a regression test. ([#681](https://github.com/ReactiveBayes/RxInfer.jl/issues/681))
 
