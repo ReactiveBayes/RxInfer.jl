@@ -68,7 +68,7 @@
 
         # Two non-low-priority operands (neither is an `AbstractContinuousGenericLogPdf`
         # nor a `LinearizedProductOf`), so `AutoProposal` cannot pick a proposal side.
-        left  = NormalMeanVariance(0.0, 1.0)
+        left = NormalMeanVariance(0.0, 1.0)
         right = NormalMeanVariance(1.0, 2.0)
         product = ProductOf(left, right)
 
