@@ -92,6 +92,18 @@ function __approximate(
     )
 end
 
+# Fallback for `AutoProposal` when neither operand is a low-priority candidate.
+# In this case the strategy has no basis to prefer one side as the proposal, so
+# we raise the same actionable error as the both-low-priority case instead of
+# letting Julia surface a cryptic `MethodError`.
+function __approximate(
+    constraint::SampleListFormConstraint{N, R, S, M}, left, right
+) where {N, R, S <: AutoProposal, M}
+    return error(
+        "Cannot approximate the product of $(left) and $(right) as a sample list. The `AutoProposal` strategy cannot choose a proposal distribution. Use either `LeftProposal` or `RightProposal` in the sample list form constraint specification.",
+    )
+end
+
 function ReactiveMP.constrain_form(::SampleListFormConstraint, something)
     return something
 end

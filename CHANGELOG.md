@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- `SampleListFormConstraint` with the `AutoProposal` strategy now raises an actionable error (pointing the user at `LeftProposal`/`RightProposal`) when neither operand of the product is a low-priority proposal candidate, instead of falling through to a cryptic `MethodError`. Added a regression test. ([#681](https://github.com/ReactiveBayes/RxInfer.jl/issues/681))
+
 ## [5.5.1] - 2026-08-12
 
 ### Added
