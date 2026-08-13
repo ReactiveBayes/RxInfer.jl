@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.5.2] - 2026-08-13
 
 ### Changed
 - `SampleListFormConstraint` now defaults its random number generator to `Random.default_rng()` instead of the legacy `Random.GLOBAL_RNG`, and the `rng` argument (with reproducibility guidance) is now documented in the docstring. Users can still pass an explicit seeded generator as the first constructor argument for reproducible sample-list approximations. ([#684](https://github.com/ReactiveBayes/RxInfer.jl/issues/684))
