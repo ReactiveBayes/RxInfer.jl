@@ -25,6 +25,21 @@ struct AutoProposal end
     SampleListFormConstraint([rng], nsamples, strategy, method)
 
 One of the form constraint objects. Approximates `ProductOf` with a `SampleList` object.
+
+# Arguments
+
+- `rng`: (optional) random number generator used to draw the samples. Defaults to
+  `Random.default_rng()`. Pass an explicit, seeded generator (e.g. `MersenneTwister(42)`
+  or a `StableRNG`) to obtain reproducible sample-list approximations.
+- `nsamples`: number of samples in the resulting `SampleList`.
+- `strategy`: proposal selection strategy, one of [`AutoProposal`](@ref), [`LeftProposal`](@ref)
+  or [`RightProposal`](@ref). Defaults to `AutoProposal()`.
+- `method`: sampling method. Defaults to `BootstrapImportanceSampling()`.
+
+!!! note
+    When no `rng` is provided the constraint uses `Random.default_rng()`, so the drawn
+    samples depend on the global RNG state. For reproducible inference either seed the
+    global RNG with `Random.seed!` or pass an explicit `rng` as the first argument.
 """
 struct SampleListFormConstraint{N, R, S, M} <: AbstractFormConstraint
     rng      :: R
@@ -43,7 +58,7 @@ Base.show(io::IO, constraint::SampleListFormConstraint) = print(
     ")",
 )
 
-SampleListFormConstraint(nsamples::Int, strategy::S = AutoProposal(), method::M = BootstrapImportanceSampling()) where {S, M}                           = SampleListFormConstraint(Random.GLOBAL_RNG, nsamples, strategy, method)
+SampleListFormConstraint(nsamples::Int, strategy::S = AutoProposal(), method::M = BootstrapImportanceSampling()) where {S, M}                           = SampleListFormConstraint(Random.default_rng(), nsamples, strategy, method)
 SampleListFormConstraint(rng::R, nsamples::Int, strategy::S = AutoProposal(), method::M = BootstrapImportanceSampling()) where {R <: AbstractRNG, S, M} = SampleListFormConstraint{nsamples, R, S, M}(rng, strategy, method)
 
 ReactiveMP.default_form_check_strategy(::SampleListFormConstraint) =
