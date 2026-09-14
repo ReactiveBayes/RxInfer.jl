@@ -577,12 +577,31 @@ function streaming_inference(;
     uselock = false,
     warn = true,
 )
-
     if compiled_backend_requested(options)
-        return compiled_streaming_inference(; model, data, datastream, initialization, autoupdates,
-            constraints, meta, options, returnvars, historyvars, keephistory, iterations,
-            free_energy, free_energy_diagnostics, allow_node_contraction, autostart,
-            events, annotations, callbacks, postprocess, uselock, warn)
+        return compiled_streaming_inference(;
+            model,
+            data,
+            datastream,
+            initialization,
+            autoupdates,
+            constraints,
+            meta,
+            options,
+            returnvars,
+            historyvars,
+            keephistory,
+            iterations,
+            free_energy,
+            free_energy_diagnostics,
+            allow_node_contraction,
+            autostart,
+            events,
+            annotations,
+            callbacks,
+            postprocess,
+            uselock,
+            warn,
+        )
     end
 
     # In case if `data` is used we cast to a synchronous `datastream` with zip operator

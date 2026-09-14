@@ -142,10 +142,27 @@ function batch_inference(;
     disable_inference_error_hint = false,
 )
     if compiled_backend_requested(options)
-        return compiled_batch_inference(; model, data, initialization, constraints, meta, options,
-            returnvars, predictvars, iterations, free_energy, free_energy_diagnostics,
-            allow_node_contraction, showprogress, callbacks, annotations, postprocess,
-            warn, catch_exception, disable_inference_error_hint)
+        return compiled_batch_inference(;
+            model,
+            data,
+            initialization,
+            constraints,
+            meta,
+            options,
+            returnvars,
+            predictvars,
+            iterations,
+            free_energy,
+            free_energy_diagnostics,
+            allow_node_contraction,
+            showprogress,
+            callbacks,
+            annotations,
+            postprocess,
+            warn,
+            catch_exception,
+            disable_inference_error_hint,
+        )
     end
     _options = convert(ReactiveMPInferenceOptions, options)
     # If the `options` does not have `warn` key inside, override it with the keyword `warn`

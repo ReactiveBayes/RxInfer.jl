@@ -15,7 +15,7 @@
     @test !ReactiveMP.multicore_readonly((buffer = zeros(4),))
     @test !ReactiveMP.multicore_readonly((ref = Ref(1),))
     job = ReactiveMP.MulticoreMapJob{Nothing, typeof(identity), Int, Int}(
-        nothing, identity, 7, false, nothing, nothing, false,
+        nothing, identity, 7, false, nothing, nothing, false
     )
     @test job.result === nothing
     ReactiveMP.compute_multicore_job!(job)
