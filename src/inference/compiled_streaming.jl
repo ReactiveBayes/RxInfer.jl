@@ -199,9 +199,9 @@ function compiled_streaming_inference(;
     if keephistory > 0
         historyvars = if historyvars === nothing
             Dict(
-            name => (iterations[] > 1 ? KeepEach() : KeepLast()) for
-            name in returnvars
-        )
+                name => (iterations[] > 1 ? KeepEach() : KeepLast()) for
+                name in returnvars
+            )
         else
             compiled_selection(fmodel, historyvars, false, iterations[])
         end

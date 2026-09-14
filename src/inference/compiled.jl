@@ -384,8 +384,7 @@ function lower_compiled_factor!(builder, fform, label, node)
             marginals[first(cluster)]
         else
             ReactiveMP.compiled_slot!(program)
-        end,
-        clusters,
+        end, clusters
     )
     interfaces = ntuple(
         i -> ReactiveMP.CompiledInterface(
@@ -978,8 +977,8 @@ function compiled_batch_inference(;
     end
     data = if data === nothing
         Dict{Symbol, Any}(
-        name => missing for name in keys(something(predictvars, (;)))
-    )
+            name => missing for name in keys(something(predictvars, (;)))
+        )
     else
         data
     end
