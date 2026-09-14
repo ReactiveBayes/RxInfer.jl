@@ -480,6 +480,9 @@ end
 include("batch.jl")
 include("autoupdates.jl")
 include("streaming.jl")
+include("compiled.jl")
+include("compiled_mixtures.jl")
+include("compiled_streaming.jl")
 
 """
     infer(
@@ -660,7 +663,10 @@ function infer(;
             ctx[:options] = log_dictnt_entries(options)
         end
 
-        if isnothing(autoupdates)
+        # A compiled stream need not feed posteriors back into its own inputs.
+        # Preserve the legacy dispatch contract when no compiled runner is used.
+        if isnothing(autoupdates) &&
+            !(compiled_backend_requested(options) && datastream !== nothing)
             check_available_callbacks(
                 warn, callbacks, available_callbacks(batch_inference)
             )

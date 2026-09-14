@@ -25,6 +25,7 @@ Creates model inference options object. The list of available options is present
 
 ### Options
 
+- `runner`: optional execution policy. `MulticoreRunner()` computes independent rules and marginal products on Julia worker threads. The default uses immediate reactive execution. See the performance guide for scheduling and thread-safety details.
 - `limit_stack_depth`: limits the stack depth for computing messages; helps with `StackOverflowError` for some huge models, but reduces the performance of the inference backend. Accepts an integer argument that specifies the maximum recursion depth. Lower is better for stack overflow errors, but worse for performance.
 - `warn`: (optional) flag to suppress warnings. Warnings are not displayed if set to `false`. Defaults to `true`.
 - `force_marginal_computation`: (optional) flag to force computation of marginals even when not explicitly requested. Defaults to `false`.
@@ -143,6 +144,7 @@ function Base.convert(
     ::Type{ReactiveMPInferenceOptions}, options::NamedTuple{keys}
 ) where {keys}
     available_options = (
+        :runner,
         :stream_postprocessors,
         :limit_stack_depth,
         :annotations,
@@ -175,7 +177,24 @@ function Base.convert(
         @warn "Inference options have `stream_postprocessors` and `limit_stack_depth` options specified together. Ignoring `limit_stack_depth`. Use `warn = false` option in `ModelInferenceOptions` to suppress this warning."
     end
 
-    stream_postprocessors = if haskey(options, :stream_postprocessors)
+    stream_postprocessors = if haskey(options, :runner)
+        haskey(options, :stream_postprocessors) && throw(
+            ArgumentError(
+                "runner and stream_postprocessors cannot be specified together",
+            ),
+        )
+        runner = ReactiveMP.instantiate_runner(options.runner)
+        if haskey(options, :limit_stack_depth)
+            ReactiveMP.CompositeStreamPostprocessor((
+                runner,
+                ReactiveMP.ScheduleOnStreamPostprocessor(
+                    LimitStackScheduler(options.limit_stack_depth...)
+                ),
+            ))
+        else
+            runner
+        end
+    elseif haskey(options, :stream_postprocessors)
         options[:stream_postprocessors]
     elseif haskey(options, :limit_stack_depth)
         ReactiveMP.ScheduleOnStreamPostprocessor(
