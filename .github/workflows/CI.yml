@@ -52,6 +52,7 @@ jobs:
           - '1.10'
           - '1.11'
           - '1.12'
+          - '1.13'
         os:
           - ubuntu-latest
         arch:
@@ -145,7 +146,7 @@ jobs:
       # Keep this in step with the highest version in this file's test matrix.
       - uses: julia-actions/setup-julia@v3
         with:
-          version: '1.12'
+          version: '1.13'
       - uses: julia-actions/cache@v3
 
       # Find existing format PR if any
