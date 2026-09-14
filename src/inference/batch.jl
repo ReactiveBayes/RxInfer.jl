@@ -141,6 +141,12 @@ function batch_inference(;
     # disable inference error hints
     disable_inference_error_hint = false,
 )
+    if compiled_backend_requested(options)
+        return compiled_batch_inference(; model, data, initialization, constraints, meta, options,
+            returnvars, predictvars, iterations, free_energy, free_energy_diagnostics,
+            allow_node_contraction, showprogress, callbacks, annotations, postprocess,
+            warn, catch_exception, disable_inference_error_hint)
+    end
     _options = convert(ReactiveMPInferenceOptions, options)
     # If the `options` does not have `warn` key inside, override it with the keyword `warn`
     if isnothing(options) || !haskey(options, :warn)
@@ -260,6 +266,8 @@ function batch_inference(;
     model_creation_span_id = generate_span_id(callbacks)
     invoke_callback(callbacks, BeforeModelCreationEvent(model_creation_span_id))
     fmodel = create_model(_model | data)
+    runner = ReactiveMP.find_multicore_runner(getpostprocessor(_options))
+    isnothing(runner) || (fmodel.metadata[:inference_runner] = runner)
     invoke_callback(
         callbacks, AfterModelCreationEvent(fmodel, model_creation_span_id)
     )
@@ -398,6 +406,7 @@ function batch_inference(;
             key => getvariable(vardict[key]) for key in keys(fdata)
         ))
 
+        ReactiveMP.start_runner!(getpostprocessor(_options))
         for iteration in 1:_iterations
             iteration_span_id = generate_span_id(callbacks)
             before_iteration_event = invoke_callback(
@@ -418,6 +427,7 @@ function batch_inference(;
                 # correctly from the dense `data` array; dense arrays behave as before.
                 new_observation_indexed!(cacheddatavars[key], get_data(value))
             end
+            ReactiveMP.synchronize_runner!(getpostprocessor(_options))
             invoke_callback(
                 callbacks,
                 AfterDataUpdateEvent(fmodel, data, data_update_span_id),
@@ -442,6 +452,7 @@ function batch_inference(;
             end
         end
 
+        ReactiveMP.stop_runner!(getpostprocessor(_options))
         for (_, subscription) in
             pairs(merge(subscriptions_pr, subscriptions_rv))
             unsubscribe!(subscription)
@@ -451,6 +462,7 @@ function batch_inference(;
             callbacks, AfterInferenceEvent(fmodel, inference_span_id)
         )
     catch error
+        ReactiveMP.stop_runner!(getpostprocessor(_options))
         potential_error = inference_process_error(
             error;
             rethrow = !catch_exception,

@@ -48,6 +48,112 @@ By default, when computing free energy values, they are stored as an abstract ty
 
 RxInfer provides a `limit_stack_depth` option to limit the depth of the stack of the inference procedure, which is explained in the [Stack Overflow during inference](@ref stack-overflow-inference) section. This can be useful to avoid stack overflows, but it can also significantly degrade the performance of the inference procedure. The larger the value, the less the performance is degraded. You can tune the value based on the size of your model as well as your computer. The optimal value differs for different models and computers.
 
+## Multicore execution
+
+Start Julia with multiple default-pool threads, for example `julia --threads=auto`,
+and pass an execution policy to the existing `infer` call:
+
+```julia
+result = infer(
+    model = my_model(),
+    data = my_data,
+    iterations = 30,
+    options = (runner = MulticoreRunner(), limit_stack_depth = 100),
+)
+```
+
+`MulticoreRunner(workers = 4, min_batch_size = 32, min_work_ns = 200_000)` limits
+worker tasks and avoids spawning tasks for narrow or cheap waves. A small sample
+of each job type estimates numerical cost; these are actual updates, not extra
+rule calls, and the first call is excluded from the timing. Set `min_work_ns = 0`
+to disable cost calibration. It operates within a single
+factor graph and works with the same model, constraints, initialization,
+missing observations, and batch or streaming API. Each inference gets its own
+execution state; the configuration can be reused across calls. Model construction
+still runs serially.
+
+This is an experimental **wave-based message schedule**. The runner captures
+ready inputs on the inference task, evaluates independent message rules,
+variable marginal products, and joint marginal rules in parallel, then delivers
+results in a deterministic order. Equality-chain caches and reactive subscribers
+are updated only on the inference task. Worker failures are joined and propagated
+before publishing the failed wave; `catch_exception = true` works as usual in
+batch inference.
+
+One and multiple workers use the same wave schedule. The standard runner uses a
+depth-first schedule, so intermediate beliefs, free energies, and the number of
+iterations to convergence can differ. Compare converged results and time to the
+same accuracy when evaluating speedup. A different schedule can also affect
+convergence in nonlinear or loopy models; check the convergence of your model.
+
+Rules accessing a factor-node object, mutable metadata, callbacks, or annotation
+processors use serial computation. This protects shared RNGs and approximation
+buffers. Custom rules that are eligible for parallel execution must not mutate
+their input distributions or shared global state. Existing custom nodes remain
+usable through the serial fallback. A custom per-node stream postprocessor can
+also keep that node on its existing execution path. The `runner` option cannot
+be combined with a global `stream_postprocessors` option; `limit_stack_depth`
+is supported directly.
+
+Speedup depends on the amount of independent numerical work. Large collections
+of expensive rules can benefit, while cheap scalar rules, narrow chains,
+model construction, and memory bandwidth can dominate other models. More nodes
+alone do not guarantee speedup. Benchmark warmed runs with `KeepLast()` and
+without detailed tracing. If the rules call BLAS, compare with
+`LinearAlgebra.BLAS.set_num_threads(1)` to avoid nested thread oversubscription;
+the runner does not alter global BLAS settings.
+
+Reproducible benchmarks live in `benchmarks/multicore_scaling.jl`,
+`benchmarks/multicore_grid.jl`, and `benchmarks/multicore_rslds.jl`. They check
+posterior agreement across worker counts and report warmed wall-clock timings.
+
+## Experimental compact backend
+
+`CompiledRunner` is a separate, opt-in backend for a single model. It constructs
+a compact graph and executes existing message, marginal and product rules through
+an indexed schedule, without reactive subjects or subscriptions at each factor.
+It is not batching and does not replace a grid with a specialized linear solver.
+The default backend and `MulticoreRunner` are unchanged.
+
+```julia
+result = infer(
+    model = my_model(),
+    data = my_data,
+    initialization = my_initialization,
+    iterations = 200,
+    returnvars = KeepLast(),
+    options = (runner = CompiledRunner(workers = 6),),
+)
+```
+
+Start Julia with at least as many threads as requested workers. The runner does
+not change BLAS settings. `CompiledRunner(workers = 1)` uses the same compiled
+schedule without parallel worker tasks. Batch and streaming/autoupdate entry
+points are supported; streaming uses Rocket only at the public input/output
+boundary. Each inference instance owns its execution state.
+
+This backend currently requires the modified local RxInfer, ReactiveMP and
+GraphPPL packages. The reproducible environment, commands, supported examples
+and validation record are in `benchmarks/compiled/README.md` and
+`benchmarks/COMPILED_BACKEND_PROGRESS.md`; registry GraphPPL alone is insufficient.
+
+Compatibility is experimental, not established for every model. Conjugate
+models, structured HMMs, several mixture layouts, nonlinear Delta/CVI models,
+predictions and streaming have regression fixtures. The RSLDS notebook's custom
+Gate node has an explicit lowering adapter. Other imperative custom node layouts
+may also need adapters. Unsupported layouts, stream postprocessors and node
+contraction raise explicit errors; there is no silent reactive fallback.
+Stateful or unaudited rule kernels execute serially within the compiled backend.
+Failed inference state cannot be reused; create a fresh inference instance.
+
+Compare converged means and variances, not iteration-by-iteration trajectories:
+the schedule can require a different number of sweeps and may affect convergence
+on loopy or nonlinear models. Retaining `KeepEach()` histories can dominate
+memory, and larger models do not guarantee linear core scaling. The compact
+backend also has compilation/setup costs that may outweigh inference savings
+on small models. Measure time to equal accuracy with BenchmarkTools, including
+construction and result materialization; see `benchmarks/compiled_benchmark_tools.jl`.
+
 ## Getting Help
 
 If you encounter performance issues:

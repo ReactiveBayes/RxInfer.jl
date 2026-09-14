@@ -328,6 +328,7 @@ function Rocket.on_next!(
         _iterations     = executor.engine.iterations
         _postprocess    = executor.engine.postprocess
         _model          = executor.engine.model
+        _runner         = get(_model.metadata, :inference_runner, nothing)
         _datavars       = executor.engine.datavars
         _autoupdates    = executor.engine.autoupdates
         _updateflags    = executor.engine.updateflags
@@ -349,74 +350,80 @@ function Rocket.on_next!(
 
         # This loop correspond to the different VMP iterations
         # Here `_iterations` can be `Ref` too, so we use `[]`. Should not affect integers
-        for iteration in 1:_iterations[]
-            inference_fire_event(
-                Val(:before_iteration),
-                Val(_enabled_events),
-                _events,
-                _model,
-                iteration,
-            )
+        ReactiveMP.start_runner!(_runner)
+        try
+            for iteration in 1:_iterations[]
+                inference_fire_event(
+                    Val(:before_iteration),
+                    Val(_enabled_events),
+                    _events,
+                    _model,
+                    iteration,
+                )
 
-            # At first we update all our priors (auto updates) with the fixed values from the `redirectupdate` field
-            inference_fire_event(
-                Val(:before_auto_update),
-                Val(_enabled_events),
-                _events,
-                _model,
-                iteration,
-                _autoupdates,
-            )
-            run_autoupdate!(autoupdate_specs, autoupdate_fetched)
-            inference_fire_event(
-                Val(:after_auto_update),
-                Val(_enabled_events),
-                _events,
-                _model,
-                iteration,
-                _autoupdates,
-            )
+                # At first we update all our priors (auto updates) with the fixed values from the `redirectupdate` field
+                inference_fire_event(
+                    Val(:before_auto_update),
+                    Val(_enabled_events),
+                    _events,
+                    _model,
+                    iteration,
+                    _autoupdates,
+                )
+                run_autoupdate!(autoupdate_specs, autoupdate_fetched)
+                inference_fire_event(
+                    Val(:after_auto_update),
+                    Val(_enabled_events),
+                    _events,
+                    _model,
+                    iteration,
+                    _autoupdates,
+                )
 
-            # At second we pass our observations
-            inference_fire_event(
-                Val(:before_data_update),
-                Val(_enabled_events),
-                _events,
-                _model,
-                iteration,
-                event,
-            )
-            for (datavar, value) in zip(_datavars, values(event))
-                # `new_observation_indexed!` aligns by index, so a model that references a
-                # streamed data tensor only partially (sparse data variables) is fed
-                # correctly from the dense streamed value; dense arrays behave as before.
-                # A sparse data variable fed an offset value is rebased to 1-based (a per-tick
-                # copy); warn once unless `warn = false` (mirrors the batch entry point).
-                if executor.engine.warn &&
-                    datavar isa GraphPPL.ResizableArray &&
-                    __incurs_offset_copy(value)
-                    @warn __offset_data_copy_warning(nothing) maxlog = 1
+                # At second we pass our observations
+                inference_fire_event(
+                    Val(:before_data_update),
+                    Val(_enabled_events),
+                    _events,
+                    _model,
+                    iteration,
+                    event,
+                )
+                for (datavar, value) in zip(_datavars, values(event))
+                    # `new_observation_indexed!` aligns by index, so a model that references a
+                    # streamed data tensor only partially (sparse data variables) is fed
+                    # correctly from the dense streamed value; dense arrays behave as before.
+                    # A sparse data variable fed an offset value is rebased to 1-based (a per-tick
+                    # copy); warn once unless `warn = false` (mirrors the batch entry point).
+                    if executor.engine.warn &&
+                        datavar isa GraphPPL.ResizableArray &&
+                        __incurs_offset_copy(value)
+                        @warn __offset_data_copy_warning(nothing) maxlog = 1
+                    end
+                    new_observation_indexed!(datavar, value)
                 end
-                new_observation_indexed!(datavar, value)
+                ReactiveMP.synchronize_runner!(_runner)
+                inference_fire_event(
+                    Val(:after_data_update),
+                    Val(_enabled_events),
+                    _events,
+                    _model,
+                    iteration,
+                    event,
+                )
+
+                check_and_reset_updated!(_updateflags)
+
+                inference_fire_event(
+                    Val(:after_iteration),
+                    Val(_enabled_events),
+                    _events,
+                    _model,
+                    iteration,
+                )
             end
-            inference_fire_event(
-                Val(:after_data_update),
-                Val(_enabled_events),
-                _events,
-                _model,
-                iteration,
-                event,
-            )
-
-            check_and_reset_updated!(_updateflags)
-
-            inference_fire_event(
-                Val(:after_iteration),
-                Val(_enabled_events),
-                _events,
-                _model,
-                iteration,
-            )
+        finally
+            ReactiveMP.stop_runner!(_runner)
         end
 
         # `release!` on `fe_actor` ensures that free energy is summed up between iterations correctly
@@ -455,7 +462,8 @@ function Rocket.on_error!(executor::RxInferenceEventExecutor, err)
     _events         = executor.engine.events
 
     _engine.is_errored = true
-    _engine.error      = err
+    ReactiveMP.stop_runner!(get(_model.metadata, :inference_runner, nothing))
+    _engine.error = err
 
     inference_fire_event(
         Val(:on_error), Val(_enabled_events), _events, _model, err
@@ -570,6 +578,13 @@ function streaming_inference(;
     warn = true,
 )
 
+    if compiled_backend_requested(options)
+        return compiled_streaming_inference(; model, data, datastream, initialization, autoupdates,
+            constraints, meta, options, returnvars, historyvars, keephistory, iterations,
+            free_energy, free_energy_diagnostics, allow_node_contraction, autostart,
+            events, annotations, callbacks, postprocess, uselock, warn)
+    end
+
     # In case if `data` is used we cast to a synchronous `datastream` with zip operator
     _datastream, _T = if isnothing(datastream) && !isnothing(data)
         infer_check_dicttype(:data, data)
@@ -667,6 +682,8 @@ function streaming_inference(;
     model_creation_span_id = generate_span_id(callbacks)
     invoke_callback(callbacks, BeforeModelCreationEvent(model_creation_span_id))
     fmodel = create_model(_model | _condition_on)
+    runner = ReactiveMP.find_multicore_runner(getpostprocessor(_options))
+    isnothing(runner) || (fmodel.metadata[:inference_runner] = runner)
     invoke_callback(
         callbacks, AfterModelCreationEvent(fmodel, model_creation_span_id)
     )
