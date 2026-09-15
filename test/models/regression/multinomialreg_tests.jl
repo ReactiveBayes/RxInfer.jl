@@ -50,7 +50,16 @@
     @test mse < 2e-5
 
     @test result.free_energy[end] < result.free_energy[1]
-    @test result.free_energy[end] <= result.free_energy[end - 1]
+
+    # Once converged, consecutive free energy values differ only by floating
+    # point noise: the free energy is of order 1e4 here, so the observed
+    # increases of up to ~5e-11 are a few dozen ULPs. Asserting exact
+    # monotonicity is therefore not meaningful and makes this test flaky.
+    # Check instead that the free energy is non-increasing up to that noise,
+    # over all iterations rather than just the last pair.
+    fe_tol = 1e-8 * max(1.0, abs(result.free_energy[end]))
+    @test all(<=(fe_tol), diff(result.free_energy))
+
     @test abs(result.free_energy[end - 1] - result.free_energy[end]) < 1e-8
 end
 
