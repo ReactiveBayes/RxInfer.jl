@@ -27,34 +27,6 @@
     @define_factor_node(node = MyBeta, type = Stochastic, interfaces = [:out, :a, :b])
     @define_factor_node(node = MyBernoulli, type = Stochastic, interfaces = [:out, :p])
 
-    # The node's log-density in one edge at the means of the others, as v6's rule fallback
-    # `NodeFunctionRuleFallback` computed it: ReactiveMP v7 has no rule fallbacks, so the rules
-    # are written out.
-    struct UnnormalizedLogPdf{F}
-        fn::F
-    end
-
-    BayesBase.insupport(::UnnormalizedLogPdf, x) = true
-    BayesBase.logpdf(f::UnnormalizedLogPdf, x) = f.fn(x)
-    (f::UnnormalizedLogPdf)(x) = logpdf(f, x)
-
-    @define_message_update_rule(
-        node = MyBeta,
-        target = :out,
-        args = (q[:a]::Any, q[:b]::Any),
-        body = (args) -> let a = mean(args.q[:a]), b = mean(args.q[:b])
-            UnnormalizedLogPdf(x -> logpdf(MyBeta(a, b), x))
-        end,
-    )
-    @define_message_update_rule(
-        node = MyBernoulli,
-        target = :p,
-        args = (q[:out]::Any,),
-        body = (args) -> let y = mean(args.q[:out])
-            UnnormalizedLogPdf(p -> logpdf(MyBernoulli(p), y))
-        end,
-    )
-
     @constraints function projection_constraints()
         q(p)::ProjectedTo(Beta)
     end
@@ -72,6 +44,7 @@
             ),
             data = (y = y,),
             constraints = projection_constraints(),
+            options = (rulefallback = NodeFunctionRuleFallback(),),
         )
         return analytical, projected
     end
@@ -619,7 +592,7 @@ end
         initialization = myinitialization(),
         free_energy = true,
         iterations = 15,
-        options = (rng = StableRNG(42),),
+        options = (context = (rng = StableRNG(42),),),
     )
 
     @test mean(result.posteriors[:a][end]) ≈ a atol = 0.05

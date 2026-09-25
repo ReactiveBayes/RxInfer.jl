@@ -33,133 +33,49 @@ Creates model inference options object. The list of available options is present
 
 - `stream_postprocessors`: changes the postprocessor of reactive streams, see ReactiveMP.jl for more info, defaults to `nothing`, unless the `limit_stack_depth` option is set, in which case will be set to `ReactiveMP.ScheduleOnStreamPostprocessor` together with `RxInfer.LimitStackScheduler`.
 - `diagnostics`: the engine's audits of the rules the model runs, a `ReactiveMP.EngineDiagnostics` (`check_everything_pure`, `check_everything_inplace`, `checked_buffers`), all off by default.
-- `rng`: the random number generator the rules draw from; the task's own by default.
-
-v6's `rulefallback` is gone: when no rule fits, the engine reports the closest candidates.
+- `context`: services for the rules, a `NamedTuple` merged over the engine's defaults: `rng`, the random number generator the rules draw from, the task's own by default; `matrix_correction`, the correction rules apply to the matrices they build, each rule's own by default; and any service a rule declares.
+- `rulefallback`: the message where no rule matches, such as `NodeFunctionRuleFallback()`; by default none, and a missing rule is an error that lists the closest candidates.
 
 See also: [`infer`](@ref)
 """
-struct ReactiveMPInferenceOptions{S, A, R, E, G}
+struct ReactiveMPInferenceOptions{S, A, R, E, C, B}
     stream_postprocessors::S
     annotations::A
     warn::Bool
     force_marginal_computation::Bool
     diagnostics::R
     callbacks::E
-    rng::G
+    context::C
+    rulefallback::B
 end
 
-ReactiveMPInferenceOptions(stream_postprocessors, annotations) =
-    ReactiveMPInferenceOptions(
-        stream_postprocessors, annotations, true, false, nothing, nothing, nothing
-    )
-ReactiveMPInferenceOptions(stream_postprocessors, annotations, warn) =
-    ReactiveMPInferenceOptions(
-        stream_postprocessors, annotations, warn, false, nothing, nothing, nothing
-    )
-ReactiveMPInferenceOptions(
-    stream_postprocessors, annotations, warn, force_marginal_computation
-) = ReactiveMPInferenceOptions(
-    stream_postprocessors,
-    annotations,
-    warn,
-    force_marginal_computation,
-    nothing,
-    nothing,
-    nothing,
-)
 ReactiveMPInferenceOptions(
     stream_postprocessors,
     annotations,
-    warn,
-    force_marginal_computation,
-    diagnostics,
+    warn = true,
+    force_marginal_computation = false,
+    diagnostics = nothing,
+    callbacks = nothing,
+    context = nothing,
 ) = ReactiveMPInferenceOptions(
-    stream_postprocessors,
-    annotations,
-    warn,
-    force_marginal_computation,
-    diagnostics,
-    nothing,
-    nothing,
-)
-ReactiveMPInferenceOptions(
-    stream_postprocessors,
-    annotations,
-    warn,
-    force_marginal_computation,
-    diagnostics,
-    callbacks,
-) = ReactiveMPInferenceOptions(
-    stream_postprocessors,
-    annotations,
-    warn,
-    force_marginal_computation,
-    diagnostics,
-    callbacks,
-    nothing,
+    stream_postprocessors, annotations, warn, force_marginal_computation, diagnostics, callbacks, context, nothing,
 )
 
-setpostprocessor(options::ReactiveMPInferenceOptions, stream_postprocessors) =
-    ReactiveMPInferenceOptions(
-        stream_postprocessors,
-        options.annotations,
-        options.warn,
-        options.force_marginal_computation,
-        options.diagnostics,
-        options.callbacks,
-        options.rng,
-    )
-setannotations(options::ReactiveMPInferenceOptions, annotations) =
-    ReactiveMPInferenceOptions(
-        options.stream_postprocessors,
-        annotations,
-        options.warn,
-        options.force_marginal_computation,
-        options.diagnostics,
-        options.callbacks,
-        options.rng,
-    )
-setwarn(options::ReactiveMPInferenceOptions, warn) = ReactiveMPInferenceOptions(
-    options.stream_postprocessors,
-    options.annotations,
-    warn,
-    options.force_marginal_computation,
-    options.diagnostics,
-    options.callbacks,
-    options.rng,
-)
-setforce_marginal_computation(
-    options::ReactiveMPInferenceOptions, force_marginal_computation
-) = ReactiveMPInferenceOptions(
-    options.stream_postprocessors,
-    options.annotations,
-    options.warn,
-    force_marginal_computation,
-    options.diagnostics,
-    options.callbacks,
-    options.rng,
-)
-setdiagnostics(options::ReactiveMPInferenceOptions, diagnostics) =
-    ReactiveMPInferenceOptions(
-        options.stream_postprocessors,
-        options.annotations,
-        options.warn,
-        options.force_marginal_computation,
-        diagnostics,
-        options.callbacks,
-        options.rng,
-    )
-setcallbacks(options::ReactiveMPInferenceOptions, callbacks) =
-    ReactiveMPInferenceOptions(
-        options.stream_postprocessors,
-        options.annotations,
-        options.warn,
-        options.force_marginal_computation,
-        options.diagnostics,
-        callbacks,
-        options.rng,
-    )
+# The options with one field replaced.
+function with_option(options::ReactiveMPInferenceOptions, name::Symbol, value)
+    values = map(field -> field === name ? value : getfield(options, field), fieldnames(ReactiveMPInferenceOptions))
+    return ReactiveMPInferenceOptions(values...)
+end
+
+setpostprocessor(options::ReactiveMPInferenceOptions, stream_postprocessors) = with_option(options, :stream_postprocessors, stream_postprocessors)
+setannotations(options::ReactiveMPInferenceOptions, annotations) = with_option(options, :annotations, annotations)
+setwarn(options::ReactiveMPInferenceOptions, warn) = with_option(options, :warn, warn)
+setforce_marginal_computation(options::ReactiveMPInferenceOptions, force_marginal_computation) =
+    with_option(options, :force_marginal_computation, force_marginal_computation)
+setdiagnostics(options::ReactiveMPInferenceOptions, diagnostics) = with_option(options, :diagnostics, diagnostics)
+setcallbacks(options::ReactiveMPInferenceOptions, callbacks) = with_option(options, :callbacks, callbacks)
+setcontext(options::ReactiveMPInferenceOptions, context) = with_option(options, :context, context)
+setrulefallback(options::ReactiveMPInferenceOptions, rulefallback) = with_option(options, :rulefallback, rulefallback)
 
 import Base: convert
 
@@ -178,12 +94,10 @@ function Base.convert(
         :diagnostics,
         :force_marginal_computation,
         :callbacks,
-        :rng,
+        :context,
+        :rulefallback,
     )
 
-    :rulefallback in keys && error(
-        "The `rulefallback` option is gone in ReactiveMP v7: when no rule fits, the engine reports the closest candidates. See the ReactiveMP v6 → v7 migration guide.",
-    )
     for key in keys
         key ∈ available_options || error(
             "Unknown model inference options: $(key). Available options are: $(available_options). ",
@@ -194,7 +108,8 @@ function Base.convert(
     annotations = haskey(options, :annotations) ? options.annotations : nothing
     diagnostics =
         haskey(options, :diagnostics) ? options.diagnostics : nothing
-    rng = haskey(options, :rng) ? options.rng : nothing
+    context = haskey(options, :context) ? options.context : nothing
+    rulefallback = haskey(options, :rulefallback) ? options.rulefallback : nothing
     force_marginal_computation = if haskey(options, :force_marginal_computation)
         options.force_marginal_computation
     else
@@ -225,7 +140,8 @@ function Base.convert(
         force_marginal_computation,
         diagnostics,
         callbacks,
-        rng,
+        context,
+        rulefallback,
     )
 end
 
@@ -246,7 +162,8 @@ ReactiveMP.getannotations(
 ) = annotations                       # Do nothing if annotations is a `Tuple`
 getdiagnostics(options::ReactiveMPInferenceOptions) =
     something(options.diagnostics, ReactiveMP.EngineDiagnostics())
-getrng(options::ReactiveMPInferenceOptions) = options.rng
+getcontext(options::ReactiveMPInferenceOptions) = options.context
+getrulefallback(options::ReactiveMPInferenceOptions) = options.rulefallback
 ReactiveMP.getcallbacks(options::ReactiveMPInferenceOptions) = options.callbacks
 ReactiveMP.getpostprocessor(options::ReactiveMPInferenceOptions) =
     options.stream_postprocessors
@@ -639,7 +556,8 @@ function activate_rmp_factornode!(
         annotations,
         callbacks,
         diagnostics = getdiagnostics(getoptions(plugin)),
-        rng = getrng(getoptions(plugin)),
+        context = getcontext(getoptions(plugin)),
+        rulefallback = getrulefallback(getoptions(plugin)),
     )
 
     return ReactiveMP.activate!(

@@ -65,18 +65,22 @@ end
         MyStreamPostprocessorForNamedTuple()
     @test RxInfer.getcallbacks(options) === callbacks
     @test RxInfer.getdiagnostics(options) === ReactiveMP.EngineDiagnostics()
-    @test RxInfer.getrng(options) === nothing
+    @test RxInfer.getcontext(options) === nothing
+    @test RxInfer.getrulefallback(options) === nothing
 
     rng = StableRNG(42)
     diagnostics = ReactiveMP.EngineDiagnostics(checked_buffers = true)
-    options = convert(ReactiveMPInferenceOptions, (diagnostics = diagnostics, rng = rng))
+    fallback = NodeFunctionRuleFallback()
+    options = convert(
+        ReactiveMPInferenceOptions,
+        (diagnostics = diagnostics, context = (rng = rng,), rulefallback = fallback),
+    )
 
     @test RxInfer.getdiagnostics(options) === diagnostics
-    @test RxInfer.getrng(options) === rng
-
-    @test_throws "The `rulefallback` option is gone" convert(
-        ReactiveMPInferenceOptions, (rulefallback = (args...) -> nothing,)
-    )
+    @test RxInfer.getcontext(options) === (rng = rng,)
+    @test RxInfer.getrulefallback(options) === fallback
+    @test RxInfer.getrulefallback(RxInfer.setrulefallback(options, nothing)) === nothing
+    @test RxInfer.getcontext(RxInfer.setcontext(options, nothing)) === nothing
 
     bad_nt = (blahblah = 1,)
 
