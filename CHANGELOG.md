@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **RxInfer runs on ReactiveMP v7** (breaking; the v6 → v7 guide in ReactiveMP's documentation lists what changes for models). Nodes and rules come from rule packages: RxInfer re-exports ReactiveMP, MessagePassingRulesBase, StandardMessagePassingRules, DeltaMessagePassingRules and MessagePassingRulesApproximations, and a model using another node loads its package (`using ProbitMessagePassingRules`, …). Nodes are declared with `@define_factor_node` and rules with `@define_message_update_rule` and its siblings, in place of `@node` and `@rule`.
+- A node's **algorithm** replaces its meta: `infer(; algorithm = @algorithm(…))` and `where { algorithm = … }`. `meta`, `@meta` and `where { meta = … }` still work for this release, with a deprecation warning. A Delta node may still be given its approximation method alone, `f() -> Linearization()`.
+
+### Added
+- The `diagnostics` inference option, the engine's audits of the rules a model runs (`EngineDiagnostics(; check_everything_pure, check_everything_inplace, checked_buffers)`), and `rng`, the generator the rules draw from.
+
+### Removed
+- `where { dependencies = … }`: a node declares what its rules read, and an initial message is set with `@initialization`. Using it is an error saying so.
+- The `rulefallback` option: when no rule fits, the engine reports the closest candidates. Using it is an error saying so.
+
 ## [5.5.0] - 2026-06-18
 
 ### Added
