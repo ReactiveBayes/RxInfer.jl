@@ -2,7 +2,10 @@ module RxInfer
 
 using Reexport
 
-@reexport using ReactiveMP,
+# The engine, the rule system a model's nodes are declared with, the standard nodes, and the
+# Delta node, which `:=` with any function creates, with its approximations. Other node
+# packages are loaded by the models that use them.
+@reexport using ReactiveMP, MessagePassingRulesBase, StandardMessagePassingRules, DeltaMessagePassingRules, MessagePassingRulesApproximations,
     GraphPPL, Rocket, Distributions, ExponentialFamily, BayesBase, FastCholesky
 
 include("helpers.jl")

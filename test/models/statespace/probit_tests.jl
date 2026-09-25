@@ -1,6 +1,7 @@
 @testitem "Probit Model" begin
     using BenchmarkTools, Random, Plots, Dates, LinearAlgebra, StableRNGs
     using StatsFuns: normcdf
+    using ProbitMessagePassingRules
 
     # `include(test/utiltests.jl)`
     include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
@@ -8,7 +9,17 @@
     # Please use StableRNGs for random number generators
 
     ## Model definition
-    @model function probit_model(y, dependencies)
+    @model function probit_model(y)
+        x[1] ~ Normal(mean = 0.0, precision = 0.01)
+
+        for k in 2:(length(y) + 1)
+            x[k] ~ Normal(mean = x[k - 1] + 0.1, precision = 100)
+            y[k - 1] ~ Probit(x[k])
+        end
+    end
+
+    # v6's `where { dependencies = … }`, which the error below tells to replace
+    @model function probit_model_with_dependencies(y, dependencies)
         x[1] ~ Normal(mean = 0.0, precision = 0.01)
 
         for k in 2:(length(y) + 1)
@@ -18,9 +29,9 @@
     end
 
     ## Inference definition
-    function probit_inference(data, dependencies)
+    function probit_inference(data)
         return infer(
-            model = probit_model(dependencies = dependencies),
+            model = probit_model(),
             data = (y = data,),
             iterations = 10,
             returnvars = KeepLast(),
@@ -60,33 +71,17 @@
     n = 40
     data_x, data_y = generate_data(n)
 
-    # `nothing` here should fallback to the `default` dependencies for the `Probit` node
-    # Check that the result does not really depend on the initial value
-    for dependencies in [
-        nothing,
-        RequireMessageFunctionalDependencies(
-            in = NormalMeanPrecision(0.0, 1.0)
-        ),
-        RequireMessageFunctionalDependencies(
-            in = NormalMeanPrecision(0.0, 10.0)
-        ),
-    ]
-        result = probit_inference(data_y, dependencies)
-        @test length(result.free_energy) === 10
-        @test all(<=(1e-6), diff(result.free_energy)) # Some values are fluctuating due to approximations
-        @test last(result.free_energy) ≈ 15.646236967225065
-    end
+    # The `Probit` node declares the initial message on its `in` edge
+    result = probit_inference(data_y)
+    @test length(result.free_energy) === 10
+    @test all(<=(1e-6), diff(result.free_energy)) # Some values are fluctuating due to approximations
+    @test last(result.free_energy) ≈ 15.646236967225065
 
-    # We don't expect the `Probit` node to work properly when the `DefaultFunctionalDependencies` are being used
-    @test_throws ErrorException probit_inference(
-        data_y, DefaultFunctionalDependencies()
-    )
-
-    result = probit_inference(
-        data_y,
-        RequireMessageFunctionalDependencies(
-            in = NormalMeanPrecision(0.0, 1.0)
-        ),
+    # A node's dependencies are declared by its algorithm now, and cannot be set in the model
+    @test_throws "`where { dependencies = … }` is gone" infer(
+        model = probit_model_with_dependencies(dependencies = nothing),
+        data = (y = data_y,),
+        disable_inference_error_hint = true,
     )
 
     ## Create output plots

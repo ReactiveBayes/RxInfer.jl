@@ -526,6 +526,7 @@ end
 @testitem "Static inference with node contraction" begin
     import RxInfer: ReactiveMPGraphPPLBackend
     import Static
+    using GCVMessagePassingRules
 
     n = 6  # Number of test cases
 
@@ -538,72 +539,76 @@ end
         y ~ Normal(; mean = x, precision = σ)
     end
 
-    @node typeof(gcv) Stochastic [y, x, z, κ, ω]
+    @define_factor_node(
+        node = gcv,
+        type = Stochastic,
+        interfaces = [:y, :x, :z, :κ, :ω],
+        algorithm = GCVApproximation,
+    )
 
-    RxInfer.ReactiveMP.default_meta(::typeof(gcv)) =
-        RxInfer.ReactiveMP.default_meta(GCV)
+    @define_message_update_rule(
+        node = gcv,
+        target = :y,
+        args = (q[:x]::Any, q[:z]::Any, q[:κ]::Any, q[:ω]::Any),
+        body = (algo, args) -> call_message_update_rule(
+            GCV, :y; q = (x = args.q[:x], z = args.q[:z], κ = args.q[:κ], ω = args.q[:ω]), algorithm = algo
+        ),
+    )
 
-    @rule typeof(gcv)(:y, Marginalisation) (
-        q_x::Any, q_z::Any, q_κ::Any, q_ω::Any, meta::Any
-    ) = begin
-        return @call_rule GCV(:y, Marginalisation) (
-            q_x = q_x, q_z = q_z, q_κ = q_κ, q_ω = q_ω, meta = meta
-        )
-    end
+    @define_message_update_rule(
+        node = gcv,
+        target = :x,
+        args = (q[:y]::Any, q[:z]::Any, q[:κ]::Any, q[:ω]::Any),
+        body = (algo, args) -> call_message_update_rule(
+            GCV, :x; q = (y = args.q[:y], z = args.q[:z], κ = args.q[:κ], ω = args.q[:ω]), algorithm = algo
+        ),
+    )
 
-    @rule typeof(gcv)(:x, Marginalisation) (
-        q_y::Any, q_z::Any, q_κ::Any, q_ω::Any, meta::Any
-    ) = begin
-        return @call_rule GCV(:x, Marginalisation) (
-            q_y = q_y, q_z = q_z, q_κ = q_κ, q_ω = q_ω, meta = meta
-        )
-    end
+    @define_message_update_rule(
+        node = gcv,
+        target = :ω,
+        args = (q[:y]::Any, q[:x]::Any, q[:z]::Any, q[:κ]::Any),
+        body = (algo, args) -> call_message_update_rule(
+            GCV, :ω; q = (y = args.q[:y], x = args.q[:x], z = args.q[:z], κ = args.q[:κ]), algorithm = algo
+        ),
+    )
 
-    @rule typeof(gcv)(:ω, Marginalisation) (
-        q_y::Any, q_x::Any, q_z::Any, q_κ::Any, meta::Any
-    ) = begin
-        return @call_rule GCV(:ω, Marginalisation) (
-            q_y = q_y, q_x = q_x, q_z = q_z, q_κ = q_κ, meta = meta
-        )
-    end
+    @define_message_update_rule(
+        node = gcv,
+        target = :z,
+        args = (q[:y]::Any, q[:x]::Any, q[:κ]::Any, q[:ω]::Any),
+        body = (algo, args) -> call_message_update_rule(
+            GCV, :z; q = (y = args.q[:y], x = args.q[:x], κ = args.q[:κ], ω = args.q[:ω]), algorithm = algo
+        ),
+    )
 
-    @rule typeof(gcv)(:z, Marginalisation) (
-        q_y::Any, q_x::Any, q_κ::Any, q_ω::Any, meta::Any
-    ) = begin
-        return @call_rule GCV(:z, Marginalisation) (
-            q_y = q_y, q_x = q_x, q_κ = q_κ, q_ω = q_ω, meta = meta
-        )
-    end
+    @define_message_update_rule(
+        node = gcv,
+        target = :κ,
+        args = (q[:y]::Any, q[:x]::Any, q[:z]::Any, q[:ω]::Any),
+        body = (algo, args) -> call_message_update_rule(
+            GCV, :κ; q = (y = args.q[:y], x = args.q[:x], z = args.q[:z], ω = args.q[:ω]), algorithm = algo
+        ),
+    )
 
-    @rule typeof(gcv)(:κ, Marginalisation) (
-        q_y::Any, q_x::Any, q_z::Any, q_ω::Any, meta::Any
-    ) = begin
-        return @call_rule GCV(:κ, Marginalisation) (
-            q_y = q_y, q_x = q_x, q_z = q_z, q_ω = q_ω, meta = meta
-        )
-    end
+    @define_average_energy(
+        node = gcv,
+        args = (q[:y]::Any, q[:x]::Any, q[:z]::Any, q[:κ]::Any, q[:ω]::Any),
+        body = (args) -> begin
+            y_mean, y_var = mean_var(args.q[:y])
+            x_mean, x_var = mean_var(args.q[:x])
+            z_mean, z_var = mean_var(args.q[:z])
+            κ_mean, κ_var = mean_var(args.q[:κ])
+            ω_mean, ω_var = mean_var(args.q[:ω])
 
-    @average_energy typeof(gcv) (
-        q_y::Any,
-        q_x::Any,
-        q_z::Any,
-        q_κ::Any,
-        q_ω::Any,
-        meta::Union{<:GCVMetadata, Nothing},
-    ) = begin
-        y_mean, y_var = mean_var(q_y)
-        x_mean, x_var = mean_var(q_x)
-        z_mean, z_var = mean_var(q_z)
-        κ_mean, κ_var = mean_var(q_κ)
-        ω_mean, ω_var = mean_var(q_ω)
+            ksi = (κ_mean^2) * z_var + (z_mean^2) * κ_var + κ_var * z_var
+            psi = (y_mean - x_mean)^2 + y_var + x_var
+            A = exp(-ω_mean + ω_var / 2)
+            B = exp(-κ_mean * z_mean + ksi / 2)
 
-        ksi = (κ_mean^2) * z_var + (z_mean^2) * κ_var + κ_var * z_var
-        psi = (y_mean - x_mean)^2 + y_var + x_var
-        A = exp(-ω_mean + ω_var / 2)
-        B = exp(-κ_mean * z_mean + ksi / 2)
-
-        (log(2π) + (z_mean * κ_mean + ω_mean) + (psi * A * B)) / 2
-    end
+            (log(2π) + (z_mean * κ_mean + ω_mean) + (psi * A * B)) / 2
+        end,
+    )
 
     @model function hgf_1(y)
         ω ~ NormalMeanVariance(0, 1)
@@ -1568,18 +1573,35 @@ end
         input
     end
 
-    @node DistributionA Stochastic [out, a]
-    @node DistributionB Stochastic [out, b]
-    @node LikelihoodDistribution Stochastic [out, input]
+    @define_factor_node(
+        node = DistributionA, type = Stochastic, interfaces = [:out, :a]
+    )
+    @define_factor_node(
+        node = DistributionB, type = Stochastic, interfaces = [:out, :b]
+    )
+    @define_factor_node(
+        node = LikelihoodDistribution,
+        type = Stochastic,
+        interfaces = [:out, :input],
+    )
 
-    @rule DistributionA(:out, Marginalisation) (q_a::Any,) = DistributionA(
-        mean(q_a)
+    @define_message_update_rule(
+        node = DistributionA,
+        target = :out,
+        args = (q[:a]::Any,),
+        body = (args) -> DistributionA(mean(args.q[:a])),
     )
-    @rule DistributionB(:out, Marginalisation) (q_b::Any,) = DistributionB(
-        mean(q_b)
+    @define_message_update_rule(
+        node = DistributionB,
+        target = :out,
+        args = (q[:b]::Any,),
+        body = (args) -> DistributionB(mean(args.q[:b])),
     )
-    @rule LikelihoodDistribution(:input, Marginalisation) (q_out::Any,) = LikelihoodDistribution(
-        mean(q_out)
+    @define_message_update_rule(
+        node = LikelihoodDistribution,
+        target = :input,
+        args = (q[:out]::Any,),
+        body = (args) -> LikelihoodDistribution(mean(args.q[:out])),
     )
 
     @model function invalid_product_posterior(out)
@@ -1650,6 +1672,7 @@ end
 
 @testitem "`infer` with UnfactorizedData" begin
     using RxInfer
+    using DiscreteTransitionMessagePassingRules
 
     @model function pred_model(p_s_t, y, goal, p_B, A)
         s[1] ~ p_s_t
@@ -1860,14 +1883,14 @@ end
         y := f(a, M)
     end
 
-    meta = @meta begin
+    algorithm = @algorithm begin
         f() -> Linearization()
     end
 
     result = infer(;
         model = simple_model_missing_data(),
         predictvars = (y = KeepEach(),),
-        meta = meta,
+        algorithm = algorithm,
     )
 
     # Test summarize_session output format for inference invokes with default n_last
@@ -1969,14 +1992,14 @@ end
         m ~ Normal(; mean = 0.0, var = 1.0)
         y ~ Normal(; mean = f(m), prec = 1.0)
     end
-    @meta function model_meta()
+    @algorithm function model_meta()
         f() -> Linearization()
     end
     session = RxInfer.create_session()
     result = infer(;
         model = simple_nonlinear_model(),
         data = (y = 1.0,),
-        meta = model_meta(),
+        algorithm = model_meta(),
         session = session,
     )
     stats = RxInfer.get_session_stats(session, :inference)
@@ -2041,56 +2064,68 @@ end
 @testitem "Test force marginal computation" begin
     using RxInfer
 
-    mutable struct CountingMeta
+    using DiscreteTransitionMessagePassingRules
+    import MessagePassingRulesBase
+
+    # A counter that the marginal rule below increments: state kept between calls belongs to an
+    # impure algorithm. It extends the default, so every other rule of the node is the default's.
+    mutable struct CountingAlgorithm <: DefaultAlgorithmExtension
         count::Int
     end
 
-    @marginalrule DiscreteTransition(:out_in) (
-        m_out::Categorical,
-        m_in::Categorical,
-        q_a::PointMass,
-        meta::CountingMeta,
-    ) = begin
-        meta.count += 1
-        return @call_marginalrule DiscreteTransition(:out_in) (
-            m_out = m_out, m_in = m_in, q_a = q_a
-        )
-    end
+    MessagePassingRulesBase.ispure(::Type{CountingAlgorithm}) = false
+
+    @define_marginal_update_rule(
+        node = DiscreteTransition,
+        target = (:out, :in),
+        algorithm = CountingAlgorithm,
+        args = (m[:out]::Categorical, m[:in]::Categorical, q[:a]::PointMass),
+        pure = false,
+        body = (algo, args) -> begin
+            algo.count += 1
+            return call_marginal_update_rule(
+                DiscreteTransition,
+                (:out, :in);
+                m = (out = args.m[:out], in = args.m[:in]),
+                q = (a = args.q[:a],),
+            )
+        end,
+    )
 
     # Test batch inference
-    @model function test_model(meta, A)
+    @model function test_model(counter, A)
         in ~ Categorical([0.5, 0.5])
         out ~ Categorical([0.5, 0.5])
-        out ~ DiscreteTransition(in, A) where {meta = meta}
+        out ~ DiscreteTransition(in, A) where {algorithm = counter}
     end
 
-    meta = CountingMeta(0)
+    counter = CountingAlgorithm(0)
 
     result = infer(;
-        model = test_model(; meta = meta), data = (A = diageye(2),)
+        model = test_model(; counter = counter), data = (A = diageye(2),)
     )
-    @test meta.count == 0
+    @test counter.count == 0
 
     result = infer(;
-        model = test_model(; meta = meta),
+        model = test_model(; counter = counter),
         data = (A = diageye(2),),
         options = (force_marginal_computation = true,),
     )
-    @test meta.count == 1
+    @test counter.count == 1
 
     result = infer(;
-        model = test_model(; meta = meta),
+        model = test_model(; counter = counter),
         data = (A = diageye(2),),
         options = (force_marginal_computation = true,),
         iterations = 10,
     )
-    @test meta.count == 11
+    @test counter.count == 11
 
     # Test streaming inference
-    @model function streaming_test_model(p_in, p_out, meta, A)
+    @model function streaming_test_model(p_in, p_out, counter, A)
         in ~ Categorical(p_in)
         out ~ Categorical(p_out)
-        out ~ DiscreteTransition(in, A) where {meta = meta}
+        out ~ DiscreteTransition(in, A) where {algorithm = counter}
     end
 
     init = @initialization begin
@@ -2103,7 +2138,7 @@ end
         p_out = probvec(q(out))
     end
 
-    meta = CountingMeta(0)
+    counter = CountingAlgorithm(0)
 
     static_observations = [rand(2, 2) for _ in 1:10]
     datastream =
@@ -2111,26 +2146,26 @@ end
         map(NamedTuple{(:A,), Tuple{Matrix{Float64}}}, (d) -> (A = d,))
 
     result = infer(;
-        model = streaming_test_model(; meta = meta),
+        model = streaming_test_model(; counter = counter),
         datastream = datastream,
         autoupdates = autoupdates,
         initialization = init,
         autostart = true,
     )
-    @test meta.count == 0
+    @test counter.count == 0
 
     datastream =
         from(static_observations) |>
         map(NamedTuple{(:A,), Tuple{Matrix{Float64}}}, (d) -> (A = d,))
     engine = infer(;
-        model = streaming_test_model(; meta = meta),
+        model = streaming_test_model(; counter = counter),
         datastream = datastream,
         autoupdates = autoupdates,
         initialization = init,
         autostart = true,
         options = (force_marginal_computation = true,),
     )
-    @test meta.count == 10
+    @test counter.count == 10
 
     # Test deterministic nodes
     @model function test_model_for_force_marginal_computations(y)
@@ -2149,13 +2184,18 @@ end
 @testitem "Inference should have missing posterior if error occurs immediately" begin
     struct MyCustomNodeForMissingPosteriorTest end
 
-    @node MyCustomNodeForMissingPosteriorTest Stochastic [out, in]
+    @define_factor_node(
+        node = MyCustomNodeForMissingPosteriorTest,
+        type = Stochastic,
+        interfaces = [:out, :in],
+    )
 
-    @rule MyCustomNodeForMissingPosteriorTest(:out, Marginalisation) (
-        q_in::Any,
-    ) = begin
-        throw(ErrorException("This is a test error"))
-    end
+    @define_message_update_rule(
+        node = MyCustomNodeForMissingPosteriorTest,
+        target = :out,
+        args = (q[:in]::Any,),
+        body = (args) -> throw(ErrorException("This is a test error")),
+    )
 
     @model function my_model_with_error(y)
         θ ~ MyCustomNodeForMissingPosteriorTest(1)
@@ -2174,4 +2214,64 @@ end
 
 @testmodule ReactiveMPEventHandlerTestUtils begin
     import RxInfer.ReactiveMP
+end
+
+@testitem "`meta` is the deprecated name of `algorithm`" begin
+    f(a) = a + 1
+
+    @model function simple_nonlinear_model(y)
+        m ~ Normal(; mean = 0.0, var = 1.0)
+        y ~ Normal(; mean = f(m), prec = 1.0)
+    end
+
+    @model function simple_nonlinear_model_with_where(y)
+        m ~ Normal(; mean = 0.0, var = 1.0)
+        z := f(m) where {meta = DeltaApproximation(method = Linearization())}
+        y ~ Normal(; mean = z, prec = 1.0)
+    end
+
+    expected = infer(;
+        model = simple_nonlinear_model(),
+        data = (y = 1.0,),
+        algorithm = @algorithm(
+            begin
+                f() -> DeltaApproximation(method = Linearization())
+            end
+        ),
+    )
+
+    # `infer(; meta = …)` warns, and still runs the algorithm it was given
+    result = @test_logs (:warn, r"`infer\(; meta = …\)` is deprecated") match_mode = :any infer(;
+        model = simple_nonlinear_model(),
+        data = (y = 1.0,),
+        meta = @meta(
+            begin
+                f() -> DeltaApproximation(method = Linearization())
+            end
+        ),
+    )
+    @test mean(result.posteriors[:m]) ≈ mean(expected.posteriors[:m])
+    @test var(result.posteriors[:m]) ≈ var(expected.posteriors[:m])
+
+    # `where { meta = … }` warns, and still runs the algorithm it was given
+    result = @test_logs (:warn, r"`where \{ meta = … \}` is deprecated") match_mode = :any infer(;
+        model = simple_nonlinear_model_with_where(), data = (y = 1.0,)
+    )
+    @test mean(result.posteriors[:m]) ≈ mean(expected.posteriors[:m])
+    @test var(result.posteriors[:m]) ≈ var(expected.posteriors[:m])
+
+    @test_throws "`infer` was given both `algorithm` and `meta`" infer(;
+        model = simple_nonlinear_model(),
+        data = (y = 1.0,),
+        algorithm = @algorithm(
+            begin
+                f() -> DeltaApproximation(method = Linearization())
+            end
+        ),
+        meta = @meta(
+            begin
+                f() -> DeltaApproximation(method = Linearization())
+            end
+        ),
+    )
 end

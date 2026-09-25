@@ -24,8 +24,36 @@
     BayesBase.logpdf(d::MyBernoulli, x) = logpdf(Bernoulli(d.p), x)
     BayesBase.insupport(d::MyBernoulli, x::Real) = true
 
-    @node MyBeta Stochastic [out, a, b]
-    @node MyBernoulli Stochastic [out, p]
+    @define_factor_node(node = MyBeta, type = Stochastic, interfaces = [:out, :a, :b])
+    @define_factor_node(node = MyBernoulli, type = Stochastic, interfaces = [:out, :p])
+
+    # The node's log-density in one edge at the means of the others, as v6's rule fallback
+    # `NodeFunctionRuleFallback` computed it: ReactiveMP v7 has no rule fallbacks, so the rules
+    # are written out.
+    struct UnnormalizedLogPdf{F}
+        fn::F
+    end
+
+    BayesBase.insupport(::UnnormalizedLogPdf, x) = true
+    BayesBase.logpdf(f::UnnormalizedLogPdf, x) = f.fn(x)
+    (f::UnnormalizedLogPdf)(x) = logpdf(f, x)
+
+    @define_message_update_rule(
+        node = MyBeta,
+        target = :out,
+        args = (q[:a]::Any, q[:b]::Any),
+        body = (args) -> let a = mean(args.q[:a]), b = mean(args.q[:b])
+            UnnormalizedLogPdf(x -> logpdf(MyBeta(a, b), x))
+        end,
+    )
+    @define_message_update_rule(
+        node = MyBernoulli,
+        target = :p,
+        args = (q[:out]::Any,),
+        body = (args) -> let y = mean(args.q[:out])
+            UnnormalizedLogPdf(p -> logpdf(MyBernoulli(p), y))
+        end,
+    )
 
     @constraints function projection_constraints()
         q(p)::ProjectedTo(Beta)
@@ -44,7 +72,6 @@
             ),
             data = (y = y,),
             constraints = projection_constraints(),
-            options = (rulefallback = NodeFunctionRuleFallback(),),
         )
         return analytical, projected
     end
@@ -271,9 +298,7 @@ end
         initialization = init,
         data = (y = dataset,),
         free_energy = true,
-        options = (
-            rulefallback = NodeFunctionRuleFallback(), limit_stack_depth = 500
-        ),
+        options = (limit_stack_depth = 500,),
     )
 
     @test all(<(0), diff(result.free_energy))
@@ -349,7 +374,7 @@ end
         q(precision)::ProjectedTo(Gamma)
     end
 
-    @meta function iid_with_delta_transforms_meta()
+    @algorithm function iid_with_delta_transforms_algorithm()
         foo() -> CVIProjection()
         bar() -> CVIProjection()
     end
@@ -373,7 +398,7 @@ end
             model = iid_with_delta_transforms(),
             data = (y = y,),
             constraints = iid_with_delta_transforms_constraints(),
-            meta = iid_with_delta_transforms_meta(),
+            algorithm = iid_with_delta_transforms_algorithm(),
             initialization = iid_with_delta_transforms_initialization(),
             iterations = 15,
             returnvars = KeepLast(),
@@ -478,7 +503,7 @@ end
         q(μ) = NormalMeanVariance(2.0, 1.0)
     end
 
-    @meta function mymeta()
+    @algorithm function myalgorithm()
         foo() -> CVIProjection(
             out_prjparams = ProjectionParameters(niterations = 500),
             in_prjparams = (
@@ -491,7 +516,7 @@ end
     result = infer(
         model = mymodel(C = C),
         data = (y = y,),
-        meta = mymeta(),
+        algorithm = myalgorithm(),
         constraints = myconstraints(),
         initialization = myinitialization(),
         free_energy = true,
@@ -579,22 +604,22 @@ end
         q(μ) = MvNormalMeanCovariance([0.5, 1.0], [1.0 0.0; 0.0 1.0])
     end
 
-    @meta function mymeta()
+    # `CVIProjection` samples from the generator the engine gives its rules, `options.rng`
+    @algorithm function myalgorithm()
         foo() -> CVIProjection(
-            rng = StableRNG(42),
-            sampling_strategy = FullSampling(10),
-            outsamples = 5,
+            sampling_strategy = FullSampling(10), outsamples = 5
         )
     end
 
     result = infer(
         model = mymodel(C = C),
         data = (y = y,),
-        meta = mymeta(),
+        algorithm = myalgorithm(),
         constraints = myconstraints(),
         initialization = myinitialization(),
         free_energy = true,
         iterations = 15,
+        options = (rng = StableRNG(42),),
     )
 
     @test mean(result.posteriors[:a][end]) ≈ a atol = 0.05
@@ -633,11 +658,25 @@ end
     struct NodePrior end
     struct NodeLikelihood end
 
-    @node NodePrior Stochastic [out, in]
-    @node NodeLikelihood Stochastic [out, in]
+    @define_factor_node(
+        node = NodePrior, type = Stochastic, interfaces = [:out, :in]
+    )
+    @define_factor_node(
+        node = NodeLikelihood, type = Stochastic, interfaces = [:out, :in]
+    )
 
-    @rule NodePrior(:out, Marginalisation) (q_in::Any,) = NodePrior()
-    @rule NodeLikelihood(:in, Marginalisation) (q_out::Any,) = NodeLikelihood()
+    @define_message_update_rule(
+        node = NodePrior,
+        target = :out,
+        args = (q[:in]::Any,),
+        body = (args) -> NodePrior(),
+    )
+    @define_message_update_rule(
+        node = NodeLikelihood,
+        target = :in,
+        args = (q[:out]::Any,),
+        body = (args) -> NodeLikelihood(),
+    )
 
     BayesBase.prod(::GenericProd, ::NodePrior, ::NodeLikelihood) =
         convert(ExponentialFamilyDistribution, Beta(1, 1))

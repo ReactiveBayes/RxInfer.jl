@@ -82,7 +82,7 @@ function generate_multinomial_data(;
     rng = StableRNG(123), N = 3, k = 3, nsamples = 5000
 )
     ψ = randn(rng, k)
-    p = ReactiveMP.softmax(ψ)
+    p = ExponentialFamily.LogExpFunctions.softmax(ψ)
 
     X = rand(rng, Multinomial(N, p), nsamples)
     X = [X[:, i] for i in axes(X, 2)]

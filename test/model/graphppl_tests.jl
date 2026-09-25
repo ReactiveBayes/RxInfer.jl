@@ -69,7 +69,7 @@ end
     import MacroTools: prettify
 
     input = :(a ~ b || c)
-    output = :(a ~ ReactiveMP.OR(b, c))
+    output = :(a ~ StandardMessagePassingRules.OR(b, c))
     @test prettify(apply_pipeline(input, inject_tilderhs_aliases)) ==
         prettify(output)
 
@@ -79,7 +79,7 @@ end
         prettify(output)
 
     input = :(a ~ b && c)
-    output = :(a ~ ReactiveMP.AND(b, c))
+    output = :(a ~ StandardMessagePassingRules.AND(b, c))
     @test prettify(apply_pipeline(input, inject_tilderhs_aliases)) ==
         prettify(output)
 
@@ -89,7 +89,7 @@ end
         prettify(output)
 
     input = :(a ~ b -> c)
-    output = :(a ~ ReactiveMP.IMPLY(b, c))
+    output = :(a ~ StandardMessagePassingRules.IMPLY(b, c))
     @test prettify(apply_pipeline(input, inject_tilderhs_aliases)) ==
         prettify(output)
 
@@ -99,27 +99,28 @@ end
         prettify(output)
 
     input = :(a ~ ¬b)
-    output = :(a ~ ReactiveMP.NOT(b))
+    output = :(a ~ StandardMessagePassingRules.NOT(b))
     @test prettify(apply_pipeline(input, inject_tilderhs_aliases)) ==
         prettify(output)
 
     input = :(a ~ !b)
-    output = :(a ~ ReactiveMP.NOT(b))
+    output = :(a ~ StandardMessagePassingRules.NOT(b))
     @test prettify(apply_pipeline(input, inject_tilderhs_aliases)) ==
         prettify(output)
 end
 
-@testitem "`@node` should properly define `GraphPPL` backend specific information" begin
+@testitem "`@define_factor_node` should properly define `GraphPPL` backend specific information" begin
     import RxInfer: ReactiveMPGraphPPLBackend
-    import ReactiveMP: @node
     import GraphPPL
     using Static
 
     struct CustomStochasticNodeForGraphPPLTests1 end
 
-    @node CustomStochasticNodeForGraphPPLTests1 Stochastic [
-        out, (x, aliases = [xx]), (y, aliases = [yy]), z
-    ]
+    @define_factor_node(
+        node = CustomStochasticNodeForGraphPPLTests1,
+        type = Stochastic,
+        interfaces = [:out, (:x, aliases = [:xx]), (:y, aliases = [:yy]), :z],
+    )
 
     backend = ReactiveMPGraphPPLBackend(Static.False())
 
@@ -164,7 +165,11 @@ end
 
     function f_for_graphppl_tests1 end
 
-    @node typeof(f_for_graphppl_tests1) Deterministic [out, in1, in2]
+    @define_factor_node(
+        node = f_for_graphppl_tests1,
+        type = Deterministic,
+        interfaces = [:out, :in1, :in2],
+    )
 
     @test GraphPPL.NodeBehaviour(backend, f_for_graphppl_tests1) ===
         GraphPPL.Deterministic()
@@ -192,17 +197,18 @@ end
     )
 end
 
-@testitem "`@node` should properly define `GraphPPL` backend specific information with node contraction allowed" begin
+@testitem "`@define_factor_node` should properly define `GraphPPL` backend specific information with node contraction allowed" begin
     import RxInfer: ReactiveMPGraphPPLBackend
-    import ReactiveMP: @node
     import GraphPPL
     import Static
 
     struct CustomStochasticNodeForGraphPPLTests2 end
 
-    @node CustomStochasticNodeForGraphPPLTests2 Stochastic [
-        out, (x, aliases = [xx]), (y, aliases = [yy]), z
-    ]
+    @define_factor_node(
+        node = CustomStochasticNodeForGraphPPLTests2,
+        type = Stochastic,
+        interfaces = [:out, (:x, aliases = [:xx]), (:y, aliases = [:yy]), :z],
+    )
 
     backend = ReactiveMPGraphPPLBackend(Static.True())
 
@@ -247,7 +253,11 @@ end
 
     function f_for_graphppl_tests2 end
 
-    @node typeof(f_for_graphppl_tests2) Deterministic [out, in1, in2]
+    @define_factor_node(
+        node = f_for_graphppl_tests2,
+        type = Deterministic,
+        interfaces = [:out, :in1, :in2],
+    )
 
     @test GraphPPL.NodeBehaviour(backend, f_for_graphppl_tests2) ===
         GraphPPL.Deterministic()
@@ -287,9 +297,13 @@ end
     @test GraphPPL.instantiate(ReactiveMPGraphPPLBackend) ==
         ReactiveMPGraphPPLBackend(Static.False())
 
-    @test GraphPPL.NodeType(
-        ReactiveMPGraphPPLBackend(Static.True()),
-        ReactiveMP.UndefinedNodeFunctionalForm(),
-        sum,
-    ) == GraphPPL.Atomic()
+    # A function no package declares is a Delta node: deterministic, and atomic through the
+    # `DefaultBackend` whether node contraction is allowed or not.
+    @test !RxInfer.isdeclarednode(sum)
+    @test GraphPPL.NodeBehaviour(ReactiveMPGraphPPLBackend(Static.True()), sum) ===
+        GraphPPL.Deterministic()
+    @test GraphPPL.NodeType(ReactiveMPGraphPPLBackend(Static.True()), sum) ==
+        GraphPPL.Atomic()
+    @test GraphPPL.NodeType(ReactiveMPGraphPPLBackend(Static.False()), sum) ==
+        GraphPPL.Atomic()
 end

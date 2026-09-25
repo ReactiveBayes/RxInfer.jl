@@ -5,7 +5,7 @@ import ReactiveMP: score
     BetheFreeEnergy(T)
 
 Implements a reactive stream for Bethe Free Energy values. 
-Must be used in combination with the `score` function of `ReactiveMP.jl`. 
+Must be used in combination with the `score` function of `ReactiveMP.jl`.
 
 # Arguments
 - `::Type{T}`: a type of the counting real number, e.g. `Float64`. Set to `Real` by default, otherwise the inference procedure is not automatically differentiable.
@@ -54,12 +54,11 @@ function GraphPPL.postprocess_plugin(
 ) where {T}
     factor_nodes(model) do _, node
         factornode = getextra(node, ReactiveMPExtraFactorNodeKey)
-        metadata = getextra(node, GraphPPL.MetaExtraKey, nothing)
         bfe_stream = score(
             __as_counting_real_type(T),
             FactorBoundFreeEnergy(),
             factornode,
-            metadata,
+            node_algorithm(node),
             nothing,
         )
         setextra!(node, ReactiveMPExtraBetheFreeEnergyStreamKey, bfe_stream)
@@ -114,9 +113,12 @@ function score(
 
     data_point_entropies_n     = mapreduce(degree_fn, +, getdatavars(model); init = 0)
     constant_point_entropies_n = mapreduce(degree_fn, +, getconstantvars(model); init = 0)
+    hidden_point_entropies_n = mapreduce(
+        nodedata -> getextra(nodedata, ReactiveMPExtraHiddenConstantsKey, 0), +, getfactornodes(model); init = 0
+    )
 
     point_entropies = CountingReal(
-        T, data_point_entropies_n + constant_point_entropies_n
+        T, data_point_entropies_n + constant_point_entropies_n + hidden_point_entropies_n
     )
 
     bfe_stream =

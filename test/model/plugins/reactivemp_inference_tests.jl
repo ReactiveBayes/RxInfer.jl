@@ -13,29 +13,29 @@
 
     @test RxInfer.getpostprocessor(options) === MyStreamPostprocessor()
     @test RxInfer.getannotations(options) === (MyAnnotations(),)
-    @test RxInfer.getrulefallback(options) === nothing
+    @test RxInfer.getdiagnostics(options) === ReactiveMP.EngineDiagnostics()
     @test RxInfer.getcallbacks(options) === nothing
 
     options = RxInfer.setpostprocessor(options, MyAnotherStreamPostprocessor())
 
     @test RxInfer.getpostprocessor(options) === MyAnotherStreamPostprocessor()
     @test RxInfer.getannotations(options) === (MyAnnotations(),)
-    @test RxInfer.getrulefallback(options) === nothing
+    @test RxInfer.getdiagnostics(options) === ReactiveMP.EngineDiagnostics()
     @test RxInfer.getcallbacks(options) === nothing
 
     options = RxInfer.setannotations(options, MyAnotherAnnotations())
 
     @test RxInfer.getpostprocessor(options) === MyAnotherStreamPostprocessor()
     @test RxInfer.getannotations(options) === (MyAnotherAnnotations(),)
-    @test RxInfer.getrulefallback(options) === nothing
+    @test RxInfer.getdiagnostics(options) === ReactiveMP.EngineDiagnostics()
     @test RxInfer.getcallbacks(options) === nothing
 
-    rulefallback = (args...) -> print(args)
-    options = RxInfer.setrulefallback(options, rulefallback)
+    diagnostics = ReactiveMP.EngineDiagnostics(check_everything_pure = true)
+    options = RxInfer.setdiagnostics(options, diagnostics)
 
     @test RxInfer.getpostprocessor(options) === MyAnotherStreamPostprocessor()
     @test RxInfer.getannotations(options) === (MyAnotherAnnotations(),)
-    @test RxInfer.getrulefallback(options) === rulefallback
+    @test RxInfer.getdiagnostics(options) === diagnostics
     @test RxInfer.getcallbacks(options) === nothing
 
     callbacks = (args...) -> print(args...)
@@ -43,12 +43,13 @@
 
     @test RxInfer.getpostprocessor(options) === MyAnotherStreamPostprocessor()
     @test RxInfer.getannotations(options) === (MyAnotherAnnotations(),)
-    @test RxInfer.getrulefallback(options) === rulefallback
+    @test RxInfer.getdiagnostics(options) === diagnostics
     @test RxInfer.getcallbacks(options) === callbacks
 end
 
 @testitem "ReactiveMPInferenceOptions can be converted from NamedTuple" begin
     import RxInfer: ReactiveMPInferenceOptions
+    using StableRNGs
 
     struct MyStreamPostprocessorForNamedTuple end
 
@@ -63,6 +64,19 @@ end
     @test RxInfer.getpostprocessor(options) ===
         MyStreamPostprocessorForNamedTuple()
     @test RxInfer.getcallbacks(options) === callbacks
+    @test RxInfer.getdiagnostics(options) === ReactiveMP.EngineDiagnostics()
+    @test RxInfer.getrng(options) === nothing
+
+    rng = StableRNG(42)
+    diagnostics = ReactiveMP.EngineDiagnostics(checked_buffers = true)
+    options = convert(ReactiveMPInferenceOptions, (diagnostics = diagnostics, rng = rng))
+
+    @test RxInfer.getdiagnostics(options) === diagnostics
+    @test RxInfer.getrng(options) === rng
+
+    @test_throws "The `rulefallback` option is gone" convert(
+        ReactiveMPInferenceOptions, (rulefallback = (args...) -> nothing,)
+    )
 
     bad_nt = (blahblah = 1,)
 

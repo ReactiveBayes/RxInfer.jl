@@ -1,5 +1,6 @@
 @testitem "Linear regression with BinomialPolya node" begin
     using BenchmarkTools, Plots, Dates, LinearAlgebra, StableRNGs
+    using PolyaMessagePassingRules
 
     include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
@@ -32,14 +33,13 @@
     @model function binomial_model(prior_xi, prior_precision, n_trials, X, y)
         β ~ MvNormalWeightedMeanPrecision(prior_xi, prior_precision)
         for i in eachindex(y)
-            y[i] ~ BinomialPolya(
-                X[i], n_trials[i], β
-            ) where {
-                dependencies = RequireMessageFunctionalDependencies(
-                    β = MvNormalWeightedMeanPrecision(prior_xi, prior_precision)
-                ),
-            }
+            y[i] ~ BinomialPolya(X[i], n_trials[i], β)
         end
+    end
+
+    # The node reads the message on `β`'s own edge, which starts from the prior
+    @initialization function binomial_initialization(prior_xi, prior_precision)
+        μ(β) = MvNormalWeightedMeanPrecision(prior_xi, prior_precision)
     end
 
     function binomial_inference(
@@ -51,6 +51,9 @@
                 prior_precision = diageye(n_features),
             ),
             data = (X = X, y = y, n_trials = n_trials),
+            initialization = binomial_initialization(
+                zeros(n_features), diageye(n_features)
+            ),
             iterations = iterations,
             free_energy = true,
             options = (limit_stack_depth = 100,),

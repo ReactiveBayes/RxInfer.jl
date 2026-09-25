@@ -1,12 +1,13 @@
 name = "RxInfer"
 uuid = "86711068-29c9-4ff7-b620-ae75d7495b3d"
-version = "5.5.0"
+version = "6.0.0-DEV"
 authors = ["Bagaev Dmitry <d.v.bagaev@tue.nl> and contributors"]
 
 [deps]
 Base64 = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
 BayesBase = "b4ee3484-f114-42fe-b91c-797d54a0c67e"
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
+DeltaMessagePassingRules = "ea5de7a7-24c9-4a61-90ce-ef77c844b13f"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 DomainSets = "5b8099bc-c8ec-5219-889f-1d9e522a28bf"
@@ -18,6 +19,8 @@ JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
 MacroTools = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"
+MessagePassingRulesApproximations = "36043009-14b3-4068-9fb9-f1e492c92d7d"
+MessagePassingRulesBase = "4a5b64c7-30c9-4471-82f2-bbe8464b157d"
 Optim = "429524aa-4258-5aef-a3af-852621145aeb"
 Preferences = "21216c6a-2e73-6563-6e65-726566657250"
 ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
@@ -26,10 +29,30 @@ ReactiveMP = "a194aa59-28ba-4574-a09c-4a745416d6e3"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 Rocket = "df971d30-c9d6-4b37-b8ff-e965b2cb3a40"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+StandardMessagePassingRules = "d166223a-7879-43b1-add3-64af0a178e9e"
 Static = "aedffcd0-7271-4cad-89d0-dc628f76c6d3"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 TupleTools = "9d95972d-f1c8-5527-a6e0-b4b365fa01f6"
 UUIDs = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
+
+[sources]
+# The v7 engine and its rule packages, from the local ReactiveMP.jl checkout, until they are
+# registered.
+DeltaMessagePassingRules = {path = "../ReactiveMP.jl/lib/DeltaMessagePassingRules"}
+MessagePassingRulesApproximations = {path = "../ReactiveMP.jl/lib/MessagePassingRulesApproximations"}
+MessagePassingRulesBase = {path = "../ReactiveMP.jl/lib/MessagePassingRulesBase"}
+ReactiveMP = {path = "../ReactiveMP.jl"}
+AutoregressiveMessagePassingRules = {path = "../ReactiveMP.jl/lib/AutoregressiveMessagePassingRules"}
+BIFMMessagePassingRules = {path = "../ReactiveMP.jl/lib/BIFMMessagePassingRules"}
+ContinuousTransitionMessagePassingRules = {path = "../ReactiveMP.jl/lib/ContinuousTransitionMessagePassingRules"}
+DiscreteTransitionMessagePassingRules = {path = "../ReactiveMP.jl/lib/DiscreteTransitionMessagePassingRules"}
+FlowMessagePassingRules = {path = "../ReactiveMP.jl/lib/FlowMessagePassingRules"}
+GaussianCouplingMessagePassingRules = {path = "../ReactiveMP.jl/lib/GaussianCouplingMessagePassingRules"}
+GCVMessagePassingRules = {path = "../ReactiveMP.jl/lib/GCVMessagePassingRules"}
+PolyaMessagePassingRules = {path = "../ReactiveMP.jl/lib/PolyaMessagePassingRules"}
+ProbitMessagePassingRules = {path = "../ReactiveMP.jl/lib/ProbitMessagePassingRules"}
+SoftDotMessagePassingRules = {path = "../ReactiveMP.jl/lib/SoftDotMessagePassingRules"}
+StandardMessagePassingRules = {path = "../ReactiveMP.jl/lib/StandardMessagePassingRules"}
 
 [weakdeps]
 TensorBoardLogger = "899adc3e-224a-11e9-021f-63837185c80f"
@@ -42,9 +65,20 @@ PrettyTablesExt = "PrettyTables"
 ProjectionExt = "ExponentialFamilyProjection"
 
 [compat]
+AutoregressiveMessagePassingRules = "0.1"
+BIFMMessagePassingRules = "0.1"
+ContinuousTransitionMessagePassingRules = "0.1"
+DiscreteTransitionMessagePassingRules = "0.1"
+FlowMessagePassingRules = "0.1"
+GaussianCouplingMessagePassingRules = "0.1"
+GCVMessagePassingRules = "0.1"
+PolyaMessagePassingRules = "0.1"
+ProbitMessagePassingRules = "0.1"
+SoftDotMessagePassingRules = "0.1"
 Base64 = "1"
 BayesBase = "1.5.0"
 DataStructures = "0.18, 0.19"
+DeltaMessagePassingRules = "0.1"
 Dates = "1.10"
 Distributions = "0.25"
 DomainSets = "0.5.2, 0.6, 0.7"
@@ -57,24 +91,37 @@ JSON = "0.21.4, 1"
 LinearAlgebra = "1.9"
 Logging = "1.10.0"
 MacroTools = "0.5.6"
+MessagePassingRulesApproximations = "0.1"
+MessagePassingRulesBase = "0.1"
 Optim = "1.0.0, 2"
 Preferences = "1.4.3"
 PrettyTables = "2"
 ProgressMeter = "1.0.0"
 Random = "1.9"
-ReactiveMP = "6.0.0"
+ReactiveMP = "7"
 Reexport = "1.2.0"
 Rocket = "1.8.0"
 SparseArrays = "1.10.0"
+StandardMessagePassingRules = "0.1"
 Static = "0.8.10, 1"
 Statistics = "1.10"
 TOML = "1.0.3"
 TensorBoardLogger = "0.1.26"
 TupleTools = "1.2.0"
 UUIDs = "1.10"
-julia = "1.10"
+julia = "1.11"
 
 [extras]
+AutoregressiveMessagePassingRules = "bbb8872a-15f9-43f6-924d-37f12d04ed53"
+BIFMMessagePassingRules = "3092217e-9fde-41d8-8729-057ea730fd7c"
+ContinuousTransitionMessagePassingRules = "be169b08-8551-4d4c-a46b-881478acc6d9"
+DiscreteTransitionMessagePassingRules = "039b7295-e235-4523-a933-c224bd9a7e58"
+FlowMessagePassingRules = "adabaeda-8474-4dd2-bb94-9124d4d2b701"
+GaussianCouplingMessagePassingRules = "a57ce80c-d854-4eb3-973d-f0d0550df039"
+GCVMessagePassingRules = "2bb838d1-ae36-49a2-8c64-82a0acccfa93"
+PolyaMessagePassingRules = "2d94fc58-1726-4ac3-9db6-3d18f146cabb"
+ProbitMessagePassingRules = "1bb8e9a6-2578-4a1e-b3eb-7f663b479540"
+SoftDotMessagePassingRules = "fdfab25d-afbd-4817-865a-cd280c067f5e"
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 Coverage = "a2441757-f6aa-5fb2-8edb-039e3f45d037"
@@ -97,4 +144,4 @@ TestItemRunner = "f8b46487-2199-4994-9208-9a1283c18c0a"
 TensorBoardLogger = "899adc3e-224a-11e9-021f-63837185c80f"
 
 [targets]
-test = ["Test", "Pkg", "Logging", "InteractiveUtils", "TOML", "Coverage", "Dates", "Distributed", "Documenter", "ExponentialFamilyProjection", "Plots", "BenchmarkTools", "PkgBenchmark", "Aqua", "StableRNGs", "StatsFuns", "Optimisers", "TestItemRunner", "TensorBoardLogger", "OffsetArrays"]
+test = ["AutoregressiveMessagePassingRules", "BIFMMessagePassingRules", "ContinuousTransitionMessagePassingRules", "DiscreteTransitionMessagePassingRules", "FlowMessagePassingRules", "GaussianCouplingMessagePassingRules", "GCVMessagePassingRules", "PolyaMessagePassingRules", "ProbitMessagePassingRules", "SoftDotMessagePassingRules", "Test", "Pkg", "Logging", "InteractiveUtils", "TOML", "Coverage", "Dates", "Distributed", "Documenter", "ExponentialFamilyProjection", "Plots", "BenchmarkTools", "PkgBenchmark", "Aqua", "StableRNGs", "StatsFuns", "Optimisers", "TestItemRunner", "TensorBoardLogger", "OffsetArrays"]

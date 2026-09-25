@@ -114,10 +114,12 @@
         @test abs(r - mean(e)) < 3std(e)
     end
 
-    @test_throws "must be the naive mean-field" inference_univariate(
+    # The node's declared `factorisation = :meanfield` (ReactiveMP v7) replaces v6's
+    # constructor check, and its error words the requirement anew
+    @test_throws "accepts only a mean-field factorisation" inference_univariate(
         y, 10, BetheFactorization()
     )
-    @test_throws "must be the naive mean-field" inference_univariate(
+    @test_throws "accepts only a mean-field factorisation" inference_univariate(
         y, 10, @constraints(
             begin end
         )

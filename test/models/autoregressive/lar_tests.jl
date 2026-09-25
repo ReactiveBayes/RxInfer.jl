@@ -1,5 +1,6 @@
 @testitem "Latent autoregressive model" begin
     using StableRNGs, Plots, BenchmarkTools
+    using AutoregressiveMessagePassingRules
 
     include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
@@ -34,7 +35,7 @@
         order, stype, observation, x_next, x_prev, θ, γ, c, τ
     )
         x_next ~
-        AR(x_prev, θ, γ) where {meta = ARMeta(Multivariate, order, stype)}
+        AR(x_prev, θ, γ) where {algorithm = ARVMP(Multivariate, order, stype)}
         observation ~ Normal(mean = dot(c, x_next), precision = τ)
     end
 
@@ -43,7 +44,7 @@
         order, stype, observation, x_next, x_prev, θ, γ, c, τ
     )
         x_next ~
-        AR(x_prev, θ, γ) where {meta = ARMeta(Univariate, order, stype)}
+        AR(x_prev, θ, γ) where {algorithm = ARVMP(Univariate, order, stype)}
         observation ~ Normal(mean = c * x_next, precision = τ)
     end
 
@@ -106,7 +107,7 @@
     )
 
     function lar_inference(data, order, artype, stype, τ, iterations)
-        c = ReactiveMP.ar_unit(artype, order)
+        c = AutoregressiveMessagePassingRules.ar_unit(artype, order)
         return infer(
             model          = lar_make_model(artype, c, τ, stype, order),
             data           = (y = data,),

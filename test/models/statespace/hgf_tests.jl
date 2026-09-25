@@ -1,6 +1,7 @@
 @testitem "Hierarchical Gaussian Filter" begin
     using RxInfer,
         BenchmarkTools, Random, Plots, Dates, LinearAlgebra, StableRNGs
+    using GCVMessagePassingRules
 
     # `include(test/utiltests.jl)`
     include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
@@ -34,9 +35,10 @@
         q(xt, zt, xt_min) = q(xt, xt_min)q(zt)
     end
 
-    @meta function hgfmeta()
+    @algorithm function hgfalgorithm()
         # Lets use 31 approximation points in the Gauss Hermite cubature approximation method
-        GCV(xt_min, xt, zt) -> GCVMetadata(GaussHermiteCubature(31))
+        GCV(xt_min, xt, zt) ->
+            GCVApproximation(; method = GaussHermiteCubature(31))
     end
 
     ## Inference definition
@@ -56,7 +58,7 @@
         return infer(
             model          = hgf(real_k = real_k, real_w = real_w, z_variance = z_variance, y_variance = y_variance),
             constraints    = hgfconstraints(),
-            meta           = hgfmeta(),
+            algorithm      = hgfalgorithm(),
             data           = (y = data,),
             autoupdates    = autoupdates,
             keephistory    = length(data),

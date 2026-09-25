@@ -32,26 +32,30 @@ Creates model inference options object. The list of available options is present
 ### Advanced options
 
 - `stream_postprocessors`: changes the postprocessor of reactive streams, see ReactiveMP.jl for more info, defaults to `nothing`, unless the `limit_stack_depth` option is set, in which case will be set to `ReactiveMP.ScheduleOnStreamPostprocessor` together with `RxInfer.LimitStackScheduler`.
-- `rulefallback`: specifies a global message update rule fallback for cases when a specific message update rule is not available. Consult `ReactiveMP` documentation for the list of available callbacks.
+- `diagnostics`: the engine's audits of the rules the model runs, a `ReactiveMP.EngineDiagnostics` (`check_everything_pure`, `check_everything_inplace`, `checked_buffers`), all off by default.
+- `rng`: the random number generator the rules draw from; the task's own by default.
+
+v6's `rulefallback` is gone: when no rule fits, the engine reports the closest candidates.
 
 See also: [`infer`](@ref)
 """
-struct ReactiveMPInferenceOptions{S, A, R, E}
+struct ReactiveMPInferenceOptions{S, A, R, E, G}
     stream_postprocessors::S
     annotations::A
     warn::Bool
     force_marginal_computation::Bool
-    rulefallback::R
+    diagnostics::R
     callbacks::E
+    rng::G
 end
 
 ReactiveMPInferenceOptions(stream_postprocessors, annotations) =
     ReactiveMPInferenceOptions(
-        stream_postprocessors, annotations, true, false, nothing, nothing
+        stream_postprocessors, annotations, true, false, nothing, nothing, nothing
     )
 ReactiveMPInferenceOptions(stream_postprocessors, annotations, warn) =
     ReactiveMPInferenceOptions(
-        stream_postprocessors, annotations, warn, false, nothing, nothing
+        stream_postprocessors, annotations, warn, false, nothing, nothing, nothing
     )
 ReactiveMPInferenceOptions(
     stream_postprocessors, annotations, warn, force_marginal_computation
@@ -62,19 +66,37 @@ ReactiveMPInferenceOptions(
     force_marginal_computation,
     nothing,
     nothing,
+    nothing,
 )
 ReactiveMPInferenceOptions(
     stream_postprocessors,
     annotations,
     warn,
     force_marginal_computation,
-    rulefallback,
+    diagnostics,
 ) = ReactiveMPInferenceOptions(
     stream_postprocessors,
     annotations,
     warn,
     force_marginal_computation,
-    rulefallback,
+    diagnostics,
+    nothing,
+    nothing,
+)
+ReactiveMPInferenceOptions(
+    stream_postprocessors,
+    annotations,
+    warn,
+    force_marginal_computation,
+    diagnostics,
+    callbacks,
+) = ReactiveMPInferenceOptions(
+    stream_postprocessors,
+    annotations,
+    warn,
+    force_marginal_computation,
+    diagnostics,
+    callbacks,
     nothing,
 )
 
@@ -84,8 +106,9 @@ setpostprocessor(options::ReactiveMPInferenceOptions, stream_postprocessors) =
         options.annotations,
         options.warn,
         options.force_marginal_computation,
-        options.rulefallback,
+        options.diagnostics,
         options.callbacks,
+        options.rng,
     )
 setannotations(options::ReactiveMPInferenceOptions, annotations) =
     ReactiveMPInferenceOptions(
@@ -93,16 +116,18 @@ setannotations(options::ReactiveMPInferenceOptions, annotations) =
         annotations,
         options.warn,
         options.force_marginal_computation,
-        options.rulefallback,
+        options.diagnostics,
         options.callbacks,
+        options.rng,
     )
 setwarn(options::ReactiveMPInferenceOptions, warn) = ReactiveMPInferenceOptions(
     options.stream_postprocessors,
     options.annotations,
     warn,
     options.force_marginal_computation,
-    options.rulefallback,
+    options.diagnostics,
     options.callbacks,
+    options.rng,
 )
 setforce_marginal_computation(
     options::ReactiveMPInferenceOptions, force_marginal_computation
@@ -111,17 +136,19 @@ setforce_marginal_computation(
     options.annotations,
     options.warn,
     force_marginal_computation,
-    options.rulefallback,
+    options.diagnostics,
     options.callbacks,
+    options.rng,
 )
-setrulefallback(options::ReactiveMPInferenceOptions, rulefallback) =
+setdiagnostics(options::ReactiveMPInferenceOptions, diagnostics) =
     ReactiveMPInferenceOptions(
         options.stream_postprocessors,
         options.annotations,
         options.warn,
         options.force_marginal_computation,
-        rulefallback,
+        diagnostics,
         options.callbacks,
+        options.rng,
     )
 setcallbacks(options::ReactiveMPInferenceOptions, callbacks) =
     ReactiveMPInferenceOptions(
@@ -129,8 +156,9 @@ setcallbacks(options::ReactiveMPInferenceOptions, callbacks) =
         options.annotations,
         options.warn,
         options.force_marginal_computation,
-        options.rulefallback,
+        options.diagnostics,
         callbacks,
+        options.rng,
     )
 
 import Base: convert
@@ -147,11 +175,15 @@ function Base.convert(
         :limit_stack_depth,
         :annotations,
         :warn,
-        :rulefallback,
+        :diagnostics,
         :force_marginal_computation,
         :callbacks,
+        :rng,
     )
 
+    :rulefallback in keys && error(
+        "The `rulefallback` option is gone in ReactiveMP v7: when no rule fits, the engine reports the closest candidates. See the ReactiveMP v6 → v7 migration guide.",
+    )
     for key in keys
         key ∈ available_options || error(
             "Unknown model inference options: $(key). Available options are: $(available_options). ",
@@ -160,8 +192,9 @@ function Base.convert(
 
     warn = haskey(options, :warn) ? options.warn : true
     annotations = haskey(options, :annotations) ? options.annotations : nothing
-    rulefallback =
-        haskey(options, :rulefallback) ? options.rulefallback : nothing
+    diagnostics =
+        haskey(options, :diagnostics) ? options.diagnostics : nothing
+    rng = haskey(options, :rng) ? options.rng : nothing
     force_marginal_computation = if haskey(options, :force_marginal_computation)
         options.force_marginal_computation
     else
@@ -190,13 +223,14 @@ function Base.convert(
         annotations,
         warn,
         force_marginal_computation,
-        rulefallback,
+        diagnostics,
         callbacks,
+        rng,
     )
 end
 
 import ReactiveMP:
-    getannotations, getrulefallback, getcallbacks, getpostprocessor
+    getannotations, getcallbacks, getpostprocessor
 
 ReactiveMP.getannotations(options::ReactiveMPInferenceOptions) =
     ReactiveMP.getannotations(options, options.annotations)
@@ -210,8 +244,9 @@ ReactiveMP.getannotations(
 ReactiveMP.getannotations(
     options::ReactiveMPInferenceOptions, annotations::Tuple
 ) = annotations                       # Do nothing if annotations is a `Tuple`
-ReactiveMP.getrulefallback(options::ReactiveMPInferenceOptions) =
-    options.rulefallback
+getdiagnostics(options::ReactiveMPInferenceOptions) =
+    something(options.diagnostics, ReactiveMP.EngineDiagnostics())
+getrng(options::ReactiveMPInferenceOptions) = options.rng
 ReactiveMP.getcallbacks(options::ReactiveMPInferenceOptions) = options.callbacks
 ReactiveMP.getpostprocessor(options::ReactiveMPInferenceOptions) =
     options.stream_postprocessors
@@ -232,8 +267,13 @@ const ReactiveMPExtraFactorNodeKey = GraphPPL.NodeDataExtraKey{
 const ReactiveMPExtraVariableKey = GraphPPL.NodeDataExtraKey{
     :rmp_variable, ReactiveMP.AbstractVariable
 }()
-const ReactiveMPExtraDependenciesKey = GraphPPL.NodeDataExtraKey{
-    :dependencies, ReactiveMP.Any
+const ReactiveMPExtraAlgorithmKey = GraphPPL.NodeDataExtraKey{
+    :algorithm, ReactiveMP.Any
+}()
+# The constants a factor node holds that GraphPPL does not know of, such as the distribution
+# of a prior `x ~ d`: the free energy cancels their point entropies as it does GraphPPL's.
+const ReactiveMPExtraHiddenConstantsKey = GraphPPL.NodeDataExtraKey{
+    :hidden_constants, Int
 }()
 const ReactiveMPExtraStreamPostprocessorsKey = GraphPPL.NodeDataExtraKey{
     :stream_postprocessors, ReactiveMP.Any
@@ -269,11 +309,17 @@ function GraphPPL.preprocess_plugin(
     nodeproperties::FactorNodeProperties,
     options::NodeCreationOptions,
 )
-    if haskey(options, GraphPPL.getkey(ReactiveMPExtraDependenciesKey))
+    haskey(options, :dependencies) && error(
+        "`where { dependencies = … }` is gone in ReactiveMP v7: a node declares what its rules read (`@define_factor_node`'s `dependencies`, or `@define_dependencies` for an algorithm), and an initial message is set with `@initialization`. See the ReactiveMP v6 → v7 migration guide.",
+    )
+    if haskey(options, :meta)
+        Base.depwarn("`where { meta = … }` is deprecated: a node's meta is its algorithm in ReactiveMP v7, so write `where { algorithm = … }`.", :meta; force = true)
+    end
+    if haskey(options, GraphPPL.getkey(ReactiveMPExtraAlgorithmKey))
         setextra!(
             nodedata,
-            ReactiveMPExtraDependenciesKey,
-            options[GraphPPL.getkey(ReactiveMPExtraDependenciesKey)],
+            ReactiveMPExtraAlgorithmKey,
+            options[GraphPPL.getkey(ReactiveMPExtraAlgorithmKey)],
         )
     end
     if haskey(options, GraphPPL.getkey(ReactiveMPExtraStreamPostprocessorsKey))
@@ -504,25 +550,70 @@ function activate_rmp_variable!(
     end
 end
 
+# A node's algorithm: `where { algorithm = … }`, else what `@algorithm` or v6's `meta`, its
+# deprecated spelling, gave it; `nothing` is the node's own default.
+function node_algorithm(nodedata::NodeData)
+    algorithm = getextra(nodedata, ReactiveMPExtraAlgorithmKey, nothing)
+    algorithm = isnothing(algorithm) ? getextra(nodedata, GraphPPL.MetaExtraKey, nothing) : algorithm
+    return model_algorithm(GraphPPL.fform(getproperties(nodedata)), algorithm)
+end
+
+# A Delta node, a function no package declares, may be given its approximation method alone,
+# `f() -> Linearization()`, as v6 allowed; it runs under `DeltaApproximation(method = …)`.
+model_algorithm(fform, algorithm) =
+    !isdeclarednode(fform) && fform isa Function && is_delta_node_compatible(algorithm) === Val(true) ?
+    DeltaApproximation(method = algorithm) : algorithm
+
+# The engine names a node's interfaces, never positions: an interface by its name, a member of
+# one of the node's groups as `(name, k)`, `k` being GraphPPL's `EdgeLabel.index`. GraphPPL may
+# index an edge that is no group's, such as `out` from a slice of a data array.
+interface_key(edge::GraphPPL.EdgeLabel, groups) =
+    !isnothing(edge.index) && GraphPPL.getname(edge) in groups ? (GraphPPL.getname(edge), edge.index) : GraphPPL.getname(edge)
+interface_key(edge::GraphPPL.EdgeLabel) = isnothing(edge.index) ? GraphPPL.getname(edge) : (GraphPPL.getname(edge), edge.index)
+
 function set_rmp_factornode!(
     plugin::ReactiveMPInferencePlugin,
     model::Model,
     nodedata::NodeData,
     nodeproperties::FactorNodeProperties,
 )
+    fform = GraphPPL.fform(nodeproperties)
     interfaces = map(GraphPPL.neighbors(nodeproperties)) do (_, edge, data)
-        return (
-            GraphPPL.getname(edge), getextra(data, ReactiveMPExtraVariableKey)
-        )
+        key = isdeclarednode(fform) ? interface_key(edge, MessagePassingRulesBase.interface_groups(fform)) : interface_key(edge)
+        return (key, getextra(data, ReactiveMPExtraVariableKey))
     end
-    factorization = getextra(
+    # GraphPPL gives the factorisation as positions in the node's neighbours.
+    positions = getextra(
         nodedata, GraphPPL.VariationalConstraintsFactorizationIndicesKey
     )
-    return setextra!(
-        nodedata,
-        ReactiveMPExtraFactorNodeKey,
-        factornode(GraphPPL.fform(nodeproperties), interfaces, factorization),
-    )
+    node = if isdeclarednode(fform)
+        factorization = map(cluster -> map(i -> first(interfaces[i]), Tuple(cluster)), Tuple(positions))
+        factornode(fform, interfaces, factorization)
+    elseif fform isa Distribution
+        # `x ~ d` for a distribution value: the node `out ~ d`, `d` a constant of its own.
+        length(interfaces) == 1 || error("A factor node with a distribution object can only have one output interface.")
+        (_, variable) = only(interfaces)
+        setextra!(nodedata, ReactiveMPExtraHiddenConstantsKey, 1)
+        factornode(StandaloneDistribution, [(:out, variable), (:distribution, ReactiveMP.constvar(fform))], ((:out,), (:distribution,)))
+    elseif fform isa Function
+        delta_factornode(fform, interfaces, positions)
+    else
+        error("`$(fform)` is not a factor node: no loaded package declares it with `@define_factor_node`")
+    end
+    return setextra!(nodedata, ReactiveMPExtraFactorNodeKey, node)
+end
+
+# A function no package declares is a Delta node, `out = f(in...)`, whose inputs are the group
+# `in`: a single input, which GraphPPL leaves unindexed, is its first member.
+function delta_factornode(f::F, interfaces, positions) where {F}
+    keys = map(interfaces) do (key, _)
+        key === :out && return :out
+        key isa Symbol && return (:in, 1)
+        return (:in, last(key))
+    end
+    renamed = map((key, (_, variable)) -> (key, variable), keys, interfaces)
+    factorization = map(cluster -> map(i -> keys[i], Tuple(cluster)), Tuple(positions))
+    return factornode(DeltaFn{F}, renamed, factorization; nodefn = f)
 end
 
 function activate_rmp_factornode!(
@@ -531,8 +622,7 @@ function activate_rmp_factornode!(
     nodedata::NodeData,
     nodeproperties::FactorNodeProperties,
 )
-    metadata = getextra(nodedata, GraphPPL.MetaExtraKey, nothing)
-    dependencies = getextra(nodedata, ReactiveMPExtraDependenciesKey, nothing)
+    algorithm = node_algorithm(nodedata)
     stream_postprocessors = getextra(
         nodedata, ReactiveMPExtraStreamPostprocessorsKey, nothing
     )
@@ -541,16 +631,15 @@ function activate_rmp_factornode!(
         stream_postprocessors = getpostprocessor(getoptions(plugin))
     end
     annotations = getannotations(getoptions(plugin))
-    rulefallback = getrulefallback(getoptions(plugin))
     callbacks = getcallbacks(getoptions(plugin))
 
-    options = ReactiveMP.FactorNodeActivationOptions(
-        metadata,
-        dependencies,
-        stream_postprocessors,
+    options = ReactiveMP.FactorNodeActivationOptions(;
+        algorithm,
+        postprocessor = stream_postprocessors,
         annotations,
-        rulefallback,
         callbacks,
+        diagnostics = getdiagnostics(getoptions(plugin)),
+        rng = getrng(getoptions(plugin)),
     )
 
     return ReactiveMP.activate!(

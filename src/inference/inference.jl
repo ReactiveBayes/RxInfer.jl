@@ -1,5 +1,19 @@
 export KeepEach, KeepLast
-export infer
+export infer, @algorithm
+
+"""
+    @algorithm begin
+        f(x, y) -> DeltaApproximation(method = Unscented())
+        NormalMixture() -> NormalMixtureVMP()
+    end
+
+The algorithm each node of a model runs under, by the node's function and its variables, as
+`@meta` did for v6's meta: a node's meta is its algorithm in ReactiveMP v7. Pass it to `infer`
+as `algorithm`. A single node takes one in the model, `x ~ Node(…) where { algorithm = … }`.
+"""
+macro algorithm(body)
+    return esc(GraphPPL.meta_macro_interior(body))
+end
 export InferenceResult
 export RxInferenceEngine, RxInferenceEvent
 
@@ -528,7 +542,8 @@ Check the official documentation for more information about some of the argument
 - `autoupdates = nothing`: auto-updates specification, required for streamline inference, see [`@autoupdates`](@ref)
 - `initialization = nothing`: initialization specification object, optional, see [`@initialization`](@ref)
 - `constraints = nothing`: constraints specification object, or an alias such as `MeanField`, optional, see `@constraints`
-- `meta  = nothing`: meta specification object, optional, may be required for some models, see `@meta`
+- `algorithm = nothing`: the algorithm specification, which algorithm each node runs under, optional, may be required for some models, see [`@algorithm`](@ref)
+- `meta = nothing`: deprecated, the old name of `algorithm`; a `@meta` specification is still accepted as one
 - `options = nothing`: model creation options, optional, see [`ReactiveMPInferenceOptions`](@ref)
 - `returnvars = nothing`: return structure info, optional, defaults to return everything at each iteration
 - `predictvars = nothing`: return structure info, optional (exclusive for batch inference)
@@ -569,7 +584,8 @@ function infer(;
     initmessages = nothing, # removed, the error is thrown below for easier migration
     initmarginals = nothing, # removed, the error is thrown below for easier migration
     constraints = nothing,
-    meta = nothing,
+    algorithm = nothing,
+    meta = nothing, # deprecated, the algorithm's old name
     options = nothing,
     returnvars = nothing,
     predictvars = nothing, # batch specific
@@ -593,6 +609,13 @@ function infer(;
     trace = false,
     session = RxInfer.default_session(),
 )
+    # v6's `meta` is the node's algorithm now, and its old name stays for one release.
+    if !isnothing(meta)
+        !isnothing(algorithm) && error("`infer` was given both `algorithm` and `meta`; `meta` is the algorithm's deprecated name, so give only `algorithm`.")
+        Base.depwarn("`infer(; meta = …)` is deprecated: a node's meta is its algorithm in ReactiveMP v7, so write `infer(; algorithm = @algorithm(…))`.", :infer; force = true)
+        algorithm = meta
+    end
+    meta = algorithm
     if isnothing(model)
         error(
             "The `model` keyword argument is required for the `infer` function."

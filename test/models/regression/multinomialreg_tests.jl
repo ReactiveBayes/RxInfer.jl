@@ -5,6 +5,7 @@
         LinearAlgebra,
         StableRNGs,
         ExponentialFamily.LogExpFunctions
+    using PolyaMessagePassingRules
 
     include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
@@ -19,23 +20,22 @@
     @model function multinomial_model(y, N, ξ_ψ, W_ψ)
         ψ ~ MvNormalWeightedMeanPrecision(ξ_ψ, W_ψ)
         for i in eachindex(y)
-            y[i] ~ MultinomialPolya(
-                N, ψ
-            ) where {
-                dependencies = RequireMessageFunctionalDependencies(
-                    ψ = MvNormalWeightedMeanPrecision(ξ_ψ, W_ψ)
-                ),
-            }
+            y[i] ~ MultinomialPolya(N, ψ)
         end
     end
 
+    # The node reads the message on `ψ`'s own edge, which starts from the prior
+    @initialization function multinomial_initialization(ξ_ψ, W_ψ)
+        μ(ψ) = MvNormalWeightedMeanPrecision(ξ_ψ, W_ψ)
+    end
+
+    ξ_ψ = zeros(k - 1)
+    W_ψ = rand(rng, Wishart(k, diageye(k - 1)))
+
     result = infer(
-        model = multinomial_model(
-            ξ_ψ = zeros(k - 1),
-            W_ψ = rand(rng, Wishart(k, diageye(k - 1))),
-            N = N,
-        ),
+        model = multinomial_model(ξ_ψ = ξ_ψ, W_ψ = W_ψ, N = N),
         data = (y = X,),
+        initialization = multinomial_initialization(ξ_ψ, W_ψ),
         iterations = 100,
         free_energy = true,
         showprogress = false,
@@ -61,6 +61,7 @@ end
         LinearAlgebra,
         StableRNGs,
         ExponentialFamily.LogExpFunctions
+    using PolyaMessagePassingRules
 
     include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
@@ -74,22 +75,18 @@ end
 
     @model function multinomial_model(y, N, ξ_ψ, W_ψ, k)
         ψ ~ MvNormalWeightedMeanPrecision(ξ_ψ, W_ψ)
-        y ~ MultinomialPolya(
-            N, ψ
-        ) where {
-            dependencies = RequireMessageFunctionalDependencies(
-                ψ = MvNormalWeightedMeanPrecision(zeros(k - 1), diageye(k - 1))
-            ),
-        }
+        y ~ MultinomialPolya(N, ψ)
     end
 
     @autoupdates function auto()
         ξ_ψ, W_ψ = weightedmean_precision(q(ψ))
     end
+    # The node reads the message on `ψ`'s own edge, which starts from a standard normal
     init = @initialization begin
         q(ψ) = MvNormalWeightedMeanPrecision(
             zeros(k - 1), rand(rng, Wishart(k, diageye(k - 1)))
         )
+        μ(ψ) = MvNormalWeightedMeanPrecision(zeros(k - 1), diageye(k - 1))
     end
 
     result = infer(

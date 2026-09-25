@@ -9,33 +9,45 @@
 
     # half space specification
     struct Halfspace end
-    @node Halfspace Stochastic [out, a, σ2, γ]
+    @define_factor_node(
+        node = Halfspace, type = Stochastic, interfaces = [:out, :a, :σ2, :γ]
+    )
 
     # rule specification
-    @rule Halfspace(:out, Marginalisation) (
-        q_a::PointMass, q_σ2::PointMass, q_γ::PointMass
-    ) = begin
-        return NormalMeanVariance(mean(q_a) + mean(q_γ) * mean(q_σ2), mean(q_σ2))
-    end
+    @define_message_update_rule(
+        node = Halfspace,
+        target = :out,
+        args = (q[:a]::PointMass, q[:σ2]::PointMass, q[:γ]::PointMass),
+        body = (args) -> NormalMeanVariance(
+            mean(args.q[:a]) + mean(args.q[:γ]) * mean(args.q[:σ2]),
+            mean(args.q[:σ2]),
+        ),
+    )
 
     struct ForcePointMass{V}
         v::V
     end
 
-    @rule Halfspace(:σ2, Marginalisation) (
-        q_out::UnivariateNormalDistributionsFamily,
-        q_a::PointMass,
-        q_γ::PointMass,
-    ) = begin
-        return ForcePointMass(
-            1 / mean(q_γ) * sqrt(abs2(mean(q_out) - mean(q_a)) + var(q_out))
-        )
-    end
+    @define_message_update_rule(
+        node = Halfspace,
+        target = :σ2,
+        args = (
+            q[:out]::UnivariateNormalDistributionsFamily,
+            q[:a]::PointMass,
+            q[:γ]::PointMass,
+        ),
+        body = (args) -> ForcePointMass(
+            1 / mean(args.q[:γ]) * sqrt(
+                abs2(mean(args.q[:out]) - mean(args.q[:a])) +
+                var(args.q[:out]),
+            ),
+        ),
+    )
 
     BayesBase.prod(::GenericProd, p::ForcePointMass, any) = PointMass(p.v)
     BayesBase.prod(::GenericProd, any, p::ForcePointMass) = PointMass(p.v)
 
-    ReactiveMP.to_marginal(p::ForcePointMass) = PointMass(p.v)
+    MessagePassingRulesBase.public_equivalent(p::ForcePointMass) = PointMass(p.v)
 
     function h(y1, y2)
         r1 = 15
@@ -89,7 +101,7 @@
         q(d, σ2) = q(d)q(σ2)
     end
 
-    @meta function switching_meta()
+    @algorithm function switching_algorithm()
         h() -> Unscented()
     end
 
@@ -119,7 +131,7 @@
             model          = switching_model(nr_steps = nr_steps, γ = 1, ΔT = 1),
             data           = (goals = goals,),
             constraints    = switching_constraints(),
-            meta           = switching_meta(),
+            algorithm      = switching_algorithm(),
             initialization = init(),
             iterations     = 100,
             returnvars     = KeepLast(),

@@ -11,22 +11,22 @@
         return x .+ θ
     end
 
-    @model function delta_2inputs_θ_fixed(meta, θ, y)
+    @model function delta_2inputs_θ_fixed(algorithm, θ, y)
         c = zeros(2)
         c[1] = 1.0
 
         x ~ MvNormal(μ = zeros(2), Λ = diageye(2))
-        z := f₂(x, θ) where {meta = meta}
+        z := f₂(x, θ) where {algorithm = algorithm}
         w ~ Normal(μ = dot(z, c), σ² = 1.0)
         y ~ Normal(μ = w, σ² = 0.5)
     end
 
-    @model function delta_2inputs_x_fixed(meta, x, y)
+    @model function delta_2inputs_x_fixed(algorithm, x, y)
         c = zeros(2)
         c[1] = 1.0
 
         θ ~ MvNormal(μ = ones(2), Λ = diageye(2))
-        z := f₂(x, θ) where {meta = meta}
+        z := f₂(x, θ) where {algorithm = algorithm}
         w ~ Normal(μ = dot(z, c), σ² = 1.0)
         y ~ Normal(μ = w, σ² = 0.5)
     end
@@ -36,24 +36,24 @@
     ## -------------------------------------------- ##
 
     function inference_2inputs_θ_fixed(data, θ)
-        metas = (
-            DeltaMeta(method = Linearization()),
-            DeltaMeta(method = Unscented()),
+        algorithms = (
+            DeltaApproximation(method = Linearization()),
+            DeltaApproximation(method = Unscented()),
             Linearization(),
             Unscented(),
         )
 
-        datavar_based = map(metas) do meta
+        datavar_based = map(algorithms) do algorithm
             return infer(
-                model = delta_2inputs_θ_fixed(meta = meta),
+                model = delta_2inputs_θ_fixed(algorithm = algorithm),
                 data = (y = data, θ = θ),
                 free_energy = true,
             )
         end
 
-        constvar_based = map(metas) do meta
+        constvar_based = map(algorithms) do algorithm
             return infer(
-                model = delta_2inputs_θ_fixed(meta = meta, θ = θ),
+                model = delta_2inputs_θ_fixed(algorithm = algorithm, θ = θ),
                 data = (y = data,),
                 free_energy = true,
             )
@@ -69,24 +69,24 @@
     end
 
     function inference_2inputs_x_fixed(data, x)
-        metas = (
-            DeltaMeta(method = Linearization()),
-            DeltaMeta(method = Unscented()),
+        algorithms = (
+            DeltaApproximation(method = Linearization()),
+            DeltaApproximation(method = Unscented()),
             Linearization(),
             Unscented(),
         )
 
-        datavar_based = map(metas) do meta
+        datavar_based = map(algorithms) do algorithm
             return infer(
-                model = delta_2inputs_x_fixed(meta = meta),
+                model = delta_2inputs_x_fixed(algorithm = algorithm),
                 data = (y = data, x = x),
                 free_energy = true,
             )
         end
 
-        constvar_based = map(metas) do meta
+        constvar_based = map(algorithms) do algorithm
             return infer(
-                model = delta_2inputs_x_fixed(meta = meta, x = x),
+                model = delta_2inputs_x_fixed(algorithm = algorithm, x = x),
                 data = (y = data,),
                 free_energy = true,
             )
