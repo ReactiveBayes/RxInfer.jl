@@ -35,6 +35,7 @@ Creates model inference options object. The list of available options is present
 - `diagnostics`: the engine's audits of the rules the model runs, a `ReactiveMP.EngineDiagnostics` (`check_everything_pure`, `check_everything_inplace`, `checked_buffers`), all off by default.
 - `context`: services for the rules, a `NamedTuple` merged over the engine's defaults: `rng`, the random number generator the rules draw from, the task's own by default; `matrix_correction`, the correction rules apply to the matrices they build, each rule's own by default; and any service a rule declares.
 - `rulefallback`: the message where no rule matches, such as `NodeFunctionRuleFallback()`; by default none, and a missing rule is an error that lists the closest candidates.
+- `logscales`: whether messages and marginals carry log scales, the log of the constant a rule's result leaves out (see `ReactiveMP.getlogscale`); `false` by default. The `Mixture` node reads them, and a posterior's log scale is the log evidence of a model inferred exactly by belief propagation.
 
 See also: [`infer`](@ref)
 """
@@ -47,6 +48,7 @@ struct ReactiveMPInferenceOptions{S, A, R, E, C, B}
     callbacks::E
     context::C
     rulefallback::B
+    logscales::Bool
 end
 
 ReactiveMPInferenceOptions(
@@ -58,7 +60,7 @@ ReactiveMPInferenceOptions(
     callbacks = nothing,
     context = nothing,
 ) = ReactiveMPInferenceOptions(
-    stream_postprocessors, annotations, warn, force_marginal_computation, diagnostics, callbacks, context, nothing,
+    stream_postprocessors, annotations, warn, force_marginal_computation, diagnostics, callbacks, context, nothing, false,
 )
 
 # The options with one field replaced.
@@ -76,6 +78,7 @@ setdiagnostics(options::ReactiveMPInferenceOptions, diagnostics) = with_option(o
 setcallbacks(options::ReactiveMPInferenceOptions, callbacks) = with_option(options, :callbacks, callbacks)
 setcontext(options::ReactiveMPInferenceOptions, context) = with_option(options, :context, context)
 setrulefallback(options::ReactiveMPInferenceOptions, rulefallback) = with_option(options, :rulefallback, rulefallback)
+setlogscales(options::ReactiveMPInferenceOptions, logscales) = with_option(options, :logscales, logscales)
 
 import Base: convert
 
@@ -96,6 +99,7 @@ function Base.convert(
         :callbacks,
         :context,
         :rulefallback,
+        :logscales,
     )
 
     for key in keys
@@ -110,6 +114,7 @@ function Base.convert(
         haskey(options, :diagnostics) ? options.diagnostics : nothing
     context = haskey(options, :context) ? options.context : nothing
     rulefallback = haskey(options, :rulefallback) ? options.rulefallback : nothing
+    logscales = haskey(options, :logscales) ? options.logscales : false
     force_marginal_computation = if haskey(options, :force_marginal_computation)
         options.force_marginal_computation
     else
@@ -142,6 +147,7 @@ function Base.convert(
         callbacks,
         context,
         rulefallback,
+        logscales,
     )
 end
 
@@ -164,6 +170,7 @@ getdiagnostics(options::ReactiveMPInferenceOptions) =
     something(options.diagnostics, ReactiveMP.EngineDiagnostics())
 getcontext(options::ReactiveMPInferenceOptions) = options.context
 getrulefallback(options::ReactiveMPInferenceOptions) = options.rulefallback
+getlogscales(options::ReactiveMPInferenceOptions) = options.logscales
 ReactiveMP.getcallbacks(options::ReactiveMPInferenceOptions) = options.callbacks
 ReactiveMP.getpostprocessor(options::ReactiveMPInferenceOptions) =
     options.stream_postprocessors
@@ -558,6 +565,7 @@ function activate_rmp_factornode!(
         diagnostics = getdiagnostics(getoptions(plugin)),
         context = getcontext(getoptions(plugin)),
         rulefallback = getrulefallback(getoptions(plugin)),
+        logscales = getlogscales(getoptions(plugin)),
     )
 
     return ReactiveMP.activate!(

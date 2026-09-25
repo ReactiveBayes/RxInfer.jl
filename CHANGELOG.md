@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A node's **algorithm** replaces its meta: `infer(; algorithm = @algorithm(…))` and `where { algorithm = … }`. `meta`, `@meta` and `where { meta = … }` still work for this release, with a deprecation warning. A Delta node may still be given its approximation method alone, `f() -> Linearization()`.
 
 ### Added
+- The `logscales` inference option, `infer(...; logscales = true)` or `options = (logscales = true,)`: messages and marginals carry log scales, read with `getlogscale(result.posteriors[:x])`. It replaces `annotations = LogScaleAnnotations()`, and `getlogscale(getannotations(q))` becomes `getlogscale(q)`; the results keep the `Marginal` wrapper, as with annotations.
 - The `diagnostics` inference option, the engine's audits of the rules a model runs (`EngineDiagnostics(; check_everything_pure, check_everything_inplace, checked_buffers)`), and `context`, the services the rules run with: `(rng = …, matrix_correction = …)`.
 
 ### Removed

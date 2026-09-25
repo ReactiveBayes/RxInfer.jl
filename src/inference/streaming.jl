@@ -564,6 +564,7 @@ function streaming_inference(;
     autostart = true,
     events = nothing,
     annotations = nothing,
+    logscales = nothing,
     callbacks = nothing,
     postprocess = nothing,
     uselock = false,
@@ -603,9 +604,15 @@ function streaming_inference(;
         _options = setannotations(_options, annotations)
     end
 
-    # Determine the default postprocessing strategy based on annotations
+    # Override `options` log scales if the `logscales` keyword argument is present
+    if !isnothing(logscales)
+        _options = setlogscales(_options, logscales)
+    end
+
+    # Determine the default postprocessing strategy: the `Marginal` wrapper is kept when it carries
+    # annotations or log scales
     if isnothing(postprocess)
-        postprocess = if isnothing(getannotations(_options))
+        postprocess = if isnothing(getannotations(_options)) && !getlogscales(_options)
             UnpackMarginalPostprocess()
         else
             NoopPostprocess()

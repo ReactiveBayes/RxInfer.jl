@@ -515,6 +515,7 @@ include("streaming.jl")
         showprogress = false,
         callbacks = nothing,
         annotations = nothing,
+        logscales = nothing,
         postprocess = nothing,
         warn = true,
         events = nothing,
@@ -555,8 +556,9 @@ Check the official documentation for more information about some of the argument
 - `showprogress = false`: show a progress bar, optional, defaults to false (exclusive for batch inference)
 - `catch_exception`: specifies whether exceptions during the inference procedure should be caught, optional, defaults to false (exclusive for batch inference)
 - `callbacks = nothing`: inference cycle callbacks, optional. Can be a `NamedTuple`, `Dict`, or any custom structure that implements `ReactiveMP.handle_event`. See [Callbacks](@ref manual-inference-callbacks) for a comprehensive overview, [Benchmark callbacks](@ref manual-inference-benchmark-callbacks) for performance analysis, [Trace callbacks](@ref manual-inference-trace-callbacks) for event tracing, and [Early stopping](@ref manual-inference-early-stopping) for an opt-in callback example.
-- `annotations = nothing`: a tuple of annotation processors that attach extra information to messages and marginals during inference. For example, `annotations = LogScaleAnnotations()` tracks log-scale normalization constants, which is useful for computing Bayes factors and model evidence in mixture models. When annotations are enabled, the inference results preserve the `Marginal` wrapper type so that annotation data remains accessible via `ReactiveMP.getannotations`. See `ReactiveMP.jl` documentation for available annotation types and how to implement custom annotation processors.
-- `postprocess = nothing`: inference results postprocessing step, optional. By default, uses [`UnpackMarginalPostprocess`](@ref) when `annotations` is `nothing` (strips the `Marginal` wrapper), and [`NoopPostprocess`](@ref) when annotations are enabled (preserves the wrapper). See [Inference results postprocessing](@ref user-guide-inference-postprocess) for details on implementing custom strategies.
+- `annotations = nothing`: a tuple of annotation processors that attach extra information to messages and marginals during inference, such as `InputArgumentsAnnotations()`. When annotations are enabled, the inference results preserve the `Marginal` wrapper type so that annotation data remains accessible via `ReactiveMP.getannotations`. See `ReactiveMP.jl` documentation for available annotation types and how to implement custom annotation processors.
+- `logscales = nothing`: whether messages and marginals carry log scales, the log of the constant a rule's result leaves out; `true` enables them, as `options = (logscales = true,)` does. The `Mixture` node needs them, and a posterior's log scale, `getlogscale(result.posteriors[:x])`, is the log evidence of a model inferred exactly by belief propagation, useful for Bayes factors and model comparison. The inference results then preserve the `Marginal` wrapper, which carries the log scale.
+- `postprocess = nothing`: inference results postprocessing step, optional. By default, uses [`UnpackMarginalPostprocess`](@ref) when neither `annotations` nor `logscales` is enabled (strips the `Marginal` wrapper), and [`NoopPostprocess`](@ref) otherwise (preserves the wrapper). See [Inference results postprocessing](@ref user-guide-inference-postprocess) for details on implementing custom strategies.
 - `events = nothing`: inference cycle events, optional (exclusive for streamline inference)
 - `uselock = false`: specifies whether to use a lock structure for the inference; if set to `true`, uses `Base.Threads.SpinLock`. Accepts a custom `AbstractLock`. (exclusive for streamline inference)
 - `autostart = true`: specifies whether to call `RxInfer.start` on the created engine automatically or not (exclusive for streamline inference)
@@ -600,6 +602,7 @@ function infer(;
     disable_inference_error_hint = false, # batch specific
     callbacks = nothing,
     annotations = nothing,
+    logscales = nothing,
     postprocess = nothing,
     events = nothing, # streamline specific
     uselock = false, # streamline  specific
@@ -706,6 +709,7 @@ function infer(;
                 showprogress = showprogress,
                 callbacks = callbacks,
                 annotations = annotations,
+                logscales = logscales,
                 postprocess = postprocess,
                 warn = warn,
                 catch_exception = catch_exception,
@@ -737,6 +741,7 @@ function infer(;
                 autostart = autostart,
                 callbacks = callbacks,
                 annotations = annotations,
+                logscales = logscales,
                 postprocess = postprocess,
                 warn = warn,
                 events = events,

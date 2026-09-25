@@ -9,14 +9,14 @@ whether these wrappers are preserved or stripped from the final result.
 
 ## Default behavior
 
-The default postprocessing strategy depends on whether [annotations](@ref RxInfer.infer) are enabled:
+The default postprocessing strategy depends on whether [annotations or log scales](@ref RxInfer.infer) are enabled:
 
-- **Without annotations** (`annotations = nothing`, the default): the strategy is [`UnpackMarginalPostprocess`](@ref). 
-  Since no annotation data is attached, the `Marginal` wrapper is removed and the result 
+- **Without either** (`annotations = nothing` and `logscales` unset, the default): the strategy is [`UnpackMarginalPostprocess`](@ref). 
+  Since nothing is attached, the `Marginal` wrapper is removed and the result 
   contains the underlying distribution directly (e.g., a `Normal` or `Beta` distribution).
-- **With annotations** (e.g., `annotations = LogScaleAnnotations()`): the strategy is [`NoopPostprocess`](@ref). 
+- **With annotations or log scales** (e.g., `annotations = InputArgumentsAnnotations()` or `logscales = true`): the strategy is [`NoopPostprocess`](@ref). 
   The `Marginal` wrapper is preserved so that annotation data remains accessible via 
-  `ReactiveMP.getannotations`.
+  `ReactiveMP.getannotations`, and the log scale via `getlogscale`.
 
 You can always override the default by passing `postprocess = ...` explicitly to [`infer`](@ref).
 

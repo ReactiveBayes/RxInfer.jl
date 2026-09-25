@@ -1,4 +1,3 @@
-using Base: annotations
 @testitem "Model mixture" begin
     using Distributions
     using BenchmarkTools, LinearAlgebra, StableRNGs, Plots
@@ -51,14 +50,14 @@ using Base: annotations
             data = (y = dataset,),
             returnvars = (θ = KeepLast(),),
             free_energy = true,
-            annotations = LogScaleAnnotations(),
+            logscales = true,
         )
         result2 = infer(
             model = beta_model2(),
             data = (y = dataset,),
             returnvars = (θ = KeepLast(),),
             free_energy = true,
-            annotations = LogScaleAnnotations(),
+            logscales = true,
         )
 
         resultswitch = infer(
@@ -70,7 +69,7 @@ using Base: annotations
                 in2 = KeepLast(),
                 selector = KeepLast(),
             ),
-            annotations = LogScaleAnnotations(),
+            logscales = true,
         )
 
         ## -------------------------------------------- ##
@@ -90,23 +89,23 @@ using Base: annotations
 
         # check free energies
         @test -result1.free_energy[1] ≈
-            getlogscale(getannotations(result1.posteriors[:θ]))
+            getlogscale(result1.posteriors[:θ])
         @test -result2.free_energy[1] ≈
-            getlogscale(getannotations(result2.posteriors[:θ]))
-        @test getlogscale(getannotations(resultswitch.posteriors[:in1])) ≈
+            getlogscale(result2.posteriors[:θ])
+        @test getlogscale(resultswitch.posteriors[:in1]) ≈
             log(0.3) - result1.free_energy[1]
-        @test getlogscale(getannotations(resultswitch.posteriors[:in2])) ≈
+        @test getlogscale(resultswitch.posteriors[:in2]) ≈
             log(0.7) - result2.free_energy[1]
         @test log(
             0.3 * exp(-result1.free_energy[1]) +
             0.7 * exp(-result2.free_energy[1]),
-        ) ≈ getlogscale(getannotations(resultswitch.posteriors[:selector]))
+        ) ≈ getlogscale(resultswitch.posteriors[:selector])
         @test log(
             0.3 * exp(-result1.free_energy[1]) +
             0.7 * exp(-result2.free_energy[1]),
-        ) ≈ getlogscale(getannotations(resultswitch.posteriors[:θ]))
-        @test getlogscale(getannotations(resultswitch.posteriors[:θ])) ≈
-            getlogscale(getannotations(resultswitch.posteriors[:selector]))
+        ) ≈ getlogscale(resultswitch.posteriors[:θ])
+        @test getlogscale(resultswitch.posteriors[:θ]) ≈
+            getlogscale(resultswitch.posteriors[:selector])
 
         ## Create output plots
         @test_plot "models" "switch" begin

@@ -290,9 +290,15 @@ See also [Early stopping](@ref manual-inference-early-stopping) and [Benchmark c
 
 - ### `annotations`
 
-Sets a tuple of annotation processors that attach extra information to messages and marginals during inference. For example, `annotations = LogScaleAnnotations()` tracks log-scale normalization constants, which is useful for computing Bayes factors and model evidence in mixture models. When annotations are enabled, the inference results preserve the `Marginal` wrapper type so that annotation data remains accessible via `ReactiveMP.getannotations`. See `ReactiveMP.jl` documentation for available annotation types and how to implement custom annotation processors.
+Sets a tuple of annotation processors that attach extra information to messages and marginals during inference, such as `InputArgumentsAnnotations()`. When annotations are enabled, the inference results preserve the `Marginal` wrapper type so that annotation data remains accessible via `ReactiveMP.getannotations`. See `ReactiveMP.jl` documentation for available annotation types and how to implement custom annotation processors.
 
 Automatically changes the default value of the `postprocess` argument to `NoopPostprocess`.
+
+- ### `logscales`
+
+`logscales = true` makes messages and marginals carry log scales: the log of the constant each rule's result leaves out, where the rule can compute it, combined through every product of messages. The `Mixture` node needs them, and in a model inferred exactly by belief propagation a posterior's log scale, `getlogscale(result.posteriors[:x])`, is the log evidence of the data, which is useful for Bayes factors and model comparison. Where a log scale cannot be computed, for instance after a variational rule, it is a `ReactiveMP.UndefinedLogScale` that says why. It can also be given as `options = (logscales = true,)`.
+
+Automatically changes the default value of the `postprocess` argument to `NoopPostprocess`, so the results keep the `Marginal` wrapper that carries the log scale.
 
 - ### `postprocess`
 
@@ -301,7 +307,7 @@ Also read the [Inference results postprocessing](@ref user-guide-inference-postp
 The `postprocess` keyword argument controls whether the inference results must be modified in some way before exiting the `inference` function.
 By default, the inference function removes the `Marginal` wrapper type from the results.
 Change this setting to `NoopPostprocess` if you would like to keep the `Marginal` wrapper type.
-If the `annotations` argument has been used, automatically changes the default strategy value to `NoopPostprocess`.
+If the `annotations` or `logscales` argument has been used, automatically changes the default strategy value to `NoopPostprocess`.
 
 - ### Error hints
 

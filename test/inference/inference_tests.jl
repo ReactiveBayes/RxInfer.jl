@@ -550,45 +550,45 @@ end
         node = gcv,
         target = :y,
         args = (q[:x]::Any, q[:z]::Any, q[:κ]::Any, q[:ω]::Any),
-        body = (algo, args) -> call_message_update_rule(
+        body = (algo, args) -> getresult(call_message_update_rule(
             GCV, :y; q = (x = args.q[:x], z = args.q[:z], κ = args.q[:κ], ω = args.q[:ω]), algorithm = algo
-        ),
+        )),
     )
 
     @define_message_update_rule(
         node = gcv,
         target = :x,
         args = (q[:y]::Any, q[:z]::Any, q[:κ]::Any, q[:ω]::Any),
-        body = (algo, args) -> call_message_update_rule(
+        body = (algo, args) -> getresult(call_message_update_rule(
             GCV, :x; q = (y = args.q[:y], z = args.q[:z], κ = args.q[:κ], ω = args.q[:ω]), algorithm = algo
-        ),
+        )),
     )
 
     @define_message_update_rule(
         node = gcv,
         target = :ω,
         args = (q[:y]::Any, q[:x]::Any, q[:z]::Any, q[:κ]::Any),
-        body = (algo, args) -> call_message_update_rule(
+        body = (algo, args) -> getresult(call_message_update_rule(
             GCV, :ω; q = (y = args.q[:y], x = args.q[:x], z = args.q[:z], κ = args.q[:κ]), algorithm = algo
-        ),
+        )),
     )
 
     @define_message_update_rule(
         node = gcv,
         target = :z,
         args = (q[:y]::Any, q[:x]::Any, q[:κ]::Any, q[:ω]::Any),
-        body = (algo, args) -> call_message_update_rule(
+        body = (algo, args) -> getresult(call_message_update_rule(
             GCV, :z; q = (y = args.q[:y], x = args.q[:x], κ = args.q[:κ], ω = args.q[:ω]), algorithm = algo
-        ),
+        )),
     )
 
     @define_message_update_rule(
         node = gcv,
         target = :κ,
         args = (q[:y]::Any, q[:x]::Any, q[:z]::Any, q[:ω]::Any),
-        body = (algo, args) -> call_message_update_rule(
+        body = (algo, args) -> getresult(call_message_update_rule(
             GCV, :κ; q = (y = args.q[:y], x = args.q[:x], z = args.q[:z], ω = args.q[:ω]), algorithm = algo
-        ),
+        )),
     )
 
     @define_average_energy(
@@ -702,16 +702,16 @@ end
         @test_logs (:warn, r"Both .* specify a value for the `annotations`.*") infer(
             model = beta_bernoulli(),
             data = (y = observations,),
-            annotations = LogScaleAnnotations(),
-            options = (annotations = LogScaleAnnotations(),),
+            annotations = InputArgumentsAnnotations(),
+            options = (annotations = InputArgumentsAnnotations(),),
             warn = true,
         )
         # Should not display a warning if `warn` is set to `true`
         @test_logs infer(
             model = beta_bernoulli(),
             data = (y = observations,),
-            annotations = LogScaleAnnotations(),
-            options = (annotations = LogScaleAnnotations(),),
+            annotations = InputArgumentsAnnotations(),
+            options = (annotations = InputArgumentsAnnotations(),),
             warn = false,
         )
     end
@@ -2083,12 +2083,12 @@ end
         pure = false,
         body = (algo, args) -> begin
             algo.count += 1
-            return call_marginal_update_rule(
+            return getresult(call_marginal_update_rule(
                 DiscreteTransition,
                 (:out, :in);
                 m = (out = args.m[:out], in = args.m[:in]),
                 q = (a = args.q[:a],),
-            )
+            ))
         end,
     )
 
