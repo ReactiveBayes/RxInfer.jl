@@ -611,12 +611,13 @@ function streaming_inference(;
 
     # Determine the default postprocessing strategy: the `Marginal` wrapper is kept when it carries
     # annotations or log scales
-    if isnothing(postprocess)
-        postprocess = if isnothing(getannotations(_options)) && !getlogscales(_options)
-            UnpackMarginalPostprocess()
-        else
-            NoopPostprocess()
-        end
+    # A single assignment: `postprocess` is captured below, and a reassigned captured variable is boxed
+    _postprocess = if !isnothing(postprocess)
+        postprocess
+    elseif isnothing(getannotations(_options)) && !getlogscales(_options)
+        UnpackMarginalPostprocess()
+    else
+        NoopPostprocess()
     end
 
     # Set ReactiveMP event handler if `callbacks` are set
@@ -678,8 +679,7 @@ function streaming_inference(;
         callbacks, AfterModelCreationEvent(fmodel, model_creation_span_id)
     )
 
-    vardict = getvardict(fmodel)
-    vardict = GraphPPL.variables(vardict) # TODO: Should work recursively as well
+    vardict = gettoplevelvardict(fmodel) # TODO: Should work recursively as well
 
     _autoupdates = prepare_autoupdates_for_model(_autoupdates, fmodel)
 
@@ -763,8 +763,9 @@ function streaming_inference(;
         elseif historyvars === KeepEach() || historyvars === KeepLast()
             # Second we check if it is one of the two possible global values: `KeepEach` and `KeepLast`. 
             # If so, we replace it with either `KeepEach` or `KeepLast` for each random and not-proxied variable in a model
+            keepoption = historyvars
             historyvars = Dict(
-                variable => historyvars for
+                variable => keepoption for
                 (variable, value) in pairs(vardict) if
                 (israndom(value) && !isanonymous(value))
             )
@@ -804,7 +805,7 @@ function streaming_inference(;
         variable =>
             obtain_marginal(vardict[variable]) |>
             schedule_on(tickscheduler) |>
-            map(Any, (data) -> inference_postprocess(postprocess, data)) for
+            map(Any, (data) -> inference_postprocess(_postprocess, data)) for
         variable in returnvars
     )
 
@@ -840,7 +841,7 @@ function streaming_inference(;
         _autoupdates,
         fe_actor,
         fe_source,
-        postprocess,
+        _postprocess,
         _iterations,
         fmodel,
         vardict,

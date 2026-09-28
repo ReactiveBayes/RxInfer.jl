@@ -84,13 +84,14 @@ end
 function score(
     model::ProbabilisticModel, ::BetheFreeEnergy{T}, diagnostic_checks
 ) where {T}
-    node_bound_free_energies = map(getfactornodes(model)) do nodedata
+    nodes = nodes_by_kind(model)
+    node_bound_free_energies = map(nodes.factors) do nodedata
         nodeproperties = getproperties(nodedata)::GraphPPL.FactorNodeProperties
         stream = getextra(nodedata, ReactiveMPExtraBetheFreeEnergyStreamKey)
         return apply_diagnostic_check(diagnostic_checks, nodeproperties, stream)
     end
 
-    variable_bound_entropies = map(getrandomvars(model)) do nodedata
+    variable_bound_entropies = map(nodes.randoms) do nodedata
         nodeproperties = getproperties(
             nodedata
         )::GraphPPL.VariableNodeProperties
@@ -109,12 +110,12 @@ function score(
 
     degree_fn =
         (nodedata::GraphPPL.NodeData) ->
-            ReactiveMP.degree(getextra(nodedata, :rmp_variable))
+            ReactiveMP.degree(getextra(nodedata, ReactiveMPExtraVariableKey))
 
-    data_point_entropies_n     = mapreduce(degree_fn, +, getdatavars(model); init = 0)
-    constant_point_entropies_n = mapreduce(degree_fn, +, getconstantvars(model); init = 0)
+    data_point_entropies_n     = mapreduce(degree_fn, +, nodes.datas; init = 0)
+    constant_point_entropies_n = mapreduce(degree_fn, +, nodes.constants; init = 0)
     hidden_point_entropies_n = mapreduce(
-        nodedata -> getextra(nodedata, ReactiveMPExtraHiddenConstantsKey, 0), +, getfactornodes(model); init = 0
+        nodedata -> getextra(nodedata, ReactiveMPExtraHiddenConstantsKey, 0), +, nodes.factors; init = 0
     )
 
     point_entropies = CountingReal(

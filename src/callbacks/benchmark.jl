@@ -59,15 +59,17 @@ using PrettyTables
 PrettyTables.pretty_table(callbacks)
 ```
 """
-struct RxInferBenchmarkCallbacks
-    before_model_creation_ts::CircularBuffer{UInt64}
-    after_model_creation_ts::CircularBuffer{UInt64}
-    before_inference_ts::CircularBuffer{UInt64}
-    after_inference_ts::CircularBuffer{UInt64}
-    before_iteration_ts::CircularBuffer{Vector{UInt64}}
-    after_iteration_ts::CircularBuffer{Vector{UInt64}}
-    before_autostart_ts::CircularBuffer{UInt64}
-    after_autostart_ts::CircularBuffer{UInt64}
+# A `mutable struct` so that the engine, which stores its callbacks in every message mapping and
+# product context, holds one reference rather than a copy of eight
+mutable struct RxInferBenchmarkCallbacks
+    const before_model_creation_ts::CircularBuffer{UInt64}
+    const after_model_creation_ts::CircularBuffer{UInt64}
+    const before_inference_ts::CircularBuffer{UInt64}
+    const after_inference_ts::CircularBuffer{UInt64}
+    const before_iteration_ts::CircularBuffer{Vector{UInt64}}
+    const after_iteration_ts::CircularBuffer{Vector{UInt64}}
+    const before_autostart_ts::CircularBuffer{UInt64}
+    const after_autostart_ts::CircularBuffer{UInt64}
 end
 
 function RxInferBenchmarkCallbacks(;
@@ -220,3 +222,11 @@ function Base.show(io::IO, callbacks::RxInferBenchmarkCallbacks)
         )
     end
 end
+
+# The events the benchmark callbacks record: the engine builds no other event for them
+# (`ReactiveMP.listens`), so `benchmark = true` does not slow down every rule call.
+ReactiveMP.listens(::RxInferBenchmarkCallbacks, ::Type{T}) where {T} =
+    T <: Union{
+    BeforeModelCreationEvent, AfterModelCreationEvent, BeforeInferenceEvent, AfterInferenceEvent,
+    BeforeIterationEvent, AfterIterationEvent, BeforeAutostartEvent, AfterAutostartEvent,
+}

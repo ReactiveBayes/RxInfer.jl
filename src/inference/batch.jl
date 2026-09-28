@@ -23,8 +23,8 @@ struct InferenceResult{P, A, F, M, E}
     error       :: E
 end
 
-Base.iterate(results::InferenceResult)      = iterate((getfield(results, :posteriors), getfield(results, :predictions), getfield(results, :free_energy), getfield(results, :model), getfield(results, :returnval), getfield(results, :error)))
-Base.iterate(results::InferenceResult, any) = iterate((getfield(results, :posteriors), getfield(results, :predictions), getfield(results, :free_energy), getfield(results, :model), getfield(results, :returnval), getfield(results, :error)), any)
+Base.iterate(results::InferenceResult)      = iterate((getfield(results, :posteriors), getfield(results, :predictions), getfield(results, :free_energy), getfield(results, :model), getfield(results, :error)))
+Base.iterate(results::InferenceResult, any) = iterate((getfield(results, :posteriors), getfield(results, :predictions), getfield(results, :free_energy), getfield(results, :model), getfield(results, :error)), any)
 
 """
 Checks if the `InferenceResult` object does not contain an error. 
@@ -164,12 +164,13 @@ function batch_inference(;
 
     # Determine the default postprocessing strategy: the `Marginal` wrapper is kept when it carries
     # annotations or log scales
-    if isnothing(postprocess)
-        postprocess = if isnothing(getannotations(_options)) && !getlogscales(_options)
-            UnpackMarginalPostprocess()
-        else
-            NoopPostprocess()
-        end
+    # A single assignment: `postprocess` is captured below, and a reassigned captured variable is boxed
+    _postprocess = if !isnothing(postprocess)
+        postprocess
+    elseif isnothing(getannotations(_options)) && !getlogscales(_options)
+        UnpackMarginalPostprocess()
+    else
+        NoopPostprocess()
     end
 
     # Set ReactiveMP event handler if `callbacks` are set
@@ -211,9 +212,9 @@ function batch_inference(;
     # If `predictvars` is specified implicitly as `KeepEach` or `KeepLast`, we replace it with the same value for each data variable
     if (predictvars === KeepEach() || predictvars === KeepLast())
         if !isnothing(data)
-            predictoption = predictvars
+            keepoption = predictvars
             predictvars = Dict(
-                variable => predictoption for (variable, value) in pairs(data)
+                variable => keepoption for (variable, value) in pairs(data)
             )
         else # else we throw an error
             error(
@@ -228,9 +229,9 @@ function batch_inference(;
         # If `predictvars` is not specified, but `data` is, we initialize the `predictvars` with `KeepLast` or `KeepEach` depending on the `iterations` value
         # But only if the data has missing values in it
     elseif isnothing(predictvars) && !isnothing(data)
-        predictoption = iterations isa Number ? KeepEach() : KeepLast()
+        defaultoption = iterations isa Number ? KeepEach() : KeepLast()
         predictvars = Dict(
-            variable => predictoption for (variable, value) in pairs(data) if
+            variable => defaultoption for (variable, value) in pairs(data) if
             inference_check_dataismissing(get_data(value))
         )
         # If both `predictvars` and `data` are specified we double check if there are some entries in the `predictvars`
@@ -271,8 +272,7 @@ function batch_inference(;
     invoke_callback(
         callbacks, AfterModelCreationEvent(fmodel, model_creation_span_id)
     )
-    vardict = getvardict(fmodel)
-    vardict = GraphPPL.variables(vardict) # TODO bvdmitri, should work recursively as well
+    vardict = gettoplevelvardict(fmodel) # TODO bvdmitri, should work recursively as well
 
     # First what we do - we check if `returnvars` is nothing or one of the two possible values: `KeepEach` and `KeepLast`. 
     # If so, we replace it with either `KeepEach` or `KeepLast` for each random and not-proxied variable in a model
@@ -373,13 +373,8 @@ function batch_inference(;
                 "Data is empty. Make sure you used `data` keyword argument with correct value.",
             )
         else
-            foreach(
-                filter(
-                    pair -> isdata(last(pair)) && !isanonymous(last(pair)),
-                    pairs(vardict),
-                ),
-            ) do pair
-                varname = first(pair)
+            for (varname, ref) in pairs(vardict)
+                (isdata(ref) && !isanonymous(ref)) || continue
                 haskey(data, varname) || error(
                     "Data entry `$(varname)` is missing in `data` or `predictvars` arguments. Double check `data = ($(varname) = ???, )` or `predictvars = ($(varname) = ???, )`",
                 )
@@ -493,8 +488,8 @@ function batch_inference(;
         isnothing(values) ? missing : inference_postprocess(postprocess, values)
     end
 
-    posterior_values = Dict(variable => inference_postprocess_or_missing(postprocess, actor) for (variable, actor) in pairs(actors_rv))
-    predicted_values = Dict(variable => inference_postprocess_or_missing(postprocess, actor) for (variable, actor) in pairs(actors_pr))
+    posterior_values = Dict(variable => inference_postprocess_or_missing(_postprocess, actor) for (variable, actor) in pairs(actors_rv))
+    predicted_values = Dict(variable => inference_postprocess_or_missing(_postprocess, actor) for (variable, actor) in pairs(actors_pr))
     fe_values        = !isnothing(fe_actor) ? score_snapshot_iterations(fe_actor, executed_iterations) : nothing
 
     return InferenceResult(

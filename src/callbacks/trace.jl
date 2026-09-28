@@ -228,3 +228,8 @@ function convert_to_tensorboard(args...)
         "`convert_to_tensorboard` method with the specified arguments were not found. Did you load the `TensorBoardLogger.jl` in the current session? Otherwise consult the documentation.",
     )
 end
+
+# The events the trace records: with an `include` filter the engine builds no other event for it
+# (`ReactiveMP.listens`); `AfterModelCreationEvent` always, since it saves the trace to the model.
+ReactiveMP.listens(callbacks::RxInferTraceCallbacks, ::Type{T}) where {T} =
+    T <: AfterModelCreationEvent || is_trace_event_included(callbacks, event_name(T))

@@ -56,6 +56,8 @@ getreturnval(model::ProbabilisticModel) = getreturnval(getmodel(model))
 
 "Returns the (nested) dictionary of random variables from the model specification."
 getvardict(model::ProbabilisticModel) = getvardict(getmodel(model))
+gettoplevelvardict(model::ProbabilisticModel) = gettoplevelvardict(getmodel(model))
+nodes_by_kind(model::ProbabilisticModel) = nodes_by_kind(getmodel(model))
 
 "Returns the random variables from the model specification."
 getrandomvars(model::ProbabilisticModel) = getrandomvars(getmodel(model))

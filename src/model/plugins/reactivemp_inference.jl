@@ -488,6 +488,10 @@ model_algorithm(fform, algorithm) =
     !isdeclarednode(fform) && fform isa Function && is_delta_node_compatible(algorithm) === Val(true) ?
     DeltaApproximation(method = algorithm) : algorithm
 
+# An interface of a node as the engine takes it, its key and its variable. Collected into a vector
+# of this type, the entries are not widened to their common type at run time for every node.
+const NodeInterfaceEntry = Tuple{Union{Symbol, Tuple{Symbol, Int}}, ReactiveMP.AbstractVariable}
+
 # The engine names a node's interfaces, never positions: an interface by its name, a member of
 # one of the node's groups as `(name, k)`, `k` being GraphPPL's `EdgeLabel.index`. GraphPPL may
 # index an edge that is no group's, such as `out` from a slice of a data array.
@@ -502,15 +506,18 @@ function set_rmp_factornode!(
     nodeproperties::FactorNodeProperties,
 )
     fform = GraphPPL.fform(nodeproperties)
-    interfaces = map(GraphPPL.neighbors(nodeproperties)) do (_, edge, data)
-        key = isdeclarednode(fform) ? interface_key(edge, MessagePassingRulesBase.interface_groups(fform)) : interface_key(edge)
-        return (key, getextra(data, ReactiveMPExtraVariableKey))
-    end
+    # Whether the node is declared, and its groups, are the node's, not each edge's.
+    declared = isdeclarednode(fform)
+    groups = declared ? MessagePassingRulesBase.interface_groups(fform) : ()
+    interfaces = NodeInterfaceEntry[
+        (declared ? interface_key(edge, groups) : interface_key(edge), getextra(data, ReactiveMPExtraVariableKey))
+            for (_, edge, data) in GraphPPL.neighbors(nodeproperties)
+    ]
     # GraphPPL gives the factorisation as positions in the node's neighbours.
     positions = getextra(
         nodedata, GraphPPL.VariationalConstraintsFactorizationIndicesKey
     )
-    node = if isdeclarednode(fform)
+    node = if declared
         factorization = map(cluster -> map(i -> first(interfaces[i]), Tuple(cluster)), Tuple(positions))
         factornode(fform, interfaces, factorization)
     elseif fform isa Distribution
@@ -540,6 +547,22 @@ function delta_factornode(f::F, interfaces, positions) where {F}
     return factornode(DeltaFn{F}, renamed, factorization; nodefn = f)
 end
 
+# The activation options of one node: the inference's, with the node's algorithm and stream
+# postprocessor. A function of those two, so the options are built where their types are known,
+# once each node's are read from its `Any`-valued extras, rather than through keywords of
+# run-time types.
+node_activation_options(options::ReactiveMPInferenceOptions, algorithm, postprocessor) =
+    ReactiveMP.FactorNodeActivationOptions(
+        algorithm,
+        postprocessor,
+        getannotations(options),
+        getcallbacks(options),
+        getdiagnostics(options),
+        something(getcontext(options), NamedTuple()),
+        getrulefallback(options),
+        getlogscales(options),
+    )
+
 function activate_rmp_factornode!(
     plugin::ReactiveMPInferencePlugin,
     model::Model,
@@ -554,19 +577,7 @@ function activate_rmp_factornode!(
     if isnothing(stream_postprocessors)
         stream_postprocessors = getpostprocessor(getoptions(plugin))
     end
-    annotations = getannotations(getoptions(plugin))
-    callbacks = getcallbacks(getoptions(plugin))
-
-    options = ReactiveMP.FactorNodeActivationOptions(;
-        algorithm,
-        postprocessor = stream_postprocessors,
-        annotations,
-        callbacks,
-        diagnostics = getdiagnostics(getoptions(plugin)),
-        context = getcontext(getoptions(plugin)),
-        rulefallback = getrulefallback(getoptions(plugin)),
-        logscales = getlogscales(getoptions(plugin)),
-    )
+    options = node_activation_options(getoptions(plugin), algorithm, stream_postprocessors)
 
     return ReactiveMP.activate!(
         getextra(nodedata, ReactiveMPExtraFactorNodeKey), options
@@ -602,6 +613,22 @@ end
 
 function getreturnval(model::GraphPPL.Model)
     return GraphPPL.returnval(GraphPPL.getcontext(model))
+end
+
+# The references to the variables of the model's top-level context only, what `infer` reads:
+# `getvardict` builds them for every submodel as well.
+function gettoplevelvardict(model::GraphPPL.Model)
+    context = GraphPPL.getcontext(model)
+    variables = merge(GraphPPL.individual_variables(context), GraphPPL.vector_variables(context), GraphPPL.tensor_variables(context))
+    return map_any(v -> getvarref(model, v), variables)
+end
+
+# `map` over a dictionary into one with `Any` values and the same keys, in the same order:
+# Dictionaries' `map` asks the compiler for the result type (`return_type`) on every call.
+function map_any(f::F, dictionary) where {F}
+    result = similar(dictionary, Any)
+    map!(f, result, dictionary)
+    return result
 end
 
 function getvardict(model::GraphPPL.Model)
@@ -676,34 +703,41 @@ function new_observation_indexed!(
     return nothing
 end
 
-function getrandomvars(model::GraphPPL.Model)
-    # TODO improve performance here
-    randomlabels = filter(collect(variable_nodes(model))) do label
-        is_random(getproperties(model[label])::GraphPPL.VariableNodeProperties)
+# The node data of the model's variables of one kind, in one pass over the graph.
+function variables_of_kind(predicate::P, model::GraphPPL.Model) where {P}
+    result = GraphPPL.NodeData[]
+    variable_nodes(model) do _, nodedata
+        predicate(getproperties(nodedata)::GraphPPL.VariableNodeProperties) && push!(result, nodedata)
     end
-    return map(label -> model[label]::GraphPPL.NodeData, randomlabels)
+    return result
 end
 
-function getdatavars(model::GraphPPL.Model)
-    # TODO improve performance here
-    datalabels = filter(collect(variable_nodes(model))) do label
-        is_data(getproperties(model[label])::GraphPPL.VariableNodeProperties)
-    end
-    return map(label -> model[label]::GraphPPL.NodeData, datalabels)
-end
-
-function getconstantvars(model::GraphPPL.Model)
-    # TODO improve performance here
-    constantlabels = filter(collect(variable_nodes(model))) do label
-        is_constant(
-            getproperties(model[label])::GraphPPL.VariableNodeProperties
-        )
-    end
-    return map(label -> model[label]::GraphPPL.NodeData, constantlabels)
-end
+getrandomvars(model::GraphPPL.Model) = variables_of_kind(is_random, model)
+getdatavars(model::GraphPPL.Model) = variables_of_kind(is_data, model)
+getconstantvars(model::GraphPPL.Model) = variables_of_kind(is_constant, model)
 
 function getfactornodes(model::GraphPPL.Model)
-    return map(label -> model[label]::GraphPPL.NodeData, factor_nodes(model))
+    result = GraphPPL.NodeData[]
+    factor_nodes(model) do _, nodedata
+        push!(result, nodedata)
+    end
+    return result
+end
+
+# The node data of the factor nodes and of the random, data and constant variables, in two passes.
+function nodes_by_kind(model::GraphPPL.Model)
+    randoms, datas, constants = GraphPPL.NodeData[], GraphPPL.NodeData[], GraphPPL.NodeData[]
+    variable_nodes(model) do _, nodedata
+        properties = getproperties(nodedata)::GraphPPL.VariableNodeProperties
+        if is_random(properties)
+            push!(randoms, nodedata)
+        elseif is_data(properties)
+            push!(datas, nodedata)
+        elseif is_constant(properties)
+            push!(constants, nodedata)
+        end
+    end
+    return (factors = getfactornodes(model), randoms = randoms, datas = datas, constants = constants)
 end
 
 obtain_prediction(ref::GraphVariableRef) =

@@ -17,6 +17,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The `logscales` inference option, `infer(...; logscales = true)` or `options = (logscales = true,)`: messages and marginals carry log scales, read with `getlogscale(result.posteriors[:x])`. It replaces `annotations = LogScaleAnnotations()`, and `getlogscale(getannotations(q))` becomes `getlogscale(q)`; the results keep the `Marginal` wrapper, as with annotations.
 - The `diagnostics` inference option, the engine's audits of the rules a model runs (`EngineDiagnostics(; check_everything_pure, check_everything_inplace, checked_buffers)`), and `context`, the services the rules run with: `(rng = …, matrix_correction = …)`.
 
+### Performance
+- Model creation and activation on ReactiveMP v7 cost less than on v6: the ReactiveMP plugin decides whether a node is declared, and reads its groups, once per node rather than once per edge, collects each node's interfaces into a vector of a declared element type, and builds a node's activation options through the positional constructor behind a function of the node's algorithm and postprocessor.
+- `benchmark = true` costs about 2% instead of 23%: `RxInferBenchmarkCallbacks` declares the events it records with `ReactiveMP.listens`, so the engine builds no others, and is a `mutable struct`, so the engine's structures that hold it do not copy it; a `trace = (…)` filtered to some events builds only those.
+- The graph getters (`getrandomvars` and the others) walk the graph once, and `infer` reads the model's top-level variables with `gettoplevelvardict`; the free energy reads the factor and variable nodes in two passes instead of five. `infer`, `batch_inference` and `streaming_inference` no longer box captured variables.
+
+### Fixed
+- `a, b, … = infer(…)` destructures the result into its posteriors, predictions, free energy, model and error; it threw, reading a field the result does not have.
+
 ### Removed
 - `where { dependencies = … }`: a node declares what its rules read, and an initial message is set with `@initialization`. Using it is an error saying so.
 

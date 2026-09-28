@@ -495,6 +495,18 @@ include("batch.jl")
 include("autoupdates.jl")
 include("streaming.jl")
 
+# The callbacks `infer` runs with: the user's, merged with the benchmark and trace callbacks when
+# those are enabled.
+function infer_callbacks(callbacks, benchmark, trace)
+    if benchmark
+        callbacks = merge_callbacks(callbacks, RxInferBenchmarkCallbacks())
+    end
+    if trace !== false
+        callbacks = merge_callbacks(callbacks, trace === true ? RxInferTraceCallbacks() : RxInferTraceCallbacks(trace))
+    end
+    return callbacks
+end
+
 """
     infer(
         model; 
@@ -643,18 +655,8 @@ function infer(;
 
     infer_check_dicttype(:data, data)
 
-    if benchmark
-        callbacks = merge_callbacks(callbacks, RxInferBenchmarkCallbacks())
-    end
-
-    if trace !== false
-        trace_callbacks = if trace === true
-            RxInferTraceCallbacks()
-        else
-            RxInferTraceCallbacks(trace)
-        end
-        callbacks = merge_callbacks(callbacks, trace_callbacks)
-    end
+    # A single assignment: the callbacks are captured below, and a reassigned captured variable is boxed
+    _callbacks = infer_callbacks(callbacks, benchmark, trace)
 
     return with_session(session, :inference) do invoke
         append_invoke_context(invoke) do ctx
@@ -681,14 +683,14 @@ function infer(;
             ctx[:showprogress] = showprogress
             ctx[:catch_exception] = catch_exception
 
-            ctx[:callbacks] = log_dictnt_entries(callbacks)
+            ctx[:callbacks] = log_dictnt_entries(_callbacks)
             ctx[:annotations] = log_dictnt_entries(annotations)
             ctx[:options] = log_dictnt_entries(options)
         end
 
         if isnothing(autoupdates)
             check_available_callbacks(
-                warn, callbacks, available_callbacks(batch_inference)
+                warn, _callbacks, available_callbacks(batch_inference)
             )
             check_available_events(
                 warn, events, available_events(batch_inference)
@@ -707,7 +709,7 @@ function infer(;
                 free_energy_diagnostics = free_energy_diagnostics,
                 allow_node_contraction = allow_node_contraction,
                 showprogress = showprogress,
-                callbacks = callbacks,
+                callbacks = _callbacks,
                 annotations = annotations,
                 logscales = logscales,
                 postprocess = postprocess,
@@ -717,7 +719,7 @@ function infer(;
             )
         else
             check_available_callbacks(
-                warn, callbacks, available_callbacks(streaming_inference)
+                warn, _callbacks, available_callbacks(streaming_inference)
             )
             check_available_events(
                 warn, events, available_events(streaming_inference)
@@ -739,7 +741,7 @@ function infer(;
                 free_energy_diagnostics = free_energy_diagnostics,
                 allow_node_contraction = allow_node_contraction,
                 autostart = autostart,
-                callbacks = callbacks,
+                callbacks = _callbacks,
                 annotations = annotations,
                 logscales = logscales,
                 postprocess = postprocess,
