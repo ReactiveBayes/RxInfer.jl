@@ -1,0 +1,2 @@
+# Preserve the resolved numerical dependencies for reproducible comparisons.
+!Manifest.toml
