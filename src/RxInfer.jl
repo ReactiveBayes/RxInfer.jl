@@ -37,6 +37,8 @@ include("callbacks/stop_early.jl")
 include("inference/postprocess.jl")
 include("inference/inference.jl")
 
+include("precompile.jl")
+
 _isprecompiling() = ccall(:jl_generating_output, Cint, ()) == 1
 
 function __init__()
