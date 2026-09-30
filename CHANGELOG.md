@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- A node's trailing group takes its positional arguments as a tuple, so numbers among them become constants of their own: with ReactiveMP v7's `+` a group of terms, `s := a + 1.0` and `a + b + c` each build one `+` node, where a vector mixing a variable and a number was taken as one constant and left the variable unconnected.
 - **RxInfer runs on ReactiveMP v7** (breaking; the v6 → v7 guide in ReactiveMP's documentation lists what changes for models). Nodes and rules come from rule packages: RxInfer re-exports ReactiveMP, MessagePassingRulesBase, StandardMessagePassingRules, DeltaMessagePassingRules and MessagePassingRulesApproximations, and a model using another node loads its package (`using ProbitMessagePassingRules`, …). Nodes are declared with `@define_factor_node` and rules with `@define_message_update_rule` and its siblings, in place of `@node` and `@rule`.
 - The `rulefallback` option takes `NodeFunctionRuleFallback()` from MessagePassingRulesBase, as before; it is consulted only where no rule matches.
 - A node's **algorithm** replaces its meta: `infer(; algorithm = @algorithm(…))` and `where { algorithm = … }`. `meta`, `@meta` and `where { meta = … }` still work for this release, with a deprecation warning. A Delta node may still be given its approximation method alone, `f() -> Linearization()`.

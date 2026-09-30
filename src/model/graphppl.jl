@@ -282,7 +282,7 @@ function GraphPPL.default_parametrization(
             fixed = length(inputs) - 1
             members = rhs[(fixed + 1):end]
             return isempty(members) ? NamedTuple{inputs[1:fixed]}(rhs[1:fixed]) :
-                NamedTuple{inputs}((rhs[1:fixed]..., collect(members)))
+                NamedTuple{inputs}((rhs[1:fixed]..., members))
         end
         return error("`$(something)` has `$(length(inputs))` input interfaces `$(inputs)`, but `$(length(rhs))` arguments provided.")
     end
