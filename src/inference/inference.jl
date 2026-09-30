@@ -344,6 +344,17 @@ function inference_process_error(
         • See `infer` function docs for options
         """
     end
+    if error isa MessagePassingRulesBase.RuleNotFoundError
+        @error """
+        No message passing rule fits a node of the model: the error below names the node, what it
+        was asked to compute, and why each of its rules does not fit.
+
+        The inputs a rule receives follow from the model's `@constraints`, and the rules a node has
+        from the packages loaded (a node outside StandardMessagePassingRules needs its package,
+        such as `using ProbitMessagePassingRules`). The Rule Not Found guide explains the options:
+        https://docs.rxinfer.com/stable/manuals/sharpbits/rule-not-found/
+        """
+    end
     if preference_inference_error_hint && !disable_inference_error_hint
         @error """
         We encountered an error during inference, here are some helpful resources to get you back on track:
@@ -637,7 +648,8 @@ function infer(;
         )
     elseif !isa(model, GraphPPL.ModelGenerator)
         error(
-            "The `model` keyword argument must be of type `GraphPPL.ModelGenerator`.",
+            "The `model` keyword argument takes a model created by calling a `@model` function with its arguments, such as `model = coin_model(n = 10)`; got `$(model)` of type `$(typeof(model))`." *
+                (model isa Function ? " If `$(model)` is the `@model` function, call it with its arguments." : ""),
         )
     elseif !isnothing(data) && !isnothing(datastream)
         error(

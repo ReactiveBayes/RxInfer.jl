@@ -37,11 +37,13 @@ include("callbacks/stop_early.jl")
 include("inference/postprocess.jl")
 include("inference/inference.jl")
 
+include("error_hints.jl")
 include("precompile.jl")
 
 _isprecompiling() = ccall(:jl_generating_output, Cint, ()) == 1
 
 function __init__()
+    Base.Experimental.register_error_hint(removed_name_error_hint, UndefVarError)
     if !_isprecompiling()
         if RxInfer.preference_enable_session_logging
             default_session = create_session()

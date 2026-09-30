@@ -59,8 +59,9 @@ function Rocket.on_next!(actor::ScoreActor{L}, data::L) where {L}
     return nothing
 end
 
+# Rethrown as it is, so that its type and its message, a rule's not-found report, reach the user.
 function Rocket.on_error!(actor::ScoreActor, err)
-    error(err)
+    throw(err)
 end
 
 function Rocket.on_complete!(actor::ScoreActor)

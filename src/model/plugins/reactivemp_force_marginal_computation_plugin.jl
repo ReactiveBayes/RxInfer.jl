@@ -44,7 +44,7 @@ function create_marginals_stream(node::ReactiveMP.AbstractFactorNode)
         lambda(
             Nothing;
             on_next = (d) -> nothing,
-            on_error = (e) -> error(e),
+            on_error = (e) -> throw(e),
             on_complete = () -> nothing,
         ),
     )
