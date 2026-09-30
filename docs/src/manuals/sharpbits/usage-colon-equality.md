@@ -6,15 +6,23 @@ When specifying probabilistic models in RxInfer, you might be tempted to use the
 
 Consider this seemingly reasonable model specification:
 
-```julia
-@model function wrong_model(θ)
+```@example usage-colon-equality
+using RxInfer
+
+@model function wrong_model(θ, z)
     x ~ MvNormal(mean = [ 0.0, 0.0 ], cov = [ 1.0 0.0; 0.0 1.0 ])
     y = dot(x, θ)      # This won't work!
-    z ~ Normal(y, 1.0)
+    z ~ Normal(mean = y, variance = 1.0)
+end
+
+try
+    infer(model = wrong_model(θ = [ 1.0, 2.0 ]), data = (z = 1.0, ))
+catch err
+    showerror(stdout, err)
 end
 ```
 
-This code will fail because:
+The error comes from Julia's `dot` function and does not point at the `=`. The code fails because:
 1. During model creation, `x` is not an actual vector of numbers - it's a reference to a node in the factor graph
 2. Julia's `dot` function expects a vector input, not a graph node
 3. The `=` operator performs immediate assignment and executes the `dot` function, which isn't what we want for building factor graphs
@@ -23,12 +31,16 @@ This code will fail because:
 
 Use the `:=` operator for deterministic relationships:
 
-```julia
-@model function correct_model()
+```@example usage-colon-equality
+@model function correct_model(θ, z)
     x ~ MvNormal(mean = [ 0.0, 0.0 ], cov = [ 1.0 0.0; 0.0 1.0 ])
     y := dot(x, θ)     # This is correct!
-    z ~ Normal(y, 1.0)
+    z ~ Normal(mean = y, variance = 1.0)
 end
+
+result = infer(model = correct_model(θ = [ 1.0, 2.0 ]), data = (z = 1.0, ))
+
+result.posteriors[:x]
 ```
 
 The `:=` operator:
@@ -67,12 +79,7 @@ Using `=` would break this design because:
 
 ## Implementation Details
 
-When you write:
-```julia
-y := dot(x, θ)
-```
-
-RxInfer creates:
+When you write `y := dot(x, θ)`, RxInfer creates:
 1. A deterministic factor node representing the `dot` function with `x` and `θ` as arguments (edges)
 2. A node for `y` if it has not been created yet
 3. Proper edges connecting `x` and `θ` to this node and this node to `y`

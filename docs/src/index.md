@@ -107,7 +107,7 @@ Pages = [
   "manuals/getting-started.md",
   "manuals/model-specification.md",
   "manuals/variational/constraints-specification.md",
-  "manuals/inference/meta-specification.md",
+  "manuals/inference/algorithm-specification.md",
   "manuals/inference/overview.md",
   "manuals/inference/create-node.md",
   "manuals/performance-tips.md",

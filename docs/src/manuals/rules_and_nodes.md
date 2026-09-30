@@ -1,69 +1,172 @@
-# [Understanding Rules: The Mechanics of Message Passing](@id what-is-a-rule)
+# [Understanding rules](@id what-is-a-rule)
 
-In RxInfer, a Rule is a computational unit that defines how information flows across a specific edge of your factor graph.
+A [rule](@extref MessagePassingRulesBase glossary-rule) computes one message of one
+[factor node](@extref MessagePassingRulesBase glossary-factor-node): the message towards one of
+the node's [interfaces](@extref MessagePassingRulesBase glossary-interface), from what the node
+receives on the others. RxInfer finds a rule for every message a model needs. This page explains
+how it finds one, and why some rules take
+[messages](@extref MessagePassingRulesBase glossary-message) while others take
+[marginals](@extref MessagePassingRulesBase glossary-marginal).
 
-Users often ask: "Why do some rules take `m_x` as input, while others take `q_x`? And what about `q_xy`?"
+[Messages by hand](@ref learning-messages-by-hand) and
+[Variational message passing by hand](@ref learning-vmp-by-hand) call the rules of small models
+one by one, and are the practical companion to this page.
 
-The answer lies in the variational constraints you place on your model. Depending on whether you are running unconstrained Belief Propagation or Mean-Field Variational Inference, the nodes in your graph need to perform different mathematical operations, which requires different types of input data.
-
-## Visualizing a Rule
-
-Consider a simple factor node $f$ connecting an input variable $y$ to an output variable $x$. When the node needs to send a message to $x$, the Rule defines how to transform the incoming information from $y$ into that outgoing message.
-
-```mermaid
-graph LR
-    subgraph "The Local Neighborhood"
-    y((y)) -- "Incoming Information" --> factor[Factor Node f]
-    factor -- "Outgoing Message" --> x((x))
-    end
-
-    style factor fill:#f9f,stroke:#333,stroke-width:2px
-    style y fill:#fff,stroke:#333
-    style x fill:#fff,stroke:#333
+```@example rules
+using RxInfer
+nothing # hide
 ```
 
-The "Rule" is the logic inside the pink box. It answers the question: "Given what I know about $y$, what should I tell $x$?"
+## What a rule computes
 
-## The Analogy: Telephone vs. Surveys
+Consider a node ``f(x, y, z)`` and the message it sends towards ``x``. Which formula computes it
+depends on the approximation.
 
-To understand which rule RxInfer needs, imagine the nodes in your graph are agents trying to learn about the world. They use different "protocols" to communicate based on the constraints you apply.
+[Belief propagation](@extref MessagePassingRulesBase glossary-belief-propagation) integrates the
+node function against the messages on the other interfaces:
 
-### 1. The "Telephone" Protocol (Belief Propagation)
+```math
+\mu_{f \to x}(x) = \int f(x, y, z)\, \mu_{y \to f}(y)\, \mu_{z \to f}(z) \, \mathrm{d}y\, \mathrm{d}z .
+```
 
-**Context**: No constraints are applied (or the graph is a tree).
+Its inputs are the messages ``\mu_{y \to f}`` and ``\mu_{z \to f}``, written `m[:y]` and `m[:z]`.
 
-- **Input Prefix**: `m_` (Incoming Message)
-- **The Logic**: "I don't know the final truth, but I will pass on the specific message I just received from my neighbor."
-- **The Math (Sum-Product Integral)**: In exact inference, a factor node $f(x, y)$ calculates a message towards $x$ by integrating the factor with the incoming message from $y$ ($\vec{\mu}(y)$):
+[Variational message passing](@extref MessagePassingRulesBase glossary-vmp) takes the expected
+log-density under the marginals ``q(y)`` and ``q(z)``, the current posterior beliefs about the
+neighbors:
 
-$$\vec{\mu}(x) \propto \int f(x, y) \cdot \vec{\mu}(y) \, dy$$
+```math
+\mu_{f \to x}(x) \propto \exp \mathbb{E}_{q(y)\, q(z)}\big[\log f(x, y, z)\big] .
+```
 
-- **Why `m_`?** To solve this integral, the node only needs the "incoming opinion" ($\vec{\mu}(y)$) from the neighbor branch. It does not need the neighbor's final marginal belief.
+Its inputs are the marginals, written `q[:y]` and `q[:z]`. An expectation needs the whole
+posterior of a neighbor, not only the message the neighbor sends.
 
-### 2. The "Survey" Protocol (Variational Message Passing)
+[Structured variational message passing](@extref MessagePassingRulesBase glossary-structured-vmp)
+mixes the two. When ``x`` and ``y`` stay joint and ``z`` is separate, the rule integrates over
+``y`` with its message and takes the expectation over ``z`` with its marginal:
 
-**Context**: Factorization constraints are applied (e.g., Mean-Field $q(x,y) = q(x)q(y)$).
+```math
+\mu_{f \to x}(x) \propto \int \mu_{y \to f}(y) \exp \mathbb{E}_{q(z)}\big[\log f(x, y, z)\big] \, \mathrm{d}y .
+```
 
-- **Input Prefix**: `q_` (Marginal Distribution)
-- **The Logic**: "To minimize the global error (Free Energy), I need to calculate the average opinion (expectation) of my neighbors."
-- **The Math (Variational Expectation)**: In Variational Message Passing (VMP), the update minimizes the KL-divergence. This results in an update equation based on the expectation of the log-factor:
+Its inputs are `m[:y]` and `q[:z]`.
 
-$$\ln \vec{\mu}(x) \propto \mathbb{E}_{q(y)} \left[ \ln f(x, y) \right]$$
+## How RxInfer finds a rule
 
-- **Why `q_`?** To calculate an expectation $\mathbb{E}_{q(y)}$, the node must know the marginal distribution $q(y)$ of the neighbor. A simple message is not enough; it needs the full summary of the neighbor's belief.
+RxInfer finds a rule from four things:
 
-### 3. The "Team Report" Protocol (Structured Inference)
+- the **node**, such as `NormalMeanPrecision` or the function `+`;
+- the **target**, the interface the message is heading to;
+- the node's **algorithm**, which is `DefaultAlgorithm()` for most nodes;
+- the **inputs**: which messages and marginals the rule receives, and their types.
 
-**Context**: Structured constraints (variables are coupled in blocks).
+Among the rules with the same inputs, the types select one, as Julia's multiple dispatch selects
+a method. [`which_message_update_rule`](@extref MessagePassingRulesBase.which_message_update_rule)
+finds the rule for a call without running it:
 
-- **Input Prefix**: `q_yz` (Joint Marginal)
-- **The Logic**: "Variables A and B are strictly coupled. I cannot look at them separately; I need a joint report on how they relate to each other."
-- **The Math**: Similar to VMP, but the expectation is taken over the joint distribution of the coupled variables:
+```@example rules
+which_message_update_rule(
+    NormalMeanPrecision, :μ;
+    m = (out = NormalMeanVariance(1.0, 2.0), τ = PointMass(4.0)),
+)
+```
 
-$$\ln \vec{\mu}(x) \propto \mathbb{E}_{q(y, z)} \left[ \ln f(x, y, z) \right]$$
+The card shows the inputs the rule takes, where it is defined, and its body. With a normal message
+on `out` and a known precision, the message towards the mean is a normal with the two variances
+added.
 
-- **Why `q_yz`?** If $y$ and $z$ are correlated, $\mathbb{E}[y \cdot z] \neq \mathbb{E}[y]\mathbb{E}[z]$. The rule needs the joint distribution to capture these correlations.
+[`rule_coverage`](@extref MessagePassingRulesBase.rule_coverage) tabulates every rule of a node:
 
-## [Implementing a Custom Node](@id implementing-a-custom-node)
+```@example rules
+MessagePassingRulesBase.rule_coverage(NormalMeanPrecision)
+```
 
-Sometimes you may need to implement a custom node and its corresponding rule. This is a common task when you need to model a new distribution or a new relationship between variables. To read more about how to implement a custom node and its corresponding rule, see [Creating your own custom nodes](@ref create-node) section.
+A row is a target, the average energy, or the joint marginal of a
+[cluster](@extref MessagePassingRulesBase glossary-cluster). A column is an algorithm, and each
+cell counts the rules. The six rules towards `μ` differ in their inputs: messages, marginals or a
+mix, from a known value or from a distribution.
+
+## Messages or marginals: the factorization decides
+
+A rule does not choose whether it takes messages or marginals. The
+[factorization](@extref MessagePassingRulesBase glossary-factorisation) of the posterior does,
+which you state with [`@constraints`](@ref user-guide-constraints-specification). It splits each
+node's interfaces into clusters. The rule towards a target then takes:
+
+- the messages on the other interfaces of the target's own cluster;
+- the marginals of the other clusters, a joint marginal for a cluster of several interfaces.
+
+For a node `x ~ NormalMeanPrecision(μ, τ)`, with the interfaces `out`, `μ` and `τ`:
+
+| factorization | clusters | the rule towards `out` takes | which is |
+|:--|:--|:--|:--|
+| `q(x, μ, τ)` | `(out, μ, τ)` | `m[:μ]`, `m[:τ]` | belief propagation |
+| `q(x) q(μ) q(τ)` | `(out)`, `(μ)`, `(τ)` | `q[:μ]`, `q[:τ]` | [mean-field](@extref MessagePassingRulesBase glossary-mean-field) variational message passing |
+| `q(x, μ) q(τ)` | `(out, μ)`, `(τ)` | `m[:μ]`, `q[:τ]` | structured variational message passing |
+
+Under the mean-field factorization, the rule towards `out` reads the marginals. The card draws
+marginal inputs as dashed arrows:
+
+```@example rules
+@call_message_update_rule(
+    node = NormalMeanPrecision, target = :out,
+    q = (μ = NormalMeanVariance(1.0, 2.0), τ = GammaShapeRate(2.0, 1.0)),
+)
+```
+
+Under the structured factorization, the rule towards `τ` reads the joint marginal of the cluster
+`(out, μ)`, written `q[:out, :μ]`. A call passes a joint marginal with the `clusters` keyword:
+
+```@example rules
+which_message_update_rule(
+    NormalMeanPrecision, :τ;
+    clusters = ((:out, :μ) => MvNormalMeanCovariance([1.0, 0.0], [1.0 0.5; 0.5 2.0]),),
+)
+```
+
+Observed data and constants are known values, and RxInfer keeps each of them in a cluster of its
+own. A stochastic node's rules therefore receive them as
+[point-mass](@extref MessagePassingRulesBase glossary-point-mass) marginals, such as
+`q[:out]::PointMass` for an observation. A point mass is the same distribution as a message or
+as a marginal, and the rules return the same result for either.
+
+A [deterministic node](@extref MessagePassingRulesBase glossary-deterministic-node), such as
+`+` or `*`, relates its output to its inputs by a function. Its clusters are always its output
+and the joint over its inputs, whatever the factorization, so its rules take messages.
+
+## A node's algorithm
+
+An [algorithm](@extref MessagePassingRulesBase glossary-algorithm) selects which rules a node
+runs and carries their parameters. Most nodes run under `DefaultAlgorithm()`, where the
+factorization alone decides the inputs. The node `*` runs under its own default,
+[`MultiplicationSampling`](@extref StandardMessagePassingRules.MultiplicationSampling). Its
+parameter is the number of samples that its rules for two uncertain factors draw:
+
+```@example rules
+MessagePassingRulesBase.rule_coverage(*)
+```
+
+A nonlinear function in a model is a [Delta node](@ref delta-node-manual), whose algorithm names
+the approximation, such as `Linearization()` or `Unscented()`.
+[Algorithm specification](@ref user-guide-algorithm-specification) shows how a model gives a node its
+algorithm, with `where { algorithm = … }` or `@algorithm`.
+[Algorithms and dependencies](@extref MessagePassingRulesBase Algorithms-and-dependencies)
+describes the scheme in full.
+
+## When no rule fits
+
+When no rule takes the inputs a message needs, inference stops with a
+[`RuleNotFoundError`](@extref MessagePassingRulesBase.RuleNotFoundError). The error names the
+node, the target and the inputs, and explains, for every rule of that node and target, why the
+rule does not fit. [Variational message passing by hand](@ref learning-vmp-by-hand) shows one,
+and [Rule Not Found Error](@ref rule-not-found) lists the ways out: another factorization, a
+functional form constraint, or a rule of your own.
+
+## [Implementing a custom node](@id implementing-a-custom-node)
+
+A model may need a node or a rule that no package defines.
+[Creating your own custom nodes](@ref create-node) declares a node and writes its rules for
+RxInfer. MessagePassingRulesBase's tutorial,
+[Your first node](@extref MessagePassingRulesBase tutorial-first-node), writes the belief
+propagation and variational rules of one node and checks them.

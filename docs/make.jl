@@ -1,7 +1,22 @@
 using RxInfer
 using Documenter
 using DocumenterMermaid
+using DocumenterInterLinks
 using Dates
+
+# The ReactiveMP ecosystem's sites, for `@extref` links: each at its planned address, with the
+# inventory of its local build in the ReactiveMP.jl checkout next to this one, which must exist
+# (`make docs-all` there builds them all).
+const REACTIVEMP_ROOT = joinpath(@__DIR__, "..", "..", "ReactiveMP.jl")
+site(name, dir) = ("https://reactivebayes.github.io/$(name).jl/dev/", joinpath(REACTIVEMP_ROOT, dir, "docs", "build", "objects.inv"))
+const LIB_SITES = [
+    "MessagePassingRulesBase", "StandardMessagePassingRules", "MessagePassingRulesApproximations",
+    "DeltaMessagePassingRules", "GaussianCouplingMessagePassingRules", "ProbitMessagePassingRules",
+    "GCVMessagePassingRules", "SoftDotMessagePassingRules", "AutoregressiveMessagePassingRules",
+    "ContinuousTransitionMessagePassingRules", "PolyaMessagePassingRules", "BIFMMessagePassingRules",
+    "FlowMessagePassingRules", "DiscreteTransitionMessagePassingRules",
+]
+links = InterLinks("ReactiveMP" => site("ReactiveMP", "."), (name => site(name, joinpath("lib", name)) for name in LIB_SITES)...)
 
 ## https://discourse.julialang.org/t/generation-of-documentation-fails-qt-qpa-xcb-could-not-connect-to-display/60988
 ## https://gr-framework.org/workstations.html#no-output
@@ -17,6 +32,7 @@ makedocs(;
     modules=[RxInfer],
     authors="Bagaev Dmitry <d.v.bagaev@tue.nl> and contributors",
     sitename="RxInfer.jl",
+    plugins=[links],
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",
         canonical="https://docs.rxinfer.com/stable",
@@ -49,6 +65,10 @@ makedocs(;
                 "Constraints specification" => "manuals/variational/constraints-specification.md",
                 "Functional form constraints" => "manuals/variational/functional-forms.md"
             ],
+            "Message passing by hand" => [
+                "Messages by hand" => "manuals/learning/messages-by-hand.md",
+                "Variational message passing by hand" => "manuals/learning/vmp-by-hand.md",
+            ],
             "Understanding Rules" => "manuals/rules_and_nodes.md",
             "Inference specification" => [
                 "Overview" => "manuals/inference/overview.md",
@@ -56,7 +76,7 @@ makedocs(;
                 "Streamline inference" => "manuals/inference/streamlined.md",
                 "Static vs. Streamlined" => "manuals/inference/static-vs-streamlined.md",
                 "Initialization" => "manuals/inference/initialization.md",
-                "Meta specification" => "manuals/inference/meta-specification.md",
+                "Algorithm specification" => "manuals/inference/algorithm-specification.md",
                 "Auto-updates" => "manuals/inference/autoupdates.md",
                 "Partially-referenced (sparse) data" =>
                     "manuals/inference/partial-data.md",
@@ -76,6 +96,7 @@ makedocs(;
             "Session summary" => "manuals/session_summary.md",
             "Sharing sessions & telemetry" => "manuals/telemetry.md",
             "Migration guides" => [
+                "Migration from v5 to v6" => "manuals/migration/v5-to-v6.md",
                 "Migration from v2 to v3" => "manuals/migration/v2-to-v3.md",
                 "Migration from v4 to v5" => "manuals/migration/v4-to-v5.md",
             ],

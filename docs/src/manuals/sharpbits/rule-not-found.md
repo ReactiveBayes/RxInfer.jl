@@ -9,21 +9,57 @@ Message-passing inference works by exchanging messages between nodes in a factor
 1. The type of the factor node (e.g., `Normal`, `Gamma`, etc.)
 2. The types of incoming messages (e.g., `Normal`, `PointMass`, etc.) 
 3. The interface through which the message is being computed
-4. The inference method being used (Belief Propagation or Variational Message Passing)
+4. The inference method being used (Belief Propagation or Variational Message Passing), and the node's algorithm
 
-The last point is particularly important - some message update rules may exist for Variational Message Passing (VMP) but not for Belief Propagation (BP), or vice versa. This is because BP aims to compute exact posterior distributions through message passing (when possible), while VMP approximates the posterior using the Bethe approximation. For a detailed mathematical treatment of these differences, see our [Bethe Free Energy implementation](@ref lib-bethe-free-energy) guide.
+The fourth point is particularly important - some message update rules may exist for Variational Message Passing (VMP) but not for Belief Propagation (BP), or vice versa. This is because BP aims to compute exact posterior distributions through message passing (when possible), while VMP approximates the posterior using the Bethe approximation. For a detailed mathematical treatment of these differences, see our [Bethe Free Energy implementation](@ref lib-bethe-free-energy) guide.
 
 For example, consider this simple model:
 
-```julia
-@model function problematic_model()
+```@example rule-not-found
+using RxInfer
+
+@model function problematic_model(y)
     μ ~ Normal(mean = 0.0, variance = 1.0)
     τ ~ Gamma(shape = 1.0, rate = 1.0)
     y ~ Normal(mean = μ, precision = τ)
 end
 ```
 
-This model will fail with a `RuleNotFoundError` because there are no belief propagation message passing update rules available for this combination of distributions - only variational message passing rules exist. Even though the model looks simple, the message passing rules needed for exact inference do not exist in closed form.
+Inference with belief propagation, the default, fails with a `RuleNotFoundError`:
+
+```@example rule-not-found
+try
+    infer(
+        model = problematic_model(),
+        data = (y = 1.0,),
+        disable_inference_error_hint = true, #hide
+    )
+catch err
+    showerror(stdout, err)
+end
+```
+
+There are no belief propagation message update rules for this combination of distributions, only variational message passing rules. Even though the model looks simple, the messages needed for exact inference do not exist in closed form.
+
+## [Reading the error](@id rule-not-found-reading)
+
+The [`RuleNotFoundError`](@extref MessagePassingRulesBase.RuleNotFoundError) above is a report in four parts:
+
+1. **The first line** names the node (`NormalMeanPrecision`), the edge the message is computed for (`:μ`), the node's [algorithm](@extref MessagePassingRulesBase glossary-algorithm) and the inputs the engine offered: here the message `m[:τ]` from the `Gamma` prior and the marginal `q[:out]` of the observation. `m[:x]` is a [message](@extref MessagePassingRulesBase glossary-message) arriving on edge `x`, and `q[:x]` a [marginal](@extref MessagePassingRulesBase glossary-marginal).
+2. **The diagnosis** says why nothing matched.
+3. **The `what to try` line** suggests the change that addresses the diagnosis.
+4. **The near misses** list the node's rules for this edge, each with its inputs marked: `✓` for an input that matches, `✗ … not provided` for an input the rule needs and did not get, `✗ … got T` for an input of the wrong type, and `✗ … provided but not consumed` for an input the engine offered and the rule does not take.
+
+The diagnosis and its `what to try` line take one of four forms:
+
+| Diagnosis | What to try |
+|:----------|:------------|
+| no rule exists for this node and target under any algorithm | load the package that defines the node's rules, or define the rule |
+| a rule of this shape exists, but the input types do not fit | project the inputs onto a family the rule takes with a form constraint in `@constraints`, or define a rule for these types |
+| rules of this shape exist under another algorithm | give the node that algorithm (see [Algorithm specification](@ref user-guide-algorithm-specification)) |
+| no rule consumes this set of inputs under this algorithm | change the factorization in `@constraints`, which decides whether a rule receives a message or a marginal on each edge, or define a rule for these inputs |
+
+In the example, the diagnosis is the last one. Two of the near misses take `q[:out]` and `q[:τ]`: the marginal of `τ` where the engine offered its message. A mean-field factorization `q(μ, τ) = q(μ)q(τ)` delivers exactly that (see [Use variational inference](@ref rule-not-found-solutions-vmp) below).
 
 ## Common scenarios
 
@@ -92,7 +128,22 @@ First, try to reformulate your model using conjugate prior-likelihood pairs. Con
 
 ### 2. Check available rules
 
-If conjugate pairs aren't suitable, verify if your combination of distributions and message types is supported. RxInfer provides many predefined rules, but not all combinations are possible. A good starting point is to check the [List of available nodes](https://reactivebayes.github.io/ReactiveMP.jl/stable/lib/nodes/#lib-predefined-nodes) section in the documentation of ReactiveMP.jl.
+If conjugate pairs aren't suitable, verify if your combination of distributions and message types is supported. RxInfer provides many predefined rules, but not all combinations are possible. The rules of the standard nodes are documented on the site of [`StandardMessagePassingRules`](@extref StandardMessagePassingRules StandardMessagePassingRules), and every other node has a package and a site of its own, listed on [ReactiveMP's ecosystem page](@extref ReactiveMP ecosystem-nodes). A node from one of those packages needs the package loaded, for example `using ProbitMessagePassingRules`.
+
+You can also ask for the rules directly. [`MessagePassingRulesBase.rule_coverage`](@extref) lists, per edge and algorithm, how many rules a node has:
+
+```@example rule-not-found
+MessagePassingRulesBase.rule_coverage(NormalMeanPrecision)
+```
+
+[`MessagePassingRulesBase.which_message_update_rule`](@extref) shows which rule would run for given inputs, the way the engine selects it:
+
+```@example rule-not-found
+MessagePassingRulesBase.which_message_update_rule(
+    NormalMeanPrecision, :μ;
+    q = (out = PointMass(1.0), τ = GammaShapeRate(1.0, 1.0)),
+)
+```
 
 ### 3. Create custom update rules
 
@@ -103,21 +154,27 @@ If you need specific message computations, you can define your own update rules.
 When exact message updates aren't available, consider:
 
 - Using simpler distribution pairs that have defined rules
-- Employing approximation techniques like moment matching or the methods described in [Meta Specification](@ref user-guide-meta-specification) and [Deterministic nodes](@ref delta-node-manual)
+- Choosing a node's approximation through its algorithm, as described in [Algorithm specification](@ref user-guide-algorithm-specification); a deterministic transformation takes `DeltaApproximation(method = Linearization())`, `Unscented()` or `CVIProjection()` (see [Deterministic nodes](@ref delta-node-manual))
+- Passing `options = (rulefallback = NodeFunctionRuleFallback(),)` to [`infer`](@ref): where no rule matches, a stochastic node sends its own log-density with every other input collapsed to its mean, an unnormalized [`NodeFunctionLogPdf`](@extref MessagePassingRulesBase.NodeFunctionLogPdf); a functional form constraint (see [Built-in Functional Forms](@ref lib-forms)) turns the resulting posterior into a proper distribution
 
-### 5. Use variational inference
+### [5. Use variational inference](@id rule-not-found-solutions-vmp)
 
 Sometimes, adding appropriate factorization constraints can help avoid problematic message computations:
 
-```julia
+```@example rule-not-found
 constraints = @constraints begin
     q(μ, τ) = q(μ)q(τ)  # Mean-field assumption
 end
 
 result = infer(
     model = problematic_model(),
+    data = (y = 1.0,),
     constraints = constraints,
+    initialization = @initialization(q(τ) = GammaShapeRate(1.0, 1.0)),
+    iterations = 10,
 )
+
+result.posteriors[:μ][end]
 ```
 
 !!! note
@@ -132,9 +189,9 @@ For more details on constraints and variational inference, see:
 
 When RxInfer encounters a missing rule, it means one of these is missing:
 
-1. A `@rule` definition for the specific message direction and types
-2. A `@marginalrule` for computing joint marginals
-3. An `@average_energy` implementation for free energy computation
+1. A message update rule for the specific message direction and input types, declared with [`@define_message_update_rule`](@extref MessagePassingRulesBase.@define_message_update_rule)
+2. A marginal update rule for computing joint marginals, declared with [`@define_marginal_update_rule`](@extref MessagePassingRulesBase.@define_marginal_update_rule)
+3. An average energy for free energy computation, declared with [`@define_average_energy`](@extref MessagePassingRulesBase.@define_average_energy)
 
 For an explanation of what rules are and how they work, see [Understanding Rules](@ref what-is-a-rule). You can add these using the methods described in [Creating your own custom nodes](@ref create-node).
 

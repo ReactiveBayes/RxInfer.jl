@@ -377,11 +377,14 @@ Now, let's create an optimized version of the `ShiftedNormal` submodel as a stan
     Creating correct message passing update rules is beyond the scope of this section. For more information about what rules are and how they work, see [Understanding Rules](@ref what-is-a-rule). For details on implementing custom message passing update rules, refer to the [Custom Node](@ref create-node) section.
 
 ```@example node-contraction
-@node typeof(ShiftedNormal) Stochastic [ data, mean, precision, shift ]
+@define_factor_node(node = ShiftedNormal, type = Stochastic, interfaces = [:data, :mean, :precision, :shift])
 
-@rule typeof(ShiftedNormal)(:mean, Marginalisation) (q_data::PointMass, q_precision::PointMass, q_shift::PointMass, ) = begin 
-    return @call_rule NormalMeanPrecision(:μ, Marginalisation) (q_out = PointMass(mean(q_data) - mean(q_shift)), q_τ = q_precision)
-end
+@define_message_update_rule(
+    node = ShiftedNormal,
+    target = :mean,
+    args = (q[:data]::PointMass, q[:precision]::PointMass, q[:shift]::PointMass),
+    body = (args) -> NormalMeanPrecision(mean(args.q[:data]) - mean(args.q[:shift]), mean(args.q[:precision])),
+)
 
 result_with_contraction = infer(
     model = Model(precision = 1.0, shift = 1.0),
@@ -448,36 +451,70 @@ This performance improvement is reflected in reduced execution time and fewer me
 
 ### [Node creation options](@id user-guide-model-specification-node-creation-options)
 
-`GraphPPL` allows to pass optional arguments to the node creation constructor with the `where { options...  }` options specification syntax.
-
-Example:
-```julia
-y ~ Normal(mean = y_mean, var = y_var) where { meta = ... }
-```
-
-A list of the available options specific to the `ReactiveMP` inference engine is presented below.
-
-#### Metadata option
-
-It is possible to pass any extra metadata to a factor node with the `meta` option. Metadata can be later accessed in message computation rules.
-```julia
-z ~ f(x, y) where { meta = Linearization() }
-d ~ g(a, b) where { meta = Unscented() }
-```
-This option might be useful to change message passing rules around a specific factor node. Read more about this feature in [Meta Specification](@ref user-guide-meta-specification) section.
-
-#### Dependencies option
-
-A user can modify the default functional dependencies of a node with the `dependencies` option.
-Read more about the available policies in the [`ReactiveMP.jl` documentation](https://reactivebayes.github.io/ReactiveMP.jl/stable/).
+`GraphPPL` passes optional arguments to the node creation constructor with the `where { options...  }` syntax:
 
 ```julia
-y[k - 1] ~ Probit(x[k]) where {
-    # This specification indicates that in order to compute an outbound message from the `in` interface
-    # We need an inbound message from the same edge initialized to `NormalMeanPrecision(0.0, 1.0)`
-    dependencies = RequireMessageFunctionalDependencies(in = NormalMeanPrecision(0.0, 1.0))
-}
+y ~ Normal(mean = y_mean, var = y_var) where { algorithm = ... }
 ```
+
+The options specific to the `ReactiveMP` inference engine are listed below.
+
+#### Algorithm option
+
+The `algorithm` option gives a factor node the [algorithm](@extref MessagePassingRulesBase glossary-algorithm) its rules run under. An algorithm selects which rules run and carries their parameters, such as the approximation method of a deterministic node:
+
+```@example node-creation-options
+using RxInfer
+
+f(x) = x^2 + 1
+g(a, b) = a * b
+
+@model function nonlinear_model(z)
+    x ~ Normal(mean = 1.0, variance = 1.0)
+    a ~ Normal(mean = 1.0, variance = 1.0)
+    y := f(x) where { algorithm = DeltaApproximation(method = Linearization()) }
+    d := g(a, y) where { algorithm = DeltaApproximation(method = Unscented()) }
+    z ~ Normal(mean = d, variance = 1.0)
+end
+
+result = infer(model = nonlinear_model(), data = (z = 3.0,))
+
+result.posteriors[:x]
+```
+
+The two deterministic nodes approximate their messages with different methods. The [`@algorithm`](@ref) macro gives algorithms to many nodes at once, from outside the model; read more in the [Algorithm specification](@ref user-guide-algorithm-specification) section. The `meta` option is the old name of `algorithm`, and it still works with a deprecation warning.
+
+#### Initial messages
+
+What a node's rules read is part of the node's declaration, not an option of the model. Some nodes read the message on their own edge, and need an initial message on it to start. The `Probit` node, from the `ProbitMessagePassingRules` package, is one of them: its rule towards `in` reads the message on `in`, and the node declares `NormalMeanPrecision(0.0, 100.0)` as its initial value. The [`@initialization`](@ref) macro sets another one, `μ(x) = ...`, which takes precedence over the node's own:
+
+```@example node-creation-options
+using ProbitMessagePassingRules
+
+@model function probit_model(y)
+    x_prev ~ Normal(mean = 0.0, variance = 1.0)
+    for k in eachindex(y)
+        x[k] ~ Normal(mean = x_prev, variance = 0.1)
+        y[k] ~ Probit(x[k])
+        x_prev = x[k]
+    end
+end
+
+probit_initialization = @initialization begin
+    μ(x) = NormalMeanPrecision(0.0, 1.0)
+end
+
+result = infer(
+    model          = probit_model(),
+    data           = (y = [1.0, 1.0, 0.0, 1.0, 1.0],),
+    initialization = probit_initialization,
+    iterations     = 5,
+)
+
+mean.(result.posteriors[:x][end])
+```
+
+Read more about initial messages in the [Initialization](@ref initialization) section.
 
 ## [Relation to GraphPPL](@id user-guide-model-specification-relation-to-graphppl)
 
@@ -542,6 +579,6 @@ ReactiveMP.israndom(variable)
 ## Read also
 
 - [Constraints specification](@ref user-guide-constraints-specification)
-- [Meta specification](@ref user-guide-meta-specification)
+- [Algorithm specification](@ref user-guide-algorithm-specification)
 - [Inference execution](@ref user-guide-inference-execution)
 - [Debugging inference](@ref user-guide-debugging)

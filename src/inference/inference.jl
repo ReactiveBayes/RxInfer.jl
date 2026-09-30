@@ -88,7 +88,7 @@ function check_and_reset_updated!(updates)
         names = join(keys(not_updated), ", ")
         error(
             """
-            Variables [ $(names) ] have not been updated after an update event: their posteriors were never computed.
+            Variables [ $(names) ] have not been updated after an update event. Their posteriors were never computed.
             A rule runs only when all its inputs have arrived, so something these variables depend on never did. The usual causes:
             - a loop in the graph, or a variational factorisation from `@constraints`: the rules wait for each other until a message or
               a marginal is given to start from, with `@initialization` and the `initialization` keyword of `infer`;

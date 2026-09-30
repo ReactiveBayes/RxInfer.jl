@@ -59,9 +59,9 @@ using PrettyTables
 PrettyTables.pretty_table(callbacks)
 ```
 """
-# A `mutable struct` so that the engine, which stores its callbacks in every message mapping and
-# product context, holds one reference rather than a copy of eight
 mutable struct RxInferBenchmarkCallbacks
+    # Mutable so that the engine, which stores its callbacks in every message mapping and product
+    # context, holds one reference rather than a copy of eight buffers.
     const before_model_creation_ts::CircularBuffer{UInt64}
     const after_model_creation_ts::CircularBuffer{UInt64}
     const before_inference_ts::CircularBuffer{UInt64}

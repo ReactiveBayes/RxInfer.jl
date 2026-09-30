@@ -13,7 +13,7 @@ All callbacks in RxInfer use an **event-based dispatch** system built on `Reacti
 
 For example, an `AfterIterationEvent` has fields `model` and `iteration`:
 
-```julia
+```@example manual-inference-callbacks-intro
 # NamedTuple callback — receives the event struct
 callbacks = (
     after_iteration = (event) -> println("Iteration ", event.iteration, " done"),
@@ -308,7 +308,32 @@ These lower-level events are fired by the `ReactiveMP` message passing engine du
 - `BeforeFormConstraintAppliedEvent` / `AfterFormConstraintAppliedEvent` — fired around form constraint application
 - `BeforeMarginalComputationEvent` / `AfterMarginalComputationEvent` — fired around marginal computations
 
-For detailed descriptions of these events and their fields, refer to the official documentation of `ReactiveMP`.
+For detailed descriptions of these events and their fields, see the [list of events](@extref ReactiveMP lib-callbacks-events) in the documentation of `ReactiveMP`.
+
+#### Message rule calls
+
+The [`ReactiveMP.AfterMessageRuleCallEvent`](@extref) fires after every message computation and carries what went into it and what came out:
+
+- `event.mapping` is the [`ReactiveMP.MessageMapping`](@extref) that ran the rule: `event.mapping.target` is the edge the message is for, and `event.mapping.algorithm` is the node's [algorithm](@extref MessagePassingRulesBase glossary-algorithm), the one given with `@algorithm` or `where { algorithm = … }`, or the node's default;
+- `event.messages` and `event.marginals` are the inputs the rule read;
+- `event.result` is the computed message;
+- `event.logscale` is the message's [log scale](@extref MessagePassingRulesBase glossary-log-scale) when inference runs with `logscales = true`, and `nothing` otherwise.
+
+```@example manual-inference-callbacks
+function print_rule_call(event)
+    println(event.mapping, " → ", event.result, ", log scale ", event.logscale)
+end
+
+result = infer(
+    model = coin_model(),
+    data  = (y = [1, 0, 1],),
+    logscales = true,
+    callbacks = (after_message_rule_call = print_rule_call,),
+)
+nothing #hide
+```
+
+Each line shows the node, the edge, the inputs and the algorithm of one rule call, then its message and log scale. `loghalf` is `log(1/2)`, the log scale of each `Bernoulli` observation's message.
 
 ## Migration from positional-argument callbacks
 

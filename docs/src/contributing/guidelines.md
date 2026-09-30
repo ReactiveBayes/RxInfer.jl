@@ -36,7 +36,15 @@ The `dev` command clones `RxInfer` to `~/.julia/dev/RxInfer`. All local changes 
 
 ### Core dependencies
 
-`RxInfer.jl` depends heavily on the core packages `ReactiveMP.jl`, `GraphPPL.jl`, and `Rocket.jl`. Ensure `RxInfer.jl` is updated whenever any of these packages undergo major updates or API changes. While making changes to `RxInfer.jl`, developers are advised to use the `dev` command for these packages as well. Note that standard Julia testing utilities ignore the local development environment and test the package with the latest released versions of core dependencies. Refer to the Makefile section below to learn how to test `RxInfer.jl` with locally installed core dependencies.
+`RxInfer.jl` depends heavily on the core packages `ReactiveMP.jl`, `GraphPPL.jl`, and `Rocket.jl`. Ensure `RxInfer.jl` is updated whenever any of these packages undergo major updates or API changes. While making changes to `RxInfer.jl`, developers are advised to use the `dev` command for these packages as well.
+
+The nodes and rules are not in `ReactiveMP.jl`'s own source: they live in the rule packages under `lib/` in the `ReactiveMP.jl` repository, one directory per package (`lib/MessagePassingRulesBase`, `lib/StandardMessagePassingRules`, `lib/DeltaMessagePassingRules`, `lib/MessagePassingRulesApproximations`, and one package per remaining node, such as `lib/AutoregressiveMessagePassingRules`). To work on a rule together with `RxInfer.jl`, `dev` the package it lives in by its path next to `ReactiveMP.jl` itself:
+
+```
+] dev ~/.julia/dev/ReactiveMP.jl ~/.julia/dev/ReactiveMP.jl/lib/MessagePassingRulesBase ~/.julia/dev/ReactiveMP.jl/lib/StandardMessagePassingRules
+```
+
+Each rule package has its own tests, run from the `ReactiveMP.jl` repository (`make test-standard`, `make test-delta`, …; `make help` lists them). Note that standard Julia testing utilities ignore the local development environment and test the package with the latest released versions of core dependencies. Refer to the Makefile section below to learn how to test `RxInfer.jl` with locally installed core dependencies.
 
 ### Committing code
 
@@ -82,8 +90,10 @@ In addition, tests can be evaluated by running the following command in the `RxI
 make test
 ```
 
-!!! note 
-    Use `make devtest` to use local `dev`-ed versions of the core packages.
+!!! note
+    `Project.toml` and `docs/Project.toml` resolve ReactiveMP and its rule packages from a
+    `ReactiveMP.jl` checkout next to this one, through `[sources]`, so `make test` and `make docs`
+    run against it.
 
 ### Makefile
 
@@ -93,15 +103,13 @@ make test
 - `make test`: Run tests, supports extra arguments
   - `make test test_args="distributions:normal_mean_variance"` would run tests only from `distributions/test_normal_mean_variance.jl`
   - `make test test_args="distributions:normal_mean_variance models:lgssm"` would run tests both from `distributions/test_normal_mean_variance.jl` and `models/test_lgssm.jl`
-  - `make test dev=true` would run tests while using `dev-ed` versions of core packages
-- `make devtest`: Alias for the `make test dev=true ...`
-- `make docs`: Compile documentation
-- `make devdocs`: Same as `make docs`, but uses `dev-ed` versions of core packages
+- `make docs`: Compile documentation. It links the ReactiveMP ecosystem's sites through their
+  local builds, so run `make docs-all` in the `ReactiveMP.jl` checkout first.
 - `make lint`: Check codestyle
 - `make format`: Check and fix codestyle 
 
 !!! note
-    Core packages include `ReactiveMP.jl`, `GraphPPL.jl` and `Rocket.jl`. When using any of the `dev` commands from the `Makefile` those packages must be present in the `Pkg.devdir()` directory.
+    Core packages include `ReactiveMP.jl`, `GraphPPL.jl` and `Rocket.jl`, and the rule packages under `ReactiveMP.jl/lib/`. When using any of the `dev` commands from the `Makefile` those packages must be present in the `Pkg.devdir()` directory, the rule packages inside the `ReactiveMP.jl` checkout.
 
 ## CHANGELOG.md
 

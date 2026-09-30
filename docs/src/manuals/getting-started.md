@@ -130,7 +130,7 @@ end
 ```
 
 !!! note
-    To quickly check the list of all available factor nodes that can be used in the model specification language call `?ReactiveMP.is_predefined_node` or `Base.doc(ReactiveMP.is_predefined_node)`.
+    The standard factor nodes, such as `Beta` and `Bernoulli`, come from [`StandardMessagePassingRules`](@extref StandardMessagePassingRules StandardMessagePassingRules), which RxInfer loads. Other nodes have packages of their own, listed on [ReactiveMP's ecosystem page](@extref ReactiveMP ecosystem-nodes). To check a node's interfaces and default algorithm, call `MessagePassingRulesBase.nodespec`, for example `MessagePassingRulesBase.nodespec(Bernoulli)`.
 
 ### [Conditioning on data and inspecting the model structure](@id getting-started-conditioning)
 

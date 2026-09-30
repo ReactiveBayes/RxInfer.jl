@@ -57,7 +57,7 @@ result.posteriors[:x]
 ```
 
 !!! note
-    The `model` keyword argument does not accept a [`ProbabilisticModel`](@ref) instance as a value, as it needs to inject `constraints` and `meta` during the inference procedure.
+    The `model` keyword argument does not accept a [`ProbabilisticModel`](@ref) instance as a value, as it needs to inject `constraints` and `algorithm` during the inference procedure.
 
 - ### `data`
 
@@ -111,6 +111,31 @@ init = @initialization begin
 end
 ```
 
+- ### `algorithm`
+
+Also read the [Algorithm specification](@ref user-guide-algorithm-specification) section.
+
+Every rule of a node belongs to an [algorithm](@extref MessagePassingRulesBase glossary-algorithm), which selects the rules that run and carries their parameters. Most nodes run under the default algorithm, and need nothing. Some need a choice, such as the approximation method of a deterministic node or the order of an autoregressive node. The `algorithm` argument accepts an [`@algorithm`](@ref) specification, which gives algorithms to the nodes of the model by their function and variables:
+
+```@example inference-overview-algorithm-keyword
+using RxInfer #hide
+@model function nonlinear_model(y)
+    x ~ Normal(mean = 0.0, variance = 1.0)
+    z := exp(x)
+    y ~ Normal(mean = z, variance = 0.1)
+end
+
+result = infer(
+    model     = nonlinear_model(),
+    data      = (y = 2.0,),
+    algorithm = @algorithm(exp() -> DeltaApproximation(method = Linearization())),
+)
+
+result.posteriors[:x]
+```
+
+A single node can also take its algorithm in the model, as `z := exp(x) where { algorithm = ... }`. The `meta` argument is the old name of `algorithm`, and it still works with a deprecation warning.
+
 - ### `returnvars`
 
 `returnvars` specifies latent variables of interest and their posterior updates. Its behavior depends on the inference type: streamline or batch.
@@ -122,23 +147,42 @@ end
 - When `iterations` is set, returns every update for each iteration (equivalent to `KeepEach()`); if `nothing`, saves the last update (equivalent to `KeepLast()`).
 - Use `iterations = 1` to force `KeepEach()` for a single iteration or set `returnvars = KeepEach()` manually.
 
-```julia
+```@example inference-overview-returnvars
+using RxInfer #hide
+@model function normal_gamma(y)
+    x ~ Normal(mean = 0.0, variance = 10.0)
+    τ ~ Gamma(shape = 1.0, rate = 1.0)
+    y .~ Normal(mean = x, precision = τ)
+end
+
 result = infer(
-    ...,
-    returnvars = (
+    model          = normal_gamma(),
+    data           = (y = [0.9, 1.1, 1.3, 0.8, 1.0],),
+    constraints    = MeanField(),
+    initialization = @initialization(q(τ) = Gamma(1.0, 1.0)),
+    iterations     = 5,
+    returnvars     = (
         x = KeepLast(),
         τ = KeepEach()
     )
 )
+
+result.posteriors[:τ]
 ```
 
 Shortcut for setting the same option for all variables:
 
-```julia
+```@example inference-overview-returnvars
 result = infer(
-    ...,
-    returnvars = KeepLast()  # or KeepEach()
+    model          = normal_gamma(),
+    data           = (y = [0.9, 1.1, 1.3, 0.8, 1.0],),
+    constraints    = MeanField(),
+    initialization = @initialization(q(τ) = Gamma(1.0, 1.0)),
+    iterations     = 5,
+    returnvars     = KeepLast()  # or KeepEach()
 )
+
+result.posteriors[:τ]
 ```
 
 **Streamline inference:**
@@ -146,12 +190,27 @@ result = infer(
 - For each symbol in `returnvars`, `infer` creates an observable stream of posterior updates.
 - Agents can subscribe to these updates using the `Rocket.jl` package.
 
-```julia
+```@example inference-overview-streaming
+using RxInfer #hide
+@model function gaussian_filter(y, x_mean, x_var)
+    x ~ Normal(mean = x_mean, variance = x_var)
+    y ~ Normal(mean = x, variance = 1.0)
+end
+
+my_autoupdates = @autoupdates begin
+    x_mean, x_var = mean_var(q(x))
+end
+
+datastream   = RecentSubject(Float64)
+observations = labeled(Val((:y,)), combineLatest(datastream))
+
 engine = infer(
-    ...,
-    autoupdates = my_autoupdates,
-    returnvars = (:x, :τ),
-    autostart  = false
+    model          = gaussian_filter(),
+    datastream     = observations,
+    autoupdates    = my_autoupdates,
+    initialization = @initialization(q(x) = NormalMeanVariance(0.0, 10.0)),
+    returnvars     = (:x,),
+    autostart      = false
 )
 ```
 
@@ -167,14 +226,17 @@ Similar to `returnvars`, `predictvars` accepts a `NamedTuple` or `Dict`. There a
 - `KeepLast`: saves the last update for a variable, ignoring any intermediate results during iterations
 - `KeepEach`: saves all updates for a variable for all iterations
 
-```julia
+```@example inference-overview-returnvars
 result = infer(
-    ...,
-    predictvars = (
-        o = KeepLast(),
-        τ = KeepEach()
-    )
+    model          = normal_gamma(),
+    data           = (y = [0.9, 1.1, 1.3, 0.8, missing],),
+    constraints    = MeanField(),
+    initialization = @initialization(q(τ) = Gamma(1.0, 1.0)),
+    iterations     = 5,
+    predictvars    = (y = KeepLast(),)
 )
+
+result.predictions[:y][end]
 ```
 
 !!! note
@@ -191,27 +253,39 @@ The `historyvars` requires `keephistory` to be greater than zero.
 - `KeepLast`: saves the last update for a variable, ignoring any intermediate results during iterations
 - `KeepEach`: saves all updates for a variable for all iterations
 
-```julia
-result = infer(
-    ...,
-    autoupdates = my_autoupdates,
-    historyvars = (
+```@example inference-overview-streaming
+engine = infer(
+    model          = gaussian_filter(),
+    datastream     = observations,
+    autoupdates    = my_autoupdates,
+    initialization = @initialization(q(x) = NormalMeanVariance(0.0, 10.0)),
+    historyvars    = (
         x = KeepLast(),
-        τ = KeepEach()
     ),
-    keephistory = 10
+    keephistory    = 10
 )
+
+for y in (0.9, 1.1, 1.3)
+    next!(datastream, y)
+end
+
+engine.history[:x]
 ```
 
 It is also possible to set either `historyvars = KeepLast()` or `historyvars = KeepEach()` that acts as an alias and sets the given option for __all__ random variables in the model.
 
-```julia
-result = infer(
-    ...,
-    autoupdates = my_autoupdates,
-    historyvars = KeepLast(),
-    keephistory = 10
+```@example inference-overview-streaming
+RxInfer.stop(engine) #hide
+engine = infer(
+    model          = gaussian_filter(),
+    datastream     = observations,
+    autoupdates    = my_autoupdates,
+    initialization = @initialization(q(x) = NormalMeanVariance(0.0, 10.0)),
+    historyvars    = KeepLast(),
+    keephistory    = 10
 )
+RxInfer.stop(engine) #hide
+nothing #hide
 ```
 
 - ### `keephistory`
@@ -275,14 +349,22 @@ RxInfer.iserror
 
 The inference function and underlying reactive message passing procedure both have their own lifecycle. The user is free to provide some (or none) of the callbacks to inject extra logic during the inference procedure. Callbacks can be a `NamedTuple`, `Dict`, or any custom structure that implements `ReactiveMP.handle_event`. For example:
 
-```julia
+```@example inference-overview-callbacks
+using RxInfer #hide
+@model function beta_bernoulli(y)
+    x ~ Beta(1.0, 1.0)
+    y .~ Bernoulli(x)
+end
+
 result = infer(
-    ...,
+    model     = beta_bernoulli(),
+    data      = (y = [true, false, true],),
     callbacks = (
-        on_marginal_update = (event) -> println("\$(event.variable_name) has been updated: \$(event.update)"),
+        on_marginal_update = (event) -> println("$(event.variable_name) has been updated: $(event.update)"),
         after_inference    = (event) -> println("Inference has been completed")
     )
 )
+nothing #hide
 ```
 
 For the full list of available events, supported callback types, model metadata, and built-in callback handlers, see the [Callbacks](@ref manual-inference-callbacks) section.

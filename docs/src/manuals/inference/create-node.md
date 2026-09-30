@@ -1,395 +1,487 @@
 # [Creating your own custom nodes](@id create-node)
 
-Welcome to the `RxInfer` documentation on creating custom factor graph nodes. In `RxInfer`, factor nodes represent functional relationships between variables, also known as factors. Together, these factors define your probabilistic model. Quite often these factors represent distributions, denoting how a certain parameter affects another. However, other factors are also possible, such as ones specifying linear or non-linear relationships. `RxInfer` already supports a lot of factor nodes, however, depending on the problem that you are trying to solve, you may need to create a custom node that better fits the specific requirements of your model. This tutorial will guide you through the process of defining a custom node in `RxInfer`, step by step. By the end of this tutorial, you will be able to create your own custom node and integrate it into your model.
+A [factor node](@extref MessagePassingRulesBase glossary-factor-node) is one factor of your
+model: a distribution, such as `Bernoulli`, or a function, such as `+`. `RxInfer` has many nodes,
+and a model outside them needs a node of your own. This tutorial builds one from nothing, runs
+inference with it, and checks the result against the exact answer.
 
-!!! note 
-    Before we dive into the details of how to implement a custom node and its corresponding rule, read what a rule is and how it works in the [Understanding Rules](@ref what-is-a-rule) section. In addition, read another section on a different way of running inference with custom stochastic nodes without explicit rule specification [here](@ref inference-undefinedrules).
+A node is two things:
 
----
+- a **declaration**, with [`@define_factor_node`](@extref MessagePassingRulesBase.@define_factor_node):
+  the node's name, its kind and its [interfaces](@extref MessagePassingRulesBase glossary-interface);
+- its **rules**, with [`@define_message_update_rule`](@extref MessagePassingRulesBase.@define_message_update_rule):
+  how the node computes each outgoing [message](@extref MessagePassingRulesBase glossary-message)
+  from what arrives on its other edges.
 
-To create a custom node in `RxInfer`, 4 steps are required:
+For the free energy, a node also needs an
+[average energy](@extref MessagePassingRulesBase glossary-average-energy), with
+[`@define_average_energy`](@extref MessagePassingRulesBase.@define_average_energy). It needs a
+marginal rule, with [`@define_marginal_update_rule`](@extref MessagePassingRulesBase.@define_marginal_update_rule),
+for each cluster of several interfaces that its models form. These macros come from
+`MessagePassingRulesBase`, which `RxInfer` re-exports.
 
-1. Create your custom node in `RxInfer` using the `@node` macro.
-2. Define the corresponding message passing update rules with the `@rule` macro. These rules specify how the node processes information in the form of messages, and how it communicates the results to adjacent parts of the model.
-3. Specify computations for marginal distributions of the relevant variables with the `@marginalrule` macro.
-4. Implement the computation of the Free Energy in a node with the `@average_energy` macro.
-
-
-Throughout this tutorial, we will create a node for the `Bernoulli` distribution. The `Bernoulli` distribution is a commonly used distribution in statistical modeling that is often used to model a binary outcome, such as a coin flip. By recreating this node, we will be able to demonstrate the process of creating a custom node, from notifying `RxInfer` of the nodes existence to implementing the required methods. While this tutorial focuses on the `Bernoulli` distribution, the principles can be applied to creating custom nodes for other distributions as well. So let's get started!
-
+Read [Understanding Rules](@ref what-is-a-rule) first for what a rule is. To run inference with
+a custom distribution and no rules at all, see
+[Inference without explicit message update rules](@ref inference-undefinedrules).
 
 ## Problem statement
 
+Jane wants to know whether a coin is fair. She throws it ``K`` times and records each outcome
+``x_k \in \{0, 1\}``, which she models with a
+[Bernoulli distribution](https://en.wikipedia.org/wiki/Bernoulli_distribution):
 
-Jane wants to determine whether a coin is a fair coin, meaning that is equally likely to land on heads or tails. In order to determine this, she will throw the coin $K=20$ times and write down how often it lands on heads and tails. The result of this experiment is a realization of the underlying stochastic process. Jane models the outcome of the experiment $x_k\in\{0,1\}$ using the [Bernoulli distribution](https://en.wikipedia.org/wiki/Bernoulli_distribution) as
+```math
+p(x_k \mid \pi) = \mathrm{Ber}(x_k \mid \pi) = \pi^{x_k} (1 - \pi)^{1 - x_k},
+```
 
-$$p(x_k \mid \pi) = \mathrm{Ber}(x_k \mid \pi) = \pi^{x_k} (1-\pi)^{1-x_k},$$
+where ``\pi \in [0, 1]`` is the probability of heads. Her prior belief about ``\pi`` is a Beta
+distribution, ``p(\pi) = \mathrm{Beta}(\pi \mid 4, 8)``, so her model is
 
-where $\pi \in[0,1]$ denotes the probability that she throws heads, also known as the success probability. Jane also has a prior belief (initial guess) about the value of $\pi$ which she models using the Beta distribution as
+```math
+p(x_{1:K}, \pi) = p(\pi) \prod_{k=1}^K p(x_k \mid \pi).
+```
 
-$$p(\pi) = \mathrm{Beta}(\pi \mid 4, 8).$$
+She wants the posterior ``p(\pi \mid x_{1:K})``. `RxInfer` already has a `Bernoulli` node. This
+tutorial builds its own, `MyBernoulli`, and compares the two at the end.
 
-With this prior belief, the total probabilistic model that she has for this experiment is given by
+## Declare the node
 
-$$p(x_{1:K}, \pi) = p(\pi) \prod_{k=1}^K p(x_k \mid \pi).$$
-
-Jane is interested in determining the fairness of the coin. Therefore she aims to infer (calculate) the posterior belief of $\pi$, $p(\pi \mid x_{1:K})$, denoting how $\pi$ is distributed after we have seen the data.
-
-
----
-
-
-## Step 1: Creating the custom node
-
-
-!!! note
-    In this example we will assume that the `Bernoulli` node and distribution do not yet exist. The `RxInfer` already defines the node for the `Bernoulli` distribution from the `Distributions.jl` package.
-
-
-First things first, let's import `RxInfer`:
+A node is a type. An empty `struct` is enough. A constructor that returns the distribution
+gives the node a density, which a rule fallback evaluates where no rule applies
+(see [Inference without explicit message update rules](@ref inference-undefinedrules)).
 
 ```@example create-node
 using RxInfer
+
+struct MyBernoulli end
+
+MyBernoulli(π::Real) = Bernoulli(π)
+
+@define_factor_node(
+    node = MyBernoulli,
+    type = Stochastic,
+    interfaces = [:out, (:π, aliases = [:p])],
+)
 ```
 
-In order to define a custom node using the `@node` macro from `ReactiveMP`, we need the following three arguments:
-
-1. The name of the node.
-2. Whether the node is `Deterministic` or `Stochastic`.
-3. The interfaces of the node and any potential aliases.
-
-For the name of the node we wish to use `MyBernoulli` in this tutorial (`Bernoulli` already exists). However, the corresponding distribution does not yet exist. Therefore we need to specify it first as
+The first interface, `out`, is the output: the ``x_k`` of ``\mathrm{Ber}(x_k \mid \pi)``. The
+second, `π`, also answers to `p`. [`Stochastic`](@extref MessagePassingRulesBase.Stochastic)
+says the node is a density over its interfaces. A [`Deterministic`](@extref MessagePassingRulesBase.Deterministic)
+node is a function, `out = f(inputs...)`. The declaration draws itself:
 
 ```@example create-node
-# struct for Bernoulli distribution with success probability π
-struct MyBernoulli{T <: Real} <: ContinuousUnivariateDistribution
-    π :: T
-end
+MessagePassingRulesBase.nodespec(MyBernoulli)
+```
 
-# for simplicity, let's also specify the mean of the distribution
-Distributions.mean(d::MyBernoulli) = d.π
+In a model, you write the node as `x ~ MyBernoulli(π)`, with its interfaces after the output in
+declaration order.
 
+## Which inputs a rule takes
+
+A rule computes the message towards one interface, its *target*, from the other interfaces. What
+it receives from them depends on the [factorization](@extref MessagePassingRulesBase glossary-factorisation)
+of the posterior. A rule takes the **messages** on the other interfaces of its target's
+[cluster](@extref MessagePassingRulesBase glossary-cluster), and the
+[**marginals**](@extref MessagePassingRulesBase glossary-marginal) of the other clusters.
+
+By default, `RxInfer` puts all random interfaces of a node in one cluster. Each observed variable
+and each constant is a cluster of its own. In Jane's model, `out` is observed, so `MyBernoulli`
+has the clusters `(out)` and `(π)`:
+
+| rule towards | takes | in Jane's model |
+|---|---|---|
+| `π` | `q[:out]`, the marginal of `out` | a [point mass](@extref MessagePassingRulesBase glossary-point-mass) at the observed outcome |
+| `out` | `q[:π]`, the marginal of `π` | a `Beta`, when you ask for a prediction of a missing outcome |
+
+When `out` is a random variable in the same cluster as `π`, the rule towards `out` takes the
+message `m[:π]` instead. Rules that take messages do
+[belief propagation](@extref MessagePassingRulesBase glossary-belief-propagation). Rules that take
+marginals do [variational message passing](@extref MessagePassingRulesBase glossary-vmp).
+
+## A message towards `π`
+
+An observation ``x`` is the likelihood ``\mathrm{Ber}(x \mid \pi) = \pi^{x} (1 - \pi)^{1 - x}``,
+a function of ``\pi``. Up to a constant, it is a Beta density:
+
+```math
+\pi^{x} (1 - \pi)^{1 - x} = \tfrac{1}{2}\, \mathrm{Beta}(\pi \mid 1 + x, 2 - x), \qquad x \in \{0, 1\}.
+```
+
+```@example create-node
+@define_message_update_rule(
+    node = MyBernoulli,
+    target = :π,
+    args = (q[:out]::PointMass,),
+    logscale = -log(2),
+    body = (args) -> begin
+        x = mean(args.q[:out])
+        return Beta(1 + x, 2 - x)
+    end,
+)
+
+@call_message_update_rule(node = MyBernoulli, target = :π, q = (out = PointMass(1.0),))
+```
+
+`q[:out]::PointMass` reads as "the marginal of `out`, a point mass". The body receives the inputs
+as `args`, and `args.q[:out]` is that marginal. [`@call_message_update_rule`](@extref MessagePassingRulesBase.@call_message_update_rule)
+runs the rule by hand, as the engine does, and returns a
+[`RuleResult`](@extref MessagePassingRulesBase.RuleResult). The card draws the node, the marginal
+the rule read as a dashed arrow, and the message it sent. [`getresult`](@extref MessagePassingRulesBase.getresult)
+returns the message itself.
+
+The `logscale` keyword states the logarithm of the constant the result leaves out, here
+``\log \tfrac{1}{2}``. This is the message's [log scale](@extref MessagePassingRulesBase glossary-log-scale).
+With `logscales = true`, `RxInfer` sums the log scales into the model's evidence, so a rule that
+declares one must state it correctly.
+
+A marginal of `out` that is not a point mass, such as `Bernoulli(p)` under a mean-field
+factorization, gives the variational message
+``\exp \mathbb{E}_{q(x)}[\log \mathrm{Ber}(x \mid \pi)] = \pi^{p} (1 - \pi)^{1 - p}``:
+
+```@example create-node
+@define_message_update_rule(
+    node = MyBernoulli,
+    target = :π,
+    args = (q[:out]::Any,),
+    body = (args) -> begin
+        p = mean(args.q[:out])
+        return Beta(1 + p, 2 - p)
+    end,
+)
+
+@call_message_update_rule(node = MyBernoulli, target = :π, q = (out = Bernoulli(0.7),))
+```
+
+Two rules share the target `π`. The types of the inputs select between them, as Julia's dispatch
+selects a method: a point mass selects the first rule, anything else the second. The second rule
+declares no `logscale`, so the log scale of its result is undefined.
+
+## A message towards `out`
+
+The message towards `out` predicts an outcome. Under belief propagation, the rule integrates a
+Beta message ``\mathrm{Beta}(\pi \mid \alpha, \beta)`` on `π` out:
+
+```math
+\mu(x) = \int \mathrm{Ber}(x \mid \pi)\, \mathrm{Beta}(\pi \mid \alpha, \beta)\, \mathrm{d}\pi
+       = \mathrm{Ber}\big(x \mid \tfrac{\alpha}{\alpha + \beta}\big).
+```
+
+Under variational message passing, the rule takes the marginal ``q(\pi)`` and sends
+``\exp \mathbb{E}_{q(\pi)}[\log \mathrm{Ber}(x \mid \pi)]``. This is a Bernoulli distribution
+whose odds of heads are ``\exp \mathbb{E}[\log \pi] / \exp \mathbb{E}[\log(1 - \pi)]``.
+
+```@example create-node
+@define_message_update_rule(
+    node = MyBernoulli,
+    target = :out,
+    args = (m[:π]::Beta,),
+    logscale = 0,
+    body = (args) -> Bernoulli(mean(args.m[:π])),
+)
+
+@define_message_update_rule(
+    node = MyBernoulli,
+    target = :out,
+    args = (q[:π]::Any,),
+    body = (args) -> begin
+        ρ₁ = mean(log, args.q[:π])         # E[log π]
+        ρ₀ = mean(mirrorlog, args.q[:π])   # E[log(1 - π)]
+        return Bernoulli(exp(ρ₁) / (exp(ρ₁) + exp(ρ₀)))
+    end,
+)
+
+@call_message_update_rule(node = MyBernoulli, target = :out, m = (π = Beta(4.0, 8.0),))
+```
+
+The first rule declares `logscale = 0` because the prediction is already normalized. With a
+marginal in place of the message, the second rule runs:
+
+```@example create-node
+@call_message_update_rule(node = MyBernoulli, target = :out, q = (π = Beta(4.0, 8.0),))
+```
+
+[`rule_coverage`](@extref MessagePassingRulesBase.rule_coverage) tabulates what the node can
+compute so far:
+
+```@example create-node
+MessagePassingRulesBase.rule_coverage(MyBernoulli)
+```
+
+## The average energy
+
+`infer` reports the [Bethe free energy](@extref MessagePassingRulesBase glossary-bethe-free-energy)
+with `free_energy = true`. It needs each node's average energy: the expected negative
+log-density of the node under the marginals of its clusters. For `MyBernoulli`,
+
+```math
+U = -\mathbb{E}_{q(x)}[x]\, \mathbb{E}_{q(\pi)}[\log \pi] - \big(1 - \mathbb{E}_{q(x)}[x]\big)\, \mathbb{E}_{q(\pi)}[\log(1 - \pi)].
+```
+
+`mean(mirrorlog, q)` computes ``\mathbb{E}_q[\log(1 - \pi)]``:
+
+```@example create-node
+@define_average_energy(
+    node = MyBernoulli,
+    args = (q[:out]::Any, q[:π]::Any),
+    body = (args) -> begin
+        x, π = args.q[:out], args.q[:π]
+        return -mean(x) * mean(log, π) - (1 - mean(x)) * mean(mirrorlog, π)
+    end,
+)
+
+@call_average_energy(node = MyBernoulli, q = (out = PointMass(1.0), π = Beta(4.0, 8.0)))
+```
+
+The energy takes one marginal per cluster, `q[:out]` and `q[:π]`, which are the clusters of
+Jane's model.
+
+## Joint marginals
+
+When `out` is a random variable in the same cluster as `π`, the cluster `(out, π)` has a joint
+marginal. The free energy then needs a rule for that marginal, and an average energy over
+`q[:out, :π]`. A marginal rule takes the messages on the cluster's members. When the message on
+`out` is a point mass, the joint factorizes into that point mass and the product of the
+likelihood with the message on `π`. The rule returns the two blocks as a
+[`FactorizedCluster`](@extref MessagePassingRulesBase.FactorizedCluster):
+
+```@example create-node
+@define_marginal_update_rule(
+    node = MyBernoulli,
+    target = (:out, :π),
+    args = (m[:out]::PointMass, m[:π]::Beta),
+    body = (args) -> begin
+        x = mean(args.m[:out])
+        likelihood = Beta(1 + x, 2 - x)
+        return FactorizedCluster(
+            (:out,) => args.m[:out],
+            (:π,) => prod(PreserveTypeProd(Distribution), likelihood, args.m[:π]),
+        )
+    end,
+)
+
+@call_marginal_update_rule(
+    node = MyBernoulli, target = (:out, :π),
+    m = (out = PointMass(1.0), π = Beta(4.0, 8.0)),
+)
+```
+
+`prod(PreserveTypeProd(Distribution), …)` multiplies the two Beta densities in closed form.
+Jane's model never forms this cluster, because `out` is observed. The rule serves models in
+which `out` is random.
+
+## Use the node in a model
+
+Jane throws the coin 500 times. The true probability of heads is 0.75:
+
+```@example create-node
+using StableRNGs
+
+π_real  = 0.75
+dataset = float.(rand(StableRNG(42), Bernoulli(π_real), 500))
 nothing # hide
 ```
 
-!!! note 
-    You can use regular functions, e.g `+` as a node type. Their Julia type, however, is written with the `typeof(_)` specification, e.g. `typeof(+)`
-
-For our node we are dealing with a stochastic node, because the node forms a probabilistic relationship. This means that for a given value of $\pi$, we do know the corresponding value of the output, but we do have some belief about this. Deterministic nodes include for example linear and non-linear transformation, such as `+` or `*`.
-
-The interfaces specify what variables are connected to the node. The first argument is its output by convention. The ordering is important for both the model specification as the rule definition. As an example consider the `NormalMeanVariance` factor node. This factor node has interfaces `[out, μ, v]` and can be called in the model specification language as `x ~ NormalMeanVariance(μ, v)`. It is also possible to use aliases for the interfaces, which can be specified in a tuple as you will see below.
-
-Concluding, we can create the `MyBernoulli` factor node as
-
-```@example create-node
-@node MyBernoulli Stochastic [out, (π, aliases = [p])]
-```
-
-Cool! Step 1 is done, we have created a custom node.
-
-
----
-
-
-## Step 2: Defining rules for our node
-
-
-In order for `RxInfer` to perform probabilistic inference and compute posterior distributions, such as $p(\pi\mid x_{1:K})$, we need to tell it how to perform inference locally around our node. This localization is what makes `RxInfer` achieve high performance. In our message passing-based paradigm, we need to describe how the node processes incoming information in the form of messages (or marginals). Here we will highlight two different message passing strategies: sum-product message passing and variational message passing.
-
-
-### Sum-product message passing update rules
-
-
-In sum-product message passing we compute outgoing messages to our node as
-
-$$\vec{\mu}(x) \propto \int \mathrm{Ber}(x\mid \pi) \vec{\mu}(\pi) \mathrm{d}x$$
-
-$$\overleftarrow{\mu}(\pi) \propto \sum_{x \in \{0,1\}} \mathrm{Ber}(x\mid \pi) \overleftarrow{\mu}(x)$$
-
-This integral does not always have nice tractable solutions. However, for some forms of the incoming messages, it does yield a tractable solution.
-
-For the case of a `Beta` message coming into our node, the outgoing message will be the predictive posterior of the `Bernoulli` distribution with a `Beta` prior. Here we obtain $\pi = \frac{\alpha}{\alpha + \beta}$, which coincides with the mean of the `Beta` distribution. Hence, we can write down the first update rule using the `@rule` macro as
-
-```@example create-node
-@rule MyBernoulli(:out, Marginalisation) (m_π :: Beta,) = MyBernoulli(mean(m_π))
-```
-
-
-
-Here, `:out` refers to the interface of the outgoing message. The second argument denotes the incoming messages (which can be typed) as a tuple. Therefore make sure that it has a trailing `,` when there is a single message coming in. `m_π` is shorthand for _the incoming message on interface `π`_. As we will see later, the structured approximation update rule for incoming message from `π` will have `q_π` as parameter. For more details on why some rules use `m_` prefixes while others use `q_` prefixes, see [Understanding Rules](@ref what-is-a-rule).
-
-The second rule is also straightforward; if `π` is a `PointMass` and therefore fixed, the outgoing message will be `MyBernoulli(π)`:
-
-```@example create-node
-@rule MyBernoulli(:out, Marginalisation) (m_π :: PointMass,) = MyBernoulli(mean(m_π))
-```
-
-
-
-Continuing with the sum-product update rules, we now have to define the update rules towards the `π` interface. We can only do exact inference if the incoming message is known, which in the case of the `Bernoulli` distribution, means that the `out` message is a `PointMass` distribution that is either `0` or `1`. The updated Beta distribution for `π` will be:
-
-$$\overleftarrow{\mu}(π) \propto \mathrm{Beta}(1 + x, 2 - x)$$
-
-Which gives us the following update rule:
-
-```@example create-node
-@rule MyBernoulli(:π, Marginalisation) (m_out :: PointMass,) = begin
-    p = mean(m_out)
-    return Beta(one(p) + p, 2one(p) - p)
-end
-```
-
-
-
-### Variational message passing update rules
-
-
-We will now cover our second set of update rules. The sum-product messages are not always tractable and therefore we may need to resort to approximations. Here we highlight the variational approximation. In variational message passing we compute outgoing messages to our node as
-
-$$\vec{\nu}(x) \propto \exp \int q(\pi) \ln \mathrm{Ber}(x\mid \pi) \mathrm{d}x$$
-
-$$\overleftarrow{\nu}(\pi) \propto \exp \sum_{x \in \{0,1\}} q(x) \ln \mathrm{Ber}(x\mid \pi)$$
-
-These messages depend on the marginals on the adjacent edges and not on the incoming messages as was the case with sum-product message passing. Update rules that operate on the marginals instead of the incoming messages are specified with the `q_{interface}` argument names. With these update rules, we can often support a wider family of distributions. For a detailed explanation of why variational message passing requires `q_` prefixes instead of `m_` prefixes, see [Understanding Rules](@ref what-is-a-rule). Below we directly give the variational update rules. Deriving them yourself will be a nice challenge.
-
-```@example create-node
-#rules towards out
-@rule MyBernoulli(:out, Marginalisation) (q_π :: PointMass,) = MyBernoulli(mean(q_π))
-
-@rule MyBernoulli(:out, Marginalisation) (q_π::Any,) = begin
-    rho_1 = mean(log, q_π)          # E[ln(x)]
-    rho_2 = mean(mirrorlog, q_π)    # E[log(1-x)]
-    m = max(rho_1, rho_2)
-    tmp = exp(rho_1 - m)
-    p = clamp(tmp / (tmp + exp(rho_2 - m)), tiny, one(m))
-    return Bernoulli(p)
-end
-
-#rules towards π
-@rule MyBernoulli(:π, Marginalisation) (q_out :: Any,) = begin
-    p = mean(q_out)
-    return Beta(one(p) + p, 2one(p) - p)
-end
-```
-
-!!! note
-    Typically, the type of the variational distributions `q_` does not matter in the real computations, but only their statistics, e.g `mean` or `var`. Thus, in this case, we may safely use `::Any`.
-
-In the example that we will show later on, we solely use sum-product message passing. Variational message passing requires us to set the local constraints in our model, something which is out of scope of this tutorial.
-
-
----
-
-
-## Step 3: Defining joint marginals for our node
-
-
-The entire probabilistic model can be scored using the Bethe free energy, which bounds the log-evidence for acyclic graphs. This Bethe free energy consists out of the sum of node-local entropies, negative node-local average energies and edge specific entropies. Formally we can denote this by
-
-$$F[q,f] = - \sum_{a\in\mathcal{V}} \mathrm{H}[q_a(s_a)] - \sum_{a\in\mathcal{V}}\mathrm{E}_{q_a(s_a)}[\ln f_a(s_a)] + \sum_{i\in\mathcal{E}}\mathrm{H}[q_i(s_i)]$$
-
-Here we call $q_a(s_a)$ the joint marginals around a node and $-\mathrm{E}_{q_a(s_a)}[\ln f_a(s_a)]$ we term the average energy.
-
-In order to be able to compute the Bethe free energy, we need to first describe how to compute $q_a(s_a)$, defined in our case as 
-
-$$q(x_k, \pi) = \vec{\mu}(\pi) \overleftarrow{\mu}(x_k) \mathrm{Ber}(x_k \mid \pi)$$
-
-To calculate the updated posterior marginal for our custom distribution, we need to return joint posterior marginals for the interfaces of our node. In our case, the posterior marginal for the observation is still the same `PointMass` distribution. However, to calculate the posterior marginal over `π`, we use `RxInfer`'s built-in `prod` functionality to multiply the `Beta` prior with the `Beta` likelihood. This gives us the updated posterior distribution, which is also a `Beta` distribution. We use `PreserveTypeProd(Distribution)` parameter to ensure that we multiply the two distributions analytically. This is done as follows:
-
-```@example create-node
-@marginalrule MyBernoulli(:out_π) (m_out::PointMass, m_π::Beta) = begin
-    r = mean(m_out)
-    p = prod(PreserveTypeProd(Distribution), Beta(one(r) + r, 2one(r) - r), m_π)
-    return (out = m_out, p = p)
-end
-```
-
-In this code `:out_π` describes the arguments of the joint marginal distribution. The second argument contains the incoming messages. Here we know from the model specification that we observe `out` and therefore this has to be a `PointMass`. Because it is a `PointMass`, the joint marginal automatically factorizes as $q(x_k, \pi) = q(x_k)q(\pi)$. These are the distributions that we return in a form of the `NamedTuple`. `NamedTuple` is used only in cases where we know that the joint marginal factorizes further, but typically it should be a full distribution. For computing $q(\pi)$ we need to compute the product $\vec{\mu}(\pi)\overleftarrow{\mu}(\pi)$. We already know how $\overleftarrow{\mu}(\pi)$ looks like from the previous step, so we can just use the `prod` function.
-
-
----
-
-
-## Step 4: Defining the average energy for our node
-
-
-To complete the computation of the Bethe free energy, we also need to compute the average energy term. The average energy in our `MyBernoulli` example can be computed as $-\mathrm{E}_{q(x_k, \pi)}[\ln p(x_k \mid \pi)]$, however, because we know that we observe $x_k$ and therefore $q(x_k, \pi)$ factorizes, we can instead compute
-$$\begin{aligned}
--\mathrm{E}_{q(x_k)q(\pi)}[\ln p(x_k \mid \pi)]
-&= -\mathrm{E}_{q(x_k)q(\pi)} [\ln (\pi^{x_k} (1-\pi)^{1 - x_k})] \\
-&= -\mathrm{E}_{q(x_k)q(\pi)} [x_k \ln(\pi) + (1-x_k) \ln(1-\pi)] \\
-&= -\mathrm{E}_{q(x_k)}[x_k] \mathrm{E}_{q(\pi)} [\ln(\pi)] - (1-\mathrm{E}_{q(x_k)}[x_k]) \mathrm{E}_{q(\pi)}[\ln(1-\pi)]
-\end{aligned}$$
-
-Which is what we implemented below. Note that `mean(mirrorlog, q(x))` is equal to $\mathrm{E}_{q(x)}[\log(1-x)]$.
-
-```@example create-node
-@average_energy MyBernoulli (q_out::Any, q_π::Any) = -mean(q_out) * mean(log, q_π) - (1.0 - mean(q_out)) * mean(mirrorlog, q_π)
-```
-
-
-
-In the case that the interfaces do not factorize, we would get something like `@average_energy MyBernoulli (q_out_π::Any,) = begin ... end`.
-
-
-## Using our node in a model
-
-
-With all the necessary functions defined, we can proceed to test our custom node in an experiment. For this experiment, we will generate a dataset from a `Bernoulli` distribution with a fixed success probability of `0.75`. Next, we will define a probabilistic model that has a `Beta` prior and a `MyBernoulli` likelihood. The `Beta` prior will be used to model our prior belief about the probability of success. The `MyBernoulli` likelihood will be used to model the generative process of the observed data. We start by generating the dataset:
-
-```@example create-node
-using Random
-
-rng = MersenneTwister(42)
-n = 500
-π_real = 0.75
-distribution = Bernoulli(π_real)
-
-dataset = float.(rand(rng, distribution, n))
-
-nothing # hide
-```
-
-Next, we define our model. Note that we use the `MyBernoulli` node in the model. The model consists of a single latent variable `π`, which has a `Beta` prior and is the parameter of the `MyBernoulli` likelihood. The `MyBernoulli` node takes the value of `π` as its parameter and returns a binary observation. We set the hyperparameters of the `Beta` prior to be 4 and 8, respectively, which correspond to a distribution slightly biased towards higher values of `π`. The model is defined as follows:
+The model uses `MyBernoulli` like any other node:
 
 ```@example create-node
 @model function coin_model_mybernoulli(y)
-    # We endow θ parameter of our model with some prior
     π ~ Beta(4.0, 8.0)
-    # We assume that outcome of each coin flip is governed by the MyBernoulli distribution
     for i in eachindex(y)
         y[i] ~ MyBernoulli(π)
     end
 end
+
+result = infer(
+    model       = coin_model_mybernoulli(),
+    data        = (y = dataset,),
+    free_energy = true,
+)
+
+result.posteriors[:π]
 ```
 
-Finally, we can run inference with this model and the generated dataset:
+Each rule towards `π` took a point mass. The engine multiplied the prior with the 500 Beta
+messages that the rules sent.
+
+## Compare with the exact answer
+
+The Beta prior is conjugate to the Bernoulli likelihood, so the posterior has a closed form:
+``\mathrm{Beta}(4 + k, 8 + K - k)``, where ``k`` is the number of heads.
 
 ```@example create-node
-result_mybernoulli = infer(
-    model = coin_model_mybernoulli(), 
-    data  = (y = dataset, ),
-)
+k, K  = count(==(1), dataset), length(dataset)
+exact = Beta(4 + k, 8 + K - k)
+
+result.posteriors[:π] == exact
 ```
 
-We have now completed our experiment and obtained the posterior marginal distribution for p through inference. To evaluate the performance of our inference, we can compare the estimated posterior to the true value. In our experiment, the true value for p is `0.75`, and we can see that the estimated posterior has a mean close to this value, which shows that our custom node was able to successfully pass messages towards the `π` variable in order to learn the true value of the parameter.
+On a tree-shaped model under belief propagation, the Bethe free energy equals the negative log
+evidence, ``-\log p(x_{1:K})``. Bayes' rule gives the evidence at any value of ``\pi``:
+``p(x_{1:K}) = p(\pi)\, p(x_{1:K} \mid \pi) / p(\pi \mid x_{1:K})``.
+
+```@example create-node
+π₀ = 0.5
+log_evidence = logpdf(Beta(4.0, 8.0), π₀) + sum(y -> logpdf(Bernoulli(π₀), y), dataset) - logpdf(exact, π₀)
+
+(free_energy = last(result.free_energy), negative_log_evidence = -log_evidence)
+```
+
+The two agree, so the rules and the average energy are right. The log scales give the same
+number. With `logscales = true`, the log scale of the posterior is the log evidence, built from
+the `-log(2)` that each rule towards `π` declares:
+
+```@example create-node
+result_logscales = infer(
+    model     = coin_model_mybernoulli(),
+    data      = (y = dataset,),
+    logscales = true,
+)
+
+getlogscale(result_logscales.posteriors[:π]) ≈ log_evidence
+```
+
+The built-in `Bernoulli` node gives the same posterior:
+
+```@example create-node
+@model function coin_model(y)
+    π ~ Beta(4.0, 8.0)
+    for i in eachindex(y)
+        y[i] ~ Bernoulli(π)
+    end
+end
+
+result_bernoulli = infer(model = coin_model(), data = (y = dataset,))
+
+result_bernoulli.posteriors[:π] == result.posteriors[:π]
+```
+
+The plot shows the posterior and the true value:
 
 ```@example create-node
 using Plots
 
-rθ = range(0, 1, length = 1000)
-
-p = plot(title = "Inference results")
-
-plot!(rθ, (x) -> pdf(result_mybernoulli.posteriors[:π], x), fillalpha=0.3, fillrange = 0, label="p(π|x)", c=3)
-vline!([π_real], label="Real π")
+plot(range(0, 1, length = 1000), (x) -> pdf(result.posteriors[:π], x);
+    fillalpha = 0.3, fillrange = 0, label = "p(π | x)", title = "Inference results")
+vline!([π_real], label = "real π")
 ```
 
-As a sanity check, we can create the same model with the `RxInfer` built-in node `Bernoulli` and compare the resulting posterior distribution with the one obtained using our custom `MyBernoulli` node. This will give us confidence that our custom node is working correctly. We use the `Bernoulli` node with the same `Beta` prior and the observed data, and then run inference. We can compare the two posterior distributions and observe that they are exactly the same, which indicates that our custom node is performing as expected.
+## [Rules that read the node](@id inference-ruleswithnode)
 
-```@example create-node
-@model function coin_model(y)
-    p ~ Beta(4.0, 8.0)
-    for i in eachindex(y)
-        y[i] ~ Bernoulli(p)
-    end
-end
+A rule can read [services](@extref MessagePassingRulesBase glossary-service) from its caller. A
+service is a value the rule needs from whoever runs it, rather than an input from its edges. The
+engine supplies three: the factor node itself (`node`), a random number generator (`rng`) and a
+matrix correction strategy (`matrix_correction`). A rule declares the services it reads with the
+`ctx` keyword and reads each one as `ctx.name`. See
+[The rule context](@extref MessagePassingRulesBase The-rule-context) for the details.
 
-result_bernoulli = infer(
-    model = coin_model(), 
-    data  = (y = dataset, ),
-)
-
-if !(result_bernoulli.posteriors[:p] == result_mybernoulli.posteriors[:π])
-    error("Results are not identical")
-else 
-    println("Results are identical 🎉🎉🎉")
-end
-
-nothing # hide
-```
-
-Congratulations! You have successfully implemented your own custom node in `RxInfer`. We went through the definition of a node to the implementation of the update rules and marginal posterior calculations. Finally we tested our custom node in a model and checked if we implemented everything correctly.
-
-# [Custom node experimental functionality](@id custom-node-experimental)
-
-!!! warning "Experimental features"
-    The functionality described below is experimental and subject to change in future releases. Use it with caution in production code.
-
-## [Rules that require a reference to a node object](@id inference-ruleswithnode)
-
-In some advanced scenarios, you might need access to the node object itself within a message passing rule. This can be useful when:
-- You need to inspect the current state of other variables in the model
-- You want to implement complex message passing schemes that depend on the global model state
-- You're experimenting with custom inference algorithms that require access to the factor graph structure
-
-Here's how to implement a rule with node access. First we define a custom node and a simple model that uses this node:
+The rule below reads the node, finds the variable on the node's `θ` interface, and uses that
+variable's latest marginal:
 
 ```@example custom-node-node-in-a-rule
 using RxInfer
 
 struct MyExperimentalNode end
 
-@node MyExperimentalNode Stochastic [ out, θ ]
+@define_factor_node(node = MyExperimentalNode, type = Stochastic, interfaces = [:out, :θ])
 
+@define_message_update_rule(
+    node = MyExperimentalNode,
+    target = :θ,
+    args = (q[:out]::Any,),
+    ctx = (:node,),
+    body = (ctx, args) -> begin
+        node = ctx.node
+        θ    = ReactiveMP.getvariable(ReactiveMP.getinterface(node, ReactiveMP.interfaceindex(node, :θ)))
+        qθ   = Rocket.getrecent(ReactiveMP.get_stream_of_marginals(θ))
+        return NormalMeanVariance(mean(qθ) + mean(args.q[:out]), var(qθ))
+    end,
+)
+
+which_message_update_rule(MyExperimentalNode, :θ; q = (out = PointMass(1.0),))
+```
+
+[`which_message_update_rule`](@extref MessagePassingRulesBase.which_message_update_rule) finds the
+rule that a call would run, without running it, and lists the services the rule declares. The
+body names the `ctx` slot before `args`. `ctx.node` is the engine's factor node, and ReactiveMP's
+accessors reach its interfaces and variables.
+
+The engine supplies `node`, so the rule runs in a model:
+
+```@example custom-node-node-in-a-rule
 @model function my_experimental_model(y)
     θ ~ Normal(mean = 0.0, variance = 1.0)
     y ~ MyExperimentalNode(θ)
 end
+
+result = infer(
+    model          = my_experimental_model(),
+    data           = (y = 1.0,),
+    initialization = @initialization(q(θ) = NormalMeanVariance(3.14, 2.71)),
+)
+
+result.posteriors[:θ]
 ```
 
-Second, we enable instruction to the inference backend to pass node reference to the rule.
+A call by hand has no engine, so it supplies no node, and `ctx.node` reads as `nothing` inside
+the rule.
+
+A rule can also declare a service of its own, which the model's user supplies with the `context`
+option of `infer`. This rule reads the variance of its message from a service named `spread`:
 
 ```@example custom-node-node-in-a-rule
-# Enable node reference passing for this node type
-ReactiveMP.call_rule_is_node_required(::Type{<:MyExperimentalNode}) = ReactiveMP.CallRuleNodeRequired()
-```
+struct Spread end
 
-!!! note "Performance Impact"
-    Enabling node reference passing can negatively impact performance as it requires additional bookkeeping during inference.
+@define_factor_node(node = Spread, type = Stochastic, interfaces = [:out, :θ])
 
-!!! danger "Global State"
-    Setting `call_rule_is_node_required` for existing nodes (like `NormalMeanVariance`) affects all models globally and will affect code that depends on your package. Only safe to use this for your custom nodes.
+@define_message_update_rule(
+    node = Spread,
+    target = :θ,
+    args = (q[:out]::PointMass,),
+    ctx = (:spread,),
+    body = (ctx, args) -> NormalMeanVariance(mean(args.q[:out]), ctx.spread),
+)
 
-The `call_rule_is_node_required` function is used to instruct the inference backend to pass the node object to the rule. After this is set, we can use the `getnode()` function to access the node object within the rule.
-
-```@example custom-node-node-in-a-rule
-@rule MyExperimentalNode(:θ, Marginalisation) (q_out::Any, ) = begin 
-    node = getnode()
-    # Access interface index
-    ii = ReactiveMP.interfaceindex(node, :θ)
-    # Get interface object
-    θi = ReactiveMP.getinterfaces(node)[ii]
-    # Get variable object
-    θv = ReactiveMP.getvariable(θi)
-    
-    # By default, `getmarginal` ignores marginals set in the @initialization block
-    # `IncludeAll` overrides this behavior and includes all marginals
-    qθ = Rocket.getrecent(ReactiveMP.get_stream_of_marginals(θv))
-
-    # This is a simple rule that returns a NormalMeanVariance distribution
-    # It could be replaced with any other rule that returns a distribution
-    return NormalMeanVariance(mean(qθ) + mean(q_out), var(qθ))
-end
-```
-
-### Running inference with the custom node and rule
-
-Here's a full example showing how to use this functionality:
-
-```@example custom-node-node-in-a-rule
-initialization = @initialization begin
-    q(θ) = NormalMeanVariance(3.14, 2.71)
+@model function spread_model(y)
+    θ ~ Normal(mean = 0.0, variance = 1.0)
+    y ~ Spread(θ)
 end
 
 result = infer(
-    model = my_experimental_model(),
-    data = (y = 1.0, ),
-    initialization = initialization
+    model   = spread_model(),
+    data    = (y = 1.0,),
+    options = (context = (spread = 2.0,),),
 )
-nothing #hide
+
+result.posteriors[:θ]
 ```
 
-The inference runs successfully, which means that the rule was able to access the node object through `getnode()` and that node reference passing is working as expected. This feature opens up possibilities for advanced inference scenarios, but should be used judiciously. Consider whether your use case truly requires access to the node object, as simpler solutions using standard message passing rules are often sufficient and more maintainable.
+The engine checks the declared services when it sets up a node, so a service that nobody
+supplies is an error before inference starts:
 
+```@example custom-node-node-in-a-rule
+try
+    infer(
+        model = spread_model(),
+        data  = (y = 1.0,),
+        disable_inference_error_hint = true, #hide
+    )
+catch err
+    showerror(stdout, err)
+end
+```
 
+!!! warning
+    A rule that reads the graph through the node depends on the engine's internals and on the
+    order in which the engine updates marginals. Prefer the inputs a rule declares in `args`, and
+    read the node only when no input carries what the rule needs.
+
+## Next steps
+
+- MessagePassingRulesBase's tutorials build nodes step by step and test each rule by hand:
+  [Your first node](@extref MessagePassingRulesBase tutorial-first-node),
+  [A deterministic node with a group](@extref MessagePassingRulesBase tutorial-groups) and
+  [A node with its own algorithm](@extref MessagePassingRulesBase tutorial-algorithm).
+- The [Keyword reference](@extref MessagePassingRulesBase keyword-reference) lists every keyword
+  of every macro on this page.
+- [Algorithm specification](@ref user-guide-algorithm-specification) shows how a model chooses
+  the algorithm that a node's rules run under.

@@ -111,6 +111,26 @@ iteration_events = filter(e -> event_name(typeof(e.event)) === :before_iteration
 println("Number of iterations: ", length(iteration_events))
 ```
 
+A traced message rule call is a [`ReactiveMP.AfterMessageRuleCallEvent`](@extref) (see [Message rule calls](@ref manual-inference-callbacks)): `event.mapping.algorithm` is the algorithm the node ran under, and `event.logscale` the message's log scale when inference runs with `logscales = true`. A `trace` given as a tuple of event names records only those events:
+
+```@example manual-inference-trace-callbacks
+@model function coin_model(y)
+    θ ~ Beta(1.0, 1.0)
+    y .~ Bernoulli(θ)
+end
+
+result = infer(
+    model = coin_model(),
+    data = (y = [1.0, 0.0, 1.0],),
+    logscales = true,
+    trace = (:after_message_rule_call,),
+)
+
+rule_calls = RxInfer.tracedevents(result.model.metadata[:trace])
+@test all(e -> event_name(typeof(e.event)) === :after_message_rule_call, rule_calls) #hide
+[(e.event.mapping.algorithm, e.event.result, e.event.logscale) for e in rule_calls]
+```
+
 ## Combining with other callbacks
 
 `trace = true` is compatible with other callbacks, including `benchmark = true` and custom callbacks:

@@ -73,12 +73,8 @@ const REPLACEMENT_OF_NAME = Dict{Symbol, String}(
     :RequireMarginalFunctionalDependencies => "a node declares what its rules read (`@define_dependencies`), and an initial marginal is set with `@initialization`",
 )
 
-"""
-    RxInfer.removed_name_hint(name::Symbol) -> Union{String, Nothing}
-
-What to use instead of `name`, a name of ReactiveMP v6 or of a node package RxInfer does not
-load, or `nothing` for any other name. RxInfer adds it to an `UndefVarError` for the name.
-"""
+# What to use instead of `name`, a name of ReactiveMP v6 or of a node package RxInfer does not
+# load, or `nothing` for any other name; added to an `UndefVarError` for the name.
 function removed_name_hint(name::Symbol)
     package = get(PACKAGE_OF_NAME, name, nothing)
     package === nothing ||
