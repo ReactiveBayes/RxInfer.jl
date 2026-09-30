@@ -7,9 +7,10 @@ export infer, @algorithm
         NormalMixture() -> NormalMixtureVMP()
     end
 
-The algorithm each node of a model runs under, by the node's function and its variables, as
-`@meta` did for v6's meta: a node's meta is its algorithm in ReactiveMP v7. Pass it to `infer`
-as `algorithm`. A single node takes one in the model, `x ~ Node(…) where { algorithm = … }`.
+The algorithm each node of a model runs under, selected by the node's function and its
+variables: the value that picks a node's rules and carries their parameters, such as a Delta
+node's approximation method. Pass it to `infer` as `algorithm`. A single node takes one in the
+model, `x ~ Node(…) where { algorithm = … }`. See the manual's *Algorithm specification*.
 """
 macro algorithm(body)
     return esc(GraphPPL.meta_macro_interior(body))
@@ -347,7 +348,7 @@ function inference_process_error(
         • See `infer` function docs for options
         """
     end
-    if error isa MessagePassingRulesBase.RuleNotFoundError
+    if error isa MessagePassingRulesBase.RuleNotFoundError && !disable_inference_error_hint
         @error """
         No message passing rule fits a node of the model: the error below names the node, what it
         was asked to compute, and why each of its rules does not fit.

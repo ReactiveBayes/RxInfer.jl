@@ -43,9 +43,17 @@ end
         τ ~ Gamma(shape = 1.0, rate = 1.0)
         y ~ Normal(mean = μ, precision = τ)
     end
-    err = @test_logs (
-        :error, r"No message passing rule fits a node of the model"
-    ) match_mode = :any try
+    # The pointer is a hint, shown unless hints are disabled.
+    err = withenv("THROW_ON_INFERENCE_ERROR_HINT" => "false") do
+        @test_logs (:error, r"No message passing rule fits a node of the model") match_mode =
+            :any try
+            infer(model = no_rule_model(), data = (y = 1.0,))
+        catch e
+            e
+        end
+    end
+    @test err isa MessagePassingRulesBase.RuleNotFoundError
+    quiet = @test_logs min_level = Base.CoreLogging.Error try
         infer(
             model = no_rule_model(),
             data = (y = 1.0,),
@@ -54,7 +62,7 @@ end
     catch e
         e
     end
-    @test err isa MessagePassingRulesBase.RuleNotFoundError
+    @test quiet isa MessagePassingRulesBase.RuleNotFoundError
 end
 
 @testitem "a variational model without an initialization says what to start from" begin
@@ -64,12 +72,40 @@ end
         y .~ Normal(mean = μ, precision = τ)
     end
     err = try
-        infer(model = not_started(), data = (y = [1.0, 2.0],), constraints = @constraints(begin
-            q(μ, τ) = q(μ)q(τ)
-        end), iterations = 2, disable_inference_error_hint = true)
+        infer(
+            model = not_started(),
+            data = (y = [1.0, 2.0],),
+            constraints = @constraints(
+                begin
+                    q(μ, τ) = q(μ)q(τ)
+                end
+            ),
+            iterations = 2,
+            disable_inference_error_hint = true,
+        )
     catch e
         e
     end
     @test err isa ErrorException
-    @test contains(err.msg, "have not been updated") && contains(err.msg, "`@initialization`")
+    @test contains(err.msg, "have not been updated") &&
+        contains(err.msg, "`@initialization`")
+end
+
+@testitem "a failed prediction with free energy keeps its error" begin
+    @model function coin_with_missing(y)
+        θ ~ Beta(1.0, 1.0)
+        y .~ Bernoulli(θ)
+    end
+    result = infer(
+        model = coin_with_missing(),
+        data = (y = [1.0, missing],),
+        free_energy = true,
+        catch_exception = true,
+        disable_inference_error_hint = true,
+    )
+    @test RxInfer.iserror(result)
+    @test contains(
+        sprint(showerror, first(result.error)),
+        "not compatible with the prediction functionality",
+    )
 end

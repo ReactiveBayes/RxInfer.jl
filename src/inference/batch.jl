@@ -483,9 +483,12 @@ function batch_inference(;
     # in combination with the `catch_exception = true` option, 
     # if catch_exception is true, the code will continue to execute till this point 
     # but there might be no result to postprocess
+    # A buffer the failed procedure left partly filled has undefined entries: it is `missing` too.
     function inference_postprocess_or_missing(postprocess, actor)
         values = getvalues(actor)
-        isnothing(values) ? missing : inference_postprocess(postprocess, values)
+        isnothing(values) && return missing
+        values isa AbstractArray && !all(i -> isassigned(values, i), eachindex(values)) && return missing
+        return inference_postprocess(postprocess, values)
     end
 
     posterior_values = Dict(variable => inference_postprocess_or_missing(_postprocess, actor) for (variable, actor) in pairs(actors_rv))
