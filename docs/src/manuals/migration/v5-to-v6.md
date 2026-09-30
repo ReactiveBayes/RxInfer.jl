@@ -193,9 +193,27 @@ mean(result.posteriors[:β][end])
 ```
 
 `BinomialPolya` declares that its rule towards `β` reads the message on `β`'s own edge, so the
-model only initializes that message. A per-node option, `where { initial_messages = … }`, is being
-added as the counterpart of the removed clause for a single node; until it is released, use
-`@initialization`.
+model only initializes that message. `@initialization` sets it on every edge of `β`. To set it on
+one node's edge only, the counterpart of the removed clause, give that node
+`where { initial_messages = … }`, keyed by the node's interface:
+
+```@example migration-dependencies
+@model function binomial_model_per_node(X, n, y)
+    β ~ MvNormalWeightedMeanPrecision(zeros(2), diageye(2))
+    for i in eachindex(y)
+        y[i] ~ BinomialPolya(X[i], n[i], β) where {
+            initial_messages = (β = MvNormalWeightedMeanPrecision(zeros(2), diageye(2)),)
+        }
+    end
+end
+
+per_node = infer(model = binomial_model_per_node(), data = (X = X, n = n, y = y), iterations = 5)
+
+mean(per_node.posteriors[:β][end])
+```
+
+A node's `initial_messages` takes precedence over the message its package declares for that edge
+and over `@initialization` on the same edge.
 
 ## Log scales
 

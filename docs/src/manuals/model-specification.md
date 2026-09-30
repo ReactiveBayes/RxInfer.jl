@@ -514,6 +514,25 @@ result = infer(
 mean.(result.posteriors[:x][end])
 ```
 
+`@initialization` sets the message on every edge of `x`. The `initial_messages` option of a node
+sets it on that node's own edges only, keyed by the node's interface, and takes precedence over
+both the node's declared message and `@initialization`:
+
+```@example node-creation-options
+@model function probit_model_per_node(y)
+    x_prev ~ Normal(mean = 0.0, variance = 1.0)
+    for k in eachindex(y)
+        x[k] ~ Normal(mean = x_prev, variance = 0.1)
+        y[k] ~ Probit(x[k]) where { initial_messages = (in = NormalMeanPrecision(0.0, 1.0),) }
+        x_prev = x[k]
+    end
+end
+
+result = infer(model = probit_model_per_node(), data = (y = [1.0, 1.0, 0.0, 1.0, 1.0],), iterations = 5)
+
+mean.(result.posteriors[:x][end])
+```
+
 Read more about initial messages in the [Initialization](@ref initialization) section.
 
 ## [Relation to GraphPPL](@id user-guide-model-specification-relation-to-graphppl)
