@@ -202,6 +202,10 @@ const ReactiveMPExtraHiddenConstantsKey = GraphPPL.NodeDataExtraKey{
 const ReactiveMPExtraStreamPostprocessorsKey = GraphPPL.NodeDataExtraKey{
     :stream_postprocessors, Any
 }()
+# `where { initial_messages = (in = …,) }`: messages on this node's own edges, before inference.
+const ReactiveMPExtraInitialMessagesKey = GraphPPL.NodeDataExtraKey{
+    :initial_messages, Any
+}()
 
 GraphPPL.plugin_type(::ReactiveMPInferencePlugin) =
     FactorAndVariableNodesPlugin()
@@ -234,7 +238,7 @@ function GraphPPL.preprocess_plugin(
     options::NodeCreationOptions,
 )
     haskey(options, :dependencies) && error(
-        "`where { dependencies = … }` is gone in ReactiveMP v7: a node declares what its rules read (`@define_factor_node`'s `dependencies`, or `@define_dependencies` for an algorithm), and an initial message is set with `@initialization`. See the ReactiveMP v6 → v7 migration guide.",
+        "`where { dependencies = … }` is gone in ReactiveMP v7: a node declares what its rules read (`@define_factor_node`'s `dependencies`, or `@define_dependencies` for an algorithm). An initial message on this node's own edge, as `RequireMessageFunctionalDependencies(in = d)` gave, is `where { initial_messages = (in = d,) }`; one for every edge of a variable is set with `@initialization`. See the ReactiveMP v6 → v7 migration guide.",
     )
     if haskey(options, :meta)
         Base.depwarn("`where { meta = … }` is deprecated: a node's meta is its algorithm in ReactiveMP v7, so write `where { algorithm = … }`.", :meta; force = true)
@@ -251,6 +255,13 @@ function GraphPPL.preprocess_plugin(
             nodedata,
             ReactiveMPExtraStreamPostprocessorsKey,
             options[GraphPPL.getkey(ReactiveMPExtraStreamPostprocessorsKey)],
+        )
+    end
+    if haskey(options, GraphPPL.getkey(ReactiveMPExtraInitialMessagesKey))
+        setextra!(
+            nodedata,
+            ReactiveMPExtraInitialMessagesKey,
+            options[GraphPPL.getkey(ReactiveMPExtraInitialMessagesKey)],
         )
     end
     return nothing
@@ -494,9 +505,10 @@ const NodeInterfaceEntry = Tuple{Union{Symbol, Tuple{Symbol, Int}}, ReactiveMP.A
 
 # The engine names a node's interfaces, never positions: an interface by its name, a member of
 # one of the node's groups as `(name, k)`, `k` being GraphPPL's `EdgeLabel.index`. GraphPPL may
-# index an edge that is no group's, such as `out` from a slice of a data array.
+# index an edge that is no group's, such as `out` from a slice of a data array, and gives a group
+# of one member no index: that member is `(name, 1)`.
 interface_key(edge::GraphPPL.EdgeLabel, groups) =
-    !isnothing(edge.index) && GraphPPL.getname(edge) in groups ? (GraphPPL.getname(edge), edge.index) : GraphPPL.getname(edge)
+    GraphPPL.getname(edge) in groups ? (GraphPPL.getname(edge), something(edge.index, 1)) : GraphPPL.getname(edge)
 interface_key(edge::GraphPPL.EdgeLabel) = isnothing(edge.index) ? GraphPPL.getname(edge) : (GraphPPL.getname(edge), edge.index)
 
 function set_rmp_factornode!(
@@ -547,11 +559,11 @@ function delta_factornode(f::F, interfaces, positions) where {F}
     return factornode(DeltaFn{F}, renamed, factorization; nodefn = f)
 end
 
-# The activation options of one node: the inference's, with the node's algorithm and stream
-# postprocessor. A function of those two, so the options are built where their types are known,
-# once each node's are read from its `Any`-valued extras, rather than through keywords of
-# run-time types.
-node_activation_options(options::ReactiveMPInferenceOptions, algorithm, postprocessor) =
+# The activation options of one node: the inference's, with the node's algorithm, stream
+# postprocessor and initial messages. A function of those three, so the options are built where
+# their types are known, once each node's are read from its `Any`-valued extras, rather than
+# through keywords of run-time types.
+node_activation_options(options::ReactiveMPInferenceOptions, algorithm, postprocessor, initial_messages) =
     ReactiveMP.FactorNodeActivationOptions(
         algorithm,
         postprocessor,
@@ -561,6 +573,7 @@ node_activation_options(options::ReactiveMPInferenceOptions, algorithm, postproc
         something(getcontext(options), NamedTuple()),
         getrulefallback(options),
         getlogscales(options),
+        initial_messages,
     )
 
 function activate_rmp_factornode!(
@@ -577,7 +590,8 @@ function activate_rmp_factornode!(
     if isnothing(stream_postprocessors)
         stream_postprocessors = getpostprocessor(getoptions(plugin))
     end
-    options = node_activation_options(getoptions(plugin), algorithm, stream_postprocessors)
+    initial_messages = getextra(nodedata, ReactiveMPExtraInitialMessagesKey, nothing)
+    options = node_activation_options(getoptions(plugin), algorithm, stream_postprocessors, initial_messages)
 
     return ReactiveMP.activate!(
         getextra(nodedata, ReactiveMPExtraFactorNodeKey), options
