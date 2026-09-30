@@ -192,7 +192,7 @@ const ReactiveMPExtraVariableKey = GraphPPL.NodeDataExtraKey{
     :rmp_variable, ReactiveMP.AbstractVariable
 }()
 const ReactiveMPExtraAlgorithmKey = GraphPPL.NodeDataExtraKey{
-    :algorithm, ReactiveMP.Any
+    :algorithm, Any
 }()
 # The constants a factor node holds that GraphPPL does not know of, such as the distribution
 # of a prior `x ~ d`: the free energy cancels their point entropies as it does GraphPPL's.
@@ -200,7 +200,7 @@ const ReactiveMPExtraHiddenConstantsKey = GraphPPL.NodeDataExtraKey{
     :hidden_constants, Int
 }()
 const ReactiveMPExtraStreamPostprocessorsKey = GraphPPL.NodeDataExtraKey{
-    :stream_postprocessors, ReactiveMP.Any
+    :stream_postprocessors, Any
 }()
 
 GraphPPL.plugin_type(::ReactiveMPInferencePlugin) =

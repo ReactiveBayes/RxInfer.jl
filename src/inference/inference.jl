@@ -23,7 +23,7 @@ import DataStructures: CircularBuffer
 import GraphPPL: ModelGenerator, create_model
 
 import ReactiveMP: israndom, isdata, isconst
-import ReactiveMP: CountingReal
+import BayesBase: CountingReal
 import ReactiveMP: Event, event_name
 
 import ProgressMeter
