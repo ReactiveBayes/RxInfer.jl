@@ -56,3 +56,20 @@ end
     end
     @test err isa MessagePassingRulesBase.RuleNotFoundError
 end
+
+@testitem "a variational model without an initialization says what to start from" begin
+    @model function not_started(y)
+        μ ~ Normal(mean = 0.0, variance = 100.0)
+        τ ~ Gamma(shape = 1.0, rate = 1.0)
+        y .~ Normal(mean = μ, precision = τ)
+    end
+    err = try
+        infer(model = not_started(), data = (y = [1.0, 2.0],), constraints = @constraints(begin
+            q(μ, τ) = q(μ)q(τ)
+        end), iterations = 2, disable_inference_error_hint = true)
+    catch e
+        e
+    end
+    @test err isa ErrorException
+    @test contains(err.msg, "have not been updated") && contains(err.msg, "`@initialization`")
+end

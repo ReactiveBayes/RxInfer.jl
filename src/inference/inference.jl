@@ -87,9 +87,12 @@ function check_and_reset_updated!(updates)
         names = join(keys(not_updated), ", ")
         error(
             """
-            Variables [ $(names) ] have not been updated after an update event. 
-            Therefore, make sure to initialize all required marginals and messages. See `initialization` keyword argument for the inference function. 
-            See documentation: https://docs.rxinfer.com/stable/manuals/inference/initialization/ .
+            Variables [ $(names) ] have not been updated after an update event: their posteriors were never computed.
+            A rule runs only when all its inputs have arrived, so something these variables depend on never did. The usual causes:
+            - a loop in the graph, or a variational factorisation from `@constraints`: the rules wait for each other until a message or
+              a marginal is given to start from, with `@initialization` and the `initialization` keyword of `infer`;
+            - a node that has no rule for the inputs it receives: if the loop is started, the error names the rule.
+            See the documentation: https://docs.rxinfer.com/stable/manuals/inference/initialization/
             """,
         )
     end
