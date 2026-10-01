@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - A test runs issue #344's model, structured VMP with four clusters and an initial message, and checks it reaches the posteriors and free energy of the same model without that message.
+- A test runs a horizon of nodes with two steps of history sharing a parameter, every marginal initialised, as the Autoregressive Active Inference example has; with ReactiveMP's rules relaxing at most once it stalled.
 - A node's trailing group takes its positional arguments as a tuple, so numbers among them become constants of their own: with ReactiveMP v7's `+` a group of terms, `s := a + 1.0` and `a + b + c` each build one `+` node, where a vector mixing a variable and a number was taken as one constant and left the variable unconnected.
 - **RxInfer runs on ReactiveMP v7** (breaking; the v6 → v7 guide in ReactiveMP's documentation lists what changes for models). Nodes and rules come from rule packages: RxInfer re-exports ReactiveMP, MessagePassingRulesBase, StandardMessagePassingRules, DeltaMessagePassingRules and MessagePassingRulesApproximations, and a model using another node loads its package (`using ProbitMessagePassingRules`, …). Nodes are declared with `@define_factor_node` and rules with `@define_message_update_rule` and its siblings, in place of `@node` and `@rule`.
 - The `rulefallback` option takes `NodeFunctionRuleFallback()` from MessagePassingRulesBase, as before; it is consulted only where no rule matches.
