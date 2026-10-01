@@ -289,3 +289,154 @@ end
     last_invoke = stats.invokes[end]
     @test last_invoke.context[:a] === 1
 end
+
+@testitem "to_firestore_invoke should redact source code when sharing is disabled (issue #682)" begin
+    using UUIDs
+
+    invoke = RxInfer.create_invoke()
+    invoke.context[:model] = "@model function foo() ... end"
+    invoke.context[:constraints] = "q(x) :: Normal"
+    invoke.context[:meta] = "some meta"
+    invoke.context[:model_name] = "foo"
+    invoke.context[:iterations] = 10
+
+    stats_id = uuid4()
+
+    # `share_source_code = true` keeps the source-code fields verbatim.
+    fields_true =
+        RxInfer.to_firestore_invoke(invoke, stats_id; share_source_code = true).fields.context.mapValue.fields
+    @test fields_true["model"].stringValue == "@model function foo() ... end"
+    @test fields_true["constraints"].stringValue == "q(x) :: Normal"
+    @test fields_true["meta"].stringValue == "some meta"
+
+    # `share_source_code = false` replaces the source-code fields with a marker but
+    # keeps everything else intact.
+    fields_false =
+        RxInfer.to_firestore_invoke(invoke, stats_id; share_source_code = false).fields.context.mapValue.fields
+    @test fields_false["model"].stringValue == "<redacted>"
+    @test fields_false["constraints"].stringValue == "<redacted>"
+    @test fields_false["meta"].stringValue == "<redacted>"
+    @test fields_false["model_name"].stringValue == "foo"
+    @test fields_false["iterations"].integerValue == 10
+
+    # The original invoke context must not be mutated by redaction.
+    @test invoke.context[:model] == "@model function foo() ... end"
+
+    # The default follows the compile-time preference, which defaults to `true` (share).
+    @test RxInfer.preference_share_source_code == true
+    fields_default =
+        RxInfer.to_firestore_invoke(invoke, stats_id).fields.context.mapValue.fields
+    @test fields_default["model"].stringValue == "@model function foo() ... end"
+
+    # `__redact_source_code` only touches keys that are present.
+    only_iterations = Dict{Symbol, Any}(:iterations => 1)
+    @test !haskey(RxInfer.__redact_source_code(only_iterations), :model)
+    @test RxInfer.__redact_source_code(only_iterations)[:iterations] == 1
+end
+
+@testitem "id_name_mapping accessors should be safe under concurrent access (issue #683)" begin
+    using UUIDs
+
+    # `id_name_mapping` is mutated from concurrent background telemetry tasks. The
+    # locked accessors must keep bookkeeping consistent (no lost updates / corruption)
+    # when many tasks read and write concurrently. Each task uses a unique key so the
+    # final state is fully determined and can be asserted exactly.
+    ntasks = 200
+    ids = [string(uuid4()) for _ in 1:ntasks]
+
+    try
+        @sync for (i, id) in enumerate(ids)
+            Threads.@spawn begin
+                expected = "name-$i"
+                RxInfer.__set_document_name!(id, expected)
+                # Hammer the read path concurrently as well.
+                for _ in 1:50
+                    RxInfer.__get_document_name(id)
+                end
+            end
+        end
+
+        # Every write must be visible with the exact value it was written with.
+        @test all(
+            RxInfer.__get_document_name(id) == "name-$i" for
+            (i, id) in enumerate(ids)
+        )
+        # Reading an unknown id returns `nothing`.
+        @test RxInfer.__get_document_name(string(uuid4())) === nothing
+    finally
+        for id in ids
+            delete!(RxInfer.id_name_mapping, id)
+        end
+    end
+end
+
+@testitem "__add_document should PATCH an already-registered document without error (issue #679)" begin
+    using UUIDs, JSON
+
+    # Stub HTTP verbs so no real network request is performed. They capture their
+    # arguments and return a minimal Firestore-like response.
+    post_calls = Ref(0)
+    patch_calls = Ref(0)
+    captured = Ref{Any}(nothing)
+
+    response = (
+        status = 200,
+        body = """{"name": "projects/x/databases/(default)/documents/sessions/generated-name"}""",
+    )
+
+    fake_post =
+        (url, headers, body) -> begin
+            post_calls[] += 1
+            captured[] = (verb = :post, url = url, body = body)
+            return response
+        end
+    fake_patch =
+        (url, headers, body) -> begin
+            patch_calls[] += 1
+            captured[] = (verb = :patch, url = url, body = body)
+            return response
+        end
+
+    endpoint = "https://example.test/documents"
+    id = string(uuid4())
+
+    try
+        # First upload of a fresh id -> POST branch, populates `id_name_mapping`.
+        payload1 = (; fields = (; x = (; stringValue = "a")))
+        name1 = RxInfer.__add_document(
+            id,
+            "sessions",
+            payload1;
+            endpoint = endpoint,
+            http_post = fake_post,
+            http_patch = fake_patch,
+        )
+        @test post_calls[] == 1
+        @test patch_calls[] == 0
+        @test name1 == "generated-name"
+        @test captured[].verb == :post
+        @test haskey(RxInfer.id_name_mapping, id)
+
+        # Second upload of the SAME id -> PATCH branch. Before the fix this threw
+        # `UndefVarError: data not defined` because the branch serialised an undefined
+        # `data` instead of the `payload` parameter.
+        payload2 = (; fields = (; x = (; stringValue = "b")))
+        name2 = RxInfer.__add_document(
+            id,
+            "sessions",
+            payload2;
+            endpoint = endpoint,
+            http_post = fake_post,
+            http_patch = fake_patch,
+        )
+        @test patch_calls[] == 1
+        @test captured[].verb == :patch
+        # The PATCH request must carry the serialised `payload`, not `data`.
+        @test captured[].body == JSON.json(payload2)
+        # The PATCH endpoint must target the previously registered document name.
+        @test endswith(captured[].url, "/sessions/generated-name")
+        @test name2 == "generated-name"
+    finally
+        delete!(RxInfer.id_name_mapping, id)
+    end
+end

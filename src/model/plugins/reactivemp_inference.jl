@@ -541,8 +541,8 @@ end
 # `f() -> Linearization()`, as v6 allowed; it runs under `DeltaApproximation(method = …)`.
 model_algorithm(fform, algorithm) =
     if !isdeclarednode(fform) &&
-       fform isa Function &&
-       is_delta_node_compatible(algorithm) === Val(true)
+        fform isa Function &&
+        is_delta_node_compatible(algorithm) === Val(true)
         DeltaApproximation(; method = algorithm)
     else
         algorithm
@@ -564,11 +564,12 @@ interface_key(edge::GraphPPL.EdgeLabel, groups) =
     else
         GraphPPL.getname(edge)
     end
-interface_key(edge::GraphPPL.EdgeLabel) = if isnothing(edge.index)
-    GraphPPL.getname(edge)
-else
-    (GraphPPL.getname(edge), edge.index)
-end
+interface_key(edge::GraphPPL.EdgeLabel) =
+    if isnothing(edge.index)
+        GraphPPL.getname(edge)
+    else
+        (GraphPPL.getname(edge), edge.index)
+    end
 
 function set_rmp_factornode!(
     plugin::ReactiveMPInferencePlugin,

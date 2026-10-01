@@ -21,7 +21,7 @@ The following table compares the key properties of RxInfer's two telemetry featu
 | Customizable Behavior               | Yes (with Preferences.jl, see [Package Usage Counter](@ref manual-package-usage-counter) manual) | Yes (with Preferences.jl, see [Session Sharing](@ref manual-session-sharing) manual) |
 | Can Be Enabled for a Specific Julia Session | Yes                      | Yes                             |
 | Can Be Enabled for All Julia Sessions | Yes                           | Yes                             |
-| What Is Being Recorded               | Only timestamp and random UUID   | Session metadata & errors, no actual data |
+| What Is Being Recorded               | Only timestamp and random UUID   | Session metadata, errors, and by default the model source code (`constraints`/`meta`); no observed data. See [Source Code Sharing](@ref manual-source-code-sharing) |
 | Real-Time Sharing of Recorded Data   | Yes (on package load)           | Optional (manual/automatic)        |
 | Local Access to Recorded Data       | N/A (No data is collected)      | Yes (via session inspection, see [Session Summary](@ref manual-session-summary) manual) |
 | Enables Extra Support from Core Developers | No                        | Yes* (if users are willing to share their session ID when opening a GitHub issue or a discussion on the GitHub repository, otherwise we cannot backtrace the session to a specific user) |
@@ -102,6 +102,47 @@ When automatic sharing is enabled:
 - No progress bars or messages are shown
 - Failed sharing attempts are silently ignored
 
+### [Source Code Sharing](@id manual-source-code-sharing)
+
+When you share a session, the payload for each labeled run includes the context that RxInfer
+captured for that `infer` call. **By default this includes the model source code** (obtained via
+`GraphPPL.getsource`), together with the `constraints` and `meta` source blocks. This is
+intentional — the model source is usually the single most useful piece of context when we help you
+debug an issue you have shared.
+
+If your model source is proprietary or otherwise sensitive, you can prevent it from being
+transmitted. When source-code sharing is disabled, the `model`, `constraints`, and `meta` fields are
+replaced with a `"<redacted>"` marker in the shared payload, while everything else (timing, status,
+data shape, number of iterations, etc.) is still shared. **This only affects what leaves your
+machine** — your local session always keeps the full context for your own inspection (see the
+[Session Summary](@ref manual-session-summary) manual).
+
+You control this in two ways.
+
+Globally, as a compile-time preference (default is to share):
+
+```julia
+using RxInfer
+RxInfer.disable_source_code_sharing!()  # do not share source code (requires Julia restart)
+RxInfer.enable_source_code_sharing!()   # share source code again (default)
+```
+
+Or per call, via the `share_source_code` keyword of `share_session_data`, which overrides the
+preference for that call:
+
+```julia
+# Never share source code for this particular call, regardless of the preference
+RxInfer.share_session_data(; share_source_code = false)
+```
+
+`share_source_code = nothing` (the default) follows the compile-time preference.
+
+```@docs
+RxInfer.enable_source_code_sharing!
+RxInfer.disable_source_code_sharing!
+RxInfer.preference_share_source_code
+```
+
 ### Using Session IDs in Issues
 
 When you share a session and then open a GitHub issue, include your session ID. This helps us:
@@ -120,7 +161,8 @@ When requesting deletion, you must provide the session UUID. Without this identi
 Remember:
 - Session sharing is completely optional
 - All statistics are anonymous, UUIDs are not persistent and are re-generated for each session
-- No actual data is shared, only meta information (e.g., type of data, number of observations)
+- No **observed data** is shared, only meta information about it (e.g., type of data, number of observations)
+- The **model source code** (and `constraints`/`meta`) *is* shared by default; you can opt out globally or per call — see [Source Code Sharing](@ref manual-source-code-sharing)
 - You can inspect the sharing code in `src/telemetry.jl`
 - We only use this data to help improve RxInfer and provide better support
 

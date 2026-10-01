@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- Main's 5.5.1 and 5.5.2 are merged in; their GCV regression test for issue #344 loads `GCVMessagePassingRules`, where the `GCV` node lives in v7, and passes with the same posteriors and free energy. The branch is formatted with main's pinned formatter, JuliaFormatter 2.12 on Julia 1.12, as the CI checks it.
 - The `diagnostics` option takes a `NamedTuple` of the audits to switch on, `options = (diagnostics = (check_everything_pure = true,),)`, which builds the `ReactiveMP.EngineDiagnostics`, as `context` is written; an unknown audit is an error that lists the available ones. An `EngineDiagnostics` itself is still accepted.
 - A test checks that a sampling rule draws from the rng the `context` option gives: BinomialPolya under `BinomialPolyaApproximation(samples = k)` gives different posteriors under two seeds and the same under one, and without sampling the seed changes nothing.
 - A test runs issue #344's model, structured VMP with four clusters and an initial message, and checks it reaches the posteriors and free energy of the same model without that message.
@@ -38,6 +39,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 - `where { dependencies = … }`: a node declares what its rules read, and an initial message is set with `@initialization`. Using it is an error saying so.
+
+## [5.5.2] - 2026-08-13
+
+### Changed
+- `SampleListFormConstraint` now defaults its random number generator to `Random.default_rng()` instead of the legacy `Random.GLOBAL_RNG`, and the `rng` argument (with reproducibility guidance) is now documented in the docstring. Users can still pass an explicit seeded generator as the first constructor argument for reproducible sample-list approximations. ([#684](https://github.com/ReactiveBayes/RxInfer.jl/issues/684))
+
+### Fixed
+- `SampleListFormConstraint` with the `AutoProposal` strategy now raises an actionable error (pointing the user at `LeftProposal`/`RightProposal`) when neither operand of the product is a low-priority proposal candidate, instead of falling through to a cryptic `MethodError`. Added a regression test. ([#681](https://github.com/ReactiveBayes/RxInfer.jl/issues/681))
+- Replaced the tautological `@test true` placeholder at the end of the nonlinear static-inputs model test with meaningful assertions. The inference helpers now return their collected results, and the test asserts each run produced finite posterior means/variances and finite free energy. ([#680](https://github.com/ReactiveBayes/RxInfer.jl/issues/680))
+
+## [5.5.1] - 2026-08-12
+
+### Added
+- Control over whether the **model source code** is included when sharing session data. Session sharing has always included the model source (`GraphPPL.getsource`) together with the `constraints`/`meta` source blocks; this is now opt-out. A new compile-time preference (default `true` = share) can be toggled with `RxInfer.enable_source_code_sharing!()` / `RxInfer.disable_source_code_sharing!()`, and `share_session_data` gains a `share_source_code` keyword (`nothing` follows the preference, `true`/`false` overrides it). When disabled, the `model`/`constraints`/`meta` fields are replaced with a `"<redacted>"` marker in the shared payload; the local session keeps the full context. The telemetry manual now documents exactly what is transmitted. ([#682](https://github.com/ReactiveBayes/RxInfer.jl/issues/682))
+
+### Changed
+- Made Julia code formatting deterministic across CI and local runs. The `scripts/` formatter environment previously re-resolved `JuliaFormatter` to the newest version on every `make format`/`make lint` (`Pkg.update()` in `scripts_init`) and was neither compat-bounded nor run on a pinned Julia version in CI, so the same code could be formatted differently depending only on when/where the formatter ran — producing spurious "🤖 Auto-format Julia code" PRs. `scripts_init` now only instantiates the pinned `scripts/Manifest.toml` (deliberate bumps moved to a new `make scripts_update`), `scripts/Project.toml` pins `JuliaFormatter = "~2.12"`, and the `format-check` CI job pins Julia to `1.12` (JuliaFormatter's output can shift with the Julia minor version via `JuliaSyntax`). Also refreshed several GitHub Actions to their Node 24 releases (`upload-artifact` v6, `codecov-action` v5, `checkout` v6, `julia-actions/cache` v3) to clear Node 20 deprecation annotations. Includes a one-time reformat of the repository under the pinned formatter.
+
+### Fixed
+- `RxInfer.share_session_data()` no longer throws `UndefVarError: data not defined` when re-uploading an already-registered document (the PATCH branch of `__add_document`). Repeat manual sharing and automatic session sharing (which hits this path on every inference call after the first) now update the existing Firestore document correctly. Added a regression test that exercises the update branch without network access. ([#679](https://github.com/ReactiveBayes/RxInfer.jl/issues/679))
+- Guarded the module-global `id_name_mapping` telemetry `Dict` against concurrent access. It was read and written directly from background telemetry tasks (`log_using_rxinfer` and automatic session sharing both dispatch via `Base.Threads.@spawn`), a latent data race that could lose updates or corrupt the `Dict` during a hash resize under multi-threading. All access now goes through locked `__get_document_name` / `__set_document_name!` accessors backed by a `ReentrantLock`. ([#683](https://github.com/ReactiveBayes/RxInfer.jl/issues/683))
 
 ## [5.5.0] - 2026-06-18
 
@@ -253,7 +275,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.5.0...HEAD
+[Unreleased]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.5.2...HEAD
+[5.5.2]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.5.1...v5.5.2
+[5.5.1]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.5.0...v5.5.1
 [5.5.0]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.4.0...v5.5.0
 [5.4.0]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.3.4...v5.4.0
 [5.3.4]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.3.3...v5.3.4
