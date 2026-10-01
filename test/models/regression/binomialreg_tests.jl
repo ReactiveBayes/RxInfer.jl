@@ -112,3 +112,43 @@
         binomial_model, $n_iterations, $X, $y, $n_trials
     )
 end
+
+@testitem "BinomialPolya draws from the rng the context option gives" begin
+    using StableRNGs, LinearAlgebra
+    using PolyaMessagePassingRules
+
+    # `samples = k` averages over draws from `ctx.rng`, which `options = (context = (rng = …,),)`
+    # supplies: two seeds give different posteriors, one seed the same twice. Without sampling the
+    # rules use means, and the seed changes nothing.
+    @model function binomial_model(X, n, y, algorithm)
+        β ~ MvNormalWeightedMeanPrecision(zeros(2), diageye(2))
+        for i in eachindex(y)
+            y[i] ~ BinomialPolya(X[i], n[i], β) where {algorithm = algorithm}
+        end
+    end
+
+    rng = StableRNG(42)
+    X = [randn(rng, 2) for _ in 1:30]
+    n = fill(10, 30)
+    y = [rand(rng, Binomial(10, 1 / (1 + exp(x[2] - x[1])))) for x in X]
+    initialization = @initialization(
+        begin
+            μ(β) = MvNormalWeightedMeanPrecision(zeros(2), diageye(2))
+        end
+    )
+    posterior(algorithm, seed) = mean(
+        infer(
+            model = binomial_model(algorithm = algorithm),
+            data = (X = X, n = n, y = y),
+            initialization = initialization,
+            iterations = 5,
+            options = (context = (rng = StableRNG(seed),),),
+        ).posteriors[:β][end],
+    )
+
+    sampling = BinomialPolyaApproximation(samples = 50)
+    @test posterior(sampling, 1) != posterior(sampling, 2)
+    @test posterior(sampling, 1) == posterior(sampling, 1)
+    @test posterior(BinomialPolyaApproximation(), 1) ==
+        posterior(BinomialPolyaApproximation(), 2)
+end

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- A test checks that a sampling rule draws from the rng the `context` option gives: BinomialPolya under `BinomialPolyaApproximation(samples = k)` gives different posteriors under two seeds and the same under one, and without sampling the seed changes nothing.
 - A test runs issue #344's model, structured VMP with four clusters and an initial message, and checks it reaches the posteriors and free energy of the same model without that message.
 - A test runs a horizon of nodes with two steps of history sharing a parameter, every marginal initialised, as the Autoregressive Active Inference example has; with ReactiveMP's rules relaxing at most once it stalled.
 - A node's trailing group takes its positional arguments as a tuple, so numbers among them become constants of their own: with ReactiveMP v7's `+` a group of terms, `s := a + 1.0` and `a + b + c` each build one `+` node, where a vector mixing a variable and a number was taken as one constant and left the variable unconnected.
