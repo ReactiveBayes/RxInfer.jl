@@ -82,6 +82,12 @@ end
     @test RxInfer.getrulefallback(RxInfer.setrulefallback(options, nothing)) === nothing
     @test RxInfer.getcontext(RxInfer.setcontext(options, nothing)) === nothing
 
+    # A `NamedTuple` of the audits to switch on builds the `EngineDiagnostics`; the others stay off.
+    shorthand = convert(ReactiveMPInferenceOptions, (diagnostics = (check_everything_pure = true, checked_buffers = true),))
+    @test RxInfer.getdiagnostics(shorthand) === ReactiveMP.EngineDiagnostics(check_everything_pure = true, checked_buffers = true)
+    @test_throws "Unknown diagnostics option: check_everything" convert(ReactiveMPInferenceOptions, (diagnostics = (check_everything = true,),))
+    @test_throws "check_everything_inplace" convert(ReactiveMPInferenceOptions, (diagnostics = (check_everything = true,),))
+
     bad_nt = (blahblah = 1,)
 
     @test_throws "Unknown model inference options: blahblah" convert(

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- The `diagnostics` option takes a `NamedTuple` of the audits to switch on, `options = (diagnostics = (check_everything_pure = true,),)`, which builds the `ReactiveMP.EngineDiagnostics`, as `context` is written; an unknown audit is an error that lists the available ones. An `EngineDiagnostics` itself is still accepted.
 - A test checks that a sampling rule draws from the rng the `context` option gives: BinomialPolya under `BinomialPolyaApproximation(samples = k)` gives different posteriors under two seeds and the same under one, and without sampling the seed changes nothing.
 - A test runs issue #344's model, structured VMP with four clusters and an initial message, and checks it reaches the posteriors and free energy of the same model without that message.
 - A test runs a horizon of nodes with two steps of history sharing a parameter, every marginal initialised, as the Autoregressive Active Inference example has; with ReactiveMP's rules relaxing at most once it stalled.

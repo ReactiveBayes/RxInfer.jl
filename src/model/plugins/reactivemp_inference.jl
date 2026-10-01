@@ -32,7 +32,7 @@ Creates model inference options object. The list of available options is present
 ### Advanced options
 
 - `stream_postprocessors`: changes the postprocessor of reactive streams, see ReactiveMP.jl for more info, defaults to `nothing`, unless the `limit_stack_depth` option is set, in which case will be set to `ReactiveMP.ScheduleOnStreamPostprocessor` together with `RxInfer.LimitStackScheduler`.
-- `diagnostics`: the engine's audits of the rules the model runs, a `ReactiveMP.EngineDiagnostics` (`check_everything_pure`, `check_everything_inplace`, `checked_buffers`), all off by default.
+- `diagnostics`: the engine's audits of the rules the model runs, a `ReactiveMP.EngineDiagnostics` (`check_everything_pure`, `check_everything_inplace`, `checked_buffers`), all off by default; or, shorter, a `NamedTuple` of the audits to switch on, `(check_everything_pure = true,)`, which builds one.
 - `context`: services for the rules, a `NamedTuple` merged over the engine's defaults: `rng`, the random number generator the rules draw from, the task's own by default; `matrix_correction`, the correction rules apply to the matrices they build, each rule's own by default; and any service a rule declares.
 - `rulefallback`: the message where no rule matches, such as `NodeFunctionRuleFallback()`; by default none, and a missing rule is an error that lists the closest candidates.
 - `logscales`: whether messages and marginals carry log scales, the log of the constant a rule's result leaves out (see `ReactiveMP.getlogscale`); `false` by default. The `Mixture` node reads them, and a posterior's log scale is the log evidence of a model inferred exactly by belief propagation.
@@ -111,7 +111,7 @@ function Base.convert(
     warn = haskey(options, :warn) ? options.warn : true
     annotations = haskey(options, :annotations) ? options.annotations : nothing
     diagnostics =
-        haskey(options, :diagnostics) ? options.diagnostics : nothing
+        haskey(options, :diagnostics) ? as_diagnostics(options.diagnostics) : nothing
     context = haskey(options, :context) ? options.context : nothing
     rulefallback = haskey(options, :rulefallback) ? options.rulefallback : nothing
     logscales = haskey(options, :logscales) ? options.logscales : false
@@ -149,6 +149,17 @@ function Base.convert(
         rulefallback,
         logscales,
     )
+end
+
+# A `NamedTuple` of the audits to switch on, `(check_everything_pure = true,)`, stands for the
+# `ReactiveMP.EngineDiagnostics` it builds; anything else is passed on as it is.
+as_diagnostics(diagnostics) = diagnostics
+function as_diagnostics(diagnostics::NamedTuple)
+    available = fieldnames(ReactiveMP.EngineDiagnostics)
+    for key in keys(diagnostics)
+        key ∈ available || error("Unknown diagnostics option: $(key). Available options are: $(available).")
+    end
+    return ReactiveMP.EngineDiagnostics(; diagnostics...)
 end
 
 import ReactiveMP:

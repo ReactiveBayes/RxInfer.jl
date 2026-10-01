@@ -434,7 +434,7 @@ The first line names the node, the target, the algorithm and the inputs the engi
 
 Two options of `infer`'s `options` argument are new in 6.x.
 
-- `diagnostics` takes a [`ReactiveMP.EngineDiagnostics`](@extref), the engine's audits of the rules a model runs: `check_everything_pure` rejects a rule that declares itself impure, `check_everything_inplace` warns about a rule without an in-place form, and `checked_buffers` fills recycled memory with `NaN` before each reuse.
+- `diagnostics` takes the engine's audits of the rules a model runs: `check_everything_pure` rejects a rule that declares itself impure, `check_everything_inplace` warns about a rule without an in-place form, and `checked_buffers` fills recycled memory with `NaN` before each reuse. Name the ones to switch on, `diagnostics = (check_everything_pure = true,)`, or give a [`ReactiveMP.EngineDiagnostics`](@extref) itself.
 - `context` gives the rules their [services](@extref MessagePassingRulesBase glossary-service), a `NamedTuple` merged over the engine's defaults: `rng`, the random number generator that sampling rules draw from, and `matrix_correction`, the correction rules apply to the matrices they build.
 
 ```@example migration-logscales
@@ -444,7 +444,7 @@ result = infer(
     model = coin_model(),
     data = (y = [1.0, 0.0, 1.0],),
     options = (
-        diagnostics = ReactiveMP.EngineDiagnostics(check_everything_pure = true),
+        diagnostics = (check_everything_pure = true,),
         context = (rng = StableRNG(42),),
     ),
 )
