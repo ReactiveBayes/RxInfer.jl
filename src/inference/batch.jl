@@ -487,7 +487,9 @@ function batch_inference(;
     function inference_postprocess_or_missing(postprocess, actor)
         values = getvalues(actor)
         isnothing(values) && return missing
-        values isa AbstractArray && !all(i -> isassigned(values, i), eachindex(values)) && return missing
+        values isa AbstractArray &&
+            !all(i -> isassigned(values, i), eachindex(values)) &&
+            return missing
         return inference_postprocess(postprocess, values)
     end
 

@@ -90,7 +90,9 @@
     # v6's `where { dependencies = RequireMessageFunctionalDependencies(in = init) }` gave this
     # free energy, iteration by iteration
     seeded = infer(
-        model = probit_model_with_initial_messages(init = NormalMeanPrecision(0.0, 0.01)),
+        model = probit_model_with_initial_messages(
+            init = NormalMeanPrecision(0.0, 0.01)
+        ),
         data = (y = data_y,),
         iterations = 10,
         returnvars = KeepLast(),
@@ -98,8 +100,16 @@
         disable_inference_error_hint = true,
     )
     @test seeded.free_energy ≈ [
-        23.177871204365005, 15.743019214442128, 15.646693289905684, 15.646239480771953, 15.646237104462447,
-        15.646236968964402, 15.646236967811586, 15.64623696724287, 15.646236967227736, 15.64623696722527,
+        23.177871204365005,
+        15.743019214442128,
+        15.646693289905684,
+        15.646239480771953,
+        15.646237104462447,
+        15.646236968964402,
+        15.646236967811586,
+        15.64623696724287,
+        15.646236967227736,
+        15.64623696722527,
     ]
     @test !(first(seeded.free_energy) ≈ first(result.free_energy))
 

@@ -300,8 +300,9 @@ end
     # A function no package declares is a Delta node: deterministic, and atomic through the
     # `DefaultBackend` whether node contraction is allowed or not.
     @test !RxInfer.isdeclarednode(sum)
-    @test GraphPPL.NodeBehaviour(ReactiveMPGraphPPLBackend(Static.True()), sum) ===
-        GraphPPL.Deterministic()
+    @test GraphPPL.NodeBehaviour(
+        ReactiveMPGraphPPLBackend(Static.True()), sum
+    ) === GraphPPL.Deterministic()
     @test GraphPPL.NodeType(ReactiveMPGraphPPLBackend(Static.True()), sum) ==
         GraphPPL.Atomic()
     @test GraphPPL.NodeType(ReactiveMPGraphPPLBackend(Static.False()), sum) ==

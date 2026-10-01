@@ -33,7 +33,9 @@ end
         y .~ Bernoulli(θ)
     end
 
-    result = infer(model = coin(), data = (y = [1.0, 0.0, 1.0],), free_energy = true)
+    result = infer(
+        model = coin(), data = (y = [1.0, 0.0, 1.0],), free_energy = true
+    )
     posteriors, predictions, free_energy, model, error = result
     @test posteriors === result.posteriors
     @test predictions === result.predictions
@@ -565,64 +567,121 @@ end
         node = gcv,
         target = :y,
         args = (q[:x]::Any, q[:z]::Any, q[:κ]::Any, q[:ω]::Any),
-        body = (algo, args) -> getresult(call_message_update_rule(
-            GCV, :y; q = (x = args.q[:x], z = args.q[:z], κ = args.q[:κ], ω = args.q[:ω]), algorithm = algo
-        )),
+        body =
+            (algo, args) -> getresult(
+                call_message_update_rule(
+                    GCV,
+                    :y;
+                    q = (
+                        x = args.q[:x],
+                        z = args.q[:z],
+                        κ = args.q[:κ],
+                        ω = args.q[:ω],
+                    ),
+                    algorithm = algo,
+                ),
+            ),
     )
 
     @define_message_update_rule(
         node = gcv,
         target = :x,
         args = (q[:y]::Any, q[:z]::Any, q[:κ]::Any, q[:ω]::Any),
-        body = (algo, args) -> getresult(call_message_update_rule(
-            GCV, :x; q = (y = args.q[:y], z = args.q[:z], κ = args.q[:κ], ω = args.q[:ω]), algorithm = algo
-        )),
+        body =
+            (algo, args) -> getresult(
+                call_message_update_rule(
+                    GCV,
+                    :x;
+                    q = (
+                        y = args.q[:y],
+                        z = args.q[:z],
+                        κ = args.q[:κ],
+                        ω = args.q[:ω],
+                    ),
+                    algorithm = algo,
+                ),
+            ),
     )
 
     @define_message_update_rule(
         node = gcv,
         target = :ω,
         args = (q[:y]::Any, q[:x]::Any, q[:z]::Any, q[:κ]::Any),
-        body = (algo, args) -> getresult(call_message_update_rule(
-            GCV, :ω; q = (y = args.q[:y], x = args.q[:x], z = args.q[:z], κ = args.q[:κ]), algorithm = algo
-        )),
+        body =
+            (algo, args) -> getresult(
+                call_message_update_rule(
+                    GCV,
+                    :ω;
+                    q = (
+                        y = args.q[:y],
+                        x = args.q[:x],
+                        z = args.q[:z],
+                        κ = args.q[:κ],
+                    ),
+                    algorithm = algo,
+                ),
+            ),
     )
 
     @define_message_update_rule(
         node = gcv,
         target = :z,
         args = (q[:y]::Any, q[:x]::Any, q[:κ]::Any, q[:ω]::Any),
-        body = (algo, args) -> getresult(call_message_update_rule(
-            GCV, :z; q = (y = args.q[:y], x = args.q[:x], κ = args.q[:κ], ω = args.q[:ω]), algorithm = algo
-        )),
+        body =
+            (algo, args) -> getresult(
+                call_message_update_rule(
+                    GCV,
+                    :z;
+                    q = (
+                        y = args.q[:y],
+                        x = args.q[:x],
+                        κ = args.q[:κ],
+                        ω = args.q[:ω],
+                    ),
+                    algorithm = algo,
+                ),
+            ),
     )
 
     @define_message_update_rule(
         node = gcv,
         target = :κ,
         args = (q[:y]::Any, q[:x]::Any, q[:z]::Any, q[:ω]::Any),
-        body = (algo, args) -> getresult(call_message_update_rule(
-            GCV, :κ; q = (y = args.q[:y], x = args.q[:x], z = args.q[:z], ω = args.q[:ω]), algorithm = algo
-        )),
+        body =
+            (algo, args) -> getresult(
+                call_message_update_rule(
+                    GCV,
+                    :κ;
+                    q = (
+                        y = args.q[:y],
+                        x = args.q[:x],
+                        z = args.q[:z],
+                        ω = args.q[:ω],
+                    ),
+                    algorithm = algo,
+                ),
+            ),
     )
 
     @define_average_energy(
         node = gcv,
         args = (q[:y]::Any, q[:x]::Any, q[:z]::Any, q[:κ]::Any, q[:ω]::Any),
-        body = (args) -> begin
-            y_mean, y_var = mean_var(args.q[:y])
-            x_mean, x_var = mean_var(args.q[:x])
-            z_mean, z_var = mean_var(args.q[:z])
-            κ_mean, κ_var = mean_var(args.q[:κ])
-            ω_mean, ω_var = mean_var(args.q[:ω])
+        body =
+            (args) -> begin
+                y_mean, y_var = mean_var(args.q[:y])
+                x_mean, x_var = mean_var(args.q[:x])
+                z_mean, z_var = mean_var(args.q[:z])
+                κ_mean, κ_var = mean_var(args.q[:κ])
+                ω_mean, ω_var = mean_var(args.q[:ω])
 
-            ksi = (κ_mean^2) * z_var + (z_mean^2) * κ_var + κ_var * z_var
-            psi = (y_mean - x_mean)^2 + y_var + x_var
-            A = exp(-ω_mean + ω_var / 2)
-            B = exp(-κ_mean * z_mean + ksi / 2)
+                ksi =
+                    (κ_mean^2) * z_var + (z_mean^2) * κ_var + κ_var * z_var
+                psi = (y_mean - x_mean)^2 + y_var + x_var
+                A = exp(-ω_mean + ω_var / 2)
+                B = exp(-κ_mean * z_mean + ksi / 2)
 
-            (log(2π) + (z_mean * κ_mean + ω_mean) + (psi * A * B)) / 2
-        end,
+                (log(2π) + (z_mean * κ_mean + ω_mean) + (psi * A * B)) / 2
+            end,
     )
 
     @model function hgf_1(y)
@@ -2096,15 +2155,18 @@ end
         algorithm = CountingAlgorithm,
         args = (m[:out]::Categorical, m[:in]::Categorical, q[:a]::PointMass),
         pure = false,
-        body = (algo, args) -> begin
-            algo.count += 1
-            return getresult(call_marginal_update_rule(
-                DiscreteTransition,
-                (:out, :in);
-                m = (out = args.m[:out], in = args.m[:in]),
-                q = (a = args.q[:a],),
-            ))
-        end,
+        body =
+            (algo, args) -> begin
+                algo.count += 1
+                return getresult(
+                    call_marginal_update_rule(
+                        DiscreteTransition,
+                        (:out, :in);
+                        m = (out = args.m[:out], in = args.m[:in]),
+                        q = (a = args.q[:a],),
+                    ),
+                )
+            end,
     )
 
     # Test batch inference
@@ -2256,7 +2318,8 @@ end
     )
 
     # `infer(; meta = …)` warns, and still runs the algorithm it was given
-    result = @test_logs (:warn, r"`infer\(; meta = …\)` is deprecated") match_mode = :any infer(;
+    result = @test_logs (:warn, r"`infer\(; meta = …\)` is deprecated") match_mode =
+        :any infer(;
         model = simple_nonlinear_model(),
         data = (y = 1.0,),
         meta = @meta(
@@ -2269,7 +2332,8 @@ end
     @test var(result.posteriors[:m]) ≈ var(expected.posteriors[:m])
 
     # `where { meta = … }` warns, and still runs the algorithm it was given
-    result = @test_logs (:warn, r"`where \{ meta = … \}` is deprecated") match_mode = :any infer(;
+    result = @test_logs (:warn, r"`where \{ meta = … \}` is deprecated") match_mode =
+        :any infer(;
         model = simple_nonlinear_model_with_where(), data = (y = 1.0,)
     )
     @test mean(result.posteriors[:m]) ≈ mean(expected.posteriors[:m])

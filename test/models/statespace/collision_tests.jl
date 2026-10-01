@@ -18,10 +18,11 @@
         node = Halfspace,
         target = :out,
         args = (q[:a]::PointMass, q[:σ2]::PointMass, q[:γ]::PointMass),
-        body = (args) -> NormalMeanVariance(
-            mean(args.q[:a]) + mean(args.q[:γ]) * mean(args.q[:σ2]),
-            mean(args.q[:σ2]),
-        ),
+        body =
+            (args) -> NormalMeanVariance(
+                mean(args.q[:a]) + mean(args.q[:γ]) * mean(args.q[:σ2]),
+                mean(args.q[:σ2]),
+            ),
     )
 
     struct ForcePointMass{V}
@@ -36,18 +37,20 @@
             q[:a]::PointMass,
             q[:γ]::PointMass,
         ),
-        body = (args) -> ForcePointMass(
-            1 / mean(args.q[:γ]) * sqrt(
-                abs2(mean(args.q[:out]) - mean(args.q[:a])) +
-                var(args.q[:out]),
+        body =
+            (args) -> ForcePointMass(
+                1 / mean(args.q[:γ]) * sqrt(
+                    abs2(mean(args.q[:out]) - mean(args.q[:a])) +
+                    var(args.q[:out]),
+                ),
             ),
-        ),
     )
 
     BayesBase.prod(::GenericProd, p::ForcePointMass, any) = PointMass(p.v)
     BayesBase.prod(::GenericProd, any, p::ForcePointMass) = PointMass(p.v)
 
-    MessagePassingRulesBase.public_equivalent(p::ForcePointMass) = PointMass(p.v)
+    MessagePassingRulesBase.public_equivalent(p::ForcePointMass) =
+        PointMass(p.v)
 
     function h(y1, y2)
         r1 = 15

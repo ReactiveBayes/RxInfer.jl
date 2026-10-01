@@ -227,6 +227,12 @@ end
 # (`ReactiveMP.listens`), so `benchmark = true` does not slow down every rule call.
 ReactiveMP.listens(::RxInferBenchmarkCallbacks, ::Type{T}) where {T} =
     T <: Union{
-    BeforeModelCreationEvent, AfterModelCreationEvent, BeforeInferenceEvent, AfterInferenceEvent,
-    BeforeIterationEvent, AfterIterationEvent, BeforeAutostartEvent, AfterAutostartEvent,
-}
+        BeforeModelCreationEvent,
+        AfterModelCreationEvent,
+        BeforeInferenceEvent,
+        AfterInferenceEvent,
+        BeforeIterationEvent,
+        AfterIterationEvent,
+        BeforeAutostartEvent,
+        AfterAutostartEvent,
+    }

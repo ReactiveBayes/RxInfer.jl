@@ -92,9 +92,8 @@ function score(
     end
 
     variable_bound_entropies = map(nodes.randoms) do nodedata
-        nodeproperties = getproperties(
-            nodedata
-        )::GraphPPL.VariableNodeProperties
+        nodeproperties =
+            getproperties(nodedata)::GraphPPL.VariableNodeProperties
         stream = getextra(nodedata, ReactiveMPExtraBetheFreeEnergyStreamKey)
         return apply_diagnostic_check(diagnostic_checks, nodeproperties, stream)
     end
@@ -114,12 +113,13 @@ function score(
 
     data_point_entropies_n     = mapreduce(degree_fn, +, nodes.datas; init = 0)
     constant_point_entropies_n = mapreduce(degree_fn, +, nodes.constants; init = 0)
-    hidden_point_entropies_n = mapreduce(
-        nodedata -> getextra(nodedata, ReactiveMPExtraHiddenConstantsKey, 0), +, nodes.factors; init = 0
-    )
+    hidden_point_entropies_n   = mapreduce(nodedata -> getextra(nodedata, ReactiveMPExtraHiddenConstantsKey, 0), +, nodes.factors; init = 0)
 
     point_entropies = CountingReal(
-        T, data_point_entropies_n + constant_point_entropies_n + hidden_point_entropies_n
+        T,
+        data_point_entropies_n +
+        constant_point_entropies_n +
+        hidden_point_entropies_n,
     )
 
     bfe_stream =

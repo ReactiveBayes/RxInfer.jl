@@ -38,7 +38,9 @@ end
 # a deterministic node's always has one, over its inputs.
 function create_marginals_stream(node::ReactiveMP.AbstractFactorNode)
     localmarginals = ReactiveMP.get_node_local_marginals(getlocalclusters(node))
-    stream = combineLatest(map(get_stream_of_marginals, localmarginals), PushNew())
+    stream = combineLatest(
+        map(get_stream_of_marginals, localmarginals), PushNew()
+    )
     return subscribe!(
         stream |> map(Nothing, (_) -> nothing),
         lambda(

@@ -24,8 +24,12 @@
     BayesBase.logpdf(d::MyBernoulli, x) = logpdf(Bernoulli(d.p), x)
     BayesBase.insupport(d::MyBernoulli, x::Real) = true
 
-    @define_factor_node(node = MyBeta, type = Stochastic, interfaces = [:out, :a, :b])
-    @define_factor_node(node = MyBernoulli, type = Stochastic, interfaces = [:out, :p])
+    @define_factor_node(
+        node = MyBeta, type = Stochastic, interfaces = [:out, :a, :b]
+    )
+    @define_factor_node(
+        node = MyBernoulli, type = Stochastic, interfaces = [:out, :p]
+    )
 
     @constraints function projection_constraints()
         q(p)::ProjectedTo(Beta)
@@ -579,9 +583,8 @@ end
 
     # `CVIProjection` samples from the generator the engine gives its rules, `options.rng`
     @algorithm function myalgorithm()
-        foo() -> CVIProjection(
-            sampling_strategy = FullSampling(10), outsamples = 5
-        )
+        foo() ->
+            CVIProjection(sampling_strategy = FullSampling(10), outsamples = 5)
     end
 
     result = infer(

@@ -5,8 +5,17 @@ using Reexport
 # The engine, the rule system a model's nodes are declared with, the standard nodes, and the
 # Delta node, which `:=` with any function creates, with its approximations. Other node
 # packages are loaded by the models that use them.
-@reexport using ReactiveMP, MessagePassingRulesBase, StandardMessagePassingRules, DeltaMessagePassingRules, MessagePassingRulesApproximations,
-    GraphPPL, Rocket, Distributions, ExponentialFamily, BayesBase, FastCholesky
+@reexport using ReactiveMP,
+    MessagePassingRulesBase,
+    StandardMessagePassingRules,
+    DeltaMessagePassingRules,
+    MessagePassingRulesApproximations,
+    GraphPPL,
+    Rocket,
+    Distributions,
+    ExponentialFamily,
+    BayesBase,
+    FastCholesky
 
 include("helpers.jl")
 include("rocket.jl")
@@ -43,7 +52,9 @@ include("precompile.jl")
 _isprecompiling() = ccall(:jl_generating_output, Cint, ()) == 1
 
 function __init__()
-    Base.Experimental.register_error_hint(removed_name_error_hint, UndefVarError)
+    Base.Experimental.register_error_hint(
+        removed_name_error_hint, UndefVarError
+    )
     if !_isprecompiling()
         if RxInfer.preference_enable_session_logging
             default_session = create_session()

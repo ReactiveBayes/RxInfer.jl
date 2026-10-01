@@ -348,7 +348,8 @@ function inference_process_error(
         • See `infer` function docs for options
         """
     end
-    if error isa MessagePassingRulesBase.RuleNotFoundError && !disable_inference_error_hint
+    if error isa MessagePassingRulesBase.RuleNotFoundError &&
+        !disable_inference_error_hint
         @error """
         No message passing rule fits a node of the model: the error below names the node, what it
         was asked to compute, and why each of its rules does not fit.
@@ -517,7 +518,14 @@ function infer_callbacks(callbacks, benchmark, trace)
         callbacks = merge_callbacks(callbacks, RxInferBenchmarkCallbacks())
     end
     if trace !== false
-        callbacks = merge_callbacks(callbacks, trace === true ? RxInferTraceCallbacks() : RxInferTraceCallbacks(trace))
+        callbacks = merge_callbacks(
+            callbacks,
+            if trace === true
+                RxInferTraceCallbacks()
+            else
+                RxInferTraceCallbacks(trace)
+            end,
+        )
     end
     return callbacks
 end
@@ -641,8 +649,14 @@ function infer(;
 )
     # v6's `meta` is the node's algorithm now, and its old name stays for one release.
     if !isnothing(meta)
-        !isnothing(algorithm) && error("`infer` was given both `algorithm` and `meta`; `meta` is the algorithm's deprecated name, so give only `algorithm`.")
-        Base.depwarn("`infer(; meta = …)` is deprecated: a node's meta is its algorithm in ReactiveMP v7, so write `infer(; algorithm = @algorithm(…))`.", :infer; force = true)
+        !isnothing(algorithm) && error(
+            "`infer` was given both `algorithm` and `meta`; `meta` is the algorithm's deprecated name, so give only `algorithm`.",
+        )
+        Base.depwarn(
+            "`infer(; meta = …)` is deprecated: a node's meta is its algorithm in ReactiveMP v7, so write `infer(; algorithm = @algorithm(…))`.",
+            :infer;
+            force = true,
+        )
         algorithm = meta
     end
     meta = algorithm
@@ -653,7 +667,13 @@ function infer(;
     elseif !isa(model, GraphPPL.ModelGenerator)
         error(
             "The `model` keyword argument takes a model created by calling a `@model` function with its arguments, such as `model = coin_model(n = 10)`; got `$(model)` of type `$(typeof(model))`." *
-                (model isa Function ? " If `$(model)` is the `@model` function, call it with its arguments." : ""),
+            (
+                if model isa Function
+                    " If `$(model)` is the `@model` function, call it with its arguments."
+                else
+                    ""
+                end
+            ),
         )
     elseif !isnothing(data) && !isnothing(datastream)
         error(

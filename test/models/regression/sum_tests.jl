@@ -12,7 +12,8 @@
     end
     result = infer(model = three_terms(), data = (y = 2.0,), free_energy = true)
     @test only(result.free_energy) ≈ -logpdf(Normal(-1.0, 2.0), 2.0)
-    @test mean(result.posteriors[:a]) ≈ 3 / 4 && var(result.posteriors[:a]) ≈ 3 / 4
+    @test mean(result.posteriors[:a]) ≈ 3 / 4 &&
+        var(result.posteriors[:a]) ≈ 3 / 4
 
     # A number among the terms is a constant of its own.
     @model function shifted(y)
@@ -30,7 +31,10 @@
         b ~ Normal(mean = 1.0, variance = 3.0)
         y := a + b + 2.0
     end
-    result = infer(model = observed_sum(), data = (y = 4.0,), free_energy = true)
-    @test mean(result.posteriors[:a]) ≈ 1 / 4 && var(result.posteriors[:a]) ≈ 3 / 4
+    result = infer(
+        model = observed_sum(), data = (y = 4.0,), free_energy = true
+    )
+    @test mean(result.posteriors[:a]) ≈ 1 / 4 &&
+        var(result.posteriors[:a]) ≈ 3 / 4
     @test only(result.free_energy) ≈ -logpdf(Normal(3.0, 2.0), 4.0)
 end

@@ -60,25 +60,47 @@ ReactiveMPInferenceOptions(
     callbacks = nothing,
     context = nothing,
 ) = ReactiveMPInferenceOptions(
-    stream_postprocessors, annotations, warn, force_marginal_computation, diagnostics, callbacks, context, nothing, false,
+    stream_postprocessors,
+    annotations,
+    warn,
+    force_marginal_computation,
+    diagnostics,
+    callbacks,
+    context,
+    nothing,
+    false,
 )
 
 # The options with one field replaced.
 function with_option(options::ReactiveMPInferenceOptions, name::Symbol, value)
-    values = map(field -> field === name ? value : getfield(options, field), fieldnames(ReactiveMPInferenceOptions))
+    values = map(
+        field -> field === name ? value : getfield(options, field),
+        fieldnames(ReactiveMPInferenceOptions),
+    )
     return ReactiveMPInferenceOptions(values...)
 end
 
-setpostprocessor(options::ReactiveMPInferenceOptions, stream_postprocessors) = with_option(options, :stream_postprocessors, stream_postprocessors)
-setannotations(options::ReactiveMPInferenceOptions, annotations) = with_option(options, :annotations, annotations)
-setwarn(options::ReactiveMPInferenceOptions, warn) = with_option(options, :warn, warn)
-setforce_marginal_computation(options::ReactiveMPInferenceOptions, force_marginal_computation) =
-    with_option(options, :force_marginal_computation, force_marginal_computation)
-setdiagnostics(options::ReactiveMPInferenceOptions, diagnostics) = with_option(options, :diagnostics, diagnostics)
-setcallbacks(options::ReactiveMPInferenceOptions, callbacks) = with_option(options, :callbacks, callbacks)
-setcontext(options::ReactiveMPInferenceOptions, context) = with_option(options, :context, context)
-setrulefallback(options::ReactiveMPInferenceOptions, rulefallback) = with_option(options, :rulefallback, rulefallback)
-setlogscales(options::ReactiveMPInferenceOptions, logscales) = with_option(options, :logscales, logscales)
+setpostprocessor(options::ReactiveMPInferenceOptions, stream_postprocessors) =
+    with_option(options, :stream_postprocessors, stream_postprocessors)
+setannotations(options::ReactiveMPInferenceOptions, annotations) =
+    with_option(options, :annotations, annotations)
+setwarn(options::ReactiveMPInferenceOptions, warn) =
+    with_option(options, :warn, warn)
+setforce_marginal_computation(
+    options::ReactiveMPInferenceOptions, force_marginal_computation
+) = with_option(
+    options, :force_marginal_computation, force_marginal_computation
+)
+setdiagnostics(options::ReactiveMPInferenceOptions, diagnostics) =
+    with_option(options, :diagnostics, diagnostics)
+setcallbacks(options::ReactiveMPInferenceOptions, callbacks) =
+    with_option(options, :callbacks, callbacks)
+setcontext(options::ReactiveMPInferenceOptions, context) =
+    with_option(options, :context, context)
+setrulefallback(options::ReactiveMPInferenceOptions, rulefallback) =
+    with_option(options, :rulefallback, rulefallback)
+setlogscales(options::ReactiveMPInferenceOptions, logscales) =
+    with_option(options, :logscales, logscales)
 
 import Base: convert
 
@@ -110,10 +132,14 @@ function Base.convert(
 
     warn = haskey(options, :warn) ? options.warn : true
     annotations = haskey(options, :annotations) ? options.annotations : nothing
-    diagnostics =
-        haskey(options, :diagnostics) ? as_diagnostics(options.diagnostics) : nothing
+    diagnostics = if haskey(options, :diagnostics)
+        as_diagnostics(options.diagnostics)
+    else
+        nothing
+    end
     context = haskey(options, :context) ? options.context : nothing
-    rulefallback = haskey(options, :rulefallback) ? options.rulefallback : nothing
+    rulefallback =
+        haskey(options, :rulefallback) ? options.rulefallback : nothing
     logscales = haskey(options, :logscales) ? options.logscales : false
     force_marginal_computation = if haskey(options, :force_marginal_computation)
         options.force_marginal_computation
@@ -157,13 +183,14 @@ as_diagnostics(diagnostics) = diagnostics
 function as_diagnostics(diagnostics::NamedTuple)
     available = fieldnames(ReactiveMP.EngineDiagnostics)
     for key in keys(diagnostics)
-        key ∈ available || error("Unknown diagnostics option: $(key). Available options are: $(available).")
+        key ∈ available || error(
+            "Unknown diagnostics option: $(key). Available options are: $(available).",
+        )
     end
     return ReactiveMP.EngineDiagnostics(; diagnostics...)
 end
 
-import ReactiveMP:
-    getannotations, getcallbacks, getpostprocessor
+import ReactiveMP: getannotations, getcallbacks, getpostprocessor
 
 ReactiveMP.getannotations(options::ReactiveMPInferenceOptions) =
     ReactiveMP.getannotations(options, options.annotations)
@@ -202,9 +229,7 @@ const ReactiveMPExtraFactorNodeKey = GraphPPL.NodeDataExtraKey{
 const ReactiveMPExtraVariableKey = GraphPPL.NodeDataExtraKey{
     :rmp_variable, ReactiveMP.AbstractVariable
 }()
-const ReactiveMPExtraAlgorithmKey = GraphPPL.NodeDataExtraKey{
-    :algorithm, Any
-}()
+const ReactiveMPExtraAlgorithmKey = GraphPPL.NodeDataExtraKey{:algorithm, Any}()
 # The constants a factor node holds that GraphPPL does not know of, such as the distribution
 # of a prior `x ~ d`: the free energy cancels their point entropies as it does GraphPPL's.
 const ReactiveMPExtraHiddenConstantsKey = GraphPPL.NodeDataExtraKey{
@@ -252,7 +277,11 @@ function GraphPPL.preprocess_plugin(
         "`where { dependencies = … }` is gone in ReactiveMP v7: a node declares what its rules read (`@define_factor_node`'s `dependencies`, or `@define_dependencies` for an algorithm). An initial message on this node's own edge, as `RequireMessageFunctionalDependencies(in = d)` gave, is `where { initial_messages = (in = d,) }`; one for every edge of a variable is set with `@initialization`. See the ReactiveMP v6 → v7 migration guide.",
     )
     if haskey(options, :meta)
-        Base.depwarn("`where { meta = … }` is deprecated: a node's meta is its algorithm in ReactiveMP v7, so write `where { algorithm = … }`.", :meta; force = true)
+        Base.depwarn(
+            "`where { meta = … }` is deprecated: a node's meta is its algorithm in ReactiveMP v7, so write `where { algorithm = … }`.",
+            :meta;
+            force = true,
+        )
     end
     if haskey(options, GraphPPL.getkey(ReactiveMPExtraAlgorithmKey))
         setextra!(
@@ -500,27 +529,46 @@ end
 # deprecated spelling, gave it; `nothing` is the node's own default.
 function node_algorithm(nodedata::NodeData)
     algorithm = getextra(nodedata, ReactiveMPExtraAlgorithmKey, nothing)
-    algorithm = isnothing(algorithm) ? getextra(nodedata, GraphPPL.MetaExtraKey, nothing) : algorithm
+    algorithm = if isnothing(algorithm)
+        getextra(nodedata, GraphPPL.MetaExtraKey, nothing)
+    else
+        algorithm
+    end
     return model_algorithm(GraphPPL.fform(getproperties(nodedata)), algorithm)
 end
 
 # A Delta node, a function no package declares, may be given its approximation method alone,
 # `f() -> Linearization()`, as v6 allowed; it runs under `DeltaApproximation(method = …)`.
 model_algorithm(fform, algorithm) =
-    !isdeclarednode(fform) && fform isa Function && is_delta_node_compatible(algorithm) === Val(true) ?
-    DeltaApproximation(method = algorithm) : algorithm
+    if !isdeclarednode(fform) &&
+       fform isa Function &&
+       is_delta_node_compatible(algorithm) === Val(true)
+        DeltaApproximation(; method = algorithm)
+    else
+        algorithm
+    end
 
 # An interface of a node as the engine takes it, its key and its variable. Collected into a vector
 # of this type, the entries are not widened to their common type at run time for every node.
-const NodeInterfaceEntry = Tuple{Union{Symbol, Tuple{Symbol, Int}}, ReactiveMP.AbstractVariable}
+const NodeInterfaceEntry = Tuple{
+    Union{Symbol, Tuple{Symbol, Int}}, ReactiveMP.AbstractVariable
+}
 
 # The engine names a node's interfaces, never positions: an interface by its name, a member of
 # one of the node's groups as `(name, k)`, `k` being GraphPPL's `EdgeLabel.index`. GraphPPL may
 # index an edge that is no group's, such as `out` from a slice of a data array, and gives a group
 # of one member no index: that member is `(name, 1)`.
 interface_key(edge::GraphPPL.EdgeLabel, groups) =
-    GraphPPL.getname(edge) in groups ? (GraphPPL.getname(edge), something(edge.index, 1)) : GraphPPL.getname(edge)
-interface_key(edge::GraphPPL.EdgeLabel) = isnothing(edge.index) ? GraphPPL.getname(edge) : (GraphPPL.getname(edge), edge.index)
+    if GraphPPL.getname(edge) in groups
+        (GraphPPL.getname(edge), something(edge.index, 1))
+    else
+        GraphPPL.getname(edge)
+    end
+interface_key(edge::GraphPPL.EdgeLabel) = if isnothing(edge.index)
+    GraphPPL.getname(edge)
+else
+    (GraphPPL.getname(edge), edge.index)
+end
 
 function set_rmp_factornode!(
     plugin::ReactiveMPInferencePlugin,
@@ -533,26 +581,39 @@ function set_rmp_factornode!(
     declared = isdeclarednode(fform)
     groups = declared ? MessagePassingRulesBase.interface_groups(fform) : ()
     interfaces = NodeInterfaceEntry[
-        (declared ? interface_key(edge, groups) : interface_key(edge), getextra(data, ReactiveMPExtraVariableKey))
-            for (_, edge, data) in GraphPPL.neighbors(nodeproperties)
+        (
+            declared ? interface_key(edge, groups) : interface_key(edge),
+            getextra(data, ReactiveMPExtraVariableKey),
+        ) for (_, edge, data) in GraphPPL.neighbors(nodeproperties)
     ]
     # GraphPPL gives the factorisation as positions in the node's neighbours.
     positions = getextra(
         nodedata, GraphPPL.VariationalConstraintsFactorizationIndicesKey
     )
     node = if declared
-        factorization = map(cluster -> map(i -> first(interfaces[i]), Tuple(cluster)), Tuple(positions))
+        factorization = map(
+            cluster -> map(i -> first(interfaces[i]), Tuple(cluster)),
+            Tuple(positions),
+        )
         factornode(fform, interfaces, factorization)
     elseif fform isa Distribution
         # `x ~ d` for a distribution value: the node `out ~ d`, `d` a constant of its own.
-        length(interfaces) == 1 || error("A factor node with a distribution object can only have one output interface.")
+        length(interfaces) == 1 || error(
+            "A factor node with a distribution object can only have one output interface.",
+        )
         (_, variable) = only(interfaces)
         setextra!(nodedata, ReactiveMPExtraHiddenConstantsKey, 1)
-        factornode(StandaloneDistribution, [(:out, variable), (:distribution, ReactiveMP.constvar(fform))], ((:out,), (:distribution,)))
+        factornode(
+            StandaloneDistribution,
+            [(:out, variable), (:distribution, ReactiveMP.constvar(fform))],
+            ((:out,), (:distribution,)),
+        )
     elseif fform isa Function
         delta_factornode(fform, interfaces, positions)
     else
-        error("`$(fform)` is not a factor node: no loaded package declares it with `@define_factor_node`")
+        error(
+            "`$(fform)` is not a factor node: no loaded package declares it with `@define_factor_node`",
+        )
     end
     return setextra!(nodedata, ReactiveMPExtraFactorNodeKey, node)
 end
@@ -566,7 +627,9 @@ function delta_factornode(f::F, interfaces, positions) where {F}
         return (:in, last(key))
     end
     renamed = map((key, (_, variable)) -> (key, variable), keys, interfaces)
-    factorization = map(cluster -> map(i -> keys[i], Tuple(cluster)), Tuple(positions))
+    factorization = map(
+        cluster -> map(i -> keys[i], Tuple(cluster)), Tuple(positions)
+    )
     return factornode(DeltaFn{F}, renamed, factorization; nodefn = f)
 end
 
@@ -574,18 +637,22 @@ end
 # postprocessor and initial messages. A function of those three, so the options are built where
 # their types are known, once each node's are read from its `Any`-valued extras, rather than
 # through keywords of run-time types.
-node_activation_options(options::ReactiveMPInferenceOptions, algorithm, postprocessor, initial_messages) =
-    ReactiveMP.FactorNodeActivationOptions(
-        algorithm,
-        postprocessor,
-        getannotations(options),
-        getcallbacks(options),
-        getdiagnostics(options),
-        something(getcontext(options), NamedTuple()),
-        getrulefallback(options),
-        getlogscales(options),
-        initial_messages,
-    )
+node_activation_options(
+    options::ReactiveMPInferenceOptions,
+    algorithm,
+    postprocessor,
+    initial_messages,
+) = ReactiveMP.FactorNodeActivationOptions(
+    algorithm,
+    postprocessor,
+    getannotations(options),
+    getcallbacks(options),
+    getdiagnostics(options),
+    something(getcontext(options), NamedTuple()),
+    getrulefallback(options),
+    getlogscales(options),
+    initial_messages,
+)
 
 function activate_rmp_factornode!(
     plugin::ReactiveMPInferencePlugin,
@@ -601,8 +668,12 @@ function activate_rmp_factornode!(
     if isnothing(stream_postprocessors)
         stream_postprocessors = getpostprocessor(getoptions(plugin))
     end
-    initial_messages = getextra(nodedata, ReactiveMPExtraInitialMessagesKey, nothing)
-    options = node_activation_options(getoptions(plugin), algorithm, stream_postprocessors, initial_messages)
+    initial_messages = getextra(
+        nodedata, ReactiveMPExtraInitialMessagesKey, nothing
+    )
+    options = node_activation_options(
+        getoptions(plugin), algorithm, stream_postprocessors, initial_messages
+    )
 
     return ReactiveMP.activate!(
         getextra(nodedata, ReactiveMPExtraFactorNodeKey), options
@@ -644,7 +715,11 @@ end
 # `getvardict` builds them for every submodel as well.
 function gettoplevelvardict(model::GraphPPL.Model)
     context = GraphPPL.getcontext(model)
-    variables = merge(GraphPPL.individual_variables(context), GraphPPL.vector_variables(context), GraphPPL.tensor_variables(context))
+    variables = merge(
+        GraphPPL.individual_variables(context),
+        GraphPPL.vector_variables(context),
+        GraphPPL.tensor_variables(context),
+    )
     return map_any(v -> getvarref(model, v), variables)
 end
 
@@ -732,7 +807,8 @@ end
 function variables_of_kind(predicate::P, model::GraphPPL.Model) where {P}
     result = GraphPPL.NodeData[]
     variable_nodes(model) do _, nodedata
-        predicate(getproperties(nodedata)::GraphPPL.VariableNodeProperties) && push!(result, nodedata)
+        predicate(getproperties(nodedata)::GraphPPL.VariableNodeProperties) &&
+            push!(result, nodedata)
     end
     return result
 end
@@ -751,7 +827,9 @@ end
 
 # The node data of the factor nodes and of the random, data and constant variables, in two passes.
 function nodes_by_kind(model::GraphPPL.Model)
-    randoms, datas, constants = GraphPPL.NodeData[], GraphPPL.NodeData[], GraphPPL.NodeData[]
+    randoms, datas, constants = GraphPPL.NodeData[],
+    GraphPPL.NodeData[],
+    GraphPPL.NodeData[]
     variable_nodes(model) do _, nodedata
         properties = getproperties(nodedata)::GraphPPL.VariableNodeProperties
         if is_random(properties)
@@ -762,7 +840,12 @@ function nodes_by_kind(model::GraphPPL.Model)
             push!(constants, nodedata)
         end
     end
-    return (factors = getfactornodes(model), randoms = randoms, datas = datas, constants = constants)
+    return (
+        factors = getfactornodes(model),
+        randoms = randoms,
+        datas = datas,
+        constants = constants,
+    )
 end
 
 obtain_prediction(ref::GraphVariableRef) =

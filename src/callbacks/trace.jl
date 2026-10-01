@@ -232,4 +232,5 @@ end
 # The events the trace records: with an `include` filter the engine builds no other event for it
 # (`ReactiveMP.listens`); `AfterModelCreationEvent` always, since it saves the trace to the model.
 ReactiveMP.listens(callbacks::RxInferTraceCallbacks, ::Type{T}) where {T} =
-    T <: AfterModelCreationEvent || is_trace_event_included(callbacks, event_name(T))
+    T <: AfterModelCreationEvent ||
+    is_trace_event_included(callbacks, event_name(T))

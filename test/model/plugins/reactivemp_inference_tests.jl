@@ -73,20 +73,34 @@ end
     fallback = NodeFunctionRuleFallback()
     options = convert(
         ReactiveMPInferenceOptions,
-        (diagnostics = diagnostics, context = (rng = rng,), rulefallback = fallback),
+        (
+            diagnostics = diagnostics,
+            context = (rng = rng,),
+            rulefallback = fallback,
+        ),
     )
 
     @test RxInfer.getdiagnostics(options) === diagnostics
     @test RxInfer.getcontext(options) === (rng = rng,)
     @test RxInfer.getrulefallback(options) === fallback
-    @test RxInfer.getrulefallback(RxInfer.setrulefallback(options, nothing)) === nothing
+    @test RxInfer.getrulefallback(RxInfer.setrulefallback(options, nothing)) ===
+        nothing
     @test RxInfer.getcontext(RxInfer.setcontext(options, nothing)) === nothing
 
     # A `NamedTuple` of the audits to switch on builds the `EngineDiagnostics`; the others stay off.
-    shorthand = convert(ReactiveMPInferenceOptions, (diagnostics = (check_everything_pure = true, checked_buffers = true),))
-    @test RxInfer.getdiagnostics(shorthand) === ReactiveMP.EngineDiagnostics(check_everything_pure = true, checked_buffers = true)
-    @test_throws "Unknown diagnostics option: check_everything" convert(ReactiveMPInferenceOptions, (diagnostics = (check_everything = true,),))
-    @test_throws "check_everything_inplace" convert(ReactiveMPInferenceOptions, (diagnostics = (check_everything = true,),))
+    shorthand = convert(
+        ReactiveMPInferenceOptions,
+        (diagnostics = (check_everything_pure = true, checked_buffers = true),),
+    )
+    @test RxInfer.getdiagnostics(shorthand) === ReactiveMP.EngineDiagnostics(
+        check_everything_pure = true, checked_buffers = true
+    )
+    @test_throws "Unknown diagnostics option: check_everything" convert(
+        ReactiveMPInferenceOptions, (diagnostics = (check_everything = true,),)
+    )
+    @test_throws "check_everything_inplace" convert(
+        ReactiveMPInferenceOptions, (diagnostics = (check_everything = true,),)
+    )
 
     bad_nt = (blahblah = 1,)
 
@@ -113,8 +127,12 @@ end
         y ~ DiscreteTransition(s, A)
     end
 
-    result = infer(model = one_control(), data = (y = [0.0, 0.0, 1.0], u = [0.0, 1.0]))
+    result = infer(
+        model = one_control(), data = (y = [0.0, 0.0, 1.0], u = [0.0, 1.0])
+    )
     joint = [p[i] * B[j, i, 2] * A[3, j] for j in 1:3, i in 1:3]
-    @test probvec(result.posteriors[:s]) ≈ vec(sum(joint; dims = 2)) ./ sum(joint)
-    @test probvec(result.posteriors[:x]) ≈ vec(sum(joint; dims = 1)) ./ sum(joint)
+    @test probvec(result.posteriors[:s]) ≈
+        vec(sum(joint; dims = 2)) ./ sum(joint)
+    @test probvec(result.posteriors[:x]) ≈
+        vec(sum(joint; dims = 1)) ./ sum(joint)
 end

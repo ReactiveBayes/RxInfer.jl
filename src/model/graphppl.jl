@@ -195,15 +195,17 @@ end
 
 # A node is what a rule package declares with `@define_factor_node`: its declaration answers
 # GraphPPL's questions. A function that is not a declared node is a Delta node, as in v6.
-isdeclarednode(something) = applicable(MessagePassingRulesBase.nodespec, something)
+isdeclarednode(something) =
+    applicable(MessagePassingRulesBase.nodespec, something)
 
 function GraphPPL.NodeBehaviour(
-        backend::ReactiveMPGraphPPLBackend, something::F
-    ) where {F}
+    backend::ReactiveMPGraphPPLBackend, something::F
+) where {F}
     isdeclarednode(something) || return undeclared_node_behaviour(something)
     return node_behaviour(MessagePassingRulesBase.sdtype(something))
 end
-node_behaviour(::MessagePassingRulesBase.Deterministic) = GraphPPL.Deterministic()
+node_behaviour(::MessagePassingRulesBase.Deterministic) =
+    GraphPPL.Deterministic()
 node_behaviour(::MessagePassingRulesBase.Stochastic) = GraphPPL.Stochastic()
 # v6's defaults for what no package declares: a function or a type is deterministic, a
 # distribution stochastic.
@@ -217,21 +219,23 @@ undeclared_node_behaviour(something) = error(
 # If node contraction is enabled, a declared node is atomic; anything else falls back to the
 # `DefaultBackend`.
 function GraphPPL.NodeType(
-        backend::ReactiveMPGraphPPLBackend{Static.True}, something::F
-    ) where {F}
+    backend::ReactiveMPGraphPPLBackend{Static.True}, something::F
+) where {F}
     isdeclarednode(something) && return GraphPPL.Atomic()
-    return GraphPPL.NodeType(ReactiveMPGraphPPLBackend(Static.False()), something)
+    return GraphPPL.NodeType(
+        ReactiveMPGraphPPLBackend(Static.False()), something
+    )
 end
 
 # Fallback to the default behaviour
 function GraphPPL.NodeType(
-        ::ReactiveMPGraphPPLBackend{Static.False}, something::F
-    ) where {F}
+    ::ReactiveMPGraphPPLBackend{Static.False}, something::F
+) where {F}
     return GraphPPL.NodeType(GraphPPL.DefaultBackend(), something)
 end
 function GraphPPL.aliases(
-        ::ReactiveMPGraphPPLBackend{Static.False}, something::F
-    ) where {F}
+    ::ReactiveMPGraphPPLBackend{Static.False}, something::F
+) where {F}
     # Fallback to the default behaviour
     return GraphPPL.aliases(GraphPPL.DefaultBackend(), something)
 end
@@ -239,9 +243,11 @@ end
 # A declared node's interfaces, a group once by its name; a node with a group may be given any
 # number of its members, which `factornode` checks.
 function GraphPPL.interfaces(
-        backend::ReactiveMPGraphPPLBackend, something::F, ninputs
-    ) where {F}
-    isdeclarednode(something) || return GraphPPL.interfaces(GraphPPL.DefaultBackend(), something, ninputs)
+    backend::ReactiveMPGraphPPLBackend, something::F, ninputs
+) where {F}
+    isdeclarednode(something) || return GraphPPL.interfaces(
+        GraphPPL.DefaultBackend(), something, ninputs
+    )
     names = MessagePassingRulesBase.interfaces(something)
     groups = MessagePassingRulesBase.interface_groups(something)
     # A trailing group given no members, as DiscreteTransition's `T` with none, is left out.
@@ -251,20 +257,22 @@ function GraphPPL.interfaces(
     if isequal(length(names), ninputs) || !isempty(groups)
         return GraphPPL.StaticInterfaces(names)
     end
-    return error("`$(something)` has `$(length(names))` interfaces `$(names)`, but `$(ninputs)` requested.")
+    return error(
+        "`$(something)` has `$(length(names))` interfaces `$(names)`, but `$(ninputs)` requested.",
+    )
 end
 
 function GraphPPL.factor_alias(
-        ::ReactiveMPGraphPPLBackend, something::F, interfaces
-    ) where {F}
+    ::ReactiveMPGraphPPLBackend, something::F, interfaces
+) where {F}
     # Fallback to the default behaviour
     return GraphPPL.factor_alias(
         GraphPPL.DefaultBackend(), something, interfaces
     )
 end
 function GraphPPL.interface_aliases(
-        ::ReactiveMPGraphPPLBackend, something::F
-    ) where {F}
+    ::ReactiveMPGraphPPLBackend, something::F
+) where {F}
     # Fallback to the default behaviour
     return GraphPPL.interface_aliases(GraphPPL.DefaultBackend(), something)
 end
@@ -272,21 +280,30 @@ end
 # The positional arguments of a declared atomic node are its interfaces after `out`, in order;
 # a trailing group takes the arguments left, as DiscreteTransition's `T` does.
 function GraphPPL.default_parametrization(
-        backend::ReactiveMPGraphPPLBackend, nodetype, something::F, rhs
-    ) where {F}
+    backend::ReactiveMPGraphPPLBackend, nodetype, something::F, rhs
+) where {F}
     if nodetype isa GraphPPL.Atomic && isdeclarednode(something)
         inputs = Base.tail(MessagePassingRulesBase.interfaces(something))
         isequal(length(inputs), length(rhs)) && return NamedTuple{inputs}(rhs)
         groups = MessagePassingRulesBase.interface_groups(something)
-        if !isempty(inputs) && last(inputs) in groups && length(rhs) >= length(inputs) - 1
+        if !isempty(inputs) &&
+            last(inputs) in groups &&
+            length(rhs) >= length(inputs) - 1
             fixed = length(inputs) - 1
             members = rhs[(fixed + 1):end]
-            return isempty(members) ? NamedTuple{inputs[1:fixed]}(rhs[1:fixed]) :
+            return if isempty(members)
+                NamedTuple{inputs[1:fixed]}(rhs[1:fixed])
+            else
                 NamedTuple{inputs}((rhs[1:fixed]..., members))
+            end
         end
-        return error("`$(something)` has `$(length(inputs))` input interfaces `$(inputs)`, but `$(length(rhs))` arguments provided.")
+        return error(
+            "`$(something)` has `$(length(inputs))` input interfaces `$(inputs)`, but `$(length(rhs))` arguments provided.",
+        )
     end
-    return GraphPPL.default_parametrization(GraphPPL.DefaultBackend(), nodetype, something, rhs)
+    return GraphPPL.default_parametrization(
+        GraphPPL.DefaultBackend(), nodetype, something, rhs
+    )
 end
 
 function GraphPPL.instantiate(::Type{ReactiveMPGraphPPLBackend})
@@ -385,7 +402,9 @@ GraphPPL.default_parametrization(
 ) = begin
     @warn "'Gamma' and 'GammaShapeScale' without keywords are constructed with parameters (Shape, Scale)." maxlog=1
     inputs = Base.tail(MessagePassingRulesBase.interfaces(factor))
-    isequal(length(inputs), length(rhs)) || error("`$(factor)` has `$(length(inputs))` input interfaces `$(inputs)`, but `$(length(rhs))` arguments provided.")
+    isequal(length(inputs), length(rhs)) || error(
+        "`$(factor)` has `$(length(inputs))` input interfaces `$(inputs)`, but `$(length(rhs))` arguments provided.",
+    )
     return NamedTuple{inputs}(rhs)
 end
 

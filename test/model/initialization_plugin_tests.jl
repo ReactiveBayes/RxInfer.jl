@@ -1121,8 +1121,12 @@ end
 
     init = @initialization begin
         q(x) = [
-            vague(NormalMeanVariance) vague(NormalMeanVariance) vague(NormalMeanVariance)
-            vague(NormalMeanVariance) vague(NormalMeanVariance) vague(NormalMeanVariance)
+            vague(NormalMeanVariance) vague(NormalMeanVariance) vague(
+                NormalMeanVariance
+            )
+            vague(NormalMeanVariance) vague(NormalMeanVariance) vague(
+                NormalMeanVariance
+            )
             vague(NormalMeanVariance) vague(NormalMeanVariance) vague(NormalMeanVariance)
         ]
     end

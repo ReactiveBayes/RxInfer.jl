@@ -26,12 +26,21 @@
         q(z) = NormalMeanVariance(0.0, 1.0)
         μ(y) = NormalMeanVariance(0.0, 1.0)
     end
-    run(initialization) = infer(model = demo(), data = (ay = 1.0,), constraints = constraints, initialization = initialization, iterations = 50, free_energy = true)
+    run(initialization) = infer(
+        model = demo(),
+        data = (ay = 1.0,),
+        constraints = constraints,
+        initialization = initialization,
+        iterations = 50,
+        free_energy = true,
+    )
 
     reference, result = run(marginals), run(with_message)
     for name in (:x, :y, :z, :k, :w)
-        @test mean(last(result.posteriors[name])) ≈ mean(last(reference.posteriors[name])) atol = 1e-8
-        @test var(last(result.posteriors[name])) ≈ var(last(reference.posteriors[name])) atol = 1e-8
+        @test mean(last(result.posteriors[name])) ≈
+            mean(last(reference.posteriors[name])) atol = 1e-8
+        @test var(last(result.posteriors[name])) ≈
+            var(last(reference.posteriors[name])) atol = 1e-8
     end
     @test last(result.free_energy) ≈ last(reference.free_energy) atol = 1e-8
 end
@@ -45,26 +54,60 @@ end
     # after several rounds, and each must restart the rules whose inputs are still initial: when a
     # rule restarted at most once, y and u were never updated.
     struct Hist end
-    @define_factor_node(node = Hist, type = Stochastic, interfaces = [:out, :prev1, :prev2, :in, :θ])
+    @define_factor_node(
+        node = Hist,
+        type = Stochastic,
+        interfaces = [:out, :prev1, :prev2, :in, :θ]
+    )
     m(args, k) = mean(args.q[k])
     @define_message_update_rule(
-        node = Hist, target = :out, args = (q[:prev1]::Any, q[:prev2]::Any, q[:in]::Any, q[:θ]::Any),
-        body = (args) -> NormalMeanVariance(m(args, :θ) * (m(args, :prev1) + m(args, :prev2)) / 2 + m(args, :in), 1.0),
+        node = Hist,
+        target = :out,
+        args = (q[:prev1]::Any, q[:prev2]::Any, q[:in]::Any, q[:θ]::Any),
+        body =
+            (args) -> NormalMeanVariance(
+                m(args, :θ) * (m(args, :prev1) + m(args, :prev2)) / 2 +
+                m(args, :in),
+                1.0,
+            ),
     )
     @define_message_update_rule(
-        node = Hist, target = :prev1, args = (q[:out]::Any, q[:prev2]::Any, q[:in]::Any, q[:θ]::Any),
-        body = (args) -> NormalMeanVariance(2 * (m(args, :out) - m(args, :in)) / m(args, :θ) - m(args, :prev2), 4.0),
+        node = Hist,
+        target = :prev1,
+        args = (q[:out]::Any, q[:prev2]::Any, q[:in]::Any, q[:θ]::Any),
+        body =
+            (args) -> NormalMeanVariance(
+                2 * (m(args, :out) - m(args, :in)) / m(args, :θ) -
+                m(args, :prev2),
+                4.0,
+            ),
     )
     @define_message_update_rule(
-        node = Hist, target = :prev2, args = (q[:out]::Any, q[:prev1]::Any, q[:in]::Any, q[:θ]::Any),
-        body = (args) -> NormalMeanVariance(2 * (m(args, :out) - m(args, :in)) / m(args, :θ) - m(args, :prev1), 4.0),
+        node = Hist,
+        target = :prev2,
+        args = (q[:out]::Any, q[:prev1]::Any, q[:in]::Any, q[:θ]::Any),
+        body =
+            (args) -> NormalMeanVariance(
+                2 * (m(args, :out) - m(args, :in)) / m(args, :θ) -
+                m(args, :prev1),
+                4.0,
+            ),
     )
     @define_message_update_rule(
-        node = Hist, target = :in, args = (q[:out]::Any, q[:prev1]::Any, q[:prev2]::Any, q[:θ]::Any),
-        body = (args) -> NormalMeanVariance(m(args, :out) - m(args, :θ) * (m(args, :prev1) + m(args, :prev2)) / 2, 1.0),
+        node = Hist,
+        target = :in,
+        args = (q[:out]::Any, q[:prev1]::Any, q[:prev2]::Any, q[:θ]::Any),
+        body =
+            (args) -> NormalMeanVariance(
+                m(args, :out) -
+                m(args, :θ) * (m(args, :prev1) + m(args, :prev2)) / 2,
+                1.0,
+            ),
     )
     @define_message_update_rule(
-        node = Hist, target = :θ, args = (q[:out]::Any, q[:prev1]::Any, q[:prev2]::Any, q[:in]::Any),
+        node = Hist,
+        target = :θ,
+        args = (q[:out]::Any, q[:prev1]::Any, q[:prev2]::Any, q[:in]::Any),
         body = (args) -> NormalMeanVariance(0.5, 10.0),
     )
 
@@ -86,7 +129,13 @@ end
         q(u) = NormalMeanVariance(0.0, 10.0)
     end
     for T in (3, 5)
-        result = infer(model = horizon(T = T), data = (y1 = 1.0, y2 = 0.5), constraints = MeanField(), initialization = init, iterations = 10)
+        result = infer(
+            model = horizon(T = T),
+            data = (y1 = 1.0, y2 = 0.5),
+            constraints = MeanField(),
+            initialization = init,
+            iterations = 10,
+        )
         @test all(q -> isfinite(mean(q)), last(result.posteriors[:y]))
         @test all(q -> isfinite(mean(q)), last(result.posteriors[:u]))
     end

@@ -88,10 +88,8 @@
             getdata(resultswitch.posteriors[:θ]).weights
 
         # check free energies
-        @test -result1.free_energy[1] ≈
-            getlogscale(result1.posteriors[:θ])
-        @test -result2.free_energy[1] ≈
-            getlogscale(result2.posteriors[:θ])
+        @test -result1.free_energy[1] ≈ getlogscale(result1.posteriors[:θ])
+        @test -result2.free_energy[1] ≈ getlogscale(result2.posteriors[:θ])
         @test getlogscale(resultswitch.posteriors[:in1]) ≈
             log(0.3) - result1.free_energy[1]
         @test getlogscale(resultswitch.posteriors[:in2]) ≈
