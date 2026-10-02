@@ -647,7 +647,9 @@ function infer(;
     trace = false,
     session = RxInfer.default_session(),
 )
-    # v6's `meta` is the node's algorithm now, and its old name stays for one release.
+    # v6's `meta` is the node's algorithm now, and its old name stays for one release. The
+    # alias can be removed safely in a later release, `algorithm` superseding it, with the
+    # `where { meta = … }` one in the ReactiveMP inference plugin.
     if !isnothing(meta)
         !isnothing(algorithm) && error(
             "`infer` was given both `algorithm` and `meta`; `meta` is the algorithm's deprecated name, so give only `algorithm`.",

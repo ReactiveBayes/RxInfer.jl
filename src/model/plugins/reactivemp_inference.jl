@@ -276,6 +276,8 @@ function GraphPPL.preprocess_plugin(
     haskey(options, :dependencies) && error(
         "`where { dependencies = … }` is gone in ReactiveMP v7: a node declares what its rules read (`@define_factor_node`'s `dependencies`, or `@define_dependencies` for an algorithm). An initial message on this node's own edge, as `RequireMessageFunctionalDependencies(in = d)` gave, is `where { initial_messages = (in = d,) }`; one for every edge of a variable is set with `@initialization`. See the ReactiveMP v6 → v7 migration guide.",
     )
+    # The deprecated alias of `where { algorithm = … }`: it can be removed safely in a later
+    # release, `algorithm` superseding it, with `infer(; meta = …)`'s.
     if haskey(options, :meta)
         Base.depwarn(
             "`where { meta = … }` is deprecated: a node's meta is its algorithm in ReactiveMP v7, so write `where { algorithm = … }`.",
