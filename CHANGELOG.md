@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- The documentation runs on ReactiveMP v7: a learning path, *Messages by hand* and *Variational message passing by hand*, that computes messages with the rules RxInfer runs and compares them with `infer`; a migration guide from v5 to v6; and every page that taught ReactiveMP v6 rewritten, among them *Understanding Rules*, custom nodes, the *Algorithm specification* (the meta page renamed), Delta nodes, the sharp bits and debugging. Every example runs when the site is built, and the site links the ReactiveMP ecosystem's documentation.
+- The node option `where { initial_messages = (in = d,) }`: messages on this node's own edges before inference, in place of those the node declares, the counterpart of v6's per-node `where { dependencies = RequireMessageFunctionalDependencies(in = d) }`. `@initialization μ(x) = d` sets the message on every edge of `x` instead, which changes the result of, for example, a Probit model. The error for `where { dependencies = … }` says so. It passes ReactiveMP's activation option `initial_messages`.
+- The `logscales` inference option, `infer(...; logscales = true)` or `options = (logscales = true,)`: messages and marginals carry log scales, read with `getlogscale(result.posteriors[:x])`. It replaces `annotations = LogScaleAnnotations()`, and `getlogscale(getannotations(q))` becomes `getlogscale(q)`; the results keep the `Marginal` wrapper, as with annotations.
+- The `diagnostics` inference option, the engine's audits of the rules a model runs (`EngineDiagnostics(; check_everything_pure, check_everything_inplace, checked_buffers)`), and `context`, the services the rules run with: `(rng = …, matrix_correction = …)`.
+
 ### Changed
 - Main's 5.5.1 and 5.5.2 are merged in; their GCV regression test for issue #344 loads `GCVMessagePassingRules`, where the `GCV` node lives in v7, and passes with the same posteriors and free energy. The branch is formatted with main's pinned formatter, JuliaFormatter 2.12 on Julia 1.12, as the CI checks it.
 - The `diagnostics` option takes a `NamedTuple` of the audits to switch on, `options = (diagnostics = (check_everything_pure = true,),)`, which builds the `ReactiveMP.EngineDiagnostics`, as `context` is written; an unknown audit is an error that lists the available ones. An `EngineDiagnostics` itself is still accepted.
@@ -17,28 +23,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A node's trailing group takes its positional arguments as a tuple, so numbers among them become constants of their own: with ReactiveMP v7's `+` a group of terms, `s := a + 1.0` and `a + b + c` each build one `+` node, where a vector mixing a variable and a number was taken as one constant and left the variable unconnected.
 - **RxInfer runs on ReactiveMP v7** (breaking; the v6 → v7 guide in ReactiveMP's documentation lists what changes for models). Nodes and rules come from rule packages: RxInfer re-exports ReactiveMP, MessagePassingRulesBase, StandardMessagePassingRules, DeltaMessagePassingRules and MessagePassingRulesApproximations, and a model using another node loads its package (`using ProbitMessagePassingRules`, …). Nodes are declared with `@define_factor_node` and rules with `@define_message_update_rule` and its siblings, in place of `@node` and `@rule`.
 - The `rulefallback` option takes `NodeFunctionRuleFallback()` from MessagePassingRulesBase, as before; it is consulted only where no rule matches.
-- A node's **algorithm** replaces its meta: `infer(; algorithm = @algorithm(…))` and `where { algorithm = … }`. `meta`, `@meta` and `where { meta = … }` still work for this release, with a deprecation warning. A Delta node may still be given its approximation method alone, `f() -> Linearization()`.
-
-### Added
-- The documentation runs on ReactiveMP v7: a learning path, *Messages by hand* and *Variational message passing by hand*, that computes messages with the rules RxInfer runs and compares them with `infer`; a migration guide from v5 to v6; and every page that taught ReactiveMP v6 rewritten, among them *Understanding Rules*, custom nodes, the *Algorithm specification* (the meta page renamed), Delta nodes, the sharp bits and debugging. Every example runs when the site is built, and the site links the ReactiveMP ecosystem's documentation.
-- The node option `where { initial_messages = (in = d,) }`: messages on this node's own edges before inference, in place of those the node declares, the counterpart of v6's per-node `where { dependencies = RequireMessageFunctionalDependencies(in = d) }`. `@initialization μ(x) = d` sets the message on every edge of `x` instead, which changes the result of, for example, a Probit model. The error for `where { dependencies = … }` says so. It passes ReactiveMP's activation option `initial_messages`.
-- The `logscales` inference option, `infer(...; logscales = true)` or `options = (logscales = true,)`: messages and marginals carry log scales, read with `getlogscale(result.posteriors[:x])`. It replaces `annotations = LogScaleAnnotations()`, and `getlogscale(getannotations(q))` becomes `getlogscale(q)`; the results keep the `Marginal` wrapper, as with annotations.
-- The `diagnostics` inference option, the engine's audits of the rules a model runs (`EngineDiagnostics(; check_everything_pure, check_everything_inplace, checked_buffers)`), and `context`, the services the rules run with: `(rng = …, matrix_correction = …)`.
-
-### Performance
+- A node's **algorithm** replaces its meta: `infer(; algorithm = @algorithm(…))` and `where { algorithm = … }`. A Delta node may still be given its approximation method alone, `f() -> Linearization()`.
 - **A precompile workload** (PrecompileTools): while RxInfer precompiles, it runs a belief-propagation chain, with and without `limit_stack_depth`, an iid model under mean field and a Beta–Bernoulli pair, so a first inference of those kinds takes under half a second instead of about 7 s, and of other models 40–70% less. RxInfer's own precompile takes about 12 s instead of 3. `free_energy = true` is not in it, since what it compiles depends on the model. It can be turned off with PrecompileTools' `precompile_workload` preference.
 - Model creation and activation on ReactiveMP v7 cost less than on v6: the ReactiveMP plugin decides whether a node is declared, and reads its groups, once per node rather than once per edge, collects each node's interfaces into a vector of a declared element type, and builds a node's activation options through the positional constructor behind a function of the node's algorithm and postprocessor.
 - `benchmark = true` costs about 2% instead of 23%: `RxInferBenchmarkCallbacks` declares the events it records with `ReactiveMP.listens`, so the engine builds no others, and is a `mutable struct`, so the engine's structures that hold it do not copy it; a `trace = (…)` filtered to some events builds only those.
 - The graph getters (`getrandomvars` and the others) walk the graph once, and `infer` reads the model's top-level variables with `gettoplevelvardict`; the free energy reads the factor and variable nodes in two passes instead of five. `infer`, `batch_inference` and `streaming_inference` no longer box captured variables.
+
+### Deprecated
+- `meta`, `@meta` and `where { meta = … }`, the old names of a node's algorithm: they still work for this release, with a deprecation warning pointing to `algorithm`.
+
+### Removed
+- `where { dependencies = … }`: a node declares what its rules read, and an initial message is set with `@initialization`. Using it is an error saying so.
 
 ### Fixed
 - A group of one member, such as `DiscreteTransition(x, B, u)`'s `T`, which GraphPPL gives no index, reaches the engine as its member `(:T, 1)`; the node's creation failed with "has no interfaces :T".
 - `infer(...; catch_exception = true)` whose inference fails before every posterior is computed, such as a prediction with `free_energy = true`, returns the result with its error; it threw an `UndefRefError` postprocessing the partly filled posteriors.
 - Clearer errors. An `UndefVarError` for a name ReactiveMP v7 removed or moved into a node package (`@rule`, `@node`, `@call_rule`, `Marginalisation`, `ARMeta`, `DeltaMeta`, `GCVMetadata`, `AR`, `Probit`, …) says what replaces it or which package to load. `infer` given a `@model` function instead of a model created by calling it says to call it. When no posterior is ever computed, the error names the usual causes, a loop or a variational factorisation waiting for `@initialization`, and a node without a rule for its inputs. A `RuleNotFoundError` during inference comes, unless `disable_inference_error_hint = true`, with a pointer to the Rule Not Found guide, and reaches the user as itself: the free energy and the forced marginal computation rethrow an error instead of converting it to an `ErrorException`, which lost its report.
 - `a, b, … = infer(…)` destructures the result into its posteriors, predictions, free energy, model and error; it threw, reading a field the result does not have.
-
-### Removed
-- `where { dependencies = … }`: a node declares what its rules read, and an initial message is set with `@initialization`. Using it is an error saying so.
 
 ## [5.5.2] - 2026-08-13
 
