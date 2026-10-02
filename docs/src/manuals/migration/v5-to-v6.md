@@ -357,8 +357,10 @@ context; a node with a variable number of edges declares an interface group. Rea
 
 `@call_rule` becomes [`@call_message_update_rule`](@extref MessagePassingRulesBase.@call_message_update_rule).
 It takes keywords: the node, the target, and the messages `m` and marginals `q` by interface
-name. The interfaces of `+` are `out`, `in1` and `in2`, and
-[`MessagePassingRulesBase.nodespec`](@extref) lists any node's:
+name. The interfaces of `+` are `out` and `in`, a
+[group](@extref MessagePassingRulesBase glossary-group) with one member per term, where v6 had
+`in1` and `in2`; the messages on a group are a tuple. [`MessagePassingRulesBase.nodespec`](@extref)
+lists any node's interfaces:
 
 ```@example migration-call
 using RxInfer
@@ -374,7 +376,7 @@ MessagePassingRulesBase.nodespec(+)
 ```@example migration-call
 result = @call_message_update_rule(
     node = +, target = :out,
-    m = (in1 = NormalMeanVariance(1.0, 1.0), in2 = NormalMeanVariance(2.0, 1.0)),
+    m = (in = (NormalMeanVariance(1.0, 1.0), NormalMeanVariance(2.0, 1.0)),),
 )
 ```
 

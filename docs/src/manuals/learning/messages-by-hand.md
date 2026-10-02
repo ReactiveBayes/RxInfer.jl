@@ -43,9 +43,11 @@ MessagePassingRulesBase.nodespec(+)
 ```
 
 The [interfaces](@extref MessagePassingRulesBase glossary-interface) are the node's edges:
-`out`, `in1` and `in2`. A model creates this node when it writes `s := z + u`.
+`out`, and `in`, a [group](@extref MessagePassingRulesBase glossary-group) with one member per
+term. A model creates this node when it writes `s := z + u`: `z` is the member `(:in, 1)` and `u`
+the member `(:in, 2)`.
 
-The message towards `out` integrates the delta out, which leaves a convolution of the two input
+The message towards `out` integrates the delta out, which leaves a convolution of the two terms'
 messages:
 
 ```math
@@ -55,12 +57,13 @@ messages:
 For two normal messages ``\mathcal{N}(m_1, v_1)`` and ``\mathcal{N}(m_2, v_2)``, the convolution
 is ``\mathcal{N}(m_1 + m_2, v_1 + v_2)``.
 [`@call_message_update_rule`](@extref MessagePassingRulesBase.@call_message_update_rule) finds the
-rule for a node, a target and the inputs you give, and runs it:
+rule for a node, a target and the inputs you give, and runs it. The messages on a group are a
+tuple, one per member:
 
 ```@example messages-by-hand
 @call_message_update_rule(
     node = +, target = :out,
-    m = (in1 = NormalMeanVariance(1.0, 1.0), in2 = NormalMeanVariance(2.0, 1.0)),
+    m = (in = (NormalMeanVariance(1.0, 1.0), NormalMeanVariance(2.0, 1.0)),),
 )
 ```
 
@@ -69,14 +72,15 @@ the double arrow out of it. The message is ``\mathcal{N}(3, 2)``: the means add 
 variances add. The value is a [`RuleResult`](@extref MessagePassingRulesBase.RuleResult), and
 [`getresult`](@extref MessagePassingRulesBase.getresult) returns the message itself.
 
-The message towards an input runs the sum backwards. Towards `in2`, the delta sets
-``\mathrm{in}_2 = \mathrm{out} - \mathrm{in}_1``, and the message is
-``\mathcal{N}(m_{\mathrm{out}} - m_1, v_{\mathrm{out}} + v_1)``:
+The message towards a term runs the sum backwards. Towards the second, `(:in, 2)`, the delta
+sets ``\mathrm{in}_2 = \mathrm{out} - \mathrm{in}_1``, and the message is
+``\mathcal{N}(m_{\mathrm{out}} - m_1, v_{\mathrm{out}} + v_1)``. The rule reads the other
+terms only, so the tuple holds `nothing` at the target's own position, as a graph delivers it:
 
 ```@example messages-by-hand
 @call_message_update_rule(
-    node = +, target = :in2,
-    m = (out = NormalMeanVariance(5.0, 1.0), in1 = NormalMeanVariance(1.0, 1.0)),
+    node = +, target = (:in, 2),
+    m = (out = NormalMeanVariance(5.0, 1.0), in = (NormalMeanVariance(1.0, 1.0), nothing)),
 )
 ```
 
@@ -163,7 +167,7 @@ The message on ``x`` then passes through `*`, and meets the message on ``u`` at 
 m_x = getresult(prior_x)
 m_z = getresult(@call_message_update_rule(node = *, target = :out, m = (A = PointMass(a), in = m_x)))
 m_u = getresult(@call_message_update_rule(node = NormalMeanVariance, target = :out, m = (μ = PointMass(1.0), v = PointMass(1.0))))
-m_s = getresult(@call_message_update_rule(node = +, target = :out, m = (in1 = m_z, in2 = m_u)))
+m_s = getresult(@call_message_update_rule(node = +, target = :out, m = (in = (m_z, m_u),)))
 ```
 
 The forward message on ``s`` is the prediction of ``s`` before the observation:
@@ -181,12 +185,12 @@ likelihood_s = @call_message_update_rule(
 )
 ```
 
-The backward message then crosses `+` towards `in1`, which is ``z``, and `*` towards `in`,
-which is ``x``:
+The backward message then crosses `+` towards its first term, `(:in, 1)`, which is ``z``, and
+`*` towards `in`, which is ``x``:
 
 ```@example messages-by-hand
 b_s = getresult(likelihood_s)
-b_z = getresult(@call_message_update_rule(node = +, target = :in1, m = (out = b_s, in2 = m_u)))
+b_z = getresult(@call_message_update_rule(node = +, target = (:in, 1), m = (out = b_s, in = (nothing, m_u))))
 b_x = getresult(@call_message_update_rule(node = *, target = :in, m = (out = b_z, A = PointMass(a))))
 ```
 
