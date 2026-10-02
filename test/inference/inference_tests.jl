@@ -36,12 +36,12 @@ end
     result = infer(
         model = coin(), data = (y = [1.0, 0.0, 1.0],), free_energy = true
     )
-    posteriors, predictions, free_energy, model, error = result
+    posteriors, predictions, free_energy, model, err = result
     @test posteriors === result.posteriors
     @test predictions === result.predictions
     @test free_energy === result.free_energy
     @test model === result.model
-    @test error === result.error
+    @test err === result.error
 end
 
 @testitem "__infer_create_factor_graph_model" begin

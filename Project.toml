@@ -111,7 +111,7 @@ TOML = "1.0.3"
 TensorBoardLogger = "0.1.26, 1"
 TupleTools = "1.2.0"
 UUIDs = "1.10"
-julia = "1.11"
+julia = "1.10"
 
 [extras]
 AutoregressiveMessagePassingRules = "bbb8872a-15f9-43f6-924d-37f12d04ed53"
