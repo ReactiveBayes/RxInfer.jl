@@ -38,10 +38,10 @@ The `dev` command clones `RxInfer` to `~/.julia/dev/RxInfer`. All local changes 
 
 `RxInfer.jl` depends heavily on the core packages `ReactiveMP.jl`, `GraphPPL.jl`, and `Rocket.jl`. Ensure `RxInfer.jl` is updated whenever any of these packages undergo major updates or API changes. While making changes to `RxInfer.jl`, developers are advised to use the `dev` command for these packages as well.
 
-The nodes and rules are not in `ReactiveMP.jl`'s own source: they live in the rule packages under `lib/` in the `ReactiveMP.jl` repository, one directory per package (`lib/MessagePassingRulesBase`, `lib/StandardMessagePassingRules`, `lib/DeltaMessagePassingRules`, `lib/MessagePassingRulesApproximations`, and one package per remaining node, such as `lib/AutoregressiveMessagePassingRules`). To work on a rule together with `RxInfer.jl`, `dev` the package it lives in by its path next to `ReactiveMP.jl` itself:
+The nodes and rules are not in `ReactiveMP.jl`'s own source: they live in the rule packages under `lib/` in the `ReactiveMP.jl` repository, one directory per package (`lib/StandardMessagePassingRules`, `lib/DeltaMessagePassingRules`, `lib/MessagePassingRulesApproximations`, and one package per remaining node, such as `lib/AutoregressiveMessagePassingRules`). The rule system they are written with, [`MessagePassingRulesBase.jl`](https://github.com/ReactiveBayes/MessagePassingRulesBase.jl), is a registered package of its own. To work on a rule together with `RxInfer.jl`, `dev` the package it lives in by its path next to `ReactiveMP.jl` itself:
 
 ```
-] dev ~/.julia/dev/ReactiveMP.jl ~/.julia/dev/ReactiveMP.jl/lib/MessagePassingRulesBase ~/.julia/dev/ReactiveMP.jl/lib/StandardMessagePassingRules
+] dev ~/.julia/dev/ReactiveMP.jl ~/.julia/dev/ReactiveMP.jl/lib/StandardMessagePassingRules
 ```
 
 Each rule package has its own tests, run from the `ReactiveMP.jl` repository (`make test-standard`, `make test-delta`, …; `make help` lists them). Note that standard Julia testing utilities ignore the local development environment and test the package with the latest released versions of core dependencies. Refer to the Makefile section below to learn how to test `RxInfer.jl` with locally installed core dependencies.

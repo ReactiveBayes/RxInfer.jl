@@ -41,7 +41,6 @@ UUIDs = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
 # registered.
 DeltaMessagePassingRules = {path = "../ReactiveMP.jl/lib/DeltaMessagePassingRules"}
 MessagePassingRulesApproximations = {path = "../ReactiveMP.jl/lib/MessagePassingRulesApproximations"}
-MessagePassingRulesBase = {path = "../ReactiveMP.jl/lib/MessagePassingRulesBase"}
 ReactiveMP = {path = "../ReactiveMP.jl"}
 AutoregressiveMessagePassingRules = {path = "../ReactiveMP.jl/lib/AutoregressiveMessagePassingRules"}
 BIFMMessagePassingRules = {path = "../ReactiveMP.jl/lib/BIFMMessagePassingRules"}
@@ -93,7 +92,7 @@ LinearAlgebra = "1.9"
 Logging = "1.10.0"
 MacroTools = "0.5.6"
 MessagePassingRulesApproximations = "0.1"
-MessagePassingRulesBase = "0.1"
+MessagePassingRulesBase = "1"
 Optim = "1.0.0, 2"
 PrecompileTools = "1.2"
 Preferences = "1.4.3"

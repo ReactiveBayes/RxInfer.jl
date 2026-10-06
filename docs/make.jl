@@ -1,22 +1,33 @@
 using RxInfer
 using Documenter
 using DocumenterMermaid
-using DocumenterInterLinks
+using DocumenterInterLinks, DocInventories
 using Dates
 
-# The ReactiveMP ecosystem's sites, for `@extref` links: each at its planned address, with the
-# inventory of its local build in the ReactiveMP.jl checkout next to this one, which must exist
-# (`make docs-all` there builds them all).
+# A registered package's site, by its published inventory. A first request to GitHub Pages can take
+# seconds, longer than DocInventories' default timeout of one second, so it waits longer.
+registered(name) = Inventory(
+    "https://reactivebayes.github.io/$(name).jl/stable/objects.inv";
+    root_url = "https://reactivebayes.github.io/$(name).jl/stable/", timeout = 30,
+)
+
+# The ReactiveMP ecosystem's sites, for `@extref` links: a registered package's by its published
+# inventory, the others at their planned address with the inventory of their local build in the
+# ReactiveMP.jl checkout next to this one, which must exist (`make docs-all` there builds them all).
 const REACTIVEMP_ROOT = joinpath(@__DIR__, "..", "..", "ReactiveMP.jl")
 site(name, dir) = ("https://reactivebayes.github.io/$(name).jl/dev/", joinpath(REACTIVEMP_ROOT, dir, "docs", "build", "objects.inv"))
 const LIB_SITES = [
-    "MessagePassingRulesBase", "StandardMessagePassingRules", "MessagePassingRulesApproximations",
+    "StandardMessagePassingRules", "MessagePassingRulesApproximations",
     "DeltaMessagePassingRules", "GaussianCouplingMessagePassingRules", "ProbitMessagePassingRules",
     "GCVMessagePassingRules", "SoftDotMessagePassingRules", "AutoregressiveMessagePassingRules",
     "ContinuousTransitionMessagePassingRules", "PolyaMessagePassingRules", "BIFMMessagePassingRules",
     "FlowMessagePassingRules", "DiscreteTransitionMessagePassingRules",
 ]
-links = InterLinks("ReactiveMP" => site("ReactiveMP", "."), (name => site(name, joinpath("lib", name)) for name in LIB_SITES)...)
+links = InterLinks(
+    "MessagePassingRulesBase" => registered("MessagePassingRulesBase"),
+    "ReactiveMP" => site("ReactiveMP", "."),
+    (name => site(name, joinpath("lib", name)) for name in LIB_SITES)...,
+)
 
 ## https://discourse.julialang.org/t/generation-of-documentation-fails-qt-qpa-xcb-could-not-connect-to-display/60988
 ## https://gr-framework.org/workstations.html#no-output
