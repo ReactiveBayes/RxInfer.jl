@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The `diagnostics` inference option, the engine's audits of the rules a model runs (`EngineDiagnostics(; check_everything_pure, check_everything_inplace, checked_buffers)`), and `context`, the services the rules run with: `(rng = …, matrix_correction = …)`.
 
 ### Changed
+- The `PrettyTables` extension uses PrettyTables 3 (`[compat]` `"3"` instead of `"2"`). Current Reactant.jl requires PrettyTables 3, so RxInfer and Reactant could not be installed together. The benchmark statistics (`pretty_table(callbacks)`) and the session summary print as before, and a new test checks both.
 - RxInfer accepts MessagePassingRulesApproximations 1 (`[compat]` `"1"`), the version it registers with.
 - RxInfer and its docs depend on the registered MessagePassingRulesBase (`[compat]` `"1"`) instead of ReactiveMP's `lib/` copy, which is gone; the docs link to its published site.
 - Main's 5.5.1 and 5.5.2 are merged in; their GCV regression test for issue #344 loads `GCVMessagePassingRules`, where the `GCV` node lives in v7, and passes with the same posteriors and free energy. The branch is formatted with main's pinned formatter, JuliaFormatter 2.12 on Julia 1.12, as the CI checks it.
