@@ -256,7 +256,7 @@ function summarize_invokes(io::IO, ::Val{:inference}, invokes; n_last = 5)
             data[i, 9] = error_str
         end
 
-        header = ([
+        column_labels = [
             "ID",
             "Status",
             "Duration",
@@ -266,15 +266,14 @@ function summarize_invokes(io::IO, ::Val{:inference}, invokes; n_last = 5)
             "Init",
             "Data",
             "Error",
-        ],)
+        ]
         summarize_invokes_pretty_table(
             summarize_invokes,
             io,
             data;
-            header = header,
-            maximum_columns_width = [12, 6, 10, 25, 6, 6, 6, 20, 6],
-            autowrap = true,
-            linebreaks = true,
+            column_labels = column_labels,
+            maximum_data_column_widths = [12, 6, 10, 25, 6, 6, 6, 20, 6],
+            line_breaks = true,
         )
     end
 end
@@ -286,8 +285,8 @@ function summarize_invokes_pretty_table(f::Any, io::IO, data; kwargs...)
         "\n !! PrettyTables.jl is not installed, skipping the pretty table output.       !! \n !! Install the `PrettyTables.jl` package to see the nicely formatted output. !! \n",
     )
     println(io)
-    if haskey(kwargs, :header)
-        println(io, kwargs[:header])
+    if haskey(kwargs, :column_labels)
+        println(io, kwargs[:column_labels])
     end
     print(io, data)
     println(io)
