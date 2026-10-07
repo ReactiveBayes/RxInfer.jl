@@ -245,7 +245,7 @@ function batch_inference(;
         end
         for (variable, value) in pairs(data)
             if !haskey(predictvars, variable) &&
-                inference_check_dataismissing(value)
+                inference_check_dataismissing(get_data(value))
                 predictoption = iterations isa Number ? KeepEach() : KeepLast()
                 predictvars = merge(
                     predictvars, Dict(variable => predictoption)

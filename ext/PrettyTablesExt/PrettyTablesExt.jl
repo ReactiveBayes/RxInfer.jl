@@ -22,8 +22,8 @@ prettytime(s) = s
 function PrettyTables.pretty_table(
     io::IO, callbacks::RxInferBenchmarkCallbacks; kwargs...
 )
-    default_header = (["Operation", "Min", "Max", "Mean", "Median", "Std"],)
-    default_highlighter = Highlighter(
+    default_column_labels = ["Operation", "Min", "Max", "Mean", "Median", "Std"]
+    default_highlighter = TextHighlighter(
         (data, i, j) -> (j == 3) && (data[i, j] > 10 * data[i, j - 1]),
         crayon"red bold",
     )
@@ -37,11 +37,11 @@ function PrettyTables.pretty_table(
         pretty_table(
             io,
             benchmark_data;
-            formatters = (s, i, j) -> prettytime(s),
-            header = default_header,
-            header_crayon = crayon"yellow bold",
-            tf = tf_unicode_rounded,
-            highlighters = default_highlighter,
+            formatters = [(s, i, j) -> prettytime(s)],
+            column_labels = default_column_labels,
+            style = TextTableStyle(first_line_column_label = crayon"yellow bold"),
+            table_format = TextTableFormat(borders = text_table_borders__unicode_rounded),
+            highlighters = [default_highlighter],
             kwargs...,
         )
     end
