@@ -444,7 +444,10 @@ function infer_check_dicttype(keyword::Symbol, ::T) where {T}
     )
 end
 
-inference_check_dataismissing(d) = (ismissing(d) || any(ismissing, d))
+# Only a container whose element type admits `missing` can hold one, and no other is iterated: its
+# elements may be expensive to visit, or unreadable, as for arrays traced by a compiler
+inference_check_dataismissing(d) =
+    ismissing(d) || (Missing <: eltype(d) && any(ismissing, d))
 
 # Return NamedTuple for predictions
 inference_fill_predictions(s::Symbol, d::AbstractArray) =

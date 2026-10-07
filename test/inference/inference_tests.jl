@@ -44,6 +44,49 @@ end
     @test err === result.error
 end
 
+@testitem "inference_check_dataismissing" begin
+    import RxInfer: inference_check_dataismissing
+
+    @test inference_check_dataismissing(missing)
+    @test inference_check_dataismissing([1.0, missing])
+    @test inference_check_dataismissing(Any[1.0, missing])
+    @test inference_check_dataismissing((1.0, missing))
+    @test !inference_check_dataismissing(1.0)
+    @test !inference_check_dataismissing([1.0, 2.0])
+    @test !inference_check_dataismissing(Union{Missing, Float64}[1.0, 2.0])
+    @test !inference_check_dataismissing(Any[1.0, 2.0])
+    @test !inference_check_dataismissing([[1.0], [2.0]])
+
+    # A container whose element type cannot be `missing` is not iterated,
+    # as an array whose elements cannot be read
+    struct UnreadableVector <: AbstractVector{Float64} end
+    Base.size(::UnreadableVector) = (2,)
+    Base.getindex(::UnreadableVector, i::Int) =
+        error("the elements of this array must not be read")
+    Base.iterate(::UnreadableVector, state...) =
+        error("the elements of this array must not be read")
+    @test !inference_check_dataismissing(UnreadableVector())
+    @test !inference_check_dataismissing([UnreadableVector()])
+end
+
+@testitem "`predictvars` with missing data wrapped in `UnfactorizedData`" begin
+    @model function two_observations(y, z)
+        x ~ Normal(mean = 0.0, var = 1.0)
+        y ~ Normal(mean = x, var = 1.0)
+        z ~ Normal(mean = x, var = 1.0)
+    end
+
+    # `z` is not in `predictvars`, so `infer` checks it for missing values itself
+    for z in (missing, UnfactorizedData(missing))
+        result = infer(
+            model = two_observations(),
+            data = (y = 1.0, z = z),
+            predictvars = (y = KeepLast(),),
+        )
+        @test haskey(result.predictions, :z)
+    end
+end
+
 @testitem "__infer_create_factor_graph_model" begin
     @model function simple_model_for_infer_create_model(y, a, b)
         x ~ Beta(a, b)
