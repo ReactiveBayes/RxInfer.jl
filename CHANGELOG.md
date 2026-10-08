@@ -9,12 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Tracing the free energy: the callback `on_free_energy_update` (`OnFreeEnergyUpdateEvent`) and ReactiveMP's new marginal-rule and free-energy events; TensorBoard logs `free_energy` per iteration, and the trace manual has a section on it.
 - The documentation runs on ReactiveMP v7: a learning path, *Messages by hand* and *Variational message passing by hand*, that computes messages with the rules RxInfer runs and compares them with `infer`; a migration guide from v5 to v6; and every page that taught ReactiveMP v6 rewritten, among them *Understanding Rules*, custom nodes, the *Algorithm specification* (the meta page renamed), Delta nodes, the sharp bits and debugging. Every example runs when the site is built, and the site links the ReactiveMP ecosystem's documentation.
 - The node option `where { initial_messages = (in = d,) }`: messages on this node's own edges before inference, in place of those the node declares, the counterpart of v6's per-node `where { dependencies = RequireMessageFunctionalDependencies(in = d) }`. `@initialization μ(x) = d` sets the message on every edge of `x` instead, which changes the result of, for example, a Probit model. The error for `where { dependencies = … }` says so. It passes ReactiveMP's activation option `initial_messages`.
 - The `logscales` inference option, `infer(...; logscales = true)` or `options = (logscales = true,)`: messages and marginals carry log scales, read with `getlogscale(result.posteriors[:x])`. It replaces `annotations = LogScaleAnnotations()`, and `getlogscale(getannotations(q))` becomes `getlogscale(q)`; the results keep the `Marginal` wrapper, as with annotations.
 - The `diagnostics` inference option, the engine's audits of the rules a model runs (`EngineDiagnostics(; check_everything_pure, check_everything_inplace, checked_buffers)`), and `context`, the services the rules run with: `(rng = …, matrix_correction = …)`.
 
 ### Changed
+- Callbacks given in `options = (callbacks = …,)` now also receive RxInfer's own events and combine with `trace`/`benchmark`, as the keyword does.
 - The `PrettyTables` extension uses PrettyTables 3 (`[compat]` `"3"` instead of `"2"`). Current Reactant.jl requires PrettyTables 3, so RxInfer and Reactant could not be installed together. The benchmark statistics (`pretty_table(callbacks)`) and the session summary print as before, and a new test checks both.
 - RxInfer accepts MessagePassingRulesApproximations 1 (`[compat]` `"1"`), the version it registers with.
 - RxInfer and its docs depend on the registered MessagePassingRulesBase (`[compat]` `"1"`) instead of ReactiveMP's `lib/` copy, which is gone; the docs link to its published site.

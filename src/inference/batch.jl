@@ -365,7 +365,7 @@ function batch_inference(;
 
         if is_free_energy
             fe_actor        = ScoreActor(S, _iterations, 1)
-            fe_subscription = subscribe!(score(fmodel, fe_objective, free_energy_diagnostics), fe_actor)
+            fe_subscription = subscribe!(report_free_energy(score(fmodel, fe_objective, free_energy_diagnostics), fmodel, callbacks), fe_actor)
         end
 
         if isnothing(data) || isempty(data)
@@ -523,6 +523,13 @@ function available_callbacks(::typeof(batch_inference))
         :after_form_constraint_applied,
         :before_marginal_computation,
         :after_marginal_computation,
+        :before_marginal_rule_call,
+        :after_marginal_rule_call,
+        :before_factor_bound_free_energy,
+        :after_factor_bound_free_energy,
+        :before_variable_bound_entropy,
+        :after_variable_bound_entropy,
+        :on_free_energy_update,
     ))
 end
 

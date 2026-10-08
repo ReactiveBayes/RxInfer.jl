@@ -80,6 +80,16 @@ ensure_update(
     )
 end
 
+# A free-energy stream that reports each value to the callbacks as an `OnFreeEnergyUpdateEvent`,
+# or the stream itself when they do not listen to it.
+function report_free_energy(stream, model, callbacks)
+    ReactiveMP.listens(callbacks, OnFreeEnergyUpdateEvent) || return stream
+    return stream |> tap(
+        (value) ->
+            invoke_callback(callbacks, OnFreeEnergyUpdateEvent(model, value)),
+    )
+end
+
 function check_and_reset_updated!(updates)
     if all((v) -> v.updated, values(updates))
         foreach(reset_updated!, values(updates))
@@ -513,6 +523,23 @@ include("batch.jl")
 include("autoupdates.jl")
 include("streaming.jl")
 
+# The callbacks the user gave: the keyword, or else `options = (callbacks = …,)`.
+function given_callbacks(callbacks, options, warn)
+    in_options = if options isa NamedTuple && haskey(options, :callbacks)
+        options.callbacks
+    else
+        nothing
+    end
+    if warn && !isnothing(callbacks) && !isnothing(in_options)
+        @warn "Both `callbacks = ...` and `options = (callbacks = ..., )` specify a value for the `callbacks`. Ignoring the `options` setting. Set `warn = false` to suppress this warning."
+    end
+    return isnothing(callbacks) ? in_options : callbacks
+end
+
+options_without_callbacks(options::NamedTuple) =
+    Base.structdiff(options, NamedTuple{(:callbacks,)})
+options_without_callbacks(options) = options
+
 # The callbacks `infer` runs with: the user's, merged with the benchmark and trace callbacks when
 # those are enabled.
 function infer_callbacks(callbacks, benchmark, trace)
@@ -695,8 +722,14 @@ function infer(;
 
     infer_check_dicttype(:data, data)
 
+    # The callbacks are given as the keyword or in `options`, the keyword winning. Either way they are
+    # one handler, which RxInfer's events and the engine's both reach, with the benchmark and trace
+    # callbacks merged into it; `options` is passed on without them.
     # A single assignment: the callbacks are captured below, and a reassigned captured variable is boxed
-    _callbacks = infer_callbacks(callbacks, benchmark, trace)
+    _callbacks = infer_callbacks(
+        given_callbacks(callbacks, options, warn), benchmark, trace
+    )
+    _options = options_without_callbacks(options)
 
     return with_session(session, :inference) do invoke
         append_invoke_context(invoke) do ctx
@@ -741,7 +774,7 @@ function infer(;
                 initialization = initialization,
                 constraints = constraints,
                 meta = meta,
-                options = options,
+                options = _options,
                 returnvars = returnvars,
                 predictvars = predictvars,
                 iterations = iterations,
@@ -772,7 +805,7 @@ function infer(;
                 initialization = initialization,
                 constraints = constraints,
                 meta = meta,
-                options = options,
+                options = _options,
                 returnvars = returnvars,
                 historyvars = historyvars,
                 keephistory = keephistory,

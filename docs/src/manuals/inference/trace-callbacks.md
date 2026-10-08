@@ -131,6 +131,34 @@ rule_calls = RxInfer.tracedevents(result.model.metadata[:trace])
 [(e.event.mapping.algorithm, e.event.result, e.event.logscale) for e in rule_calls]
 ```
 
+## [Tracing the free energy](@id trace-callbacks-free-energy)
+
+With `free_energy = true`, the trace records the free energy each time it is computed, as an [`OnFreeEnergyUpdateEvent`](@ref), and every term of it: a factor node's as a [`ReactiveMP.AfterFactorBoundFreeEnergyEvent`](@extref), with its average energy, its entropies and the average energy rule that ran, and a random variable's as a [`ReactiveMP.AfterVariableBoundEntropyEvent`](@extref). A term is a `CountingReal`, which counts the infinite entropies of point masses apart from its value; in each iteration the values of the terms sum to the free energy:
+
+```@example manual-inference-trace-callbacks
+result = infer(
+    model = iid_normal(),
+    data = (y = [1.0, 2.0, 3.0],),
+    constraints = MeanField(),
+    iterations = 3,
+    initialization = init,
+    free_energy = true,
+    trace = (:after_iteration, :after_factor_bound_free_energy, :after_variable_bound_entropy, :on_free_energy_update),
+)
+
+traced = map(e -> e.event, RxInfer.tracedevents(result.model.metadata[:trace]))
+last_iteration = traced[(findlast(e -> e isa AfterIterationEvent, traced[1:(end - 1)]) + 1):end]
+terms = filter(e -> e isa ReactiveMP.AfterFactorBoundFreeEnergyEvent || e isa ReactiveMP.AfterVariableBoundEntropyEvent, last_iteration)
+@test BayesBase.value(sum(e.result for e in terms)) ≈ last(result.free_energy) #hide
+Text(join([sprint(show, e; context = :compact => true) for e in terms[1:3]], "\n"))
+```
+
+```@example manual-inference-trace-callbacks
+BayesBase.value(sum(e.result for e in terms)), last(result.free_energy)
+```
+
+A node whose term is unexpectedly large is the one to look at first. Traced with their "before" events too, the terms are spans: Perfetto, below, shows each inside its iteration, and a deterministic node's joint, computed by its marginal rule, inside its term. TensorBoard, below, plots the free energy per iteration.
+
 ## Combining with other callbacks
 
 `trace = true` is compatible with other callbacks, including `benchmark = true` and custom callbacks:
@@ -211,6 +239,7 @@ log_dir = RxInfer.convert_to_tensorboard(trace; log_distributions = true)
 | Output | TensorBoard tab | Condition |
 |--------|----------------|-----------|
 | Per-iteration wall-clock duration (`iteration_time_ms`) | Scalars | always |
+| The free energy per iteration (`free_energy`) | Scalars | `free_energy = true` in `infer` |
 | Parameterisation-aware scalar tags for each posterior (see table below) | Scalars | `log_posteriors` admits the variable (see [Filtering posteriors](@ref tensorboard-log-posteriors)) |
 | Per-iteration histogram of posterior samples (`posteriors/<var>/distribution`) | Distributions / Histograms | `log_distributions = true` **and** `log_posteriors` admits the variable |
 | `EventCounts` per-event-type table | Text | always |

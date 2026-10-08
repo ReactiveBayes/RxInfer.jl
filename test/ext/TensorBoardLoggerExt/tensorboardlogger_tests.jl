@@ -695,3 +695,23 @@ end
         end
     end
 end
+
+@testitem "The free energy is logged as a scalar per iteration" begin
+    using RxInfer, StableRNGs, TensorBoardLogger
+    include(joinpath(@__DIR__, "helpers.jl"))
+
+    n_iterations = 3
+    results = iid_normal_inference(
+        iterations = n_iterations, free_energy = true
+    )
+    trace = results.model.metadata[:trace]
+
+    with_safe_tempdir() do log_dir
+        run_dir = RxInfer.convert_to_tensorboard(
+            trace; output_file = log_dir, verbose = false
+        )
+        @test "free_energy" in read_tags(run_dir)
+        @test collect(steps_for_tag(run_dir, "free_energy")) ==
+            collect(1:n_iterations)
+    end
+end

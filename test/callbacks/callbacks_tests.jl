@@ -171,3 +171,49 @@ end
         (:after_iteration, 3),
     ]
 end
+
+@testitem "Callbacks given in `options` reach RxInfer's events, the engine's, and the trace" begin
+    using RxInfer
+
+    @model function coin_for_options_callbacks(y)
+        θ ~ Beta(1.0, 1.0)
+        y .~ Bernoulli(θ)
+    end
+
+    rule_calls = Ref(0)
+    iterations = Ref(0)
+    handler = (
+        after_message_rule_call = (event) -> (rule_calls[] += 1),
+        after_iteration = (event) -> (iterations[] += 1),
+    )
+
+    result = infer(;
+        model = coin_for_options_callbacks(),
+        data = (y = [1.0, 0.0, 1.0],),
+        iterations = 2,
+        options = (callbacks = handler,),
+        trace = true,
+    )
+    @test rule_calls[] > 0
+    @test iterations[] == 2
+    @test haskey(result.model.metadata, :trace)
+    @test length(
+        RxInfer.tracedevents(:after_iteration, result.model.metadata[:trace])
+    ) == 2
+
+    # The keyword wins over `options`, with a warning.
+    keyword_calls = Ref(0)
+    keyword = (after_iteration = (event) -> (keyword_calls[] += 1),)
+    iterations[] = 0
+    @test_logs (
+        :warn, r"Both `callbacks = ...` and `options = \(callbacks = ..., \)`"
+    ) infer(;
+        model = coin_for_options_callbacks(),
+        data = (y = [1.0, 0.0, 1.0],),
+        iterations = 2,
+        callbacks = keyword,
+        options = (callbacks = handler,),
+    )
+    @test keyword_calls[] == 2
+    @test iterations[] == 0
+end

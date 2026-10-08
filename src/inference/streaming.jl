@@ -902,5 +902,11 @@ function available_callbacks(::typeof(streaming_inference))
         :after_form_constraint_applied,
         :before_marginal_computation,
         :after_marginal_computation,
+        :before_marginal_rule_call,
+        :after_marginal_rule_call,
+        :before_factor_bound_free_energy,
+        :after_factor_bound_free_energy,
+        :before_variable_bound_entropy,
+        :after_variable_bound_entropy,
     ))
 end

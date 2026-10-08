@@ -317,3 +317,57 @@ end
         @test isempty(RxInfer.tracedevents(trace))
     end
 end
+
+@testitem "Traced events include the free energy and each of its terms" begin
+    using RxInfer, BayesBase
+    import RxInfer: tracedevents
+
+    @model function iid_normals_for_free_energy(y)
+        μ ~ Normal(mean = 0.0, variance = 100.0)
+        τ ~ Gamma(shape = 1.0, rate = 1.0)
+        y .~ Normal(mean = μ, precision = τ)
+    end
+
+    n_iterations = 3
+    result = infer(;
+        model = iid_normals_for_free_energy(),
+        data = (y = [1.0, 2.0, 3.0],),
+        constraints = MeanField(),
+        initialization = @initialization(q(τ) = GammaShapeRate(1.0, 1.0)),
+        iterations = n_iterations,
+        free_energy = true,
+        trace = true,
+    )
+    trace = result.model.metadata[:trace]
+
+    updates = tracedevents(:on_free_energy_update, trace)
+    @test length(updates) == n_iterations
+    @test [traced.event.value for traced in updates] ≈ result.free_energy
+
+    # In each iteration, every factor node and every random variable reports its term once, and
+    # the terms' values sum to that iteration's free energy, the point entropies of the data and
+    # the constants cancelling as infinities.
+    events = map(traced -> traced.event, tracedevents(trace))
+    starts = findall(event -> event isa BeforeIterationEvent, events)
+    ends = findall(event -> event isa AfterIterationEvent, events)
+    for (k, (first, last)) in enumerate(zip(starts, ends))
+        iteration = events[first:last]
+        nodes = filter(
+            event -> event isa ReactiveMP.AfterFactorBoundFreeEnergyEvent,
+            iteration,
+        )
+        variables = filter(
+            event -> event isa ReactiveMP.AfterVariableBoundEntropyEvent,
+            iteration,
+        )
+        @test length(nodes) == 5
+        @test length(variables) == 2
+        @test all(
+            event -> event.rule isa MessagePassingRulesBase.RuleSpec, nodes
+        )
+        total =
+            sum(event.result for event in nodes) +
+            sum(event.result for event in variables)
+        @test BayesBase.value(total) ≈ result.free_energy[k]
+    end
+end

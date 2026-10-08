@@ -236,7 +236,14 @@ using RxInfer, Test
     :before_form_constraint_applied,
     :after_form_constraint_applied,
     :before_marginal_computation,
-    :after_marginal_computation
+    :after_marginal_computation,
+    :before_marginal_rule_call,
+    :after_marginal_rule_call,
+    :before_factor_bound_free_energy,
+    :after_factor_bound_free_energy,
+    :before_variable_bound_entropy,
+    :after_variable_bound_entropy,
+    :on_free_energy_update
 ))
 @test RxInfer.available_callbacks(RxInfer.streaming_inference) === Val((
     :before_model_creation,
@@ -252,7 +259,13 @@ using RxInfer, Test
     :before_form_constraint_applied,
     :after_form_constraint_applied,
     :before_marginal_computation,
-    :after_marginal_computation
+    :after_marginal_computation,
+    :before_marginal_rule_call,
+    :after_marginal_rule_call,
+    :before_factor_bound_free_energy,
+    :after_factor_bound_free_energy,
+    :before_variable_bound_entropy,
+    :after_variable_bound_entropy
 ))
 nothing
 ```
@@ -275,6 +288,7 @@ For more details on batch inference, see [Static inference](@ref manual-static-i
 
 ```@docs
 OnMarginalUpdateEvent
+OnFreeEnergyUpdateEvent
 BeforeInferenceEvent
 AfterInferenceEvent
 BeforeIterationEvent
@@ -307,6 +321,9 @@ These lower-level events are fired by the `ReactiveMP` message passing engine du
 - `BeforeProductOfMessagesEvent` / `AfterProductOfMessagesEvent` — fired around folded message products
 - `BeforeFormConstraintAppliedEvent` / `AfterFormConstraintAppliedEvent` — fired around form constraint application
 - `BeforeMarginalComputationEvent` / `AfterMarginalComputationEvent` — fired around marginal computations
+- `BeforeMarginalRuleCallEvent` / `AfterMarginalRuleCallEvent` — fired around the marginal rule calls that compute the joint marginals of a node's clusters
+- `BeforeFactorBoundFreeEnergyEvent` / `AfterFactorBoundFreeEnergyEvent` — fired around a factor node's term of the free energy, with `free_energy = true`
+- `BeforeVariableBoundEntropyEvent` / `AfterVariableBoundEntropyEvent` — fired around a random variable's term of the free energy, with `free_energy = true`
 
 For detailed descriptions of these events and their fields, see the [list of events](@extref ReactiveMP lib-callbacks-events) in the documentation of `ReactiveMP`.
 
@@ -318,6 +335,7 @@ The [`ReactiveMP.AfterMessageRuleCallEvent`](@extref) fires after every message 
 - `event.messages` and `event.marginals` are the inputs the rule read;
 - `event.result` is the computed message;
 - `event.logscale` is the message's [log scale](@extref MessagePassingRulesBase glossary-log-scale) when inference runs with `logscales = true`, and `nothing` otherwise.
+- `event.rule` is what gave the message: the rule that ran, a [`RuleSpec`](@extref MessagePassingRulesBase.RuleSpec) that shows where the rule is defined; the rule fallback, where no rule matched; or `nothing`, where a `missing` input skipped the rule.
 
 ```@example manual-inference-callbacks
 function print_rule_call(event)

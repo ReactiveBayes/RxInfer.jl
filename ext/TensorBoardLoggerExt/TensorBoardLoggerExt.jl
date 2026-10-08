@@ -71,6 +71,11 @@ mutable struct LogContext{L}
     # wall-clock figure in the Summary text tag.
     first_event_ns::UInt64
     last_event_ns::UInt64
+    # The iteration the last `BeforeIterationEvent` opened, `0` before any, and the number of
+    # free-energy values logged: a free-energy value is logged at its iteration, or at its count
+    # when no iteration was traced.
+    current_iteration::Int
+    free_energy_count::Int
 end
 
 # Normalize the user-facing `log_posteriors` value to the internal
@@ -105,6 +110,8 @@ LogContext(
     NaN,
     zero(UInt64),
     zero(UInt64),
+    0,
+    0,
 )
 
 # Central gate for all narrative/event text summaries. Scalar and
@@ -297,6 +304,7 @@ end
 # that previously lived in a pre-scan loop — we now stash the start time
 # in-line as events stream by, via `ctx.current_time_ns`.
 function log_event(ctx::LogContext, ev::BeforeIterationEvent, _idx)
+    ctx.current_iteration = ev.iteration
     _log_text!(ctx, "before_iteration", _compact_repr(ev); step = ev.iteration)
     ctx.before_times[ev.span_id] = (ev.iteration, ctx.current_time_ns)
 end
@@ -360,6 +368,22 @@ function log_event(ctx::LogContext, ev::OnMarginalUpdateEvent, idx)
                 ev.variable_name exception = (err, catch_backtrace())
         end
     end
+end
+
+# The free energy, a scalar per iteration: the last value computed in an iteration is the
+# iteration's.
+function log_event(ctx::LogContext, ev::OnFreeEnergyUpdateEvent, idx)
+    ctx.free_energy_count += 1
+    step = if ctx.current_iteration > 0
+        ctx.current_iteration
+    else
+        ctx.free_energy_count
+    end
+    _log_text!(ctx, "on_free_energy_update", _compact_repr(ev); step = idx)
+    TensorBoardLogger.log_value(
+        ctx.logger, "free_energy", Float64(ev.value); step = step
+    )
+    return nothing
 end
 
 function log_event(ctx::LogContext, ev::BeforeAutostartEvent, idx)
@@ -437,6 +461,50 @@ function log_event(
 )
     _log_text!(
         ctx, "after_form_constraint_applied", _compact_repr(ev); step = idx
+    )
+end
+
+function log_event(
+    ctx::LogContext, ev::ReactiveMP.BeforeMarginalRuleCallEvent, idx
+)
+    _log_text!(ctx, "before_marginal_rule_call", _compact_repr(ev); step = idx)
+end
+
+function log_event(
+    ctx::LogContext, ev::ReactiveMP.AfterMarginalRuleCallEvent, idx
+)
+    _log_text!(ctx, "after_marginal_rule_call", _compact_repr(ev); step = idx)
+end
+
+function log_event(
+    ctx::LogContext, ev::ReactiveMP.BeforeFactorBoundFreeEnergyEvent, idx
+)
+    _log_text!(
+        ctx, "before_factor_bound_free_energy", _compact_repr(ev); step = idx
+    )
+end
+
+function log_event(
+    ctx::LogContext, ev::ReactiveMP.AfterFactorBoundFreeEnergyEvent, idx
+)
+    _log_text!(
+        ctx, "after_factor_bound_free_energy", _compact_repr(ev); step = idx
+    )
+end
+
+function log_event(
+    ctx::LogContext, ev::ReactiveMP.BeforeVariableBoundEntropyEvent, idx
+)
+    _log_text!(
+        ctx, "before_variable_bound_entropy", _compact_repr(ev); step = idx
+    )
+end
+
+function log_event(
+    ctx::LogContext, ev::ReactiveMP.AfterVariableBoundEntropyEvent, idx
+)
+    _log_text!(
+        ctx, "after_variable_bound_entropy", _compact_repr(ev); step = idx
     )
 end
 

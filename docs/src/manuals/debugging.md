@@ -4,6 +4,7 @@ Debugging inference in `RxInfer` can be challenging due to the reactive nature o
 
 !!! tip "Quick reference"
     - **Trace inference events** — use [`RxInferTraceCallbacks`](@ref) or `trace = true` to record every callback event. See [Trace callbacks](@ref manual-inference-trace-callbacks).
+    - **Trace the free energy** — with `free_energy = true`, the trace holds every node's and every variable's term of it, to find the node that makes it wrong. See [Tracing the free energy](@ref trace-callbacks-free-energy).
     - **Benchmark performance** — use [`RxInferBenchmarkCallbacks`](@ref) or `benchmark = true` to collect timing statistics. See [Benchmark callbacks](@ref manual-inference-benchmark-callbacks).
     - **Custom callbacks** — use the [Callbacks](@ref manual-inference-callbacks) system to inject arbitrary logic at any point during inference.
 

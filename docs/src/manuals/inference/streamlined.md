@@ -461,14 +461,20 @@ using RxInfer, Test, Markdown
     :before_form_constraint_applied,
     :after_form_constraint_applied,
     :before_marginal_computation,
-    :after_marginal_computation
+    :after_marginal_computation,
+    :before_marginal_rule_call,
+    :after_marginal_rule_call,
+    :before_factor_bound_free_energy,
+    :after_factor_bound_free_energy,
+    :before_variable_bound_entropy,
+    :after_variable_bound_entropy
 ))
 nothing
 ```
 
 ---
 
-Below we list `RxInfer` specific callbacks. In addition to these, `ReactiveMP` provides lower-level callbacks for the message passing procedure itself, such as `before_message_rule_call`, `after_message_rule_call`, `before_product_of_messages`, `after_product_of_messages`, `before_marginal_computation`, `after_marginal_computation`, and others. For a full list and detailed descriptions of these callbacks, refer to the official documentation of `ReactiveMP`.
+Below we list `RxInfer` specific callbacks. In addition to these, `ReactiveMP` provides lower-level callbacks for the message passing procedure itself, such as `before_message_rule_call`, `after_message_rule_call`, `before_product_of_messages`, `after_product_of_messages`, `before_marginal_computation`, `after_marginal_computation`, the marginal rule calls (`after_marginal_rule_call`) and the free energy's terms (`after_factor_bound_free_energy`, `after_variable_bound_entropy`), and others. For a full list and detailed descriptions of these callbacks, refer to the official documentation of `ReactiveMP`.
 
 ```julia
 before_model_creation(event::BeforeModelCreationEvent)
