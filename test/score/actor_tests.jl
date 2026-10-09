@@ -1,3 +1,26 @@
+@testitem "ScoreActor partial frames" begin
+    using RxInfer, Rocket
+    actor = RxInfer.ScoreActor(Float64, 4, 2)
+    next!(actor, 1.0)
+    next!(actor, 3.0)
+    release!(actor; allow_partial = true)
+    next!(actor, 5.0)
+    release!(actor; allow_partial = true)
+    @test RxInfer.score_snapshot(actor) == [1.0, 3.0, 5.0]
+    @test RxInfer.score_snapshot_final(actor) == [3.0, 5.0]
+    # The second iteration was reached by only the first event, so its average is 3.
+    @test RxInfer.score_snapshot_iterations(actor) == [3.0, 3.0]
+    next!(actor, 7.0)
+    next!(actor, 9.0)
+    next!(actor, 11.0)
+    release!(actor; allow_partial = true)
+    # Wrapping discards the first event without padding either retained partial frame.
+    @test RxInfer.score_snapshot(actor) == [5.0, 7.0, 9.0, 11.0]
+    @test RxInfer.score_snapshot_final(actor) == [5.0, 11.0]
+    @test RxInfer.score_snapshot_iterations(actor) == [6.0, 9.0, 11.0]
+    @test_throws AssertionError release!(actor; allow_partial = true)
+end
+
 @testitem "ScoreActor tests" begin
     using Random
     using RxInfer

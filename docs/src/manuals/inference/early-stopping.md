@@ -10,9 +10,9 @@ For a general overview of the callbacks system, see the [Callbacks](@ref manual-
 
 ## Constructors
 
-- `StopEarlyIterationStrategy(rtol)`:
+- `StopEarlyIterationStrategy(rtol; window = 2)`:
   sets `atol = 0.0`, uses the given relative tolerance.
-- `StopEarlyIterationStrategy(atol, rtol)`:
+- `StopEarlyIterationStrategy(atol, rtol; window = 2)`:
   sets both absolute and relative tolerances.
 - Both constructors use `start_fe_value = Inf` for the initial comparison value.
 
@@ -32,6 +32,25 @@ Check out more about callbacks for static inference [here](@ref manual-static-in
 
 Note that in this case we still have to specify the `iterations`, which
 in the case of early stopping specifies _maximum_ number of iterations.
+
+The default `window = 2` compares consecutive values with `isapprox`, preserving
+the previous behavior. For example, `window = 4` requires four finite BFE values
+whose full range satisfies
+`maximum(values) - minimum(values) <= max(atol, rtol * maximum(abs, values))`.
+This prevents several individually small changes from accumulating into a larger
+drift within the window. Four values span three iteration-to-iteration changes.
+
+The same `before_iteration` and `after_iteration` callbacks are supported in
+streaming inference. A stop flag ends only the current observation event's solve;
+posterior publication, history saving, and processing of future events continue.
+The strategy resets its BFE history at iteration one of every new solve/event, so
+values from different observations are never compared. Streaming BFE histories
+contain only executed iterations; the per-iteration average includes only events
+that reached that iteration. A stop before the first iteration produces no tick
+or history entry for that observation event.
+
+Use a separate strategy instance for each concurrently running inference engine.
+BFE stability is a stopping heuristic, not a guarantee of posterior accuracy.
 
 ## Example
 
