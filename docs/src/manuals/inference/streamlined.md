@@ -448,6 +448,10 @@ Here are available callbacks that can be used together with the streaming infere
 using RxInfer, Test, Markdown
 # Update the documentation below if this test does not pass
 @test RxInfer.available_callbacks(RxInfer.streaming_inference) === Val((
+    :before_inference,
+    :after_inference,
+    :before_iteration,
+    :after_iteration,
     :before_model_creation,
     :after_model_creation,
     :before_autostart,
@@ -469,6 +473,18 @@ nothing
 ---
 
 Below we list `RxInfer` specific callbacks. In addition to these, `ReactiveMP` provides lower-level callbacks for the message passing procedure itself, such as `before_message_rule_call`, `after_message_rule_call`, `before_product_of_messages`, `after_product_of_messages`, `before_marginal_computation`, `after_marginal_computation`, and others. For a full list and detailed descriptions of these callbacks, refer to the official documentation of `ReactiveMP`.
+
+```julia
+before_inference(event::BeforeInferenceEvent)
+after_inference(event::AfterInferenceEvent)
+```
+Called before and after processing each observation event. Access the model via `event.model`. The inference callbacks run separately for each event, allowing convergence state to reset between observations.
+
+```julia
+before_iteration(event::BeforeIterationEvent)
+after_iteration(event::AfterIterationEvent)
+```
+Called before and after each iteration within an observation event. Access the model and iteration number via `event.model` and `event.iteration`. Setting `event.stop_iteration = true` stops iterations for the current event; later observation events continue to be processed. A stop requested before an iteration skips that iteration, while a stop requested after it preserves its posterior and history updates. See [Early stopping](@ref manual-inference-early-stopping) for the BFE convergence callback.
 
 ```julia
 before_model_creation(event::BeforeModelCreationEvent)
