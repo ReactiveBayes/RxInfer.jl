@@ -17,7 +17,7 @@ registered(name) = Inventory(
 const REACTIVEMP_ROOT = joinpath(@__DIR__, "..", "..", "ReactiveMP.jl")
 site(name, dir) = ("https://reactivebayes.github.io/$(name).jl/dev/", joinpath(REACTIVEMP_ROOT, dir, "docs", "build", "objects.inv"))
 const LIB_SITES = [
-    "StandardMessagePassingRules", "MessagePassingRulesApproximations",
+    "StandardMessagePassingRules",
     "DeltaMessagePassingRules", "GaussianCouplingMessagePassingRules", "ProbitMessagePassingRules",
     "GCVMessagePassingRules", "SoftDotMessagePassingRules", "AutoregressiveMessagePassingRules",
     "ContinuousTransitionMessagePassingRules", "PolyaMessagePassingRules", "BIFMMessagePassingRules",
@@ -25,6 +25,7 @@ const LIB_SITES = [
 ]
 links = InterLinks(
     "MessagePassingRulesBase" => registered("MessagePassingRulesBase"),
+    "MessagePassingRulesApproximations" => registered("MessagePassingRulesApproximations"),
     "ReactiveMP" => site("ReactiveMP", "."),
     (name => site(name, joinpath("lib", name)) for name in LIB_SITES)...,
 )

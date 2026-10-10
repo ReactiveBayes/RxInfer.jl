@@ -49,7 +49,6 @@ DiscreteTransitionMessagePassingRules = {path = "../../ReactiveMP.jl/lib/Discret
 FlowMessagePassingRules = {path = "../../ReactiveMP.jl/lib/FlowMessagePassingRules"}
 GaussianCouplingMessagePassingRules = {path = "../../ReactiveMP.jl/lib/GaussianCouplingMessagePassingRules"}
 GCVMessagePassingRules = {path = "../../ReactiveMP.jl/lib/GCVMessagePassingRules"}
-MessagePassingRulesApproximations = {path = "../../ReactiveMP.jl/lib/MessagePassingRulesApproximations"}
 PolyaMessagePassingRules = {path = "../../ReactiveMP.jl/lib/PolyaMessagePassingRules"}
 ProbitMessagePassingRules = {path = "../../ReactiveMP.jl/lib/ProbitMessagePassingRules"}
 ReactiveMP = {path = "../../ReactiveMP.jl"}
