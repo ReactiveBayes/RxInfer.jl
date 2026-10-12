@@ -1,6 +1,5 @@
 @testitem "Latent autoregressive model" begin
     using StableRNGs, Plots, BenchmarkTools
-    using AutoregressiveMessagePassingRules
 
     include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 

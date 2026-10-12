@@ -18,7 +18,7 @@ const REACTIVEMP_ROOT = joinpath(@__DIR__, "..", "..", "ReactiveMP.jl")
 site(name, dir) = ("https://reactivebayes.github.io/$(name).jl/dev/", joinpath(REACTIVEMP_ROOT, dir, "docs", "build", "objects.inv"))
 const LIB_SITES = [
     "StandardMessagePassingRules",
-    "DeltaMessagePassingRules", "GaussianCouplingMessagePassingRules", "ProbitMessagePassingRules",
+    "DeltaMessagePassingRules", "GaussianCouplingMessagePassingRules",
     "GCVMessagePassingRules", "SoftDotMessagePassingRules", "AutoregressiveMessagePassingRules",
     "ContinuousTransitionMessagePassingRules", "PolyaMessagePassingRules", "BIFMMessagePassingRules",
     "FlowMessagePassingRules", "DiscreteTransitionMessagePassingRules",

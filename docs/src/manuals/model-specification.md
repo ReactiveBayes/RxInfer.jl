@@ -486,11 +486,9 @@ The two deterministic nodes approximate their messages with different methods. T
 
 #### Initial messages
 
-What a node's rules read is part of the node's declaration, not an option of the model. Some nodes read the message on their own edge, and need an initial message on it to start. The `Probit` node, from the `ProbitMessagePassingRules` package, is one of them: its rule towards `in` reads the message on `in`, and the node declares `NormalMeanPrecision(0.0, 100.0)` as its initial value. The [`@initialization`](@ref) macro sets another one, `μ(x) = ...`, which takes precedence over the node's own:
+What a node's rules read is part of the node's declaration, not an option of the model. Some nodes read the message on their own edge, and need an initial message on it to start. The `Probit` node, one of the standard nodes, is one of them: its rule towards `in` reads the message on `in`, and the node declares `NormalMeanPrecision(0.0, 100.0)` as its initial value. The [`@initialization`](@ref) macro sets another one, `μ(x) = ...`, which takes precedence over the node's own:
 
 ```@example node-creation-options
-using ProbitMessagePassingRules
-
 @model function probit_model(y)
     x_prev ~ Normal(mean = 0.0, variance = 1.0)
     for k in eachindex(y)

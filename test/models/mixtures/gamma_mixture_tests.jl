@@ -1,4 +1,6 @@
 @testitem "Gamma mixture model" begin
+    # The shapes are continuous point masses, whose default optimiser runs Optim.jl.
+    using Optim
     using Distributions
     using BenchmarkTools, LinearAlgebra, StableRNGs, Plots, BayesBase
 

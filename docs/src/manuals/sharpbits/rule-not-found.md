@@ -128,7 +128,7 @@ First, try to reformulate your model using conjugate prior-likelihood pairs. Con
 
 ### 2. Check available rules
 
-If conjugate pairs aren't suitable, verify if your combination of distributions and message types is supported. RxInfer provides many predefined rules, but not all combinations are possible. The rules of the standard nodes are documented on the site of [`StandardMessagePassingRules`](@extref StandardMessagePassingRules StandardMessagePassingRules), and every other node has a package and a site of its own, listed on [ReactiveMP's ecosystem page](@extref ReactiveMP ecosystem-nodes). A node from one of those packages needs the package loaded, for example `using ProbitMessagePassingRules`.
+If conjugate pairs aren't suitable, verify if your combination of distributions and message types is supported. RxInfer provides many predefined rules, but not all combinations are possible. The rules of the standard nodes are documented on the site of [`StandardMessagePassingRules`](@extref StandardMessagePassingRules StandardMessagePassingRules), and every other node has a package and a site of its own, listed on [ReactiveMP's ecosystem page](@extref ReactiveMP ecosystem-nodes). RxInfer loads some of them (Delta, AR, DiscreteTransition, GCV, GaussianCoupling and SoftDot, see [Rule packages](@ref rule-packages)); a node from another needs its package loaded, for example `using PolyaMessagePassingRules`.
 
 You can also ask for the rules directly. [`MessagePassingRulesBase.rule_coverage`](@extref) lists, per edge and algorithm, how many rules a node has:
 

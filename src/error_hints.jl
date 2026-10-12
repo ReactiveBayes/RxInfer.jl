@@ -1,19 +1,10 @@
 # Hints for names that ReactiveMP v7 removed or moved into a package of its own: an
 # `UndefVarError` for one of them says what replaces it, or which package to load.
 
-# The nodes and algorithms of the node packages, which RxInfer does not load: `using` the package
-# brings them in.
+# The nodes and algorithms of the node packages that RxInfer does not load: `using` the package
+# brings them in. The standard nodes (Probit among them), Delta, AR, DiscreteTransition, GCV,
+# GaussianCoupling and SoftDot come with RxInfer.
 const PACKAGE_OF_NAME = Dict{Symbol, String}(
-    (
-        name => "AutoregressiveMessagePassingRules" for
-        name in (:AR, :Autoregressive, :ConjugateAR, :ARVMP, :ARsafe, :ARunsafe)
-    )...,
-    (
-        name => "GCVMessagePassingRules" for
-        name in (:GCV, :GCVApproximation, :ExponentialLinearQuadratic)
-    )...,
-    (name => "ProbitMessagePassingRules" for name in (:Probit, :ProbitEP))...,
-    (name => "SoftDotMessagePassingRules" for name in (:SoftDot, :softdot))...,
     (
         name => "ContinuousTransitionMessagePassingRules" for
         name in (:ContinuousTransition, :CTransition, :CTVMP)
@@ -44,8 +35,6 @@ const PACKAGE_OF_NAME = Dict{Symbol, String}(
             :PermutationMatrix,
         )
     )...,
-    :DiscreteTransition => "DiscreteTransitionMessagePassingRules",
-    :GaussianCoupling => "GaussianCouplingMessagePassingRules",
 )
 
 # ReactiveMP v6's names that have another name, or no counterpart, in v7.

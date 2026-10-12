@@ -31,6 +31,12 @@ nothing #hide
 
 The most basic form of posterior marginal approximation is the `PointMass` function. In a few words `PointMass` represents the delta function. In the context of functional form constraints `PointMass` approximation corresponds to the MAP estimate. For a given distribution `d`, the `PointMass` functional form simply finds the `argmax` of the `logpdf` of `q(x)`, thus $q(x) = F[\mu_1, \mu_2] = \delta(x - \arg\max_{x} \mu_1(x) \mu_2(x))$. This is especially useful when the exact functional form of `q(x)` is not available or cannot be parametrized efficiently. 
 
+For a discrete distribution the `argmax` is the mode of its probability vector. For a continuous
+univariate one the default optimiser runs [Optim.jl](https://github.com/JuliaNLSolvers/Optim.jl),
+which RxInfer does not load: load it with `using Optim` next to `using RxInfer`, or give the
+constraint an optimiser of your own with the `optimizer` keyword. Without either, inference stops
+with an error that says so.
+
 ```@example constraints-functional-forms
 @constraints begin 
     q(x) :: PointMassFormConstraint()

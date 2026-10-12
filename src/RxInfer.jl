@@ -2,13 +2,20 @@ module RxInfer
 
 using Reexport
 
-# The engine, the rule system a model's nodes are declared with, the standard nodes, and the
-# Delta node, which `:=` with any function creates, with its approximations. Other node
-# packages are loaded by the models that use them.
+# The engine, the rule system a model's nodes are declared with, the node packages RxInfer
+# loads by default (the standard nodes with Probit, the Delta node, which `:=` with any function
+# creates, AR, DiscreteTransition, GCV, GaussianCoupling and SoftDot), and the approximations.
+# The other node packages (ContinuousTransition, Pólya, BIFM, Flow) are loaded by the models that
+# use them.
 @reexport using ReactiveMP,
     MessagePassingRulesBase,
     StandardMessagePassingRules,
     DeltaMessagePassingRules,
+    AutoregressiveMessagePassingRules,
+    DiscreteTransitionMessagePassingRules,
+    GCVMessagePassingRules,
+    GaussianCouplingMessagePassingRules,
+    SoftDotMessagePassingRules,
     MessagePassingRulesApproximations,
     GraphPPL,
     Rocket,

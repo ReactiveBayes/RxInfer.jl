@@ -21,11 +21,11 @@ warning, as the old names of these three.
 
 ## An algorithm in the model
 
-The `AR` node lives in the `AutoregressiveMessagePassingRules` package, which you load next to
-`RxInfer`. This model observes an autoregressive process of order 2 through noise:
+The `AR` node lives in the `AutoregressiveMessagePassingRules` package, which RxInfer loads. This
+model observes an autoregressive process of order 2 through noise:
 
 ```@example algorithm-specification
-using RxInfer, AutoregressiveMessagePassingRules, StableRNGs
+using RxInfer, StableRNGs
 
 @model function ar_model(y, order)
     γ  ~ Gamma(shape = 1.0, rate = 1.0)
@@ -149,12 +149,11 @@ RxInfer.@algorithm
 
 ## Selecting nodes by their variables
 
-The `GCV` node lives in the `GCVMessagePassingRules` package. It models an observation whose
-log-variance is linear in a latent variable, ``y \sim \mathcal{N}(x, \exp(\kappa z + \omega))``:
+The `GCV` node lives in the `GCVMessagePassingRules` package, which RxInfer loads too. It models
+an observation whose log-variance is linear in a latent variable,
+``y \sim \mathcal{N}(x, \exp(\kappa z + \omega))``:
 
 ```@example algorithm-specification
-using GCVMessagePassingRules
-
 @model function volatility_model(y, κ, ω)
     x ~ Normal(mean = 0.0, variance = 10.0)
     z ~ Normal(mean = 0.0, variance = 1.0)

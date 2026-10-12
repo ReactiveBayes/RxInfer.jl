@@ -4,7 +4,7 @@ This guide explains how to migrate a model from `RxInfer` 5.x to 6.x. RxInfer 6.
 `ReactiveMP` v7, which moves every factor node and its rules out of the engine into rule
 packages. The main breaking changes for a model author are:
 
-1. **Some nodes need their package loaded.** RxInfer loads the standard nodes and the Delta node; the others have packages of their own.
+1. **Some nodes need their package loaded.** RxInfer loads the standard nodes and the packages of Delta, AR, DiscreteTransition, GCV, GaussianCoupling and SoftDot; ContinuousTransition, Pólya, BIFM and Flow have packages that you load. The default optimiser of a continuous point mass needs `using Optim`.
 2. **A node's meta is its algorithm**: `@meta` becomes `@algorithm` and `meta =` becomes `algorithm =`, and several meta types are renamed.
 3. **`where { dependencies = … }` is removed**: a node declares what its rules read, and you set initial messages with `@initialization`.
 4. **Log scales are part of a message**: `annotations = LogScaleAnnotations()` becomes `logscales = true`.
@@ -18,31 +18,34 @@ after it shows the 6.x code and runs when this documentation is built.
 
 RxInfer loads and re-exports `ReactiveMP`,
 [`MessagePassingRulesBase`](@extref MessagePassingRulesBase MessagePassingRulesBase),
-[`StandardMessagePassingRules`](@extref StandardMessagePassingRules StandardMessagePassingRules),
-[`DeltaMessagePassingRules`](@extref DeltaMessagePassingRules DeltaMessagePassingRules) and
-[`MessagePassingRulesApproximations`](@extref MessagePassingRulesApproximations MessagePassingRulesApproximations).
-These cover the distributions, the arithmetic and logic nodes, the mixtures and deterministic
-transformations with `:=`. Every other node lives in a package that you load next to RxInfer:
+[`MessagePassingRulesApproximations`](@extref MessagePassingRulesApproximations MessagePassingRulesApproximations)
+and the node packages most models use:
+[`StandardMessagePassingRules`](@extref StandardMessagePassingRules StandardMessagePassingRules)
+(the distributions, the arithmetic and logic nodes, the mixtures and `Probit`),
+[`DeltaMessagePassingRules`](@extref DeltaMessagePassingRules DeltaMessagePassingRules)
+(deterministic transformations with `:=`),
+[`AutoregressiveMessagePassingRules`](@extref AutoregressiveMessagePassingRules AutoregressiveMessagePassingRules),
+[`DiscreteTransitionMessagePassingRules`](@extref DiscreteTransitionMessagePassingRules DiscreteTransitionMessagePassingRules),
+[`GCVMessagePassingRules`](@extref GCVMessagePassingRules GCVMessagePassingRules),
+[`GaussianCouplingMessagePassingRules`](@extref GaussianCouplingMessagePassingRules GaussianCouplingMessagePassingRules)
+and [`SoftDotMessagePassingRules`](@extref SoftDotMessagePassingRules SoftDotMessagePassingRules).
+The other nodes live in packages that you load next to RxInfer, so that RxInfer depends on as
+little as possible:
 
 | Node | Package |
 |:-----|:--------|
-| `AR`, `ConjugateAR` | [`AutoregressiveMessagePassingRules`](@extref AutoregressiveMessagePassingRules AutoregressiveMessagePassingRules) |
-| `GCV` | [`GCVMessagePassingRules`](@extref GCVMessagePassingRules GCVMessagePassingRules) |
-| `Probit` | [`ProbitMessagePassingRules`](@extref ProbitMessagePassingRules ProbitMessagePassingRules) |
-| `SoftDot` | [`SoftDotMessagePassingRules`](@extref SoftDotMessagePassingRules SoftDotMessagePassingRules) |
 | `ContinuousTransition` | [`ContinuousTransitionMessagePassingRules`](@extref ContinuousTransitionMessagePassingRules ContinuousTransitionMessagePassingRules) |
 | `BinomialPolya`, `MultinomialPolya` | [`PolyaMessagePassingRules`](@extref PolyaMessagePassingRules PolyaMessagePassingRules) (GPL-3 licensed) |
 | `BIFM`, `BIFMHelper` | [`BIFMMessagePassingRules`](@extref BIFMMessagePassingRules BIFMMessagePassingRules) |
 | `Flow` | [`FlowMessagePassingRules`](@extref FlowMessagePassingRules FlowMessagePassingRules) |
-| `DiscreteTransition` | [`DiscreteTransitionMessagePassingRules`](@extref DiscreteTransitionMessagePassingRules DiscreteTransitionMessagePassingRules) |
-| `GaussianCoupling` | [`GaussianCouplingMessagePassingRules`](@extref GaussianCouplingMessagePassingRules GaussianCouplingMessagePassingRules) |
 
-Each package is an ordinary Julia package: install it with `] add AutoregressiveMessagePassingRules`
-and load it with `using`. Loading it is enough for the engine to find the node's rules. A model
-with an autoregressive state reads as follows:
+Each package is an ordinary Julia package: install it with `] add PolyaMessagePassingRules` and
+load it with `using`. Loading it is enough for the engine to find the node's rules. A model with
+a node RxInfer loads needs nothing more than `using RxInfer`; one with an autoregressive state
+reads as follows:
 
 ```@example migration-packages
-using RxInfer, AutoregressiveMessagePassingRules
+using RxInfer
 
 @model function ar_model(y)
     θ ~ Normal(mean = 0.0, precision = 1.0)
@@ -71,8 +74,9 @@ result = infer(
 mean(result.posteriors[:θ][end])
 ```
 
-Without `using AutoregressiveMessagePassingRules`, the name `AR` is undefined, and the error
-says which package to load (see [Hints for removed names](@ref migration-5-to-6-hints)).
+A node from a package that is not loaded is undefined: without `using PolyaMessagePassingRules`,
+the name `BinomialPolya` is an `UndefVarError`, and the error says which package to load (see
+[Hints for removed names](@ref migration-5-to-6-hints)).
 
 ## [A node's meta is its algorithm](@id migration-5-to-6-algorithm)
 

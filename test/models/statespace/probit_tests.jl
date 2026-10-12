@@ -1,7 +1,6 @@
 @testitem "Probit Model" begin
     using BenchmarkTools, Random, Plots, Dates, LinearAlgebra, StableRNGs
     using StatsFuns: normcdf
-    using ProbitMessagePassingRules
 
     # `include(test/utiltests.jl)`
     include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))

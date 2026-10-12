@@ -87,6 +87,37 @@ A row is a target, the average energy, or the joint marginal of a
 cell counts the rules. The six rules towards `μ` differ in their inputs: messages, marginals or a
 mix, from a known value or from a distribution.
 
+## [Rule packages: what RxInfer loads](@id rule-packages)
+
+The nodes and their rules live in packages, listed on
+[ReactiveMP's ecosystem page](@extref ReactiveMP ecosystem-nodes). `using RxInfer` loads the
+packages of the nodes most models use, and a rule is found once its package is loaded:
+
+| package | nodes |
+|---|---|
+| [`StandardMessagePassingRules`](@extref StandardMessagePassingRules StandardMessagePassingRules) | the distributions, `+`, `-`, `*`, `dot`, the logic nodes, the mixtures and `Probit` |
+| [`DeltaMessagePassingRules`](@extref DeltaMessagePassingRules DeltaMessagePassingRules) | a nonlinear function of random variables, the [Delta node](@ref delta-node-manual) |
+| [`AutoregressiveMessagePassingRules`](@extref AutoregressiveMessagePassingRules AutoregressiveMessagePassingRules) | `AR`, `ConjugateAR` |
+| [`DiscreteTransitionMessagePassingRules`](@extref DiscreteTransitionMessagePassingRules DiscreteTransitionMessagePassingRules) | `DiscreteTransition` |
+| [`GCVMessagePassingRules`](@extref GCVMessagePassingRules GCVMessagePassingRules) | `GCV` |
+| [`GaussianCouplingMessagePassingRules`](@extref GaussianCouplingMessagePassingRules GaussianCouplingMessagePassingRules) | `GaussianCoupling` |
+| [`SoftDotMessagePassingRules`](@extref SoftDotMessagePassingRules SoftDotMessagePassingRules) | `SoftDot`, `softdot` |
+
+The other node packages are not loaded, so that RxInfer depends on as little as possible. A model
+that uses one of their nodes loads the package next to RxInfer:
+
+| node | load |
+|---|---|
+| `ContinuousTransition` | `using ContinuousTransitionMessagePassingRules` |
+| `BinomialPolya`, `MultinomialPolya` | `using PolyaMessagePassingRules` (GPL-3 licensed) |
+| `BIFM`, `BIFMHelper` | `using BIFMMessagePassingRules` |
+| `Flow` | `using FlowMessagePassingRules` |
+
+A name from a package that is not loaded is an `UndefVarError`, whose hint names the package.
+The same holds for one optimisation package: the default optimiser of a
+[`PointMassFormConstraint`](@ref lib-forms-point-mass-constraint) on a continuous variable runs
+[Optim.jl](https://github.com/JuliaNLSolvers/Optim.jl), which a model loads with `using Optim`.
+
 ## Messages or marginals: the factorization decides
 
 A rule does not choose whether it takes messages or marginals. The

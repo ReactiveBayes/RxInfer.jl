@@ -1,5 +1,4 @@
 @testitem "structured VMP with four clusters and an initial message (issue #344)" begin
-    using GCVMessagePassingRules
 
     # Under q(x, y) q(k) q(z) q(w) the clusters wait on each other, so an initial message on `y`
     # once stopped inference: no posterior of w, k, z or x was ever computed. With it, inference

@@ -113,7 +113,7 @@ end
 end
 
 @testitem "A group of one member is the member `(name, 1)`" begin
-    using RxInfer, DiscreteTransitionMessagePassingRules
+    using RxInfer
 
     # `DiscreteTransition(x, B, u)` gives the group `T` one member, which GraphPPL does not index
     normalised(A) = A ./ sum(A; dims = 1)

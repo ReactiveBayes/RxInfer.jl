@@ -586,7 +586,6 @@ end
 @testitem "Static inference with node contraction" begin
     import RxInfer: ReactiveMPGraphPPLBackend
     import Static
-    using GCVMessagePassingRules
 
     n = 6  # Number of test cases
 
@@ -1789,7 +1788,6 @@ end
 
 @testitem "`infer` with UnfactorizedData" begin
     using RxInfer
-    using DiscreteTransitionMessagePassingRules
 
     @model function pred_model(p_s_t, y, goal, p_B, A)
         s[1] ~ p_s_t
@@ -2181,7 +2179,6 @@ end
 @testitem "Test force marginal computation" begin
     using RxInfer
 
-    using DiscreteTransitionMessagePassingRules
     import MessagePassingRulesBase
 
     # A counter that the marginal rule below increments: state kept between calls belongs to an

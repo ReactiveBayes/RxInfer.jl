@@ -1,6 +1,5 @@
 @testitem "Hidden Markov Model" begin
     using BenchmarkTools, Random, Plots, Dates, LinearAlgebra, StableRNGs
-    using DiscreteTransitionMessagePassingRules
 
     # `include(test/utiltests.jl)`
     include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))

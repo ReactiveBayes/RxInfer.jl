@@ -2,8 +2,10 @@
     using RxInfer: removed_name_hint
 
     @test contains(
-        removed_name_hint(:Probit), "`using ProbitMessagePassingRules`"
+        removed_name_hint(:BinomialPolya), "`using PolyaMessagePassingRules`"
     )
+    # A node RxInfer loads has no hint: its name is defined.
+    @test removed_name_hint(:Probit) === nothing
     @test contains(removed_name_hint(:ARMeta), "`ARVMP(form, order, stype)`")
     @test contains(
         removed_name_hint(Symbol("@rule")), "`@define_message_update_rule`"

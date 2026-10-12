@@ -364,8 +364,9 @@ function inference_process_error(
         was asked to compute, and why each of its rules does not fit.
 
         The inputs a rule receives follow from the model's `@constraints`, and the rules a node has
-        from the packages loaded (a node outside StandardMessagePassingRules needs its package,
-        such as `using ProbitMessagePassingRules`). The Rule Not Found guide explains the options:
+        from the packages loaded (RxInfer loads the standard nodes, Delta, AR, DiscreteTransition,
+        GCV, GaussianCoupling and SoftDot; another node needs its package, such as
+        `using PolyaMessagePassingRules`). The Rule Not Found guide explains the options:
         https://docs.rxinfer.com/stable/manuals/sharpbits/rule-not-found/
         """
     end

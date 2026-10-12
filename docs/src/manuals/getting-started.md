@@ -130,7 +130,7 @@ end
 ```
 
 !!! note
-    The standard factor nodes, such as `Beta` and `Bernoulli`, come from [`StandardMessagePassingRules`](@extref StandardMessagePassingRules StandardMessagePassingRules), which RxInfer loads. Other nodes have packages of their own, listed on [ReactiveMP's ecosystem page](@extref ReactiveMP ecosystem-nodes). To check a node's interfaces and default algorithm, call `MessagePassingRulesBase.nodespec`, for example `MessagePassingRulesBase.nodespec(Bernoulli)`.
+    The standard factor nodes, such as `Beta` and `Bernoulli`, come from [`StandardMessagePassingRules`](@extref StandardMessagePassingRules StandardMessagePassingRules), which RxInfer loads. Other nodes have packages of their own, listed on [ReactiveMP's ecosystem page](@extref ReactiveMP ecosystem-nodes); RxInfer loads some of them too, and [Rule packages](@ref rule-packages) says which. To check a node's interfaces and default algorithm, call `MessagePassingRulesBase.nodespec`, for example `MessagePassingRulesBase.nodespec(Bernoulli)`.
 
 ### [Conditioning on data and inspecting the model structure](@id getting-started-conditioning)
 

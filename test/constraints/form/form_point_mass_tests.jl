@@ -1,4 +1,6 @@
 @testitem "PointMassFormConstraint" begin
+    # The default optimiser of a continuous point mass runs Optim.jl, through RxInfer's extension.
+    using Optim
     using LinearAlgebra
     using Random, StableRNGs, DomainSets, Distributions
     import RxInfer:
@@ -203,4 +205,20 @@
             @test mean(result.posteriors[:θ]) ≈ p atol = 1e-1
         end
     end
+end
+
+@testitem "PointMassFormConstraint: without Optim, the continuous default optimiser says what to load" begin
+    import RxInfer: PointMassFormConstraint, point_mass_optimize
+    using Distributions
+
+    # Only the extension's backend has a method; any other reaches the core's fallback, as the
+    # default does when Optim is not loaded.
+    err = try
+        point_mass_optimize(:no_optim, PointMassFormConstraint(), Normal(0.0, 1.0))
+    catch e
+        e
+    end
+    @test err isa ErrorException
+    @test contains(err.msg, "`using Optim`") &&
+        contains(err.msg, "PointMassFormConstraint(optimizer = ...)")
 end

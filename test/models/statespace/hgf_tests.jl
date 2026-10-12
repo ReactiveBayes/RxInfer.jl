@@ -1,7 +1,6 @@
 @testitem "Hierarchical Gaussian Filter" begin
     using RxInfer,
         BenchmarkTools, Random, Plots, Dates, LinearAlgebra, StableRNGs
-    using GCVMessagePassingRules
 
     # `include(test/utiltests.jl)`
     include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))

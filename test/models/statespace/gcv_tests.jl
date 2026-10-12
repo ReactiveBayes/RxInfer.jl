@@ -7,7 +7,6 @@
     # with a `Variables [ w, k, z, x ] have not been updated` error.
     # Requires ReactiveMP with the fix from
     # https://github.com/ReactiveBayes/ReactiveMP.jl/pull/620
-    using GCVMessagePassingRules
 
     @model function gcv_single_step(ay)
         x ~ NormalMeanVariance(0.0, 1.0)
