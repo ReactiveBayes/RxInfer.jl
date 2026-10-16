@@ -117,9 +117,8 @@ from the full run's estimated mean.
 With `window = 2`, two adjacent BFE values pass the 1% tolerance while the BFE
 is still drifting across the last four iterations. `window = 4` waits for a
 flatter plateau and gives a mean closer to the reference, while still saving
-iterations. The readings are noisy, but inference here is deterministic; this
-example demonstrates accumulated BFE drift. A larger window remains a heuristic,
-so check the posterior quantities that matter for your application.
+iterations. A larger window remains a heuristic, so check the posterior quantities
+that matter for your application.
 
 ## Streaming example: stopping each observation separately
 
