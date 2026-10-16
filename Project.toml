@@ -41,20 +41,10 @@ TupleTools = "9d95972d-f1c8-5527-a6e0-b4b365fa01f6"
 UUIDs = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
 
 [sources]
-# The v7 engine and its rule packages, from the local ReactiveMP.jl checkout, until they are
-# registered.
-DeltaMessagePassingRules = {path = "../ReactiveMP.jl/lib/DeltaMessagePassingRules"}
+# The v7 engine and GCVMessagePassingRules, from the local ReactiveMP.jl checkout, until they are
+# registered; the other rule packages come from General.
 ReactiveMP = {path = "../ReactiveMP.jl"}
-AutoregressiveMessagePassingRules = {path = "../ReactiveMP.jl/lib/AutoregressiveMessagePassingRules"}
-BIFMMessagePassingRules = {path = "../ReactiveMP.jl/lib/BIFMMessagePassingRules"}
-ContinuousTransitionMessagePassingRules = {path = "../ReactiveMP.jl/lib/ContinuousTransitionMessagePassingRules"}
-DiscreteTransitionMessagePassingRules = {path = "../ReactiveMP.jl/lib/DiscreteTransitionMessagePassingRules"}
-FlowMessagePassingRules = {path = "../ReactiveMP.jl/lib/FlowMessagePassingRules"}
-GaussianCouplingMessagePassingRules = {path = "../ReactiveMP.jl/lib/GaussianCouplingMessagePassingRules"}
 GCVMessagePassingRules = {path = "../ReactiveMP.jl/lib/GCVMessagePassingRules"}
-PolyaMessagePassingRules = {path = "../ReactiveMP.jl/lib/PolyaMessagePassingRules"}
-SoftDotMessagePassingRules = {path = "../ReactiveMP.jl/lib/SoftDotMessagePassingRules"}
-StandardMessagePassingRules = {path = "../ReactiveMP.jl/lib/StandardMessagePassingRules"}
 
 [weakdeps]
 ExponentialFamilyProjection = "17f509fa-9a96-44ba-99b2-1c5f01f0931b"

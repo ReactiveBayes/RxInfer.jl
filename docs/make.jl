@@ -13,21 +13,20 @@ registered(name) = Inventory(
 
 # The ReactiveMP ecosystem's sites, for `@extref` links: a registered package's by its published
 # inventory, the others at their planned address with the inventory of their local build in the
-# ReactiveMP.jl checkout next to this one, which must exist (`make docs-all` there builds them all).
+# ReactiveMP.jl checkout next to this one, which must exist (`make docs-all` there builds them).
 const REACTIVEMP_ROOT = joinpath(@__DIR__, "..", "..", "ReactiveMP.jl")
 site(name, dir) = ("https://reactivebayes.github.io/$(name).jl/dev/", joinpath(REACTIVEMP_ROOT, dir, "docs", "build", "objects.inv"))
-const LIB_SITES = [
-    "StandardMessagePassingRules",
-    "DeltaMessagePassingRules", "GaussianCouplingMessagePassingRules",
-    "GCVMessagePassingRules", "SoftDotMessagePassingRules", "AutoregressiveMessagePassingRules",
-    "ContinuousTransitionMessagePassingRules", "PolyaMessagePassingRules", "BIFMMessagePassingRules",
-    "FlowMessagePassingRules", "DiscreteTransitionMessagePassingRules",
+const REGISTERED_SITES = [
+    "MessagePassingRulesBase", "MessagePassingRulesApproximations", "StandardMessagePassingRules",
+    "DeltaMessagePassingRules", "GaussianCouplingMessagePassingRules", "SoftDotMessagePassingRules",
+    "AutoregressiveMessagePassingRules", "ContinuousTransitionMessagePassingRules",
+    "PolyaMessagePassingRules", "BIFMMessagePassingRules", "FlowMessagePassingRules",
+    "DiscreteTransitionMessagePassingRules",
 ]
 links = InterLinks(
-    "MessagePassingRulesBase" => registered("MessagePassingRulesBase"),
-    "MessagePassingRulesApproximations" => registered("MessagePassingRulesApproximations"),
+    (name => registered(name) for name in REGISTERED_SITES)...,
     "ReactiveMP" => site("ReactiveMP", "."),
-    (name => site(name, joinpath("lib", name)) for name in LIB_SITES)...,
+    "GCVMessagePassingRules" => site("GCVMessagePassingRules", joinpath("lib", "GCVMessagePassingRules")),
 )
 
 ## https://discourse.julialang.org/t/generation-of-documentation-fails-qt-qpa-xcb-could-not-connect-to-display/60988

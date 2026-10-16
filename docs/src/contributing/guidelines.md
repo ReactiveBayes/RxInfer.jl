@@ -38,13 +38,13 @@ The `dev` command clones `RxInfer` to `~/.julia/dev/RxInfer`. All local changes 
 
 `RxInfer.jl` depends heavily on the core packages `ReactiveMP.jl`, `GraphPPL.jl`, and `Rocket.jl`. Ensure `RxInfer.jl` is updated whenever any of these packages undergo major updates or API changes. While making changes to `RxInfer.jl`, developers are advised to use the `dev` command for these packages as well.
 
-The nodes and rules are not in `ReactiveMP.jl`'s own source: they live in the rule packages under `lib/` in the `ReactiveMP.jl` repository, one directory per package (`lib/StandardMessagePassingRules`, `lib/DeltaMessagePassingRules`, and one package per remaining node, such as `lib/AutoregressiveMessagePassingRules`). The rule system they are written with, [`MessagePassingRulesBase.jl`](https://github.com/ReactiveBayes/MessagePassingRulesBase.jl), the numerics they share, [`MessagePassingRulesApproximations.jl`](https://github.com/ReactiveBayes/MessagePassingRulesApproximations.jl), and their test tooling, [`MessagePassingRulesTestUtils.jl`](https://github.com/ReactiveBayes/MessagePassingRulesTestUtils.jl), are registered packages of their own. To work on a rule together with `RxInfer.jl`, `dev` the package it lives in by its path next to `ReactiveMP.jl` itself:
+The nodes and rules are not in `ReactiveMP.jl`'s own source: they live in rule packages, each a registered package with a repository of its own, [`ReactiveBayes/<Package>.jl`](https://github.com/ReactiveBayes): `StandardMessagePassingRules`, `DeltaMessagePassingRules`, and one package per remaining node, such as `AutoregressiveMessagePassingRules`. They are written with [`MessagePassingRulesBase.jl`](https://github.com/ReactiveBayes/MessagePassingRulesBase.jl), share the numerics of [`MessagePassingRulesApproximations.jl`](https://github.com/ReactiveBayes/MessagePassingRulesApproximations.jl) and are tested with [`MessagePassingRulesTestUtils.jl`](https://github.com/ReactiveBayes/MessagePassingRulesTestUtils.jl). `GCVMessagePassingRules` is still under `lib/` in the `ReactiveMP.jl` repository until it is registered. To work on a rule together with `RxInfer.jl`, `dev` the package it lives in:
 
 ```
-] dev ~/.julia/dev/ReactiveMP.jl ~/.julia/dev/ReactiveMP.jl/lib/StandardMessagePassingRules
+] dev StandardMessagePassingRules
 ```
 
-Each rule package has its own tests, run from the `ReactiveMP.jl` repository (`make test-standard`, `make test-delta`, …; `make help` lists them). Note that standard Julia testing utilities ignore the local development environment and test the package with the latest released versions of core dependencies. Refer to the Makefile section below to learn how to test `RxInfer.jl` with locally installed core dependencies.
+Each rule package has its own tests, run from its repository with `make test` (`make help` lists the other targets). Note that standard Julia testing utilities ignore the local development environment and test the package with the latest released versions of core dependencies. Refer to the Makefile section below to learn how to test `RxInfer.jl` with locally installed core dependencies.
 
 ### Committing code
 
@@ -109,7 +109,7 @@ make test
 - `make format`: Check and fix codestyle 
 
 !!! note
-    Core packages include `ReactiveMP.jl`, `GraphPPL.jl` and `Rocket.jl`, and the rule packages under `ReactiveMP.jl/lib/`. When using any of the `dev` commands from the `Makefile` those packages must be present in the `Pkg.devdir()` directory, the rule packages inside the `ReactiveMP.jl` checkout.
+    Core packages include `ReactiveMP.jl`, `GraphPPL.jl` and `Rocket.jl`. When using any of the `dev` commands from the `Makefile` those packages must be present in the `Pkg.devdir()` directory.
 
 ## CHANGELOG.md
 

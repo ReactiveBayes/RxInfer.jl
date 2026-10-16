@@ -36,22 +36,13 @@ StableRNGs = "860ef19b-820b-49d6-a774-d7a799459cd3"
 StandardMessagePassingRules = "d166223a-7879-43b1-add3-64af0a178e9e"
 StatsPlots = "f3b207a7-027a-5e70-b257-86293d7955fd"
 
-# RxInfer, the ReactiveMP v7 engine and its rule packages from the local checkouts, until they are
-# registered: the docs load every node package, so their pages can show every node.
+# RxInfer, the ReactiveMP v7 engine and GCVMessagePassingRules from the local checkouts, until they
+# are registered; the other rule packages come from General. The docs load every node package, so
+# their pages can show every node.
 [sources]
 RxInfer = {path = ".."}
-AutoregressiveMessagePassingRules = {path = "../../ReactiveMP.jl/lib/AutoregressiveMessagePassingRules"}
-BIFMMessagePassingRules = {path = "../../ReactiveMP.jl/lib/BIFMMessagePassingRules"}
-ContinuousTransitionMessagePassingRules = {path = "../../ReactiveMP.jl/lib/ContinuousTransitionMessagePassingRules"}
-DeltaMessagePassingRules = {path = "../../ReactiveMP.jl/lib/DeltaMessagePassingRules"}
-DiscreteTransitionMessagePassingRules = {path = "../../ReactiveMP.jl/lib/DiscreteTransitionMessagePassingRules"}
-FlowMessagePassingRules = {path = "../../ReactiveMP.jl/lib/FlowMessagePassingRules"}
-GaussianCouplingMessagePassingRules = {path = "../../ReactiveMP.jl/lib/GaussianCouplingMessagePassingRules"}
 GCVMessagePassingRules = {path = "../../ReactiveMP.jl/lib/GCVMessagePassingRules"}
-PolyaMessagePassingRules = {path = "../../ReactiveMP.jl/lib/PolyaMessagePassingRules"}
 ReactiveMP = {path = "../../ReactiveMP.jl"}
-SoftDotMessagePassingRules = {path = "../../ReactiveMP.jl/lib/SoftDotMessagePassingRules"}
-StandardMessagePassingRules = {path = "../../ReactiveMP.jl/lib/StandardMessagePassingRules"}
 
 [compat]
 DocInventories = "1"
