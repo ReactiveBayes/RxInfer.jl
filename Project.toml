@@ -49,12 +49,14 @@ ReactiveMP = {path = "../ReactiveMP.jl"}
 ExponentialFamilyProjection = "17f509fa-9a96-44ba-99b2-1c5f01f0931b"
 Optim = "429524aa-4258-5aef-a3af-852621145aeb"
 PrettyTables = "08abe8d2-0d0c-5749-adfa-8a2ac140af0d"
+Reactant = "3c362404-f566-11ee-1572-e11a4b42c853"
 TensorBoardLogger = "899adc3e-224a-11e9-021f-63837185c80f"
 
 [extensions]
 OptimExt = "Optim"
 PrettyTablesExt = "PrettyTables"
 ProjectionExt = "ExponentialFamilyProjection"
+ReactantExt = "Reactant"
 TensorBoardLoggerExt = "TensorBoardLogger"
 
 [compat]
@@ -91,6 +93,7 @@ Preferences = "1.4.3"
 PrettyTables = "3"
 ProgressMeter = "1.0.0"
 Random = "1.9"
+Reactant = "0.2.134"
 ReactiveMP = "7"
 Reexport = "1.2.0"
 Rocket = "1.8.0"

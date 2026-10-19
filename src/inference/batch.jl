@@ -100,6 +100,21 @@ function Base.getproperty(result::InferenceResult, property::Symbol)
     return getfield(result, property)
 end
 
+# If the actor is not updated, we return `missing` instead
+# this might happen if the inference procedure fails without producing any result 
+# in combination with the `catch_exception = true` option, 
+# if catch_exception is true, the code will continue to execute till this point 
+# but there might be no result to postprocess
+# A buffer the failed procedure left partly filled has undefined entries: it is `missing` too.
+function inference_postprocess_or_missing(postprocess, actor)
+    values = getvalues(actor)
+    isnothing(values) && return missing
+    values isa AbstractArray &&
+        !all(i -> isassigned(values, i), eachindex(values)) &&
+        return missing
+    return inference_postprocess(postprocess, values)
+end
+
 function batch_inference(;
     # `model` must be a materialized graph object from GraphPPL 
     model::ModelGenerator,
@@ -476,21 +491,6 @@ function batch_inference(;
                 unsubscribe!(marginal_stream)
             end
         end
-    end
-
-    # If the actor is not updated, we return `missing` instead
-    # this might happen if the inference procedure fails without producing any result 
-    # in combination with the `catch_exception = true` option, 
-    # if catch_exception is true, the code will continue to execute till this point 
-    # but there might be no result to postprocess
-    # A buffer the failed procedure left partly filled has undefined entries: it is `missing` too.
-    function inference_postprocess_or_missing(postprocess, actor)
-        values = getvalues(actor)
-        isnothing(values) && return missing
-        values isa AbstractArray &&
-            !all(i -> isassigned(values, i), eachindex(values)) &&
-            return missing
-        return inference_postprocess(postprocess, values)
     end
 
     posterior_values = Dict(variable => inference_postprocess_or_missing(_postprocess, actor) for (variable, actor) in pairs(actors_rv))

@@ -1,0 +1,46 @@
+name: Reactant check
+
+# Compiling `infer` with Reactant (`ext/ReactantExt`, `make test-reactant`), on its own: Reactant
+# changes often, so this check is kept apart from the test suite in `CI.yml`, and runs weekly too, to
+# learn when a Reactant release breaks it.
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - main
+      - refactor/reactivemp-v7
+  schedule:
+    - cron: '0 8 * * 1' # Mondays, 08:00 UTC
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  reactant:
+    name: Reactant check
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      # The test environment takes ReactiveMP v7 from the checkout next to this one, until it is
+      # registered: its branch for v7, then `main`.
+      - uses: actions/checkout@v6
+        with:
+          path: RxInfer.jl
+      - uses: actions/checkout@v6
+        with:
+          repository: ReactiveBayes/ReactiveMP.jl
+          ref: refactor/rule-node-system-rewrite
+          path: ReactiveMP.jl
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: '1'
+      - uses: julia-actions/cache@v3
+      - run: make test-reactant
+        working-directory: RxInfer.jl
+        env:
+          JULIA_FASTCHOLESKY_THROW_ERROR_NON_SYMMETRIC: '1'
