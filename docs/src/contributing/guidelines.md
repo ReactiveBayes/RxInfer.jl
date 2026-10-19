@@ -69,7 +69,7 @@ We use the default [Julia style guide](https://docs.julialang.org/en/v1/manual/s
 - The name of a method that modifies its argument(s) must end in `!`
 
 !!! note
-    The `RxInfer` repository contains scripts to automatically format code according to our guidelines. Use the `make format` command to fix codestyle. This command overwrites files. Use `make lint` to run a linting procedure without overwriting the actual source files.
+    The `RxInfer` repository formats its code with [Runic](https://github.com/fredrikekre/Runic.jl), which has no configuration. Use the `make format` command to fix codestyle; this command overwrites files. Use `make check-format` to check it without overwriting the source files, as CI does.
 
 ### Unit tests
 
@@ -105,8 +105,8 @@ make test
   - `make test test_args="distributions:normal_mean_variance models:lgssm"` would run tests both from `distributions/test_normal_mean_variance.jl` and `models/test_lgssm.jl`
 - `make docs`: Compile documentation. It links the ReactiveMP ecosystem's sites through their
   local builds, so run `make docs-all` in the `ReactiveMP.jl` checkout first.
-- `make lint`: Check codestyle
-- `make format`: Check and fix codestyle 
+- `make check-format`: Check codestyle (Runic), as CI does; `make lint` is the same
+- `make format`: Fix codestyle; this overwrites files
 
 !!! note
     Core packages include `ReactiveMP.jl`, `GraphPPL.jl` and `Rocket.jl`. When using any of the `dev` commands from the `Makefile` those packages must be present in the `Pkg.devdir()` directory.

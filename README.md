@@ -8,6 +8,7 @@
 [![Changelog](https://img.shields.io/badge/CHANGELOG-md-blue)](https://github.com/ReactiveBayes/RxInfer.jl/blob/main/CHANGELOG.md)
 [![Build Status](https://github.com/reactivebayes/RxInfer.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/reactivebayes/RxInfer.jl/actions/workflows/CI.yml?query=branch%3Amain)
 [![Coverage](https://codecov.io/gh/reactivebayes/RxInfer.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/reactivebayes/RxInfer.jl)
+[![Code style: Runic](https://img.shields.io/badge/code_style-%E1%9A%B1%E1%9A%A2%E1%9A%BE%E1%9B%81%E1%9A%B2-black)](https://github.com/fredrikekre/Runic.jl)
 [![Downloads](https://img.shields.io/badge/dynamic/json?url=http%3A%2F%2Fjuliapkgstats.com%2Fapi%2Fv1%2Fmonthly_downloads%2FRxInfer&query=total_requests&suffix=%2Fmonth&label=Downloads)](https://juliapkgstats.com/pkg/RxInfer)
 [![DOI](https://img.shields.io/badge/Journal%20of%20Open%20Source%20Software-10.21105/joss.05161-critical)](https://doi.org/10.21105/joss.05161)
 [![Zenodo](https://img.shields.io/badge/Zenodo-10.5281/zenodo.7774921-important)](https://zenodo.org/badge/latestdoi/501995296)

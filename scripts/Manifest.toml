@@ -1,0 +1,52 @@
+# This file is machine-generated - editing it directly is not advised
+
+julia_version = "1.10.12"
+manifest_format = "2.0"
+project_hash = "9cdc8457c2a17450560f818881cf3b61bde0fbfa"
+
+[[deps.ArgParse]]
+deps = ["Logging", "TextWrap"]
+git-tree-sha1 = "22cf435ac22956a7b45b0168abbc871176e7eecc"
+uuid = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
+version = "1.2.0"
+
+[[deps.Dates]]
+deps = ["Printf"]
+uuid = "ade2ca70-3891-5945-98fb-dc099432e06a"
+
+[[deps.JuliaSyntax]]
+git-tree-sha1 = "0d4b3dab95018bcf3925204475693d9f09dc45b8"
+uuid = "70703baa-626e-46a2-a12c-08ffd08c73b4"
+version = "1.0.2"
+
+[[deps.Logging]]
+uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
+
+[[deps.Preferences]]
+deps = ["TOML"]
+git-tree-sha1 = "5005266de4bfe50e53ff44a5cb5c540b6e47a254"
+uuid = "21216c6a-2e73-6563-6e65-726566657250"
+version = "1.6.0"
+
+[[deps.Printf]]
+deps = ["Unicode"]
+uuid = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+
+[[deps.Runic]]
+deps = ["JuliaSyntax", "Preferences"]
+git-tree-sha1 = "4bb4f4bbff3fe1c1f9b55ed2c1d08082a63a2d6b"
+uuid = "62bfec6d-59d7-401d-8490-b29ee721c001"
+version = "1.10.0"
+
+[[deps.TOML]]
+deps = ["Dates"]
+uuid = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
+version = "1.0.3"
+
+[[deps.TextWrap]]
+git-tree-sha1 = "43044b737fa70bc12f6105061d3da38f881a3e3c"
+uuid = "b718987f-49a8-5099-9789-dcd902bef87d"
+version = "1.0.2"
+
+[[deps.Unicode]]
+uuid = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
