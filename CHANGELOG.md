@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Added tests to compare `ManyPlus` with chain of `+` operations, ensuring consistent behavior and results.
+
 ## [5.5.2] - 2026-08-13
 
 ### Changed
