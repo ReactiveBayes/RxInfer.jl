@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.5.3] - 2026-10-19
+
+The last release of the 5.x series; RxInfer 6 runs on ReactiveMP 7.
+
 ### Added
 - Added tests to compare `ManyPlus` with chain of `+` operations, ensuring consistent behavior and results.
 - Streaming inference now supports `before_inference`, `after_inference`, `before_iteration`, and `after_iteration` callbacks. Iteration callbacks can set `stop_iteration` to end the current observation event's solve while preserving posterior publication and processing of future events.
