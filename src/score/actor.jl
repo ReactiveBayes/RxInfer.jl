@@ -7,25 +7,32 @@ mutable struct ScoreActor{L} <: Rocket.Actor{L}
     cframe :: Int
     cindex :: Int
     valid  :: BitVector
+    # Matrix height is capacity; a converged event may fill only a prefix of its column.
+    counts::Vector{Int}
 end
 
 ScoreActor(iterations::Int, keep::Int = 1) = ScoreActor(Real, iterations, keep)
 ScoreActor(::Type{L}, iterations::Int, keep::Int = 1) where {L <: Real} =
-    ScoreActor{L}(zeros(L, iterations, keep), 1, 0, falses(keep))
+    ScoreActor{L}(
+        zeros(L, iterations, keep), 1, 0, falses(keep), zeros(Int, keep)
+    )
+
+function valid_score_frames(actor::ScoreActor)
+    # Ring storage order differs from observation order after wrapping.
+    return filter(
+        i -> actor.valid[i],
+        vcat((actor.cframe + 1):getnframes(actor), 1:actor.cframe),
+    )
+end
 
 Base.show(io::IO, ::ScoreActor{L}) where {L} = print(io, "ScoreActor(", L, ")")
 Base.setindex!(actor::ScoreActor, data, frame, index) =
     actor.score[index, frame] = data
 
 function getvalid(actor::ScoreActor)
-    firstframe  = something(findnext(actor.valid, actor.cframe + 1), 1)
-    continuous  = Iterators.flatten(eachcol(actor.score))
-    niterations = getniterations(actor)
-    ndrop       = (firstframe - 1) * niterations
-    ntotal      = sum(actor.valid) * niterations
-
-    return Iterators.take(
-        Iterators.drop(Iterators.cycle(continuous), ndrop), ntotal
+    return Iterators.flatten(
+        view(actor.score, 1:actor.counts[i], i) for
+        i in valid_score_frames(actor)
     )
 end
 
@@ -40,10 +47,8 @@ function Rocket.on_next!(actor::ScoreActor{L}, data::L) where {L}
     cframe = actor.cframe
     cindex = actor.cindex + 1
 
-    # If `cindex` overflows number of iterations it means we have to save 
-    # our data in the next frame 
-    # This functionality is also present in the `release!` function
-    if cindex > iterations
+    # A released partial column is finished even when its capacity was not reached.
+    if cindex > iterations || actor.valid[cframe]
         # We also check that the previous frame has been released
         @assert actor.valid[cframe] "Broken `ScoreActor` state, previous frame has not been released"
         cframe = ifelse(cframe + 1 > nframes, 1, cframe + 1)
@@ -68,16 +73,18 @@ function Rocket.on_complete!(actor::ScoreActor)
     nothing
 end
 
-function Rocket.release!(actor::ScoreActor, warn = true)
+function Rocket.release!(actor::ScoreActor, warn = true; allow_partial = false)
     iterations = getniterations(actor)
     cframe     = actor.cframe
     cindex     = actor.cindex
+    allow_partial && cindex == 0 && return nothing
 
-    if warn && (cindex !== iterations)
+    if warn && (cindex !== iterations) && !allow_partial
         @warn "Invalid `release!` call on `ScoreActor`. The current frame has not been fully specified"
     else
         @assert !actor.valid[cframe] "Broken `ScoreActor` state, cannot `release!` a valid frame of free energy values"
         actor.valid[cframe] = true
+        actor.counts[cframe] = cindex
     end
 
     return nothing
@@ -88,14 +95,17 @@ function score_snapshot(actor::ScoreActor)
 end
 
 function score_snapshot_final(actor::ScoreActor)
-    iters = getniterations(actor)
-    return score_snapshot(actor)[iters:iters:end]
+    return [actor.score[actor.counts[i], i] for i in valid_score_frames(actor)]
 end
 
 function score_snapshot_iterations(actor::ScoreActor, slice = nothing)
-    result = vec(sum(view(actor.score, :, actor.valid); dims = 2))
-
-    map!(Base.Fix2(/, sum(actor.valid)), result, result)
+    frames = valid_score_frames(actor)
+    niterations = isempty(frames) ? 0 : maximum(actor.counts[i] for i in frames)
+    # Average only events that reached iteration k; unused cells are not zero BFE samples.
+    result = [
+        sum(actor.score[k, i] for i in frames if actor.counts[i] >= k) /
+        count(i -> actor.counts[i] >= k, frames) for k in 1:niterations
+    ]
 
     return slice_snapshot(result, slice)
 end
