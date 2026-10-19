@@ -27,7 +27,7 @@
 
     for aliases in [binary_aliases_1, binary_aliases_2]
         results = binary_aliases_inference(aliases)
-        # Here we simply test that it ran and gave some output 
+        # Here we simply test that it ran and gave some output
         @test mean(results.posteriors[:x1][end]) ≈ 0.5
         @test first(results.free_energy) ≈ 0.6931471805599454
         @test last(results.free_energy) ≈ 0.6931471805599454

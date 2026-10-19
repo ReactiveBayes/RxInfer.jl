@@ -3,7 +3,7 @@
 
     include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
-    # The latent autoregressive model may run in different regimes, e.g. 
+    # The latent autoregressive model may run in different regimes, e.g.
     # - it can be a Univariate autoregressive process where we only need to infer a single AR coefficient
     # - it can be a Multivariate autoregressive process where we need to infer a vector of AR coefficients
     #   - but the vector can be of length 1, which is essentially a Univariate AR process
@@ -31,26 +31,26 @@
 
     # The state transition with the `AR` node for the Multivariate case
     @model function lar_multivariate_state_transition(
-        order, stype, observation, x_next, x_prev, θ, γ, c, τ
-    )
+            order, stype, observation, x_next, x_prev, θ, γ, c, τ
+        )
         x_next ~
-        AR(x_prev, θ, γ) where {meta = ARMeta(Multivariate, order, stype)}
+            AR(x_prev, θ, γ) where {algorithm = ARVMP(Multivariate, order, stype)}
         observation ~ Normal(mean = dot(c, x_next), precision = τ)
     end
 
     # The state transition with the `AR` node for the Univariate case
     @model function lar_univariate_state_transition(
-        order, stype, observation, x_next, x_prev, θ, γ, c, τ
-    )
+            order, stype, observation, x_next, x_prev, θ, γ, c, τ
+        )
         x_next ~
-        AR(x_prev, θ, γ) where {meta = ARMeta(Univariate, order, stype)}
+            AR(x_prev, θ, γ) where {algorithm = ARVMP(Univariate, order, stype)}
         observation ~ Normal(mean = c * x_next, precision = τ)
     end
 
     # Generic LAR model implementation, which depends on `θprior`, `x0prior`, `state_transition` submodels
     @model function lar_model(
-        θprior, x0prior, state_transition, y, c, τ, order, stype
-    )
+            θprior, x0prior, state_transition, y, c, τ, order, stype
+        )
         γ ~ Gamma(shape = 1.0, rate = 1.0)
         θ ~ θprior(order = order)
         x0 ~ x0prior(order = order)
@@ -106,15 +106,15 @@
     )
 
     function lar_inference(data, order, artype, stype, τ, iterations)
-        c = ReactiveMP.ar_unit(artype, order)
+        c = AutoregressiveMessagePassingRules.ar_unit(artype, order)
         return infer(
-            model          = lar_make_model(artype, c, τ, stype, order),
-            data           = (y = data,),
+            model = lar_make_model(artype, c, τ, stype, order),
+            data = (y = data,),
             initialization = lar_init_marginals(artype, order),
-            returnvars     = (γ = KeepEach(), θ = KeepEach(), x = KeepLast()),
-            constraints    = lar_constraints(),
-            iterations     = iterations,
-            free_energy    = Float64,
+            returnvars = (γ = KeepEach(), θ = KeepEach(), x = KeepLast()),
+            constraints = lar_constraints(),
+            iterations = iterations,
+            free_energy = Float64,
         )
     end
 
@@ -128,8 +128,8 @@
     ]
 
     function generate_lar_data(rng, n, θ, γ, τ)
-        order        = length(θ)
-        states       = Vector{Vector{Float64}}(undef, n + 3order)
+        order = length(θ)
+        states = Vector{Vector{Float64}}(undef, n + 3order)
         observations = Vector{Float64}(undef, n + 3order)
 
         γ_std = sqrt(inv(γ))
@@ -138,7 +138,7 @@
         states[1] = randn(rng, order)
 
         for i in 2:(n + 3order)
-            states[i]       = vcat(rand(rng, Normal(dot(θ, states[i - 1]), γ_std)), states[i - 1][1:(end - 1)])
+            states[i] = vcat(rand(rng, Normal(dot(θ, states[i - 1]), γ_std)), states[i - 1][1:(end - 1)])
             observations[i] = rand(rng, Normal(states[i][1], τ_std))
         end
 
@@ -159,8 +159,8 @@
 
     # Test AR(1) + Univariate
     result = lar_inference(observations, 1, Univariate, ARsafe(), real_τ, 15)
-    qs     = result.posteriors
-    fe     = result.free_energy
+    qs = result.posteriors
+    fe = result.free_energy
 
     (γ, θ, xs) = (qs[:γ], qs[:θ], qs[:x])
 
@@ -170,7 +170,7 @@
     @test length(fe) === 15
     @test abs(last(fe) - 518.9182342) < 0.01
     @test last(fe) < first(fe)
-    @test all(filter(e -> abs(e) > 1e-3, diff(fe)) .< 0)
+    @test all(filter(e -> abs(e) > 1.0e-3, diff(fe)) .< 0)
 
     # Test AR(k) + Multivariate
     for k in 1:4
@@ -190,8 +190,8 @@
 
     # AR(5) + Multivariate
     result = lar_inference(observations, length(real_θ), Multivariate, ARsafe(), real_τ, 15)
-    qs     = result.posteriors
-    fe     = result.free_energy
+    qs = result.posteriors
+    fe = result.free_energy
 
     (γ, θ, xs) = (qs[:γ], qs[:θ], qs[:x])
 
@@ -200,11 +200,11 @@
     @test length(θ) === 15
     @test length(fe) === 15
     @test abs(last(fe) - 514.66086) < 0.01
-    @test all(filter(e -> abs(e) > 1e-1, diff(fe)) .< 0)
+    @test all(filter(e -> abs(e) > 1.0e-1, diff(fe)) .< 0)
     @test (
         mean(last(γ)) - 3.0std(last(γ)) <
-        real_γ <
-        mean(last(γ)) + 3.0std(last(γ))
+            real_γ <
+            mean(last(γ)) + 3.0std(last(γ))
     )
 
     @test_plot "models" "lar" begin

@@ -39,10 +39,10 @@
         free_energy = true,
     )
 
-    # Here we simply test that it ran and gave some output 
+    # Here we simply test that it ran and gave some output
     @test mean(results.posteriors[:s][end]) ≈ 9.468846338832027
     @test first(results.free_energy[end]) ≈ 4.385584096993327
-    @test all(<=(1e-14), diff(results.free_energy)) # it oscilates a bit at the end, but all should be less or equal to zero
+    @test all(<=(1.0e-14), diff(results.free_energy)) # it oscilates a bit at the end, but all should be less or equal to zero
 end
 
 @testitem "`Gamma` by itself cannot be used as a node" begin

@@ -1,32 +1,45 @@
 # [Deterministic nodes](@id delta-node-manual)
 
-RxInfer.jl offers a comprehensive set of stochastic nodes, primarily emphasizing distributions from the exponential family and related compositions, such as Gaussian with controlled variance (GCV) or autoregressive (AR) nodes. The `DeltaNode` stands out in this package, representing a deterministic transformation of either a single random variable or a group of them. This guide provides insights into the `DeltaNode` and its functionalities.
+Most nodes of RxInfer.jl are distributions, mainly from the exponential family, and compositions
+of them, such as the Gaussian controlled variance (GCV) and autoregressive (AR) nodes. A
+deterministic transformation of one or several random variables, `y := f(x)`, is a node too:
+the *delta node*. Its messages have no closed form for an arbitrary `f`, so the node needs an
+approximation method, which you choose per node. This guide describes the methods and when each
+applies.
 
-## Features and Supported Inference Scenarios
+## Features and supported inference scenarios
 
-The delta node supports several approximation methods for probabilistic inference. The desired approximation method depends on the nodes connected to the delta node. We differentiate the following deterministic transformation scenarios:
+The delta node supports three approximation methods. Which one fits depends on the nodes around
+the delta node:
 
-1. **Gaussian Nodes**: For delta nodes linked to strictly multivariate or univariate Gaussian distributions, the recommended methods are `Linearization` or `Unscented` transforms.
-2. **Exponential Family Nodes**: For the delta node connected to nodes from the exponential family, the `CVIProjection` (Conjugate Variational Inference) is the method of choice.
-3. **Stacking Delta Nodes**: For scenarios where delta nodes are stacked, either `Linearization`, `Unscented` or `CVIProjection` are suitable.
-4. **Support for Inverse Functions**: For scenarios where an inverse function is available.
+1. **Gaussian nodes**: for a delta node connected only to univariate or multivariate Gaussian
+   distributions, use [`Linearization`](@extref MessagePassingRulesApproximations.Linearization)
+   or [`Unscented`](@extref MessagePassingRulesApproximations.Unscented).
+2. **Exponential family nodes**: for a delta node connected to other members of the exponential
+   family, use [`CVIProjection`](@extref DeltaMessagePassingRules.CVIProjection).
+3. **Stacked delta nodes**: for delta nodes connected to each other, any of the three methods
+   applies.
+4. **Inverse functions**: when the inverse of `f` is known, `Linearization` and `Unscented` use it.
 
-The table below summarizes the features of the delta node in RxInfer.jl, categorized by the approximation method:
+| Method        | Gaussian nodes | Exponential family nodes | Stacked delta nodes | Inverse functions |
+|---------------|----------------|--------------------------|---------------------|-------------------|
+| Linearization | ✓              | ✗                        | ✓                   | ✓                 |
+| Unscented     | ✓              | ✗                        | ✓                   | ✓                 |
+| CVIProjection | ✓              | ✓                        | ✓                   | ✗                 |
 
-| Methods          | Gaussian Nodes | Exponential Family Nodes | Stacking Delta Nodes | Inverse functions
-|------------------|----------------|--------------------------|----------------------|----------------------
-| Linearization    | ✓              | ✗                        | ✓                    | ✓                   
-| Unscented        | ✓              | ✗                        | ✓                    | ✓                   
-| CVI (deprecated) | ✓              | ✓                        | ✗                    | ✗                   
-| CVI Projection   | ✓              | ✓                        | ✓                    | ✗                   
+The node's [algorithm](@extref MessagePassingRulesBase glossary-algorithm) is
+[`DeltaApproximation`](@extref DeltaMessagePassingRules.DeltaApproximation), which carries the
+method and, optionally, the inverse. You give it to the node with `@algorithm`, as
+[Algorithm specification](@ref user-guide-algorithm-specification) describes.
 
+## Gaussian case
 
-## Gaussian Case
+For Gaussian distributions, use either `Linearization` or `Unscented`. `Linearization` is a
+first-order approximation. `Unscented` is a more precise second-order approximation, and it may
+need its hyperparameters tuned. Both methods work well for a differentiable function; for a
+function that is not differentiable, their results may be inaccurate.
 
-In the context of Gaussian distributions, we recommend either the `Linearization` or `Unscented` method for delta node approximation. The `Linearization` method provides a first-order approximation, while the `Unscented` method delivers a more precise second-order approximation. It's worth noting that while the `Unscented` method is more accurate, it may require hyperparameters tuning. In addition, both methods are working well when the function is differentiable. The results may not be accurate if the function is not differentiable.
-
-
-For clarity, consider the following example:
+Consider the following example:
 
 ```@example delta_node_example
 using RxInfer
@@ -39,46 +52,56 @@ end
 ```
 
 !!! note
-    While not strictly required, it is advised to use `:=` to define a deterministic relationship within the `@model` macro.
+    It is advised, though not required, to write a deterministic relationship with `:=` in the
+    `@model` macro.
 
-To perform inference on this model, designate the approximation method for the delta node (here, the `tanh` function) using the `@meta` specification:
+To run inference in this model, give the delta node, here the `tanh` function, its approximation
+method with `@algorithm`:
 
 ```@example delta_node_example
-delta_meta = @meta begin 
-    tanh() -> Linearization()
+delta_algorithm = @algorithm begin
+    tanh() -> DeltaApproximation(method = Linearization())
 end
+nothing # hide
 ```
-or
+
+A method alone is a shorthand for `DeltaApproximation(method = ...)`:
+
 ```@example delta_node_example
-delta_meta = @meta begin 
+delta_algorithm = @algorithm begin
     tanh() -> Unscented()
 end
+nothing # hide
 ```
 
-For a deeper understanding of the `Unscented` method and its parameters, consult the docstrings.
+The docstrings of [`Unscented`](@extref MessagePassingRulesApproximations.Unscented) and
+[`Linearization`](@extref MessagePassingRulesApproximations.Linearization) describe their
+parameters.
 
-Given the invertibility of `tanh`, indicating its inverse function can optimize the inference procedure:
+`tanh` is invertible, and giving its inverse lets the node compute the message towards `x`
+directly from the message from `z`:
 
 ```@example delta_node_example
-delta_meta = @meta begin 
-    tanh() -> DeltaMeta(method = Linearization(), inverse = atanh)
+delta_algorithm = @algorithm begin
+    tanh() -> DeltaApproximation(method = Linearization(), inverse = atanh)
 end
+nothing # hide
 ```
 
-To execute the inference procedure:
+Pass the specification to `infer` as `algorithm`:
 
 ```@example delta_node_example
 result = infer(
-    model = delta_node_example(), 
-    meta  = delta_meta, 
-    data = (z = 1.0,)
+    model     = delta_node_example(),
+    algorithm = delta_algorithm,
+    data      = (z = 1.0,),
 )
 ```
 
-This methodology is consistent even when the delta node is associated with multiple inputs. For instance:
+The same holds for a delta node with several inputs. For instance:
 
 ```@example delta_node_example
-f(x, g) = x*tanh(g)
+f(x, g) = x * tanh(g)
 ```
 
 ```@example delta_node_example
@@ -90,64 +113,102 @@ f(x, g) = x*tanh(g)
 end
 ```
 
-The corresponding meta specification is:
+The corresponding algorithm specification is
 
 ```@example delta_node_example
-delta_meta = @meta begin 
-    f() -> DeltaMeta(method = Linearization())
+delta_algorithm = @algorithm begin
+    f() -> DeltaApproximation(method = Linearization())
 end
+nothing # hide
 ```
-or simply
+
+or, with the shorthand,
+
 ```@example delta_node_example
-delta_meta = @meta begin 
+delta_algorithm = @algorithm begin
     f() -> Linearization()
 end
+
+result = infer(model = delta_node_example(), algorithm = delta_algorithm, data = (z = 1.0,))
 ```
 
-If specific functions outline the backward relation of variables within the `f` function, you can provide a tuple of inverse functions in the order of the variables:
+When functions express each input of `f` in terms of the output and the other inputs, you can
+give them as a tuple of inverses, in the order of the inputs:
 
 ```@example delta_node_example
-f_back_x(out, g) = out/tanh(g)
-f_back_g(out, x) = atanh(out/x)
+f_back_x(out, g) = out / tanh(g)
+f_back_g(out, x) = atanh(out / x)
 ```
 
-
 ```@example delta_node_example
-delta_meta = @meta begin 
-    f() -> DeltaMeta(method = Linearization(), inverse=(f_back_x, f_back_g))
+delta_algorithm = @algorithm begin
+    f() -> DeltaApproximation(method = Linearization(), inverse = (f_back_x, f_back_g))
 end
+
+result = infer(model = delta_node_example(), algorithm = delta_algorithm, data = (z = 1.0,))
 ```
 
-## Exponential Family Case
+## Exponential family case
 
-When the delta node is associated with nodes from the exponential family (excluding Gaussians), the `Linearization` and `Unscented` methods are not applicable. In such cases, the CVI (Conjugate Variational Inference) is available. Here's a modified example:
+When the delta node is connected to nodes of the exponential family other than Gaussians,
+`Linearization` and `Unscented` do not apply. `CVIProjection` does: it projects the node's
+messages onto members of the exponential family by stochastic optimization. Here is a modified
+example:
 
 !!! note
-    The `CVIProjection` method is available only if `ExponentialFamilyProjection` package is installed in the current environment.
+    The `CVIProjection` method is available only when the `ExponentialFamilyProjection` package
+    is loaded in the current environment.
 
 ```@example delta_node_example_cvi
-using RxInfer, ExponentialFamilyProjection
+using RxInfer, ExponentialFamilyProjection, StableRNGs
 
 @model function delta_node_example1(z)
     x ~ Gamma(shape = 1.0, rate = 1.0)
     y := tanh(x)
-    z ~ Bernoulli(y)
+    z .~ Bernoulli(y)
 end
 ```
 
-The corresponding meta specification can be represented as:
+`CVIProjection` projects onto the families that you name with `ProjectedTo` in `@constraints`,
+and its rules read the marginal of the output, which needs an initial value:
 
 ```@example delta_node_example_cvi
-delta_meta = @meta begin 
-    tanh() -> CVIProjection()
+delta_algorithm = @algorithm begin
+    tanh() -> DeltaApproximation(method = CVIProjection())
 end
+
+delta_constraints = @constraints begin
+    q(x)::ProjectedTo(Gamma)
+    q(y)::ProjectedTo(Beta)
+end
+
+delta_initialization = @initialization begin
+    q(y) = Beta(1.0, 1.0)
+end
+nothing # hide
 ```
 
-Consult the `CVIProjection` docstrings for a detailed explanation of its hyper-parameters. Additionally, read the [Non-conjugate Inference](@ref inference-nonconjugate) section.
+`CVIProjection` samples. It draws from the random number generator of the engine, which you
+choose with the `context` option of `infer`, here for reproducible results:
 
-!!! note
-    The `CVIProjection` method is an improved version of the now-deprecated `CVI` method. This new implementation features different hyperparameters, better accuracy, and improved stability.
+```@example delta_node_example_cvi
+result = infer(
+    model          = delta_node_example1(),
+    algorithm      = delta_algorithm,
+    constraints    = delta_constraints,
+    initialization = delta_initialization,
+    data           = (z = [1.0, 1.0, 0.0, 1.0, 1.0, 1.0, 0.0, 1.0],),
+    iterations     = 10,
+    options        = (context = (rng = StableRNG(42),),),
+)
+
+(x = result.posteriors[:x][end], y = result.posteriors[:y][end])
+```
+
+The docstring of [`CVIProjection`](@extref DeltaMessagePassingRules.CVIProjection) explains its
+hyperparameters. Also read the [Non-conjugate Inference](@ref inference-nonconjugate) section.
 
 ## Fuse deterministic nodes with stochastic nodes
 
-Read how to circumvent the need to define the meta structure and, instead, fuse the deterministic relation with a neighboring stochastic factor node in [this section](@ref inference-undefinedrules-fusedelta).
+You can also avoid the approximation altogether, by fusing the deterministic relation with a
+neighboring stochastic node, as [this section](@ref inference-undefinedrules-fusedelta) shows.

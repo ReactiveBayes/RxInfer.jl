@@ -143,11 +143,11 @@
             y[3] = f(q(g[1, 2]), μ(r[2])) + 3
         end
         @test repr(autoupdates) == """
-        @autoupdates begin
-            x = clamp.(mean.(q(z)), 0, 2)
-            y[3] = +(f(q(g[1, 2]), μ(r[2])), 3)
-        end
-        """
+            @autoupdates begin
+                x = clamp.(mean.(q(z)), 0, 2)
+                y[3] = +(f(q(g[1, 2]), μ(r[2])), 3)
+            end
+            """
     end
 
     @testset "`@autoupdates` can accept a function" begin
@@ -160,8 +160,8 @@
         end
         # To check the dispatch and complex function definition
         @autoupdates function myautoupdates(
-            unused, input::S; keyword = input
-        ) where {S <: String}
+                unused, input::S; keyword = input
+            ) where {S <: String}
             z = mean(q(z)) + keyword
         end
 
@@ -268,13 +268,21 @@ end
 end
 
 @testitem "q(x) and μ(x) are reserved functions" begin
-    @test_throws "q(x) and μ(x) are reserved functions" eval(:(@autoupdates begin
-        q(x) = 1
-    end))
+    @test_throws "q(x) and μ(x) are reserved functions" eval(
+        :(
+            @autoupdates begin
+                q(x) = 1
+            end
+        )
+    )
 
-    @test_throws "q(x) and μ(x) are reserved functions" eval(:(@autoupdates begin
-        μ(x) = 1
-    end))
+    @test_throws "q(x) and μ(x) are reserved functions" eval(
+        :(
+            @autoupdates begin
+                μ(x) = 1
+            end
+        )
+    )
 end
 
 @testitem "The `autoupdates` macro should support different options" begin
@@ -327,36 +335,48 @@ end
     @test is_autoupdates_strict(autoupdates_strict_nowarn_function())
 
     @test_throws "Unknown option for `@autoupdates`: hello = false. Supported options are [ `warn`, `strict` ]" eval(
-        :(@autoupdates [hello = false] begin
-            a, b = params(q(θ))
-        end)
+        :(
+            @autoupdates [hello = false] begin
+                a, b = params(q(θ))
+            end
+        )
     )
     @test_throws "Unknown option for `@autoupdates`: hello = false. Supported options are [ `warn`, `strict` ]" eval(
-        :(@autoupdates [hello = false] function hello_function()
-            a, b = params(q(θ))
-        end)
+        :(
+            @autoupdates [hello = false] function hello_function()
+                a, b = params(q(θ))
+            end
+        )
     )
 
     @test_throws "Invalid value for `warn` option. Expected `true` or `false`." eval(
-        :(@autoupdates [warn = "hello"] begin
-            a, b = params(q(θ))
-        end)
+        :(
+            @autoupdates [warn = "hello"] begin
+                a, b = params(q(θ))
+            end
+        )
     )
     @test_throws "Invalid value for `warn` option. Expected `true` or `false`." eval(
-        :(@autoupdates [warn = "hello"] function hello_function()
-            a, b = params(q(θ))
-        end)
+        :(
+            @autoupdates [warn = "hello"] function hello_function()
+                a, b = params(q(θ))
+            end
+        )
     )
 
     @test_throws "Invalid value for `strict` option. Expected `true` or `false`." eval(
-        :(@autoupdates [strict = "hello"] begin
-            a, b = params(q(θ))
-        end)
+        :(
+            @autoupdates [strict = "hello"] begin
+                a, b = params(q(θ))
+            end
+        )
     )
     @test_throws "Invalid value for `strict` option. Expected `true` or `false`." eval(
-        :(@autoupdates [strict = "hello"] function hello_function()
-            a, b = params(q(θ))
-        end)
+        :(
+            @autoupdates [strict = "hello"] function hello_function()
+                a, b = params(q(θ))
+            end
+        )
     )
 end
 
@@ -412,11 +432,11 @@ end
         import RxInfer: DeferredDataHandler, autoupdates_data_handlers
 
         for autoupdate in (
-            autoupdates,
-            autoupdates_nowarn,
-            autoupdates_strict,
-            autoupdates_strict_nowarn,
-        )
+                autoupdates,
+                autoupdates_nowarn,
+                autoupdates_strict,
+                autoupdates_strict_nowarn,
+            )
             @test @inferred(autoupdates_data_handlers(autoupdate)) ===
                 (a = DeferredDataHandler(), b = DeferredDataHandler())
         end
@@ -588,12 +608,14 @@ end
             @test ReactiveMP.getdata.(updates_for_y) ==
                 [PointMass(1), PointMass(0)]
 
-            unsubscribe!([
-                subscription_marginal_θ,
-                subscription_updates_a,
-                subscription_updates_b,
-                subscription_updates_y,
-            ])
+            unsubscribe!(
+                [
+                    subscription_marginal_θ,
+                    subscription_updates_a,
+                    subscription_updates_b,
+                    subscription_updates_y,
+                ]
+            )
         end
     end
 end
@@ -713,12 +735,14 @@ end
             [PointMass(2), PointMass(2.0)]
         @test ReactiveMP.getdata.(updates_for_y) == [PointMass(1), PointMass(0)]
 
-        unsubscribe!([
-            subscription_marginal_θ,
-            subscription_updates_a,
-            subscription_updates_b,
-            subscription_updates_y,
-        ])
+        unsubscribe!(
+            [
+                subscription_marginal_θ,
+                subscription_updates_a,
+                subscription_updates_b,
+                subscription_updates_y,
+            ]
+        )
     end
 end
 
@@ -776,13 +800,13 @@ end
     end
 
     for autoupdate in (
-        autoupdates_1,
-        autoupdates_2,
-        autoupdates_3,
-        autoupdates_4,
-        autoupdates_5,
-        autoupdates_6,
-    )
+            autoupdates_1,
+            autoupdates_2,
+            autoupdates_3,
+            autoupdates_4,
+            autoupdates_5,
+            autoupdates_6,
+        )
         extra_data_handlers = autoupdates_data_handlers(autoupdate)
         data_handlers = (y = DeferredDataHandler(), extra_data_handlers...)
         options = convert(ReactiveMPInferenceOptions, (;))
@@ -791,7 +815,7 @@ end
         )
         model = create_model(
             with_plugins(beta_bernoulli_vector_based_args(), plugins) |
-            data_handlers,
+                data_handlers,
         )
         variable_ins = getvariable(getindex(getvardict(model), :ins))
         variable_y = getvariable(getindex(getvardict(model), :y))
@@ -840,11 +864,13 @@ end
             [[PointMass(1), PointMass(2)], [PointMass(2.0), PointMass(2.0)]]
         @test ReactiveMP.getdata.(updates_for_y) == [PointMass(1), PointMass(0)]
 
-        unsubscribe!([
-            subscription_marginal_θ,
-            subscription_updates_ins,
-            subscription_updates_y,
-        ])
+        unsubscribe!(
+            [
+                subscription_marginal_θ,
+                subscription_updates_ins,
+                subscription_updates_y,
+            ]
+        )
     end
 end
 
@@ -992,93 +1018,123 @@ end
         AutoUpdateFetchMessageArgument
 
     @test autoupdate_convert_mapping_expr(:(f(q(x)))) ==
-        :(RxInfer.AutoUpdateMapping(
-        f, (RxInfer.AutoUpdateFetchMarginalArgument(:x),)
-    ))
+        :(
+        RxInfer.AutoUpdateMapping(
+            f, (RxInfer.AutoUpdateFetchMarginalArgument(:x),)
+        )
+    )
     @test autoupdate_convert_mapping_expr(:(f.(q(x)))) ==
-        :(RxInfer.AutoUpdateMapping(
-        Base.Broadcast.BroadcastFunction(f),
-        (RxInfer.AutoUpdateFetchMarginalArgument(:x),),
-    ))
+        :(
+        RxInfer.AutoUpdateMapping(
+            Base.Broadcast.BroadcastFunction(f),
+            (RxInfer.AutoUpdateFetchMarginalArgument(:x),),
+        )
+    )
     @test autoupdate_convert_mapping_expr(:(q(x) .+ 1)) ==
-        :(RxInfer.AutoUpdateMapping(
-        Base.Broadcast.BroadcastFunction(+),
-        (RxInfer.AutoUpdateFetchMarginalArgument(:x), 1),
-    ))
+        :(
+        RxInfer.AutoUpdateMapping(
+            Base.Broadcast.BroadcastFunction(+),
+            (RxInfer.AutoUpdateFetchMarginalArgument(:x), 1),
+        )
+    )
 
     @test autoupdate_convert_mapping_expr(:(f(q(x[1])))) ==
-        :(RxInfer.AutoUpdateMapping(
-        f, (RxInfer.AutoUpdateFetchMarginalArgument(:x, (1,)),)
-    ))
+        :(
+        RxInfer.AutoUpdateMapping(
+            f, (RxInfer.AutoUpdateFetchMarginalArgument(:x, (1,)),)
+        )
+    )
     @test autoupdate_convert_mapping_expr(:(f(q(x[1, 1])))) ==
-        :(RxInfer.AutoUpdateMapping(
-        f, (RxInfer.AutoUpdateFetchMarginalArgument(:x, (1, 1)),)
-    ))
+        :(
+        RxInfer.AutoUpdateMapping(
+            f, (RxInfer.AutoUpdateFetchMarginalArgument(:x, (1, 1)),)
+        )
+    )
     @test autoupdate_convert_mapping_expr(:(g(μ(x)))) ==
-        :(RxInfer.AutoUpdateMapping(
-        g, (RxInfer.AutoUpdateFetchMessageArgument(:x),)
-    ))
+        :(
+        RxInfer.AutoUpdateMapping(
+            g, (RxInfer.AutoUpdateFetchMessageArgument(:x),)
+        )
+    )
     @test autoupdate_convert_mapping_expr(:(g(μ(x[1])))) ==
-        :(RxInfer.AutoUpdateMapping(
-        g, (RxInfer.AutoUpdateFetchMessageArgument(:x, (1,)),)
-    ))
+        :(
+        RxInfer.AutoUpdateMapping(
+            g, (RxInfer.AutoUpdateFetchMessageArgument(:x, (1,)),)
+        )
+    )
     @test autoupdate_convert_mapping_expr(:(g(μ(x[1, 1])))) ==
-        :(RxInfer.AutoUpdateMapping(
-        g, (RxInfer.AutoUpdateFetchMessageArgument(:x, (1, 1)),)
-    ))
+        :(
+        RxInfer.AutoUpdateMapping(
+            g, (RxInfer.AutoUpdateFetchMessageArgument(:x, (1, 1)),)
+        )
+    )
     @test autoupdate_convert_mapping_expr(:(f(q(x), q(y)))) ==
-        :(RxInfer.AutoUpdateMapping(
-        f,
-        (
-            RxInfer.AutoUpdateFetchMarginalArgument(:x),
-            RxInfer.AutoUpdateFetchMarginalArgument(:y),
-        ),
-    ))
+        :(
+        RxInfer.AutoUpdateMapping(
+            f,
+            (
+                RxInfer.AutoUpdateFetchMarginalArgument(:x),
+                RxInfer.AutoUpdateFetchMarginalArgument(:y),
+            ),
+        )
+    )
     @test autoupdate_convert_mapping_expr(:(f(q(x), q(y)))) ==
-        :(RxInfer.AutoUpdateMapping(
-        f,
-        (
-            RxInfer.AutoUpdateFetchMarginalArgument(:x),
-            RxInfer.AutoUpdateFetchMarginalArgument(:y),
-        ),
-    ))
+        :(
+        RxInfer.AutoUpdateMapping(
+            f,
+            (
+                RxInfer.AutoUpdateFetchMarginalArgument(:x),
+                RxInfer.AutoUpdateFetchMarginalArgument(:y),
+            ),
+        )
+    )
     @test autoupdate_convert_mapping_expr(:(f(q(x), 2))) ==
-        :(RxInfer.AutoUpdateMapping(
-        f, (RxInfer.AutoUpdateFetchMarginalArgument(:x), 2)
-    ))
+        :(
+        RxInfer.AutoUpdateMapping(
+            f, (RxInfer.AutoUpdateFetchMarginalArgument(:x), 2)
+        )
+    )
     @test autoupdate_convert_mapping_expr(:(f(q(x), g(3, 2)))) ==
-        :(RxInfer.AutoUpdateMapping(
-        f, (RxInfer.AutoUpdateFetchMarginalArgument(:x), g(3, 2))
-    ))
+        :(
+        RxInfer.AutoUpdateMapping(
+            f, (RxInfer.AutoUpdateFetchMarginalArgument(:x), g(3, 2))
+        )
+    )
     # hierarchial call
     @test autoupdate_convert_mapping_expr(:(f(f(q(x))))) ==
-        :(RxInfer.AutoUpdateMapping(
-        f,
-        (
-            RxInfer.AutoUpdateMapping(
-                f, (RxInfer.AutoUpdateFetchMarginalArgument(:x),)
+        :(
+        RxInfer.AutoUpdateMapping(
+            f,
+            (
+                RxInfer.AutoUpdateMapping(
+                    f, (RxInfer.AutoUpdateFetchMarginalArgument(:x),)
+                ),
             ),
-        ),
-    ))
+        )
+    )
     @test autoupdate_convert_mapping_expr(:(f(f(q(x), 1)))) ==
-        :(RxInfer.AutoUpdateMapping(
-        f,
-        (
-            RxInfer.AutoUpdateMapping(
-                f, (RxInfer.AutoUpdateFetchMarginalArgument(:x), 1)
+        :(
+        RxInfer.AutoUpdateMapping(
+            f,
+            (
+                RxInfer.AutoUpdateMapping(
+                    f, (RxInfer.AutoUpdateFetchMarginalArgument(:x), 1)
+                ),
             ),
-        ),
-    ))
+        )
+    )
     @test autoupdate_convert_mapping_expr(:(f(f(q(x)), 1))) ==
-        :(RxInfer.AutoUpdateMapping(
-        f,
-        (
-            RxInfer.AutoUpdateMapping(
-                f, (RxInfer.AutoUpdateFetchMarginalArgument(:x),)
+        :(
+        RxInfer.AutoUpdateMapping(
+            f,
+            (
+                RxInfer.AutoUpdateMapping(
+                    f, (RxInfer.AutoUpdateFetchMarginalArgument(:x),)
+                ),
+                1,
             ),
-            1,
-        ),
-    ))
+        )
+    )
 end
 
 @testitem "autoupdate_convert_labels_expr" begin
@@ -1090,17 +1146,23 @@ end
         :(RxInfer.AutoUpdateVariableLabel(:a, (1,)))
     @test autoupdate_convert_labels_expr(:(a[1, 1])) ==
         :(RxInfer.AutoUpdateVariableLabel(:a, (1, 1)))
-    @test autoupdate_convert_labels_expr(:(a, b)) == :((
-        RxInfer.AutoUpdateVariableLabel(:a), RxInfer.AutoUpdateVariableLabel(:b)
-    ))
-    @test autoupdate_convert_labels_expr(:(a, b[1])) == :((
-        RxInfer.AutoUpdateVariableLabel(:a),
-        RxInfer.AutoUpdateVariableLabel(:b, (1,)),
-    ))
-    @test autoupdate_convert_labels_expr(:(a, b[1, 1])) == :((
-        RxInfer.AutoUpdateVariableLabel(:a),
-        RxInfer.AutoUpdateVariableLabel(:b, (1, 1)),
-    ))
+    @test autoupdate_convert_labels_expr(:(a, b)) == :(
+        (
+            RxInfer.AutoUpdateVariableLabel(:a), RxInfer.AutoUpdateVariableLabel(:b),
+        )
+    )
+    @test autoupdate_convert_labels_expr(:(a, b[1])) == :(
+        (
+            RxInfer.AutoUpdateVariableLabel(:a),
+            RxInfer.AutoUpdateVariableLabel(:b, (1,)),
+        )
+    )
+    @test autoupdate_convert_labels_expr(:(a, b[1, 1])) == :(
+        (
+            RxInfer.AutoUpdateVariableLabel(:a),
+            RxInfer.AutoUpdateVariableLabel(:b, (1, 1)),
+        )
+    )
 
     @test_throws "Cannot create variable label from expression `a + b`" autoupdate_convert_labels_expr(
         :(a + b)

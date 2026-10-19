@@ -71,6 +71,11 @@ mutable struct LogContext{L}
     # wall-clock figure in the Summary text tag.
     first_event_ns::UInt64
     last_event_ns::UInt64
+    # The iteration the last `BeforeIterationEvent` opened, `0` before any, and the number of
+    # free-energy values logged: a free-energy value is logged at its iteration, or at its count
+    # when no iteration was traced.
+    current_iteration::Int
+    free_energy_count::Int
 end
 
 # Normalize the user-facing `log_posteriors` value to the internal
@@ -83,7 +88,7 @@ _normalize_posteriors(v::AbstractVector) = Set{Symbol}(Symbol(x) for x in v)
 LogContext(
     logger;
     log_posteriors::Union{
-        Bool, AbstractVector{<:Union{Symbol, AbstractString}}
+        Bool, AbstractVector{<:Union{Symbol, AbstractString}},
     } = true,
     log_distributions::Bool,
     log_text_events::Bool,
@@ -105,6 +110,8 @@ LogContext(
     NaN,
     zero(UInt64),
     zero(UInt64),
+    0,
+    0,
 )
 
 # Central gate for all narrative/event text summaries. Scalar and
@@ -138,7 +145,7 @@ LogContext(
 # so non-univariate or unsupported marginals are silently skipped without
 # any branching at the call site.
 _posterior_samples(dist::UnivariateDistribution, n::Int) = rand(MersenneTwister(1), dist, n)
-_posterior_samples(::Any, ::Int)                         = Float64[]
+_posterior_samples(::Any, ::Int) = Float64[]
 
 # Per-distribution scalar tag table. Returns a `NamedTuple` of
 # `(tag => value)` pairs to log under `posteriors/<name>/<tag>`.
@@ -217,12 +224,12 @@ end
 # the actual sample extremes — that is what makes the Distributions plugin
 # narrow the percentile bands as the posterior sharpens.
 function _log_posterior_distribution!(
-    ctx::LogContext, dist::UnivariateDistribution, name::Symbol
-)
+        ctx::LogContext, dist::UnivariateDistribution, name::Symbol
+    )
     samples = _posterior_samples(dist, ctx.n_samples)
     isempty(samples) && return nothing
     step = get(ctx.posterior_step, name, 0)
-    TensorBoardLogger.log_histogram(
+    return TensorBoardLogger.log_histogram(
         ctx.logger, "posteriors/$(name)/distribution", samples; step = step
     )
 end
@@ -245,8 +252,8 @@ function _log_summary!(ctx::LogContext)
         push!(lines, "inference: $(_fmt_ms(ctx.inference_ms))")
     end
     if ctx.first_event_ns != zero(UInt64) &&
-        ctx.last_event_ns >= ctx.first_event_ns
-        wall_ms = (ctx.last_event_ns - ctx.first_event_ns) / 1e6
+            ctx.last_event_ns >= ctx.first_event_ns
+        wall_ms = (ctx.last_event_ns - ctx.first_event_ns) / 1.0e6
         push!(lines, "total_wall: $(_fmt_ms(wall_ms))")
     end
     if !isempty(ctx.iteration_durations)
@@ -270,44 +277,45 @@ end
 
 function log_event(ctx::LogContext, ev::BeforeModelCreationEvent, idx)
     ctx.model_build_start_ns = ctx.current_time_ns
-    _log_text!(ctx, "before_model_creation", _compact_repr(ev); step = idx)
+    return _log_text!(ctx, "before_model_creation", _compact_repr(ev); step = idx)
 end
 
 function log_event(ctx::LogContext, ev::AfterModelCreationEvent, idx)
     if ctx.model_build_start_ns != zero(UInt64)
         ctx.model_build_ms =
-            (ctx.current_time_ns - ctx.model_build_start_ns) / 1e6
+            (ctx.current_time_ns - ctx.model_build_start_ns) / 1.0e6
     end
-    _log_text!(ctx, "after_model_creation", _compact_repr(ev); step = idx)
+    return _log_text!(ctx, "after_model_creation", _compact_repr(ev); step = idx)
 end
 
 function log_event(ctx::LogContext, ev::BeforeInferenceEvent, idx)
     ctx.inference_start_ns = ctx.current_time_ns
-    _log_text!(ctx, "before_inference", _compact_repr(ev); step = idx)
+    return _log_text!(ctx, "before_inference", _compact_repr(ev); step = idx)
 end
 
 function log_event(ctx::LogContext, ev::AfterInferenceEvent, idx)
     if ctx.inference_start_ns != zero(UInt64)
-        ctx.inference_ms = (ctx.current_time_ns - ctx.inference_start_ns) / 1e6
+        ctx.inference_ms = (ctx.current_time_ns - ctx.inference_start_ns) / 1.0e6
     end
-    _log_text!(ctx, "after_inference", _compact_repr(ev); step = idx)
+    return _log_text!(ctx, "after_inference", _compact_repr(ev); step = idx)
 end
 
 # BeforeIterationEvent absorbs the start-of-iteration timing bookkeeping
 # that previously lived in a pre-scan loop — we now stash the start time
 # in-line as events stream by, via `ctx.current_time_ns`.
 function log_event(ctx::LogContext, ev::BeforeIterationEvent, _idx)
+    ctx.current_iteration = ev.iteration
     _log_text!(ctx, "before_iteration", _compact_repr(ev); step = ev.iteration)
-    ctx.before_times[ev.span_id] = (ev.iteration, ctx.current_time_ns)
+    return ctx.before_times[ev.span_id] = (ev.iteration, ctx.current_time_ns)
 end
 
 # AfterIterationEvent pairs with the matching BeforeIterationEvent via
 # `span_id` to compute and log the iteration's wall-clock duration.
 function log_event(ctx::LogContext, ev::AfterIterationEvent, _idx)
     _log_text!(ctx, "after_iteration", _compact_repr(ev); step = ev.iteration)
-    if haskey(ctx.before_times, ev.span_id)
+    return if haskey(ctx.before_times, ev.span_id)
         (iter, t0) = ctx.before_times[ev.span_id]
-        duration_ms = (ctx.current_time_ns - t0) / 1e6
+        duration_ms = (ctx.current_time_ns - t0) / 1.0e6
         ctx.iteration_durations[iter] = duration_ms
         TensorBoardLogger.log_value(
             ctx.logger, "iteration_time_ms", duration_ms; step = iter
@@ -316,11 +324,11 @@ function log_event(ctx::LogContext, ev::AfterIterationEvent, _idx)
 end
 
 function log_event(ctx::LogContext, ev::BeforeDataUpdateEvent, idx)
-    _log_text!(ctx, "before_data_update", _compact_repr(ev); step = idx)
+    return _log_text!(ctx, "before_data_update", _compact_repr(ev); step = idx)
 end
 
 function log_event(ctx::LogContext, ev::AfterDataUpdateEvent, idx)
-    _log_text!(ctx, "after_data_update", _compact_repr(ev); step = idx)
+    return _log_text!(ctx, "after_data_update", _compact_repr(ev); step = idx)
 end
 
 # OnMarginalUpdateEvent carries text, scalar, and distribution logging for
@@ -341,7 +349,7 @@ function log_event(ctx::LogContext, ev::OnMarginalUpdateEvent, idx)
         getdata(ev.update)
     catch err
         @warn "Failed to unwrap marginal" variable_name = ev.variable_name exception = (
-            err, catch_backtrace()
+            err, catch_backtrace(),
         )
         return nothing
     end
@@ -349,10 +357,10 @@ function log_event(ctx::LogContext, ev::OnMarginalUpdateEvent, idx)
         _log_posterior_scalars!(ctx, dist, ev.variable_name)
     catch err
         @warn "Failed to log posterior scalars" variable_name = ev.variable_name exception = (
-            err, catch_backtrace()
+            err, catch_backtrace(),
         )
     end
-    if ctx.log_distributions
+    return if ctx.log_distributions
         try
             _log_posterior_distribution!(ctx, dist, ev.variable_name)
         catch err
@@ -362,87 +370,147 @@ function log_event(ctx::LogContext, ev::OnMarginalUpdateEvent, idx)
     end
 end
 
+# The free energy, a scalar per iteration: the last value computed in an iteration is the
+# iteration's.
+function log_event(ctx::LogContext, ev::OnFreeEnergyUpdateEvent, idx)
+    ctx.free_energy_count += 1
+    step = if ctx.current_iteration > 0
+        ctx.current_iteration
+    else
+        ctx.free_energy_count
+    end
+    _log_text!(ctx, "on_free_energy_update", _compact_repr(ev); step = idx)
+    TensorBoardLogger.log_value(
+        ctx.logger, "free_energy", Float64(ev.value); step = step
+    )
+    return nothing
+end
+
 function log_event(ctx::LogContext, ev::BeforeAutostartEvent, idx)
-    _log_text!(ctx, "before_autostart", _compact_repr(ev); step = idx)
+    return _log_text!(ctx, "before_autostart", _compact_repr(ev); step = idx)
 end
 
 function log_event(ctx::LogContext, ev::AfterAutostartEvent, idx)
-    _log_text!(ctx, "after_autostart", _compact_repr(ev); step = idx)
+    return _log_text!(ctx, "after_autostart", _compact_repr(ev); step = idx)
 end
 
 function log_event(
-    ctx::LogContext, ev::ReactiveMP.BeforeMessageRuleCallEvent, idx
-)
-    _log_text!(ctx, "before_message_rule_call", _compact_repr(ev); step = idx)
+        ctx::LogContext, ev::ReactiveMP.BeforeMessageRuleCallEvent, idx
+    )
+    return _log_text!(ctx, "before_message_rule_call", _compact_repr(ev); step = idx)
 end
 
 function log_event(
-    ctx::LogContext, ev::ReactiveMP.AfterMessageRuleCallEvent, idx
-)
-    _log_text!(ctx, "after_message_rule_call", _compact_repr(ev); step = idx)
+        ctx::LogContext, ev::ReactiveMP.AfterMessageRuleCallEvent, idx
+    )
+    return _log_text!(ctx, "after_message_rule_call", _compact_repr(ev); step = idx)
 end
 
 function log_event(
-    ctx::LogContext, ev::ReactiveMP.BeforeProductOfMessagesEvent, idx
-)
-    _log_text!(ctx, "before_product_of_messages", _compact_repr(ev); step = idx)
+        ctx::LogContext, ev::ReactiveMP.BeforeProductOfMessagesEvent, idx
+    )
+    return _log_text!(ctx, "before_product_of_messages", _compact_repr(ev); step = idx)
 end
 
 function log_event(
-    ctx::LogContext, ev::ReactiveMP.AfterProductOfMessagesEvent, idx
-)
-    _log_text!(ctx, "after_product_of_messages", _compact_repr(ev); step = idx)
+        ctx::LogContext, ev::ReactiveMP.AfterProductOfMessagesEvent, idx
+    )
+    return _log_text!(ctx, "after_product_of_messages", _compact_repr(ev); step = idx)
 end
 
 function log_event(
-    ctx::LogContext, ev::ReactiveMP.BeforeProductOfTwoMessagesEvent, idx
-)
-    _log_text!(
+        ctx::LogContext, ev::ReactiveMP.BeforeProductOfTwoMessagesEvent, idx
+    )
+    return _log_text!(
         ctx, "before_product_of_two_messages", _compact_repr(ev); step = idx
     )
 end
 
 function log_event(
-    ctx::LogContext, ev::ReactiveMP.AfterProductOfTwoMessagesEvent, idx
-)
-    _log_text!(
+        ctx::LogContext, ev::ReactiveMP.AfterProductOfTwoMessagesEvent, idx
+    )
+    return _log_text!(
         ctx, "after_product_of_two_messages", _compact_repr(ev); step = idx
     )
 end
 
 function log_event(
-    ctx::LogContext, ev::ReactiveMP.BeforeMarginalComputationEvent, idx
-)
-    _log_text!(
+        ctx::LogContext, ev::ReactiveMP.BeforeMarginalComputationEvent, idx
+    )
+    return _log_text!(
         ctx, "before_marginal_computation", _compact_repr(ev); step = idx
     )
 end
 
 function log_event(
-    ctx::LogContext, ev::ReactiveMP.AfterMarginalComputationEvent, idx
-)
-    _log_text!(ctx, "after_marginal_computation", _compact_repr(ev); step = idx)
+        ctx::LogContext, ev::ReactiveMP.AfterMarginalComputationEvent, idx
+    )
+    return _log_text!(ctx, "after_marginal_computation", _compact_repr(ev); step = idx)
 end
 
 function log_event(
-    ctx::LogContext, ev::ReactiveMP.BeforeFormConstraintAppliedEvent, idx
-)
-    _log_text!(
+        ctx::LogContext, ev::ReactiveMP.BeforeFormConstraintAppliedEvent, idx
+    )
+    return _log_text!(
         ctx, "before_form_constraint_applied", _compact_repr(ev); step = idx
     )
 end
 
 function log_event(
-    ctx::LogContext, ev::ReactiveMP.AfterFormConstraintAppliedEvent, idx
-)
-    _log_text!(
+        ctx::LogContext, ev::ReactiveMP.AfterFormConstraintAppliedEvent, idx
+    )
+    return _log_text!(
         ctx, "after_form_constraint_applied", _compact_repr(ev); step = idx
+    )
+end
+
+function log_event(
+        ctx::LogContext, ev::ReactiveMP.BeforeMarginalRuleCallEvent, idx
+    )
+    return _log_text!(ctx, "before_marginal_rule_call", _compact_repr(ev); step = idx)
+end
+
+function log_event(
+        ctx::LogContext, ev::ReactiveMP.AfterMarginalRuleCallEvent, idx
+    )
+    return _log_text!(ctx, "after_marginal_rule_call", _compact_repr(ev); step = idx)
+end
+
+function log_event(
+        ctx::LogContext, ev::ReactiveMP.BeforeFactorBoundFreeEnergyEvent, idx
+    )
+    return _log_text!(
+        ctx, "before_factor_bound_free_energy", _compact_repr(ev); step = idx
+    )
+end
+
+function log_event(
+        ctx::LogContext, ev::ReactiveMP.AfterFactorBoundFreeEnergyEvent, idx
+    )
+    return _log_text!(
+        ctx, "after_factor_bound_free_energy", _compact_repr(ev); step = idx
+    )
+end
+
+function log_event(
+        ctx::LogContext, ev::ReactiveMP.BeforeVariableBoundEntropyEvent, idx
+    )
+    return _log_text!(
+        ctx, "before_variable_bound_entropy", _compact_repr(ev); step = idx
+    )
+end
+
+function log_event(
+        ctx::LogContext, ev::ReactiveMP.AfterVariableBoundEntropyEvent, idx
+    )
+    return _log_text!(
+        ctx, "after_variable_bound_entropy", _compact_repr(ev); step = idx
     )
 end
 
 # Fallback for unknown event types
 function log_event(ctx::LogContext, ev::ReactiveMP.Event, idx)
-    _log_text!(
+    return _log_text!(
         ctx,
         "unknown_events",
         "event_type: $(event_name(typeof(ev)))";
@@ -453,16 +521,16 @@ end
 # defined in RxInfer.jl in src/callbacks/trace.jl
 # this module extends it
 function RxInfer.convert_to_tensorboard(
-    trace::RxInferTraceCallbacks;
-    output_file::Union{String, Nothing} = nothing,
-    log_posteriors::Union{
-        Bool, AbstractVector{<:Union{Symbol, AbstractString}}
-    } = true,
-    log_distributions::Bool = false,
-    log_text_events::Bool = false,
-    n_samples::Int = 1024,
-    verbose = true,
-)
+        trace::RxInferTraceCallbacks;
+        output_file::Union{String, Nothing} = nothing,
+        log_posteriors::Union{
+            Bool, AbstractVector{<:Union{Symbol, AbstractString}},
+        } = true,
+        log_distributions::Bool = false,
+        log_text_events::Bool = false,
+        n_samples::Int = 1024,
+        verbose = true,
+    )
     if isnothing(output_file)
         output_file = joinpath(pwd(), "tensorboard_logs")
     end
@@ -483,12 +551,12 @@ function RxInfer.convert_to_tensorboard(
     log_subdir = joinpath(output_file, format(now(), "yyyy-mm-dd_HH-MM-SS"))
     mkpath(log_subdir)
     logger = TBLogger(log_subdir, tb_append)
-    ctx    = LogContext(logger; log_posteriors = log_posteriors, log_distributions = log_distributions, log_text_events = log_text_events, n_samples = n_samples)
+    ctx = LogContext(logger; log_posteriors = log_posteriors, log_distributions = log_distributions, log_text_events = log_text_events, n_samples = n_samples)
 
     for (idx, traced) in enumerate(events)
-        ev                  = traced.event
-        ev_sym              = event_name(typeof(ev))
-        ctx.counts[ev_sym]  = get(ctx.counts, ev_sym, 0) + 1
+        ev = traced.event
+        ev_sym = event_name(typeof(ev))
+        ctx.counts[ev_sym] = get(ctx.counts, ev_sym, 0) + 1
         ctx.current_time_ns = traced.time_ns
         if ctx.first_event_ns == zero(UInt64)
             ctx.first_event_ns = traced.time_ns

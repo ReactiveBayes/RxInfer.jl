@@ -8,7 +8,7 @@ Welcome to the contribution guide for `RxInfer.jl`. Here you'll find information
 - `GraphPPL.jl`: A domain-specific language for probabilistic programming, facilitating the `@model` macro and other crucial user-facing features.
 - `ReactiveMP.jl`: Reactive message passing engine, using `Rocket.jl` to pass messages between nodes in a probabilistic model defined with `GraphPPL.jl`.
 
-In general, non-inference related functionality is implemented in `Rocket.jl` and `GraphPPL.jl`, while inference-related functionality is implemented in `ReactiveMP.jl`. For example, all factor nodes and inference rules for messages are implemented in `ReactiveMP.jl`.
+In general, non-inference related functionality is implemented in `Rocket.jl` and `GraphPPL.jl`, while inference-related functionality is implemented in `ReactiveMP.jl` and its rule packages. The engine itself defines no factor node and no rule: nodes and their message update rules live in the rule packages under `lib/` in the `ReactiveMP.jl` repository, such as `StandardMessagePassingRules` for the standard distributions and `AutoregressiveMessagePassingRules` for the `AR` node, and are declared with the macros of `MessagePassingRulesBase`. [ReactiveMP's ecosystem page](@extref ReactiveMP ecosystem) lists every package. A new rule for an existing node belongs in that node's package.
 
 ## Getting started
 

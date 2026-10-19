@@ -17,10 +17,10 @@
                 sin(approximate_angle_prior) cos(approximate_angle_prior)
             ]
             mean_mean_prior = approximate_rotation * approximate_basis_v
-            mean_mean_cov = [1e6 0.0; 0.0 1e6]
+            mean_mean_cov = [1.0e6 0.0; 0.0 1.0e6]
 
             m[i] ~ MvNormal(mean = mean_mean_prior, cov = mean_mean_cov)
-            w[i] ~ Wishart(3, [1e2 0.0; 0.0 1e2])
+            w[i] ~ Wishart(3, [1.0e2 0.0; 0.0 1.0e2])
         end
 
         s ~ Dirichlet(ones(nmixtures))
@@ -32,8 +32,8 @@
     end
 
     function inference_multivariate(
-        rng, L, nmixtures, data, viters, constraints
-    )
+            rng, L, nmixtures, data, viters, constraints
+        )
         basis_v = [1.0, 0.0]
 
         minitmarginals = []
@@ -48,13 +48,13 @@
                 sin(approximate_angle_prior) cos(approximate_angle_prior)
             ]
             mean_mean_prior = approximate_rotation * approximate_basis_v
-            mean_mean_cov = [1e6 0.0; 0.0 1e6]
+            mean_mean_cov = [1.0e6 0.0; 0.0 1.0e6]
 
             push!(
                 minitmarginals,
                 MvNormalMeanCovariance(mean_mean_prior, mean_mean_cov),
             )
-            push!(winitmarginals, Wishart(3, [1e2 0.0; 0.0 1e2]))
+            push!(winitmarginals, Wishart(3, [1.0e2 0.0; 0.0 1.0e2]))
         end
 
         init = @initialization begin
@@ -78,7 +78,7 @@
 
     rng = StableRNG(43)
 
-    L         = 50.0
+    L = 50.0
     nmixtures = 3
     n_samples = 250
 
@@ -88,10 +88,10 @@
     switch = Categorical(probvec)
 
     gaussians = map(1:nmixtures) do index
-        angle      = 2π / nmixtures * (index - 1)
-        basis_v    = L * [1.0, 0.0]
-        rotationm  = [cos(angle) -sin(angle); sin(angle) cos(angle)]
-        mean       = rotationm * basis_v
+        angle = 2π / nmixtures * (index - 1)
+        basis_v = L * [1.0, 0.0]
+        rotationm = [cos(angle) -sin(angle); sin(angle) cos(angle)]
+        mean = rotationm * basis_v
         covariance = Matrix(Hermitian(rotationm * [10.0 0.0; 0.0 20.0] * transpose(rotationm)))
         return MvNormal(mean, covariance)
     end
@@ -113,7 +113,7 @@
     # Execute inference for different constraints and option specification
     results = map(
         (specs) ->
-            inference_multivariate(specs[1], L, nmixtures, y, 25, specs[2]),
+        inference_multivariate(specs[1], L, nmixtures, y, 25, specs[2]),
         [(StableRNG(42), MeanField()), (StableRNG(42), constraints)],
     )
 
@@ -137,7 +137,7 @@
     @test length(m) === 25
     @test length(w) === 25
     @test length(fe) === 25
-    @test all(filter(e -> abs(e) > 1e-3, diff(fe)) .< 0)
+    @test all(filter(e -> abs(e) > 1.0e-3, diff(fe)) .< 0)
     @test last(fe) ≈ 1763.9 atol = 1.0
 
     ems = sort(mean.(last(m)), by = x -> atan(x[2] / x[1]))

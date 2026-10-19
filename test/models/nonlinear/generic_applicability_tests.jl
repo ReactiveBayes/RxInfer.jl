@@ -13,28 +13,28 @@
         return x .^ 2
     end
 
-    @model function delta_1input(y, meta)
+    @model function delta_1input(y, algorithm)
         c = zeros(2)
         c[1] = 1.0
         x ~ MvNormal(μ = ones(2), Λ = diageye(2))
-        z := f₁(x) where {meta = meta}
+        z := f₁(x) where {algorithm = algorithm}
         θ ~ Normal(μ = dot(z, c), σ² = 1.0)
         y ~ Normal(μ = θ, σ² = 0.5)
     end
 
     # We test here different approximation methods
-    metas = (
-        DeltaMeta(method = Linearization(), inverse = f₁_inv),
-        DeltaMeta(method = Unscented(), inverse = f₁_inv),
-        DeltaMeta(method = Linearization()),
-        DeltaMeta(method = Unscented()),
+    algorithms = (
+        DeltaApproximation(method = Linearization(), inverse = f₁_inv),
+        DeltaApproximation(method = Unscented(), inverse = f₁_inv),
+        DeltaApproximation(method = Linearization()),
+        DeltaApproximation(method = Unscented()),
         Linearization(),
         Unscented(),
     )
 
-    results = map(metas) do meta
+    results = map(algorithms) do algorithm
         return infer(
-            model = delta_1input(meta = meta),
+            model = delta_1input(algorithm = algorithm),
             data = (y = 1.0,),
             free_energy = true,
             iterations = 10,
@@ -60,29 +60,29 @@ end
         return z .- x
     end
 
-    @model function delta_2inputs(meta, y)
+    @model function delta_2inputs(algorithm, y)
         c = zeros(2)
         c[1] = 1.0
 
         θ ~ MvNormal(μ = ones(2), Λ = diageye(2))
         x ~ MvNormal(μ = zeros(2), Λ = diageye(2))
-        z := f₂(x, θ) where {meta = meta}
+        z := f₂(x, θ) where {algorithm = algorithm}
         w ~ Normal(μ = dot(z, c), σ² = 1.0)
         y ~ Normal(μ = w, σ² = 0.5)
     end
 
-    metas = (
-        DeltaMeta(method = Linearization(), inverse = (f₂_x, f₂_θ)),
-        DeltaMeta(method = Unscented(), inverse = (f₂_x, f₂_θ)),
-        DeltaMeta(method = Linearization()),
-        DeltaMeta(method = Unscented()),
+    algorithms = (
+        DeltaApproximation(method = Linearization(), inverse = (f₂_x, f₂_θ)),
+        DeltaApproximation(method = Unscented(), inverse = (f₂_x, f₂_θ)),
+        DeltaApproximation(method = Linearization()),
+        DeltaApproximation(method = Unscented()),
         Linearization(),
         Unscented(),
     )
 
-    results = map(metas) do meta
+    results = map(algorithms) do algorithm
         return infer(
-            model = delta_2inputs(meta = meta),
+            model = delta_2inputs(algorithm = algorithm),
             data = (y = 1.0,),
             free_energy = true,
             iterations = 10,
@@ -100,28 +100,28 @@ end
         return x .+ θ .+ ζ
     end
 
-    @model function delta_3inputs(meta, y)
+    @model function delta_3inputs(algorithm, y)
         c = zeros(2)
         c[1] = 1.0
 
         θ ~ MvNormal(μ = ones(2), Λ = diageye(2))
         ζ ~ MvNormal(μ = 0.5ones(2), Λ = diageye(2))
         x ~ MvNormal(μ = zeros(2), Λ = diageye(2))
-        z := f₃(x, θ, ζ) where {meta = meta}
+        z := f₃(x, θ, ζ) where {algorithm = algorithm}
         w ~ Normal(μ = dot(z, c), σ² = 1.0)
         y ~ Normal(μ = w, σ² = 0.5)
     end
 
-    metas = (
-        DeltaMeta(method = Linearization()),
-        DeltaMeta(method = Unscented()),
+    algorithms = (
+        DeltaApproximation(method = Linearization()),
+        DeltaApproximation(method = Unscented()),
         Linearization(),
         Unscented(),
     )
 
-    results = map(metas) do meta
+    results = map(algorithms) do algorithm
         return infer(
-            model = delta_3inputs(meta = meta),
+            model = delta_3inputs(algorithm = algorithm),
             data = (y = 1.0,),
             free_energy = true,
             iterations = 10,
@@ -139,27 +139,27 @@ end
         return θ .* x
     end
 
-    @model function delta_2input_1d2d(meta, y)
+    @model function delta_2input_1d2d(algorithm, y)
         c = zeros(2)
         c[1] = 1.0
 
         θ ~ Normal(μ = 0.5, γ = 1.0)
         x ~ MvNormal(μ = zeros(2), Λ = diageye(2))
-        z := f₄(x, θ) where {meta = meta}
+        z := f₄(x, θ) where {algorithm = algorithm}
         w ~ Normal(μ = dot(z, c), σ² = 1.0)
         y ~ Normal(μ = w, σ² = 0.5)
     end
 
-    metas = (
-        DeltaMeta(method = Linearization()),
-        DeltaMeta(method = Unscented()),
+    algorithms = (
+        DeltaApproximation(method = Linearization()),
+        DeltaApproximation(method = Unscented()),
         Linearization(),
         Unscented(),
     )
 
-    results = map(metas) do meta
+    results = map(algorithms) do algorithm
         return infer(
-            model = delta_2input_1d2d(meta = meta),
+            model = delta_2input_1d2d(algorithm = algorithm),
             data = (y = 1.0,),
             free_energy = true,
             iterations = 10,
@@ -175,7 +175,7 @@ end
 
     g(x, z) = x .* z
 
-    @meta function test_meta()
+    @algorithm function test_algorithm()
         g() -> Linearization()
     end
 
@@ -189,7 +189,7 @@ end
     results = infer(
         model = test_model(),
         data = (z = [1, 2], y = [1, 2]),
-        meta = test_meta(),
+        algorithm = test_algorithm(),
     )
 
     @test results isa RxInfer.InferenceResult

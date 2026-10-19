@@ -10,7 +10,7 @@ In RxInfer, initialization is essential because both loopy belief propagation an
 
 
 
-The syntax for the `@initialization` macro is similar to the `@constraints` and `@meta` macro. An example is shown below:
+The syntax for the `@initialization` macro is similar to the `@constraints` and `@algorithm` macros. An example is shown below:
 
 ```@example init-example
 using RxInfer

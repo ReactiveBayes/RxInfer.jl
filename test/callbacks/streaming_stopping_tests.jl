@@ -10,8 +10,8 @@
     end
 
     function stream_case(
-        callbacks; iterations = 8, free_energy = true, postprocess = nothing
-    )
+            callbacks; iterations = 8, free_energy = true, postprocess = nothing
+        )
         source = Subject(NamedTuple{(:y,), Tuple{Float64}})
         engine = infer(;
             model = stopping_stream_model(),
@@ -34,17 +34,19 @@
         return (; source, engine, posteriors, subscription)
     end
 
-    strategy = StopEarlyIterationStrategy(0.0, 1e-10; window = 4)
+    strategy = StopEarlyIterationStrategy(0.0, 1.0e-10; window = 4)
     runs = Vector{Float64}[]
     before_spans = Any[]
-    state = stream_case((
-        before_iteration = e -> push!(before_spans, e.span_id),
-        after_iteration = e -> begin
-            @test e.span_id == last(before_spans)
-            strategy(e)
-        end,
-        after_inference = e -> push!(runs, copy(strategy.fe_values)),
-    ))
+    state = stream_case(
+        (
+            before_iteration = e -> push!(before_spans, e.span_id),
+            after_iteration = e -> begin
+                @test e.span_id == last(before_spans)
+                strategy(e)
+            end,
+            after_inference = e -> push!(runs, copy(strategy.fe_values)),
+        )
+    )
     try
         # Identical successive observations catch a missing reset: their BFE is unchanged.
         # A later changed observation also checks that early exit leaves the engine usable.
@@ -69,13 +71,15 @@
     # Custom stopping and varying event lengths must not pad or mix BFE frames.
     completed = Int[]
     stage = Ref(0)
-    state = stream_case((
-        before_inference = e -> (stage[] += 1),
-        after_iteration = e -> begin
-            push!(completed, e.iteration)
-            e.stop_iteration = e.iteration == stage[]
-        end,
-    ))
+    state = stream_case(
+        (
+            before_inference = e -> (stage[] += 1),
+            after_iteration = e -> begin
+                push!(completed, e.iteration)
+                e.stop_iteration = e.iteration == stage[]
+            end,
+        )
+    )
     try
         for value in (1.0, 2.0, 3.0, 4.0)
             next!(state.source, (y = value,))
@@ -104,9 +108,11 @@
     end
 
     # Stopping before iteration two must still publish iteration one's posterior.
-    state = stream_case((
-        before_iteration = e -> (e.stop_iteration = e.iteration == 2),
-    ))
+    state = stream_case(
+        (
+            before_iteration = e -> (e.stop_iteration = e.iteration == 2),
+        )
+    )
     try
         next!(state.source, (y = 2.0,))
         @test length(only(state.engine.history[:x])) == 1
@@ -147,7 +153,7 @@
     end
 
     # A reused batch strategy must also start a fresh window for each solve.
-    strategy = StopEarlyIterationStrategy(1e-10; window = 4)
+    strategy = StopEarlyIterationStrategy(1.0e-10; window = 4)
     for value in (2.0, -3.0)
         result = infer(;
             model = stopping_stream_model(),

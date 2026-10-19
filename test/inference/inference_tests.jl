@@ -27,6 +27,66 @@ end
     @test_throws ErrorException infer_check_dicttype(:something, (missing))
 end
 
+@testitem "an `InferenceResult` destructures into its posteriors, predictions, free energy, model and error" begin
+    @model function coin(y)
+        θ ~ Beta(1.0, 1.0)
+        y .~ Bernoulli(θ)
+    end
+
+    result = infer(
+        model = coin(), data = (y = [1.0, 0.0, 1.0],), free_energy = true
+    )
+    posteriors, predictions, free_energy, model, err = result
+    @test posteriors === result.posteriors
+    @test predictions === result.predictions
+    @test free_energy === result.free_energy
+    @test model === result.model
+    @test err === result.error
+end
+
+@testitem "inference_check_dataismissing" begin
+    import RxInfer: inference_check_dataismissing
+
+    @test inference_check_dataismissing(missing)
+    @test inference_check_dataismissing([1.0, missing])
+    @test inference_check_dataismissing(Any[1.0, missing])
+    @test inference_check_dataismissing((1.0, missing))
+    @test !inference_check_dataismissing(1.0)
+    @test !inference_check_dataismissing([1.0, 2.0])
+    @test !inference_check_dataismissing(Union{Missing, Float64}[1.0, 2.0])
+    @test !inference_check_dataismissing(Any[1.0, 2.0])
+    @test !inference_check_dataismissing([[1.0], [2.0]])
+
+    # A container whose element type cannot be `missing` is not iterated,
+    # as an array whose elements cannot be read
+    struct UnreadableVector <: AbstractVector{Float64} end
+    Base.size(::UnreadableVector) = (2,)
+    Base.getindex(::UnreadableVector, i::Int) =
+        error("the elements of this array must not be read")
+    Base.iterate(::UnreadableVector, state...) =
+        error("the elements of this array must not be read")
+    @test !inference_check_dataismissing(UnreadableVector())
+    @test !inference_check_dataismissing([UnreadableVector()])
+end
+
+@testitem "`predictvars` with missing data wrapped in `UnfactorizedData`" begin
+    @model function two_observations(y, z)
+        x ~ Normal(mean = 0.0, var = 1.0)
+        y ~ Normal(mean = x, var = 1.0)
+        z ~ Normal(mean = x, var = 1.0)
+    end
+
+    # `z` is not in `predictvars`, so `infer` checks it for missing values itself
+    for z in (missing, UnfactorizedData(missing))
+        result = infer(
+            model = two_observations(),
+            data = (y = 1.0, z = z),
+            predictvars = (y = KeepLast(),),
+        )
+        @test haskey(result.predictions, :z)
+    end
+end
+
 @testitem "__infer_create_factor_graph_model" begin
     @model function simple_model_for_infer_create_model(y, a, b)
         x ~ Beta(a, b)
@@ -516,7 +576,7 @@ end
         @test length(results3.posteriors[:x]) === 5
         @test length(results3.posteriors[:τ]) === 5
 
-        # Check that free energy is equivalent between runs, data is the same, inference should be 
+        # Check that free energy is equivalent between runs, data is the same, inference should be
         # the same up until the halting point
         @test all(results1.free_energy[1:4] .=== results2.free_energy)
         @test all(results1.free_energy[1:5] .=== results3.free_energy)
@@ -530,7 +590,7 @@ end
     n = 6  # Number of test cases
 
     distribution = NormalMeanVariance(0.0, 1.0)
-    dataset      = rand(distribution, n)
+    dataset = rand(distribution, n)
 
     @model function gcv(y, x, z, κ, ω)
         log_σ := κ * z + ω
@@ -538,72 +598,133 @@ end
         y ~ Normal(; mean = x, precision = σ)
     end
 
-    @node typeof(gcv) Stochastic [y, x, z, κ, ω]
+    @define_factor_node(
+        node = gcv,
+        type = Stochastic,
+        interfaces = [:y, :x, :z, :κ, :ω],
+        algorithm = GCVApproximation,
+    )
 
-    RxInfer.ReactiveMP.default_meta(::typeof(gcv)) =
-        RxInfer.ReactiveMP.default_meta(GCV)
+    @define_message_update_rule(
+        node = gcv,
+        target = :y,
+        args = (q[:x]::Any, q[:z]::Any, q[:κ]::Any, q[:ω]::Any),
+        body =
+            (algo, args) -> getresult(
+            call_message_update_rule(
+                GCV,
+                :y;
+                q = (
+                    x = args.q[:x],
+                    z = args.q[:z],
+                    κ = args.q[:κ],
+                    ω = args.q[:ω],
+                ),
+                algorithm = algo,
+            ),
+        ),
+    )
 
-    @rule typeof(gcv)(:y, Marginalisation) (
-        q_x::Any, q_z::Any, q_κ::Any, q_ω::Any, meta::Any
-    ) = begin
-        return @call_rule GCV(:y, Marginalisation) (
-            q_x = q_x, q_z = q_z, q_κ = q_κ, q_ω = q_ω, meta = meta
-        )
-    end
+    @define_message_update_rule(
+        node = gcv,
+        target = :x,
+        args = (q[:y]::Any, q[:z]::Any, q[:κ]::Any, q[:ω]::Any),
+        body =
+            (algo, args) -> getresult(
+            call_message_update_rule(
+                GCV,
+                :x;
+                q = (
+                    y = args.q[:y],
+                    z = args.q[:z],
+                    κ = args.q[:κ],
+                    ω = args.q[:ω],
+                ),
+                algorithm = algo,
+            ),
+        ),
+    )
 
-    @rule typeof(gcv)(:x, Marginalisation) (
-        q_y::Any, q_z::Any, q_κ::Any, q_ω::Any, meta::Any
-    ) = begin
-        return @call_rule GCV(:x, Marginalisation) (
-            q_y = q_y, q_z = q_z, q_κ = q_κ, q_ω = q_ω, meta = meta
-        )
-    end
+    @define_message_update_rule(
+        node = gcv,
+        target = :ω,
+        args = (q[:y]::Any, q[:x]::Any, q[:z]::Any, q[:κ]::Any),
+        body =
+            (algo, args) -> getresult(
+            call_message_update_rule(
+                GCV,
+                :ω;
+                q = (
+                    y = args.q[:y],
+                    x = args.q[:x],
+                    z = args.q[:z],
+                    κ = args.q[:κ],
+                ),
+                algorithm = algo,
+            ),
+        ),
+    )
 
-    @rule typeof(gcv)(:ω, Marginalisation) (
-        q_y::Any, q_x::Any, q_z::Any, q_κ::Any, meta::Any
-    ) = begin
-        return @call_rule GCV(:ω, Marginalisation) (
-            q_y = q_y, q_x = q_x, q_z = q_z, q_κ = q_κ, meta = meta
-        )
-    end
+    @define_message_update_rule(
+        node = gcv,
+        target = :z,
+        args = (q[:y]::Any, q[:x]::Any, q[:κ]::Any, q[:ω]::Any),
+        body =
+            (algo, args) -> getresult(
+            call_message_update_rule(
+                GCV,
+                :z;
+                q = (
+                    y = args.q[:y],
+                    x = args.q[:x],
+                    κ = args.q[:κ],
+                    ω = args.q[:ω],
+                ),
+                algorithm = algo,
+            ),
+        ),
+    )
 
-    @rule typeof(gcv)(:z, Marginalisation) (
-        q_y::Any, q_x::Any, q_κ::Any, q_ω::Any, meta::Any
-    ) = begin
-        return @call_rule GCV(:z, Marginalisation) (
-            q_y = q_y, q_x = q_x, q_κ = q_κ, q_ω = q_ω, meta = meta
-        )
-    end
+    @define_message_update_rule(
+        node = gcv,
+        target = :κ,
+        args = (q[:y]::Any, q[:x]::Any, q[:z]::Any, q[:ω]::Any),
+        body =
+            (algo, args) -> getresult(
+            call_message_update_rule(
+                GCV,
+                :κ;
+                q = (
+                    y = args.q[:y],
+                    x = args.q[:x],
+                    z = args.q[:z],
+                    ω = args.q[:ω],
+                ),
+                algorithm = algo,
+            ),
+        ),
+    )
 
-    @rule typeof(gcv)(:κ, Marginalisation) (
-        q_y::Any, q_x::Any, q_z::Any, q_ω::Any, meta::Any
-    ) = begin
-        return @call_rule GCV(:κ, Marginalisation) (
-            q_y = q_y, q_x = q_x, q_z = q_z, q_ω = q_ω, meta = meta
-        )
-    end
+    @define_average_energy(
+        node = gcv,
+        args = (q[:y]::Any, q[:x]::Any, q[:z]::Any, q[:κ]::Any, q[:ω]::Any),
+        body =
+            (args) -> begin
+            y_mean, y_var = mean_var(args.q[:y])
+            x_mean, x_var = mean_var(args.q[:x])
+            z_mean, z_var = mean_var(args.q[:z])
+            κ_mean, κ_var = mean_var(args.q[:κ])
+            ω_mean, ω_var = mean_var(args.q[:ω])
 
-    @average_energy typeof(gcv) (
-        q_y::Any,
-        q_x::Any,
-        q_z::Any,
-        q_κ::Any,
-        q_ω::Any,
-        meta::Union{<:GCVMetadata, Nothing},
-    ) = begin
-        y_mean, y_var = mean_var(q_y)
-        x_mean, x_var = mean_var(q_x)
-        z_mean, z_var = mean_var(q_z)
-        κ_mean, κ_var = mean_var(q_κ)
-        ω_mean, ω_var = mean_var(q_ω)
+            ksi =
+                (κ_mean^2) * z_var + (z_mean^2) * κ_var + κ_var * z_var
+            psi = (y_mean - x_mean)^2 + y_var + x_var
+            A = exp(-ω_mean + ω_var / 2)
+            B = exp(-κ_mean * z_mean + ksi / 2)
 
-        ksi = (κ_mean^2) * z_var + (z_mean^2) * κ_var + κ_var * z_var
-        psi = (y_mean - x_mean)^2 + y_var + x_var
-        A = exp(-ω_mean + ω_var / 2)
-        B = exp(-κ_mean * z_mean + ksi / 2)
-
-        (log(2π) + (z_mean * κ_mean + ω_mean) + (psi * A * B)) / 2
-    end
+            (log(2π) + (z_mean * κ_mean + ω_mean) + (psi * A * B)) / 2
+        end,
+    )
 
     @model function hgf_1(y)
         ω ~ NormalMeanVariance(0, 1)
@@ -697,16 +818,16 @@ end
         @test_logs (:warn, r"Both .* specify a value for the `annotations`.*") infer(
             model = beta_bernoulli(),
             data = (y = observations,),
-            annotations = LogScaleAnnotations(),
-            options = (annotations = LogScaleAnnotations(),),
+            annotations = InputArgumentsAnnotations(),
+            options = (annotations = InputArgumentsAnnotations(),),
             warn = true,
         )
         # Should not display a warning if `warn` is set to `true`
         @test_logs infer(
             model = beta_bernoulli(),
             data = (y = observations,),
-            annotations = LogScaleAnnotations(),
-            options = (annotations = LogScaleAnnotations(),),
+            annotations = InputArgumentsAnnotations(),
+            options = (annotations = InputArgumentsAnnotations(),),
             warn = false,
         )
     end
@@ -763,7 +884,7 @@ end
     end
 
     init = @initialization begin
-        q(x_t) = NormalMeanVariance(0.0, 1e3)
+        q(x_t) = NormalMeanVariance(0.0, 1.0e3)
         q(τ) = GammaShapeRate(1.0, 1.0)
     end
 
@@ -773,10 +894,10 @@ end
         τ_rate = rate(q(τ))
     end
 
-    n         = 10
-    hiddenx   = Float64[]
+    n = 10
+    hiddenx = Float64[]
     observedy = Float64[]
-    prevx     = 0.0
+    prevx = 0.0
     for i in 1:n
         nextx = rand(NormalMeanVariance(prevx, 1.0))
         nexty = rand(NormalMeanPrecision(nextx, 10.0))
@@ -787,10 +908,10 @@ end
 
     @testset "Check basic usage" begin
         for keephistory in (0, 1, 2),
-            iterations in (3, 4),
-            free_energy in (true, Float64, false),
-            returnvars in ((:x_t,), (:x_t, :τ)),
-            historyvars in ((:x_t,), (:x_t, :τ))
+                iterations in (3, 4),
+                free_energy in (true, Float64, false),
+                returnvars in ((:x_t,), (:x_t, :τ)),
+                historyvars in ((:x_t,), (:x_t, :τ))
 
             historyvars = if keephistory > 0
                 NamedTuple{historyvars}(map(_ -> KeepEach(), historyvars))
@@ -879,13 +1000,13 @@ end
             autoupdates = autoupdates,
             callbacks = (
                 before_model_creation = (event) ->
-                    push!(callbacksdata, (:before_model_creation, event)),
+                push!(callbacksdata, (:before_model_creation, event)),
                 after_model_creation = (event) ->
-                    push!(callbacksdata, (:after_model_creation, event)),
+                push!(callbacksdata, (:after_model_creation, event)),
                 before_autostart = (event) ->
-                    push!(callbacksdata, (:before_autostart, event)),
+                push!(callbacksdata, (:before_autostart, event)),
                 after_autostart = (event) ->
-                    push!(callbacksdata, (:after_autostart, event)),
+                push!(callbacksdata, (:after_autostart, event)),
             ),
             autostart = true,
         )
@@ -918,13 +1039,13 @@ end
             autoupdates = autoupdates,
             callbacks = (
                 before_model_creation = (event) ->
-                    push!(callbacksdata, (:before_model_creation, event)),
+                push!(callbacksdata, (:before_model_creation, event)),
                 after_model_creation = (event) ->
-                    push!(callbacksdata, (:after_model_creation, event)),
+                push!(callbacksdata, (:after_model_creation, event)),
                 before_autostart = (event) ->
-                    push!(callbacksdata, (:before_autostart, event)),
+                push!(callbacksdata, (:before_autostart, event)),
                 after_autostart = (event) ->
-                    push!(callbacksdata, (:after_autostart, event)),
+                push!(callbacksdata, (:after_autostart, event)),
             ),
             autostart = false,
         )
@@ -970,14 +1091,14 @@ end
         end
 
         function Rocket.on_next!(
-            listener::CustomEventListener, event::RxInferenceEvent{:on_new_data}
-        )
+                listener::CustomEventListener, event::RxInferenceEvent{:on_new_data}
+            )
             push!(listener.eventsdata, Any[event])
         end
 
         function Rocket.on_next!(
-            listener::CustomEventListener, event::RxInferenceEvent
-        )
+                listener::CustomEventListener, event::RxInferenceEvent
+            )
             push!(last(listener.eventsdata), event)
         end
 
@@ -990,20 +1111,22 @@ end
                 autoupdates = autoupdates,
                 historyvars = KeepEach(),
                 keephistory = keephistory,
-                events = Val((
-                    :on_new_data,
-                    :before_iteration,
-                    :after_iteration,
-                    :before_auto_update,
-                    :after_auto_update,
-                    :before_data_update,
-                    :after_data_update,
-                    :before_history_save,
-                    :after_history_save,
-                    :on_tick,
-                    :on_error,
-                    :on_complete,
-                )),
+                events = Val(
+                    (
+                        :on_new_data,
+                        :before_iteration,
+                        :after_iteration,
+                        :before_auto_update,
+                        :after_auto_update,
+                        :before_data_update,
+                        :after_data_update,
+                        :before_history_save,
+                        :after_history_save,
+                        :on_tick,
+                        :on_error,
+                        :on_complete,
+                    )
+                ),
                 iterations = iterations,
                 autostart = false,
                 warn = false,
@@ -1060,7 +1183,7 @@ end
                     enumerate(
                         filter(
                             event ->
-                                event isa RxInferenceEvent{:before_iteration},
+                            event isa RxInferenceEvent{:before_iteration},
                             events,
                         ),
                     ),
@@ -1075,7 +1198,7 @@ end
                     enumerate(
                         filter(
                             event ->
-                                event isa RxInferenceEvent{:after_iteration},
+                            event isa RxInferenceEvent{:after_iteration},
                             events,
                         ),
                     ),
@@ -1090,7 +1213,7 @@ end
                     event_name,
                     filter(
                         event ->
-                            event isa RxInferenceEvent{:before_iteration} ||
+                        event isa RxInferenceEvent{:before_iteration} ||
                             event isa RxInferenceEvent{:after_iteration},
                         events,
                     ),
@@ -1100,7 +1223,7 @@ end
                 @test length(
                     filter(
                         event ->
-                            event isa RxInferenceEvent{:before_auto_update},
+                        event isa RxInferenceEvent{:before_auto_update},
                         events,
                     ),
                 ) == iterations
@@ -1116,7 +1239,7 @@ end
                     enumerate(
                         filter(
                             event ->
-                                event isa RxInferenceEvent{:before_auto_update},
+                            event isa RxInferenceEvent{:before_auto_update},
                             events,
                         ),
                     ),
@@ -1132,7 +1255,7 @@ end
                     enumerate(
                         filter(
                             event ->
-                                event isa RxInferenceEvent{:after_auto_update},
+                            event isa RxInferenceEvent{:after_auto_update},
                             events,
                         ),
                     ),
@@ -1148,7 +1271,7 @@ end
                     event_name,
                     filter(
                         event ->
-                            event isa RxInferenceEvent{:before_auto_update} ||
+                        event isa RxInferenceEvent{:before_auto_update} ||
                             event isa RxInferenceEvent{:after_auto_update},
                         events,
                     ),
@@ -1160,7 +1283,7 @@ end
                 @test length(
                     filter(
                         event ->
-                            event isa RxInferenceEvent{:before_data_update},
+                        event isa RxInferenceEvent{:before_data_update},
                         events,
                     ),
                 ) == iterations
@@ -1176,7 +1299,7 @@ end
                     enumerate(
                         filter(
                             event ->
-                                event isa RxInferenceEvent{:before_data_update},
+                            event isa RxInferenceEvent{:before_data_update},
                             events,
                         ),
                     ),
@@ -1192,7 +1315,7 @@ end
                     enumerate(
                         filter(
                             event ->
-                                event isa RxInferenceEvent{:after_data_update},
+                            event isa RxInferenceEvent{:after_data_update},
                             events,
                         ),
                     ),
@@ -1208,7 +1331,7 @@ end
                     event_name,
                     filter(
                         event ->
-                            event isa RxInferenceEvent{:before_data_update} ||
+                        event isa RxInferenceEvent{:before_data_update} ||
                             event isa RxInferenceEvent{:after_data_update},
                         events,
                     ),
@@ -1221,13 +1344,13 @@ end
                     event_name,
                     filter(events) do event
                         return event isa RxInferenceEvent{:before_iteration} ||
-                               event isa
-                               RxInferenceEvent{:before_auto_update} ||
-                               event isa RxInferenceEvent{:after_auto_update} ||
-                               event isa
-                               RxInferenceEvent{:before_data_update} ||
-                               event isa RxInferenceEvent{:after_data_update} ||
-                               event isa RxInferenceEvent{:after_iteration}
+                            event isa
+                            RxInferenceEvent{:before_auto_update} ||
+                            event isa RxInferenceEvent{:after_auto_update} ||
+                            event isa
+                            RxInferenceEvent{:before_data_update} ||
+                            event isa RxInferenceEvent{:after_data_update} ||
+                            event isa RxInferenceEvent{:after_iteration}
                     end,
                 ) == repeat(
                     [
@@ -1245,7 +1368,7 @@ end
                     @test length(
                         filter(
                             event ->
-                                event isa
+                            event isa
                                 RxInferenceEvent{:before_history_save},
                             events,
                         ),
@@ -1253,7 +1376,7 @@ end
                     @test length(
                         filter(
                             event ->
-                                event isa RxInferenceEvent{:after_history_save},
+                            event isa RxInferenceEvent{:after_history_save},
                             events,
                         ),
                     ) == 1
@@ -1350,8 +1473,8 @@ end
 @testitem "vector of inputs in streaming inference" begin
     import RxInfer: infer
     @model function test_model_for_vector_of_inputs_in_streaming_inference(
-        x, y, mx, vx
-    )
+            x, y, mx, vx
+        )
         for i in 1:3
             x[i] ~ NormalMeanVariance(mx, vx)
         end
@@ -1568,18 +1691,35 @@ end
         input
     end
 
-    @node DistributionA Stochastic [out, a]
-    @node DistributionB Stochastic [out, b]
-    @node LikelihoodDistribution Stochastic [out, input]
+    @define_factor_node(
+        node = DistributionA, type = Stochastic, interfaces = [:out, :a]
+    )
+    @define_factor_node(
+        node = DistributionB, type = Stochastic, interfaces = [:out, :b]
+    )
+    @define_factor_node(
+        node = LikelihoodDistribution,
+        type = Stochastic,
+        interfaces = [:out, :input],
+    )
 
-    @rule DistributionA(:out, Marginalisation) (q_a::Any,) = DistributionA(
-        mean(q_a)
+    @define_message_update_rule(
+        node = DistributionA,
+        target = :out,
+        args = (q[:a]::Any,),
+        body = (args) -> DistributionA(mean(args.q[:a])),
     )
-    @rule DistributionB(:out, Marginalisation) (q_b::Any,) = DistributionB(
-        mean(q_b)
+    @define_message_update_rule(
+        node = DistributionB,
+        target = :out,
+        args = (q[:b]::Any,),
+        body = (args) -> DistributionB(mean(args.q[:b])),
     )
-    @rule LikelihoodDistribution(:input, Marginalisation) (q_out::Any,) = LikelihoodDistribution(
-        mean(q_out)
+    @define_message_update_rule(
+        node = LikelihoodDistribution,
+        target = :input,
+        args = (q[:out]::Any,),
+        body = (args) -> LikelihoodDistribution(mean(args.q[:out])),
     )
 
     @model function invalid_product_posterior(out)
@@ -1860,14 +2000,14 @@ end
         y := f(a, M)
     end
 
-    meta = @meta begin
+    algorithm = @algorithm begin
         f() -> Linearization()
     end
 
     result = infer(;
         model = simple_model_missing_data(),
         predictvars = (y = KeepEach(),),
-        meta = meta,
+        algorithm = algorithm,
     )
 
     # Test summarize_session output format for inference invokes with default n_last
@@ -1969,14 +2109,14 @@ end
         m ~ Normal(; mean = 0.0, var = 1.0)
         y ~ Normal(; mean = f(m), prec = 1.0)
     end
-    @meta function model_meta()
+    @algorithm function model_meta()
         f() -> Linearization()
     end
     session = RxInfer.create_session()
     result = infer(;
         model = simple_nonlinear_model(),
         data = (y = 1.0,),
-        meta = model_meta(),
+        algorithm = model_meta(),
         session = session,
     )
     stats = RxInfer.get_session_stats(session, :inference)
@@ -2041,56 +2181,70 @@ end
 @testitem "Test force marginal computation" begin
     using RxInfer
 
-    mutable struct CountingMeta
+    import MessagePassingRulesBase
+
+    # A counter that the marginal rule below increments: state kept between calls belongs to an
+    # impure algorithm. It extends the default, so every other rule of the node is the default's.
+    mutable struct CountingAlgorithm <: DefaultAlgorithmExtension
         count::Int
     end
 
-    @marginalrule DiscreteTransition(:out_in) (
-        m_out::Categorical,
-        m_in::Categorical,
-        q_a::PointMass,
-        meta::CountingMeta,
-    ) = begin
-        meta.count += 1
-        return @call_marginalrule DiscreteTransition(:out_in) (
-            m_out = m_out, m_in = m_in, q_a = q_a
-        )
-    end
+    MessagePassingRulesBase.ispure(::Type{CountingAlgorithm}) = false
+
+    @define_marginal_update_rule(
+        node = DiscreteTransition,
+        target = (:out, :in),
+        algorithm = CountingAlgorithm,
+        args = (m[:out]::Categorical, m[:in]::Categorical, q[:a]::PointMass),
+        pure = false,
+        body =
+            (algo, args) -> begin
+            algo.count += 1
+            return getresult(
+                call_marginal_update_rule(
+                    DiscreteTransition,
+                    (:out, :in);
+                    m = (out = args.m[:out], in = args.m[:in]),
+                    q = (a = args.q[:a],),
+                ),
+            )
+        end,
+    )
 
     # Test batch inference
-    @model function test_model(meta, A)
+    @model function test_model(counter, A)
         in ~ Categorical([0.5, 0.5])
         out ~ Categorical([0.5, 0.5])
-        out ~ DiscreteTransition(in, A) where {meta = meta}
+        out ~ DiscreteTransition(in, A) where {algorithm = counter}
     end
 
-    meta = CountingMeta(0)
+    counter = CountingAlgorithm(0)
 
     result = infer(;
-        model = test_model(; meta = meta), data = (A = diageye(2),)
+        model = test_model(; counter = counter), data = (A = diageye(2),)
     )
-    @test meta.count == 0
+    @test counter.count == 0
 
     result = infer(;
-        model = test_model(; meta = meta),
+        model = test_model(; counter = counter),
         data = (A = diageye(2),),
         options = (force_marginal_computation = true,),
     )
-    @test meta.count == 1
+    @test counter.count == 1
 
     result = infer(;
-        model = test_model(; meta = meta),
+        model = test_model(; counter = counter),
         data = (A = diageye(2),),
         options = (force_marginal_computation = true,),
         iterations = 10,
     )
-    @test meta.count == 11
+    @test counter.count == 11
 
     # Test streaming inference
-    @model function streaming_test_model(p_in, p_out, meta, A)
+    @model function streaming_test_model(p_in, p_out, counter, A)
         in ~ Categorical(p_in)
         out ~ Categorical(p_out)
-        out ~ DiscreteTransition(in, A) where {meta = meta}
+        out ~ DiscreteTransition(in, A) where {algorithm = counter}
     end
 
     init = @initialization begin
@@ -2103,7 +2257,7 @@ end
         p_out = probvec(q(out))
     end
 
-    meta = CountingMeta(0)
+    counter = CountingAlgorithm(0)
 
     static_observations = [rand(2, 2) for _ in 1:10]
     datastream =
@@ -2111,26 +2265,26 @@ end
         map(NamedTuple{(:A,), Tuple{Matrix{Float64}}}, (d) -> (A = d,))
 
     result = infer(;
-        model = streaming_test_model(; meta = meta),
+        model = streaming_test_model(; counter = counter),
         datastream = datastream,
         autoupdates = autoupdates,
         initialization = init,
         autostart = true,
     )
-    @test meta.count == 0
+    @test counter.count == 0
 
     datastream =
         from(static_observations) |>
         map(NamedTuple{(:A,), Tuple{Matrix{Float64}}}, (d) -> (A = d,))
     engine = infer(;
-        model = streaming_test_model(; meta = meta),
+        model = streaming_test_model(; counter = counter),
         datastream = datastream,
         autoupdates = autoupdates,
         initialization = init,
         autostart = true,
         options = (force_marginal_computation = true,),
     )
-    @test meta.count == 10
+    @test counter.count == 10
 
     # Test deterministic nodes
     @model function test_model_for_force_marginal_computations(y)
@@ -2149,13 +2303,18 @@ end
 @testitem "Inference should have missing posterior if error occurs immediately" begin
     struct MyCustomNodeForMissingPosteriorTest end
 
-    @node MyCustomNodeForMissingPosteriorTest Stochastic [out, in]
+    @define_factor_node(
+        node = MyCustomNodeForMissingPosteriorTest,
+        type = Stochastic,
+        interfaces = [:out, :in],
+    )
 
-    @rule MyCustomNodeForMissingPosteriorTest(:out, Marginalisation) (
-        q_in::Any,
-    ) = begin
-        throw(ErrorException("This is a test error"))
-    end
+    @define_message_update_rule(
+        node = MyCustomNodeForMissingPosteriorTest,
+        target = :out,
+        args = (q[:in]::Any,),
+        body = (args) -> throw(ErrorException("This is a test error")),
+    )
 
     @model function my_model_with_error(y)
         θ ~ MyCustomNodeForMissingPosteriorTest(1)
@@ -2174,4 +2333,66 @@ end
 
 @testmodule ReactiveMPEventHandlerTestUtils begin
     import RxInfer.ReactiveMP
+end
+
+@testitem "`meta` is the deprecated name of `algorithm`" begin
+    f(a) = a + 1
+
+    @model function simple_nonlinear_model(y)
+        m ~ Normal(; mean = 0.0, var = 1.0)
+        y ~ Normal(; mean = f(m), prec = 1.0)
+    end
+
+    @model function simple_nonlinear_model_with_where(y)
+        m ~ Normal(; mean = 0.0, var = 1.0)
+        z := f(m) where {meta = DeltaApproximation(method = Linearization())}
+        y ~ Normal(; mean = z, prec = 1.0)
+    end
+
+    expected = infer(;
+        model = simple_nonlinear_model(),
+        data = (y = 1.0,),
+        algorithm = @algorithm(
+            begin
+                f() -> DeltaApproximation(method = Linearization())
+            end
+        ),
+    )
+
+    # `infer(; meta = …)` warns, and still runs the algorithm it was given
+    result = @test_logs (:warn, r"`infer\(; meta = …\)` is deprecated") match_mode =
+        :any infer(;
+        model = simple_nonlinear_model(),
+        data = (y = 1.0,),
+        meta = @meta(
+            begin
+                f() -> DeltaApproximation(method = Linearization())
+            end
+        ),
+    )
+    @test mean(result.posteriors[:m]) ≈ mean(expected.posteriors[:m])
+    @test var(result.posteriors[:m]) ≈ var(expected.posteriors[:m])
+
+    # `where { meta = … }` warns, and still runs the algorithm it was given
+    result = @test_logs (:warn, r"`where \{ meta = … \}` is deprecated") match_mode =
+        :any infer(;
+        model = simple_nonlinear_model_with_where(), data = (y = 1.0,)
+    )
+    @test mean(result.posteriors[:m]) ≈ mean(expected.posteriors[:m])
+    @test var(result.posteriors[:m]) ≈ var(expected.posteriors[:m])
+
+    @test_throws "`infer` was given both `algorithm` and `meta`" infer(;
+        model = simple_nonlinear_model(),
+        data = (y = 1.0,),
+        algorithm = @algorithm(
+            begin
+                f() -> DeltaApproximation(method = Linearization())
+            end
+        ),
+        meta = @meta(
+            begin
+                f() -> DeltaApproximation(method = Linearization())
+            end
+        ),
+    )
 end

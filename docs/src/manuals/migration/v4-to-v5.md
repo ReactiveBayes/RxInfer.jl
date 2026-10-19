@@ -1,4 +1,7 @@
-# Migration Guide from version 4.x to 5.x
+# [Migration Guide from version 4.x to 5.x](@id migration-4-to-5)
+
+!!! warning "Superseded in 6.x"
+    The "After (v5.x)" code for log scales on this page does not run on RxInfer 6.x: `LogScaleAnnotations` is removed, and you enable log scales with `logscales = true` and read them with `getlogscale(q)`. See the [Migration Guide from version 5.x to 6.x](@ref migration-5-to-6).
 
 This guide explains how to migrate your code from `RxInfer` version 4.x to 5.x. The main breaking changes in version 5.x are:
 

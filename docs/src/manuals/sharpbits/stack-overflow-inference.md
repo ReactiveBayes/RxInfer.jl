@@ -14,11 +14,7 @@ For large models, this recursive subscription process can consume the entire sta
 
 ## Example Error
 
-When this occurs, you'll see an error message that looks something like this:
-
-```julia
-ERROR: Stack overflow error occurred during the inference procedure. 
-```
+When this occurs, RxInfer logs an error that begins with `Stack overflow error detected during inference` and suggests the `limit_stack_depth` option, followed by Julia's `StackOverflowError`.
 
 ## Solution: Limiting Stack Depth
 
@@ -54,18 +50,7 @@ results = infer(
 !!! note
     Note the comma after `limit_stack_depth = 100`. This is important because it tells Julia that the option is placed in the named tuple `options`.
 
-Without `limit_stack_depth` enabled, the inference will fail with a `StackOverflowError`:
-
-```julia
-results = infer(
-    model = long_state_space_model(),
-    data = data
-)
-```
-
-```julia
-ERROR: Stack overflow error occurred during the inference procedure. 
-```
+Without `limit_stack_depth`, the same call, `infer(model = long_state_space_model(), data = data)`, may fail with a `StackOverflowError`, depending on the stack size of your system.
 
 ### Performance Considerations
 

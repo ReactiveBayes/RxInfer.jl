@@ -3,10 +3,10 @@ using Rocket
 import Base: show, setindex!
 
 mutable struct ScoreActor{L} <: Rocket.Actor{L}
-    score  :: Matrix{L}
-    cframe :: Int
-    cindex :: Int
-    valid  :: BitVector
+    score::Matrix{L}
+    cframe::Int
+    cindex::Int
+    valid::BitVector
     # Matrix height is capacity; a converged event may fill only a prefix of its column.
     counts::Vector{Int}
 end
@@ -14,8 +14,8 @@ end
 ScoreActor(iterations::Int, keep::Int = 1) = ScoreActor(Real, iterations, keep)
 ScoreActor(::Type{L}, iterations::Int, keep::Int = 1) where {L <: Real} =
     ScoreActor{L}(
-        zeros(L, iterations, keep), 1, 0, falses(keep), zeros(Int, keep)
-    )
+    zeros(L, iterations, keep), 1, 0, falses(keep), zeros(Int, keep)
+)
 
 function valid_score_frames(actor::ScoreActor)
     # Ring storage order differs from observation order after wrapping.
@@ -32,16 +32,16 @@ Base.setindex!(actor::ScoreActor, data, frame, index) =
 function getvalid(actor::ScoreActor)
     return Iterators.flatten(
         view(actor.score, 1:actor.counts[i], i) for
-        i in valid_score_frames(actor)
+            i in valid_score_frames(actor)
     )
 end
 
 getniterations(actor::ScoreActor) = size(actor.score, 1)
-getnframes(actor::ScoreActor)     = size(actor.score, 2)
+getnframes(actor::ScoreActor) = size(actor.score, 2)
 
 function Rocket.on_next!(actor::ScoreActor{L}, data::L) where {L}
     iterations = getniterations(actor)
-    nframes    = getnframes(actor)
+    nframes = getnframes(actor)
 
     # Obtain current `frame` and data `index` position
     cframe = actor.cframe
@@ -64,19 +64,20 @@ function Rocket.on_next!(actor::ScoreActor{L}, data::L) where {L}
     return nothing
 end
 
+# Rethrown as it is, so that its type and its message, a rule's not-found report, reach the user.
 function Rocket.on_error!(actor::ScoreActor, err)
-    error(err)
+    throw(err)
 end
 
 function Rocket.on_complete!(actor::ScoreActor)
     Rocket.release!(actor)
-    nothing
+    return nothing
 end
 
 function Rocket.release!(actor::ScoreActor, warn = true; allow_partial = false)
     iterations = getniterations(actor)
-    cframe     = actor.cframe
-    cindex     = actor.cindex
+    cframe = actor.cframe
+    cindex = actor.cindex
     allow_partial && cindex == 0 && return nothing
 
     if warn && (cindex !== iterations) && !allow_partial
@@ -104,7 +105,7 @@ function score_snapshot_iterations(actor::ScoreActor, slice = nothing)
     # Average only events that reached iteration k; unused cells are not zero BFE samples.
     result = [
         sum(actor.score[k, i] for i in frames if actor.counts[i] >= k) /
-        count(i -> actor.counts[i] >= k, frames) for k in 1:niterations
+            count(i -> actor.counts[i] >= k, frames) for k in 1:niterations
     ]
 
     return slice_snapshot(result, slice)
@@ -113,8 +114,8 @@ end
 slice_snapshot(vector, ::Nothing) = vector
 slice_snapshot(vector, range::AbstractRange) = vector[range]
 slice_snapshot(vector, count::Int) =
-    if length(vector) === count
-        vector
-    else
-        vector[firstindex(vector):(firstindex(vector) + count - 1)]
-    end
+if length(vector) === count
+    vector
+else
+    vector[firstindex(vector):(firstindex(vector) + count - 1)]
+end

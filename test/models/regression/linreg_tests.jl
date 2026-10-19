@@ -18,10 +18,10 @@
     @model function linear_regression_broadcasted(x, y)
         a ~ Normal(mean = 0.0, var = 1.0)
         b ~ Normal(mean = 0.0, var = 1.0)
-        # Variance over-complicated for a purpose of checking that this expressions is allowed, 
+        # Variance over-complicated for a purpose of checking that this expressions is allowed,
         # it should be equal to `1.0`, but it shouldn't create any extra factor nodes
         y .~
-        Normal(mean = x .* b .+ a, var = det((diageye(2) .+ diageye(2)) ./ 2))
+            Normal(mean = x .* b .+ a, var = det((diageye(2) .+ diageye(2)) ./ 2))
     end
 
     init = @initialization begin
@@ -52,7 +52,7 @@
     ydata = reala .+ realb .* xdata
 
     ## Inference execution
-    result  = linreg_inference(linear_regression, 25, xdata, ydata)
+    result = linreg_inference(linear_regression, 25, xdata, ydata)
     resultb = linreg_inference(linear_regression_broadcasted, 25, xdata, ydata)
 
     ares = result.posteriors[:a]
@@ -64,7 +64,7 @@
     fresb = resultb.free_energy
 
     ## Test inference results
-    @test mean(ares) ≈ mean(aresb) && var(ares) ≈ var(aresb) # Broadcasting may change the order of computations, so slight 
+    @test mean(ares) ≈ mean(aresb) && var(ares) ≈ var(aresb) # Broadcasting may change the order of computations, so slight
     @test mean(bres) ≈ mean(bresb) && var(bres) ≈ var(bresb) # differences are allowed
     @test all(fres .≈ fresb)
     @test isapprox(mean(ares), reala, atol = 5)

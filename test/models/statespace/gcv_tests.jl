@@ -53,16 +53,16 @@
         for v in (:x, :z, :k, :w)
             @test length(results.posteriors[v]) === 20
         end
-        @test mean(results.posteriors[:x][end]) ≈ 0.3972145516 atol = 1e-6
-        @test var(results.posteriors[:x][end]) ≈ 0.6027854484 atol = 1e-6
-        @test last(results.free_energy) ≈ 1.9679321014 atol = 1e-6
+        @test mean(results.posteriors[:x][end]) ≈ 0.3972145516 atol = 1.0e-6
+        @test var(results.posteriors[:x][end]) ≈ 0.6027854484 atol = 1.0e-6
+        @test last(results.free_energy) ≈ 1.9679321014 atol = 1.0e-6
     end
 
     # Both initializations must converge to the same posteriors
     for v in (:x, :z, :k, :w)
         @test mean(results_marginals_only.posteriors[v][end]) ≈
-            mean(results_with_message.posteriors[v][end]) atol = 1e-8
+            mean(results_with_message.posteriors[v][end]) atol = 1.0e-8
         @test var(results_marginals_only.posteriors[v][end]) ≈
-            var(results_with_message.posteriors[v][end]) atol = 1e-8
+            var(results_with_message.posteriors[v][end]) atol = 1.0e-8
     end
 end

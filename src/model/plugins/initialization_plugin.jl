@@ -35,17 +35,17 @@ getvardescriptor(m::InitObject) = m.var_descriptor
 getinitinfo(m::InitObject) = m.init_info
 
 function Base.show(
-    io::IO, m::InitObject{S, T}
-) where {S <: InitDescriptor{InitMarginal}, T}
+        io::IO, m::InitObject{S, T}
+    ) where {S <: InitDescriptor{InitMarginal}, T}
     print(io, "q($(getvardescriptor(m))) = ")
-    print(io, getinitinfo(m))
+    return print(io, getinitinfo(m))
 end
 
 function Base.show(
-    io::IO, m::InitObject{S, T}
-) where {S <: InitDescriptor{InitMessage}, T}
+        io::IO, m::InitObject{S, T}
+    ) where {S <: InitDescriptor{InitMessage}, T}
     print(io, "μ($(getvardescriptor(m))) = ")
-    print(io, getinitinfo(m))
+    return print(io, getinitinfo(m))
 end
 
 struct InitSpecification
@@ -73,6 +73,7 @@ function Base.show(io::IO, c::InitSpecification)
         print(io, submodel)
         print(io, "\n")
     end
+    return
 end
 
 getinitobjects(m::InitSpecification) = m.init_objects
@@ -119,7 +120,7 @@ getkey(m::GeneralSubModelInit) = getsubmodel(m)
 const SubModelInit = Union{GeneralSubModelInit, SpecificSubModelInit}
 
 function Base.show(io::IO, init::SubModelInit)
-    print(
+    return print(
         IOContext(io, (:indent => get(io, :indent, 0) + 2), (:head => false)),
         "Init for submodel ",
         getsubmodel(init),
@@ -133,19 +134,19 @@ function Base.push!(m::InitSpecification, o::InitObject)
         @warn "Variable $(getvardescriptor(getvardescriptor(o))) is initialized multiple times. The last initialization will be used."
         filter!(
             x ->
-                getvardescriptor(getvardescriptor(x)) ≠
+            getvardescriptor(getvardescriptor(x)) ≠
                 getvardescriptor(getvardescriptor(o)),
             m.init_objects,
         )
     end
-    push!(m.init_objects, o)
+    return push!(m.init_objects, o)
 end
 Base.push!(m::InitSpecification, o::SubModelInit) = push!(m.submodel_init, o)
 
 default_init(any) = EmptyInit
 
 function apply_init!(model::Model, init::InitSpecification)
-    apply_init!(model, GraphPPL.get_principal_submodel(model), init)
+    return apply_init!(model, GraphPPL.get_principal_submodel(model), init)
 end
 
 function apply_init!(model::Model, context::Context, init::InitSpecification)
@@ -157,7 +158,7 @@ function apply_init!(model::Model, context::Context, init::InitSpecification)
         if (submodel = getspecificsubmodelinit(init, factor_id)) !== nothing
             apply_init!(model, child, getinitobjects(submodel))
         elseif (submodel = getgeneralsubmodelinit(init, fform(factor_id))) !==
-            nothing
+                nothing
             apply_init!(model, child, getinitobjects(submodel))
         elseif inline_init !== nothing
             apply_init!(model, child, inline_init)
@@ -165,15 +166,16 @@ function apply_init!(model::Model, context::Context, init::InitSpecification)
             apply_init!(model, child, default_init(fform(factor_id)))
         end
     end
+    return
 end
 
 function apply_init!(
-    model::Model,
-    context::Context,
-    init::InitObject{S, T} where {S <: InitDescriptor, T},
-)
+        model::Model,
+        context::Context,
+        init::InitObject{S, T} where {S <: InitDescriptor, T},
+    )
     nodes = unroll(context[getvardescriptor(getvardescriptor(init))])
-    apply_init!(model, context, init, nodes)
+    return apply_init!(model, context, init, nodes)
 end
 
 apply_init!(
@@ -184,25 +186,27 @@ apply_init!(
 ) = save_init!(model, node, init)
 
 function apply_init!(
-    model::Model,
-    context::Context,
-    init::InitObject{S, T} where {S <: InitDescriptor, T},
-    nodes::AbstractArray{NodeLabel},
-)
+        model::Model,
+        context::Context,
+        init::InitObject{S, T} where {S <: InitDescriptor, T},
+        nodes::AbstractArray{NodeLabel},
+    )
     for node in nodes
         save_init!(model, node, init)
     end
+    return
 end
 
 function apply_init!(
-    model::Model,
-    context::Context,
-    init::InitObject{S, T},
-    nodes::AbstractArray{NodeLabel},
-) where {S <: InitDescriptor, T <: AbstractArray}
+        model::Model,
+        context::Context,
+        init::InitObject{S, T},
+        nodes::AbstractArray{NodeLabel},
+    ) where {S <: InitDescriptor, T <: AbstractArray}
     for (node, marginal) in zip(nodes, getinitinfo(init))
         save_init!(model, node, InitObject(getvardescriptor(init), marginal))
     end
+    return
 end
 
 const InitMsgExtraKey = GraphPPL.NodeDataExtraKey{:init_msg, Any}()
@@ -218,10 +222,10 @@ save_init!(
     save_init!(model, node, init, InitMarExtraKey)
 
 function save_init!(
-    model::Model, node::NodeLabel, init::InitObject{S, T} where {S, T}, key
-)
+        model::Model, node::NodeLabel, init::InitObject{S, T} where {S, T}, key
+    )
     nodedata = model[node]
-    if !hasextra(nodedata, key)
+    return if !hasextra(nodedata, key)
         setextra!(nodedata, key, getinitinfo(init))
     end
 end
@@ -252,8 +256,8 @@ GraphPPL.preprocess_plugin(
 ) = label, nodedata
 
 function GraphPPL.postprocess_plugin(
-    plugin::InitializationPlugin{NoInit}, model::Model
-)
+        plugin::InitializationPlugin{NoInit}, model::Model
+    )
     apply_init!(model, default_init(GraphPPL.fform(GraphPPL.getcontext(model))))
     return nothing
 end
@@ -276,13 +280,17 @@ end
 
 function add_init_construction(e::Expr)
     if @capture(
-        e,
-        (function m_name_(m_args__; m_kwargs__)
-            c_body_
-        end) | (function m_name_(m_args__)
-            c_body_
-        end)
-    )
+            e,
+            (
+                function m_name_(m_args__; m_kwargs__)
+                    c_body_
+                end
+            ) | (
+                function m_name_(m_args__)
+                    c_body_
+                end
+            )
+        )
         m_kwargs = m_kwargs === nothing ? [] : m_kwargs
         return quote
             function $m_name($(m_args...); $(m_kwargs...))
@@ -302,15 +310,19 @@ function add_init_construction(e::Expr)
 end
 
 function create_submodel_init(e::Expr)
-    if @capture(e, (
-        for init in submodel_
-            body__
-        end
-    ))
+    if @capture(
+            e, (
+                for init in submodel_
+                    body__
+                end
+            )
+        )
         if @capture(submodel, (name_, index_))
-            submodel_constructor = :(RxInfer.SpecificSubModelInit(
-                RxInfer.GraphPPL.FactorID($name, $index)
-            ))
+            submodel_constructor = :(
+                RxInfer.SpecificSubModelInit(
+                    RxInfer.GraphPPL.FactorID($name, $index)
+                )
+            )
         else
             submodel_constructor = :(RxInfer.GeneralSubModelInit($submodel))
         end

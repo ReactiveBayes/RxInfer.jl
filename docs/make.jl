@@ -1,7 +1,27 @@
 using RxInfer
 using Documenter
 using DocumenterMermaid
+using DocumenterInterLinks, DocInventories
 using Dates
+
+# A registered package's site, by its published inventory. A first request to GitHub Pages can take
+# seconds, longer than DocInventories' default timeout of one second, so it waits longer.
+registered(name) = Inventory(
+    "https://reactivebayes.github.io/$(name).jl/stable/objects.inv";
+    root_url = "https://reactivebayes.github.io/$(name).jl/stable/", timeout = 30,
+)
+
+# The ReactiveMP ecosystem's sites, for `@extref` links, each by its published inventory.
+const REGISTERED_SITES = [
+    "ReactiveMP", "MessagePassingRulesBase", "MessagePassingRulesApproximations", "StandardMessagePassingRules",
+    "DeltaMessagePassingRules", "GaussianCouplingMessagePassingRules", "SoftDotMessagePassingRules",
+    "AutoregressiveMessagePassingRules", "ContinuousTransitionMessagePassingRules",
+    "PolyaMessagePassingRules", "BIFMMessagePassingRules", "FlowMessagePassingRules",
+    "DiscreteTransitionMessagePassingRules", "GCVMessagePassingRules",
+]
+links = InterLinks(
+    (name => registered(name) for name in REGISTERED_SITES)...,
+)
 
 ## https://discourse.julialang.org/t/generation-of-documentation-fails-qt-qpa-xcb-could-not-connect-to-display/60988
 ## https://gr-framework.org/workstations.html#no-output
@@ -14,9 +34,13 @@ draft = get(ENV, "DOCS_DRAFT", "false") == "true"
 makedocs(;
     draft=draft,
     warnonly=draft,
+    # External links are checked too; these publishers answer scripted requests with 403.
+    linkcheck=!draft,
+    linkcheck_ignore=[r"doi\.org/", r"mdpi\.com/", r"dl\.acm\.org/", r"ieeexplore\.ieee\.org/"],
     modules=[RxInfer],
     authors="Bagaev Dmitry <d.v.bagaev@tue.nl> and contributors",
     sitename="RxInfer.jl",
+    plugins=[links],
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",
         canonical="https://docs.rxinfer.com/stable",
@@ -42,12 +66,15 @@ makedocs(;
         "User guide" => [
             "Getting started" => "manuals/getting-started.md",
             "RxInfer.jl vs. Others" => "manuals/comparison.md",
-            "Using RxInfer from Python" => "manuals/how-to-use-rxinfer-from-python.md",
             "Model specification" => "manuals/model-specification.md",
             "Variational inference" => [
                 "Bethe Free Energy" => "manuals/variational/bethe-free-energy.md",
                 "Constraints specification" => "manuals/variational/constraints-specification.md",
                 "Functional form constraints" => "manuals/variational/functional-forms.md"
+            ],
+            "Message passing by hand" => [
+                "Messages by hand" => "manuals/learning/messages-by-hand.md",
+                "Variational message passing by hand" => "manuals/learning/vmp-by-hand.md",
             ],
             "Understanding Rules" => "manuals/rules_and_nodes.md",
             "Inference specification" => [
@@ -56,7 +83,7 @@ makedocs(;
                 "Streamline inference" => "manuals/inference/streamlined.md",
                 "Static vs. Streamlined" => "manuals/inference/static-vs-streamlined.md",
                 "Initialization" => "manuals/inference/initialization.md",
-                "Meta specification" => "manuals/inference/meta-specification.md",
+                "Algorithm specification" => "manuals/inference/algorithm-specification.md",
                 "Auto-updates" => "manuals/inference/autoupdates.md",
                 "Partially-referenced (sparse) data" =>
                     "manuals/inference/partial-data.md",
@@ -76,6 +103,7 @@ makedocs(;
             "Session summary" => "manuals/session_summary.md",
             "Sharing sessions & telemetry" => "manuals/telemetry.md",
             "Migration guides" => [
+                "Migration from v5 to v6" => "manuals/migration/v5-to-v6.md",
                 "Migration from v2 to v3" => "manuals/migration/v2-to-v3.md",
                 "Migration from v4 to v5" => "manuals/migration/v4-to-v5.md",
             ],

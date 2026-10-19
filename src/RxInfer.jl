@@ -2,8 +2,27 @@ module RxInfer
 
 using Reexport
 
+# The engine, the rule system a model's nodes are declared with, the node packages RxInfer
+# loads by default (the standard nodes with Probit, the Delta node, which `:=` with any function
+# creates, AR, DiscreteTransition, GCV, GaussianCoupling and SoftDot), and the approximations.
+# The other node packages (ContinuousTransition, Pólya, BIFM, Flow) are loaded by the models that
+# use them.
 @reexport using ReactiveMP,
-    GraphPPL, Rocket, Distributions, ExponentialFamily, BayesBase, FastCholesky
+    MessagePassingRulesBase,
+    StandardMessagePassingRules,
+    DeltaMessagePassingRules,
+    AutoregressiveMessagePassingRules,
+    DiscreteTransitionMessagePassingRules,
+    GCVMessagePassingRules,
+    GaussianCouplingMessagePassingRules,
+    SoftDotMessagePassingRules,
+    MessagePassingRulesApproximations,
+    GraphPPL,
+    Rocket,
+    Distributions,
+    ExponentialFamily,
+    BayesBase,
+    FastCholesky
 
 include("helpers.jl")
 include("rocket.jl")
@@ -34,10 +53,16 @@ include("callbacks/stop_early.jl")
 include("inference/postprocess.jl")
 include("inference/inference.jl")
 
+include("error_hints.jl")
+include("precompile.jl")
+
 _isprecompiling() = ccall(:jl_generating_output, Cint, ()) == 1
 
 function __init__()
-    if !_isprecompiling()
+    Base.Experimental.register_error_hint(
+        removed_name_error_hint, UndefVarError
+    )
+    return if !_isprecompiling()
         if RxInfer.preference_enable_session_logging
             default_session = create_session()
             RxInfer.set_default_session!(default_session)

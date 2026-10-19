@@ -1,4 +1,6 @@
 @testitem "PointMassFormConstraint" begin
+    # The default optimiser of a continuous point mass runs Optim.jl, through RxInfer's extension.
+    using Optim
     using LinearAlgebra
     using Random, StableRNGs, DomainSets, Distributions
     import RxInfer:
@@ -12,11 +14,11 @@
         mode::Float64
     end
 
-    # We are testing specifically that the point mass optimizer does not call `logpdf` and 
+    # We are testing specifically that the point mass optimizer does not call `logpdf` and
     # chooses a fast path with `mode` for `<: Distribution` objects
     Distributions.logpdf(::MyDistributionWithMode, _) = error("This should not be called")
-    Distributions.mode(d::MyDistributionWithMode)     = d.mode
-    Distributions.support(::MyDistributionWithMode)   = RealInterval(-Inf, Inf)
+    Distributions.mode(d::MyDistributionWithMode) = d.mode
+    Distributions.support(::MyDistributionWithMode) = RealInterval(-Inf, Inf)
 
     const arbitrary_dist_1 = ContinuousUnivariateLogPdf(
         RealLine(), (x) -> logpdf(NormalMeanVariance(0, 1), x)
@@ -125,7 +127,7 @@
 
             analytical = prod(PreserveTypeProd(Distribution), d1, d2)
 
-            @test isapprox(mode(opt), mode(analytical), atol = 1e-8)
+            @test isapprox(mode(opt), mode(analytical), atol = 1.0e-8)
         end
 
         for _ in 1:3
@@ -145,7 +147,7 @@
 
             analytical = prod(PreserveTypeProd(Distribution), d1, d2)
 
-            @test isapprox(mode(opt), mode(analytical), atol = 1e-4)
+            @test isapprox(mode(opt), mode(analytical), atol = 1.0e-4)
         end
     end
 
@@ -187,11 +189,11 @@
         end
 
         for p in [0.25, 0.5, 0.75],
-            prior in [
-                Beta(2.0, 2.0),
-                Truncated(Normal(0.5, 1.0), 0.0, 1.0),
-                Truncated(Gamma(10.0, 10.0), 0.0, 1.0),
-            ]
+                prior in [
+                    Beta(2.0, 2.0),
+                    Truncated(Normal(0.5, 1.0), 0.0, 1.0),
+                    Truncated(Gamma(10.0, 10.0), 0.0, 1.0),
+                ]
 
             dataset = float.(rand(StableRNG(42), Bernoulli(p), 500))
             result = infer(
@@ -200,7 +202,23 @@
                 constraints = constraints,
             )
             @test result.posteriors[:θ] isa PointMass
-            @test mean(result.posteriors[:θ]) ≈ p atol = 1e-1
+            @test mean(result.posteriors[:θ]) ≈ p atol = 1.0e-1
         end
     end
+end
+
+@testitem "PointMassFormConstraint: without Optim, the continuous default optimiser says what to load" begin
+    import RxInfer: PointMassFormConstraint, point_mass_optimize
+    using Distributions
+
+    # Only the extension's backend has a method; any other reaches the core's fallback, as the
+    # default does when Optim is not loaded.
+    err = try
+        point_mass_optimize(:no_optim, PointMassFormConstraint(), Normal(0.0, 1.0))
+    catch e
+        e
+    end
+    @test err isa ErrorException
+    @test contains(err.msg, "`using Optim`") &&
+        contains(err.msg, "PointMassFormConstraint(optimizer = ...)")
 end

@@ -351,14 +351,21 @@ using RxInfer, Test, Markdown
     :before_form_constraint_applied,
     :after_form_constraint_applied,
     :before_marginal_computation,
-    :after_marginal_computation
+    :after_marginal_computation,
+    :before_marginal_rule_call,
+    :after_marginal_rule_call,
+    :before_factor_bound_free_energy,
+    :after_factor_bound_free_energy,
+    :before_variable_bound_entropy,
+    :after_variable_bound_entropy,
+    :on_free_energy_update
 )) 
 nothing
 ```
 
 ---
 
-Below we list `RxInfer` specific callbacks. In addition to these, `ReactiveMP` provides lower-level callbacks for the message passing procedure itself, such as `before_message_rule_call`, `after_message_rule_call`, `before_product_of_messages`, `after_product_of_messages`, `before_marginal_computation`, `after_marginal_computation`, and others. For a full list and detailed descriptions of these callbacks, refer to the official documentation of `ReactiveMP`.
+Below we list `RxInfer` specific callbacks. In addition to these, `ReactiveMP` provides lower-level callbacks for the message passing procedure itself, such as `before_message_rule_call`, `after_message_rule_call`, `before_product_of_messages`, `after_product_of_messages`, `before_marginal_computation`, `after_marginal_computation`, the marginal rule calls (`after_marginal_rule_call`) and the free energy's terms (`after_factor_bound_free_energy`, `after_variable_bound_entropy`), and others. For a full list and detailed descriptions of these callbacks, refer to the official documentation of `ReactiveMP`.
 
 ```julia
 before_model_creation()
@@ -404,6 +411,11 @@ Calls after each data update, accepts two arguments: the `model` and the updated
 on_marginal_update(model::ProbabilisticModel, name, update)
 ```
 Calls after each marginal update, accepts three arguments: the `model`, the name of the updated marginal, and the updated marginal itself.
+
+```julia
+on_free_energy_update(event::OnFreeEnergyUpdateEvent)
+```
+Calls each time the free energy is computed, with `free_energy = true`: once per iteration. The value is `event.value`; see [Tracing the free energy](@ref trace-callbacks-free-energy) for its terms.
 
 ---
 

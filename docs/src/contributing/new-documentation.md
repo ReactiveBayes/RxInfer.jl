@@ -18,7 +18,7 @@ Contributing to our documentation is a valuable way to enhance the RxInfer ecosy
 
 By following these steps, you can play an essential role in improving and expanding our documentation, making it more accessible and valuable to the RxInfer community.
 
-## Use [`LiveServer.jl`](https://github.com/tlienart/LiveServer.jl)
+## Use [`LiveServer.jl`](https://github.com/JuliaDocs/LiveServer.jl)
 
 `LiveServer.jl` is a simple and lightweight web server developed in Julia. It features live-reload capabilities, making it a valuable tool for automatically refreshing the documentation of a package while you work on its content.
 

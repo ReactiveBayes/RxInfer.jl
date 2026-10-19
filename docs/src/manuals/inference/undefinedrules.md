@@ -1,6 +1,6 @@
 # [Inference without explicit message update rules](@id inference-undefinedrules)
 
-`RxInfer` utilizes the [`ReactiveMP.jl`](https://github.com/ReactiveBayes/ReactiveMP.jl) package as its inference backend. Typically, running inference with `ReactiveMP.jl` requires users to define a factor node using the `@node` macro and specify corresponding message update rules with the `@rule` macro. For background on what rules are and how they work, see [Understanding Rules](@ref what-is-a-rule). Detailed instructions on implementing rules can be found in [this section](@ref create-node) of the documentation. However, in this tutorial, we will explore an alternative approach that allows inference with default message update rule for custom factor nodes by defining only `BayesBase.logpdf` and `BayesBase.insupport` for a factor node, without needing explicit `@rule` specifications.
+`RxInfer` utilizes the [`ReactiveMP.jl`](https://github.com/ReactiveBayes/ReactiveMP.jl) package as its inference backend. Typically, running inference with a custom factor node requires you to declare the node with the [`@define_factor_node`](@extref MessagePassingRulesBase.@define_factor_node) macro and to define its message update rules with the [`@define_message_update_rule`](@extref MessagePassingRulesBase.@define_message_update_rule) macro. For background on what rules are and how they work, see [Understanding Rules](@ref what-is-a-rule). Detailed instructions on implementing rules can be found in [this section](@ref create-node) of the documentation. In this tutorial, we explore an alternative approach: inference with a fallback message update rule for custom factor nodes, which only needs `BayesBase.logpdf` and `BayesBase.insupport` for the node's distribution, without any rules.
 
 !!! note 
     In the context of message-passing based Bayesian inference, custom message update rules enhance precision and efficiency. These rules leverage the specific mathematical properties of the model's distributions and relationships, leading to more accurate updates and faster convergence. By incorporating domain-specific knowledge, custom rules improve the robustness and reliability of the inference process, particularly in complex models where default rules may be inadequate or inefficient.
@@ -51,14 +51,19 @@ BayesBase.logpdf(d::BernoulliDistribution, x) = logpdf(Bernoulli(d.p), x)
 BayesBase.insupport(d::BernoulliDistribution, x) = x === true || x === false
 ```
 
-The next step is to register these structures as valid factor nodes:
+The next step is to declare these structures as factor nodes:
 
 ```@example inference-undefinedrules
-@node BetaDistribution Stochastic [out, a, b]
-@node BernoulliDistribution Stochastic [out, p]
+@define_factor_node(node = BetaDistribution, type = Stochastic, interfaces = [:out, :a, :b])
+@define_factor_node(node = BernoulliDistribution, type = Stochastic, interfaces = [:out, :p])
 ```
 
-When specifying a node for our custom distributions, we must follow a specific edge ordering. The first edge is always `out`, which represents a sample in the `logpdf` function. All remaining edges must match the parameters of the distribution in the exact same order. For example, for the `BetaDistribution`, the node function is defined as `(out, a, b) -> logpdf(BetaDistribution(a, b), out)`. This ensures that the node specification and the `logpdf` function correctly maps the distribution parameters to the sample output.
+When declaring a node for a custom distribution, you must follow a specific interface ordering. The first interface is always `out`, which represents a sample in the `logpdf` function. All remaining interfaces must match the parameters of the distribution's constructor in the exact same order. For example, for the `BetaDistribution`, the node function is `(out, a, b) -> logpdf(BetaDistribution(a, b), out)`. The declaration defines this function, [`nodefunction`](@extref MessagePassingRulesBase.nodefunction), which the fallback evaluates:
+
+```@example inference-undefinedrules
+f = MessagePassingRulesBase.nodefunction(BernoulliDistribution)
+f(out = true, p = 0.3) ≈ logpdf(Bernoulli(0.3), true)
+```
 
 !!! note
     Although `Beta` is a conjugate prior for the parameter of the `Bernoulli` distribution, `ReactiveMP` and `RxInfer` are unaware of this and cannot exploit this information. To utilize conjugacy, refer to the [custom node creation section](@ref create-node) of the documentation.
@@ -79,7 +84,7 @@ bar(["true", "false"], [ count(==(true), dataset), count(==(false), dataset) ], 
 
 ## Inference with a rule fallback
 
-Now, we can run inference with `RxInfer`. Since explicit rules for our nodes have not been defined, we can instruct the `ReactiveMP` backend to use fallback message update rules. Refer to the `ReactiveMP` documentation for available fallbacks. In this example, we will use the `NodeFunctionRuleFallback` structure, which uses the `logpdf` of the stochastic node to approximate messages.
+Now, we can run inference with `RxInfer`. Since explicit rules for our nodes have not been defined, we can instruct the `ReactiveMP` backend to use a fallback where no rule fits, with the `rulefallback` option. Refer to the [rule fallbacks](@extref MessagePassingRulesBase Rule-fallbacks) page of MessagePassingRulesBase for how fallbacks work. In this example, we use [`NodeFunctionRuleFallback`](@extref MessagePassingRulesBase.NodeFunctionRuleFallback), which uses the `logpdf` of the stochastic node to approximate messages: its message towards an interface is the node's log-density as a function of that interface, with every other input collapsed to its mean.
 
 !!! note
     `NodeFunctionRuleFallback` employs a simple approximation for outbound messages, which may significantly degrade inference accuracy. Whenever possible, it is recommended to define [proper message update rules](@ref create-node).
@@ -109,7 +114,7 @@ result = infer(
 ```
 
 !!! note 
-    For `rulefallback = NodeFunctionRuleFallback()` to function correctly, the node must be defined as `Stochastic` and the underlying object must be a subtype of `Distribution` from `Distributions.jl`.
+    For `rulefallback = NodeFunctionRuleFallback()` to apply, the node must be declared as `Stochastic` without interface groups, and calling the node with its inputs, as `BernoulliDistribution(p)`, must return an object with a `logpdf`. The fallback does not apply to a member of a group or to an input that is a joint marginal, and a rule of the node, where one fits, takes precedence over it.
 
 ### Result analysis
 
@@ -173,7 +178,7 @@ end
 BayesBase.logpdf(dist::TransformedNormalDistribution, x) = logpdf(NormalMeanPrecision(known_transformation(dist.h), dist.t), x)
 BayesBase.insupport(dist::TransformedNormalDistribution, x) = true
 
-@node TransformedNormalDistribution Stochastic [out, h, t]
+@define_factor_node(node = TransformedNormalDistribution, type = Stochastic, interfaces = [:out, :h, :t])
 ```
 
 Next, we tweak the model structure:

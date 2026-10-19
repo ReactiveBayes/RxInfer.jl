@@ -103,17 +103,17 @@ end
     # When callbacks are disabled the span id is `nothing` and the helper
     # must not surface a `span=nothing` field in either form.
     for ev in (
-        BeforeModelCreationEvent(nothing),
-        AfterModelCreationEvent(model, nothing),
-        BeforeInferenceEvent(model, nothing),
-        AfterInferenceEvent(model, nothing),
-        BeforeIterationEvent(model, 1, nothing),
-        AfterIterationEvent(model, 1, nothing),
-        BeforeDataUpdateEvent(model, (y = 1,), nothing),
-        AfterDataUpdateEvent(model, (y = 1,), nothing),
-        BeforeAutostartEvent(engine, nothing),
-        AfterAutostartEvent(engine, nothing),
-    )
+            BeforeModelCreationEvent(nothing),
+            AfterModelCreationEvent(model, nothing),
+            BeforeInferenceEvent(model, nothing),
+            AfterInferenceEvent(model, nothing),
+            BeforeIterationEvent(model, 1, nothing),
+            AfterIterationEvent(model, 1, nothing),
+            BeforeDataUpdateEvent(model, (y = 1,), nothing),
+            AfterDataUpdateEvent(model, (y = 1,), nothing),
+            BeforeAutostartEvent(engine, nothing),
+            AfterAutostartEvent(engine, nothing),
+        )
         @test !occursin("span", compact(ev))
         @test !occursin("span", repr(ev))
     end

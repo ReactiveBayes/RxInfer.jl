@@ -2,7 +2,7 @@ export BeforeModelCreationEvent, AfterModelCreationEvent
 export BeforeInferenceEvent, AfterInferenceEvent
 export BeforeIterationEvent, AfterIterationEvent
 export BeforeDataUpdateEvent, AfterDataUpdateEvent
-export OnMarginalUpdateEvent
+export OnMarginalUpdateEvent, OnFreeEnergyUpdateEvent
 export BeforeAutostartEvent, AfterAutostartEvent
 
 import ReactiveMP: Event, event_name, generate_span_id, getdata
@@ -173,6 +173,25 @@ struct OnMarginalUpdateEvent{M, U} <: Event{:on_marginal_update}
 end
 
 """
+    OnFreeEnergyUpdateEvent{M, V} <: ReactiveMP.Event{:on_free_energy_update}
+
+Fires each time the Bethe free energy is computed during batch inference with
+`free_energy = true`: once per iteration when the data is given once per iteration. Each term of
+it is reported by the engine as `ReactiveMP.AfterFactorBoundFreeEnergyEvent` (a factor node's)
+and `ReactiveMP.AfterVariableBoundEntropyEvent` (a variable's).
+
+# Fields
+- `model::M`: the [`ProbabilisticModel`](@ref) instance
+- `value::V`: the free energy, a number of the type `free_energy` asks for
+
+See also: [Callbacks](@ref manual-inference-callbacks), [Tracing the free energy](@ref trace-callbacks-free-energy)
+"""
+struct OnFreeEnergyUpdateEvent{M, V} <: Event{:on_free_energy_update}
+    model::M
+    value::V
+end
+
+"""
     BeforeAutostartEvent{E, S} <: ReactiveMP.Event{:before_autostart}
 
 Fires right before `RxInfer.start()` is called on the streaming inference engine (when `autostart = true`).
@@ -326,6 +345,13 @@ end
 function Base.show(io::IO, ev::OnMarginalUpdateEvent)
     print(io, "OnMarginalUpdateEvent(var=:", ev.variable_name, ", update=")
     show(io, getdata(ev.update))
+    print(io, ")")
+    return nothing
+end
+
+function Base.show(io::IO, ev::OnFreeEnergyUpdateEvent)
+    print(io, "OnFreeEnergyUpdateEvent(value=")
+    show(io, ev.value)
     print(io, ")")
     return nothing
 end
