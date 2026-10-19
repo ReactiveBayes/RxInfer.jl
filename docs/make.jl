@@ -12,8 +12,8 @@ registered(name) = Inventory(
 )
 
 # The ReactiveMP ecosystem's sites, for `@extref` links: a registered package's by its published
-# inventory, the others at their planned address with the inventory of their local build in the
-# ReactiveMP.jl checkout next to this one, which must exist (`make docs-all` there builds them).
+# inventory, and ReactiveMP's at its planned address with the inventory of its local build in the
+# ReactiveMP.jl checkout next to this one, which must exist (`make docs` there builds it).
 const REACTIVEMP_ROOT = joinpath(@__DIR__, "..", "..", "ReactiveMP.jl")
 site(name, dir) = ("https://reactivebayes.github.io/$(name).jl/dev/", joinpath(REACTIVEMP_ROOT, dir, "docs", "build", "objects.inv"))
 const REGISTERED_SITES = [
@@ -21,12 +21,11 @@ const REGISTERED_SITES = [
     "DeltaMessagePassingRules", "GaussianCouplingMessagePassingRules", "SoftDotMessagePassingRules",
     "AutoregressiveMessagePassingRules", "ContinuousTransitionMessagePassingRules",
     "PolyaMessagePassingRules", "BIFMMessagePassingRules", "FlowMessagePassingRules",
-    "DiscreteTransitionMessagePassingRules",
+    "DiscreteTransitionMessagePassingRules", "GCVMessagePassingRules",
 ]
 links = InterLinks(
     (name => registered(name) for name in REGISTERED_SITES)...,
     "ReactiveMP" => site("ReactiveMP", "."),
-    "GCVMessagePassingRules" => site("GCVMessagePassingRules", joinpath("lib", "GCVMessagePassingRules")),
 )
 
 ## https://discourse.julialang.org/t/generation-of-documentation-fails-qt-qpa-xcb-could-not-connect-to-display/60988
