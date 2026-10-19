@@ -3,7 +3,7 @@ name: CI
 on:
   workflow_dispatch:
   pull_request:
-    types: [review_requested,reopened,synchronize]
+    types: [opened, reopened, synchronize, ready_for_review, review_requested]
   push:
     branches:
       - 'main'
@@ -26,6 +26,7 @@ permissions:
 jobs:
   paper:
     name: Paper Preview
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -43,6 +44,8 @@ jobs:
           path: paper/paper.pdf
   test:
     name: Tests ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
+    # Draft pull requests run no tests; marking one ready for review starts them.
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ contains(matrix.version, 'nightly') }}
     strategy:
