@@ -22,7 +22,7 @@ Note, that it is not always possible to start/stop the inference procedure.
 See also: [`infer`](@ref), [`RxInferenceEvent`](@ref), [`RxInfer.start`](@ref), [`RxInfer.stop`](@ref)
 """
 mutable struct RxInferenceEngine{
-    T, D, L, V, P, H, S, U, A, FA, FS, R, I, M, N, X, E, J
+    T, D, L, V, P, H, S, U, A, FA, FS, R, I, M, N, X, E, J, C
 }
     datastream       :: D
     tickscheduler    :: L
@@ -60,6 +60,7 @@ mutable struct RxInferenceEngine{
 
     # Whether to emit non-fatal warnings during inference (mirrors `infer`'s `warn` keyword).
     warn::Bool
+    callbacks::C
 
     RxInferenceEngine(
         ::Type{T},
@@ -81,8 +82,9 @@ mutable struct RxInferenceEngine{
         events::E,
         ticklock::J,
         warn::Bool = true,
-    ) where {T, D, L, V, P, H, S, U, A, FA, FS, R, I, M, N, X, E, J} = begin
-        return new{T, D, L, V, P, H, S, U, A, FA, FS, R, I, M, N, X, E, J}(
+        callbacks::C = nothing,
+    ) where {T, D, L, V, P, H, S, U, A, FA, FS, R, I, M, N, X, E, J, C} = begin
+        return new{T, D, L, V, P, H, S, U, A, FA, FS, R, I, M, N, X, E, J, C}(
             datastream,
             tickscheduler,
             voidTeardown,
@@ -108,6 +110,7 @@ mutable struct RxInferenceEngine{
             nothing,
             ticklock,
             warn,
+            callbacks,
         )
     end
 end
@@ -336,6 +339,7 @@ function Rocket.on_next!(
         _fe_actor       = executor.engine.fe_actor
         _enabled_events = executor.engine.enabled_events
         _events         = executor.engine.events
+        _callbacks      = executor.engine.callbacks
 
         inference_fire_event(
             Val(:on_new_data), Val(_enabled_events), _events, _model, event
@@ -346,10 +350,27 @@ function Rocket.on_next!(
         # change during the iterations
         autoupdate_specs = getspecifications(_autoupdates)
         autoupdate_fetched = map(fetch, autoupdate_specs)
+        inference_span_id = generate_span_id(_callbacks)
+        invoke_callback(
+            _callbacks, BeforeInferenceEvent(_model, inference_span_id)
+        )
+        executed_iterations = 0
+        # KeepEach buffers must contain only this event, even if it stops early.
+        if !isnothing(_historyactors)
+            for actor in values(_historyactors)
+                actor isa CircularKeepActor && empty!(getvalues(actor))
+            end
+        end
 
         # This loop correspond to the different VMP iterations
         # Here `_iterations` can be `Ref` too, so we use `[]`. Should not affect integers
         for iteration in 1:_iterations[]
+            iteration_span_id = generate_span_id(_callbacks)
+            before = invoke_callback(
+                _callbacks,
+                BeforeIterationEvent(_model, iteration, iteration_span_id),
+            )
+            before.stop_iteration && break
             inference_fire_event(
                 Val(:before_iteration),
                 Val(_enabled_events),
@@ -409,6 +430,7 @@ function Rocket.on_next!(
             )
 
             check_and_reset_updated!(_updateflags)
+            executed_iterations += 1
 
             inference_fire_event(
                 Val(:after_iteration),
@@ -417,11 +439,23 @@ function Rocket.on_next!(
                 _model,
                 iteration,
             )
+            after = invoke_callback(
+                _callbacks,
+                AfterIterationEvent(_model, iteration, iteration_span_id),
+            )
+            # Exit only this solve; history and pending posteriors must still be released below.
+            after.stop_iteration && break
         end
+
+        invoke_callback(
+            _callbacks, AfterInferenceEvent(_model, inference_span_id)
+        )
+        # A before-iteration callback may stop before any observation is applied.
+        executed_iterations == 0 && return nothing
 
         # `release!` on `fe_actor` ensures that free energy is summed up between iterations correctly
         if !isnothing(_fe_actor)
-            release!(_fe_actor)
+            release!(_fe_actor; allow_partial = true)
         end
 
         if !isnothing(_history) && !isnothing(_historyactors)
@@ -429,9 +463,13 @@ function Rocket.on_next!(
                 Val(:before_history_save), Val(_enabled_events), _events, _model
             )
             for (name, actor) in pairs(_historyactors)
+                saved_values = getvalues(actor)
+                # NoopPostprocess must not retain the live buffer we clear next tick.
+                actor isa CircularKeepActor &&
+                    (saved_values = copy(saved_values))
                 push!(
                     _history[name],
-                    inference_postprocess(_postprocess, getvalues(actor)),
+                    inference_postprocess(_postprocess, saved_values),
                 )
             end
             inference_fire_event(
@@ -841,6 +879,7 @@ function streaming_inference(;
         _events,
         _ticklock,
         warn,
+        getcallbacks(_options),
     )
 
     if autostart
@@ -880,6 +919,10 @@ end
 
 function available_callbacks(::typeof(streaming_inference))
     return Val((
+        :before_inference,
+        :after_inference,
+        :before_iteration,
+        :after_iteration,
         :before_model_creation,
         :after_model_creation,
         :before_autostart,
