@@ -9,8 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Streaming inference now supports `before_inference`, `after_inference`, `before_iteration`, and `after_iteration` callbacks. Iteration callbacks can set `stop_iteration` to end the current observation event's solve while preserving posterior publication and processing of future events.
-- `StopEarlyIterationStrategy` accepts a `window` keyword to require a stable range of consecutive finite Bethe free energy values. The default `window = 2` retains the consecutive-value comparison.
 - `ReactantExt`, an extension on Reactant: `infer` on a model of more than one step compiles with Reactant again. Since Reactant 0.2.292 (EnzymeAD/Reactant.jl#3378) its overlays walk every field of their arguments, which throws on Rocket's linked lists (EnzymeAD/Reactant.jl#3506); the extension marks the functions that collect the model's variables, streams and results, `getvariable`, `isanonymous`, `obtain_marginal`, `obtain_prediction` and `inference_postprocess_or_missing` (now a top-level function), with `Reactant.@skip_rewrite_func`, as ReactiveMP's `ReactiveMPReactantExt` does for the engine. Its test compiles an unrolled state-space model whole; it has its own environment, `test/reactant`, run by `make test-reactant` and by the workflow *Reactant check*, apart from the test suite.
 - Tracing the free energy: the callback `on_free_energy_update` (`OnFreeEnergyUpdateEvent`) and ReactiveMP's new marginal-rule and free-energy events; TensorBoard logs `free_energy` per iteration, and the trace manual has a section on it.
 - The documentation runs on ReactiveMP v7: a learning path, *Messages by hand* and *Variational message passing by hand*, that computes messages with the rules RxInfer runs and compares them with `infer`; a migration guide from v5 to v6; and every page that taught ReactiveMP v6 rewritten, among them *Understanding Rules*, custom nodes, the *Algorithm specification* (the meta page renamed), Delta nodes, the sharp bits and debugging. Every example runs when the site is built, and the site links the ReactiveMP ecosystem's documentation.
@@ -19,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The `diagnostics` inference option, the engine's audits of the rules a model runs (`EngineDiagnostics(; check_everything_pure, check_everything_inplace, checked_buffers)`), and `context`, the services the rules run with: `(rng = …, matrix_correction = …)`.
 
 ### Changed
+- The tests of `ManyPlus` against a chain of binary `+` (#698) compare the n-ary `+`, `+(x...)` and `a + b + c`, with the chain: ReactiveMP 7 has no `ManyPlus`, since `+` takes any number of terms.
 - RxInfer accepts DomainSets 0.8 (`[compat]` `"0.5.2, 0.6, 0.7, 0.8"`), which ReactiveMP 7 no longer holds back (#637).
 - RxInfer and its docs depend on the registered rule packages (1.0.0) instead of ReactiveMP's `lib/` copies, which are gone, GCVMessagePassingRules the last of them; the docs link to their published sites.
 - RxInfer loads and re-exports the node packages most models use (user, with Mykola): StandardMessagePassingRules, which now holds Probit, DeltaMessagePassingRules, AutoregressiveMessagePassingRules, DiscreteTransitionMessagePassingRules, GCVMessagePassingRules, GaussianCouplingMessagePassingRules and SoftDotMessagePassingRules. ContinuousTransition, Pólya, BIFM and Flow stay in packages a model loads, so that RxInfer depends on as little as possible; the manual's *Rule packages* section lists both.
@@ -49,13 +48,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `where { dependencies = … }`: a node declares what its rules read, and an initial message is set with `@initialization`. Using it is an error saying so.
 
 ### Fixed
-- Early-stopping BFE history resets for each solve or observation event. Streaming posterior and BFE histories retain only the executed iterations, including events with different iteration counts, without mixing previous observations or unused storage into saved results.
 - `infer` with `predictvars` given failed with `MethodError: no method matching iterate(::UnfactorizedData{…})` when a data entry not in `predictvars` was wrapped in `UnfactorizedData`; its wrapped value is now checked for missing entries, as it already was without `predictvars`.
 - Checking data for missing entries no longer iterates containers whose element type cannot be `missing`, such as a `Vector{Float64}` or arrays traced by Reactant.jl, whose elements cannot be read.
 - A group of one member, such as `DiscreteTransition(x, B, u)`'s `T`, which GraphPPL gives no index, reaches the engine as its member `(:T, 1)`; the node's creation failed with "has no interfaces :T".
 - `infer(...; catch_exception = true)` whose inference fails before every posterior is computed, such as a prediction with `free_energy = true`, returns the result with its error; it threw an `UndefRefError` postprocessing the partly filled posteriors.
 - Clearer errors. An `UndefVarError` for a name ReactiveMP v7 removed or moved into a node package (`@rule`, `@node`, `@call_rule`, `Marginalisation`, `ARMeta`, `DeltaMeta`, `GCVMetadata`, `BinomialPolya`, `Flow`, …) says what replaces it or which package to load. `infer` given a `@model` function instead of a model created by calling it says to call it. When no posterior is ever computed, the error names the usual causes, a loop or a variational factorisation waiting for `@initialization`, and a node without a rule for its inputs. A `RuleNotFoundError` during inference comes, unless `disable_inference_error_hint = true`, with a pointer to the Rule Not Found guide, and reaches the user as itself: the free energy and the forced marginal computation rethrow an error instead of converting it to an `ErrorException`, which lost its report.
 - `a, b, … = infer(…)` destructures the result into its posteriors, predictions, free energy, model and error; it threw, reading a field the result does not have.
+
+## [5.5.3] - 2026-10-19
+
+The last release of the 5.x series; RxInfer 6 runs on ReactiveMP 7.
+
+### Added
+- Added tests to compare `ManyPlus` with chain of `+` operations, ensuring consistent behavior and results.
+- Streaming inference now supports `before_inference`, `after_inference`, `before_iteration`, and `after_iteration` callbacks. Iteration callbacks can set `stop_iteration` to end the current observation event's solve while preserving posterior publication and processing of future events.
+- `StopEarlyIterationStrategy` accepts a `window` keyword to require a stable range of consecutive finite Bethe free energy values. The default `window = 2` retains the consecutive-value comparison.
+
+### Fixed
+
+- Early-stopping BFE history resets for each solve or observation event. Streaming posterior and BFE histories retain only the executed iterations, including events with different iteration counts, without mixing previous observations or unused storage into saved results.
 
 ## [5.5.2] - 2026-08-13
 
