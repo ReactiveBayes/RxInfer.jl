@@ -246,6 +246,10 @@ using RxInfer, Test
     :on_free_energy_update
 ))
 @test RxInfer.available_callbacks(RxInfer.streaming_inference) === Val((
+    :before_inference,
+    :after_inference,
+    :before_iteration,
+    :after_iteration,
     :before_model_creation,
     :after_model_creation,
     :before_autostart,
