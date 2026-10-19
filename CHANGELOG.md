@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- The benchmark in `benchmarks/` runs on RxInfer 6, Julia 1.13 and Turing 0.49 (its samples are a FlexiChains chain), and the README's figures are regenerated from it.
+
 ## [6.0.0] - 2026-10-19
 
 RxInfer 6 runs on ReactiveMP 7, whose message passing rules live in registered rule packages declared with MessagePassingRulesBase. Models that use the nodes RxInfer loads run as before; code that defines its own nodes or rules needs porting, which ReactiveMP's [v6 → v7 migration guide](https://reactivebayes.github.io/ReactiveMP.jl/stable/migration-guides/v6-to-v7/) explains.
