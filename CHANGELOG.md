@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The `diagnostics` inference option, the engine's audits of the rules a model runs (`EngineDiagnostics(; check_everything_pure, check_everything_inplace, checked_buffers)`), and `context`, the services the rules run with: `(rng = …, matrix_correction = …)`.
 
 ### Changed
+- RxInfer accepts DomainSets 0.8 (`[compat]` `"0.5.2, 0.6, 0.7, 0.8"`), which ReactiveMP 7 no longer holds back (#637).
 - RxInfer and its docs depend on the registered rule packages (1.0.0) instead of ReactiveMP's `lib/` copies, which are gone, GCVMessagePassingRules the last of them; the docs link to their published sites.
 - RxInfer loads and re-exports the node packages most models use (user, with Mykola): StandardMessagePassingRules, which now holds Probit, DeltaMessagePassingRules, AutoregressiveMessagePassingRules, DiscreteTransitionMessagePassingRules, GCVMessagePassingRules, GaussianCouplingMessagePassingRules and SoftDotMessagePassingRules. ContinuousTransition, Pólya, BIFM and Flow stay in packages a model loads, so that RxInfer depends on as little as possible; the manual's *Rule packages* section lists both.
 - **Optim is no longer a dependency** (breaking): the default optimiser of a `PointMassFormConstraint` on a continuous univariate variable runs Optim.jl through the extension `OptimExt`, loaded with `using Optim`. Without it, such a constraint throws an error saying to load Optim or pass `optimizer = …`; discrete point masses need nothing.
