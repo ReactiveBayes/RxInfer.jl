@@ -55,9 +55,11 @@ function parse_autoupdates(options, expression)
     end
 
     # If expression is not a function definition, then `funcdef` is `nothing`
-    block, funcdef = if @capture(expression, function (fcall_ | fcall_)
-        body_
-    end)
+    block, funcdef = if @capture(
+            expression, function (fcall_ | fcall_)
+                body_
+            end
+        )
         funcdef = MacroTools.splitdef(expression)
         funcdef[:body], funcdef
     else
@@ -83,7 +85,7 @@ function parse_autoupdates(options, expression)
         end
     end
 
-    if !isnothing(funcdef)
+    return if !isnothing(funcdef)
         funcdef[:body] = body
         MacroTools.combinedef(funcdef)
     else
@@ -126,7 +128,7 @@ end
 # This function checks if the expression is a valid autoupdate mapping
 function is_autoupdate_mapping_expr(expr)
     return @capture(expr, (f_(args__)) | (f_.(args__))) &&
-           any(autoupdate_argument_inexpr, args)
+        any(autoupdate_argument_inexpr, args)
 end
 
 # This function converts an expression of the form `f(args...)` to the `AutoUpdateMapping` structure
@@ -136,21 +138,27 @@ function autoupdate_convert_mapping_expr(expr)
             if @capture(subexpr, f_(args__))
                 if (f isa Symbol && isequal(first(string(f)), '.'))
                     f = Symbol(string(f)[2:end]) # Strip of the `.` from broadcasted functions like `.+`
-                    return :(RxInfer.AutoUpdateMapping(
-                        Base.Broadcast.BroadcastFunction($f),
-                        ($(map(autoupdate_convert_mapping_arg_expr, args)...),),
-                    ))
+                    return :(
+                        RxInfer.AutoUpdateMapping(
+                            Base.Broadcast.BroadcastFunction($f),
+                            ($(map(autoupdate_convert_mapping_arg_expr, args)...),),
+                        )
+                    )
                 else
-                    return :(RxInfer.AutoUpdateMapping(
-                        $f,
-                        ($(map(autoupdate_convert_mapping_arg_expr, args)...),),
-                    ))
+                    return :(
+                        RxInfer.AutoUpdateMapping(
+                            $f,
+                            ($(map(autoupdate_convert_mapping_arg_expr, args)...),),
+                        )
+                    )
                 end
             elseif @capture(subexpr, f_.(args__))
-                return :(RxInfer.AutoUpdateMapping(
-                    Base.Broadcast.BroadcastFunction($f),
-                    ($(map(autoupdate_convert_mapping_arg_expr, args)...),),
-                ))
+                return :(
+                    RxInfer.AutoUpdateMapping(
+                        Base.Broadcast.BroadcastFunction($f),
+                        ($(map(autoupdate_convert_mapping_arg_expr, args)...),),
+                    )
+                )
             else
                 error("Invalid autoupdate mapping expression: $subexpr")
             end
@@ -161,13 +169,17 @@ end
 
 function autoupdate_convert_mapping_arg_expr(expr)
     if @capture(expr, q(s_[i__]))
-        return :(RxInfer.AutoUpdateFetchMarginalArgument(
-            $(QuoteNode(s)), ($(i...),)
-        ))
+        return :(
+            RxInfer.AutoUpdateFetchMarginalArgument(
+                $(QuoteNode(s)), ($(i...),)
+            )
+        )
     elseif @capture(expr, μ(s_[i__]))
-        return :(RxInfer.AutoUpdateFetchMessageArgument(
-            $(QuoteNode(s)), ($(i...),)
-        ))
+        return :(
+            RxInfer.AutoUpdateFetchMessageArgument(
+                $(QuoteNode(s)), ($(i...),)
+            )
+        )
     elseif @capture(expr, q(s_))
         return :(RxInfer.AutoUpdateFetchMarginalArgument($(QuoteNode(s))))
     elseif @capture(expr, μ(s_))
@@ -181,9 +193,11 @@ function autoupdate_convert_labels_expr(expr)
     if expr isa Symbol
         return :(RxInfer.AutoUpdateVariableLabel($(QuoteNode(expr))))
     elseif @capture(expr, s_[indices__])
-        return :(RxInfer.AutoUpdateVariableLabel(
-            $(QuoteNode(s)), ($(indices...),)
-        ))
+        return :(
+            RxInfer.AutoUpdateVariableLabel(
+                $(QuoteNode(s)), ($(indices...),)
+            )
+        )
     elseif @capture(expr, (s__,))
         return :(($(map(autoupdate_convert_labels_expr, s)...),))
     end
@@ -252,19 +266,19 @@ end
 
 "Appends the individual auto-update specification to the existing specification"
 function addspecification(
-    specification::AutoUpdateSpecification, labels, mapping
-)
+        specification::AutoUpdateSpecification, labels, mapping
+    )
     return addspecification(
         specification, getspecifications(specification), labels, mapping
     )
 end
 
 function addspecification(
-    specification::AutoUpdateSpecification,
-    specifications::Tuple,
-    labels,
-    mapping,
-)
+        specification::AutoUpdateSpecification,
+        specifications::Tuple,
+        labels,
+        mapping,
+    )
     return AutoUpdateSpecification(
         is_autoupdates_warn(specification),
         is_autoupdates_strict(specification),
@@ -303,7 +317,7 @@ function Base.show(io::IO, specification::AutoUpdateSpecification)
     foreach(getspecifications(specification)) do spec
         println(io, "    ", spec)
     end
-    println(io, "end")
+    return println(io, "end")
 end
 
 """
@@ -344,17 +358,17 @@ AutoUpdateVariableLabel(label::Symbol, index::Tuple) =
     AutoUpdateVariableLabel{label, index}()
 
 Base.show(io::IO, specification::AutoUpdateVariableLabel) =
-    if isempty(getindex(specification))
-        print(io, getlabel(specification))
-    else
-        print(
-            io,
-            getlabel(specification),
-            "[",
-            join(getindex(specification), ", "),
-            "]",
-        )
-    end
+if isempty(getindex(specification))
+    print(io, getlabel(specification))
+else
+    print(
+        io,
+        getlabel(specification),
+        "[",
+        join(getindex(specification), ", "),
+        "]",
+    )
+end
 
 """
     AutoUpdateMapping(mappingFn, arguments)
@@ -391,18 +405,18 @@ AutoUpdateFetchMarginalArgument(label::Symbol, index::Tuple) =
     AutoUpdateFetchMarginalArgument{label, index}()
 
 Base.show(io::IO, argument::AutoUpdateFetchMarginalArgument) =
-    if isempty(getindex(argument))
-        print(io, "q(", getlabel(argument), ")")
-    else
-        print(
-            io,
-            "q(",
-            getlabel(argument),
-            "[",
-            join(getindex(argument), ", "),
-            "])",
-        )
-    end
+if isempty(getindex(argument))
+    print(io, "q(", getlabel(argument), ")")
+else
+    print(
+        io,
+        "q(",
+        getlabel(argument),
+        "[",
+        join(getindex(argument), ", "),
+        "])",
+    )
+end
 
 "This autoupdate would fetch updates from the last message (in the array of messages) of a variable"
 struct AutoUpdateFetchMessageArgument{L, I} end
@@ -416,26 +430,26 @@ AutoUpdateFetchMessageArgument(label::Symbol, index::Tuple) =
     AutoUpdateFetchMessageArgument{label, index}()
 
 Base.show(io::IO, argument::AutoUpdateFetchMessageArgument) =
-    if isempty(getindex(argument))
-        print(io, "μ(", getlabel(argument), ")")
-    else
-        print(
-            io,
-            "μ(",
-            getlabel(argument),
-            "[",
-            join(getindex(argument), ", "),
-            "])",
-        )
-    end
+if isempty(getindex(argument))
+    print(io, "μ(", getlabel(argument), ")")
+else
+    print(
+        io,
+        "μ(",
+        getlabel(argument),
+        "[",
+        join(getindex(argument), ", "),
+        "])",
+    )
+end
 
 # Model interactions with GraphPPL generator
 
 import GraphPPL
 
 function check_model_generator_compatibility(
-    specification::AutoUpdateSpecification, model::GraphPPL.ModelGenerator
-)
+        specification::AutoUpdateSpecification, model::GraphPPL.ModelGenerator
+    )
     kwargskeys = keys(GraphPPL.getkwargs(model))
     varlabels = getvarlabels(specification)
     for label in varlabels
@@ -472,20 +486,20 @@ function prepare_autoupdates_for_model(autoupdates, model)
     vardict = getvardict(model)
     return map(
         (autoupdate) ->
-            prepare_individual_autoupdate_for_model(autoupdate, model, vardict),
+        prepare_individual_autoupdate_for_model(autoupdate, model, vardict),
         autoupdates,
     )
 end
 function prepare_individual_autoupdate_for_model(
-    autoupdate::IndividualAutoUpdateSpecification, model, vardict
-)
+        autoupdate::IndividualAutoUpdateSpecification, model, vardict
+    )
     return prepare_individual_autoupdate_for_model(
         getvarlabels(autoupdate), getmapping(autoupdate), model, vardict
     )
 end
 function prepare_individual_autoupdate_for_model(
-    varlabels, mapping, model, vardict
-)
+        varlabels, mapping, model, vardict
+    )
     prepared_varlabels = prepare_varlabels_autoupdate_for_model(
         varlabels, model, vardict
     )
@@ -498,31 +512,31 @@ function prepare_individual_autoupdate_for_model(
 end
 
 function prepare_varlabels_autoupdate_for_model(
-    varlabel::AutoUpdateVariableLabel, model, vardict
-)
+        varlabel::AutoUpdateVariableLabel, model, vardict
+    )
     return prepare_varlabels_autoupdate_for_model(
         getlabel(varlabel), getindex(varlabel), model, vardict
     )
 end
 function prepare_varlabels_autoupdate_for_model(
-    varlabels::Tuple, model, vardict
-)
+        varlabels::Tuple, model, vardict
+    )
     return map(
         (l) -> prepare_varlabels_autoupdate_for_model(l, model, vardict),
         varlabels,
     )
 end
 function prepare_varlabels_autoupdate_for_model(
-    label::Symbol, index::Tuple{}, model, vardict
-)
+        label::Symbol, index::Tuple{}, model, vardict
+    )
     haskey(vardict, label) || error(
         lazy"The `autoupdate` specification defines an update for `$(label)`, but the model has no variable named `$(label)`",
     )
     return getvariable(vardict[label])
 end
 function prepare_varlabels_autoupdate_for_model(
-    label::Symbol, index::Tuple, model, vardict
-)
+        label::Symbol, index::Tuple, model, vardict
+    )
     haskey(vardict, label) || error(
         lazy"The `autoupdate` specification defines an update for `$(label)`, but the model has no variable named `$(label)`",
     )
@@ -530,8 +544,8 @@ function prepare_varlabels_autoupdate_for_model(
 end
 
 function prepare_mapping_autoupdate_for_model(
-    mapping::AutoUpdateMapping, model, vardict
-)
+        mapping::AutoUpdateMapping, model, vardict
+    )
     prepared_arguments = map(
         (a) -> prepare_mapping_argument_for_model(a, model, vardict),
         getarguments(mapping),
@@ -560,8 +574,8 @@ Rocket.getrecent(argument::FetchRecentArgument, streams::AbstractArray) =
 
 # Prepare expression of `q(_)`
 function prepare_mapping_argument_for_model(
-    marginal::AutoUpdateFetchMarginalArgument, model, vardict
-)
+        marginal::AutoUpdateFetchMarginalArgument, model, vardict
+    )
     label = getlabel(marginal)
     if !haskey(vardict, label)
         error(
@@ -569,7 +583,7 @@ function prepare_mapping_argument_for_model(
         )
     end
     index = getindex(marginal)
-    var   = isempty(index) ? vardict[label] : vardict[label][index...]
+    var = isempty(index) ? vardict[label] : vardict[label][index...]
     return FetchRecentArgument(label, _marginal_argument(getvariable(var)))
 end
 _marginal_argument(variable) = ReactiveMP.get_stream_of_marginals(variable)
@@ -578,8 +592,8 @@ _marginal_argument(variables::AbstractArray) =
 
 # Prepare expression of `μ(_)`
 function prepare_mapping_argument_for_model(
-    message::AutoUpdateFetchMessageArgument, model, vardict
-)
+        message::AutoUpdateFetchMessageArgument, model, vardict
+    )
     label = getlabel(message)
     if !haskey(vardict, label)
         error(
@@ -587,7 +601,7 @@ function prepare_mapping_argument_for_model(
         )
     end
     index = getindex(message)
-    var   = isempty(index) ? vardict[label] : vardict[label][index...]
+    var = isempty(index) ? vardict[label] : vardict[label][index...]
     return FetchRecentArgument(label, _message_argument(getvariable(var)))
 end
 _message_argument(variable) = ReactiveMP.get_stream_of_outbound_messages(
@@ -626,7 +640,7 @@ function run_autoupdate!(specifications::Tuple, prefetched::Tuple)
     length(specifications) === length(prefetched) || error(
         "Cannot execute autoupdate. The number of specifications and prefetched values must be equal.",
     )
-    foreach(zip(specifications, prefetched)) do (specification, update)
+    return foreach(zip(specifications, prefetched)) do (specification, update)
         varlabels = getvarlabels(specification)
         varlabels_tupled = as_tuple(varlabels)
         update_tupled = as_tuple(update)

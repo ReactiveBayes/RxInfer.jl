@@ -62,7 +62,7 @@ function __init__()
     Base.Experimental.register_error_hint(
         removed_name_error_hint, UndefVarError
     )
-    if !_isprecompiling()
+    return if !_isprecompiling()
         if RxInfer.preference_enable_session_logging
             default_session = create_session()
             RxInfer.set_default_session!(default_session)

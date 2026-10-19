@@ -22,8 +22,8 @@
     q = last(result.posteriors[:x])
 
     # x ~ N(0, 100) with two unit-variance observations 1.0 and 3.0:
-    @test isapprox(precision(q), 1 / 100 + 2; atol = 1e-8)
-    @test isapprox(weightedmean(q), 0 / 100 + (1.0 + 3.0); atol = 1e-8)
+    @test isapprox(precision(q), 1 / 100 + 2; atol = 1.0e-8)
+    @test isapprox(weightedmean(q), 0 / 100 + (1.0 + 3.0); atol = 1.0e-8)
 end
 
 @testitem "Inference with a 2-D sparse data tensor" begin
@@ -39,8 +39,8 @@ end
     q = last(result.posteriors[:x])
 
     observed = [data[1, 1], data[2, 2], data[1, 3]] # 1.0, 4.0, 5.0
-    @test isapprox(precision(q), 1 / 100 + length(observed); atol = 1e-8)
-    @test isapprox(weightedmean(q), sum(observed); atol = 1e-8)
+    @test isapprox(precision(q), 1 / 100 + length(observed); atol = 1.0e-8)
+    @test isapprox(weightedmean(q), sum(observed); atol = 1.0e-8)
 end
 
 @testitem "Inference with a sub-model that references data only at masked positions" begin
@@ -70,8 +70,8 @@ end
     q = last(result.posteriors[:x])
 
     observed = [data[idx] for idx in findall(mask)] # 1.0, 4.0, 5.0
-    @test isapprox(precision(q), 1 / 100 + length(observed); atol = 1e-8)
-    @test isapprox(weightedmean(q), sum(observed); atol = 1e-8)
+    @test isapprox(precision(q), 1 / 100 + length(observed); atol = 1.0e-8)
+    @test isapprox(weightedmean(q), sum(observed); atol = 1.0e-8)
 end
 
 @testitem "Dense data tensors are unaffected by the sparse-array handling" begin
@@ -86,8 +86,8 @@ end
     result = infer(model = dense_model(), data = (y = ys,), iterations = 1)
     q = last(result.posteriors[:x])
 
-    @test isapprox(precision(q), 1 / 100 + length(ys); atol = 1e-8)
-    @test isapprox(weightedmean(q), sum(ys); atol = 1e-8)
+    @test isapprox(precision(q), 1 / 100 + length(ys); atol = 1.0e-8)
+    @test isapprox(weightedmean(q), sum(ys); atol = 1.0e-8)
 end
 
 @testitem "Sparse-array helpers (_is_densely_assigned / _map_sparse)" begin
@@ -146,15 +146,17 @@ end
 
     run_stream(y2a, y2b) = begin
         engine = infer(
-            model          = ssm_sparse(),
-            datastream     = from([(y = [1.0, y2a, 3.0],), (y = [2.0, y2b, 4.0],)]),
-            autoupdates    = autoupdates,
-            initialization = (@initialization begin
-                q(x) = NormalMeanVariance(0.0, 100.0)
-            end),
-            historyvars    = (x = KeepLast(),),
-            keephistory    = 10,
-            autostart      = true,
+            model = ssm_sparse(),
+            datastream = from([(y = [1.0, y2a, 3.0],), (y = [2.0, y2b, 4.0],)]),
+            autoupdates = autoupdates,
+            initialization = (
+                @initialization begin
+                    q(x) = NormalMeanVariance(0.0, 100.0)
+                end
+            ),
+            historyvars = (x = KeepLast(),),
+            keephistory = 10,
+            autostart = true,
         )
         return engine.history[:x]
     end
@@ -166,8 +168,8 @@ end
 
     # The unreferenced entry y[2] must have no effect on the inferred trajectory.
     h2 = run_stream(-12345.0, 54321.0)
-    @test all(isapprox.(mean.(h1), mean.(h2); atol = 1e-10))
-    @test all(isapprox.(var.(h1), var.(h2); atol = 1e-10))
+    @test all(isapprox.(mean.(h1), mean.(h2); atol = 1.0e-10))
+    @test all(isapprox.(var.(h1), var.(h2); atol = 1.0e-10))
 end
 
 @testitem "Conditioning on offset-indexed (OffsetArray) data with 1-based model indexing" begin
@@ -201,8 +203,8 @@ end
                 warn = false,
             ).posteriors[:x],
         )
-        @test isapprox(precision(q), 1 / 100 + length(observed); atol = 1e-8)
-        @test isapprox(weightedmean(q), sum(observed); atol = 1e-8)
+        @test isapprox(precision(q), 1 / 100 + length(observed); atol = 1.0e-8)
+        @test isapprox(weightedmean(q), sum(observed); atol = 1.0e-8)
     end
 
     # Baseline (1-based) is unchanged.
@@ -235,8 +237,8 @@ end
                 warn = false,
             ).posteriors[:x],
         )
-        @test isapprox(precision(q), 1 / 100 + 2; atol = 1e-8)        # two observations
-        @test isapprox(weightedmean(q), 10.0 + 30.0; atol = 1e-8)     # 1st and 3rd values, 2nd ignored
+        @test isapprox(precision(q), 1 / 100 + 2; atol = 1.0e-8)        # two observations
+        @test isapprox(weightedmean(q), 10.0 + 30.0; atol = 1.0e-8)     # 1st and 3rd values, 2nd ignored
     end
 
     check([10.0, 999.0, 30.0])                       # standard, sanity
@@ -316,21 +318,23 @@ end
 
     run_stream(warnflag) = Test.collect_test_logs() do
         infer(
-            model          = ssm(),
-            datastream     = from([(y = OffsetArray([1.0, 999.0, 3.0], 0:2),)]),
-            autoupdates    = autoupdates,
-            initialization = (@initialization begin
-                q(x) = NormalMeanVariance(0.0, 100.0)
-            end),
-            keephistory    = 1,
-            autostart      = true,
-            warn           = warnflag,
+            model = ssm(),
+            datastream = from([(y = OffsetArray([1.0, 999.0, 3.0], 0:2),)]),
+            autoupdates = autoupdates,
+            initialization = (
+                @initialization begin
+                    q(x) = NormalMeanVariance(0.0, 100.0)
+                end
+            ),
+            keephistory = 1,
+            autostart = true,
+            warn = warnflag,
         )
     end
     has_offset_warn(logs) =
         any(l -> l.level == Logging.Warn && occursin("offset", l.message), logs)
 
-    logs_on, _  = run_stream(true)
+    logs_on, _ = run_stream(true)
     logs_off, _ = run_stream(false)
     @test has_offset_warn(logs_on)
     @test !has_offset_warn(logs_off)

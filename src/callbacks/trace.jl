@@ -90,8 +90,8 @@ false
 ```
 """
 function is_trace_event_included(
-    callbacks::RxInferTraceCallbacks, event_name::Symbol
-)
+        callbacks::RxInferTraceCallbacks, event_name::Symbol
+    )
     if isnothing(callbacks.include)
         return true
     else
@@ -125,7 +125,7 @@ function _event_name_to_type_name(name::Symbol)
 end
 
 function Base.show(io::IO, callbacks::RxInferTraceCallbacks)
-    if isempty(callbacks)
+    return if isempty(callbacks)
         print(io, "RxInferTraceCallbacks (empty, no events recorded)")
     else
         events = callbacks.events
@@ -162,13 +162,13 @@ end
 
 # Special handling for :after_model_creation to save to metadata
 function ReactiveMP.handle_event(
-    callbacks::RxInferTraceCallbacks, event::AfterModelCreationEvent
-)
+        callbacks::RxInferTraceCallbacks, event::AfterModelCreationEvent
+    )
     if haskey(event.model.metadata, :trace)
         error(
             "The model's metadata already contains a `:trace` key. " *
-            "This can happen if you pass `trace = true` (or a tuple of event names) while also providing " *
-            "`RxInferTraceCallbacks` in the `callbacks` argument. Use one or the other, not both.",
+                "This can happen if you pass `trace = true` (or a tuple of event names) while also providing " *
+                "`RxInferTraceCallbacks` in the `callbacks` argument. Use one or the other, not both.",
         )
     end
     event.model.metadata[:trace] = callbacks

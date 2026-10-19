@@ -59,7 +59,7 @@
         analytical, projected = run_experiment(y)
 
         @test mean(analytical.posteriors[:p]) ≈ mean(projected.posteriors[:p]) rtol =
-            1e-1
+            1.0e-1
     end
 
     @test_plot "projection" "simple-beta-bernoulli" begin
@@ -102,7 +102,7 @@ end
         q(t, r) = q(t)q(r)
     end
 
-    for realt in (0.15, 0.67), realr in (0.23, 0.90), n in (5000, 10000)
+    for realt in (0.15, 0.67), realr in (0.23, 0.9), n in (5000, 10000)
         ydata = rand(StableRNG(43), NormalMeanPrecision(realt, realr), n)
 
         result = infer(
@@ -116,10 +116,10 @@ end
             options = (limit_stack_depth = 500,),
         )
 
-        @test mean(result.posteriors[:r]) ≈ realr atol = 1e-2
-        @test mean(result.posteriors[:t]) ≈ realt atol = 1e-1
+        @test mean(result.posteriors[:r]) ≈ realr atol = 1.0e-2
+        @test mean(result.posteriors[:t]) ≈ realt atol = 1.0e-1
         @test result.free_energy[1] > result.free_energy[end]
-        @test all(d -> d < 0 || abs(d) < 1e-3, diff(result.free_energy))
+        @test all(d -> d < 0 || abs(d) < 1.0e-3, diff(result.free_energy))
     end
 
     @test_plot "projection" "non_conjugate_iid" begin
@@ -284,8 +284,8 @@ end
         zip(result.posteriors[:z][end], dataset)
     ) do (posterior_i, data_i)
         return mean(posterior_i) - 5std(posterior_i) <
-               data_i <
-               mean(posterior_i) + 5std(posterior_i)
+            data_i <
+            mean(posterior_i) + 5std(posterior_i)
     end
 
     @test test_deviation / length(dataset) > 0.8
@@ -389,10 +389,10 @@ end
         ra, rb, rmean, rprecision, y, result = run_experiment(ra, rb)
 
         @test result.free_energy[end] < result.free_energy[begin]
-        @test mean(result.posteriors[:a]) ≈ ra atol = 2e-1
-        @test mean(result.posteriors[:b]) ≈ rb atol = 2e-1
-        @test mean(result.posteriors[:mean]) ≈ rmean atol = 2e-1
-        @test mean(result.posteriors[:precision]) ≈ rprecision atol = 3e-1
+        @test mean(result.posteriors[:a]) ≈ ra atol = 2.0e-1
+        @test mean(result.posteriors[:b]) ≈ rb atol = 2.0e-1
+        @test mean(result.posteriors[:mean]) ≈ rmean atol = 2.0e-1
+        @test mean(result.posteriors[:precision]) ≈ rprecision atol = 3.0e-1
     end
 
     @test_plot "projection" "iid_delta" begin
@@ -438,8 +438,8 @@ end
     end
 end
 
-# This is quite a challenge for the inference 
-# and the test is fragile. Turing.jl cannot solve this reliably, we neither, but this test 
+# This is quite a challenge for the inference
+# and the test is fragile. Turing.jl cannot solve this reliably, we neither, but this test
 # has been fine-tuned in order to pass. If case of the failure the test could be re-designed
 # the point of the test is to check that multi-variable functions are supported
 @testitem "Inference with CVI projection, multiple univariate inputs, univariate output" begin
@@ -447,8 +447,8 @@ end
 
     include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
-    a = 0.60
-    b = 1.20
+    a = 0.6
+    b = 1.2
 
     function foo(a, b)
         return a
@@ -510,11 +510,11 @@ end
         b <
         mean(result.posteriors[:b][end]) + conf_bound_b
 
-    @test mean(result.posteriors[:a][end]) ≈ a atol = 1e-2
+    @test mean(result.posteriors[:a][end]) ≈ a atol = 1.0e-2
     @test foo(
         mean(result.posteriors[:a][end]), mean(result.posteriors[:b][end])
-    ) ≈ foo(a, b) atol = 1e-2
-    @test mean(result.posteriors[:μ][end]) ≈ foo(a, b) atol = 2e-2
+    ) ≈ foo(a, b) atol = 1.0e-2
+    @test mean(result.posteriors[:μ][end]) ≈ foo(a, b) atol = 2.0e-2
     @test first(result.free_energy) > last(result.free_energy)
     @test count(<(0), diff(result.free_energy)) > 0.95
 
@@ -584,7 +584,7 @@ end
     # `CVIProjection` samples from the generator the engine gives its rules, `options.rng`
     @algorithm function myalgorithm()
         foo() ->
-            CVIProjection(sampling_strategy = FullSampling(10), outsamples = 5)
+        CVIProjection(sampling_strategy = FullSampling(10), outsamples = 5)
     end
 
     result = infer(

@@ -66,13 +66,13 @@ function stop_early_converged(strategy::StopEarlyIterationStrategy)
         previous =
             length(values) == 1 ? strategy.start_fe_value : values[end - 1]
         return isfinite(last(values)) &&
-               isfinite(previous) &&
-               isapprox(
-                   last(values),
-                   previous;
-                   atol = strategy.atol,
-                   rtol = strategy.rtol,
-               )
+            isfinite(previous) &&
+            isapprox(
+            last(values),
+            previous;
+            atol = strategy.atol,
+            rtol = strategy.rtol,
+        )
     end
     length(values) >= strategy.window || return false
     recent = @view values[(end - strategy.window + 1):end]
@@ -80,7 +80,7 @@ function stop_early_converged(strategy::StopEarlyIterationStrategy)
     # A range check catches accumulated drift even when every adjacent step is small.
     # Match isapprox's tolerance convention; absolute magnitudes also handle negative BFE.
     return maximum(recent) - minimum(recent) <=
-           max(strategy.atol, strategy.rtol * maximum(abs, recent))
+        max(strategy.atol, strategy.rtol * maximum(abs, recent))
 end
 
 function (strategy::StopEarlyIterationStrategy)(event::AfterIterationEvent)

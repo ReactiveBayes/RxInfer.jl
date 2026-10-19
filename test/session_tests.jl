@@ -359,7 +359,7 @@ end
         # Every write must be visible with the exact value it was written with.
         @test all(
             RxInfer.__get_document_name(id) == "name-$i" for
-            (i, id) in enumerate(ids)
+                (i, id) in enumerate(ids)
         )
         # Reading an unknown id returns `nothing`.
         @test RxInfer.__get_document_name(string(uuid4())) === nothing
@@ -386,16 +386,16 @@ end
 
     fake_post =
         (url, headers, body) -> begin
-            post_calls[] += 1
-            captured[] = (verb = :post, url = url, body = body)
-            return response
-        end
+        post_calls[] += 1
+        captured[] = (verb = :post, url = url, body = body)
+        return response
+    end
     fake_patch =
         (url, headers, body) -> begin
-            patch_calls[] += 1
-            captured[] = (verb = :patch, url = url, body = body)
-            return response
-        end
+        patch_calls[] += 1
+        captured[] = (verb = :patch, url = url, body = body)
+        return response
+    end
 
     endpoint = "https://example.test/documents"
     id = string(uuid4())

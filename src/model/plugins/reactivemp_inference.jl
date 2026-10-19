@@ -109,8 +109,8 @@ function Base.convert(::Type{ReactiveMPInferenceOptions}, options::Nothing)
 end
 
 function Base.convert(
-    ::Type{ReactiveMPInferenceOptions}, options::NamedTuple{keys}
-) where {keys}
+        ::Type{ReactiveMPInferenceOptions}, options::NamedTuple{keys}
+    ) where {keys}
     available_options = (
         :stream_postprocessors,
         :limit_stack_depth,
@@ -149,8 +149,8 @@ function Base.convert(
     callbacks = haskey(options, :callbacks) ? options.callbacks : nothing
 
     if warn &&
-        haskey(options, :stream_postprocessors) &&
-        haskey(options, :limit_stack_depth)
+            haskey(options, :stream_postprocessors) &&
+            haskey(options, :limit_stack_depth)
         @warn "Inference options have `stream_postprocessors` and `limit_stack_depth` options specified together. Ignoring `limit_stack_depth`. Use `warn = false` option in `ModelInferenceOptions` to suppress this warning."
     end
 
@@ -224,55 +224,55 @@ end
 getoptions(plugin::ReactiveMPInferencePlugin) = plugin.options
 
 const ReactiveMPExtraFactorNodeKey = GraphPPL.NodeDataExtraKey{
-    :rmp_factornode, ReactiveMP.AbstractFactorNode
+    :rmp_factornode, ReactiveMP.AbstractFactorNode,
 }()
 const ReactiveMPExtraVariableKey = GraphPPL.NodeDataExtraKey{
-    :rmp_variable, ReactiveMP.AbstractVariable
+    :rmp_variable, ReactiveMP.AbstractVariable,
 }()
 const ReactiveMPExtraAlgorithmKey = GraphPPL.NodeDataExtraKey{:algorithm, Any}()
 # The constants a factor node holds that GraphPPL does not know of, such as the distribution
 # of a prior `x ~ d`: the free energy cancels their point entropies as it does GraphPPL's.
 const ReactiveMPExtraHiddenConstantsKey = GraphPPL.NodeDataExtraKey{
-    :hidden_constants, Int
+    :hidden_constants, Int,
 }()
 const ReactiveMPExtraStreamPostprocessorsKey = GraphPPL.NodeDataExtraKey{
-    :stream_postprocessors, Any
+    :stream_postprocessors, Any,
 }()
 # `where { initial_messages = (in = …,) }`: messages on this node's own edges, before inference.
 const ReactiveMPExtraInitialMessagesKey = GraphPPL.NodeDataExtraKey{
-    :initial_messages, Any
+    :initial_messages, Any,
 }()
 
 GraphPPL.plugin_type(::ReactiveMPInferencePlugin) =
     FactorAndVariableNodesPlugin()
 
 function GraphPPL.preprocess_plugin(
-    plugin::ReactiveMPInferencePlugin,
-    model::Model,
-    context::Context,
-    label::NodeLabel,
-    nodedata::NodeData,
-    options::NodeCreationOptions,
-)
+        plugin::ReactiveMPInferencePlugin,
+        model::Model,
+        context::Context,
+        label::NodeLabel,
+        nodedata::NodeData,
+        options::NodeCreationOptions,
+    )
     preprocess_plugin(plugin, nodedata, getproperties(nodedata), options)
     return label, nodedata
 end
 
 function GraphPPL.preprocess_plugin(
-    plugin::ReactiveMPInferencePlugin,
-    nodedata::NodeData,
-    nodeproperties::VariableNodeProperties,
-    options::NodeCreationOptions,
-)
+        plugin::ReactiveMPInferencePlugin,
+        nodedata::NodeData,
+        nodeproperties::VariableNodeProperties,
+        options::NodeCreationOptions,
+    )
     return nothing
 end
 
 function GraphPPL.preprocess_plugin(
-    plugin::ReactiveMPInferencePlugin,
-    nodedata::NodeData,
-    nodeproperties::FactorNodeProperties,
-    options::NodeCreationOptions,
-)
+        plugin::ReactiveMPInferencePlugin,
+        nodedata::NodeData,
+        nodeproperties::FactorNodeProperties,
+        options::NodeCreationOptions,
+    )
     haskey(options, :dependencies) && error(
         "`where { dependencies = … }` is gone in ReactiveMP v7: a node declares what its rules read (`@define_factor_node`'s `dependencies`, or `@define_dependencies` for an algorithm). An initial message on this node's own edge, as `RequireMessageFunctionalDependencies(in = d)` gave, is `where { initial_messages = (in = d,) }`; one for every edge of a variable is set with `@initialization`. See the ReactiveMP v6 → v7 migration guide.",
     )
@@ -310,8 +310,8 @@ function GraphPPL.preprocess_plugin(
 end
 
 function GraphPPL.postprocess_plugin(
-    plugin::ReactiveMPInferencePlugin, model::Model
-)
+        plugin::ReactiveMPInferencePlugin, model::Model
+    )
     # The variable nodes must be instantiated before the factor nodes
     variable_nodes(model) do label, variable
         properties = getproperties(variable)::VariableNodeProperties
@@ -358,7 +358,7 @@ function GraphPPL.postprocess_plugin(
     end
 
     # The factor nodes must be activated after the variable nodes
-    factor_nodes(model) do label, factor
+    return factor_nodes(model) do label, factor
         activate_rmp_factornode!(
             plugin, model, factor, getproperties(factor)::FactorNodeProperties
         )
@@ -366,11 +366,11 @@ function GraphPPL.postprocess_plugin(
 end
 
 function set_rmp_variable!(
-    plugin::ReactiveMPInferencePlugin,
-    model::Model,
-    nodedata::NodeData,
-    nodeproperties::VariableNodeProperties,
-)
+        plugin::ReactiveMPInferencePlugin,
+        model::Model,
+        nodedata::NodeData,
+        nodeproperties::VariableNodeProperties,
+    )
     varlabel = nodeproperties # TODO: should we make VariableNodeProperties mutable?
     if is_random(nodeproperties)
         return setextra!(
@@ -394,11 +394,11 @@ function set_rmp_variable!(
 end
 
 function activate_rmp_variable!(
-    plugin::ReactiveMPInferencePlugin,
-    model::Model,
-    nodedata::NodeData,
-    nodeproperties::VariableNodeProperties,
-)
+        plugin::ReactiveMPInferencePlugin,
+        model::Model,
+        nodedata::NodeData,
+        nodeproperties::VariableNodeProperties,
+    )
     if is_random(nodeproperties)
         # Fetch "fold-strategy" for messages and marginals. The fold-strategy usually defines the order of messages multiplication (left-to-right)
         # But can use some custom logic for product, e.g. parallel products
@@ -418,32 +418,32 @@ function activate_rmp_variable!(
         # constrains the resulting distribution to be of a point mass form
         messages_form_constraint =
             ReactiveMP.preprocess_form_constraints(
-                plugin,
-                model,
-                getextra(
-                    nodedata,
-                    GraphPPL.VariationalConstraintsMessagesFormConstraintKey,
-                    ReactiveMP.UnspecifiedFormConstraint(),
-                ),
-            ) + EnsureSupportedFunctionalForm(
-                :μ,
-                GraphPPL.getname(nodeproperties),
-                GraphPPL.index(nodeproperties),
-            )
+            plugin,
+            model,
+            getextra(
+                nodedata,
+                GraphPPL.VariationalConstraintsMessagesFormConstraintKey,
+                ReactiveMP.UnspecifiedFormConstraint(),
+            ),
+        ) + EnsureSupportedFunctionalForm(
+            :μ,
+            GraphPPL.getname(nodeproperties),
+            GraphPPL.index(nodeproperties),
+        )
         marginal_form_constraint =
             ReactiveMP.preprocess_form_constraints(
-                plugin,
-                model,
-                getextra(
-                    nodedata,
-                    GraphPPL.VariationalConstraintsMarginalFormConstraintKey,
-                    ReactiveMP.UnspecifiedFormConstraint(),
-                ),
-            ) + EnsureSupportedFunctionalForm(
-                :q,
-                GraphPPL.getname(nodeproperties),
-                GraphPPL.index(nodeproperties),
-            )
+            plugin,
+            model,
+            getextra(
+                nodedata,
+                GraphPPL.VariationalConstraintsMarginalFormConstraintKey,
+                ReactiveMP.UnspecifiedFormConstraint(),
+            ),
+        ) + EnsureSupportedFunctionalForm(
+            :q,
+            GraphPPL.getname(nodeproperties),
+            GraphPPL.index(nodeproperties),
+        )
         # Fetch "prod-constraint" for messages and marginals. The prod-constraint usually defines the constraints for a single product of messages
         # It can for example preserve a specific parametrization of distribution, see BayesBase.prod documentation for more details on that
         messages_prod_constraint = getextra(
@@ -496,7 +496,7 @@ function activate_rmp_variable!(
         )
     elseif is_data(nodeproperties)
         properties = getproperties(nodedata)::GraphPPL.VariableNodeProperties
-        # The datavar can be linked to another variable via a `transform` function, which should be stored in the `value` 
+        # The datavar can be linked to another variable via a `transform` function, which should be stored in the `value`
         # field of the properties. In this case the `datavar` gets its values from the linked variable and does not create an explicit factor node
         transform = nothing
         args = nothing
@@ -504,11 +504,13 @@ function activate_rmp_variable!(
         if !isnothing(value)
             _transform, _args = value
             transform = _transform
-            args = map(arg -> if GraphPPL.is_nodelabel(arg)
-                getvariable(getvarref(model, arg))
-            else
-                arg
-            end, _args)
+            args = map(
+                arg -> if GraphPPL.is_nodelabel(arg)
+                    getvariable(getvarref(model, arg))
+                else
+                    arg
+                end, _args
+            )
         end
         options = ReactiveMP.DataVariableActivationOptions(
             true, !isnothing(value), transform, args
@@ -542,18 +544,18 @@ end
 # A Delta node, a function no package declares, may be given its approximation method alone,
 # `f() -> Linearization()`, as v6 allowed; it runs under `DeltaApproximation(method = …)`.
 model_algorithm(fform, algorithm) =
-    if !isdeclarednode(fform) &&
+if !isdeclarednode(fform) &&
         fform isa Function &&
         is_delta_node_compatible(algorithm) === Val(true)
-        DeltaApproximation(; method = algorithm)
-    else
-        algorithm
-    end
+    DeltaApproximation(; method = algorithm)
+else
+    algorithm
+end
 
 # An interface of a node as the engine takes it, its key and its variable. Collected into a vector
 # of this type, the entries are not widened to their common type at run time for every node.
 const NodeInterfaceEntry = Tuple{
-    Union{Symbol, Tuple{Symbol, Int}}, ReactiveMP.AbstractVariable
+    Union{Symbol, Tuple{Symbol, Int}}, ReactiveMP.AbstractVariable,
 }
 
 # The engine names a node's interfaces, never positions: an interface by its name, a member of
@@ -561,24 +563,24 @@ const NodeInterfaceEntry = Tuple{
 # index an edge that is no group's, such as `out` from a slice of a data array, and gives a group
 # of one member no index: that member is `(name, 1)`.
 interface_key(edge::GraphPPL.EdgeLabel, groups) =
-    if GraphPPL.getname(edge) in groups
-        (GraphPPL.getname(edge), something(edge.index, 1))
-    else
-        GraphPPL.getname(edge)
-    end
+if GraphPPL.getname(edge) in groups
+    (GraphPPL.getname(edge), something(edge.index, 1))
+else
+    GraphPPL.getname(edge)
+end
 interface_key(edge::GraphPPL.EdgeLabel) =
-    if isnothing(edge.index)
-        GraphPPL.getname(edge)
-    else
-        (GraphPPL.getname(edge), edge.index)
-    end
+if isnothing(edge.index)
+    GraphPPL.getname(edge)
+else
+    (GraphPPL.getname(edge), edge.index)
+end
 
 function set_rmp_factornode!(
-    plugin::ReactiveMPInferencePlugin,
-    model::Model,
-    nodedata::NodeData,
-    nodeproperties::FactorNodeProperties,
-)
+        plugin::ReactiveMPInferencePlugin,
+        model::Model,
+        nodedata::NodeData,
+        nodeproperties::FactorNodeProperties,
+    )
     fform = GraphPPL.fform(nodeproperties)
     # Whether the node is declared, and its groups, are the node's, not each edge's.
     declared = isdeclarednode(fform)
@@ -658,11 +660,11 @@ node_activation_options(
 )
 
 function activate_rmp_factornode!(
-    plugin::ReactiveMPInferencePlugin,
-    model::Model,
-    nodedata::NodeData,
-    nodeproperties::FactorNodeProperties,
-)
+        plugin::ReactiveMPInferencePlugin,
+        model::Model,
+        nodedata::NodeData,
+        nodeproperties::FactorNodeProperties,
+    )
     algorithm = node_algorithm(nodedata)
     stream_postprocessors = getextra(
         nodedata, ReactiveMPExtraStreamPostprocessorsKey, nothing
@@ -771,8 +773,8 @@ _is_densely_assigned(container::GraphPPL.ResizableArray) =
 function _map_sparse(f::F, container::GraphPPL.ResizableArray) where {F}
     _is_densely_assigned(container) && return map(f, container)
     indices = filter(I -> isassigned(container, I.I...), collect(CartesianIndices(size(container))))
-    values  = [f(container[I.I...]) for I in indices]
-    result  = GraphPPL.ResizableArray(eltype(values), Val(ndims(container)))
+    values = [f(container[I.I...]) for I in indices]
+    result = GraphPPL.ResizableArray(eltype(values), Val(ndims(container)))
     for (value, I) in zip(values, indices)
         result[I.I...] = value
     end
@@ -791,8 +793,8 @@ getvariable(container::GraphPPL.ResizableArray) =
 new_observation_indexed!(datavars, data) =
     ReactiveMP.new_observation!(datavars, data)
 function new_observation_indexed!(
-    datavars::GraphPPL.ResizableArray, data::AbstractArray
-)
+        datavars::GraphPPL.ResizableArray, data::AbstractArray
+    )
     # The label array is 1-based; normalize offset-indexed `data` so the per-index alignment
     # below (`data[I]`, with 1-based `I`) reads the intended values (see `__normalize_data_indexing`).
     data = __normalize_data_indexing(data)
@@ -831,8 +833,8 @@ end
 # The node data of the factor nodes and of the random, data and constant variables, in two passes.
 function nodes_by_kind(model::GraphPPL.Model)
     randoms, datas, constants = GraphPPL.NodeData[],
-    GraphPPL.NodeData[],
-    GraphPPL.NodeData[]
+        GraphPPL.NodeData[],
+        GraphPPL.NodeData[]
     variable_nodes(model) do _, nodedata
         properties = getproperties(nodedata)::GraphPPL.VariableNodeProperties
         if is_random(properties)
@@ -877,12 +879,12 @@ isanonymous(collection::AbstractArray{GraphVariableRef}) =
     all(isanonymous, vec(collection))
 isanonymous(ref::GraphVariableRef) = GraphPPL.is_anonymous(ref.properties)
 
-# Form constraint preprocessing 
+# Form constraint preprocessing
 
 function ReactiveMP.preprocess_form_constraints(
-    backend::ReactiveMPInferencePlugin, model::Model, constraints
-)
-    # It is a simple pass-through for now, but can be extended in the future to preprocess constraints that 
+        backend::ReactiveMPInferencePlugin, model::Model, constraints
+    )
+    # It is a simple pass-through for now, but can be extended in the future to preprocess constraints that
     # are defined in other packages, e.g. in `Distributions` and to support constraints, such as `q(x) :: Normal`
     return ReactiveMP.preprocess_form_constraints(constraints)
 end

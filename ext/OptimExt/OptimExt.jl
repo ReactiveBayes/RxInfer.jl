@@ -8,8 +8,8 @@ using RxInfer:
     OptimBackend, PointMassFormConstraint, call_boundaries, call_starting_point
 
 function RxInfer.point_mass_optimize(
-    ::OptimBackend, constraint::PointMassFormConstraint, distribution
-)
+        ::OptimBackend, constraint::PointMassFormConstraint, distribution
+    )
     target = let distribution = distribution
         (x) -> -logpdf(distribution, x[1])
     end

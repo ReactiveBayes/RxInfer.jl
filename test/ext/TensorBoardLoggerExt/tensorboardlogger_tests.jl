@@ -58,10 +58,10 @@ end
     with_safe_tempdir() do log_dir
         run_dir = RxInfer.convert_to_tensorboard(
             trace;
-            output_file       = log_dir,
+            output_file = log_dir,
             log_distributions = true,
-            n_samples         = 64,
-            verbose           = false,
+            n_samples = 64,
+            verbose = false,
         )
         all_tags = read_tags(run_dir)
 
@@ -115,10 +115,10 @@ end
     with_safe_tempdir() do log_dir
         run_dir = RxInfer.convert_to_tensorboard(
             trace;
-            output_file       = log_dir,
+            output_file = log_dir,
             log_distributions = true,
-            n_samples         = 64,
-            verbose           = false,
+            n_samples = 64,
+            verbose = false,
         )
         all_tags = read_tags(run_dir)
 
@@ -166,10 +166,10 @@ end
     with_safe_tempdir() do log_dir
         run_dir = RxInfer.convert_to_tensorboard(
             trace;
-            output_file       = log_dir,
+            output_file = log_dir,
             log_distributions = true,
-            n_samples         = 64,
-            verbose           = false,
+            n_samples = 64,
+            verbose = false,
         )
         all_tags = read_tags(run_dir)
 
@@ -354,15 +354,15 @@ end
         # Stage 1 — standard trace export to populate the Beta scalars.
         run_dir = RxInfer.convert_to_tensorboard(
             results.model.metadata[:trace];
-            output_file       = log_dir,
+            output_file = log_dir,
             log_distributions = false,
-            verbose           = false,
+            verbose = false,
         )
 
         # Stage 2 — append Binomial predictive scalars in the same run dir.
         n_trials = 20
-        logger   = TBLogger(run_dir, tb_append)
-        ctx      = ext.LogContext(logger; log_distributions = false, log_text_events = false, n_samples = 0)
+        logger = TBLogger(run_dir, tb_append)
+        ctx = ext.LogContext(logger; log_distributions = false, log_text_events = false, n_samples = 0)
         for θ_post in results.posteriors[:θ]
             ext._log_posterior_scalars!(
                 ctx, Binomial(n_trials, mean(θ_post)), :y_pred
@@ -435,9 +435,9 @@ end
     with_safe_tempdir() do log_dir
         run_dir = RxInfer.convert_to_tensorboard(
             trace;
-            output_file     = log_dir,
+            output_file = log_dir,
             log_text_events = true,
-            verbose         = false,
+            verbose = false,
         )
         all_tags = read_tags(run_dir)
         @test "Events" in all_tags
@@ -463,10 +463,10 @@ end
     with_safe_tempdir() do log_dir
         run_dir = RxInfer.convert_to_tensorboard(
             trace;
-            output_file       = log_dir,
-            log_posteriors    = false,
+            output_file = log_dir,
+            log_posteriors = false,
             log_distributions = true,
-            verbose           = false,
+            verbose = false,
         )
         all_tags = read_tags(run_dir)
 
@@ -498,9 +498,9 @@ end
     with_safe_tempdir() do log_dir
         run_dir = RxInfer.convert_to_tensorboard(
             trace;
-            output_file    = log_dir,
+            output_file = log_dir,
             log_posteriors = true,
-            verbose        = false,
+            verbose = false,
         )
         all_tags = read_tags(run_dir)
 
@@ -532,10 +532,10 @@ end
         with_safe_tempdir() do log_dir
             run_dir = RxInfer.convert_to_tensorboard(
                 trace;
-                output_file       = log_dir,
-                log_posteriors    = ["μ"],
+                output_file = log_dir,
+                log_posteriors = ["μ"],
                 log_distributions = true,
-                verbose           = false,
+                verbose = false,
             )
             all_tags = read_tags(run_dir)
 
@@ -554,9 +554,9 @@ end
         with_safe_tempdir() do log_dir
             run_dir = RxInfer.convert_to_tensorboard(
                 trace;
-                output_file    = log_dir,
+                output_file = log_dir,
                 log_posteriors = [:μ],
-                verbose        = false,
+                verbose = false,
             )
             all_tags = read_tags(run_dir)
 
@@ -571,9 +571,9 @@ end
         with_safe_tempdir() do log_dir
             run_dir = RxInfer.convert_to_tensorboard(
                 trace;
-                output_file    = log_dir,
+                output_file = log_dir,
                 log_posteriors = String[],
-                verbose        = false,
+                verbose = false,
             )
             all_tags = read_tags(run_dir)
             @test !("posteriors/μ/mean" in all_tags)
@@ -628,8 +628,8 @@ end
             ctx = ext.LogContext(
                 logger;
                 log_distributions = false,
-                log_text_events   = false,
-                n_samples         = 0,
+                log_text_events = false,
+                n_samples = 0,
             )
 
             ext._log_summary!(ctx)
@@ -651,8 +651,8 @@ end
             ctx = ext.LogContext(
                 logger;
                 log_distributions = false,
-                log_text_events   = false,
-                n_samples         = 0,
+                log_text_events = false,
+                n_samples = 0,
             )
             ctx.iteration_durations[1] = 12.5
             ctx.iteration_durations[2] = 8.0
@@ -677,8 +677,8 @@ end
             ctx = ext.LogContext(
                 logger;
                 log_distributions = false,
-                log_text_events   = false,
-                n_samples         = 0,
+                log_text_events = false,
+                n_samples = 0,
             )
             ctx.model_build_ms = 4.2
             ctx.inference_ms = 17.3

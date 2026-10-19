@@ -42,9 +42,9 @@ One of the form constraint objects. Approximates `ProductOf` with a `SampleList`
     global RNG with `Random.seed!` or pass an explicit `rng` as the first argument.
 """
 struct SampleListFormConstraint{N, R, S, M} <: AbstractFormConstraint
-    rng      :: R
-    strategy :: S
-    method   :: M
+    rng::R
+    strategy::S
+    method::M
 end
 
 Base.show(io::IO, constraint::SampleListFormConstraint) = print(
@@ -58,7 +58,7 @@ Base.show(io::IO, constraint::SampleListFormConstraint) = print(
     ")",
 )
 
-SampleListFormConstraint(nsamples::Int, strategy::S = AutoProposal(), method::M = BootstrapImportanceSampling()) where {S, M}                           = SampleListFormConstraint(Random.default_rng(), nsamples, strategy, method)
+SampleListFormConstraint(nsamples::Int, strategy::S = AutoProposal(), method::M = BootstrapImportanceSampling()) where {S, M} = SampleListFormConstraint(Random.default_rng(), nsamples, strategy, method)
 SampleListFormConstraint(rng::R, nsamples::Int, strategy::S = AutoProposal(), method::M = BootstrapImportanceSampling()) where {R <: AbstractRNG, S, M} = SampleListFormConstraint{nsamples, R, S, M}(rng, strategy, method)
 
 ReactiveMP.default_form_check_strategy(::SampleListFormConstraint) =
@@ -66,7 +66,7 @@ ReactiveMP.default_form_check_strategy(::SampleListFormConstraint) =
 
 ReactiveMP.default_prod_constraint(::SampleListFormConstraint) = GenericProd()
 
-__approximate(constraint::SampleListFormConstraint{N, R, S, M}, left, right) where {N, R, S <: LeftProposal, M}  = BayesBase.approximate_prod_with_sample_list(constraint.rng, constraint.method, left, right, N)
+__approximate(constraint::SampleListFormConstraint{N, R, S, M}, left, right) where {N, R, S <: LeftProposal, M} = BayesBase.approximate_prod_with_sample_list(constraint.rng, constraint.method, left, right, N)
 __approximate(constraint::SampleListFormConstraint{N, R, S, M}, left, right) where {N, R, S <: RightProposal, M} = BayesBase.approximate_prod_with_sample_list(constraint.rng, constraint.method, right, left, N)
 
 # The logic here is that the `__approximate` function will try to pick as a proposal candidate an object
@@ -74,34 +74,34 @@ __approximate(constraint::SampleListFormConstraint{N, R, S, M}, left, right) whe
 # For example if we have a product of a `Gaussian` and a `ContinuousGenericLogPdf` the `AutoProposal` strategy
 # should pick the `Gaussian` as the proposal distribution
 const AutoProposalLowPriorityCandidates = Union{
-    AbstractContinuousGenericLogPdf, LinearizedProductOf
+    AbstractContinuousGenericLogPdf, LinearizedProductOf,
 }
 
 function __approximate(
-    constraint::SampleListFormConstraint{N, R, S, M},
-    left::AutoProposalLowPriorityCandidates,
-    right,
-) where {N, R, S <: AutoProposal, M}
+        constraint::SampleListFormConstraint{N, R, S, M},
+        left::AutoProposalLowPriorityCandidates,
+        right,
+    ) where {N, R, S <: AutoProposal, M}
     return BayesBase.approximate_prod_with_sample_list(
         constraint.rng, constraint.method, right, left, N
     )
 end
 
 function __approximate(
-    constraint::SampleListFormConstraint{N, R, S, M},
-    left,
-    right::AutoProposalLowPriorityCandidates,
-) where {N, R, S <: AutoProposal, M}
+        constraint::SampleListFormConstraint{N, R, S, M},
+        left,
+        right::AutoProposalLowPriorityCandidates,
+    ) where {N, R, S <: AutoProposal, M}
     return BayesBase.approximate_prod_with_sample_list(
         constraint.rng, constraint.method, left, right, N
     )
 end
 
 function __approximate(
-    constraint::SampleListFormConstraint{N, R, S, M},
-    left::AutoProposalLowPriorityCandidates,
-    right::AutoProposalLowPriorityCandidates,
-) where {N, R, S <: AutoProposal, M}
+        constraint::SampleListFormConstraint{N, R, S, M},
+        left::AutoProposalLowPriorityCandidates,
+        right::AutoProposalLowPriorityCandidates,
+    ) where {N, R, S <: AutoProposal, M}
     return error(
         "Cannot approximate the product of $(left) and $(right) as a sample list. The `AutoProposal` strategy cannot choose a proposal distribution. Use either `LeftProposal` or `RightProposal` in the sample list form constraint specification.",
     )
@@ -112,8 +112,8 @@ end
 # we raise the same actionable error as the both-low-priority case instead of
 # letting Julia surface a cryptic `MethodError`.
 function __approximate(
-    constraint::SampleListFormConstraint{N, R, S, M}, left, right
-) where {N, R, S <: AutoProposal, M}
+        constraint::SampleListFormConstraint{N, R, S, M}, left, right
+    ) where {N, R, S <: AutoProposal, M}
     return error(
         "Cannot approximate the product of $(left) and $(right) as a sample list. The `AutoProposal` strategy cannot choose a proposal distribution. Use either `LeftProposal` or `RightProposal` in the sample list form constraint specification.",
     )
@@ -124,9 +124,9 @@ function ReactiveMP.constrain_form(::SampleListFormConstraint, something)
 end
 
 function ReactiveMP.constrain_form(
-    constraint::SampleListFormConstraint, product::ProductOf
-)
-    left  = ReactiveMP.constrain_form(constraint, BayesBase.getleft(product))
+        constraint::SampleListFormConstraint, product::ProductOf
+    )
+    left = ReactiveMP.constrain_form(constraint, BayesBase.getleft(product))
     right = ReactiveMP.constrain_form(constraint, BayesBase.getright(product))
     return __approximate(constraint, left, right)
 end

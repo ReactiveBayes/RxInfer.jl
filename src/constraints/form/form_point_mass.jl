@@ -52,9 +52,9 @@ end
 ```
 """
 struct PointMassFormConstraint{F, P, B} <: AbstractFormConstraint
-    optimizer      :: F
-    starting_point :: P
-    boundaries     :: B
+    optimizer::F
+    starting_point::P
+    boundaries::B
 end
 
 Base.show(io::IO, ::PointMassFormConstraint) =
@@ -71,8 +71,8 @@ ReactiveMP.default_form_check_strategy(::PointMassFormConstraint) =
 
 ReactiveMP.default_prod_constraint(::PointMassFormConstraint) = GenericProd()
 
-call_optimizer(pmconstraint::PointMassFormConstraint, distribution::D) where {D}      = pmconstraint.optimizer(variate_form(D), value_support(D), pmconstraint, distribution)
-call_boundaries(pmconstraint::PointMassFormConstraint, distribution::D) where {D}     = pmconstraint.boundaries(variate_form(D), value_support(D), pmconstraint, distribution)
+call_optimizer(pmconstraint::PointMassFormConstraint, distribution::D) where {D} = pmconstraint.optimizer(variate_form(D), value_support(D), pmconstraint, distribution)
+call_boundaries(pmconstraint::PointMassFormConstraint, distribution::D) where {D} = pmconstraint.boundaries(variate_form(D), value_support(D), pmconstraint, distribution)
 call_starting_point(pmconstraint::PointMassFormConstraint, distribution::D) where {D} = pmconstraint.starting_point(variate_form(D), value_support(D), pmconstraint, distribution)
 
 ReactiveMP.constrain_form(pmconstraint::PointMassFormConstraint, distribution) =
@@ -103,11 +103,11 @@ Uses the `starting_point` and `boundaries` callbacks to determine the starting p
 function default_point_mass_form_constraint_optimizer end
 
 function default_point_mass_form_constraint_optimizer(
-    ::Type{Univariate},
-    ::Type{Continuous},
-    constraint::PointMassFormConstraint,
-    distribution,
-)
+        ::Type{Univariate},
+        ::Type{Continuous},
+        constraint::PointMassFormConstraint,
+        distribution,
+    )
     return point_mass_optimize(OptimBackend(), constraint, distribution)
 end
 
@@ -119,16 +119,16 @@ struct OptimBackend end
 function point_mass_optimize(backend, constraint, distribution)
     error(
         "The default optimiser of `PointMassFormConstraint` for a continuous univariate variable runs Optim.jl, which is not loaded. " *
-        "Load it with `using Optim`, or give the constraint an optimiser of your own, `PointMassFormConstraint(optimizer = ...)`.",
+            "Load it with `using Optim`, or give the constraint an optimiser of your own, `PointMassFormConstraint(optimizer = ...)`.",
     )
 end
 
 function default_point_mass_form_constraint_optimizer(
-    ::Type{Univariate},
-    ::Type{Discrete},
-    constraint::PointMassFormConstraint,
-    distribution,
-)
+        ::Type{Univariate},
+        ::Type{Discrete},
+        constraint::PointMassFormConstraint,
+        distribution,
+    )
 
     # fetch probvec
     p = probvec(distribution)
@@ -148,11 +148,11 @@ Defines the default boundaries for the `PointMassFormConstraint`. By default sim
 function default_point_mass_form_constraint_boundaries end
 
 function default_point_mass_form_constraint_boundaries(
-    ::Type{Univariate},
-    ::Type{Continuous},
-    constraint::PointMassFormConstraint,
-    distribution,
-)
+        ::Type{Univariate},
+        ::Type{Continuous},
+        constraint::PointMassFormConstraint,
+        distribution,
+    )
     return __default_univariate_boundaries(support(distribution))
 end
 
@@ -172,11 +172,11 @@ If the support is unbounded, returns a zero point. Otherwise throws an error.
 function default_point_mass_form_constraint_starting_point end
 
 function default_point_mass_form_constraint_starting_point(
-    ::Type{Univariate},
-    ::Type{Continuous},
-    constraint::PointMassFormConstraint,
-    distribution,
-)
+        ::Type{Univariate},
+        ::Type{Continuous},
+        constraint::PointMassFormConstraint,
+        distribution,
+    )
     lower, upper = call_boundaries(constraint, distribution)
     return if isinf(lower) && isinf(upper)
         return zeros(1)

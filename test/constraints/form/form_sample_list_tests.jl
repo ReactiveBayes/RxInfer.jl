@@ -20,8 +20,8 @@
 
                 @test q isa SampleList
                 @test length(q) === nsamples
-                @test mean(q) ≈ mean(d) atol = 1e-1
-                @test var(q) ≈ var(d) atol = 1e-1
+                @test mean(q) ≈ mean(d) atol = 1.0e-1
+                @test var(q) ≈ var(d) atol = 1.0e-1
             end
         end
     end
@@ -45,8 +45,8 @@
 
                 @test q isa SampleList
                 @test length(q) === nsamples
-                @test mean(q) ≈ mean(d) atol = 1e-1
-                @test var(q) ≈ var(d) atol = 1e-1
+                @test mean(q) ≈ mean(d) atol = 1.0e-1
+                @test var(q) ≈ var(d) atol = 1.0e-1
             end
         end
     end

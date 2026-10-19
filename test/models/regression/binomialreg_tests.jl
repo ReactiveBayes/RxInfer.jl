@@ -5,8 +5,8 @@
     include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
     function generate_synthetic_binomial_data(
-        n_samples::Int, true_beta::Vector{Float64}; seed::Int = 42
-    )
+            n_samples::Int, true_beta::Vector{Float64}; seed::Int = 42
+        )
         rng = StableRNG(seed)
         n_features = length(true_beta)
         # Generate design matrix X
@@ -43,8 +43,8 @@
     end
 
     function binomial_inference(
-        binomial_model, iterations, X, y, n_trials, n_features
-    )
+            binomial_model, iterations, X, y, n_trials, n_features
+        )
         return infer(
             model = binomial_model(
                 prior_xi = zeros(n_features),
@@ -61,11 +61,11 @@
     end
 
     function run_simulation(
-        n_sims::Int,
-        n_samples::Int,
-        true_beta::Vector{Float64};
-        iterations = n_iterations,
-    )
+            n_sims::Int,
+            n_samples::Int,
+            true_beta::Vector{Float64};
+            iterations = n_iterations,
+        )
         # Storage for results
         n_features = length(true_beta)
         coverage = Vector{Vector{Float64}}(undef, n_sims)

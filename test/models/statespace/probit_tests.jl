@@ -83,7 +83,7 @@
     # The `Probit` node declares the initial message on its `in` edge
     result = probit_inference(data_y)
     @test length(result.free_energy) === 10
-    @test all(<=(1e-6), diff(result.free_energy)) # Some values are fluctuating due to approximations
+    @test all(<=(1.0e-6), diff(result.free_energy)) # Some values are fluctuating due to approximations
     @test last(result.free_energy) ≈ 15.646236967225065
 
     # v6's `where { dependencies = RequireMessageFunctionalDependencies(in = init) }` gave this

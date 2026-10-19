@@ -1,16 +1,16 @@
 @testitem "Tests for `StopEarlyIterationStrategy`" begin
     using RxInfer, Rocket, UUIDs
 
-    strategy = StopEarlyIterationStrategy(1e-3)
-    strategy_with_atol = StopEarlyIterationStrategy(1e-5, 1e-3)
+    strategy = StopEarlyIterationStrategy(1.0e-3)
+    strategy_with_atol = StopEarlyIterationStrategy(1.0e-5, 1.0e-3)
 
     @test strategy.atol === 0.0
-    @test strategy.rtol === 1e-3
+    @test strategy.rtol === 1.0e-3
     @test strategy.start_fe_value === Inf
     @test isempty(strategy.fe_values)
 
-    @test strategy_with_atol.atol === 1e-5
-    @test strategy_with_atol.rtol === 1e-3
+    @test strategy_with_atol.atol === 1.0e-5
+    @test strategy_with_atol.rtol === 1.0e-3
     @test strategy_with_atol.start_fe_value === Inf
     @test isempty(strategy_with_atol.fe_values)
 
@@ -40,8 +40,8 @@
 
     @test strategy.window == 2
     @test StopEarlyIterationStrategy(0, 0, Inf, Float64[]).window == 2
-    @test StopEarlyIterationStrategy(1e-3; window = 4).window == 4
-    @test_throws ArgumentError StopEarlyIterationStrategy(1e-3; window = 1)
+    @test StopEarlyIterationStrategy(1.0e-3; window = 4).window == 4
+    @test_throws ArgumentError StopEarlyIterationStrategy(1.0e-3; window = 1)
     @test_throws ArgumentError StopEarlyIterationStrategy(-1.0)
     @test_throws ArgumentError StopEarlyIterationStrategy(Inf)
     @test_throws ArgumentError StopEarlyIterationStrategy(NaN, 0.0)
@@ -65,7 +65,7 @@
     @test !any(last(check_sequence([1.0, 1.2, 1.0, 1.2])))
     @test last(
         check_sequence(
-            [-100.0, -100.01, -100.02, -100.03]; atol = 0.0, rtol = 1e-3
+            [-100.0, -100.01, -100.02, -100.03]; atol = 0.0, rtol = 1.0e-3
         ),
     )[end]
     @test !any(last(check_sequence([Inf, Inf, Inf, Inf])))
@@ -78,13 +78,13 @@
     callback(restarted)
     @test !restarted.stop_iteration
     @test callback.fe_values == [1.0]
-    unavailable = StopEarlyIterationStrategy(1e-3)
+    unavailable = StopEarlyIterationStrategy(1.0e-3)
     missing_event = AfterIterationEvent(MockModel(Subject(Float64)), 1, uuid4())
     @test_throws ErrorException unavailable(missing_event)
     @test isempty(unavailable.fe_values)
     @test !last(
         check_sequence(
-            [100.0, 100.04, 100.08, 100.12]; atol = 0.05, rtol = 1e-3
+            [100.0, 100.04, 100.08, 100.12]; atol = 0.05, rtol = 1.0e-3
         ),
     )[end]
 end

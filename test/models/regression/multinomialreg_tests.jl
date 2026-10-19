@@ -47,7 +47,7 @@
     pest = logistic_stic_breaking(m)
 
     mse = mean((pest - p) .^ 2)
-    @test mse < 2e-5
+    @test mse < 2.0e-5
 
     @test result.free_energy[end] < result.free_energy[1]
 
@@ -57,10 +57,10 @@
     # monotonicity is therefore not meaningful and makes this test flaky.
     # Check instead that the free energy is non-increasing up to that noise,
     # over all iterations rather than just the last pair.
-    fe_tol = 1e-8 * max(1.0, abs(result.free_energy[end]))
+    fe_tol = 1.0e-8 * max(1.0, abs(result.free_energy[end]))
     @test all(<=(fe_tol), diff(result.free_energy))
 
-    @test abs(result.free_energy[end - 1] - result.free_energy[end]) < 1e-8
+    @test abs(result.free_energy[end - 1] - result.free_energy[end]) < 1.0e-8
 end
 
 @testitem "Multinomial regression - online inference" begin
@@ -113,10 +113,10 @@ end
 
     pest = logistic_stic_breaking(mean(m))
     mse = mean((pest - p) .^ 2)
-    @test mse < 1e-3
+    @test mse < 1.0e-3
 
     @test result.free_energy_final_only_history[end] <
         result.free_energy_final_only_history[1]
-    #Free energy over time decreases in a noisy way. It is not a monotonic decrease. 
+    #Free energy over time decreases in a noisy way. It is not a monotonic decrease.
 
 end

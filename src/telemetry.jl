@@ -65,7 +65,7 @@ function log_using_rxinfer()
     end
 
     if !preference_enable_using_rxinfer_telemetry ||
-        isnothing(preference_telemetry_endpoint)
+            isnothing(preference_telemetry_endpoint)
         return nothing
     end
 
@@ -101,7 +101,7 @@ function log_using_rxinfer()
         )
     catch e
         logged_usage[] = false
-        @debug "Failed to `log_using_rxinfer`" error=(e, catch_backtrace())
+        @debug "Failed to `log_using_rxinfer`" error = (e, catch_backtrace())
         nothing # Discard any log errors to avoid disrupting the user
     end
 
@@ -218,17 +218,17 @@ const collection_allow_patch = Dict{String, Bool}(
 # base endpoint and stub HTTP verbs that capture their arguments. In normal operation
 # they default to the configured telemetry endpoint and the real `HTTP.post`/`HTTP.patch`.
 function __add_document(
-    id,
-    collection,
-    payload;
-    endpoint = preference_telemetry_endpoint,
-    http_post = HTTP.post,
-    http_patch = HTTP.patch,
-)
+        id,
+        collection,
+        payload;
+        endpoint = preference_telemetry_endpoint,
+        http_post = HTTP.post,
+        http_patch = HTTP.patch,
+    )
     if !isnothing(endpoint)
         # Headers required for Firestore REST API
         headers = [
-            "Accept" => "application/json", "Content-Type" => "application/json"
+            "Accept" => "application/json", "Content-Type" => "application/json",
         ]
 
         # Example values:
@@ -369,11 +369,13 @@ end
 Convert a Session object to a Firestore-compatible document format.
 """
 function to_firestore_session(session::Session)
-    return to_firestore_document((
-        id = session.id,
-        created_at = session.created_at,
-        environment = session.environment,
-    ))
+    return to_firestore_document(
+        (
+            id = session.id,
+            created_at = session.created_at,
+            environment = session.environment,
+        )
+    )
 end
 
 """
@@ -383,27 +385,29 @@ Convert a SessionStats object to a Firestore-compatible document format.
 Includes a reference to the parent session.
 """
 function to_firestore_session_stats(stats::SessionStats, session_id::UUID)
-    return to_firestore_document((
-        id = stats.id,
-        session = session_id,
-        label = stats.label,
-        total_invokes = stats.total_invokes,
-        success_count = stats.success_count,
-        failed_count = stats.failed_count,
-        success_rate = stats.success_rate,
-        min_duration_ms = if stats.min_duration_ms == Inf
-            0.0
-        else
-            stats.min_duration_ms
-        end,
-        max_duration_ms = if stats.max_duration_ms == -Inf
-            0.0
-        else
-            stats.max_duration_ms
-        end,
-        total_duration_ms = stats.total_duration_ms,
-        context_keys = collect(stats.context_keys),
-    ))
+    return to_firestore_document(
+        (
+            id = stats.id,
+            session = session_id,
+            label = stats.label,
+            total_invokes = stats.total_invokes,
+            success_count = stats.success_count,
+            failed_count = stats.failed_count,
+            success_rate = stats.success_rate,
+            min_duration_ms = if stats.min_duration_ms == Inf
+                0.0
+            else
+                stats.min_duration_ms
+            end,
+            max_duration_ms = if stats.max_duration_ms == -Inf
+                0.0
+            else
+                stats.max_duration_ms
+            end,
+            total_duration_ms = stats.total_duration_ms,
+            context_keys = collect(stats.context_keys),
+        )
+    )
 end
 
 """
@@ -419,21 +423,23 @@ conversion, so they are not included in the shared document. All other context e
 untouched.
 """
 function to_firestore_invoke(
-    invoke::SessionInvoke, stats_id::UUID; share_source_code::Bool = true
-)
+        invoke::SessionInvoke, stats_id::UUID; share_source_code::Bool = true
+    )
     context = if share_source_code
         invoke.context
     else
         __redact_source_code(invoke.context)
     end
-    return to_firestore_document((
-        id = invoke.id,
-        session_stats = stats_id,
-        status = invoke.status,
-        execution_start = invoke.execution_start,
-        execution_end = invoke.execution_end,
-        context = context,
-    ))
+    return to_firestore_document(
+        (
+            id = invoke.id,
+            session_stats = stats_id,
+            status = invoke.status,
+            execution_start = invoke.execution_start,
+            execution_end = invoke.execution_end,
+            context = context,
+        )
+    )
 end
 
 # The invoke-context keys that carry user-authored source code (see
@@ -495,10 +501,10 @@ When `show_progress` is true (default), the function displays:
 - A green progress bar for sharing labeled runs
 """
 function share_session_data(
-    session::Union{Session, Nothing} = RxInfer.default_session();
-    show_progress::Bool = true,
-    share_source_code::Union{Bool, Nothing} = nothing,
-)
+        session::Union{Session, Nothing} = RxInfer.default_session();
+        show_progress::Bool = true,
+        share_source_code::Union{Bool, Nothing} = nothing,
+    )
     if isnothing(preference_telemetry_endpoint)
         @warn "Cannot share session data: telemetry endpoint is not set. See `RxInfer.set_telemetry_endpoint!()`"
         return nothing
@@ -592,11 +598,11 @@ function share_session_data(
 end
 
 function share_session_data(
-    session::Session,
-    stats::SessionStats;
-    show_progress::Bool = true,
-    share_source_code::Union{Bool, Nothing} = nothing,
-)
+        session::Session,
+        stats::SessionStats;
+        show_progress::Bool = true,
+        share_source_code::Union{Bool, Nothing} = nothing,
+    )
     return share_session_data(
         session,
         stats,
@@ -607,12 +613,12 @@ function share_session_data(
 end
 
 function share_session_data(
-    session::Session,
-    stats::SessionStats,
-    invokes;
-    show_progress::Bool = true,
-    share_source_code::Union{Bool, Nothing} = nothing,
-)
+        session::Session,
+        stats::SessionStats,
+        invokes;
+        show_progress::Bool = true,
+        share_source_code::Union{Bool, Nothing} = nothing,
+    )
     # Resolve the source-code sharing behaviour: `nothing` follows the compile-time
     # preference, an explicit `Bool` overrides it for this call.
     resolved_share_source_code = if isnothing(share_source_code)

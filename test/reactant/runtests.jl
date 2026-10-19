@@ -34,10 +34,10 @@ BayesBase.default_prod_rule(
 ) = BayesBase.ClosedProd()
 
 function BayesBase.prod(
-    ::BayesBase.ClosedProd,
-    prior::TracedMvNormal,
-    likelihood::TracedMvNormalWeighted,
-)
+        ::BayesBase.ClosedProd,
+        prior::TracedMvNormal,
+        likelihood::TracedMvNormalWeighted,
+    )
     F = lu(I + prior.Σ * likelihood.Λ)
     return TracedMvNormal(F \ (prior.μ + prior.Σ * likelihood.ξ), F \ prior.Σ)
 end
@@ -77,9 +77,9 @@ struct LinearGaussian end
     args = (m[:in]::TracedMvNormal, q[:A]::PointMass, q[:Σ]::PointMass),
     body =
         (args) -> begin
-            A, belief = mean(args.q[:A]), args.m[:in]
-            TracedMvNormal(A * belief.μ, A * belief.Σ * A' + mean(args.q[:Σ]))
-        end,
+        A, belief = mean(args.q[:A]), args.m[:in]
+        TracedMvNormal(A * belief.μ, A * belief.Σ * A' + mean(args.q[:Σ]))
+    end,
 )
 
 @define_message_update_rule(
@@ -88,13 +88,13 @@ struct LinearGaussian end
     args = (q[:out]::PointMass, q[:A]::PointMass, q[:Σ]::PointMass),
     body =
         (args) -> begin
-            A, observation, noise = mean(args.q[:A]),
+        A, observation, noise = mean(args.q[:A]),
             mean(args.q[:out]),
             lu(mean(args.q[:Σ]))
-            TracedMvNormalWeighted(
-                A' * (noise \ observation), A' * (noise \ A)
-            )
-        end,
+        TracedMvNormalWeighted(
+            A' * (noise \ observation), A' * (noise \ A)
+        )
+    end,
 )
 
 @define_message_update_rule(
@@ -103,12 +103,12 @@ struct LinearGaussian end
     args = (m[:out]::TracedMvNormalWeighted, q[:A]::PointMass, q[:Σ]::PointMass),
     body =
         (args) -> begin
-            A, Σ, message = mean(args.q[:A]), mean(args.q[:Σ]), args.m[:out]
-            F = lu(I + message.Λ * Σ)
-            TracedMvNormalWeighted(
-                A' * (F \ message.ξ), A' * (F \ message.Λ) * A
-            )
-        end,
+        A, Σ, message = mean(args.q[:A]), mean(args.q[:Σ]), args.m[:out]
+        F = lu(I + message.Λ * Σ)
+        TracedMvNormalWeighted(
+            A' * (F \ message.ξ), A' * (F \ message.Λ) * A
+        )
+    end,
 )
 
 @model function linear_gaussian_ssm(y, m0, V0, A, B, P, Q)

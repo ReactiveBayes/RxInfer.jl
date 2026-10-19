@@ -26,32 +26,32 @@ end
 getobjective(plugin::ReactiveMPFreeEnergyPlugin) = plugin.objective
 
 const ReactiveMPExtraBetheFreeEnergyStreamKey = GraphPPL.NodeDataExtraKey{
-    :bfe_stream, Any
+    :bfe_stream, Any,
 }()
 
 GraphPPL.plugin_type(::ReactiveMPFreeEnergyPlugin) =
     FactorAndVariableNodesPlugin()
 
 function GraphPPL.preprocess_plugin(
-    ::ReactiveMPFreeEnergyPlugin,
-    ::Model,
-    ::Context,
-    label::NodeLabel,
-    nodedata::NodeData,
-    ::NodeCreationOptions,
-)
+        ::ReactiveMPFreeEnergyPlugin,
+        ::Model,
+        ::Context,
+        label::NodeLabel,
+        nodedata::NodeData,
+        ::NodeCreationOptions,
+    )
     return label, nodedata
 end
 
 function GraphPPL.postprocess_plugin(
-    plugin::ReactiveMPFreeEnergyPlugin, model::Model
-)
+        plugin::ReactiveMPFreeEnergyPlugin, model::Model
+    )
     return postprocess_plugin(plugin, getobjective(plugin), model)
 end
 
 function GraphPPL.postprocess_plugin(
-    ::ReactiveMPFreeEnergyPlugin, objective::BetheFreeEnergy{T}, model::Model
-) where {T}
+        ::ReactiveMPFreeEnergyPlugin, objective::BetheFreeEnergy{T}, model::Model
+    ) where {T}
     factor_nodes(model) do _, node
         factornode = getextra(node, ReactiveMPExtraFactorNodeKey)
         bfe_stream = score(
@@ -82,8 +82,8 @@ function GraphPPL.postprocess_plugin(
 end
 
 function score(
-    model::ProbabilisticModel, ::BetheFreeEnergy{T}, diagnostic_checks
-) where {T}
+        model::ProbabilisticModel, ::BetheFreeEnergy{T}, diagnostic_checks
+    ) where {T}
     nodes = nodes_by_kind(model)
     node_bound_free_energies = map(nodes.factors) do nodedata
         nodeproperties = getproperties(nodedata)::GraphPPL.FactorNodeProperties
@@ -109,33 +109,33 @@ function score(
 
     degree_fn =
         (nodedata::GraphPPL.NodeData) ->
-            ReactiveMP.degree(getextra(nodedata, ReactiveMPExtraVariableKey))
+    ReactiveMP.degree(getextra(nodedata, ReactiveMPExtraVariableKey))
 
-    data_point_entropies_n     = mapreduce(degree_fn, +, nodes.datas; init = 0)
+    data_point_entropies_n = mapreduce(degree_fn, +, nodes.datas; init = 0)
     constant_point_entropies_n = mapreduce(degree_fn, +, nodes.constants; init = 0)
-    hidden_point_entropies_n   = mapreduce(nodedata -> getextra(nodedata, ReactiveMPExtraHiddenConstantsKey, 0), +, nodes.factors; init = 0)
+    hidden_point_entropies_n = mapreduce(nodedata -> getextra(nodedata, ReactiveMPExtraHiddenConstantsKey, 0), +, nodes.factors; init = 0)
 
     point_entropies = CountingReal(
         T,
         data_point_entropies_n +
-        constant_point_entropies_n +
-        hidden_point_entropies_n,
+            constant_point_entropies_n +
+            hidden_point_entropies_n,
     )
 
     bfe_stream =
         combineLatest(
-            (node_bound_free_energies_sum, variable_bound_entropies_sum),
-            PushNew(),
-        ) |> map(T, d -> float(d[1] + d[2] - point_entropies))
+        (node_bound_free_energies_sum, variable_bound_entropies_sum),
+        PushNew(),
+    ) |> map(T, d -> float(d[1] + d[2] - point_entropies))
 
     return apply_diagnostic_check(diagnostic_checks, nothing, bfe_stream)
 end
 
-# Diagnostic checks 
+# Diagnostic checks
 
 function apply_diagnostic_check(
-    ::ObjectiveDiagnosticCheckNaNs, node::GraphPPL.FactorNodeProperties, stream
-)
+        ::ObjectiveDiagnosticCheckNaNs, node::GraphPPL.FactorNodeProperties, stream
+    )
     error_fn = let node = node
         (_) -> lazy"""
         Failed to compute node bound free energy component. The result is `NaN`.
@@ -147,10 +147,10 @@ function apply_diagnostic_check(
 end
 
 function apply_diagnostic_check(
-    ::ObjectiveDiagnosticCheckNaNs,
-    variable::GraphPPL.VariableNodeProperties,
-    stream,
-)
+        ::ObjectiveDiagnosticCheckNaNs,
+        variable::GraphPPL.VariableNodeProperties,
+        stream,
+    )
     error_fn = let variable = variable
         (_) -> lazy"""
         Failed to compute variable bound free energy component for `$(variable)` variable. The result is `NaN`.
@@ -161,8 +161,8 @@ function apply_diagnostic_check(
 end
 
 function apply_diagnostic_check(
-    ::ObjectiveDiagnosticCheckInfs, node::GraphPPL.FactorNodeProperties, stream
-)
+        ::ObjectiveDiagnosticCheckInfs, node::GraphPPL.FactorNodeProperties, stream
+    )
     error_fn = let node = node
         (_) -> lazy"""
         Failed to compute node bound free energy component. The result is `Inf`. 
@@ -174,10 +174,10 @@ function apply_diagnostic_check(
 end
 
 function apply_diagnostic_check(
-    ::ObjectiveDiagnosticCheckInfs,
-    variable::GraphPPL.VariableNodeProperties,
-    stream,
-)
+        ::ObjectiveDiagnosticCheckInfs,
+        variable::GraphPPL.VariableNodeProperties,
+        stream,
+    )
     error_fn = let variable = variable
         (_) -> lazy"""
         Failed to compute variable bound free energy component for `$(variable)` variable. The result is `Inf`. 
@@ -187,7 +187,7 @@ function apply_diagnostic_check(
     return stream |> error_if(check_isinf, error_fn)
 end
 
-## 
+##
 
 __as_counting_real_type(::Type{Real}) = CountingReal{<:Real}
 __as_counting_real_type(::Type{T}) where {T <: Real} = CountingReal{T}

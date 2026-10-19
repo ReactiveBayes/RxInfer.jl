@@ -31,7 +31,7 @@
     next!(stream, NormalMeanPrecision(0.0, 0.0))
     @test occursin("The result is `Inf`", events[3])
 
-    # Normally stream should unsubscribe after first error 
+    # Normally stream should unsubscribe after first error
     next!(stream, NormalMeanPrecision(0.0, 0.0))
     @test length(events) === 3
 end
@@ -69,7 +69,7 @@ end
     next!(stream, NormalMeanPrecision(NaN, NaN))
     @test occursin("The result is `NaN`", events[3])
 
-    # Normally stream should unsubscribe after first error 
+    # Normally stream should unsubscribe after first error
     next!(stream, NormalMeanPrecision(0.0, 0.0))
     @test length(events) === 3
 end

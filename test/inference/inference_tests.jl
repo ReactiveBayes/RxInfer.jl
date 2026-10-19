@@ -576,7 +576,7 @@ end
         @test length(results3.posteriors[:x]) === 5
         @test length(results3.posteriors[:τ]) === 5
 
-        # Check that free energy is equivalent between runs, data is the same, inference should be 
+        # Check that free energy is equivalent between runs, data is the same, inference should be
         # the same up until the halting point
         @test all(results1.free_energy[1:4] .=== results2.free_energy)
         @test all(results1.free_energy[1:5] .=== results3.free_energy)
@@ -590,7 +590,7 @@ end
     n = 6  # Number of test cases
 
     distribution = NormalMeanVariance(0.0, 1.0)
-    dataset      = rand(distribution, n)
+    dataset = rand(distribution, n)
 
     @model function gcv(y, x, z, κ, ω)
         log_σ := κ * z + ω
@@ -611,18 +611,18 @@ end
         args = (q[:x]::Any, q[:z]::Any, q[:κ]::Any, q[:ω]::Any),
         body =
             (algo, args) -> getresult(
-                call_message_update_rule(
-                    GCV,
-                    :y;
-                    q = (
-                        x = args.q[:x],
-                        z = args.q[:z],
-                        κ = args.q[:κ],
-                        ω = args.q[:ω],
-                    ),
-                    algorithm = algo,
+            call_message_update_rule(
+                GCV,
+                :y;
+                q = (
+                    x = args.q[:x],
+                    z = args.q[:z],
+                    κ = args.q[:κ],
+                    ω = args.q[:ω],
                 ),
+                algorithm = algo,
             ),
+        ),
     )
 
     @define_message_update_rule(
@@ -631,18 +631,18 @@ end
         args = (q[:y]::Any, q[:z]::Any, q[:κ]::Any, q[:ω]::Any),
         body =
             (algo, args) -> getresult(
-                call_message_update_rule(
-                    GCV,
-                    :x;
-                    q = (
-                        y = args.q[:y],
-                        z = args.q[:z],
-                        κ = args.q[:κ],
-                        ω = args.q[:ω],
-                    ),
-                    algorithm = algo,
+            call_message_update_rule(
+                GCV,
+                :x;
+                q = (
+                    y = args.q[:y],
+                    z = args.q[:z],
+                    κ = args.q[:κ],
+                    ω = args.q[:ω],
                 ),
+                algorithm = algo,
             ),
+        ),
     )
 
     @define_message_update_rule(
@@ -651,18 +651,18 @@ end
         args = (q[:y]::Any, q[:x]::Any, q[:z]::Any, q[:κ]::Any),
         body =
             (algo, args) -> getresult(
-                call_message_update_rule(
-                    GCV,
-                    :ω;
-                    q = (
-                        y = args.q[:y],
-                        x = args.q[:x],
-                        z = args.q[:z],
-                        κ = args.q[:κ],
-                    ),
-                    algorithm = algo,
+            call_message_update_rule(
+                GCV,
+                :ω;
+                q = (
+                    y = args.q[:y],
+                    x = args.q[:x],
+                    z = args.q[:z],
+                    κ = args.q[:κ],
                 ),
+                algorithm = algo,
             ),
+        ),
     )
 
     @define_message_update_rule(
@@ -671,18 +671,18 @@ end
         args = (q[:y]::Any, q[:x]::Any, q[:κ]::Any, q[:ω]::Any),
         body =
             (algo, args) -> getresult(
-                call_message_update_rule(
-                    GCV,
-                    :z;
-                    q = (
-                        y = args.q[:y],
-                        x = args.q[:x],
-                        κ = args.q[:κ],
-                        ω = args.q[:ω],
-                    ),
-                    algorithm = algo,
+            call_message_update_rule(
+                GCV,
+                :z;
+                q = (
+                    y = args.q[:y],
+                    x = args.q[:x],
+                    κ = args.q[:κ],
+                    ω = args.q[:ω],
                 ),
+                algorithm = algo,
             ),
+        ),
     )
 
     @define_message_update_rule(
@@ -691,18 +691,18 @@ end
         args = (q[:y]::Any, q[:x]::Any, q[:z]::Any, q[:ω]::Any),
         body =
             (algo, args) -> getresult(
-                call_message_update_rule(
-                    GCV,
-                    :κ;
-                    q = (
-                        y = args.q[:y],
-                        x = args.q[:x],
-                        z = args.q[:z],
-                        ω = args.q[:ω],
-                    ),
-                    algorithm = algo,
+            call_message_update_rule(
+                GCV,
+                :κ;
+                q = (
+                    y = args.q[:y],
+                    x = args.q[:x],
+                    z = args.q[:z],
+                    ω = args.q[:ω],
                 ),
+                algorithm = algo,
             ),
+        ),
     )
 
     @define_average_energy(
@@ -710,20 +710,20 @@ end
         args = (q[:y]::Any, q[:x]::Any, q[:z]::Any, q[:κ]::Any, q[:ω]::Any),
         body =
             (args) -> begin
-                y_mean, y_var = mean_var(args.q[:y])
-                x_mean, x_var = mean_var(args.q[:x])
-                z_mean, z_var = mean_var(args.q[:z])
-                κ_mean, κ_var = mean_var(args.q[:κ])
-                ω_mean, ω_var = mean_var(args.q[:ω])
+            y_mean, y_var = mean_var(args.q[:y])
+            x_mean, x_var = mean_var(args.q[:x])
+            z_mean, z_var = mean_var(args.q[:z])
+            κ_mean, κ_var = mean_var(args.q[:κ])
+            ω_mean, ω_var = mean_var(args.q[:ω])
 
-                ksi =
-                    (κ_mean^2) * z_var + (z_mean^2) * κ_var + κ_var * z_var
-                psi = (y_mean - x_mean)^2 + y_var + x_var
-                A = exp(-ω_mean + ω_var / 2)
-                B = exp(-κ_mean * z_mean + ksi / 2)
+            ksi =
+                (κ_mean^2) * z_var + (z_mean^2) * κ_var + κ_var * z_var
+            psi = (y_mean - x_mean)^2 + y_var + x_var
+            A = exp(-ω_mean + ω_var / 2)
+            B = exp(-κ_mean * z_mean + ksi / 2)
 
-                (log(2π) + (z_mean * κ_mean + ω_mean) + (psi * A * B)) / 2
-            end,
+            (log(2π) + (z_mean * κ_mean + ω_mean) + (psi * A * B)) / 2
+        end,
     )
 
     @model function hgf_1(y)
@@ -884,7 +884,7 @@ end
     end
 
     init = @initialization begin
-        q(x_t) = NormalMeanVariance(0.0, 1e3)
+        q(x_t) = NormalMeanVariance(0.0, 1.0e3)
         q(τ) = GammaShapeRate(1.0, 1.0)
     end
 
@@ -894,10 +894,10 @@ end
         τ_rate = rate(q(τ))
     end
 
-    n         = 10
-    hiddenx   = Float64[]
+    n = 10
+    hiddenx = Float64[]
     observedy = Float64[]
-    prevx     = 0.0
+    prevx = 0.0
     for i in 1:n
         nextx = rand(NormalMeanVariance(prevx, 1.0))
         nexty = rand(NormalMeanPrecision(nextx, 10.0))
@@ -908,10 +908,10 @@ end
 
     @testset "Check basic usage" begin
         for keephistory in (0, 1, 2),
-            iterations in (3, 4),
-            free_energy in (true, Float64, false),
-            returnvars in ((:x_t,), (:x_t, :τ)),
-            historyvars in ((:x_t,), (:x_t, :τ))
+                iterations in (3, 4),
+                free_energy in (true, Float64, false),
+                returnvars in ((:x_t,), (:x_t, :τ)),
+                historyvars in ((:x_t,), (:x_t, :τ))
 
             historyvars = if keephistory > 0
                 NamedTuple{historyvars}(map(_ -> KeepEach(), historyvars))
@@ -1000,13 +1000,13 @@ end
             autoupdates = autoupdates,
             callbacks = (
                 before_model_creation = (event) ->
-                    push!(callbacksdata, (:before_model_creation, event)),
+                push!(callbacksdata, (:before_model_creation, event)),
                 after_model_creation = (event) ->
-                    push!(callbacksdata, (:after_model_creation, event)),
+                push!(callbacksdata, (:after_model_creation, event)),
                 before_autostart = (event) ->
-                    push!(callbacksdata, (:before_autostart, event)),
+                push!(callbacksdata, (:before_autostart, event)),
                 after_autostart = (event) ->
-                    push!(callbacksdata, (:after_autostart, event)),
+                push!(callbacksdata, (:after_autostart, event)),
             ),
             autostart = true,
         )
@@ -1039,13 +1039,13 @@ end
             autoupdates = autoupdates,
             callbacks = (
                 before_model_creation = (event) ->
-                    push!(callbacksdata, (:before_model_creation, event)),
+                push!(callbacksdata, (:before_model_creation, event)),
                 after_model_creation = (event) ->
-                    push!(callbacksdata, (:after_model_creation, event)),
+                push!(callbacksdata, (:after_model_creation, event)),
                 before_autostart = (event) ->
-                    push!(callbacksdata, (:before_autostart, event)),
+                push!(callbacksdata, (:before_autostart, event)),
                 after_autostart = (event) ->
-                    push!(callbacksdata, (:after_autostart, event)),
+                push!(callbacksdata, (:after_autostart, event)),
             ),
             autostart = false,
         )
@@ -1091,14 +1091,14 @@ end
         end
 
         function Rocket.on_next!(
-            listener::CustomEventListener, event::RxInferenceEvent{:on_new_data}
-        )
+                listener::CustomEventListener, event::RxInferenceEvent{:on_new_data}
+            )
             push!(listener.eventsdata, Any[event])
         end
 
         function Rocket.on_next!(
-            listener::CustomEventListener, event::RxInferenceEvent
-        )
+                listener::CustomEventListener, event::RxInferenceEvent
+            )
             push!(last(listener.eventsdata), event)
         end
 
@@ -1111,20 +1111,22 @@ end
                 autoupdates = autoupdates,
                 historyvars = KeepEach(),
                 keephistory = keephistory,
-                events = Val((
-                    :on_new_data,
-                    :before_iteration,
-                    :after_iteration,
-                    :before_auto_update,
-                    :after_auto_update,
-                    :before_data_update,
-                    :after_data_update,
-                    :before_history_save,
-                    :after_history_save,
-                    :on_tick,
-                    :on_error,
-                    :on_complete,
-                )),
+                events = Val(
+                    (
+                        :on_new_data,
+                        :before_iteration,
+                        :after_iteration,
+                        :before_auto_update,
+                        :after_auto_update,
+                        :before_data_update,
+                        :after_data_update,
+                        :before_history_save,
+                        :after_history_save,
+                        :on_tick,
+                        :on_error,
+                        :on_complete,
+                    )
+                ),
                 iterations = iterations,
                 autostart = false,
                 warn = false,
@@ -1181,7 +1183,7 @@ end
                     enumerate(
                         filter(
                             event ->
-                                event isa RxInferenceEvent{:before_iteration},
+                            event isa RxInferenceEvent{:before_iteration},
                             events,
                         ),
                     ),
@@ -1196,7 +1198,7 @@ end
                     enumerate(
                         filter(
                             event ->
-                                event isa RxInferenceEvent{:after_iteration},
+                            event isa RxInferenceEvent{:after_iteration},
                             events,
                         ),
                     ),
@@ -1211,7 +1213,7 @@ end
                     event_name,
                     filter(
                         event ->
-                            event isa RxInferenceEvent{:before_iteration} ||
+                        event isa RxInferenceEvent{:before_iteration} ||
                             event isa RxInferenceEvent{:after_iteration},
                         events,
                     ),
@@ -1221,7 +1223,7 @@ end
                 @test length(
                     filter(
                         event ->
-                            event isa RxInferenceEvent{:before_auto_update},
+                        event isa RxInferenceEvent{:before_auto_update},
                         events,
                     ),
                 ) == iterations
@@ -1237,7 +1239,7 @@ end
                     enumerate(
                         filter(
                             event ->
-                                event isa RxInferenceEvent{:before_auto_update},
+                            event isa RxInferenceEvent{:before_auto_update},
                             events,
                         ),
                     ),
@@ -1253,7 +1255,7 @@ end
                     enumerate(
                         filter(
                             event ->
-                                event isa RxInferenceEvent{:after_auto_update},
+                            event isa RxInferenceEvent{:after_auto_update},
                             events,
                         ),
                     ),
@@ -1269,7 +1271,7 @@ end
                     event_name,
                     filter(
                         event ->
-                            event isa RxInferenceEvent{:before_auto_update} ||
+                        event isa RxInferenceEvent{:before_auto_update} ||
                             event isa RxInferenceEvent{:after_auto_update},
                         events,
                     ),
@@ -1281,7 +1283,7 @@ end
                 @test length(
                     filter(
                         event ->
-                            event isa RxInferenceEvent{:before_data_update},
+                        event isa RxInferenceEvent{:before_data_update},
                         events,
                     ),
                 ) == iterations
@@ -1297,7 +1299,7 @@ end
                     enumerate(
                         filter(
                             event ->
-                                event isa RxInferenceEvent{:before_data_update},
+                            event isa RxInferenceEvent{:before_data_update},
                             events,
                         ),
                     ),
@@ -1313,7 +1315,7 @@ end
                     enumerate(
                         filter(
                             event ->
-                                event isa RxInferenceEvent{:after_data_update},
+                            event isa RxInferenceEvent{:after_data_update},
                             events,
                         ),
                     ),
@@ -1329,7 +1331,7 @@ end
                     event_name,
                     filter(
                         event ->
-                            event isa RxInferenceEvent{:before_data_update} ||
+                        event isa RxInferenceEvent{:before_data_update} ||
                             event isa RxInferenceEvent{:after_data_update},
                         events,
                     ),
@@ -1342,13 +1344,13 @@ end
                     event_name,
                     filter(events) do event
                         return event isa RxInferenceEvent{:before_iteration} ||
-                               event isa
-                               RxInferenceEvent{:before_auto_update} ||
-                               event isa RxInferenceEvent{:after_auto_update} ||
-                               event isa
-                               RxInferenceEvent{:before_data_update} ||
-                               event isa RxInferenceEvent{:after_data_update} ||
-                               event isa RxInferenceEvent{:after_iteration}
+                            event isa
+                            RxInferenceEvent{:before_auto_update} ||
+                            event isa RxInferenceEvent{:after_auto_update} ||
+                            event isa
+                            RxInferenceEvent{:before_data_update} ||
+                            event isa RxInferenceEvent{:after_data_update} ||
+                            event isa RxInferenceEvent{:after_iteration}
                     end,
                 ) == repeat(
                     [
@@ -1366,7 +1368,7 @@ end
                     @test length(
                         filter(
                             event ->
-                                event isa
+                            event isa
                                 RxInferenceEvent{:before_history_save},
                             events,
                         ),
@@ -1374,7 +1376,7 @@ end
                     @test length(
                         filter(
                             event ->
-                                event isa RxInferenceEvent{:after_history_save},
+                            event isa RxInferenceEvent{:after_history_save},
                             events,
                         ),
                     ) == 1
@@ -1471,8 +1473,8 @@ end
 @testitem "vector of inputs in streaming inference" begin
     import RxInfer: infer
     @model function test_model_for_vector_of_inputs_in_streaming_inference(
-        x, y, mx, vx
-    )
+            x, y, mx, vx
+        )
         for i in 1:3
             x[i] ~ NormalMeanVariance(mx, vx)
         end
@@ -2197,16 +2199,16 @@ end
         pure = false,
         body =
             (algo, args) -> begin
-                algo.count += 1
-                return getresult(
-                    call_marginal_update_rule(
-                        DiscreteTransition,
-                        (:out, :in);
-                        m = (out = args.m[:out], in = args.m[:in]),
-                        q = (a = args.q[:a],),
-                    ),
-                )
-            end,
+            algo.count += 1
+            return getresult(
+                call_marginal_update_rule(
+                    DiscreteTransition,
+                    (:out, :in);
+                    m = (out = args.m[:out], in = args.m[:in]),
+                    q = (a = args.q[:a],),
+                ),
+            )
+        end,
     )
 
     # Test batch inference

@@ -43,7 +43,7 @@ struct ProbabilisticModel{M}
 end
 
 function Base.show(io::IO, ::ProbabilisticModel)
-    print(io, "ProbabilisticModel()")
+    return print(io, "ProbabilisticModel()")
 end
 
 ProbabilisticModel(model) = ProbabilisticModel(model, Dict{Any, Any}())
@@ -141,7 +141,7 @@ function Base.show(io::IO, generator::ConditionedModelGenerator)
         ),
     )
     print(io, ")")
-    if !isnothing(getconditioned_on(generator))
+    return if !isnothing(getconditioned_on(generator))
         println(io, " conditioned on: ")
         foreach(keys(getconditioned_on(generator))) do key
             println(io, "  ", key, " = ", getconditioned_on(generator)[key])
@@ -169,12 +169,12 @@ end
 
 # This function works for static data, such as `NamedTuple` or a `Dict`
 function __infer_create_factor_graph_model(
-    generator::ModelGenerator, conditioned_on::Union{NamedTuple, Dict}
-)
-    # If the data is already a `NamedTuple` this should not really matter 
+        generator::ModelGenerator, conditioned_on::Union{NamedTuple, Dict}
+    )
+    # If the data is already a `NamedTuple` this should not really matter
     # But it makes it easier to deal with the `Dict` type, which is unordered by default
     ntdata = NamedTuple(conditioned_on)::NamedTuple
-    model  = create_model(generator) do model, ctx
+    model = create_model(generator) do model, ctx
         ikeys = keys(ntdata)
         interfaces = map(ikeys) do key
             return __infer_create_data_interface(model, ctx, key, ntdata[key])
@@ -191,7 +191,7 @@ for which the data is not known at the time of model creation.
 struct DeferredDataHandler end
 
 function Base.show(io::IO, ::DeferredDataHandler)
-    print(io, "[ deferred data ]")
+    return print(io, "[ deferred data ]")
 end
 
 # __normalize_data_indexing(data)
@@ -240,8 +240,8 @@ end
 # We use the `datalabel` to instantiate the data interface for the model, in case of `DeferredDataHandler`
 # the data is not known at the time of the model creation
 function __infer_create_data_interface(
-    model, context, key::Symbol, ::DeferredDataHandler
-)
+        model, context, key::Symbol, ::DeferredDataHandler
+    )
     return GraphPPL.datalabel(
         model,
         context,
@@ -253,8 +253,8 @@ end
 
 # For `UnfactorizedData` we use the `datalabel` to instantiate the data interface for the model with factorization disabled; the data is known at the time of the model creation
 function __infer_create_data_interface(
-    model, context, key::Symbol, data::UnfactorizedData{D}
-) where {D}
+        model, context, key::Symbol, data::UnfactorizedData{D}
+    ) where {D}
     return GraphPPL.datalabel(
         model,
         context,

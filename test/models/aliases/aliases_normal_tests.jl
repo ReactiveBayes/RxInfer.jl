@@ -39,7 +39,7 @@
         iterations = 10,
         free_energy = true,
     )
-    # Here we simply test that it ran and gave some output 
+    # Here we simply test that it ran and gave some output
     @test first(mean(result.posteriors[:x1])) ≈ 0.010554034251599802
     @test first(result.free_energy) ≈ 2.530978771805266
     @test last(result.free_energy) ≈ 2.530978771805266

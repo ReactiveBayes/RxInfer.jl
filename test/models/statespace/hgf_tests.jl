@@ -8,20 +8,20 @@
     # We create a single-time step of corresponding state-space process to
     # perform online learning (filtering)
     @model function hgf(
-        real_k,
-        real_w,
-        z_variance,
-        y_variance,
-        zt_min_mean,
-        zt_min_var,
-        xt_min_mean,
-        xt_min_var,
-        y,
-    )
+            real_k,
+            real_w,
+            z_variance,
+            y_variance,
+            zt_min_mean,
+            zt_min_var,
+            xt_min_mean,
+            xt_min_var,
+            y,
+        )
         zt_min ~ Normal(mean = zt_min_mean, var = zt_min_var)
         xt_min ~ Normal(mean = xt_min_mean, var = xt_min_var)
 
-        # Higher layer is modelled as a random walk 
+        # Higher layer is modelled as a random walk
         zt ~ Normal(mean = zt_min, var = z_variance)
 
         # Lower layer is modelled with `GCV` node
@@ -37,13 +37,13 @@
     @algorithm function hgfalgorithm()
         # Lets use 31 approximation points in the Gauss Hermite cubature approximation method
         GCV(xt_min, xt, zt) ->
-            GCVApproximation(; method = GaussHermiteCubature(31))
+        GCVApproximation(; method = GaussHermiteCubature(31))
     end
 
     ## Inference definition
     function hgf_online_inference(
-        data, vmp_iters, real_k, real_w, z_variance, y_variance
-    )
+            data, vmp_iters, real_k, real_w, z_variance, y_variance
+        )
         autoupdates = @autoupdates begin
             zt_min_mean, zt_min_var = mean_var(q(zt))
             xt_min_mean, xt_min_var = mean_var(q(xt))
@@ -55,17 +55,17 @@
         end
 
         return infer(
-            model          = hgf(real_k = real_k, real_w = real_w, z_variance = z_variance, y_variance = y_variance),
-            constraints    = hgfconstraints(),
-            algorithm      = hgfalgorithm(),
-            data           = (y = data,),
-            autoupdates    = autoupdates,
-            keephistory    = length(data),
-            historyvars    = (xt = KeepLast(), zt = KeepLast()),
+            model = hgf(real_k = real_k, real_w = real_w, z_variance = z_variance, y_variance = y_variance),
+            constraints = hgfconstraints(),
+            algorithm = hgfalgorithm(),
+            data = (y = data,),
+            autoupdates = autoupdates,
+            keephistory = length(data),
+            historyvars = (xt = KeepLast(), zt = KeepLast()),
             initialization = init,
-            iterations     = vmp_iters,
-            free_energy    = true,
-            autostart      = true,
+            iterations = vmp_iters,
+            free_energy = true,
+            autostart = true,
         )
     end
 
@@ -124,11 +124,11 @@
     # Check if more than 95% of estimates are within 3std interval
     @test (
         sum((mean.(mz) .- 3 .* std.(mz)) .< z .< (mean.(mz) .+ 3 .* std.(mz))) /
-        n
+            n
     ) > 0.95
     @test (
         sum((mean.(mx) .- 3 .* std.(mx)) .< x .< (mean.(mx) .+ 3 .* std.(mx))) /
-        n
+            n
     ) > 0.95
     @test all(var.(mx) .> 0.0)
     @test all(var.(mz) .> 0.0)

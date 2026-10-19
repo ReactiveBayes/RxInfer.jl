@@ -34,15 +34,17 @@ Notifies the user that the `datavar`, `constvar` and `randomvar` syntax has been
 """
 function error_datavar_constvar_randomvar(e::Expr)
     if @capture(
-        e,
-        (
-            (lhs_ = datavar(args__)) | (lhs_ = constvar(args__)) |
-            (lhs_ = randomvar(args__))
+            e,
+            (
+                (lhs_ = datavar(args__)) | (lhs_ = constvar(args__)) |
+                    (lhs_ = randomvar(args__))
+            )
         )
-    )
-        return :(error(
-            "`datavar`, `constvar` and `randomvar` syntax has been removed from new versions of `RxInfer.jl`. Please refer to `GraphPPL` documentation for new model creation syntax.",
-        ))
+        return :(
+            error(
+                "`datavar`, `constvar` and `randomvar` syntax has been removed from new versions of `RxInfer.jl`. Please refer to `GraphPPL` documentation for new model creation syntax.",
+            )
+        )
     end
     return e
 end
@@ -83,7 +85,7 @@ function recursive_brackets_expression(operator, args)
 end
 
 function show_tilderhs_alias(io = stdout)
-    foreach(skipmissing(map(last, ReactiveMPNodeAliases))) do alias
+    return foreach(skipmissing(map(last, ReactiveMPNodeAliases))) do alias
         println(io, "- ", alias)
     end
 end
@@ -95,7 +97,7 @@ end
 
 function apply_alias_transformation(expression::Expr, alias)
     _expression = first(alias)(expression)
-    # Returns potentially modified expression and a Boolean flag, 
+    # Returns potentially modified expression and a Boolean flag,
     # which indicates if expression actually has been modified
     return (_expression, _expression !== expression)
 end
@@ -199,8 +201,8 @@ isdeclarednode(something) =
     applicable(MessagePassingRulesBase.nodespec, something)
 
 function GraphPPL.NodeBehaviour(
-    backend::ReactiveMPGraphPPLBackend, something::F
-) where {F}
+        backend::ReactiveMPGraphPPLBackend, something::F
+    ) where {F}
     isdeclarednode(something) || return undeclared_node_behaviour(something)
     return node_behaviour(MessagePassingRulesBase.sdtype(something))
 end
@@ -219,8 +221,8 @@ undeclared_node_behaviour(something) = error(
 # If node contraction is enabled, a declared node is atomic; anything else falls back to the
 # `DefaultBackend`.
 function GraphPPL.NodeType(
-    backend::ReactiveMPGraphPPLBackend{Static.True}, something::F
-) where {F}
+        backend::ReactiveMPGraphPPLBackend{Static.True}, something::F
+    ) where {F}
     isdeclarednode(something) && return GraphPPL.Atomic()
     return GraphPPL.NodeType(
         ReactiveMPGraphPPLBackend(Static.False()), something
@@ -229,13 +231,13 @@ end
 
 # Fallback to the default behaviour
 function GraphPPL.NodeType(
-    ::ReactiveMPGraphPPLBackend{Static.False}, something::F
-) where {F}
+        ::ReactiveMPGraphPPLBackend{Static.False}, something::F
+    ) where {F}
     return GraphPPL.NodeType(GraphPPL.DefaultBackend(), something)
 end
 function GraphPPL.aliases(
-    ::ReactiveMPGraphPPLBackend{Static.False}, something::F
-) where {F}
+        ::ReactiveMPGraphPPLBackend{Static.False}, something::F
+    ) where {F}
     # Fallback to the default behaviour
     return GraphPPL.aliases(GraphPPL.DefaultBackend(), something)
 end
@@ -243,8 +245,8 @@ end
 # A declared node's interfaces, a group once by its name; a node with a group may be given any
 # number of its members, which `factornode` checks.
 function GraphPPL.interfaces(
-    backend::ReactiveMPGraphPPLBackend, something::F, ninputs
-) where {F}
+        backend::ReactiveMPGraphPPLBackend, something::F, ninputs
+    ) where {F}
     isdeclarednode(something) || return GraphPPL.interfaces(
         GraphPPL.DefaultBackend(), something, ninputs
     )
@@ -263,16 +265,16 @@ function GraphPPL.interfaces(
 end
 
 function GraphPPL.factor_alias(
-    ::ReactiveMPGraphPPLBackend, something::F, interfaces
-) where {F}
+        ::ReactiveMPGraphPPLBackend, something::F, interfaces
+    ) where {F}
     # Fallback to the default behaviour
     return GraphPPL.factor_alias(
         GraphPPL.DefaultBackend(), something, interfaces
     )
 end
 function GraphPPL.interface_aliases(
-    ::ReactiveMPGraphPPLBackend, something::F
-) where {F}
+        ::ReactiveMPGraphPPLBackend, something::F
+    ) where {F}
     # Fallback to the default behaviour
     return GraphPPL.interface_aliases(GraphPPL.DefaultBackend(), something)
 end
@@ -280,15 +282,15 @@ end
 # The positional arguments of a declared atomic node are its interfaces after `out`, in order;
 # a trailing group takes the arguments left, as DiscreteTransition's `T` does.
 function GraphPPL.default_parametrization(
-    backend::ReactiveMPGraphPPLBackend, nodetype, something::F, rhs
-) where {F}
+        backend::ReactiveMPGraphPPLBackend, nodetype, something::F, rhs
+    ) where {F}
     if nodetype isa GraphPPL.Atomic && isdeclarednode(something)
         inputs = Base.tail(MessagePassingRulesBase.interfaces(something))
         isequal(length(inputs), length(rhs)) && return NamedTuple{inputs}(rhs)
         groups = MessagePassingRulesBase.interface_groups(something)
         if !isempty(inputs) &&
-            last(inputs) in groups &&
-            length(rhs) >= length(inputs) - 1
+                last(inputs) in groups &&
+                length(rhs) >= length(inputs) - 1
             fixed = length(inputs) - 1
             members = rhs[(fixed + 1):end]
             return if isempty(members)
@@ -339,7 +341,8 @@ GraphPPL.default_parametrization(
 # GraphPPL.interfaces(::ReactiveMPGraphPPLBackend, ::Type{<:ExponentialFamily.NormalMeanPrecision}, _) = GraphPPL.StaticInterfaces((:out, :μ, :τ))
 
 GraphPPL.interface_aliases(::ReactiveMPGraphPPLBackend, ::Type{Normal}) =
-    GraphPPL.StaticInterfaceAliases((
+    GraphPPL.StaticInterfaceAliases(
+    (
         (:mean, :μ),
         (:m, :μ),
         (:variance, :v),
@@ -352,7 +355,8 @@ GraphPPL.interface_aliases(::ReactiveMPGraphPPLBackend, ::Type{Normal}) =
         (:w, :τ),
         (:σ⁻², :τ),
         (:γ, :τ),
-    ))
+    )
+)
 
 GraphPPL.factor_alias(
     ::ReactiveMPGraphPPLBackend,
@@ -371,7 +375,8 @@ GraphPPL.default_parametrization(
 )
 
 GraphPPL.interface_aliases(::ReactiveMPGraphPPLBackend, ::Type{MvNormal}) =
-    GraphPPL.StaticInterfaceAliases((
+    GraphPPL.StaticInterfaceAliases(
+    (
         (:mean, :μ),
         (:m, :μ),
         (:covariance, :Σ),
@@ -382,7 +387,8 @@ GraphPPL.interface_aliases(::ReactiveMPGraphPPLBackend, ::Type{MvNormal}) =
         (:prec, :Λ),
         (:W, :Λ),
         (:Σ⁻¹, :Λ),
-    ))
+    )
+)
 
 GraphPPL.factor_alias(
     ::ReactiveMPGraphPPLBackend,
@@ -400,7 +406,7 @@ GraphPPL.default_parametrization(
     factor::Type{Gamma},
     rhs,
 ) = begin
-    @warn "'Gamma' and 'GammaShapeScale' without keywords are constructed with parameters (Shape, Scale)." maxlog=1
+    @warn "'Gamma' and 'GammaShapeScale' without keywords are constructed with parameters (Shape, Scale)." maxlog = 1
     inputs = Base.tail(MessagePassingRulesBase.interfaces(factor))
     isequal(length(inputs), length(rhs)) || error(
         "`$(factor)` has `$(length(inputs))` input interfaces `$(inputs)`, but `$(length(rhs))` arguments provided.",
@@ -409,11 +415,13 @@ GraphPPL.default_parametrization(
 end
 
 GraphPPL.interface_aliases(::ReactiveMPGraphPPLBackend, ::Type{Gamma}) =
-    GraphPPL.StaticInterfaceAliases((
+    GraphPPL.StaticInterfaceAliases(
+    (
         (:a, :α),
         (:shape, :α),
         (:β⁻¹, :θ),
         (:scale, :θ),
         (:θ⁻¹, :β),
         (:rate, :β),
-    ))
+    )
+)

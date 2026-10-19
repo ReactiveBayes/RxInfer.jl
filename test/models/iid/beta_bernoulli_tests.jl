@@ -6,7 +6,7 @@
     p = 0.75 # Bias of a coin
 
     distribution = Bernoulli(p)
-    dataset      = float.(rand(StableRNG(42), distribution, n))
+    dataset = float.(rand(StableRNG(42), distribution, n))
 
     @model function beta_bernoulli(y, a, b)
         θ ~ Beta(a, b)
@@ -33,7 +33,7 @@
     end
 
     # The initial value for `θ` in the `@autoupdates` has not been specified, the `initialization` should be used
-    # The `beta_bernoulli_streaming` with `initialization` is being tested later 
+    # The `beta_bernoulli_streaming` with `initialization` is being tested later
     @test_throws "The initial value for `θ` has not been specified, but is required in the `@autoupdates`." infer(
         model = beta_bernoulli_streaming(),
         data = (y = dataset,),
@@ -53,7 +53,7 @@
     @test allequal(result.free_energy)
     @test length(result.free_energy) === 10
     @test all(v -> v ≈ 2828.0533343622483, result.free_energy)
-    @test mean(result.posteriors[:θ][end]) ≈ p atol = 1e-2
+    @test mean(result.posteriors[:θ][end]) ≈ p atol = 1.0e-2
     @test getreturnval(result.model) === 9.0
 
     # Double check that Free Energy computes properly even with no iterations specified (not equal to saying `iterations = 1`)
@@ -88,7 +88,7 @@
             model = beta_bernoulli(a = 1.0, b = 1.0),
             data = (y = data_for_specific_p,),
         )
-        @test mean(result_for_specific_p.posteriors[:θ]) ≈ p atol = 1e-2
+        @test mean(result_for_specific_p.posteriors[:θ]) ≈ p atol = 1.0e-2
         @test getreturnval(result_for_specific_p.model) === 2.0
 
         # Here we also double check the streaming version on this simple case
@@ -129,7 +129,7 @@
                 new_posterior_a, new_posterior_b = params(new_posterior)
 
                 if new_posterior_a !== streaming_analytical_a[] ||
-                    new_posterior_b !== streaming_analytical_b[]
+                        new_posterior_b !== streaming_analytical_b[]
                     # If the intermediate result does not match the analytical solution we set the flag to `false`
                     # We avoid doing `@test` here since it generates hundreds of thousands of tests
                     streaming_analytical_check[] = false

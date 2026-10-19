@@ -7,8 +7,8 @@
     include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
     @model function gamma_mixture_model(
-        y, nmixtures, priors_as, priors_bs, prior_s
-    )
+            y, nmixtures, priors_as, priors_bs, prior_s
+        )
 
         # set prior on global selection variable
         s ~ prior_s
@@ -20,9 +20,9 @@
         # set priors on variables of mixtures
         for i in 1:nmixtures
             as[i] ~
-            Gamma(shape = shape(priors_as[i]), rate = rate(priors_as[i]))
+                Gamma(shape = shape(priors_as[i]), rate = rate(priors_as[i]))
             bs[i] ~
-            Gamma(shape = shape(priors_bs[i]), rate = rate(priors_bs[i]))
+                Gamma(shape = shape(priors_bs[i]), rate = rate(priors_bs[i]))
         end
 
         # specify local selection variable and data generating process
@@ -47,22 +47,22 @@
 
     # specify parameters of mixture model that generates the data
     # Note that mixture components have exactly the same means
-    mixtures  = [Gamma(9.0, inv(27.0)), Gamma(90.0, inv(270.0))]
+    mixtures = [Gamma(9.0, inv(27.0)), Gamma(90.0, inv(270.0))]
     nmixtures = length(mixtures)
-    mixing    = rand(rng, nmixtures)
-    mixing    = mixing ./ sum(mixing)
-    mixture   = MixtureModel(mixtures, mixing)
+    mixing = rand(rng, nmixtures)
+    mixing = mixing ./ sum(mixing)
+    mixture = MixtureModel(mixtures, mixing)
 
     # generate data set
     dataset = rand(rng, mixture, n_samples)
 
     priors_as = [Gamma(1.0, 0.1), Gamma(1.0, 1.0)]
     priors_bs = [Gamma(10.0, 2.0), Gamma(1.0, 3.0)]
-    prior_s = Dirichlet(1e3 * mixing)
+    prior_s = Dirichlet(1.0e3 * mixing)
 
-    gmodel      = gamma_mixture_model(nmixtures = nmixtures, priors_as = priors_as, priors_bs = priors_bs, prior_s = prior_s)
-    gdata       = (y = dataset,)
-    ginit       = @initialization begin
+    gmodel = gamma_mixture_model(nmixtures = nmixtures, priors_as = priors_as, priors_bs = priors_bs, prior_s = prior_s)
+    gdata = (y = dataset,)
+    ginit = @initialization begin
         q(s) = prior_s
         q(z) = vague(Categorical, nmixtures)
         q(bs) = GammaShapeRate(1.0, 1.0)
@@ -81,16 +81,16 @@
 
     # extract inferred parameters
     _as, _bs = mean.(gresult.posteriors[:as][end]), mean.(gresult.posteriors[:bs][end])
-    _dists   = map(g -> Gamma(g[1], inv(g[2])), zip(_as, _bs))
-    _mixing  = mean(gresult.posteriors[:s])
+    _dists = map(g -> Gamma(g[1], inv(g[2])), zip(_as, _bs))
+    _mixing = mean(gresult.posteriors[:s])
 
     # create model from inferred parameters
     _mixture = MixtureModel(_dists, _mixing)
 
-    @test mean(_dists[1]) ≈ 0.32 atol = 1e-2
-    @test mean(_dists[2]) ≈ 0.33 atol = 1e-2
-    @test _mixing ≈ [0.8, 0.2] atol = 1e-2
-    @test last(gresult.free_energy) ≈ -146.8 atol = 2e-1
+    @test mean(_dists[1]) ≈ 0.32 atol = 1.0e-2
+    @test mean(_dists[2]) ≈ 0.33 atol = 1.0e-2
+    @test _mixing ≈ [0.8, 0.2] atol = 1.0e-2
+    @test last(gresult.free_energy) ≈ -146.8 atol = 2.0e-1
 
     @test_plot "models" "gamma_mixture" begin
         # plot results

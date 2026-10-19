@@ -7,33 +7,33 @@
 const PACKAGE_OF_NAME = Dict{Symbol, String}(
     (
         name => "ContinuousTransitionMessagePassingRules" for
-        name in (:ContinuousTransition, :CTransition, :CTVMP)
+            name in (:ContinuousTransition, :CTransition, :CTVMP)
     )...,
     (
         name => "PolyaMessagePassingRules" for name in (
-            :BinomialPolya,
-            :BinomialPolyaApproximation,
-            :MultinomialPolya,
-            :MultinomialPolyaApproximation,
-        )
+                :BinomialPolya,
+                :BinomialPolyaApproximation,
+                :MultinomialPolya,
+                :MultinomialPolyaApproximation,
+            )
     )...,
     (
         name => "BIFMMessagePassingRules" for
-        name in (:BIFM, :BIFMHelper, :BIFMSmoother)
+            name in (:BIFM, :BIFMHelper, :BIFMSmoother)
     )...,
     (
         name => "FlowMessagePassingRules" for name in (
-            :Flow,
-            :FlowApproximation,
-            :FlowModel,
-            :CompiledFlowModel,
-            :PlanarFlow,
-            :RadialFlow,
-            :AdditiveCouplingLayer,
-            :PermutationLayer,
-            :InputLayer,
-            :PermutationMatrix,
-        )
+                :Flow,
+                :FlowApproximation,
+                :FlowModel,
+                :CompiledFlowModel,
+                :PlanarFlow,
+                :RadialFlow,
+                :AdditiveCouplingLayer,
+                :PermutationLayer,
+                :InputLayer,
+                :PermutationMatrix,
+            )
     )...,
 )
 

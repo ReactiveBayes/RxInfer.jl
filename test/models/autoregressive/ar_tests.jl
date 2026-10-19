@@ -17,7 +17,7 @@
     @model function ar_model(y, x, order)
         γ ~ Gamma(shape = 1.0, rate = 1.0)
         θ ~ MvNormal(mean = zeros(order), precision = diageye(order))
-        # `i` and `k` should be the same here, but the code is more 
+        # `i` and `k` should be the same here, but the code is more
         # generic with `zip` over `eachindex`
         for (i, k) in zip(eachindex(y), eachindex(x))
             y[i] ~ Normal(mean = dot(x[k], θ), precision = γ)
@@ -34,14 +34,14 @@
 
     function ar_inference(inputs, outputs, order, niter, constraints)
         return infer(
-            model          = ar_model(order = order),
-            data           = (x = inputs, y = outputs),
-            constraints    = constraints,
-            options        = (limit_stack_depth = 500,),
+            model = ar_model(order = order),
+            data = (x = inputs, y = outputs),
+            constraints = constraints,
+            options = (limit_stack_depth = 500,),
             initialization = init,
-            returnvars     = (γ = KeepEach(), θ = KeepEach()),
-            iterations     = niter,
-            free_energy    = Float64,
+            returnvars = (γ = KeepEach(), θ = KeepEach()),
+            iterations = niter,
+            free_energy = Float64,
         )
     end
 
@@ -62,11 +62,11 @@
             @test length(θ) === 15
             @test length(fe) === 15
             @test last(fe) < first(fe)
-            @test all(filter(e -> abs(e) > 1e-3, diff(fe)) .< 0)
+            @test all(filter(e -> abs(e) > 1.0e-3, diff(fe)) .< 0)
         end
     end
 
-    benchrng          = randn(StableRNG(32), 1_000)
+    benchrng = randn(StableRNG(32), 1_000)
     inputs5, outputs5 = ar_ssm_data(benchrng, 5)
 
     @test_benchmark "models" "ar" ar_inference($inputs5, $outputs5, 5, 15)

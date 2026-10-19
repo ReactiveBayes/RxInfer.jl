@@ -62,7 +62,7 @@ end
 
     @testset "Beta-Bernoulli model" begin
         for seed in (123, 456), n in (50, 100)
-            rng  = StableRNG(seed)
+            rng = StableRNG(seed)
             data = float.(rand(rng, Bernoulli(0.75), n))
 
             count_trues = count(isone, data)
@@ -105,7 +105,7 @@ end
                 @test result_with_params_as_input.posteriors[:θ] == ts[:answer]
                 @test all(
                     result_with_prior_as_input.free_energy .≈
-                    result_with_params_as_input.free_energy,
+                        result_with_params_as_input.free_energy,
                 )
             end
         end
@@ -129,14 +129,16 @@ end
 
     @testset "IID Gaussian model" begin
         for seed in (123, 456),
-            n in (50, 100),
-            constraints in (MeanField(), @constraints(
-                begin
-                    q(μ, τ) = q(μ)q(τ)
-                end
-            ))
+                n in (50, 100),
+                constraints in (
+                    MeanField(), @constraints(
+                        begin
+                            q(μ, τ) = q(μ)q(τ)
+                        end
+                    ),
+                )
 
-            rng  = StableRNG(seed)
+            rng = StableRNG(seed)
             data = float.(rand(rng, Normal(0.75, 10.0), n))
 
             testsets = [
@@ -193,7 +195,7 @@ end
                     result_with_params_as_input.posteriors[:τ]
                 @test all(
                     result_with_prior_as_input.free_energy .≈
-                    result_with_params_as_input.free_energy,
+                        result_with_params_as_input.free_energy,
                 )
             end
         end
@@ -237,8 +239,8 @@ end
     end
 
     @testset for modelfn in [
-        sum_datavars_as_gaussian_mean_1, sum_datavars_as_gaussian_mean_2
-    ]
+            sum_datavars_as_gaussian_mean_1, sum_datavars_as_gaussian_mean_2,
+        ]
         result = infer(
             model = modelfn(),
             data = (a = 2.0, b = 1.0, y = 0.0),
@@ -261,15 +263,15 @@ end
     end
 
     @model function sum_datavars_as_gaussian_mean_4(y, v)
-        # `+ 0` here is purely for the resulting length 
+        # `+ 0` here is purely for the resulting length
         # (such that it equals to `4` and tests can be joined)
         x ~ Normal(mean = sum(v) + 0, precision = 1.0)
         y ~ Normal(mean = x, variance = 1.0)
     end
 
     @testset for modelfn in [
-        sum_datavars_as_gaussian_mean_3, sum_datavars_as_gaussian_mean_4
-    ]
+            sum_datavars_as_gaussian_mean_3, sum_datavars_as_gaussian_mean_4,
+        ]
         result = infer(
             model = modelfn(),
             data = (v = [1.0, 2.0], y = 0.0),

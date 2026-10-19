@@ -7,10 +7,10 @@
     @model function univariate_gaussian_mixture_model(y)
         s ~ Beta(1.0, 1.0)
 
-        m[1] ~ Normal(mean = -2.0, variance = 1e3)
+        m[1] ~ Normal(mean = -2.0, variance = 1.0e3)
         p[1] ~ Gamma(shape = 0.01, rate = 0.01)
 
-        m[2] ~ Normal(mean = 2.0, variance = 1e3)
+        m[2] ~ Normal(mean = 2.0, variance = 1.0e3)
         p[2] ~ Gamma(shape = 0.01, rate = 0.01)
 
         for i in eachindex(y)
@@ -21,18 +21,18 @@
 
     init = @initialization begin
         q(s) = vague(Beta)
-        q(m) = [NormalMeanVariance(-2.0, 1e3), NormalMeanVariance(2.0, 1e3)]
+        q(m) = [NormalMeanVariance(-2.0, 1.0e3), NormalMeanVariance(2.0, 1.0e3)]
         q(p) = [vague(GammaShapeRate), vague(GammaShapeRate)]
     end
 
     function inference_univariate(data, n_its, constraints)
         return infer(
-            model          = univariate_gaussian_mixture_model(),
-            data           = (y = data,),
-            constraints    = constraints,
-            returnvars     = KeepEach(),
-            free_energy    = Float64,
-            iterations     = n_its,
+            model = univariate_gaussian_mixture_model(),
+            data = (y = data,),
+            constraints = constraints,
+            returnvars = KeepEach(),
+            free_energy = Float64,
+            iterations = n_its,
             initialization = init,
         )
     end
@@ -93,8 +93,8 @@
     @test length(mm2) === 10
     @test length(mw1) === 10
     @test length(mw2) === 10
-    @test length(fe) === 10 && all(e -> e <= 1e-10, diff(fe))
-    @test last(fe) ≈ 284.76 atol = 1e-1
+    @test length(fe) === 10 && all(e -> e <= 1.0e-10, diff(fe))
+    @test last(fe) ≈ 284.76 atol = 1.0e-1
 
     ms = mean(last(mswitch))
 

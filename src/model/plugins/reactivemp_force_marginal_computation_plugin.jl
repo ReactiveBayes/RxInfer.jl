@@ -1,7 +1,7 @@
 import ReactiveMP: getlocalclusters, get_stream_of_marginals
 
 const ReactiveMPExtraMarginalStreamKey = GraphPPL.NodeDataExtraKey{
-    :marginal_stream, Any
+    :marginal_stream, Any,
 }()
 
 """
@@ -13,19 +13,19 @@ GraphPPL.plugin_type(::ReactiveMPForceMarginalComputationPlugin) =
     GraphPPL.FactorNodePlugin()
 
 function GraphPPL.preprocess_plugin(
-    ::ReactiveMPForceMarginalComputationPlugin,
-    ::Model,
-    ::Context,
-    label::NodeLabel,
-    nodedata::NodeData,
-    ::NodeCreationOptions,
-)
+        ::ReactiveMPForceMarginalComputationPlugin,
+        ::Model,
+        ::Context,
+        label::NodeLabel,
+        nodedata::NodeData,
+        ::NodeCreationOptions,
+    )
     return label, nodedata
 end
 
 function GraphPPL.postprocess_plugin(
-    plugin::ReactiveMPForceMarginalComputationPlugin, model::Model
-)
+        plugin::ReactiveMPForceMarginalComputationPlugin, model::Model
+    )
     factor_nodes(model) do _, node
         factornode = getextra(node, ReactiveMPExtraFactorNodeKey)
         subscription = create_marginals_stream(factornode)

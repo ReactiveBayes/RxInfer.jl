@@ -64,14 +64,14 @@ end
 
     # Catch-all: ignore unhandled events
     function ReactiveMP.handle_event(
-        ::ArbitraryCallbackHandler, ::ReactiveMP.Event
-    )
+            ::ArbitraryCallbackHandler, ::ReactiveMP.Event
+        )
         return nothing
     end
 
     function ReactiveMP.handle_event(
-        ::ArbitraryCallbackHandler, event::OnMarginalUpdateEvent
-    )
+            ::ArbitraryCallbackHandler, event::OnMarginalUpdateEvent
+        )
         saved_context = get!(() -> [], event.model.metadata, :saved_context)
         push!(
             saved_context,
@@ -110,14 +110,14 @@ end
     end
 
     function ReactiveMP.handle_event(
-        handler::ConcreteTypeHandler, event::BeforeIterationEvent
-    )
+            handler::ConcreteTypeHandler, event::BeforeIterationEvent
+        )
         push!(handler.log, (:before_iteration, event.iteration))
     end
 
     function ReactiveMP.handle_event(
-        handler::ConcreteTypeHandler, event::AfterIterationEvent
-    )
+            handler::ConcreteTypeHandler, event::AfterIterationEvent
+        )
         push!(handler.log, (:after_iteration, event.iteration))
     end
 
@@ -131,14 +131,14 @@ end
     end
 
     function ReactiveMP.handle_event(
-        handler::EventNameHandler, event::ReactiveMP.Event{:before_iteration}
-    )
+            handler::EventNameHandler, event::ReactiveMP.Event{:before_iteration}
+        )
         push!(handler.log, (:before_iteration, event.iteration))
     end
 
     function ReactiveMP.handle_event(
-        handler::EventNameHandler, event::ReactiveMP.Event{:after_iteration}
-    )
+            handler::EventNameHandler, event::ReactiveMP.Event{:after_iteration}
+        )
         push!(handler.log, (:after_iteration, event.iteration))
     end
 
@@ -206,7 +206,7 @@ end
     keyword = (after_iteration = (event) -> (keyword_calls[] += 1),)
     iterations[] = 0
     @test_logs (
-        :warn, r"Both `callbacks = ...` and `options = \(callbacks = ..., \)`"
+        :warn, r"Both `callbacks = ...` and `options = \(callbacks = ..., \)`",
     ) infer(;
         model = coin_for_options_callbacks(),
         data = (y = [1.0, 0.0, 1.0],),

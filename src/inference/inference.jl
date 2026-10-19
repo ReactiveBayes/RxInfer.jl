@@ -60,11 +60,11 @@ mutable struct MarginalHasBeenUpdated <: Actor{Any}
 end
 
 reset_updated!(updated::MarginalHasBeenUpdated) = updated.updated = false
-set_updated!(updated::MarginalHasBeenUpdated)   = updated.updated = true
+set_updated!(updated::MarginalHasBeenUpdated) = updated.updated = true
 
 Rocket.on_next!(updated::MarginalHasBeenUpdated, anything) = set_updated!(updated)
-Rocket.on_error!(updated::MarginalHasBeenUpdated, err)     = begin end
-Rocket.on_complete!(updated::MarginalHasBeenUpdated)       = begin end
+Rocket.on_error!(updated::MarginalHasBeenUpdated, err) = begin end
+Rocket.on_complete!(updated::MarginalHasBeenUpdated) = begin end
 
 # This creates a `tap` operator that will set the `updated` flag to true.
 # Later on we check flags and `unset!` them after the `new_observation!` procedure
@@ -86,12 +86,12 @@ function report_free_energy(stream, model, callbacks)
     ReactiveMP.listens(callbacks, OnFreeEnergyUpdateEvent) || return stream
     return stream |> tap(
         (value) ->
-            invoke_callback(callbacks, OnFreeEnergyUpdateEvent(model, value)),
+        invoke_callback(callbacks, OnFreeEnergyUpdateEvent(model, value)),
     )
 end
 
 function check_and_reset_updated!(updates)
-    if all((v) -> v.updated, values(updates))
+    return if all((v) -> v.updated, values(updates))
         foreach(reset_updated!, values(updates))
     else
         not_updated = filter((pair) -> !last(pair).updated, updates)
@@ -109,7 +109,7 @@ function check_and_reset_updated!(updates)
     end
 end
 
-## Logging utilities 
+## Logging utilities
 
 struct InferenceLoggedDataEntry
     name
@@ -131,18 +131,18 @@ log_data_entry(name::Union{Symbol, String}, ::Base.HasShape{0}, data) =
     InferenceLoggedDataEntry(name, typeof(data), (), ())
 log_data_entry(name::Union{Symbol, String}, ::Base.HasShape, data) =
     InferenceLoggedDataEntry(
-        name,
-        typeof(data),
-        log_data_entry_size(data),
-        isempty(data) ? () : log_data_entry_size(first(data)),
-    )
+    name,
+    typeof(data),
+    log_data_entry_size(data),
+    isempty(data) ? () : log_data_entry_size(first(data)),
+)
 
 log_data_entry_size(data) = log_data_entry_size(Base.IteratorSize(data), data)
 log_data_entry_size(::Base.HasShape, data) = size(data)
 log_data_entry_size(_, data) = ()
 
-# Julia has `Base.HasLength` by default, which is quite bad because it fallbacks here 
-# for structures that has nothing to do with being iterators nor implement `length`, 
+# Julia has `Base.HasLength` by default, which is quite bad because it fallbacks here
+# for structures that has nothing to do with being iterators nor implement `length`,
 # Better to be safe here and simply return :unknown
 log_data_entry(name::Union{Symbol, String}, ::Base.HasLength, data) =
     InferenceLoggedDataEntry(name, typeof(data), :unknown, :unknown)
@@ -156,7 +156,7 @@ log_data_entries_from_pairs(pairs) =
     collect(Iterators.map(log_data_entry, pairs))
 
 function Base.show(io::IO, entry::InferenceLoggedDataEntry)
-    print(
+    return print(
         io,
         "data: ",
         entry.name,
@@ -185,7 +185,7 @@ log_dictnt_entries(data::NamedTuple) =
 
 function Base.show(io::IO, entry::InferenceLoggedDictNTEntries)
     entries_str = join(map(e -> "$(e.name)::$(e.type)", entry.entries), ", ")
-    print(io, entry.base_type, ": ", entries_str)
+    return print(io, entry.base_type, ": ", entries_str)
 end
 
 function summarize_invokes(io::IO, ::Val{:inference}, invokes; n_last = 5)
@@ -198,7 +198,7 @@ function summarize_invokes(io::IO, ::Val{:inference}, invokes; n_last = 5)
     println(io, "  Unique models: $unique_models")
 
     # Show last N invokes in a table format
-    if !isempty(invokes)
+    return if !isempty(invokes)
         println(
             io,
             "\nLast $n_last invokes, use `n_last` keyword argument to see more or less.",
@@ -244,12 +244,12 @@ function summarize_invokes(io::IO, ::Val{:inference}, invokes; n_last = 5)
             # Data info
             data_entries = get(invoke.context, :data, nothing)
             data_str =
-                if data_entries isa Vector{InferenceLoggedDataEntry} &&
+            if data_entries isa Vector{InferenceLoggedDataEntry} &&
                     !isempty(data_entries)
-                    join(map(e -> string(e.name), data_entries), ",")
-                else
-                    "N/A"
-                end
+                join(map(e -> string(e.name), data_entries), ",")
+            else
+                "N/A"
+            end
 
             # Error info if present
             error_str = get(invoke.context, :error, "")
@@ -299,7 +299,7 @@ function summarize_invokes_pretty_table(f::Any, io::IO, data; kwargs...)
         println(io, kwargs[:column_labels])
     end
     print(io, data)
-    println(io)
+    return println(io)
 end
 
 ## Extra error handling
@@ -320,7 +320,7 @@ See also: [`enable_inference_error_hint!`](@ref), [`infer`](@ref)
 """
 function disable_inference_error_hint!()
     @set_preferences!("inference_error_hint" => false)
-    @info "Inference error hints are disabled. Restart Julia session for the change to take effect."
+    return @info "Inference error hints are disabled. Restart Julia session for the change to take effect."
 end
 
 """
@@ -337,12 +337,12 @@ See also: [`disable_inference_error_hint!`](@ref), [`infer`](@ref)
 """
 function enable_inference_error_hint!()
     @set_preferences!("inference_error_hint" => true)
-    @info "Inference error hints are enabled. Restart Julia session for the change to take effect."
+    return @info "Inference error hints are enabled. Restart Julia session for the change to take effect."
 end
 
 function inference_process_error(
-    error; rethrow = true, disable_inference_error_hint = false
-)
+        error; rethrow = true, disable_inference_error_hint = false
+    )
     if error isa StackOverflowError
         @error """
         Stack overflow error detected during inference. This can happen with large model graphs 
@@ -358,7 +358,7 @@ function inference_process_error(
         """
     end
     if error isa MessagePassingRulesBase.RuleNotFoundError &&
-        !disable_inference_error_hint
+            !disable_inference_error_hint
         @error """
         No message passing rule fits a node of the model: the error below names the node, what it
         was asked to compute, and why each of its rules does not fit.
@@ -400,7 +400,7 @@ function inference_process_error(
         Use `RxInfer.disable_inference_error_hint!()` to disable this message permanently (requires Julia session restart).
         Use `infer(..., disable_inference_error_hint = true)` to disable this message for a specific inference run.
         """
-        # This normally is turned off, but is enabled on CI in order to catch 
+        # This normally is turned off, but is enabled on CI in order to catch
         # bad examples or failing tests that print this error
         # The tests that fail intentionally must use the `disable_inference_error_hint` option set to true
         if get(ENV, "THROW_ON_INFERENCE_ERROR_HINT", "false") === "true"
@@ -416,7 +416,7 @@ end
 function inference_check_itertype(::Symbol, ::Union{Nothing, Tuple, Vector})
     # This function checks if the second argument is of type `Nothing`, `Tuple` or `Vector`.
     # Does nothing if true, throws an error otherwise (see the second method below)
-    nothing
+    return nothing
 end
 
 function inference_check_itertype(keyword::Symbol, ::T) where {T}
@@ -432,14 +432,14 @@ function inference_check_itertype(keyword::Symbol, ::T) where {T}
 end
 
 function infer_check_dicttype(
-    ::Symbol,
-    ::Union{
-        Nothing, NamedTuple, Dict, GraphPPL.VarDict, RxInferBenchmarkCallbacks
-    },
-)
+        ::Symbol,
+        ::Union{
+            Nothing, NamedTuple, Dict, GraphPPL.VarDict, RxInferBenchmarkCallbacks,
+        },
+    )
     # This function checks if the second argument is of type `Nothing`, `NamedTuple`, `Dict` or `VarDict`.
     # Does nothing if true, throws an error otherwise (see the second method below)
-    nothing
+    return nothing
 end
 
 function infer_check_dicttype(keyword::Symbol, ::T) where {T}
@@ -470,29 +470,30 @@ inference_fill_predictions(s::Symbol, d::DataVariable) =
 # `invoke_callback` dispatches to `handle_event` and always returns the event itself
 import ReactiveMP: invoke_callback, handle_event, merge_callbacks
 
-unwrap_free_energy_option(option::Bool)                      = (option, Real)
+unwrap_free_energy_option(option::Bool) = (option, Real)
 unwrap_free_energy_option(option::Type{T}) where {T <: Real} = (true, T)
 
 function available_callbacks end
 function available_events end
 
 function check_available_callbacks(
-    warn, callbacks, ::Val{AvailableCallbacks}
-) where {AvailableCallbacks}
-    if warn && !isnothing(callbacks)
+        warn, callbacks, ::Val{AvailableCallbacks}
+    ) where {AvailableCallbacks}
+    return if warn && !isnothing(callbacks)
         _check_available_callback_keys(warn, callbacks, AvailableCallbacks)
     end
 end
 
 # For NamedTuples and Dicts we can check the keys against the available callbacks
 function _check_available_callback_keys(
-    warn, callbacks::Union{NamedTuple, Dict}, available_callbacks
-)
+        warn, callbacks::Union{NamedTuple, Dict}, available_callbacks
+    )
     for key in keys(callbacks)
         if key ∉ available_callbacks
             @warn "Unknown callback specification: $(key). Available callbacks: $(available_callbacks). Set `warn = false` to suppress this warning."
         end
     end
+    return
 end
 
 # For arbitrary callback structures (custom structs, etc.) we skip the key check
@@ -502,16 +503,16 @@ function _check_available_callback_keys(warn, callbacks, available_callbacks)
 end
 
 function check_available_events(
-    warn, events::Nothing, ::Val{AvailableEvents}
-) where {AvailableEvents}
+        warn, events::Nothing, ::Val{AvailableEvents}
+    ) where {AvailableEvents}
     # If `events` is nothing, we don't need to check anything
     return nothing
 end
 
 function check_available_events(
-    warn, events::Val{Events}, ::Val{AvailableEvents}
-) where {Events, AvailableEvents}
-    if warn && !isnothing(events)
+        warn, events::Val{Events}, ::Val{AvailableEvents}
+    ) where {Events, AvailableEvents}
+    return if warn && !isnothing(events)
         for key in Events
             if key ∉ AvailableEvents
                 @warn "Unknown event type: $(key). Available events: $(AvailableEvents). Set `warn = false` to suppress this warning."
@@ -643,40 +644,40 @@ See also: [`RxInfer.disable_inference_error_hint!`](@ref), [`RxInfer.enable_infe
 
 """
 function infer(;
-    model = nothing,
-    data = nothing,
-    datastream = nothing, # streamline specific
-    autoupdates = nothing, # streamline specific
-    initialization = nothing,
-    initmessages = nothing, # removed, the error is thrown below for easier migration
-    initmarginals = nothing, # removed, the error is thrown below for easier migration
-    constraints = nothing,
-    algorithm = nothing,
-    meta = nothing, # deprecated, the algorithm's old name
-    options = nothing,
-    returnvars = nothing,
-    predictvars = nothing, # batch specific
-    historyvars = nothing, # streamline specific
-    keephistory = nothing, # streamline specific
-    iterations = nothing,
-    free_energy = false,
-    free_energy_diagnostics = DefaultObjectiveDiagnosticChecks,
-    allow_node_contraction = false,
-    showprogress = false, # batch specific
-    catch_exception = false, # batch specific
-    disable_inference_error_hint = false, # batch specific
-    callbacks = nothing,
-    annotations = nothing,
-    logscales = nothing,
-    postprocess = nothing,
-    events = nothing, # streamline specific
-    uselock = false, # streamline  specific
-    autostart = true, # streamline specific
-    warn = true,
-    benchmark = false,
-    trace = false,
-    session = RxInfer.default_session(),
-)
+        model = nothing,
+        data = nothing,
+        datastream = nothing, # streamline specific
+        autoupdates = nothing, # streamline specific
+        initialization = nothing,
+        initmessages = nothing, # removed, the error is thrown below for easier migration
+        initmarginals = nothing, # removed, the error is thrown below for easier migration
+        constraints = nothing,
+        algorithm = nothing,
+        meta = nothing, # deprecated, the algorithm's old name
+        options = nothing,
+        returnvars = nothing,
+        predictvars = nothing, # batch specific
+        historyvars = nothing, # streamline specific
+        keephistory = nothing, # streamline specific
+        iterations = nothing,
+        free_energy = false,
+        free_energy_diagnostics = DefaultObjectiveDiagnosticChecks,
+        allow_node_contraction = false,
+        showprogress = false, # batch specific
+        catch_exception = false, # batch specific
+        disable_inference_error_hint = false, # batch specific
+        callbacks = nothing,
+        annotations = nothing,
+        logscales = nothing,
+        postprocess = nothing,
+        events = nothing, # streamline specific
+        uselock = false, # streamline  specific
+        autostart = true, # streamline specific
+        warn = true,
+        benchmark = false,
+        trace = false,
+        session = RxInfer.default_session(),
+    )
     # v6's `meta` is the node's algorithm now, and its old name stays for one release. The
     # alias can be removed safely in a later release, `algorithm` superseding it, with the
     # `where { meta = … }` one in the ReactiveMP inference plugin.
@@ -699,7 +700,7 @@ function infer(;
     elseif !isa(model, GraphPPL.ModelGenerator)
         error(
             "The `model` keyword argument takes a model created by calling a `@model` function with its arguments, such as `model = coin_model(n = 10)`; got `$(model)` of type `$(typeof(model))`." *
-            (
+                (
                 if model isa Function
                     " If `$(model)` is the `@model` function, call it with its arguments."
                 else

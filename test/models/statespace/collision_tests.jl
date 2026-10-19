@@ -20,9 +20,9 @@
         args = (q[:a]::PointMass, q[:σ2]::PointMass, q[:γ]::PointMass),
         body =
             (args) -> NormalMeanVariance(
-                mean(args.q[:a]) + mean(args.q[:γ]) * mean(args.q[:σ2]),
-                mean(args.q[:σ2]),
-            ),
+            mean(args.q[:a]) + mean(args.q[:γ]) * mean(args.q[:σ2]),
+            mean(args.q[:σ2]),
+        ),
     )
 
     struct ForcePointMass{V}
@@ -39,11 +39,11 @@
         ),
         body =
             (args) -> ForcePointMass(
-                1 / mean(args.q[:γ]) * sqrt(
-                    abs2(mean(args.q[:out]) - mean(args.q[:a])) +
+            1 / mean(args.q[:γ]) * sqrt(
+                abs2(mean(args.q[:out]) - mean(args.q[:a])) +
                     var(args.q[:out]),
-                ),
             ),
+        ),
     )
 
     BayesBase.prod(::GenericProd, p::ForcePointMass, any) = PointMass(p.v)
@@ -71,12 +71,12 @@
         for k in 1:2
 
             # prior on state
-            x[k, 1] ~ MvNormalMeanCovariance(zeros(4), 1e2I)
+            x[k, 1] ~ MvNormalMeanCovariance(zeros(4), 1.0e2I)
 
             for t in 1:nr_steps
 
                 # prior on controls
-                u[k, t] ~ MvNormalMeanCovariance(zeros(2), 1e-2I)
+                u[k, t] ~ MvNormalMeanCovariance(zeros(2), 1.0e-2I)
 
                 # state transition
                 x[k, t + 1] ~ A * x[k, t] + B * u[k, t]
@@ -86,8 +86,8 @@
             end
 
             # goal priors (indexing reverse due to definition)
-            goals[1, k] ~ MvNormalMeanCovariance(x[k, 1], 1e-5I)
-            goals[2, k] ~ MvNormalMeanCovariance(x[k, nr_steps + 1], 1e-5I)
+            goals[1, k] ~ MvNormalMeanCovariance(x[k, 1], 1.0e-5I)
+            goals[2, k] ~ MvNormalMeanCovariance(x[k, nr_steps + 1], 1.0e-5I)
         end
 
         # multi-agent models
@@ -128,24 +128,24 @@
     end
 
     for nr_steps in (50, 100),
-        init in [switching_initialization_1, switching_initialization_2]
+            init in [switching_initialization_1, switching_initialization_2]
 
         result = infer(
-            model          = switching_model(nr_steps = nr_steps, γ = 1, ΔT = 1),
-            data           = (goals = goals,),
-            constraints    = switching_constraints(),
-            algorithm      = switching_algorithm(),
+            model = switching_model(nr_steps = nr_steps, γ = 1, ΔT = 1),
+            data = (goals = goals,),
+            constraints = switching_constraints(),
+            algorithm = switching_algorithm(),
             initialization = init(),
-            iterations     = 100,
-            returnvars     = KeepLast(),
-            showprogress   = false,
-            options        = (limit_stack_depth = 100,),
+            iterations = 100,
+            returnvars = KeepLast(),
+            showprogress = false,
+            options = (limit_stack_depth = 100,),
         )
-        @test mean(result.posteriors[:x][1, 1]) ≈ [0, 0, 0, 0] atol = 5e-1
+        @test mean(result.posteriors[:x][1, 1]) ≈ [0, 0, 0, 0] atol = 5.0e-1
         @test mean(result.posteriors[:x][1, nr_steps]) ≈ [0, 0, 50, 0] atol =
-            5e-1
-        @test mean(result.posteriors[:x][2, 1]) ≈ [0, 0, 50, 0] atol = 5e-1
+            5.0e-1
+        @test mean(result.posteriors[:x][2, 1]) ≈ [0, 0, 50, 0] atol = 5.0e-1
         @test mean(result.posteriors[:x][2, nr_steps]) ≈ [0, 0, 0, 0] atol =
-            5e-1
+            5.0e-1
     end
 end

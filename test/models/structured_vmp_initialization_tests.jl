@@ -37,11 +37,11 @@
     reference, result = run(marginals), run(with_message)
     for name in (:x, :y, :z, :k, :w)
         @test mean(last(result.posteriors[name])) ≈
-            mean(last(reference.posteriors[name])) atol = 1e-8
+            mean(last(reference.posteriors[name])) atol = 1.0e-8
         @test var(last(result.posteriors[name])) ≈
-            var(last(reference.posteriors[name])) atol = 1e-8
+            var(last(reference.posteriors[name])) atol = 1.0e-8
     end
-    @test last(result.free_energy) ≈ last(reference.free_energy) atol = 1e-8
+    @test last(result.free_energy) ≈ last(reference.free_energy) atol = 1.0e-8
 end
 
 @testitem "a horizon with two steps of history and every marginal initialised" begin
@@ -65,10 +65,10 @@ end
         args = (q[:prev1]::Any, q[:prev2]::Any, q[:in]::Any, q[:θ]::Any),
         body =
             (args) -> NormalMeanVariance(
-                m(args, :θ) * (m(args, :prev1) + m(args, :prev2)) / 2 +
+            m(args, :θ) * (m(args, :prev1) + m(args, :prev2)) / 2 +
                 m(args, :in),
-                1.0,
-            ),
+            1.0,
+        ),
     )
     @define_message_update_rule(
         node = Hist,
@@ -76,10 +76,10 @@ end
         args = (q[:out]::Any, q[:prev2]::Any, q[:in]::Any, q[:θ]::Any),
         body =
             (args) -> NormalMeanVariance(
-                2 * (m(args, :out) - m(args, :in)) / m(args, :θ) -
+            2 * (m(args, :out) - m(args, :in)) / m(args, :θ) -
                 m(args, :prev2),
-                4.0,
-            ),
+            4.0,
+        ),
     )
     @define_message_update_rule(
         node = Hist,
@@ -87,10 +87,10 @@ end
         args = (q[:out]::Any, q[:prev1]::Any, q[:in]::Any, q[:θ]::Any),
         body =
             (args) -> NormalMeanVariance(
-                2 * (m(args, :out) - m(args, :in)) / m(args, :θ) -
+            2 * (m(args, :out) - m(args, :in)) / m(args, :θ) -
                 m(args, :prev1),
-                4.0,
-            ),
+            4.0,
+        ),
     )
     @define_message_update_rule(
         node = Hist,
@@ -98,10 +98,10 @@ end
         args = (q[:out]::Any, q[:prev1]::Any, q[:prev2]::Any, q[:θ]::Any),
         body =
             (args) -> NormalMeanVariance(
-                m(args, :out) -
+            m(args, :out) -
                 m(args, :θ) * (m(args, :prev1) + m(args, :prev2)) / 2,
-                1.0,
-            ),
+            1.0,
+        ),
     )
     @define_message_update_rule(
         node = Hist,

@@ -73,9 +73,9 @@ mutable struct RxInferBenchmarkCallbacks
 end
 
 function RxInferBenchmarkCallbacks(;
-    capacity = DEFAULT_BENCHMARK_CALLBACKS_BUFFER_CAPACITY
-)
-    RxInferBenchmarkCallbacks(
+        capacity = DEFAULT_BENCHMARK_CALLBACKS_BUFFER_CAPACITY
+    )
+    return RxInferBenchmarkCallbacks(
         CircularBuffer{UInt64}(capacity),
         CircularBuffer{UInt64}(capacity),
         CircularBuffer{UInt64}(capacity),
@@ -98,61 +98,61 @@ function ReactiveMP.handle_event(callbacks::RxInferBenchmarkCallbacks, ::Event)
 end
 
 function ReactiveMP.handle_event(
-    callbacks::RxInferBenchmarkCallbacks, ::BeforeModelCreationEvent
-)
+        callbacks::RxInferBenchmarkCallbacks, ::BeforeModelCreationEvent
+    )
     push!(callbacks.before_model_creation_ts, time_ns())
     push!(callbacks.before_iteration_ts, UInt64[])
-    push!(callbacks.after_iteration_ts, UInt64[])
+    return push!(callbacks.after_iteration_ts, UInt64[])
 end
 
 function ReactiveMP.handle_event(
-    callbacks::RxInferBenchmarkCallbacks, event::AfterModelCreationEvent
-)
+        callbacks::RxInferBenchmarkCallbacks, event::AfterModelCreationEvent
+    )
     if haskey(event.model.metadata, :benchmark)
         error(
             "The model's metadata already contains a `:benchmark` key. " *
-            "This can happen if you pass `benchmark = true` while also providing " *
-            "`RxInferBenchmarkCallbacks` in the `callbacks` argument. Use one or the other, not both.",
+                "This can happen if you pass `benchmark = true` while also providing " *
+                "`RxInferBenchmarkCallbacks` in the `callbacks` argument. Use one or the other, not both.",
         )
     end
     event.model.metadata[:benchmark] = callbacks
-    push!(callbacks.after_model_creation_ts, time_ns())
+    return push!(callbacks.after_model_creation_ts, time_ns())
 end
 
 function ReactiveMP.handle_event(
-    callbacks::RxInferBenchmarkCallbacks, ::BeforeInferenceEvent
-)
-    push!(callbacks.before_inference_ts, time_ns())
+        callbacks::RxInferBenchmarkCallbacks, ::BeforeInferenceEvent
+    )
+    return push!(callbacks.before_inference_ts, time_ns())
 end
 
 function ReactiveMP.handle_event(
-    callbacks::RxInferBenchmarkCallbacks, ::AfterInferenceEvent
-)
-    push!(callbacks.after_inference_ts, time_ns())
+        callbacks::RxInferBenchmarkCallbacks, ::AfterInferenceEvent
+    )
+    return push!(callbacks.after_inference_ts, time_ns())
 end
 
 function ReactiveMP.handle_event(
-    callbacks::RxInferBenchmarkCallbacks, ::BeforeIterationEvent
-)
-    push!(last(callbacks.before_iteration_ts), time_ns())
+        callbacks::RxInferBenchmarkCallbacks, ::BeforeIterationEvent
+    )
+    return push!(last(callbacks.before_iteration_ts), time_ns())
 end
 
 function ReactiveMP.handle_event(
-    callbacks::RxInferBenchmarkCallbacks, ::AfterIterationEvent
-)
-    push!(last(callbacks.after_iteration_ts), time_ns())
+        callbacks::RxInferBenchmarkCallbacks, ::AfterIterationEvent
+    )
+    return push!(last(callbacks.after_iteration_ts), time_ns())
 end
 
 function ReactiveMP.handle_event(
-    callbacks::RxInferBenchmarkCallbacks, ::BeforeAutostartEvent
-)
-    push!(callbacks.before_autostart_ts, time_ns())
+        callbacks::RxInferBenchmarkCallbacks, ::BeforeAutostartEvent
+    )
+    return push!(callbacks.before_autostart_ts, time_ns())
 end
 
 function ReactiveMP.handle_event(
-    callbacks::RxInferBenchmarkCallbacks, ::AfterAutostartEvent
-)
-    push!(callbacks.after_autostart_ts, time_ns())
+        callbacks::RxInferBenchmarkCallbacks, ::AfterAutostartEvent
+    )
+    return push!(callbacks.after_autostart_ts, time_ns())
 end
 
 """
@@ -180,8 +180,8 @@ function get_benchmark_stats(callbacks::RxInferBenchmarkCallbacks)
         collect(callbacks.before_inference_ts)
     iteration_time = [
         collect(callbacks.after_iteration_ts[i]) .-
-        collect(callbacks.before_iteration_ts[i]) for
-        i in 1:length(callbacks.before_iteration_ts)
+            collect(callbacks.before_iteration_ts[i]) for
+            i in 1:length(callbacks.before_iteration_ts)
     ]
     if length(inference_time) > 0
         push!(stats_to_show, ("Inference", inference_time))
@@ -227,12 +227,12 @@ end
 # (`ReactiveMP.listens`), so `benchmark = true` does not slow down every rule call.
 ReactiveMP.listens(::RxInferBenchmarkCallbacks, ::Type{T}) where {T} =
     T <: Union{
-        BeforeModelCreationEvent,
-        AfterModelCreationEvent,
-        BeforeInferenceEvent,
-        AfterInferenceEvent,
-        BeforeIterationEvent,
-        AfterIterationEvent,
-        BeforeAutostartEvent,
-        AfterAutostartEvent,
-    }
+    BeforeModelCreationEvent,
+    AfterModelCreationEvent,
+    BeforeInferenceEvent,
+    AfterInferenceEvent,
+    BeforeIterationEvent,
+    AfterIterationEvent,
+    BeforeAutostartEvent,
+    AfterAutostartEvent,
+}

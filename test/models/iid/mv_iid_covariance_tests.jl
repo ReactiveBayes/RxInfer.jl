@@ -55,7 +55,7 @@
     ## Test inference results
     @test isapprox(mean(result.posteriors[:m]), m, atol = 0.07)
     @test isapprox(mean(result.posteriors[:C]), C, atol = 0.15)
-    @test all(<(0), filter(e -> abs(e) > 1e-10, diff(result.free_energy)))
+    @test all(<(0), filter(e -> abs(e) > 1.0e-10, diff(result.free_energy)))
 
     @test_plot "models" "iid_mv_covariance" begin
         X = range(-5, 5, length = 200)
