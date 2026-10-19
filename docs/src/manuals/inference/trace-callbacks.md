@@ -213,7 +213,7 @@ RxInfer.PerfettoDisplay
 
 ## Exporting to TensorBoard
 
-When [`TensorBoardLogger.jl`](https://github.com/PhilipVinc/TensorBoardLogger.jl) is loaded, the `TensorBoardLoggerExt` extension activates and provides `RxInfer.convert_to_tensorboard`, which converts a recorded trace into TensorFlow event files readable by TensorBoard.
+When [`TensorBoardLogger.jl`](https://github.com/JuliaLogging/TensorBoardLogger.jl) is loaded, the `TensorBoardLoggerExt` extension activates and provides `RxInfer.convert_to_tensorboard`, which converts a recorded trace into TensorFlow event files readable by TensorBoard.
 
 ```julia
 using RxInfer

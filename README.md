@@ -13,7 +13,6 @@
 [![DOI](https://img.shields.io/badge/Journal%20of%20Open%20Source%20Software-10.21105/joss.05161-critical)](https://doi.org/10.21105/joss.05161)
 [![Zenodo](https://img.shields.io/badge/Zenodo-10.5281/zenodo.7774921-important)](https://zenodo.org/badge/latestdoi/501995296)
 [![NumFocus](https://img.shields.io/badge/supported%20by-NumFocus-green)](#numfocus)
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/ReactiveBayes/RxInfer.jl)
 
 
 # Overview
@@ -185,33 +184,6 @@ We are very proud to be an affiliated project with [NumFocus](https://numfocus.o
 
 ![](docs/src/assets/numfocus.png)
 
-## Client-Server Infrastructure and Python integration
-
-> [!NOTE]
-> The development of RxInferServer has been sponsored by [Lazy Dynamics](https://lazydynamics.com/). The repositories are hosted under the [Lazy Dynamics](https://github.com/lazydynamics/) organization. Note that LICENSE for the RxInferServer is different from RxInfer.
-
-RxInfer can be deployed as a RESTful API service using [`RxInferServer`](https://github.com/lazydynamics/RxInferServer), which provides:
-
-- OpenAPI-compliant RESTful API endpoints for RxInfer models
-- Support for model instance management and inference execution
-- Real-time inference capabilities
-- Comprehensive API documentation at [server.rxinfer.com](https://server.rxinfer.com)
-
-### Client SDKs
-
-To interact with RxInferServer, you can use one of the following SDKs:
-
-- **Python SDK**: [`RxInferClient.py`](https://github.com/lazydynamics/RxInferClient.py) - A Python client for interacting with RxInferServer
-- **TypeScript SDK**: [`RxInferClient.ts`](https://github.com/lazydynamics/RxInferClient.ts) - A TypeScript client for interacting with RxInferServer
-- **Julia SDK**: Included in the RxInferServer repository
-
-SDKs provide a convenient interface to:
-- Create and manage model instances
-- Execute inference tasks
-- Monitor inference progress
-- Handle authentication and API keys
-- Process results in a native format
-
 # Join Our Community and Contribute to RxInfer
 
 RxInfer is a community-driven project and we welcome all contributions! To get started:
@@ -222,13 +194,7 @@ RxInfer is a community-driven project and we welcome all contributions! To get s
 
 ## Active Inference Institute Collaboration
 
-The [Active Inference Institute](https://www.activeinference.org/) community members are enhancing RxInfer/GraphPPL's visualization capabilities. Their work includes:
-- Developing advanced model visualization features ✅ ([PR](https://github.com/ReactiveBayes/GraphPPL.jl/pull/251))
-- Creating summary and subgraph visualization modalities
-- Implementing various graph layout algorithms
-- Improving model inspection and understanding tools
-
-For more details on ongoing work, see the [RxInfer development project board](https://coda.io/d/RxInfer-2024-Active-Inference-Institute_ddtS-XZ4BJb/Developing-RxInfer-jl_sufeCeIa#_lutfq_7F).
+RxInfer is developed in collaboration with members of the [Active Inference Institute](https://www.activeinference.org/) community.
 
 ## Learning Resources
 

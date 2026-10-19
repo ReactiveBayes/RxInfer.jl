@@ -24,10 +24,6 @@ See [Installation](@ref user-guide-getting-started-installation) for details.
 
 Try `Pkg.resolve()` to resolve conflicts. See [Pkg.jl](https://pkgdocs.julialang.org/v1/getting-started/) for more details.
 
-### Can I use RxInfer from Python?
-
-Yes! See our guide on [Using RxInfer from Python](@ref python-usage).
-
 ## Model Specification
 
 ### What's the difference between `=` and `:=` in model specification?

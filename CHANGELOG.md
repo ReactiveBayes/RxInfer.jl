@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.0.0] - 2026-10-19
+
+RxInfer 6 runs on ReactiveMP 7, whose message passing rules live in registered rule packages declared with MessagePassingRulesBase. Models that use the nodes RxInfer loads run as before; code that defines its own nodes or rules needs porting, which ReactiveMP's [v6 → v7 migration guide](https://reactivebayes.github.io/ReactiveMP.jl/stable/migration-guides/v6-to-v7/) explains.
+
 ### Added
 - `ReactantExt`, an extension on Reactant: `infer` on a model of more than one step compiles with Reactant again. Since Reactant 0.2.292 (EnzymeAD/Reactant.jl#3378) its overlays walk every field of their arguments, which throws on Rocket's linked lists (EnzymeAD/Reactant.jl#3506); the extension marks the functions that collect the model's variables, streams and results, `getvariable`, `isanonymous`, `obtain_marginal`, `obtain_prediction` and `inference_postprocess_or_missing` (now a top-level function), with `Reactant.@skip_rewrite_func`, as ReactiveMP's `ReactiveMPReactantExt` does for the engine. Its test compiles an unrolled state-space model whole; it has its own environment, `test/reactant`, run by `make test-reactant` and by the workflow *Reactant check*, apart from the test suite.
 - Tracing the free energy: the callback `on_free_energy_update` (`OnFreeEnergyUpdateEvent`) and ReactiveMP's new marginal-rule and free-energy events; TensorBoard logs `free_energy` per iteration, and the trace manual has a section on it.
@@ -17,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The `diagnostics` inference option, the engine's audits of the rules a model runs (`EngineDiagnostics(; check_everything_pure, check_everything_inplace, checked_buffers)`), and `context`, the services the rules run with: `(rng = …, matrix_correction = …)`.
 
 ### Changed
+- The documentation checks its external links when it is built (Documenter's `linkcheck`), except a few publishers that answer scripted requests with 403. Dead and moved links are updated.
 - The code is formatted with Runic instead of JuliaFormatter: `make format` formats, `make check-format` (or `make lint`) checks, and the workflow *Format* runs the check, in place of the job that opened pull requests with the formatting.
 - The tests of `ManyPlus` against a chain of binary `+` (#698) compare the n-ary `+`, `+(x...)` and `a + b + c`, with the chain: ReactiveMP 7 has no `ManyPlus`, since `+` takes any number of terms.
 - RxInfer accepts DomainSets 0.8 (`[compat]` `"0.5.2, 0.6, 0.7, 0.8"`), which ReactiveMP 7 no longer holds back (#637).
@@ -46,6 +51,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `meta`, `@meta` and `where { meta = … }`, the old names of a node's algorithm: they still work for this release, with a deprecation warning pointing to `algorithm`.
 
 ### Removed
+- The page *Using RxInfer from Python* and the mentions of RxInferServer, its Python and TypeScript clients and server.rxinfer.com, from the README and the documentation: that third-party work is no longer maintained.
+- The README's DeepWiki badge, and the milestones of the Active Inference Institute collaboration (the collaboration itself is still credited).
 - `where { dependencies = … }`: a node declares what its rules read, and an initial message is set with `@initialization`. Using it is an error saying so.
 
 ### Fixed

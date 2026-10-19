@@ -48,8 +48,8 @@ Each rule package has its own tests, run from its repository with `make test` (`
 
 ### Committing code
 
-We use the standard [GitHub Flow](https://guides.github.com/introduction/flow/) workflow where all contributions are added through pull requests. To contribute:
-- [Fork](https://guides.github.com/activities/forking/) the repository
+We use the standard [GitHub Flow](https://docs.github.com/get-started/quickstart/github-flow) workflow where all contributions are added through pull requests. To contribute:
+- [Fork](https://docs.github.com/get-started/quickstart/contributing-to-projects) the repository
 - Commit your contributions to your fork
 - Create a pull request on the `main` branch of the `RxInfer` repository.
 

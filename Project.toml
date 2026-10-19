@@ -1,6 +1,6 @@
 name = "RxInfer"
 uuid = "86711068-29c9-4ff7-b620-ae75d7495b3d"
-version = "6.0.0-DEV"
+version = "6.0.0"
 authors = ["Bagaev Dmitry <d.v.bagaev@tue.nl> and contributors"]
 
 [deps]
@@ -39,11 +39,6 @@ Static = "aedffcd0-7271-4cad-89d0-dc628f76c6d3"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 TupleTools = "9d95972d-f1c8-5527-a6e0-b4b365fa01f6"
 UUIDs = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
-
-[sources]
-# The v7 engine, from the local ReactiveMP.jl checkout, until it is registered; the rule packages
-# come from General.
-ReactiveMP = {path = "../ReactiveMP.jl"}
 
 [weakdeps]
 ExponentialFamilyProjection = "17f509fa-9a96-44ba-99b2-1c5f01f0931b"
