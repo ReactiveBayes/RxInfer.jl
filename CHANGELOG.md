@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-
+- Added tests to compare `ManyPlus` with chain of `+` operations, ensuring consistent behavior and results.
 - Streaming inference now supports `before_inference`, `after_inference`, `before_iteration`, and `after_iteration` callbacks. Iteration callbacks can set `stop_iteration` to end the current observation event's solve while preserving posterior publication and processing of future events.
 - `StopEarlyIterationStrategy` accepts a `window` keyword to require a stable range of consecutive finite Bethe free energy values. The default `window = 2` retains the consecutive-value comparison.
 
