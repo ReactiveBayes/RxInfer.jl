@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.1.0] - 2026-10-20
+
 ### Added
 - An algorithm can name variables of the model, `x[t] ~ DiscreteTransition(x[t - 1], A, u[t], θ) where { algorithm = Planning(control = u[t]) }`: RxInfer resolves them to the keys of the node's interfaces the variables connect to, `(:T, 1)` here, before the node runs, with `RxInfer.resolve_variables(algorithm, interface)`, which such an algorithm extends. The default returns the algorithm unchanged. Only the variables of the model are resolved, and any other value reaches the algorithm as it is: a key given explicitly, which is how an algorithm from `@algorithm` names the interfaces, since it is evaluated outside the model, or a value such as `u[t]` after `u[t] = 1.0`. The activation and the free energy read the resolved algorithm, and a variable the node is not connected to is an error. The *Algorithm specification* manual has a section on it.
 
@@ -330,7 +332,8 @@ The last release of the 5.x series; RxInfer 6 runs on ReactiveMP 7.
 
 ---
 
-[Unreleased]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v6.0.2...HEAD
+[Unreleased]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v6.1.0...HEAD
+[6.1.0]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v6.0.2...v6.1.0
 [6.0.2]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v6.0.1...v6.0.2
 [6.0.1]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v6.0.0...v6.0.1
 [6.0.0]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.5.2...v6.0.0
