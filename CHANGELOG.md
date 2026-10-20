@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- CI uploads coverage with `codecov/codecov-action@v7`, which runs on Node.js 24; v5 ran `actions/github-script` on the deprecated Node.js 20.
+
 ## [6.0.1] - 2026-10-19
 
 ### Fixed
