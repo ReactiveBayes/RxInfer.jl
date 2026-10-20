@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- RxInfer accepts HTTP 2 (`[compat]` `"1.10, 2"`), which the telemetry uses to send its requests (#659).
+
 ## [6.0.1] - 2026-10-19
 
 ### Fixed
