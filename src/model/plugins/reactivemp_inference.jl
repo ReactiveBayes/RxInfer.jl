@@ -561,14 +561,20 @@ that returns it with each variable replaced by its key:
 RxInfer.resolve_variables(algorithm::Planning, interface) = Planning(interface(algorithm.control))
 ```
 
-The default returns the algorithm as it is. `interface` throws an `ArgumentError` for a variable
-the node is not connected to.
+The default returns the algorithm as it is. `interface` resolves the variables of the model only,
+and returns any other value as it is: a key given explicitly, `Planning(control = (:T, 1))`,
+which is how an algorithm from [`@algorithm`](@ref) names the interfaces, or a value that is not
+a variable of the model, such as `u[t]` after `u[t] = 1.0`. It throws an `ArgumentError` for a
+variable the node is not connected to.
 """
 resolve_variables(algorithm, _) = algorithm
 
 # The key of the interface of the node with `nodeproperties` that `variable` connects to, as the
 # engine names it (see `set_rmp_factornode!`). Inside a model, a variable that exists is a
-# `NodeLabel`, and one referred to before it is created a `VariableRef`.
+# `NodeLabel`, and one referred to before it is created a `VariableRef`. Any other value is not a
+# variable of the model, and is the algorithm's own.
+node_interface_key(::FactorNodeProperties, value) = value
+
 function node_interface_key(
         nodeproperties::FactorNodeProperties, variable::NodeLabel
     )
@@ -683,13 +689,14 @@ end
 
 # A function no package declares is a Delta node, `out = f(in...)`, whose inputs are the group
 # `in`: a single input, which GraphPPL leaves unindexed, is its first member.
-delta_interface_key(key) =
-if key === :out
-    :out
-elseif key isa Symbol
-    (:in, 1)
-else
-    (:in, last(key))
+function delta_interface_key(key)
+    if key === :out
+        return :out
+    elseif key isa Symbol
+        return (:in, 1)
+    else
+        return (:in, last(key))
+    end
 end
 
 function delta_factornode(f::F, interfaces, positions) where {F}

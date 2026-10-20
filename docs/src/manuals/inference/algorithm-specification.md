@@ -316,13 +316,15 @@ entry selects only the node connected to `y`.
 
 ## Algorithms that name variables
 
-An algorithm may give the variables of a node roles. A planning algorithm for the transition
-`x[t] ~ DiscreteTransition(x[t - 1], A, u[t], θ)` needs to know that `u[t]` is the control and
-`θ` a parameter it holds fixed. The model knows them as variables, and the node's rules know the
-node's interfaces: `u[t]` is the first member of the group `T`, `(:T, 1)`, and `θ` its second,
-`(:T, 2)`. The model names the variables, and RxInfer resolves them to the interfaces before the
-node runs, with [`RxInfer.resolve_variables`](@ref), which an algorithm that names variables
-extends:
+Most algorithms only carry parameters. Some also give the variables of a node roles that its
+rules must know. A planning algorithm for the transition
+`x[t + 1] ~ DiscreteTransition(x[t], A, u[t], θ)` must know that `u[t]` is the control and that
+`θ` is a parameter it holds fixed. The rules know the node's interfaces, not the model's
+variables: `u[t]` is the first member of the group `T`, `(:T, 1)`, and `θ` its second, `(:T, 2)`.
+Written as keys, the roles depend on the order of the node's inputs, and a model that writes
+`DiscreteTransition(x[t], A, θ, u[t])` silently swaps them. An algorithm can name the variables
+instead, and RxInfer resolves them to the keys of the interfaces they connect to before the node
+runs. The algorithm opts in with a method of [`RxInfer.resolve_variables`](@ref):
 
 ```julia
 struct Planning{C, P} <: DefaultAlgorithmExtension
@@ -346,9 +348,18 @@ RxInfer.resolve_variables(algorithm::Planning, interface) =
 end
 ```
 
-The rules of each transition run under `Planning((:T, 1), (:T, 2))`, and read the roles from
-their `algo` slot. A model that orders the inputs otherwise, `DiscreteTransition(x[t], A, θ, u[t])`,
-gives `Planning((:T, 2), (:T, 1))`, and the rules need not change.
+The rules of each transition run under `Planning((:T, 1), (:T, 2))` and read the roles from their
+`algo` slot. With the inputs in the other order, they run under `Planning((:T, 2), (:T, 1))`, and
+the rules need not change.
+
+Only an algorithm given in the model, with `where { algorithm = … }`, can name variables: the
+variables exist there. [`@algorithm`](@ref) is evaluated outside the model, so an algorithm from
+it gives the keys themselves, `DiscreteTransition() -> Planning((:T, 1), (:T, 2))`.
+
+`interface` resolves the variables of the model only. It returns any other value as it is: a key
+given explicitly, as above, or a value that is not a variable of the model, whatever its name.
+After `u[t] = 1.0` in a model, `Planning(control = u[t], …)` gets `1.0`, as an algorithm that
+names no variables does. A variable the node is not connected to is an error.
 
 ```@docs
 RxInfer.resolve_variables

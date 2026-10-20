@@ -196,6 +196,64 @@ end
     @test result.free_energy ≈ reference.free_energy
 end
 
+@testitem "An algorithm is given a value that is not a variable of the model as it is" begin
+    using RxInfer
+    import RxInfer: getmodel, node_algorithm
+    import GraphPPL: factor_nodes, fform, getproperties
+
+    # `Plain` names no variables, `Roles` resolves its field
+    struct Plain{C} <: DefaultAlgorithmExtension
+        value::C
+    end
+    struct Roles{C} <: DefaultAlgorithmExtension
+        control::C
+    end
+    RxInfer.resolve_variables(roles::Roles, interface) =
+        Roles(interface(roles.control))
+
+    function algorithms_of(result, node)
+        algorithms = []
+        factor_nodes(getmodel(result.model)) do _, nodedata
+            fform(getproperties(nodedata)) === node &&
+                push!(algorithms, node_algorithm(nodedata))
+        end
+        return algorithms
+    end
+
+    # `u[t] = 1.0` makes `u[t]` a value, not a variable of the model, whatever the name suggests
+    @model function constants(y, algorithm)
+        u = zeros(2)
+        x ~ NormalMeanVariance(0.0, 1.0)
+        for t in 1:2
+            u[t] = 1.0
+            y[t] ~ NormalMeanVariance(x, u[t]) where {algorithm = algorithm(u[t])}
+        end
+    end
+
+    for algorithm in (Plain, Roles)
+        result = infer(model = constants(algorithm = algorithm), data = (y = [0.1, 0.2],))
+        @test count(==(algorithm(1.0)), algorithms_of(result, NormalMeanVariance)) == 2
+    end
+
+    # `@algorithm` is evaluated outside the model, where there are no variables to name: it gives
+    # the keys of the interfaces instead
+    normalised(A) = A ./ sum(A; dims = 1)
+    A = normalised(reshape(Float64.(1:8), 2, 2, 2))
+
+    @model function transition(goal)
+        x0 ~ Categorical([1.0, 0.0])
+        u ~ Categorical([0.5, 0.5])
+        x ~ DiscreteTransition(x0, A, u)
+        x ~ Categorical(goal)
+    end
+
+    roles = @algorithm begin
+        DiscreteTransition() -> Roles((:T, 1))
+    end
+    result = infer(model = transition(), data = (goal = [0.3, 0.7],), algorithm = roles)
+    @test algorithms_of(result, DiscreteTransition) == [Roles((:T, 1))]
+end
+
 @testitem "An algorithm that names a variable the node is not connected to is an error" begin
     using RxInfer
 
