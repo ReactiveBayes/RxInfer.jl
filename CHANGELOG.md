@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- RxInfer accepts HTTP 2 (`[compat]` `"1.10, 2"`), which the telemetry uses to send its requests (#659).
+- The tests no longer depend on Coverage.jl, which nothing used and which holds HTTP below 2; CI collects coverage with `julia-processcoverage` as before.
 - CI uploads coverage with `codecov/codecov-action@v7`, which runs on Node.js 24; v5 ran `actions/github-script` on the deprecated Node.js 20.
 
 ## [6.0.1] - 2026-10-19
