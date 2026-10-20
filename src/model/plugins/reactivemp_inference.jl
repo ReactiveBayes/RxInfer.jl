@@ -530,7 +530,8 @@ function activate_rmp_variable!(
 end
 
 # A node's algorithm: `where { algorithm = … }`, else what `@algorithm` or v6's `meta`, its
-# deprecated spelling, gave it; `nothing` is the node's own default.
+# deprecated spelling, gave it; `nothing` is the node's own default. The variables it names are
+# resolved to the node's interfaces.
 function node_algorithm(nodedata::NodeData)
     algorithm = getextra(nodedata, ReactiveMPExtraAlgorithmKey, nothing)
     algorithm = if isnothing(algorithm)
@@ -538,7 +539,64 @@ function node_algorithm(nodedata::NodeData)
     else
         algorithm
     end
-    return model_algorithm(GraphPPL.fform(getproperties(nodedata)), algorithm)
+    nodeproperties = getproperties(nodedata)::FactorNodeProperties
+    return resolve_variables(
+        model_algorithm(GraphPPL.fform(nodeproperties), algorithm),
+        variable -> node_interface_key(nodeproperties, variable),
+    )
+end
+
+"""
+    RxInfer.resolve_variables(algorithm, interface)
+
+The algorithm of a node may name variables of the model, as
+`x[t] ~ DiscreteTransition(x[t - 1], A, u[t], θ) where { algorithm = Planning(control = u[t]) }`
+does: inside the model, `u[t]` is the variable, not the interface of the node it connects to,
+which the rules know. Before the node runs, RxInfer calls `resolve_variables(algorithm, interface)`,
+where `interface(variable)` is the key of the node's interface that `variable` connects to, `:out`
+or `(:T, 1)` say, as the node's rules name it. An algorithm that names variables adds a method
+that returns it with each variable replaced by its key:
+
+```julia
+RxInfer.resolve_variables(algorithm::Planning, interface) = Planning(interface(algorithm.control))
+```
+
+The default returns the algorithm as it is. `interface` throws an `ArgumentError` for a variable
+the node is not connected to.
+"""
+resolve_variables(algorithm, _) = algorithm
+
+# The key of the interface of the node with `nodeproperties` that `variable` connects to, as the
+# engine names it (see `set_rmp_factornode!`). Inside a model, a variable that exists is a
+# `NodeLabel`, and one referred to before it is created a `VariableRef`.
+function node_interface_key(
+        nodeproperties::FactorNodeProperties, variable::NodeLabel
+    )
+    fform = GraphPPL.fform(nodeproperties)
+    for (label, edge, _) in GraphPPL.neighbors(nodeproperties)
+        label == variable || continue
+        isdeclarednode(fform) && return interface_key(
+            edge, MessagePassingRulesBase.interface_groups(fform)
+        )
+        fform isa Function && return delta_interface_key(interface_key(edge))
+        return interface_key(edge)
+    end
+    throw(
+        ArgumentError(
+            "The algorithm of the node `$(fform)` names the variable `$(GraphPPL.getname(variable))`, which the node is not connected to",
+        ),
+    )
+end
+
+function node_interface_key(
+        nodeproperties::FactorNodeProperties, variable::GraphPPL.VariableRef
+    )
+    # A variable that is not a member of a collection is referred to with the index `(nothing,)`
+    index = all(isnothing, variable.index) ? nothing : variable.index
+    label = GraphPPL.checked_getindex(
+        GraphPPL.getifcreated(variable.model, variable.context, variable), index
+    )
+    return node_interface_key(nodeproperties, label)
 end
 
 # A Delta node, a function no package declares, may be given its approximation method alone,
@@ -625,12 +683,17 @@ end
 
 # A function no package declares is a Delta node, `out = f(in...)`, whose inputs are the group
 # `in`: a single input, which GraphPPL leaves unindexed, is its first member.
+delta_interface_key(key) =
+if key === :out
+    :out
+elseif key isa Symbol
+    (:in, 1)
+else
+    (:in, last(key))
+end
+
 function delta_factornode(f::F, interfaces, positions) where {F}
-    keys = map(interfaces) do (key, _)
-        key === :out && return :out
-        key isa Symbol && return (:in, 1)
-        return (:in, last(key))
-    end
+    keys = map(((key, _),) -> delta_interface_key(key), interfaces)
     renamed = map((key, (_, variable)) -> (key, variable), keys, interfaces)
     factorization = map(
         cluster -> map(i -> keys[i], Tuple(cluster)), Tuple(positions)

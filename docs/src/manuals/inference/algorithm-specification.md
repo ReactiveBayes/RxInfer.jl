@@ -313,3 +313,43 @@ mean_var(prod(PreserveTypeProd(Distribution), NormalMeanVariance(2.5, 0.5), Norm
 
 The prior's node, `x ~ NormalMeanVariance(2.5, 0.5)`, keeps the default algorithm, because the
 entry selects only the node connected to `y`.
+
+## Algorithms that name variables
+
+An algorithm may give the variables of a node roles. A planning algorithm for the transition
+`x[t] ~ DiscreteTransition(x[t - 1], A, u[t], θ)` needs to know that `u[t]` is the control and
+`θ` a parameter it holds fixed. The model knows them as variables, and the node's rules know the
+node's interfaces: `u[t]` is the first member of the group `T`, `(:T, 1)`, and `θ` its second,
+`(:T, 2)`. The model names the variables, and RxInfer resolves them to the interfaces before the
+node runs, with [`RxInfer.resolve_variables`](@ref), which an algorithm that names variables
+extends:
+
+```julia
+struct Planning{C, P} <: DefaultAlgorithmExtension
+    control::C
+    parameter::P
+end
+Planning(; control, parameter) = Planning(control, parameter)
+
+RxInfer.resolve_variables(algorithm::Planning, interface) =
+    Planning(interface(algorithm.control), interface(algorithm.parameter))
+
+@model function rollout(A, x0, horizon)
+    θ ~ Categorical([0.5, 0.5])
+    x[1] ~ Categorical(x0)
+    for t in 1:horizon
+        u[t] ~ Categorical([0.5, 0.5])
+        x[t + 1] ~ DiscreteTransition(x[t], A, u[t], θ) where {
+            algorithm = Planning(control = u[t], parameter = θ)
+        }
+    end
+end
+```
+
+The rules of each transition run under `Planning((:T, 1), (:T, 2))`, and read the roles from
+their `algo` slot. A model that orders the inputs otherwise, `DiscreteTransition(x[t], A, θ, u[t])`,
+gives `Planning((:T, 2), (:T, 1))`, and the rules need not change.
+
+```@docs
+RxInfer.resolve_variables
+```
