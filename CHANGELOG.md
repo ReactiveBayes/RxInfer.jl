@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.0.2] - 2026-10-20
+
 ### Changed
 - RxInfer accepts HTTP 2 (`[compat]` `"1.10, 2"`), which the telemetry uses to send its requests (#659).
 - The tests no longer depend on Coverage.jl, which nothing used and which holds HTTP below 2; CI collects coverage with `julia-processcoverage` as before.
@@ -325,7 +327,10 @@ The last release of the 5.x series; RxInfer 6 runs on ReactiveMP 7.
 
 ---
 
-[Unreleased]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.5.2...HEAD
+[Unreleased]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v6.0.2...HEAD
+[6.0.2]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v6.0.1...v6.0.2
+[6.0.1]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v6.0.0...v6.0.1
+[6.0.0]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.5.2...v6.0.0
 [5.5.2]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.5.1...v5.5.2
 [5.5.1]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.5.0...v5.5.1
 [5.5.0]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v5.4.0...v5.5.0
