@@ -8,7 +8,7 @@
     end
 
     @testset "Conditioning on `y = [0.0, 1.0, 0.0]`" begin
-        model_generator           = beta_bernoulli(a = 1.0, b = 1.0)
+        model_generator = beta_bernoulli(a = 1.0, b = 1.0)
         model_generator_with_data = condition_on(model_generator, y = [0.0, 1.0, 0.0])
 
         @test getconditioned_on(model_generator_with_data) ==
@@ -22,7 +22,7 @@
     end
 
     @testset "Conditioning on `y = [0.0, 1.0, 0.0], b = 7.0`" begin
-        model_generator           = beta_bernoulli(a = 2.0)
+        model_generator = beta_bernoulli(a = 2.0)
         model_generator_with_data = condition_on(model_generator, y = [0.0, 1.0, 0.0], b = 7.0)
 
         @test getconditioned_on(model_generator_with_data) ==
@@ -42,7 +42,7 @@
     end
 
     @testset "Conditioning on `y = ???`" begin
-        model_generator           = beta_bernoulli_single(a = 1.0, b = 1.0)
+        model_generator = beta_bernoulli_single(a = 1.0, b = 1.0)
         model_generator_with_data = condition_on(model_generator, y = DeferredDataHandler())
 
         @test getconditioned_on(model_generator_with_data) ==
@@ -51,7 +51,7 @@
             "beta_bernoulli_single(a = 1.0, b = 1.0) conditioned on: ",
             repr(model_generator_with_data),
         )
-        @test occursin("y = [ deffered data ]", repr(model_generator_with_data))
+        @test occursin("y = [ deferred data ]", repr(model_generator_with_data))
         @test create_model(model_generator_with_data) isa ProbabilisticModel
     end
 end

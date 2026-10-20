@@ -8,7 +8,7 @@ using RxInfer
 
 A nice explanation about how modules/packages work in Julia can be found in [the official documentation](https://docs.julialang.org/en/v1/manual/modules/#Standalone-using-and-import).
 
-In a nutshell, Julia automatically resolves all name collisions and there is no a lot of benefit of importing specific names, e.g.:
+In a nutshell, Julia automatically resolves all name collisions and there is not a lot of benefit to importing specific names, e.g.:
 
 ```julia
 import RxInfer: mean
@@ -23,7 +23,7 @@ import Distributions: mean as mean_from_distributions
 mean_from_rxinfer === mean_from_distributions
 ```
 
-Even though we import `mean` function from two different packages they actually refer to the same object. Worth noting that this is not always the case - Julia will print a warning in case it finds unresolvable conflicts and usage of such functions will be disallowed unless the user `import`s from them specifically. Read more about this in the [section of the Julia's documentation](https://docs.julialang.org/en/v1/manual/modules/#Handling-name-conflicts).
+Even though we import the `mean` function from two different packages, they actually refer to the same object. It is worth noting that this is not always the case - Julia will print a warning in case it finds unresolvable conflicts and usage of such functions will be disallowed unless the user `import`s from them specifically. Read more about this in the [section of the Julia's documentation](https://docs.julialang.org/en/v1/manual/modules/#Handling-name-conflicts).
 
 ```@example another_import
 # It is easier to let Julia resolve names automatically

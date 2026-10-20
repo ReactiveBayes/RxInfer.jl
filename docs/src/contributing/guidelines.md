@@ -36,12 +36,20 @@ The `dev` command clones `RxInfer` to `~/.julia/dev/RxInfer`. All local changes 
 
 ### Core dependencies
 
-`RxInfer.jl` depends heavily on the core packages `ReactiveMP.jl`, `GraphPPL.jl`, and `Rocket.jl`. Ensure `RxInfer.jl` is updated whenever any of these packages undergo major updates or API changes. While making changes to `RxInfer.jl`, developers are advised to use the `dev` command for these packages as well. Note that standard Julia testing utilities ignore the local development environment and test the package with the latest released versions of core dependencies. Refer to the Makefile section below to learn how to test `RxInfer.jl` with locally installed core dependencies.
+`RxInfer.jl` depends heavily on the core packages `ReactiveMP.jl`, `GraphPPL.jl`, and `Rocket.jl`. Ensure `RxInfer.jl` is updated whenever any of these packages undergo major updates or API changes. While making changes to `RxInfer.jl`, developers are advised to use the `dev` command for these packages as well.
+
+The nodes and rules are not in `ReactiveMP.jl`'s own source: they live in rule packages, each a registered package with a repository of its own, [`ReactiveBayes/<Package>.jl`](https://github.com/ReactiveBayes): `StandardMessagePassingRules`, `DeltaMessagePassingRules`, and one package per remaining node, such as `AutoregressiveMessagePassingRules`. They are written with [`MessagePassingRulesBase.jl`](https://github.com/ReactiveBayes/MessagePassingRulesBase.jl), share the numerics of [`MessagePassingRulesApproximations.jl`](https://github.com/ReactiveBayes/MessagePassingRulesApproximations.jl) and are tested with [`MessagePassingRulesTestUtils.jl`](https://github.com/ReactiveBayes/MessagePassingRulesTestUtils.jl). `GCVMessagePassingRules` is still under `lib/` in the `ReactiveMP.jl` repository until it is registered. To work on a rule together with `RxInfer.jl`, `dev` the package it lives in:
+
+```
+] dev StandardMessagePassingRules
+```
+
+Each rule package has its own tests, run from its repository with `make test` (`make help` lists the other targets). Note that standard Julia testing utilities ignore the local development environment and test the package with the latest released versions of core dependencies. Refer to the Makefile section below to learn how to test `RxInfer.jl` with locally installed core dependencies.
 
 ### Committing code
 
-We use the standard [GitHub Flow](https://guides.github.com/introduction/flow/) workflow where all contributions are added through pull requests. To contribute:
-- [Fork](https://guides.github.com/activities/forking/) the repository
+We use the standard [GitHub Flow](https://docs.github.com/get-started/quickstart/github-flow) workflow where all contributions are added through pull requests. To contribute:
+- [Fork](https://docs.github.com/get-started/quickstart/contributing-to-projects) the repository
 - Commit your contributions to your fork
 - Create a pull request on the `main` branch of the `RxInfer` repository.
 
@@ -52,7 +60,7 @@ Before opening a pull request, ensure all tests pass without errors.
 
 ### Style conventions
 
-We use the default [Julia style guide](https://docs.julialang.org/en/v1/manual/style-guide/index.html). There are a couple of important points modifications to the Julia style guide to take into account:
+We use the default [Julia style guide](https://docs.julialang.org/en/v1/manual/style-guide/index.html). There are a couple of important modifications to the Julia style guide to take into account:
 
 - Use 4 spaces for indentation
 - Type names use `UpperCamelCase`. For example: `AbstractFactorNode`, `RandomVariable`, etc.
@@ -61,7 +69,7 @@ We use the default [Julia style guide](https://docs.julialang.org/en/v1/manual/s
 - The name of a method that modifies its argument(s) must end in `!`
 
 !!! note
-    The `RxInfer` repository contains scripts to automatically format code according to our guidelines. Use `make format` command to fix codestyle. This command overwrites files. Use `make lint` to run a linting procedure without overwriting the actual source files.
+    The `RxInfer` repository formats its code with [Runic](https://github.com/fredrikekre/Runic.jl), which has no configuration. Use the `make format` command to fix codestyle; this command overwrites files. Use `make check-format` to check it without overwriting the source files, as CI does.
 
 ### Unit tests
 
@@ -70,20 +78,22 @@ We use the test-driven development (TDD) methodology for `RxInfer` development. 
 All unit tests are located in the `/test/` directory. The `/test/` directory follows the structure of the `/src/` directory. Each test file should have the following filename format: `*_tests.jl`. Some tests are also present in `jldoctest` docs annotations directly in the source code.
 See [Julia's documentation](https://docs.julialang.org/en/v1/manual/documentation/index.html) about doctests.
 
-The tests can be evaluated by running following command in the Julia REPL:
+The tests can be evaluated by running the following command in the Julia REPL:
 
 ```
 ] test RxInfer
 ```
 
-In addition tests can be evaluated by running following command in the `RxInfer` root directory:
+In addition, tests can be evaluated by running the following command in the `RxInfer` root directory:
 
 ```bash
 make test
 ```
 
-!!! note 
-    Use `make devtest` to use local `dev`-ed versions of the core packages.
+!!! note
+    `Project.toml` and `docs/Project.toml` resolve ReactiveMP and its rule packages from a
+    `ReactiveMP.jl` checkout next to this one, through `[sources]`, so `make test` and `make docs`
+    run against it.
 
 ### Makefile
 
@@ -93,12 +103,10 @@ make test
 - `make test`: Run tests, supports extra arguments
   - `make test test_args="distributions:normal_mean_variance"` would run tests only from `distributions/test_normal_mean_variance.jl`
   - `make test test_args="distributions:normal_mean_variance models:lgssm"` would run tests both from `distributions/test_normal_mean_variance.jl` and `models/test_lgssm.jl`
-  - `make test dev=true` would run tests while using `dev-ed` versions of core packages
-- `make devtest`: Alias for the `make test dev=true ...`
-- `make docs`: Compile documentation
-- `make devdocs`: Same as `make docs`, but uses `dev-ed` versions of core packages
-- `make lint`: Check codestyle
-- `make format`: Check and fix codestyle 
+- `make docs`: Compile documentation. It links the ReactiveMP ecosystem's sites through their
+  local builds, so run `make docs-all` in the `ReactiveMP.jl` checkout first.
+- `make check-format`: Check codestyle (Runic), as CI does; `make lint` is the same
+- `make format`: Fix codestyle; this overwrites files
 
 !!! note
     Core packages include `ReactiveMP.jl`, `GraphPPL.jl` and `Rocket.jl`. When using any of the `dev` commands from the `Makefile` those packages must be present in the `Pkg.devdir()` directory.
@@ -109,7 +117,7 @@ This project uses a `CHANGELOG.md` to document all user-visible changes. Regardl
 
 ### Opting out
 
-Not all changes need a changelog entry, some are not user-visible, like changing CI or some internal refactoring. For those it is possible to disable the check.
+Not all changes need a changelog entry; some are not user-visible, like changing CI or some internal refactoring. For those it is possible to disable the check.
 
 To do so, apply the `no changelog` label to the PR. Then the changelog check will re-run and succeed automatically. This label can also be applied directly when opening the PR so the check will be automatically omitted.
 

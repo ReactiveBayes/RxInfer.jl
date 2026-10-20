@@ -94,7 +94,7 @@ model = RxInfer.create_model(modelgenerator)
 RxInfer.getreturnval(model)
 ```
 
-The [`InferenceResult`](@ref)  also no longer stores the `returnval` field. Instead, use the `model` field and the [`RxInfer.getreturnval`](@ref) function:
+The [`InferenceResult`](@ref) also no longer stores the `returnval` field. Instead, use the `model` field and the [`RxInfer.getreturnval`](@ref) function:
 ```@example migration-guide
 result = infer(
     model = test_model(a = 1.0, b = 1.0),
@@ -141,5 +141,5 @@ nothing #hide
 
 ## Initialization
 
-Initialization of messages and marginals to kickstart the inference procedure was previously done with the `initmessages` and `initmarginals` keyword. With the introduction of a nested model specificiation in the `@model` macro, we now need a more specific way to initialize messages and marginals. This is done with the new [`@initialization`](@ref) macro. 
+Initialization of messages and marginals to kickstart the inference procedure was previously done with the `initmessages` and `initmarginals` keyword. With the introduction of a nested model specification in the `@model` macro, we now need a more specific way to initialize messages and marginals. This is done with the new [`@initialization`](@ref) macro. 
 Read more about the new syntax in the [Initialization](@ref initialization) guide.

@@ -39,24 +39,48 @@ Which factorisation you get — full mean-field, structured, or none at all — 
 
 ## [Automatic rule selection](@id concepts-message-passing-automatic)
 
-You never choose a message update rule by hand. `RxInfer` uses Julia's multiple dispatch to pick the right rule for every edge based on:
+You never choose a message update rule by hand. For every message, `RxInfer` finds the rule by:
 
-1. **Node type** — which factor you wrote (`Normal`, `Gamma`, a custom deterministic node, ...).
-2. **Outgoing edge** — which argument of the factor the message is heading towards.
-3. **Incoming message types** — the distribution families arriving on the other edges.
-4. **Factorisation assumption** — whether the surrounding constraints require a BP-style or VMP-style rule.
+1. **Node** — which factor you wrote (`Normal`, `Gamma`, `+`, a custom node, ...).
+2. **Target** — which edge of the factor the message is heading to.
+3. **Algorithm** — the node's algorithm. Most nodes run under the default; the node of a nonlinear function names its approximation.
+4. **Inputs** — which messages and marginals arrive on the other edges, and their distribution families. The factorisation your constraints impose decides whether an input is a message, as in BP, or a marginal, as in VMP.
 
-When a [conjugate pair](@ref concepts-probability-distributions-conjugate) is detected, the dispatched rule is a closed-form analytical update. Non-conjugate combinations fall back to numerical or approximate rules. The [Understanding Rules](@ref what-is-a-rule) manual explains exactly how this machinery works under the hood, and [custom rules](@ref create-node) can be added without touching the core engine.
+When a [conjugate pair](@ref concepts-probability-distributions-conjugate) meets, the rule is a closed-form update. A Beta prior and a Bernoulli likelihood give an exact Beta posterior:
 
-```julia
-# Conjugate — dispatches to an exact analytical Beta update
-θ ~ Beta(1.0, 1.0)
-y ~ Bernoulli(θ)
+```@example concepts-message-passing
+using RxInfer
 
-# Non-conjugate — dispatches to a variational approximation
-λ ~ Normal(mean = 0.0, variance = 1.0)
-y ~ Poisson(exp(λ))
+@model function coin(y)
+    θ ~ Beta(1.0, 1.0)
+    for i in eachindex(y)
+        y[i] ~ Bernoulli(θ)
+    end
+end
+
+infer(model = coin(), data = (y = [1.0, 0.0, 1.0, 1.0],)).posteriors[:θ]
 ```
+
+A nonlinear function of a variable, such as `sin(x)` below, has no closed-form rule. `RxInfer` represents it with a [Delta node](@ref delta-node-manual), and you choose its approximation with `@algorithm`:
+
+```@example concepts-message-passing
+@model function sensor(y)
+    x ~ Normal(mean = 0.0, variance = 1.0)
+    z := sin(x)
+    y ~ Normal(mean = z, variance = 0.1)
+end
+
+result = infer(
+    model = sensor(),
+    data = (y = 0.5,),
+    algorithm = @algorithm(begin
+        sin() -> Linearization()
+    end),
+)
+result.posteriors[:x]
+```
+
+When no rule takes the inputs a message needs, as for `sin` without an approximation, inference stops with an error that names the node and the inputs, and says why each candidate rule does not fit. The [Understanding Rules](@ref what-is-a-rule) manual explains how rules are found and what decides their inputs. [Messages by hand](@ref learning-messages-by-hand) and [Variational message passing by hand](@ref learning-vmp-by-hand) call the rules of small models one by one, and [custom rules](@ref create-node) can be added without touching the core engine.
 
 ## [Reactive scheduling](@id concepts-message-passing-reactive)
 
@@ -72,6 +96,7 @@ The [Reactive Programming](@ref concepts-reactive-programming) concept page expa
 
 - **[ReactiveMP.jl](https://reactivebayes.github.io/ReactiveMP.jl/stable/)** — the message passing engine and rule dispatch system.
 - **[Understanding Rules](@ref what-is-a-rule)** — how RxInfer picks a rule for every edge.
+- **[Messages by hand](@ref learning-messages-by-hand)** and **[Variational message passing by hand](@ref learning-vmp-by-hand)** — belief propagation and variational message passing computed step by step, with the rules RxInfer runs.
 - **[Variational Message Passing and Local Constraint Manipulation in Factor Graphs](https://doi.org/10.3390/e23070807)** — Şenöz et al., the theoretical basis of RxInfer's VMP implementation.
 - **[Reactive Message Passing for Scalable Bayesian Inference](https://doi.org/10.48550/arXiv.2112.13251)** — scaling message passing with reactive programming.
 - **[Factor Graphs and the Sum-Product Algorithm](https://ieeexplore.ieee.org/document/910572)** — Kschischang, Frey and Loeliger (2001).

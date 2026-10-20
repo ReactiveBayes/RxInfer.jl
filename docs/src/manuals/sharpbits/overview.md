@@ -18,7 +18,7 @@ This page serves as a collection of sharp bits - potential pitfalls and common i
     - Why not `=`?
 
 !!! note
-    This is a community document that will be updated as we identify more common issues and their solutions. If you encounter a problem that isn't covered here, please consider opening an [issue/discussion](https://github.com/rxinfer/rxinfer/discussions) or contributing to this guide.
+    This is a community document that will be updated as we identify more common issues and their solutions. If you encounter a problem that isn't covered here, please consider opening an [issue/discussion](https://github.com/reactivebayes/RxInfer.jl/discussions) or contributing to this guide.
 
 ## [Getting Help with Issues](@id getting-help)
 
@@ -41,7 +41,7 @@ All data sharing is optional and privacy-focused. When opening issues, including
 
 ## How to contribute
 
-If you have a sharp bit to share, please consider opening an [issue/discussion](https://github.com/rxinfer/rxinfer/discussions) or contributing to this guide.
+If you have a sharp bit to share, please consider opening an [issue/discussion](https://github.com/reactivebayes/RxInfer.jl/discussions) or contributing to this guide.
 To write a new section, create a new file in the `docs/src/manuals/sharpbits` directory. Use `@id` to specify the ID of the section and `@ref` to reference it later.
 
 ```md

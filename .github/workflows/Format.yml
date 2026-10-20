@@ -1,0 +1,25 @@
+name: Format
+
+# `make check-format`: Runic, the version `scripts/Manifest.toml` pins, over the directories
+# `scripts/formatter.jl` formats; it fails on a diff, which `make format` fixes.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  runic:
+    name: Runic
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: '1'
+      - uses: julia-actions/cache@v3
+      - run: make check-format

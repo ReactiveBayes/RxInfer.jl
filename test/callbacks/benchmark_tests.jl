@@ -97,32 +97,32 @@
         q(x_prev, x_current, τ) = q(x_prev, x_current)q(τ)
     end
     static_observations = rand(300)
-    callbacks           = RxInferBenchmarkCallbacks()
-    datastream          = from(static_observations) |> map(NamedTuple{(:y,), Tuple{Float64}}, (d) -> (y = d,))
-    autoupdates         = @autoupdates begin
+    callbacks = RxInferBenchmarkCallbacks()
+    datastream = from(static_observations) |> map(NamedTuple{(:y,), Tuple{Float64}}, (d) -> (y = d,))
+    autoupdates = @autoupdates begin
         x_prev_mean, x_prev_var = mean_var(q(x_current))
         τ_shape = shape(q(τ))
         τ_rate = rate(q(τ))
     end
 
     init = @initialization begin
-        q(x_current) = NormalMeanVariance(0.0, 1e3)
+        q(x_current) = NormalMeanVariance(0.0, 1.0e3)
         q(τ) = GammaShapeRate(1.0, 1.0)
     end
 
     engine = infer(;
-        model          = kalman_filter(),
-        constraints    = filter_constraints(),
-        datastream     = datastream,
-        autoupdates    = autoupdates,
-        returnvars     = (:x_current,),
-        keephistory    = 10_000,
-        historyvars    = (x_current = KeepLast(), τ = KeepLast()),
+        model = kalman_filter(),
+        constraints = filter_constraints(),
+        datastream = datastream,
+        autoupdates = autoupdates,
+        returnvars = (:x_current,),
+        keephistory = 10_000,
+        historyvars = (x_current = KeepLast(), τ = KeepLast()),
         initialization = init,
-        iterations     = 10,
-        free_energy    = true,
-        autostart      = true,
-        callbacks      = callbacks,
+        iterations = 10,
+        free_energy = true,
+        autostart = true,
+        callbacks = callbacks,
     )
 
     @test length(callbacks.before_model_creation_ts) == 1

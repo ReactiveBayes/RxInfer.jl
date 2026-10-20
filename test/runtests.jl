@@ -19,6 +19,6 @@ if isempty(ARGS)
     @run_package_tests(verbose = true)
 else
     filtered_files = map(arg -> join(split(arg, ":"), "/"), ARGS)
-    filter_fn = ti -> any(occursin(ti.filename), filtered_files)
+    filter_fn = ti -> any(file -> occursin(file, ti.filename), filtered_files)
     @run_package_tests(filter = filter_fn, verbose = true)
 end

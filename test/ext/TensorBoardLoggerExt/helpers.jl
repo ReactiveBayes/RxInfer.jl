@@ -14,12 +14,12 @@ using TensorBoardLogger: TensorBoardLogger, TBLogger, tb_append
 # it) rather than failing the test.
 function with_safe_tempdir(fn)
     log_dir = mktempdir(; cleanup = false)
-    try
+    return try
         fn(log_dir)
     finally
         for attempt in 1:40
             try
-                GC.gc();
+                GC.gc()
                 GC.gc()
                 rm(log_dir; recursive = true, force = true)
                 break
@@ -53,6 +53,7 @@ function _each_summary(fn, logdir)
             end
         end
     end
+    return
 end
 
 function read_tags(logdir)
@@ -94,8 +95,8 @@ function with_dispatch_logger(write_events; n_samples::Int = 0)
         ctx = ext.LogContext(
             logger;
             log_distributions = false,
-            log_text_events   = false,
-            n_samples         = n_samples,
+            log_text_events = false,
+            n_samples = n_samples,
         )
         try
             write_events(ext, ctx)
@@ -135,8 +136,8 @@ end
 end
 
 function iid_normal_inference(;
-    iterations::Int = 2, n_samples::Int = 10, seed::Int = 42, kwargs...
-)
+        iterations::Int = 2, n_samples::Int = 10, seed::Int = 42, kwargs...
+    )
     initialization = @initialization begin
         q(μ) = vague(NormalMeanPrecision)
         q(τ) = vague(GammaShapeRate)
@@ -145,12 +146,12 @@ function iid_normal_inference(;
         StableRNG(seed), NormalMeanPrecision(3.1415, 2.7182), n_samples
     )
     return infer(;
-        model          = iid_normal_model(),
-        data           = (y = dataset,),
-        constraints    = iid_normal_constraints(),
-        iterations     = iterations,
+        model = iid_normal_model(),
+        data = (y = dataset,),
+        constraints = iid_normal_constraints(),
+        iterations = iterations,
         initialization = initialization,
-        trace          = true,
+        trace = true,
         kwargs...,
     )
 end
@@ -161,18 +162,18 @@ end
 end
 
 function coin_toss_inference(;
-    iterations::Int = 2, n_samples::Int = 10, seed::Int = 42, kwargs...
-)
+        iterations::Int = 2, n_samples::Int = 10, seed::Int = 42, kwargs...
+    )
     initialization = @initialization begin
         q(θ) = vague(Beta)
     end
     dataset = rand(StableRNG(seed), Bernoulli(0.7), n_samples)
     return infer(;
-        model          = coin_toss_model(),
-        data           = (y = dataset,),
-        iterations     = iterations,
+        model = coin_toss_model(),
+        data = (y = dataset,),
+        iterations = iterations,
         initialization = initialization,
-        trace          = true,
+        trace = true,
         kwargs...,
     )
 end
@@ -188,8 +189,8 @@ end
 end
 
 function iid_invgamma_inference(;
-    iterations::Int = 2, n_samples::Int = 10, seed::Int = 42, kwargs...
-)
+        iterations::Int = 2, n_samples::Int = 10, seed::Int = 42, kwargs...
+    )
     initialization = @initialization begin
         q(μ) = vague(NormalMeanVariance)
         q(σ²) = vague(GammaInverse)
@@ -198,12 +199,12 @@ function iid_invgamma_inference(;
         StableRNG(seed), NormalMeanVariance(3.1415, 1.0 / 2.7182), n_samples
     )
     return infer(;
-        model          = iid_invgamma_model(),
-        data           = (y = dataset,),
-        constraints    = iid_invgamma_constraints(),
-        iterations     = iterations,
+        model = iid_invgamma_model(),
+        data = (y = dataset,),
+        constraints = iid_invgamma_constraints(),
+        iterations = iterations,
         initialization = initialization,
-        trace          = true,
+        trace = true,
         kwargs...,
     )
 end

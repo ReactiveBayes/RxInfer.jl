@@ -540,6 +540,8 @@ end
             μ(z) = Normal(0, 1)
         end
     end
+    # The empty `;` is part of the expected expression: Runic would remove it.
+    # runic: off
     output = quote
         function someinit(;)
             __init__ = RxInfer.InitSpecification()
@@ -548,6 +550,7 @@ end
             return __init__
         end
     end
+    # runic: on
     @test_expression_generating add_init_construction(input) output
 
     # Test 4: add_constraints_construction to constraint specification with function specification and arguments
@@ -557,6 +560,7 @@ end
             μ(z) = Normal(0, 1)
         end
     end
+    # runic: off
     output = quote
         function someinit(x, y;)
             __init__ = RxInfer.InitSpecification()
@@ -565,6 +569,7 @@ end
             return __init__
         end
     end
+    # runic: on
     @test_expression_generating add_init_construction(input) output
 
     # Test 5: add_constraints_construction to constraint specification with function specification and arguments and keyword arguments
@@ -772,7 +777,7 @@ end
     @test resolve_parametrization(Gamma, (1, 1)) == GammaShapeScale(1, 1)
 
     @test resolve_parametrization(vague, (NormalMeanVariance,)) ==
-        NormalMeanVariance(0, 1e12)
+        NormalMeanVariance(0, 1.0e12)
 
     @test resolve_parametrization(tiny, (Float32,)) == tiny(Float32)
 
@@ -1121,8 +1126,12 @@ end
 
     init = @initialization begin
         q(x) = [
-            vague(NormalMeanVariance) vague(NormalMeanVariance) vague(NormalMeanVariance)
-            vague(NormalMeanVariance) vague(NormalMeanVariance) vague(NormalMeanVariance)
+            vague(NormalMeanVariance) vague(NormalMeanVariance) vague(
+                NormalMeanVariance
+            )
+            vague(NormalMeanVariance) vague(NormalMeanVariance) vague(
+                NormalMeanVariance
+            )
             vague(NormalMeanVariance) vague(NormalMeanVariance) vague(NormalMeanVariance)
         ]
     end
@@ -1182,7 +1191,7 @@ end
         ),
     )
     @test GraphPPL.getextra(model[model[][:x]], RxInfer.InitMarExtraKey) ==
-        NormalMeanVariance(0, 1e12)
+        NormalMeanVariance(0, 1.0e12)
 end
 
 @testitem "throw warning if double init" begin
@@ -1266,9 +1275,180 @@ end
         q(x) = distribution
     end
     init = my_initialization(NormalMeanVariance(0, 1))
-    @test repr(init) == repr(@initialization begin
-        q(x) = NormalMeanVariance(0, 1)
-    end)
+    @test repr(init) == repr(
+        @initialization begin
+            q(x) = NormalMeanVariance(0, 1)
+        end
+    )
+end
+
+@testitem "inline initialization on submodel calls" begin
+    using RxInfer
+    import GraphPPL:
+        create_model,
+        with_plugins,
+        getcontext,
+        getextra,
+        hasextra,
+        context_options
+    import RxInfer: InitMarExtraKey, InitSpecification
+
+    @model function inline_init_inner(x, m, v)
+        x ~ Normal(mean = m, var = v)
+    end
+
+    @model function inline_init_middle(y)
+        y ~ inline_init_inner(
+            m = 1.0, v = 1.0
+        ) where {
+            initialization = @initialization begin
+                q(x) = NormalMeanVariance(2.0, 3.0)
+            end
+        }
+    end
+
+    @model function inline_init_outer()
+        y ~ inline_init_inner(
+            m = 1.0, v = 1.0
+        ) where {
+            initialization = @initialization begin
+                q(x) = NormalMeanVariance(2.0, 3.0)
+            end
+        }
+    end
+
+    @initialization function make_inline_init(distribution)
+        q(x) = distribution
+    end
+
+    @model function inline_init_function_outer()
+        y ~ inline_init_inner(
+            m = 1.0, v = 1.0
+        ) where {
+            initialization = make_inline_init(NormalMeanVariance(4.0, 5.0)),
+        }
+    end
+
+    @model function nested_inline_init_outer()
+        y ~ inline_init_middle()
+    end
+
+    model = create_model(
+        with_plugins(
+            inline_init_outer(),
+            GraphPPL.PluginsCollection(RxInfer.InitializationPlugin()),
+        ),
+    )
+    context = getcontext(model)
+    inner_context = context[inline_init_inner, 1]
+    @test get(context_options(inner_context), :initialization, nothing) isa
+        InitSpecification
+    @test getextra(
+        model[GraphPPL.unroll(inner_context[:x])], InitMarExtraKey
+    ) == NormalMeanVariance(2.0, 3.0)
+
+    model = create_model(
+        with_plugins(
+            inline_init_function_outer(),
+            GraphPPL.PluginsCollection(RxInfer.InitializationPlugin()),
+        ),
+    )
+    context = getcontext(model)
+    inner_context = context[inline_init_inner, 1]
+    @test get(context_options(inner_context), :initialization, nothing) isa
+        InitSpecification
+    @test getextra(
+        model[GraphPPL.unroll(inner_context[:x])], InitMarExtraKey
+    ) == NormalMeanVariance(4.0, 5.0)
+
+    model = create_model(
+        with_plugins(
+            nested_inline_init_outer(),
+            GraphPPL.PluginsCollection(RxInfer.InitializationPlugin()),
+        ),
+    )
+    context = getcontext(model)
+    inner_context = context[inline_init_middle, 1][inline_init_inner, 1]
+    @test getextra(
+        model[GraphPPL.unroll(inner_context[:x])], InitMarExtraKey
+    ) == NormalMeanVariance(2.0, 3.0)
+
+    external_init = @initialization begin
+        for init in inline_init_inner
+            q(x) = NormalMeanVariance(5.0, 6.0)
+        end
+    end
+    model = create_model(
+        with_plugins(
+            inline_init_outer(),
+            GraphPPL.PluginsCollection(
+                RxInfer.InitializationPlugin(external_init)
+            ),
+        ),
+    )
+    context = getcontext(model)
+    inner_context = context[inline_init_inner, 1]
+    @test getextra(
+        model[GraphPPL.unroll(inner_context[:x])], InitMarExtraKey
+    ) == NormalMeanVariance(5.0, 6.0)
+end
+
+@testitem "inline constraints and initialization on the same submodel call" begin
+    using RxInfer
+    import GraphPPL:
+        create_model,
+        with_plugins,
+        getcontext,
+        getextra,
+        hasextra,
+        context_options,
+        VariationalConstraintsPlugin,
+        PluginsCollection
+    import RxInfer: InitMarExtraKey
+
+    @model function inline_options_inner(y, x)
+        theta ~ Normal(mean = 0.0, var = 1.0)
+        y ~ Normal(mean = x, var = theta)
+    end
+
+    @model function inline_options_outer()
+        x ~ Normal(mean = 0.0, var = 1.0)
+        y ~ inline_options_inner(
+            x = x
+        ) where {
+            constraints = (
+                @constraints begin
+                    q(x, y, theta) = MeanField()
+                end
+            ),
+            initialization = (
+                @initialization begin
+                    q(theta) = NormalMeanVariance(2.0, 3.0)
+                end
+            ),
+        }
+    end
+
+    model = create_model(
+        with_plugins(
+            inline_options_outer(),
+            PluginsCollection(
+                VariationalConstraintsPlugin(), RxInfer.InitializationPlugin()
+            ),
+        ),
+    )
+    context = getcontext(model)
+    inner_context = context[inline_options_inner, 1]
+    node = inner_context[NormalMeanVariance, 2]
+
+    @test haskey(context_options(inner_context), :constraints)
+    @test haskey(context_options(inner_context), :initialization)
+    @test hasextra(model[node], :factorization_constraint_indices)
+    @test Tuple.(getextra(model[node], :factorization_constraint_indices)) ==
+        ((1,), (2,), (3,))
+    @test getextra(
+        model[GraphPPL.unroll(inner_context[:theta])], InitMarExtraKey
+    ) == NormalMeanVariance(2.0, 3.0)
 end
 
 @testitem "@initialization macro creates working InitSpecification in all forms" begin
@@ -1501,7 +1681,7 @@ end
     )
     context = getcontext(model)
     @test getextra(model[context[:x]], InitMarExtraKey) ==
-        NormalMeanVariance(0, 1e12)
+        NormalMeanVariance(0, 1.0e12)
     @test getextra(model[context[:y][1]], InitMsgExtraKey) ==
         NormalMeanVariance(0, 1)
     @test getextra(
@@ -1553,8 +1733,8 @@ end
 
     # Test 12: Function with keyword arguments works
     @initialization function init_kw_args(;
-        dist = NormalMeanVariance(0, 1), mean_val = 0.0
-    )
+            dist = NormalMeanVariance(0, 1), mean_val = 0.0
+        )
         q(x) = dist
         q(y) = NormalMeanVariance(mean_val, 1)
     end

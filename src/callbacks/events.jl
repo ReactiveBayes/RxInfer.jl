@@ -2,7 +2,7 @@ export BeforeModelCreationEvent, AfterModelCreationEvent
 export BeforeInferenceEvent, AfterInferenceEvent
 export BeforeIterationEvent, AfterIterationEvent
 export BeforeDataUpdateEvent, AfterDataUpdateEvent
-export OnMarginalUpdateEvent
+export OnMarginalUpdateEvent, OnFreeEnergyUpdateEvent
 export BeforeAutostartEvent, AfterAutostartEvent
 
 import ReactiveMP: Event, event_name, generate_span_id, getdata
@@ -92,9 +92,8 @@ mutable struct BeforeIterationEvent{M, S} <: Event{:before_iteration}
     span_id::S
 end
 
-BeforeIterationEvent(model::M, iteration::Int, span_id) where {M} = BeforeIterationEvent(
-    model, iteration, false, span_id
-)
+BeforeIterationEvent(model::M, iteration::Int, span_id) where {M} =
+    BeforeIterationEvent(model, iteration, false, span_id)
 
 """
     AfterIterationEvent{M, S} <: ReactiveMP.Event{:after_iteration}
@@ -116,9 +115,8 @@ mutable struct AfterIterationEvent{M, S} <: Event{:after_iteration}
     span_id::S
 end
 
-AfterIterationEvent(model::M, iteration::Int, span_id) where {M} = AfterIterationEvent(
-    model, iteration, false, span_id
-)
+AfterIterationEvent(model::M, iteration::Int, span_id) where {M} =
+    AfterIterationEvent(model, iteration, false, span_id)
 
 """
     BeforeDataUpdateEvent{M, D, S} <: ReactiveMP.Event{:before_data_update}
@@ -172,6 +170,25 @@ struct OnMarginalUpdateEvent{M, U} <: Event{:on_marginal_update}
     model::M
     variable_name::Symbol
     update::U
+end
+
+"""
+    OnFreeEnergyUpdateEvent{M, V} <: ReactiveMP.Event{:on_free_energy_update}
+
+Fires each time the Bethe free energy is computed during batch inference with
+`free_energy = true`: once per iteration when the data is given once per iteration. Each term of
+it is reported by the engine as `ReactiveMP.AfterFactorBoundFreeEnergyEvent` (a factor node's)
+and `ReactiveMP.AfterVariableBoundEntropyEvent` (a variable's).
+
+# Fields
+- `model::M`: the [`ProbabilisticModel`](@ref) instance
+- `value::V`: the free energy, a number of the type `free_energy` asks for
+
+See also: [Callbacks](@ref manual-inference-callbacks), [Tracing the free energy](@ref trace-callbacks-free-energy)
+"""
+struct OnFreeEnergyUpdateEvent{M, V} <: Event{:on_free_energy_update}
+    model::M
+    value::V
 end
 
 """
@@ -328,6 +345,13 @@ end
 function Base.show(io::IO, ev::OnMarginalUpdateEvent)
     print(io, "OnMarginalUpdateEvent(var=:", ev.variable_name, ", update=")
     show(io, getdata(ev.update))
+    print(io, ")")
+    return nothing
+end
+
+function Base.show(io::IO, ev::OnFreeEnergyUpdateEvent)
+    print(io, "OnFreeEnergyUpdateEvent(value=")
+    show(io, ev.value)
     print(io, ")")
     return nothing
 end

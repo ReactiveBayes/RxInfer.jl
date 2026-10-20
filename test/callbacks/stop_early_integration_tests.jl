@@ -52,8 +52,8 @@
     max_iterations = 40
     data = make_data(rng, 200, 0.2, 0.5)
 
-    result_loose = run_inference(data, max_iterations, 1e-2)
-    result_strict = run_inference(data, max_iterations, 1e-12)
+    result_loose = run_inference(data, max_iterations, 1.0e-2)
+    result_strict = run_inference(data, max_iterations, 1.0e-12)
 
     loose_iters = length(result_loose.free_energy)
     strict_iters = length(result_strict.free_energy)

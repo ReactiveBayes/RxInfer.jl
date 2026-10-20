@@ -4,7 +4,6 @@
 docs/build
 docs/Manifest.toml
 
-scripts/Manifest.toml
 
 _output
 test/_output
@@ -27,6 +26,8 @@ Coverage.ipynb
 **/Manifest-v*.toml
 **/LocalPreferences.toml
 !benchmarks/Manifest.toml
+# Tracked so `make format` uses a reproducible Runic version everywhere.
+!scripts/Manifest.toml
 
 **/.benchmarkci
 benchmark/*.json

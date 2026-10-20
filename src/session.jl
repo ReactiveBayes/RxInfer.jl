@@ -88,13 +88,13 @@ Set the default capacity for session statistics at compile time. The change requ
 function set_session_stats_capacity!(capacity::Int)
     @assert capacity > 0 "Session stats capacity must be positive"
     @set_preferences!("session_stats_capacity" => capacity)
-    @info "Session stats capacity set to $capacity. Restart Julia for the change to take effect."
+    return @info "Session stats capacity set to $capacity. Restart Julia for the change to take effect."
 end
 
 # Constructor for empty stats
 function SessionStats(
-    label::Symbol, capacity::Int = DEFAULT_SESSION_STATS_CAPACITY
-)
+        label::Symbol, capacity::Int = DEFAULT_SESSION_STATS_CAPACITY
+    )
     invokes = CircularBuffer{SessionInvoke}(capacity)
     return SessionStats(
         uuid4(), label, 0, 0, 0, 0.0, Inf, -Inf, 0.0, Set{Symbol}(), invokes
@@ -159,9 +159,9 @@ Removes gathered statistics from the session. Optionally accepts a vector of lab
 If no labels specified deletes everything.
 """
 function reset_session!(
-    session::Union{Nothing, Session} = RxInfer.default_session(),
-    labels = nothing,
-)
+        session::Union{Nothing, Session} = RxInfer.default_session(),
+        labels = nothing,
+    )
     if isnothing(labels)
         labels = keys(session.stats)
     end
@@ -173,6 +173,7 @@ function reset_session!(
             @warn "Cannot remove statistics for `$label`. Statistics labeled with `$label` do not exist."
         end
     end
+    return
 end
 
 """
@@ -217,7 +218,7 @@ function update_stats!(stats::SessionStats, invoke::SessionInvoke)
     # Update context keys
     union!(stats.context_keys, keys(invoke.context))
 
-    push!(stats.invokes, invoke)
+    return push!(stats.invokes, invoke)
 end
 
 """
@@ -257,7 +258,7 @@ function update_session!(session::Session, label::Symbol, invoke::SessionInvoke)
 end
 
 """
-    with_session(f::F, session, label::Symbol = :unknown) where {F}
+    with_session(f::F, session, label::Symbol) where {F}
 
 Execute function `f` within a session context with the specified label. If `session` is provided,
 logs execution details including timing and errors, and updates the session statistics for the given label.
@@ -303,7 +304,7 @@ function append_invoke_context(f::F, invoke::SessionInvoke) where {F}
     catch e
         invoke.context[:__append_invoke_context_error] = string(e)
     end
-    nothing
+    return nothing
 end
 
 const default_session_sem = Base.Semaphore(1)
@@ -348,7 +349,7 @@ Note that session logging still can be enabled manually for the current session 
 """
 function disable_session_logging!()
     @set_preferences!("enable_session_logging" => false)
-    @info "Disabled session logging. Changes will take effect after Julia restart."
+    return @info "Disabled session logging. Changes will take effect after Julia restart."
 end
 
 """
@@ -358,7 +359,7 @@ Restart Julia and verify it by `!isnothing(RxInfer.default_session())`.
 """
 function enable_session_logging!()
     @set_preferences!("enable_session_logging" => true)
-    @info "Enabled session logging. Changes will take effect after Julia restart."
+    return @info "Enabled session logging. Changes will take effect after Julia restart."
 end
 
 """
@@ -371,28 +372,30 @@ The default label is `:inference` which gathers statistics of the `infer` functi
     You may want to additionally install `PrettyTables.jl` package to see the nicely formatted output of the `summarize_session` function.
     It is not bundled with `RxInfer` by default, but, if installed manually, it makes the output more readable.
 """
-summarize_session(session::Session = RxInfer.default_session(), label::Symbol = :inference; n_last = 5) = summarize_session(
-    stdout, session, label; n_last = n_last
-)
-
-function summarize_session(
-    io::IO,
-    session::Union{Session, Nothing} = RxInfer.default_session(),
+summarize_session(
+    session::Session = RxInfer.default_session(),
     label::Symbol = :inference;
     n_last = 5,
-)
+) = summarize_session(stdout, session, label; n_last = n_last)
+
+function summarize_session(
+        io::IO,
+        session::Union{Session, Nothing} = RxInfer.default_session(),
+        label::Symbol = :inference;
+        n_last = 5,
+    )
     if isnothing(session)
         println(io, "Session logging is disabled")
         return nothing
     end
 
-    stats   = get_session_stats(session, label)
+    stats = get_session_stats(session, label)
     invokes = stats.invokes
 
     println(io, "\nSession Summary (label: $label)")
     println(io, "Total invokes: $(stats.total_invokes)")
     println(io, "Session invokes limit: $(capacity(invokes))")
-    println(io, "Success rate: $(round(stats.success_rate * 100, digits=1))%")
+    println(io, "Success rate: $(round(stats.success_rate * 100, digits = 1))%")
     println(io, "Failed invokes: $(stats.failed_count)")
 
     mean_execution = round(
@@ -450,9 +453,9 @@ returns a new empty `SessionStats` instance.
 
 """
 function get_session_stats(
-    session::Union{Nothing, Session} = RxInfer.default_session(),
-    label::Symbol = :inference,
-)
+        session::Union{Nothing, Session} = RxInfer.default_session(),
+        label::Symbol = :inference,
+    )
     if isnothing(session)
         return SessionStats(label)
     end
@@ -469,21 +472,21 @@ function Base.show(io::IO, invoke::SessionInvoke)
         );
         digits = 2,
     )
-    print(
+    return print(
         io,
         "SessionInvoke(id=$(invoke.id), status=$(invoke.status), duration=$(duration_ms)ms, context_keys=[$(join(keys(invoke.context), ", "))])",
     )
 end
 
 function Base.show(io::IO, stats::SessionStats)
-    print(
+    return print(
         io,
-        "SessionStats(id=$(stats.id), label=:$(stats.label), total=$(stats.total_invokes), success_rate=$(round(stats.success_rate * 100, digits=1))%, invokes=$(length(stats.invokes))/$(capacity(stats.invokes)))",
+        "SessionStats(id=$(stats.id), label=:$(stats.label), total=$(stats.total_invokes), success_rate=$(round(stats.success_rate * 100, digits = 1))%, invokes=$(length(stats.invokes))/$(capacity(stats.invokes)))",
     )
 end
 
 function Base.show(io::IO, session::Session)
-    print(
+    return print(
         io,
         "Session(id=$(session.id), labels=[$(join(keys(session.stats), ", "))])",
     )
@@ -500,7 +503,7 @@ See also: [`disable_automatic_session_sharing!`](@ref), [`share_session_data`](@
 """
 function enable_automatic_session_sharing!()
     @set_preferences!("automatic_session_sharing" => true)
-    @info "Automatic session sharing enabled. Restart Julia for the change to take effect."
+    return @info "Automatic session sharing enabled. Restart Julia for the change to take effect."
 end
 
 """
@@ -512,5 +515,5 @@ See also: [`enable_automatic_session_sharing!`](@ref), [`share_session_data`](@r
 """
 function disable_automatic_session_sharing!()
     @set_preferences!("automatic_session_sharing" => false)
-    @info "Automatic session sharing disabled. Restart Julia for the change to take effect."
+    return @info "Automatic session sharing disabled. Restart Julia for the change to take effect."
 end

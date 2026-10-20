@@ -25,9 +25,8 @@ end
 @testitem "Custom postprocessing" begin
     struct CustomPostprocess end
 
-    RxInfer.inference_postprocess(::CustomPostprocess, result::Marginal) = string(
-        ReactiveMP.getdata(result)
-    )
+    RxInfer.inference_postprocess(::CustomPostprocess, result::Marginal) =
+        string(ReactiveMP.getdata(result))
 
     @model function beta_bernoulli(y)
         θ ~ Beta(1, 1)
@@ -48,19 +47,24 @@ end
     # We are going to throw in the rule
     struct MyCustomNodeForPostprocessingTest end
 
-    @node MyCustomNodeForPostprocessingTest Stochastic [out, in]
+    @define_factor_node(
+        node = MyCustomNodeForPostprocessingTest,
+        type = Stochastic,
+        interfaces = [:out, :in],
+    )
 
-    @rule MyCustomNodeForPostprocessingTest(:out, Marginalisation) (
-        q_in::Any,
-    ) = begin
-        throw(ErrorException("This is a test error"))
-    end
+    @define_message_update_rule(
+        node = MyCustomNodeForPostprocessingTest,
+        target = :out,
+        args = (q[:in]::Any,),
+        body = (args) -> throw(ErrorException("This is a test error")),
+    )
 
     struct CustomPostprocessShouldNotBeInvoked end
 
-    RxInfer.inference_postprocess(::CustomPostprocessShouldNotBeInvoked, result::Any) = error(
-        "This should not be invoked"
-    )
+    RxInfer.inference_postprocess(
+        ::CustomPostprocessShouldNotBeInvoked, result::Any
+    ) = error("This should not be invoked")
 
     @model function my_model_with_error(y)
         θ ~ MyCustomNodeForPostprocessingTest(1)

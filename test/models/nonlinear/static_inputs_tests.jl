@@ -11,22 +11,22 @@
         return x .+ θ
     end
 
-    @model function delta_2inputs_θ_fixed(meta, θ, y)
+    @model function delta_2inputs_θ_fixed(algorithm, θ, y)
         c = zeros(2)
         c[1] = 1.0
 
         x ~ MvNormal(μ = zeros(2), Λ = diageye(2))
-        z := f₂(x, θ) where {meta = meta}
+        z := f₂(x, θ) where {algorithm = algorithm}
         w ~ Normal(μ = dot(z, c), σ² = 1.0)
         y ~ Normal(μ = w, σ² = 0.5)
     end
 
-    @model function delta_2inputs_x_fixed(meta, x, y)
+    @model function delta_2inputs_x_fixed(algorithm, x, y)
         c = zeros(2)
         c[1] = 1.0
 
         θ ~ MvNormal(μ = ones(2), Λ = diageye(2))
-        z := f₂(x, θ) where {meta = meta}
+        z := f₂(x, θ) where {algorithm = algorithm}
         w ~ Normal(μ = dot(z, c), σ² = 1.0)
         y ~ Normal(μ = w, σ² = 0.5)
     end
@@ -36,24 +36,24 @@
     ## -------------------------------------------- ##
 
     function inference_2inputs_θ_fixed(data, θ)
-        metas = (
-            DeltaMeta(method = Linearization()),
-            DeltaMeta(method = Unscented()),
+        algorithms = (
+            DeltaApproximation(method = Linearization()),
+            DeltaApproximation(method = Unscented()),
             Linearization(),
             Unscented(),
         )
 
-        datavar_based = map(metas) do meta
+        datavar_based = map(algorithms) do algorithm
             return infer(
-                model = delta_2inputs_θ_fixed(meta = meta),
+                model = delta_2inputs_θ_fixed(algorithm = algorithm),
                 data = (y = data, θ = θ),
                 free_energy = true,
             )
         end
 
-        constvar_based = map(metas) do meta
+        constvar_based = map(algorithms) do algorithm
             return infer(
-                model = delta_2inputs_θ_fixed(meta = meta, θ = θ),
+                model = delta_2inputs_θ_fixed(algorithm = algorithm, θ = θ),
                 data = (y = data,),
                 free_energy = true,
             )
@@ -66,27 +66,29 @@
             @test mean(d.posteriors[:x]) ≈ mean(c.posteriors[:x])
             @test d.free_energy == c.free_energy
         end
+
+        return (datavar_based, constvar_based)
     end
 
     function inference_2inputs_x_fixed(data, x)
-        metas = (
-            DeltaMeta(method = Linearization()),
-            DeltaMeta(method = Unscented()),
+        algorithms = (
+            DeltaApproximation(method = Linearization()),
+            DeltaApproximation(method = Unscented()),
             Linearization(),
             Unscented(),
         )
 
-        datavar_based = map(metas) do meta
+        datavar_based = map(algorithms) do algorithm
             return infer(
-                model = delta_2inputs_x_fixed(meta = meta),
+                model = delta_2inputs_x_fixed(algorithm = algorithm),
                 data = (y = data, x = x),
                 free_energy = true,
             )
         end
 
-        constvar_based = map(metas) do meta
+        constvar_based = map(algorithms) do algorithm
             return infer(
-                model = delta_2inputs_x_fixed(meta = meta, x = x),
+                model = delta_2inputs_x_fixed(algorithm = algorithm, x = x),
                 data = (y = data,),
                 free_energy = true,
             )
@@ -99,13 +101,21 @@
             @test mean(d.posteriors[:θ]) ≈ mean(c.posteriors[:θ])
             @test d.free_energy == c.free_energy
         end
+
+        return (datavar_based, constvar_based)
     end
 
-    # Inference execution
-    inference_2inputs_θ_fixed(4.0, [1.0, 2.0])
-    inference_2inputs_x_fixed(4.0, [1.0, 2.0])
+    # Inference execution. Each helper runs its own internal `@test` comparisons
+    # (datavar- vs constvar-based models) and returns the collected results so we
+    # can additionally assert the inference produced finite, sane posteriors.
+    results_θ_fixed = inference_2inputs_θ_fixed(4.0, [1.0, 2.0])
+    results_x_fixed = inference_2inputs_x_fixed(4.0, [1.0, 2.0])
 
-    # All models have been created and runned extra tests inside. 
-    # The inference finished without errors
-    @test true
+    for (datavar_based, constvar_based) in (results_θ_fixed, results_x_fixed)
+        for result in Iterators.flatten((datavar_based, constvar_based))
+            @test all(isfinite, mean(result.posteriors[:z]))
+            @test all(isfinite, var(result.posteriors[:z]))
+            @test all(isfinite, result.free_energy)
+        end
+    end
 end

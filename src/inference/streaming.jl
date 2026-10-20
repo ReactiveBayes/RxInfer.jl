@@ -9,10 +9,10 @@ The return value of the `infer` function in case of streamlined inference.
 - `posteriors`: `Dict` or `NamedTuple` of 'random variable' - 'posterior stream' pairs. See the `returnvars` argument for the [`infer`](@ref).
 - `free_energy`: (optional) A stream of Bethe Free Energy values per VMP iteration. See the `free_energy` argument for the [`infer`](@ref).
 - `history`: (optional) Saves history of previous marginal updates. See the `historyvars` and `keephistory` arguments for the [`infer`](@ref).
-- `free_energy_history`: (optional) Free energy history, averaged across variational iterations value for all observations  
-- `free_energy_raw_history`: (optional) Free energy history, returns returns computed values of all variational iterations for each data event (if available)
-- `free_energy_final_only_history`: (optional) Free energy history, returns computed values of final variational iteration for each data event (if available)
-- `events`: (optional) A stream of events send by the inference engine. See the `events` argument for the [`infer`](@ref).
+- `free_energy_history`: (optional) Free energy history, averaged across variational iterations for all observations
+- `free_energy_raw_history`: (optional) Free energy history, returns the computed values of all variational iterations for each data event (if available)
+- `free_energy_final_only_history`: (optional) Free energy history, returns the computed values of the final variational iteration for each data event (if available)
+- `events`: (optional) A stream of events sent by the inference engine. See the `events` argument for the [`infer`](@ref).
 - `model`: `ProbabilisticModel` object reference.
 
 Use the `RxInfer.start(engine)` function to subscribe on the `datastream` source and start the inference procedure. 
@@ -22,14 +22,14 @@ Note, that it is not always possible to start/stop the inference procedure.
 See also: [`infer`](@ref), [`RxInferenceEvent`](@ref), [`RxInfer.start`](@ref), [`RxInfer.stop`](@ref)
 """
 mutable struct RxInferenceEngine{
-    T, D, L, V, P, H, S, U, A, FA, FS, R, I, M, N, X, E, J
-}
-    datastream       :: D
-    tickscheduler    :: L
-    mainsubscription :: Teardown
+        T, D, L, V, P, H, S, U, A, FA, FS, R, I, M, N, X, E, J, C,
+    }
+    datastream::D
+    tickscheduler::L
+    mainsubscription::Teardown
 
-    datavars   :: V
-    posteriors :: P
+    datavars::V
+    posteriors::P
 
     history::H
     historyactors::S
@@ -42,21 +42,25 @@ mutable struct RxInferenceEngine{
     autoupdates::A
 
     # free energy related
-    fe_actor        :: FA
-    fe_source       :: FS
-    fe_subscription :: Teardown
+    fe_actor::FA
+    fe_source::FS
+    fe_subscription::Teardown
 
-    # utility 
-    postprocess  :: R
-    iterations   :: I
-    model        :: M
-    vardict      :: N
-    events       :: E
-    is_running   :: Bool
-    is_errored   :: Bool
-    is_completed :: Bool
-    error        :: Any
-    ticklock     :: J
+    # utility
+    postprocess::R
+    iterations::I
+    model::M
+    vardict::N
+    events::E
+    is_running::Bool
+    is_errored::Bool
+    is_completed::Bool
+    error::Any
+    ticklock::J
+
+    # Whether to emit non-fatal warnings during inference (mirrors `infer`'s `warn` keyword).
+    warn::Bool
+    callbacks::C
 
     RxInferenceEngine(
         ::Type{T},
@@ -77,8 +81,10 @@ mutable struct RxInferenceEngine{
         enabledevents::Val{X},
         events::E,
         ticklock::J,
-    ) where {T, D, L, V, P, H, S, U, A, FA, FS, R, I, M, N, X, E, J} = begin
-        return new{T, D, L, V, P, H, S, U, A, FA, FS, R, I, M, N, X, E, J}(
+        warn::Bool = true,
+        callbacks::C = nothing,
+    ) where {T, D, L, V, P, H, S, U, A, FA, FS, R, I, M, N, X, E, J, C} = begin
+        return new{T, D, L, V, P, H, S, U, A, FA, FS, R, I, M, N, X, E, J, C}(
             datastream,
             tickscheduler,
             voidTeardown,
@@ -103,6 +109,8 @@ mutable struct RxInferenceEngine{
             false,
             nothing,
             ticklock,
+            warn,
+            callbacks,
         )
     end
 end
@@ -141,7 +149,7 @@ function Base.show(io::IO, engine::RxInferenceEngine)
     end
 
     print(io, rpad("  Enabled events", lcolumnlen), " | ")
-    print(io, "[ ", join(enabled_events(engine), ", "), " ]")
+    return print(io, "[ ", join(enabled_events(engine), ", "), " ]")
 end
 
 enabled_events(
@@ -153,22 +161,22 @@ function Base.getproperty(result::RxInferenceEngine, property::Symbol)
         return enabled_events(result)
     elseif property === :free_energy
         !isnothing(getfield(result, :fe_source)) || error(
-            "Bethe Free Energy stream has not been created. Use `free_energy = true` keyword argument for the `rxinference` function to compute Bethe Free Energy values.",
+            "Bethe Free Energy stream has not been created. Use `free_energy = true` keyword argument for the `infer` function to compute Bethe Free Energy values.",
         )
         return getfield(result, :fe_source)
     elseif property === :free_energy_history
         !isnothing(getfield(result, :fe_actor)) || error(
-            "Bethe Free Energy history has not been computed. Use `free_energy = true` keyword argument for the `rxinference` function to compute Bethe Free Energy values together with the `keephistory` argument.",
+            "Bethe Free Energy history has not been computed. Use `free_energy = true` keyword argument for the `infer` function to compute Bethe Free Energy values together with the `keephistory` argument.",
         )
         return score_snapshot_iterations(getfield(result, :fe_actor))
     elseif property === :free_energy_final_only_history
         !isnothing(getfield(result, :fe_actor)) || error(
-            "Bethe Free Energy history has not been comptued. Use `free_energy = true` keyword argument for the `rxinference` function to compute Bethe Free Energy values together with the `keephistory` argument.",
+            "Bethe Free Energy history has not been computed. Use `free_energy = true` keyword argument for the `infer` function to compute Bethe Free Energy values together with the `keephistory` argument.",
         )
         return score_snapshot_final(getfield(result, :fe_actor))
     elseif property === :free_energy_raw_history
         !isnothing(getfield(result, :fe_actor)) || error(
-            "Bethe Free Energy history has not been comptued. Use `free_energy = true` keyword argument for the `rxinference` function to compute Bethe Free Energy values together with the `keephistory` argument.",
+            "Bethe Free Energy history has not been computed. Use `free_energy = true` keyword argument for the `infer` function to compute Bethe Free Energy values together with the `keephistory` argument.",
         )
         return score_snapshot(getfield(result, :fe_actor))
     end
@@ -196,7 +204,7 @@ function start(engine::RxInferenceEngine{T}) where {T}
         end
 
         _enabled_events = engine.enabled_events
-        _events         = engine.events
+        _events = engine.events
 
         inference_fire_event(
             Val(:before_start), Val(_enabled_events), _events, engine
@@ -262,7 +270,7 @@ function stop(engine::RxInferenceEngine)
         end
 
         _enabled_events = engine.enabled_events
-        _events         = engine.events
+        _events = engine.events
 
         inference_fire_event(
             Val(:before_stop), Val(_enabled_events), _events, engine
@@ -296,57 +304,73 @@ import Rocket: Actor, on_next!, on_error!, on_complete!
 struct RxInferenceEventExecutor{T, E} <: Actor{T}
     engine::E
 
-    RxInferenceEventExecutor(::Type{T}, engine::E) where {T, E} = new{T, E}(
-        engine
-    )
+    RxInferenceEventExecutor(::Type{T}, engine::E) where {T, E} =
+        new{T, E}(engine)
 end
 
-Base.show(io::IO, ::RxInferenceEventExecutor) = print(
-    io, "RxInferenceEventExecutor"
-)
+Base.show(io::IO, ::RxInferenceEventExecutor) =
+    print(io, "RxInferenceEventExecutor")
 
 rxexecutorlock(fn::F, ::Nothing) where {F} = fn()
-rxexecutorlock(fn::F, locker) where {F}    = lock(fn, locker)
+rxexecutorlock(fn::F, locker) where {F} = lock(fn, locker)
 
 function Rocket.on_next!(
-    executor::RxInferenceEventExecutor{T}, event::T
-) where {T}
+        executor::RxInferenceEventExecutor{T}, event::T
+    ) where {T}
     # This is the `main` executor of the inference procedure
     # It listens new data and is supposed to run indefinitely
 
     # By default `_ticklock` is nothing, `executorlock` is defined such that it does not sync if `_ticklock` is nothing
     _ticklock = executor.engine.ticklock
 
-    rxexecutorlock(_ticklock) do
+    return rxexecutorlock(_ticklock) do
 
-        # `executor.engine` is defined as mutable 
+        # `executor.engine` is defined as mutable
         # we extract all variables before the loop so Julia does not extract them every time
-        _tickscheduler  = executor.engine.tickscheduler
-        _iterations     = executor.engine.iterations
-        _postprocess    = executor.engine.postprocess
-        _model          = executor.engine.model
-        _datavars       = executor.engine.datavars
-        _autoupdates    = executor.engine.autoupdates
-        _updateflags    = executor.engine.updateflags
-        _history        = executor.engine.history
-        _historyactors  = executor.engine.historyactors
-        _fe_actor       = executor.engine.fe_actor
+        _tickscheduler = executor.engine.tickscheduler
+        _iterations = executor.engine.iterations
+        _postprocess = executor.engine.postprocess
+        _model = executor.engine.model
+        _datavars = executor.engine.datavars
+        _autoupdates = executor.engine.autoupdates
+        _updateflags = executor.engine.updateflags
+        _history = executor.engine.history
+        _historyactors = executor.engine.historyactors
+        _fe_actor = executor.engine.fe_actor
         _enabled_events = executor.engine.enabled_events
-        _events         = executor.engine.events
+        _events = executor.engine.events
+        _callbacks = executor.engine.callbacks
 
         inference_fire_event(
             Val(:on_new_data), Val(_enabled_events), _events, _model, event
         )
 
         # Before we start our iterations we 'prefetch' recent values for autoupdates
-        # This is important, because the values linked to the `autoupdate` may (and most likely will) 
-        # change during the iterationd
+        # This is important, because the values linked to the `autoupdate` may (and most likely will)
+        # change during the iterations
         autoupdate_specs = getspecifications(_autoupdates)
         autoupdate_fetched = map(fetch, autoupdate_specs)
+        inference_span_id = generate_span_id(_callbacks)
+        invoke_callback(
+            _callbacks, BeforeInferenceEvent(_model, inference_span_id)
+        )
+        executed_iterations = 0
+        # KeepEach buffers must contain only this event, even if it stops early.
+        if !isnothing(_historyactors)
+            for actor in values(_historyactors)
+                actor isa CircularKeepActor && empty!(getvalues(actor))
+            end
+        end
 
         # This loop correspond to the different VMP iterations
         # Here `_iterations` can be `Ref` too, so we use `[]`. Should not affect integers
         for iteration in 1:_iterations[]
+            iteration_span_id = generate_span_id(_callbacks)
+            before = invoke_callback(
+                _callbacks,
+                BeforeIterationEvent(_model, iteration, iteration_span_id),
+            )
+            before.stop_iteration && break
             inference_fire_event(
                 Val(:before_iteration),
                 Val(_enabled_events),
@@ -384,7 +408,17 @@ function Rocket.on_next!(
                 event,
             )
             for (datavar, value) in zip(_datavars, values(event))
-                new_observation!(datavar, value)
+                # `new_observation_indexed!` aligns by index, so a model that references a
+                # streamed data tensor only partially (sparse data variables) is fed
+                # correctly from the dense streamed value; dense arrays behave as before.
+                # A sparse data variable fed an offset value is rebased to 1-based (a per-tick
+                # copy); warn once unless `warn = false` (mirrors the batch entry point).
+                if executor.engine.warn &&
+                        datavar isa GraphPPL.ResizableArray &&
+                        __incurs_offset_copy(value)
+                    @warn __offset_data_copy_warning(nothing) maxlog = 1
+                end
+                new_observation_indexed!(datavar, value)
             end
             inference_fire_event(
                 Val(:after_data_update),
@@ -396,6 +430,7 @@ function Rocket.on_next!(
             )
 
             check_and_reset_updated!(_updateflags)
+            executed_iterations += 1
 
             inference_fire_event(
                 Val(:after_iteration),
@@ -404,11 +439,23 @@ function Rocket.on_next!(
                 _model,
                 iteration,
             )
+            after = invoke_callback(
+                _callbacks,
+                AfterIterationEvent(_model, iteration, iteration_span_id),
+            )
+            # Exit only this solve; history and pending posteriors must still be released below.
+            after.stop_iteration && break
         end
 
-        # `release!` on `fe_actor` ensures that free energy sumed up between iterations correctly
+        invoke_callback(
+            _callbacks, AfterInferenceEvent(_model, inference_span_id)
+        )
+        # A before-iteration callback may stop before any observation is applied.
+        executed_iterations == 0 && return nothing
+
+        # `release!` on `fe_actor` ensures that free energy is summed up between iterations correctly
         if !isnothing(_fe_actor)
-            release!(_fe_actor)
+            release!(_fe_actor; allow_partial = true)
         end
 
         if !isnothing(_history) && !isnothing(_historyactors)
@@ -416,9 +463,13 @@ function Rocket.on_next!(
                 Val(:before_history_save), Val(_enabled_events), _events, _model
             )
             for (name, actor) in pairs(_historyactors)
+                saved_values = getvalues(actor)
+                # NoopPostprocess must not retain the live buffer we clear next tick.
+                actor isa CircularKeepActor &&
+                    (saved_values = copy(saved_values))
                 push!(
                     _history[name],
-                    inference_postprocess(_postprocess, getvalues(actor)),
+                    inference_postprocess(_postprocess, saved_values),
                 )
             end
             inference_fire_event(
@@ -436,13 +487,13 @@ function Rocket.on_next!(
 end
 
 function Rocket.on_error!(executor::RxInferenceEventExecutor, err)
-    _engine         = executor.engine
-    _model          = executor.engine.model
+    _engine = executor.engine
+    _model = executor.engine.model
     _enabled_events = executor.engine.enabled_events
-    _events         = executor.engine.events
+    _events = executor.engine.events
 
     _engine.is_errored = true
-    _engine.error      = err
+    _engine.error = err
 
     inference_fire_event(
         Val(:on_error), Val(_enabled_events), _events, _model, err
@@ -452,10 +503,10 @@ function Rocket.on_error!(executor::RxInferenceEventExecutor, err)
 end
 
 function Rocket.on_complete!(executor::RxInferenceEventExecutor)
-    _engine         = executor.engine
-    _model          = executor.engine.model
+    _engine = executor.engine
+    _model = executor.engine.model
     _enabled_events = executor.engine.enabled_events
-    _events         = executor.engine.events
+    _events = executor.engine.events
 
     _engine.is_completed = true
 
@@ -469,9 +520,9 @@ end
 """
     RxInferenceEvent{T, D}
 
-The `RxInferenceEngine` sends events in a form of the `RxInferenceEvent` structure. `T` represents the type of an event, `D` represents the type of a data associated with the event.
-The type of data depends on the type of an event, but usually represents a tuple, which can be unrolled automatically with the Julia's splitting syntax, e.g. `model, iteration = event`. 
-See the documentation of the `rxinference` function for possible event types and their associated data types.
+The `RxInferenceEngine` sends events in the form of the `RxInferenceEvent` structure. `T` represents the type of an event, `D` represents the type of the data associated with the event.
+The type of data depends on the type of an event, but usually represents a tuple, which can be unrolled automatically with Julia's splatting syntax, e.g. `model, iteration = event`.
+See the documentation of the [`infer`](@ref) function for possible event types and their associated data types.
 
 The events system itself uses the `Rocket.jl` library API. For example, one may create a custom event listener in the following way:
 
@@ -516,16 +567,15 @@ end
 
 event_name(::RxInferenceEvent{T}) where {T} = T
 
-Base.show(io::IO, ::RxInferenceEvent{T}) where {T} = print(
-    io, "RxInferenceEvent(:", T, ")"
-)
+Base.show(io::IO, ::RxInferenceEvent{T}) where {T} =
+    print(io, "RxInferenceEvent(:", T, ")")
 
-Base.iterate(event::RxInferenceEvent)        = iterate(event.data)
+Base.iterate(event::RxInferenceEvent) = iterate(event.data)
 Base.iterate(event::RxInferenceEvent, state) = iterate(event.data, state)
 
 function inference_fire_event(
-    ::Val{Event}, ::Val{EnabledEvents}, events, args...
-) where {Event, EnabledEvents}
+        ::Val{Event}, ::Val{EnabledEvents}, events, args...
+    ) where {Event, EnabledEvents}
     # Here `E` must be a tuple of symbols
     if Event ∈ EnabledEvents
         next!(events, RxInferenceEvent(Val(Event), args))
@@ -534,38 +584,39 @@ function inference_fire_event(
 end
 
 function streaming_inference(;
-    model::ModelGenerator,
-    data = nothing,
-    datastream = nothing,
-    initialization = nothing,
-    autoupdates = nothing,
-    constraints = nothing,
-    meta = nothing,
-    options = nothing,
-    returnvars = nothing,
-    historyvars = nothing,
-    keephistory = nothing,
-    iterations = nothing,
-    free_energy = false,
-    free_energy_diagnostics = DefaultObjectiveDiagnosticChecks,
-    allow_node_contraction = false,
-    autostart = true,
-    events = nothing,
-    annotations = nothing,
-    callbacks = nothing,
-    postprocess = nothing,
-    uselock = false,
-    warn = true,
-)
+        model::ModelGenerator,
+        data = nothing,
+        datastream = nothing,
+        initialization = nothing,
+        autoupdates = nothing,
+        constraints = nothing,
+        meta = nothing,
+        options = nothing,
+        returnvars = nothing,
+        historyvars = nothing,
+        keephistory = nothing,
+        iterations = nothing,
+        free_energy = false,
+        free_energy_diagnostics = DefaultObjectiveDiagnosticChecks,
+        allow_node_contraction = false,
+        autostart = true,
+        events = nothing,
+        annotations = nothing,
+        logscales = nothing,
+        callbacks = nothing,
+        postprocess = nothing,
+        uselock = false,
+        warn = true,
+    )
 
     # In case if `data` is used we cast to a synchronous `datastream` with zip operator
     _datastream, _T = if isnothing(datastream) && !isnothing(data)
         infer_check_dicttype(:data, data)
 
-        names  = tuple(keys(data)...)
-        items  = tuple(values(data)...)
+        names = tuple(keys(data)...)
+        items = tuple(values(data)...)
         stream = labeled(Val(names), iterable(zip(items...)))
-        etype  = NamedTuple{names, Tuple{eltype.(items)...}}
+        etype = NamedTuple{names, Tuple{eltype.(items)...}}
 
         stream, etype
     else
@@ -575,7 +626,7 @@ function streaming_inference(;
     end
 
     datavarnames = fields(_T)::NTuple
-    N            = length(datavarnames) # should be static
+    N = length(datavarnames) # should be static
 
     _options = convert(ReactiveMPInferenceOptions, options)
     # If the `options` does not have `warn` key inside, override it with the keyword `warn`
@@ -586,29 +637,36 @@ function streaming_inference(;
     # Override `options` annotations if the `annotations` keyword argument is present
     if !isnothing(annotations)
         if warn && !isnothing(getannotations(_options))
-            @warn "Both `annotations = ...` and `options = (annotations = ..., )` specify a value for the `annotations`. Ignoring the `options` setting. Set `warn = false` to supress this warning."
+            @warn "Both `annotations = ...` and `options = (annotations = ..., )` specify a value for the `annotations`. Ignoring the `options` setting. Set `warn = false` to suppress this warning."
         end
         _options = setannotations(_options, annotations)
     end
 
-    # Determine the default postprocessing strategy based on annotations
-    if isnothing(postprocess)
-        postprocess = if isnothing(getannotations(_options))
-            UnpackMarginalPostprocess()
-        else
-            NoopPostprocess()
-        end
+    # Override `options` log scales if the `logscales` keyword argument is present
+    if !isnothing(logscales)
+        _options = setlogscales(_options, logscales)
+    end
+
+    # Determine the default postprocessing strategy: the `Marginal` wrapper is kept when it carries
+    # annotations or log scales
+    # A single assignment: `postprocess` is captured below, and a reassigned captured variable is boxed
+    _postprocess = if !isnothing(postprocess)
+        postprocess
+    elseif isnothing(getannotations(_options)) && !getlogscales(_options)
+        UnpackMarginalPostprocess()
+    else
+        NoopPostprocess()
     end
 
     # Set ReactiveMP event handler if `callbacks` are set
     if !isnothing(callbacks)
         if warn && !isnothing(getcallbacks(_options))
-            @warn "Both `callbacks = ...` and `options = (callbacks = ..., )` specify a value for the `callbacks`. Ignoring the `options` setting. Set `warn = false` to supress this warning."
+            @warn "Both `callbacks = ...` and `options = (callbacks = ..., )` specify a value for the `callbacks`. Ignoring the `options` setting. Set `warn = false` to suppress this warning."
         end
         _options = setcallbacks(_options, callbacks)
     end
 
-    # We create a model with the `GraphPPL` package and insert a certain RxInfer related 
+    # We create a model with the `GraphPPL` package and insert a certain RxInfer related
     # plugins which include the VI plugin, meta plugin and the ReactiveMP integration plugin
     modelplugins = GraphPPL.PluginsCollection(
         GraphPPL.VariationalConstraintsPlugin(constraints),
@@ -637,7 +695,7 @@ function streaming_inference(;
 
     check_model_generator_compatibility(_autoupdates, _model)
 
-    # For each data entry and autoupdate we create a `DeferredDataHandler` handler for the `condition_on` structure 
+    # For each data entry and autoupdate we create a `DeferredDataHandler` handler for the `condition_on` structure
     # We must do that because the data is not available at the moment of the model creation
     _autoupdates_data_handlers = autoupdates_data_handlers(autoupdates)
     foreach(keys(_autoupdates_data_handlers)) do _autoupdate_data_handler_key
@@ -659,8 +717,7 @@ function streaming_inference(;
         callbacks, AfterModelCreationEvent(fmodel, model_creation_span_id)
     )
 
-    vardict = getvardict(fmodel)
-    vardict = GraphPPL.variables(vardict) # TODO: Should work recursively as well
+    vardict = gettoplevelvardict(fmodel) # TODO: Should work recursively as well
 
     _autoupdates = prepare_autoupdates_for_model(_autoupdates, fmodel)
 
@@ -670,8 +727,8 @@ function streaming_inference(;
         datavarname = datavarnames[i]
         (haskey(vardict, datavarname) && is_data(vardict[datavarname])) ||
             error(
-                "The `datastream` produces data for `$(datavarname)`, but the model does not have a datavar named `$(datavarname)`",
-            )
+            "The `datastream` produces data for `$(datavarname)`, but the model does not have a datavar named `$(datavarname)`",
+        )
         return getvariable(vardict[datavarname])
     end
 
@@ -693,7 +750,7 @@ function streaming_inference(;
     tickscheduler = PendingScheduler()
 
     # Here we prepare our free energy streams (if requested)
-    fe_actor  = nothing
+    fe_actor = nothing
     fe_source = nothing
 
     if is_free_energy
@@ -705,7 +762,7 @@ function streaming_inference(;
 
     # Use `__check_has_randomvar` to filter out unknown or non-random variables in the `returnvars` and `historyvars` specification
     __check_has_randomvar(object, vardict, key) = begin
-        haskey_check   = haskey(vardict, key)
+        haskey_check = haskey(vardict, key)
         israndom_check = haskey_check ? israndom(vardict[key]) : false
         if warn && !haskey_check
             @warn "`$(object)` object has `$(key)` specification, but model has no variable named `$(key)`. The `$(key)` specification is ignored. Use `warn = false` to suppress this warning."
@@ -719,7 +776,7 @@ function streaming_inference(;
     if isnothing(returnvars)
         returnvars = [
             variable for
-            (variable, value) in pairs(vardict) if (israndom(value))
+                (variable, value) in pairs(vardict) if (israndom(value))
         ]
     end
 
@@ -733,27 +790,28 @@ function streaming_inference(;
 
     inference_check_itertype(:returnvars, returnvars)
 
-    # `rxinference` by default does not keep track of marginals updates history
+    # `infer` by default does not keep track of marginal updates history
     # If user specifies `keephistory` keyword argument
     if _keephistory > 0
         if isnothing(historyvars)
-            # First what we do - we check if `historyvars` is nothing 
-            # In which case we mirror the `returnvars` specication and use either `KeepLast()` or `KeepEach` (depending on the iterations spec)
+            # First what we do - we check if `historyvars` is nothing
+            # In which case we mirror the `returnvars` specification and use either `KeepLast()` or `KeepEach` (depending on the iterations spec)
             historyoption = _iterations[] > 1 ? KeepEach() : KeepLast()
-            historyvars   = Dict(name => historyoption for name in returnvars)
+            historyvars = Dict(name => historyoption for name in returnvars)
         elseif historyvars === KeepEach() || historyvars === KeepLast()
-            # Second we check if it is one of the two possible global values: `KeepEach` and `KeepLast`. 
+            # Second we check if it is one of the two possible global values: `KeepEach` and `KeepLast`.
             # If so, we replace it with either `KeepEach` or `KeepLast` for each random and not-proxied variable in a model
+            keepoption = historyvars
             historyvars = Dict(
-                variable => historyvars for
-                (variable, value) in pairs(vardict) if
-                (israndom(value) && !isanonymous(value))
+                variable => keepoption for
+                    (variable, value) in pairs(vardict) if
+                    (israndom(value) && !isanonymous(value))
             )
         end
 
         historyvars = Dict(
             (varkey => value) for (varkey, value) in pairs(historyvars) if
-            __check_has_randomvar(:historyvars, vardict, varkey)
+                __check_has_randomvar(:historyvars, vardict, varkey)
         )
 
         infer_check_dicttype(:historyvars, historyvars)
@@ -764,13 +822,13 @@ function streaming_inference(;
         end
     end
 
-    # Here we finally create structures for updates history 
+    # Here we finally create structures for updates history
     historyactors = nothing
-    history       = nothing
+    history = nothing
 
     if !isnothing(historyvars) && _keephistory > 0
         historyactors = Dict(name => make_actor(vardict[name], historyoption, _iterations[]) for (name, historyoption) in pairs(historyvars))
-        history       = Dict(name => CircularBuffer(_keephistory) for (name, _) in pairs(historyvars))
+        history = Dict(name => CircularBuffer(_keephistory) for (name, _) in pairs(historyvars))
     end
 
     # At this point we must have properly defined and fixed `returnvars` and `historyvars` objects
@@ -785,17 +843,17 @@ function streaming_inference(;
         variable =>
             obtain_marginal(vardict[variable]) |>
             schedule_on(tickscheduler) |>
-            map(Any, (data) -> inference_postprocess(postprocess, data)) for
-        variable in returnvars
+            map(Any, (data) -> inference_postprocess(_postprocess, data)) for
+            variable in returnvars
     )
 
-    _events        = Subject(RxInferenceEvent)
+    _events = Subject(RxInferenceEvent)
     _enabledevents = something(events, Val(()))
 
     if !(_enabledevents isa Val) || !(unval(_enabledevents) isa Tuple)
         error("`events` keyword argument must be a `Val` of tuple of symbols")
     elseif length(unval(_enabledevents)) > 0 &&
-        !(eltype(unval(_enabledevents)) === Symbol)
+            !(eltype(unval(_enabledevents)) === Symbol)
         error("`events` keyword argument must be a `Val` of tuple of symbols")
     end
 
@@ -821,13 +879,15 @@ function streaming_inference(;
         _autoupdates,
         fe_actor,
         fe_source,
-        postprocess,
+        _postprocess,
         _iterations,
         fmodel,
         vardict,
         _enabledevents,
         _events,
         _ticklock,
+        warn,
+        getcallbacks(_options),
     )
 
     if autostart
@@ -845,41 +905,55 @@ function streaming_inference(;
 end
 
 function available_events(::typeof(streaming_inference))
-    return Val((
-        :before_start,
-        :after_start,
-        :before_stop,
-        :after_stop,
-        :on_new_data,
-        :before_iteration,
-        :before_auto_update,
-        :after_auto_update,
-        :before_data_update,
-        :after_data_update,
-        :after_iteration,
-        :before_history_save,
-        :after_history_save,
-        :on_tick,
-        :on_error,
-        :on_complete,
-    ))
+    return Val(
+        (
+            :before_start,
+            :after_start,
+            :before_stop,
+            :after_stop,
+            :on_new_data,
+            :before_iteration,
+            :before_auto_update,
+            :after_auto_update,
+            :before_data_update,
+            :after_data_update,
+            :after_iteration,
+            :before_history_save,
+            :after_history_save,
+            :on_tick,
+            :on_error,
+            :on_complete,
+        )
+    )
 end
 
 function available_callbacks(::typeof(streaming_inference))
-    return Val((
-        :before_model_creation,
-        :after_model_creation,
-        :before_autostart,
-        :after_autostart,
-        :before_message_rule_call,
-        :after_message_rule_call,
-        :before_product_of_two_messages,
-        :after_product_of_two_messages,
-        :before_product_of_messages,
-        :after_product_of_messages,
-        :before_form_constraint_applied,
-        :after_form_constraint_applied,
-        :before_marginal_computation,
-        :after_marginal_computation,
-    ))
+    return Val(
+        (
+            :before_inference,
+            :after_inference,
+            :before_iteration,
+            :after_iteration,
+            :before_model_creation,
+            :after_model_creation,
+            :before_autostart,
+            :after_autostart,
+            :before_message_rule_call,
+            :after_message_rule_call,
+            :before_product_of_two_messages,
+            :after_product_of_two_messages,
+            :before_product_of_messages,
+            :after_product_of_messages,
+            :before_form_constraint_applied,
+            :after_form_constraint_applied,
+            :before_marginal_computation,
+            :after_marginal_computation,
+            :before_marginal_rule_call,
+            :after_marginal_rule_call,
+            :before_factor_bound_free_energy,
+            :after_factor_bound_free_energy,
+            :before_variable_bound_entropy,
+            :after_variable_bound_entropy,
+        )
+    )
 end

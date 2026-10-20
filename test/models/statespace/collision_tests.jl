@@ -9,33 +9,48 @@
 
     # half space specification
     struct Halfspace end
-    @node Halfspace Stochastic [out, a, σ2, γ]
+    @define_factor_node(
+        node = Halfspace, type = Stochastic, interfaces = [:out, :a, :σ2, :γ]
+    )
 
     # rule specification
-    @rule Halfspace(:out, Marginalisation) (
-        q_a::PointMass, q_σ2::PointMass, q_γ::PointMass
-    ) = begin
-        return NormalMeanVariance(mean(q_a) + mean(q_γ) * mean(q_σ2), mean(q_σ2))
-    end
+    @define_message_update_rule(
+        node = Halfspace,
+        target = :out,
+        args = (q[:a]::PointMass, q[:σ2]::PointMass, q[:γ]::PointMass),
+        body =
+            (args) -> NormalMeanVariance(
+            mean(args.q[:a]) + mean(args.q[:γ]) * mean(args.q[:σ2]),
+            mean(args.q[:σ2]),
+        ),
+    )
 
     struct ForcePointMass{V}
         v::V
     end
 
-    @rule Halfspace(:σ2, Marginalisation) (
-        q_out::UnivariateNormalDistributionsFamily,
-        q_a::PointMass,
-        q_γ::PointMass,
-    ) = begin
-        return ForcePointMass(
-            1 / mean(q_γ) * sqrt(abs2(mean(q_out) - mean(q_a)) + var(q_out))
-        )
-    end
+    @define_message_update_rule(
+        node = Halfspace,
+        target = :σ2,
+        args = (
+            q[:out]::UnivariateNormalDistributionsFamily,
+            q[:a]::PointMass,
+            q[:γ]::PointMass,
+        ),
+        body =
+            (args) -> ForcePointMass(
+            1 / mean(args.q[:γ]) * sqrt(
+                abs2(mean(args.q[:out]) - mean(args.q[:a])) +
+                    var(args.q[:out]),
+            ),
+        ),
+    )
 
     BayesBase.prod(::GenericProd, p::ForcePointMass, any) = PointMass(p.v)
     BayesBase.prod(::GenericProd, any, p::ForcePointMass) = PointMass(p.v)
 
-    ReactiveMP.to_marginal(p::ForcePointMass) = PointMass(p.v)
+    MessagePassingRulesBase.public_equivalent(p::ForcePointMass) =
+        PointMass(p.v)
 
     function h(y1, y2)
         r1 = 15
@@ -56,12 +71,12 @@
         for k in 1:2
 
             # prior on state
-            x[k, 1] ~ MvNormalMeanCovariance(zeros(4), 1e2I)
+            x[k, 1] ~ MvNormalMeanCovariance(zeros(4), 1.0e2I)
 
             for t in 1:nr_steps
 
                 # prior on controls
-                u[k, t] ~ MvNormalMeanCovariance(zeros(2), 1e-2I)
+                u[k, t] ~ MvNormalMeanCovariance(zeros(2), 1.0e-2I)
 
                 # state transition
                 x[k, t + 1] ~ A * x[k, t] + B * u[k, t]
@@ -71,8 +86,8 @@
             end
 
             # goal priors (indexing reverse due to definition)
-            goals[1, k] ~ MvNormalMeanCovariance(x[k, 1], 1e-5I)
-            goals[2, k] ~ MvNormalMeanCovariance(x[k, nr_steps + 1], 1e-5I)
+            goals[1, k] ~ MvNormalMeanCovariance(x[k, 1], 1.0e-5I)
+            goals[2, k] ~ MvNormalMeanCovariance(x[k, nr_steps + 1], 1.0e-5I)
         end
 
         # multi-agent models
@@ -89,7 +104,7 @@
         q(d, σ2) = q(d)q(σ2)
     end
 
-    @meta function switching_meta()
+    @algorithm function switching_algorithm()
         h() -> Unscented()
     end
 
@@ -113,24 +128,24 @@
     end
 
     for nr_steps in (50, 100),
-        init in [switching_initialization_1, switching_initialization_2]
+            init in [switching_initialization_1, switching_initialization_2]
 
         result = infer(
-            model          = switching_model(nr_steps = nr_steps, γ = 1, ΔT = 1),
-            data           = (goals = goals,),
-            constraints    = switching_constraints(),
-            meta           = switching_meta(),
+            model = switching_model(nr_steps = nr_steps, γ = 1, ΔT = 1),
+            data = (goals = goals,),
+            constraints = switching_constraints(),
+            algorithm = switching_algorithm(),
             initialization = init(),
-            iterations     = 100,
-            returnvars     = KeepLast(),
-            showprogress   = false,
-            options        = (limit_stack_depth = 100,),
+            iterations = 100,
+            returnvars = KeepLast(),
+            showprogress = false,
+            options = (limit_stack_depth = 100,),
         )
-        @test mean(result.posteriors[:x][1, 1]) ≈ [0, 0, 0, 0] atol = 5e-1
+        @test mean(result.posteriors[:x][1, 1]) ≈ [0, 0, 0, 0] atol = 5.0e-1
         @test mean(result.posteriors[:x][1, nr_steps]) ≈ [0, 0, 50, 0] atol =
-            5e-1
-        @test mean(result.posteriors[:x][2, 1]) ≈ [0, 0, 50, 0] atol = 5e-1
+            5.0e-1
+        @test mean(result.posteriors[:x][2, 1]) ≈ [0, 0, 50, 0] atol = 5.0e-1
         @test mean(result.posteriors[:x][2, nr_steps]) ≈ [0, 0, 0, 0] atol =
-            5e-1
+            5.0e-1
     end
 end

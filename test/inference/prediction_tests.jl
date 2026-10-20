@@ -16,8 +16,8 @@
     # They are essentially the same with the exception that the second model has multiple observations
     # Each case has two options: KeepLast() and KeepEach() which specifies how many predictions we should keep for the result
     for a in (1, 2, 3), b in (2, 3, 4), iterations in (10, 20, 30)
-        expected_prediction = @call_rule Bernoulli(:out, Marginalisation) (
-            q_p = Beta(a, b),
+        expected_prediction = getresult(
+            call_message_update_rule(Bernoulli, :out; q = (p = Beta(a, b),))
         )
 
         @testset "beta_bernoulli_single" for option in (KeepLast(), KeepEach())
@@ -67,9 +67,11 @@
 
         @testset "beta_bernoulli_multiple" begin
             for n in (10, 20, 30), option in (KeepLast(), KeepEach())
-                expected_prediction = @call_rule Bernoulli(
-                    :out, Marginalisation
-                ) (q_p = Beta(a, b),)
+                expected_prediction = getresult(
+                    call_message_update_rule(
+                        Bernoulli, :out; q = (p = Beta(a, b),)
+                    ),
+                )
 
                 result_missing_data_explicitly_specified_1 = infer(
                     model = beta_bernoulli_multiple(a = a, b = b, n = n),
@@ -214,10 +216,10 @@ end
 
     @testset "test #1 (array with missing + KeepLast predictvars)" begin
         for data in [
-                (y = [1.0, -500.0, missing, 100.0],),
-                (y = [1.0, -500.0, missing, 100.0, missing, missing],),
-            ],
-            iterations in (10, 20)
+                    (y = [1.0, -500.0, missing, 100.0],),
+                    (y = [1.0, -500.0, missing, 100.0, missing, missing],),
+                ],
+                iterations in (10, 20)
 
             result = infer(
                 model = model_1(),
@@ -229,7 +231,7 @@ end
             @test haskey(result.predictions, :o)
             @test haskey(result.predictions, :y)
 
-            # The prediction for `o` should have the same length as the `o` handler 
+            # The prediction for `o` should have the same length as the `o` handler
             # since we use the `KeepLast` strategy
             @test length(result.predictions[:o]) === 2
             @test all(
@@ -251,10 +253,10 @@ end
 
     @testset "test #1.1 (KeepEach predictvars)" begin
         for data in [
-                (y = [1.0, -500.0, 1.0, 100.0],),
-                (y = [1.0, -500.0, 3.0, 100.0, 4.0, 5.0],),
-            ],
-            iterations in (10, 20)
+                    (y = [1.0, -500.0, 1.0, 100.0],),
+                    (y = [1.0, -500.0, 3.0, 100.0, 4.0, 5.0],),
+                ],
+                iterations in (10, 20)
 
             result = infer(
                 model = model_1(),
@@ -302,7 +304,7 @@ end
                 predictvars = (o = KeepEach(), y = KeepLast()),
             )
 
-            # note we used KeepEach for variable o with BP algorithm (10 iterations), 
+            # note we used KeepEach for variable o with BP algorithm (10 iterations),
             # we expect all predicted variables to be equal (because of the beleif propagation)
             @test all(
                 prediction -> prediction == result.predictions[:o][1],

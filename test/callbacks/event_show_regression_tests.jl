@@ -20,14 +20,14 @@
     push_ev = ev -> push!(captured, ev)
 
     callbacks = (
-        before_message_rule_call       = push_ev,
-        after_message_rule_call        = push_ev,
+        before_message_rule_call = push_ev,
+        after_message_rule_call = push_ev,
         before_product_of_two_messages = push_ev,
-        after_product_of_two_messages  = push_ev,
-        before_product_of_messages     = push_ev,
-        after_product_of_messages      = push_ev,
-        before_marginal_computation    = push_ev,
-        after_marginal_computation     = push_ev,
+        after_product_of_two_messages = push_ev,
+        before_product_of_messages = push_ev,
+        after_product_of_messages = push_ev,
+        before_marginal_computation = push_ev,
+        after_marginal_computation = push_ev,
     )
 
     infer(;

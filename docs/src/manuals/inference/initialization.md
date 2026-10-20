@@ -1,4 +1,4 @@
-# [Understating why we need to initialize posteriors or messages in RxInfer](@id initialization)
+# [Understanding why we need to initialize posteriors or messages in RxInfer](@id initialization)
 
 In certain models, after completing the model specification step and moving on to execute the inference procedure, you may encounter the error prompting you to _initialize required marginals and messages_. 
 
@@ -10,7 +10,7 @@ In RxInfer, initialization is essential because both loopy belief propagation an
 
 
 
-The syntax for the `@initialization` macro is similar to the `@constraints` and `@meta` macro. An example is shown below:
+The syntax for the `@initialization` macro is similar to the `@constraints` and `@algorithm` macros. An example is shown below:
 
 ```@example init-example
 using RxInfer
@@ -69,6 +69,50 @@ end
 
 The result of the initialization macro can be passed to the [`infer`](@ref) function with a keyword argument called [`initialization`](@ref user-guide-inference-execution).
 
+## Inline initialization on submodel calls
+
+Initialization can also be specified **inline** at the call site of a submodel using the `where` keyword. This is useful when you want to attach initialization to a specific invocation without defining a separate `@initialization` block at the outer level. For example:
+
+```julia
+@model function outer_model(a, b)
+    a ~ inner_model(y = b) where {
+        initialization = @initialization begin
+            q(x) = vague(NormalMeanVariance)
+        end
+    }
+end
+```
+
+Initialization objects created with the `@initialization function` form can also be passed by reference:
+
+```julia
+@initialization function my_init()
+    q(x) = vague(NormalMeanVariance)
+end
+
+@model function outer_model(a, b)
+    a ~ inner_model(y = b) where { initialization = my_init() }
+end
+```
+
+Inline initialization applies only to the specific submodel invocation it is attached to. If external initialization also targets the same submodel (via `for init in submodel` blocks passed to [`infer`](@ref)), the external initialization takes priority and the inline value is ignored.
+
+!!! note "Combining inline constraints and initialization"
+    When specifying both `constraints` and `initialization` inline on the same submodel call, each macro expression must be wrapped in parentheses so that Julia parses the `where { ... }` block correctly:
+    ```julia
+    @model function outer_model(a, b, c)
+        a ~ inner_model(y = b, z = c) where {
+            constraints = (@constraints begin
+                q(x, y, z) = q(x, y)q(z)
+            end),
+            initialization = (@initialization begin
+                q(x) = vague(NormalMeanVariance)
+            end)
+        }
+    end
+    ```
+    Without the parentheses the parser will raise a syntax error.
+
 ## Part 1. Framing the problem 
 
 John has recently acquired a new car and is keenly interested in its `fuel consumption` rate. He holds the belief that this rate follows a linear relationship with the variable `speed`. To validate this hypothesis, he plans to conduct tests by driving his car on the urban roads close to his home, recording both the `fuel consumption` and `speed` data. To ascertain the fuel consumption rate, John has opted for Bayesian linear regression as his analytical method.
@@ -93,7 +137,7 @@ ylabel!("Fuel consumption")
 
 ### Univariate regression with known noise
 
-First, he drives the car on a urban road. John enjoys driving on the well-built, wide, and flat urban roads. Urban roads also offer the advantage of precise fuel consumption measurement with minimal noise. Therefore John models the fuel consumption $y_n\in\mathbb{R}$ as a normal distribution and treats $x_n$ as a fixed hyperparameter:
+First, he drives the car on an urban road. John enjoys driving on the well-built, wide, and flat urban roads. Urban roads also offer the advantage of precise fuel consumption measurement with minimal noise. Therefore John models the fuel consumption $y_n\in\mathbb{R}$ as a normal distribution and treats $x_n$ as a fixed hyperparameter:
 
 $$\begin{aligned}
 p(y_n \mid a, b) = \mathcal{N}(y_n \mid a x_n + b , 1)
@@ -107,10 +151,10 @@ $$\begin{aligned}
 \end{aligned}$$
 
 Together they form the probabilistic model
-$$p(y, a, b) = p(a)p(b) \prod_{N=1}^N p(y_n \mid a, b),$$
+$$p(y, a, b) = p(a)p(b) \prod_{n=1}^N p(y_n \mid a, b),$$
 where the goal is to infer the posterior distributions $p(a \mid y)$ and $p(b\mid y)$.
 
-In order to estimate the two parameters with the recorded data, he uses a `RxInfer.jl` to create the above described model.
+In order to estimate the two parameters with the recorded data, he uses `RxInfer.jl` to create the model described above.
 
 ```@example init-tutorial
 using RxInfer
@@ -134,7 +178,7 @@ results = infer(
 )
 ```
 
-Oeps! Exception?
+Oops! Exception?
 
 ```
 exception =
@@ -169,7 +213,7 @@ John proceeds to derive the factor graph for his problem where he identifies whe
 
 ![linear_regression_model](../../assets/img/linear_regresion_model.png)
 
-He does note that there is a loop in his model, namely all $a$ and $b$ variables are connected over all observations, therefore he needs to initialize one of the messages and run multiple iterations for the loopy belief propagation algorithm. Note that loopy belief propagation is not guaranteed to converge in general and might be highly influenced by the choice of the initial messages in the `initialization` argument. He is going to evaluate the convergency performance of the algorithm with the `free_energy = true` option:
+He does note that there is a loop in his model, namely all $a$ and $b$ variables are connected over all observations, therefore he needs to initialize one of the messages and run multiple iterations for the loopy belief propagation algorithm. Note that loopy belief propagation is not guaranteed to converge in general and might be highly influenced by the choice of the initial messages in the `initialization` argument. He is going to evaluate the convergence performance of the algorithm with the `free_energy = true` option:
  
 
 ```@example init-tutorial
@@ -208,6 +252,7 @@ plot(p, size = (900, 400))
 
 ```@docs
 RxInfer.InitializationPlugin
+RxInfer.convert_init_variables
 RxInfer.convert_init_object
 RxInfer.convert_init_fform
 ```

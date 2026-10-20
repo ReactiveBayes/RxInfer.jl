@@ -16,15 +16,15 @@ This structure is used as a return value from the [`infer`](@ref) function for s
 See also: [`infer`](@ref)
 """
 struct InferenceResult{P, A, F, M, E}
-    posteriors  :: P
-    predictions :: A
-    free_energy :: F
-    model       :: M
-    error       :: E
+    posteriors::P
+    predictions::A
+    free_energy::F
+    model::M
+    error::E
 end
 
-Base.iterate(results::InferenceResult)      = iterate((getfield(results, :posteriors), getfield(results, :predictions), getfield(results, :free_energy), getfield(results, :model), getfield(results, :returnval), getfield(results, :error)))
-Base.iterate(results::InferenceResult, any) = iterate((getfield(results, :posteriors), getfield(results, :predictions), getfield(results, :free_energy), getfield(results, :model), getfield(results, :returnval), getfield(results, :error)), any)
+Base.iterate(results::InferenceResult) = iterate((getfield(results, :posteriors), getfield(results, :predictions), getfield(results, :free_energy), getfield(results, :model), getfield(results, :error)))
+Base.iterate(results::InferenceResult, any) = iterate((getfield(results, :posteriors), getfield(results, :predictions), getfield(results, :free_energy), getfield(results, :model), getfield(results, :error)), any)
 
 """
 Checks if the `InferenceResult` object does not contain an error. 
@@ -64,7 +64,7 @@ function Base.show(io::IO, result::InferenceResult)
         print(io, "\n")
     end
 
-    if iserror(result)
+    return if iserror(result)
         print(
             io,
             "[ WARN ] An error has occurred during the inference procedure. The result might not be complete. You can use the `.error` field to access the error and its backtrace. Use `Base.showerror` function to display the error.",
@@ -77,7 +77,7 @@ function Base.showerror(result::InferenceResult)
 end
 
 function Base.showerror(io::IO, result::InferenceResult)
-    if iserror(result)
+    return if iserror(result)
         error, backtrace = result.error
         println(io, error, "\n")
         show(io, "text/plain", stacktrace(backtrace))
@@ -100,47 +100,64 @@ function Base.getproperty(result::InferenceResult, property::Symbol)
     return getfield(result, property)
 end
 
+# If the actor is not updated, we return `missing` instead
+# this might happen if the inference procedure fails without producing any result
+# in combination with the `catch_exception = true` option,
+# if catch_exception is true, the code will continue to execute till this point
+# but there might be no result to postprocess
+# A buffer the failed procedure left partly filled has undefined entries: it is `missing` too.
+function inference_postprocess_or_missing(postprocess, actor)
+    values = getvalues(actor)
+    isnothing(values) && return missing
+    values isa AbstractArray &&
+        !all(i -> isassigned(values, i), eachindex(values)) &&
+        return missing
+    return inference_postprocess(postprocess, values)
+end
+
 function batch_inference(;
-    # `model` must be a materialized graph object from GraphPPL 
-    model::ModelGenerator,
-    # NamedTuple or Dict with data, optional if predictvars are specified
-    data = nothing,
-    # Initialization specification object
-    initialization = nothing,
-    # Constraints specification object
-    constraints = nothing,
-    # Meta specification object
-    meta = nothing,
-    # Model creation options
-    options = nothing,
-    # Return structure info, optional, defaults to return everything at each iteration
-    returnvars = nothing,
-    # Prediction structure info, optional, defaults to return everything at each iteration
-    predictvars = nothing,
-    # Number of iterations, defaults to 1, we do not distinguish between VMP or Loopy belief or EP iterations
-    iterations = nothing,
-    # Do we compute FE, optional, defaults to false 
-    # Can be passed a floating point type, e.g. `Float64`, for better efficiency, but disables automatic differentiation packages, such as ForwardDiff.jl
-    free_energy = false,
-    # Default BFE stream checks
-    free_energy_diagnostics = DefaultObjectiveDiagnosticChecks,
-    # Enables node contraction with additional implementation, optional, defaults to false.
-    allow_node_contraction = false,
-    # Show progress module, optional, defaults to false
-    showprogress = false,
-    # Inference cycle callbacks
-    callbacks = nothing,
-    # Annotations specification
-    annotations = nothing,
-    # Inference postprocessing option
-    postprocess = nothing,
-    # warn, optional, defaults to true
-    warn = true,
-    # catch exceptions during the inference procedure, optional, defaults to false
-    catch_exception = false,
-    # disable inference error hints
-    disable_inference_error_hint = false,
-)
+        # `model` must be a materialized graph object from GraphPPL
+        model::ModelGenerator,
+        # NamedTuple or Dict with data, optional if predictvars are specified
+        data = nothing,
+        # Initialization specification object
+        initialization = nothing,
+        # Constraints specification object
+        constraints = nothing,
+        # Meta specification object
+        meta = nothing,
+        # Model creation options
+        options = nothing,
+        # Return structure info, optional, defaults to return everything at each iteration
+        returnvars = nothing,
+        # Prediction structure info, optional, defaults to return everything at each iteration
+        predictvars = nothing,
+        # Number of iterations, defaults to 1, we do not distinguish between VMP, loopy belief propagation, or EP iterations
+        iterations = nothing,
+        # Do we compute FE, optional, defaults to false
+        # Can be passed a floating point type, e.g. `Float64`, for better efficiency, but disables automatic differentiation packages, such as ForwardDiff.jl
+        free_energy = false,
+        # Default BFE stream checks
+        free_energy_diagnostics = DefaultObjectiveDiagnosticChecks,
+        # Enables node contraction with additional implementation, optional, defaults to false.
+        allow_node_contraction = false,
+        # Show a progress bar, optional, defaults to false
+        showprogress = false,
+        # Inference cycle callbacks
+        callbacks = nothing,
+        # Annotations specification
+        annotations = nothing,
+        # Log scales on messages and marginals
+        logscales = nothing,
+        # Inference postprocessing option
+        postprocess = nothing,
+        # warn, optional, defaults to true
+        warn = true,
+        # catch exceptions during the inference procedure, optional, defaults to false
+        catch_exception = false,
+        # disable inference error hints
+        disable_inference_error_hint = false,
+    )
     _options = convert(ReactiveMPInferenceOptions, options)
     # If the `options` does not have `warn` key inside, override it with the keyword `warn`
     if isnothing(options) || !haskey(options, :warn)
@@ -150,29 +167,36 @@ function batch_inference(;
     # Override `options` annotations if the `annotations` keyword argument is present
     if !isnothing(annotations)
         if warn && !isnothing(getannotations(_options))
-            @warn "Both `annotations = ...` and `options = (annotations = ..., )` specify a value for the `annotations`. Ignoring the `options` setting. Set `warn = false` to supress this warning."
+            @warn "Both `annotations = ...` and `options = (annotations = ..., )` specify a value for the `annotations`. Ignoring the `options` setting. Set `warn = false` to suppress this warning."
         end
         _options = setannotations(_options, annotations)
     end
 
-    # Determine the default postprocessing strategy based on annotations
-    if isnothing(postprocess)
-        postprocess = if isnothing(getannotations(_options))
-            UnpackMarginalPostprocess()
-        else
-            NoopPostprocess()
-        end
+    # Override `options` log scales if the `logscales` keyword argument is present
+    if !isnothing(logscales)
+        _options = setlogscales(_options, logscales)
+    end
+
+    # Determine the default postprocessing strategy: the `Marginal` wrapper is kept when it carries
+    # annotations or log scales
+    # A single assignment: `postprocess` is captured below, and a reassigned captured variable is boxed
+    _postprocess = if !isnothing(postprocess)
+        postprocess
+    elseif isnothing(getannotations(_options)) && !getlogscales(_options)
+        UnpackMarginalPostprocess()
+    else
+        NoopPostprocess()
     end
 
     # Set ReactiveMP event handler if `callbacks` are set
     if !isnothing(callbacks)
         if warn && !isnothing(getcallbacks(_options))
-            @warn "Both `callbacks = ...` and `options = (callbacks = ..., )` specify a value for the `callbacks`. Ignoring the `options` setting. Set `warn = false` to supress this warning."
+            @warn "Both `callbacks = ...` and `options = (callbacks = ..., )` specify a value for the `callbacks`. Ignoring the `options` setting. Set `warn = false` to suppress this warning."
         end
         _options = setcallbacks(_options, callbacks)
     end
 
-    # We create a model with the `GraphPPL` package and insert a certain RxInfer related 
+    # We create a model with the `GraphPPL` package and insert a certain RxInfer related
     # plugins which include the VI plugin, meta plugin and the ReactiveMP integration plugin
     modelplugins = GraphPPL.PluginsCollection(
         GraphPPL.VariationalConstraintsPlugin(constraints),
@@ -200,32 +224,32 @@ function batch_inference(;
 
     infer_check_dicttype(:data, data)
 
-    # If `predictvars` is specified implicitly as `KeepEach` or `KeepLast`, we replace it a the same value for each data variable
+    # If `predictvars` is specified implicitly as `KeepEach` or `KeepLast`, we replace it with the same value for each data variable
     if (predictvars === KeepEach() || predictvars === KeepLast())
         if !isnothing(data)
-            predictoption = predictvars
+            keepoption = predictvars
             predictvars = Dict(
-                variable => predictoption for (variable, value) in pairs(data)
+                variable => keepoption for (variable, value) in pairs(data)
             )
         else # else we throw an error
             error(
-                "`predictvar` is specified as `$(predictvars)`, but `data` is not provided. Make sure to provide `data` or specify `predictvars` explicitly.",
+                "`predictvars` is specified as `$(predictvars)`, but `data` is not provided. Make sure to provide `data` or specify `predictvars` explicitly.",
             )
         end
-        # If `predictvar` is specified, but `data` is not, we initialize the `data` with missing values
+        # If `predictvars` is specified, but `data` is not, we initialize the `data` with missing values
     elseif !isnothing(predictvars) && isnothing(data)
         data = Dict(
             variable => missing for (variable, value) in pairs(predictvars)
         )
-        # If `predictvar` is not specified, but `data` is, we initialize the `predictvars` with `KeepLast` or `KeepEach` depending on the `iterations` value
+        # If `predictvars` is not specified, but `data` is, we initialize the `predictvars` with `KeepLast` or `KeepEach` depending on the `iterations` value
         # But only if the data has missing values in it
     elseif isnothing(predictvars) && !isnothing(data)
-        predictoption = iterations isa Number ? KeepEach() : KeepLast()
+        defaultoption = iterations isa Number ? KeepEach() : KeepLast()
         predictvars = Dict(
-            variable => predictoption for (variable, value) in pairs(data) if
-            inference_check_dataismissing(get_data(value))
+            variable => defaultoption for (variable, value) in pairs(data) if
+                inference_check_dataismissing(get_data(value))
         )
-        # If both `predictvar` and `data` are specified we double check if there are some entries in the `predictvars`
+        # If both `predictvars` and `data` are specified we double check if there are some entries in the `predictvars`
         # which are not specified in the `data` and inject them
         # We do the same the other way around for the `data` entries which are not specified in the `predictvars`
     elseif !isnothing(predictvars) && !isnothing(data)
@@ -236,7 +260,7 @@ function batch_inference(;
         end
         for (variable, value) in pairs(data)
             if !haskey(predictvars, variable) &&
-                inference_check_dataismissing(value)
+                    inference_check_dataismissing(get_data(value))
                 predictoption = iterations isa Number ? KeepEach() : KeepLast()
                 predictvars = merge(
                     predictvars, Dict(variable => predictoption)
@@ -247,30 +271,39 @@ function batch_inference(;
 
     infer_check_dicttype(:predictvars, predictvars)
 
+    # Offset-indexed (e.g. `OffsetArray`) data is rebased to 1-based indexing during model
+    # construction, which copies it. Warn once per offset-indexed data *input* (not per
+    # element — `pairs(data)` iterates the conditioned arguments), unless `warn = false`.
+    if warn
+        for (key, value) in pairs(data)
+            __incurs_offset_copy(get_data(value)) &&
+                @warn __offset_data_copy_warning(key)
+        end
+    end
+
     model_creation_span_id = generate_span_id(callbacks)
     invoke_callback(callbacks, BeforeModelCreationEvent(model_creation_span_id))
     fmodel = create_model(_model | data)
     invoke_callback(
         callbacks, AfterModelCreationEvent(fmodel, model_creation_span_id)
     )
-    vardict = getvardict(fmodel)
-    vardict = GraphPPL.variables(vardict) # TODO bvdmitri, should work recursively as well
+    vardict = gettoplevelvardict(fmodel) # TODO bvdmitri, should work recursively as well
 
-    # First what we do - we check if `returnvars` is nothing or one of the two possible values: `KeepEach` and `KeepLast`. 
+    # First what we do - we check if `returnvars` is nothing or one of the two possible values: `KeepEach` and `KeepLast`.
     # If so, we replace it with either `KeepEach` or `KeepLast` for each random and not-proxied variable in a model
     if isnothing(returnvars) ||
-        returnvars === KeepEach() ||
-        returnvars === KeepLast()
+            returnvars === KeepEach() ||
+            returnvars === KeepLast()
         # Checks if the first argument is `nothing`, in which case returns the second argument
         returnoption = something(returnvars, iterations isa Number ? KeepEach() : KeepLast())
-        returnvars   = Dict(variable => returnoption for (variable, value) in pairs(vardict) if (israndom(value) && !isanonymous(value)))
+        returnvars = Dict(variable => returnoption for (variable, value) in pairs(vardict) if (israndom(value) && !isanonymous(value)))
     end
 
     infer_check_dicttype(:returnvars, returnvars)
 
     # Use `__check_has_randomvar` to filter out unknown or non-random variables in the `returnvar` specification
     __check_has_randomvar(vardict, variable) = begin
-        haskey_check   = haskey(vardict, variable)
+        haskey_check = haskey(vardict, variable)
         israndom_check = haskey_check ? israndom(vardict[variable]) : false
         if warn && !haskey_check
             @warn "`returnvars` object has `$(variable)` specification, but model has no variable named `$(variable)`. The `$(variable)` specification is ignored. Use `warn = false` to suppress this warning."
@@ -280,7 +313,7 @@ function batch_inference(;
         return haskey_check && israndom_check
     end
 
-    # Use `__check_has_prediction` to filter out unknown predictions variables in the `predictvar` specification
+    # Use `__check_has_prediction` to filter out unknown prediction variables in the `predictvars` specification
     __check_has_prediction(vardict, variable) = begin
         haskey_check = haskey(vardict, variable)
         isdata_check = haskey_check ? isdata(vardict[variable]) : false
@@ -295,19 +328,19 @@ function batch_inference(;
     # Second, for each random variable and predicting variable entry we create an actor
     actors_rv = Dict(
         variable => make_actor(vardict[variable], value) for
-        (variable, value) in pairs(returnvars) if
-        __check_has_randomvar(vardict, variable)
+            (variable, value) in pairs(returnvars) if
+            __check_has_randomvar(vardict, variable)
     )
     actors_pr = Dict(
         variable => make_actor(vardict[variable], value) for
-        (variable, value) in pairs(predictvars) if
-        __check_has_prediction(vardict, variable)
+            (variable, value) in pairs(predictvars) if
+            __check_has_prediction(vardict, variable)
     )
 
     # At third, for each variable entry we create a boolean flag to track their updates
     updates = Dict(
         variable => MarginalHasBeenUpdated(false) for
-        (variable, _) in pairs(merge(actors_rv, actors_pr))
+            (variable, _) in pairs(merge(actors_rv, actors_pr))
     )
 
     _iterations = something(iterations, 1)
@@ -346,8 +379,8 @@ function batch_inference(;
         end
 
         if is_free_energy
-            fe_actor        = ScoreActor(S, _iterations, 1)
-            fe_subscription = subscribe!(score(fmodel, fe_objective, free_energy_diagnostics), fe_actor)
+            fe_actor = ScoreActor(S, _iterations, 1)
+            fe_subscription = subscribe!(report_free_energy(score(fmodel, fe_objective, free_energy_diagnostics), fmodel, callbacks), fe_actor)
         end
 
         if isnothing(data) || isempty(data)
@@ -355,13 +388,8 @@ function batch_inference(;
                 "Data is empty. Make sure you used `data` keyword argument with correct value.",
             )
         else
-            foreach(
-                filter(
-                    pair -> isdata(last(pair)) && !isanonymous(last(pair)),
-                    pairs(vardict),
-                ),
-            ) do pair
-                varname = first(pair)
+            for (varname, ref) in pairs(vardict)
+                (isdata(ref) && !isanonymous(ref)) || continue
                 haskey(data, varname) || error(
                     "Data entry `$(varname)` is missing in `data` or `predictvars` arguments. Double check `data = ($(varname) = ???, )` or `predictvars = ($(varname) = ???, )`",
                 )
@@ -374,7 +402,7 @@ function batch_inference(;
         )
 
         fdata = filter(pairs(data)) do pair
-            hk      = haskey(vardict, first(pair))
+            hk = haskey(vardict, first(pair))
             is_data = hk ? isdata(vardict[first(pair)]) : false
             if warn && (!hk || !is_data)
                 @warn "`data` object has `$(first(pair))` specification, but model has no data input named `$(first(pair))`. Use `warn = false` to suppress this warning."
@@ -384,9 +412,11 @@ function batch_inference(;
 
         progress_meter =
             showprogress ? ProgressMeter.Progress(_iterations) : nothing
-        cacheddatavars = Dict((
-            key => getvariable(vardict[key]) for key in keys(fdata)
-        ))
+        cacheddatavars = Dict(
+            (
+                key => getvariable(vardict[key]) for key in keys(fdata)
+            )
+        )
 
         for iteration in 1:_iterations
             iteration_span_id = generate_span_id(callbacks)
@@ -403,7 +433,10 @@ function batch_inference(;
                 BeforeDataUpdateEvent(fmodel, data, data_update_span_id),
             )
             for (key, value) in fdata
-                new_observation!(cacheddatavars[key], get_data(value))
+                # `new_observation_indexed!` aligns by index, so a model that references a
+                # conditioned data tensor only partially (sparse data variables) is fed
+                # correctly from the dense `data` array; dense arrays behave as before.
+                new_observation_indexed!(cacheddatavars[key], get_data(value))
             end
             invoke_callback(
                 callbacks,
@@ -411,7 +444,7 @@ function batch_inference(;
             )
 
             # Check that all requested marginals have been updated and unset the `updated` flag
-            # Throws an error if some were not update
+            # Throws an error if some were not updated
             check_and_reset_updated!(updates)
 
             if !isnothing(progress_meter)
@@ -462,19 +495,9 @@ function batch_inference(;
         end
     end
 
-    # If the actor is not updated, we return `missing` instead
-    # this might happen if the inference procedure fails without producing any result 
-    # in combination with the `catch_exception = true` option, 
-    # if catch_exception is true, the code will continue to execute till this point 
-    # but there might be no result to postprocess
-    function inference_postprocess_or_missing(postprocess, actor)
-        values = getvalues(actor)
-        isnothing(values) ? missing : inference_postprocess(postprocess, values)
-    end
-
-    posterior_values = Dict(variable => inference_postprocess_or_missing(postprocess, actor) for (variable, actor) in pairs(actors_rv))
-    predicted_values = Dict(variable => inference_postprocess_or_missing(postprocess, actor) for (variable, actor) in pairs(actors_pr))
-    fe_values        = !isnothing(fe_actor) ? score_snapshot_iterations(fe_actor, executed_iterations) : nothing
+    posterior_values = Dict(variable => inference_postprocess_or_missing(_postprocess, actor) for (variable, actor) in pairs(actors_rv))
+    predicted_values = Dict(variable => inference_postprocess_or_missing(_postprocess, actor) for (variable, actor) in pairs(actors_pr))
+    fe_values = !isnothing(fe_actor) ? score_snapshot_iterations(fe_actor, executed_iterations) : nothing
 
     return InferenceResult(
         posterior_values, predicted_values, fe_values, fmodel, potential_error
@@ -482,27 +505,36 @@ function batch_inference(;
 end
 
 function available_callbacks(::typeof(batch_inference))
-    return Val((
-        :on_marginal_update,
-        :before_model_creation,
-        :after_model_creation,
-        :before_inference,
-        :before_iteration,
-        :before_data_update,
-        :after_data_update,
-        :after_iteration,
-        :after_inference,
-        :before_message_rule_call,
-        :after_message_rule_call,
-        :before_product_of_two_messages,
-        :after_product_of_two_messages,
-        :before_product_of_messages,
-        :after_product_of_messages,
-        :before_form_constraint_applied,
-        :after_form_constraint_applied,
-        :before_marginal_computation,
-        :after_marginal_computation,
-    ))
+    return Val(
+        (
+            :on_marginal_update,
+            :before_model_creation,
+            :after_model_creation,
+            :before_inference,
+            :before_iteration,
+            :before_data_update,
+            :after_data_update,
+            :after_iteration,
+            :after_inference,
+            :before_message_rule_call,
+            :after_message_rule_call,
+            :before_product_of_two_messages,
+            :after_product_of_two_messages,
+            :before_product_of_messages,
+            :after_product_of_messages,
+            :before_form_constraint_applied,
+            :after_form_constraint_applied,
+            :before_marginal_computation,
+            :after_marginal_computation,
+            :before_marginal_rule_call,
+            :after_marginal_rule_call,
+            :before_factor_bound_free_energy,
+            :after_factor_bound_free_energy,
+            :before_variable_bound_entropy,
+            :after_variable_bound_entropy,
+            :on_free_energy_update,
+        )
+    )
 end
 
 function available_events(::typeof(batch_inference))

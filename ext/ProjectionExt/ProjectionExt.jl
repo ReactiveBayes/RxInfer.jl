@@ -8,7 +8,8 @@ using RxInfer,
     Random,
     LinearAlgebra
 
-ReactiveMP.default_form_check_strategy(::ProjectedTo) = FormConstraintCheckLast()
+ReactiveMP.default_form_check_strategy(::ProjectedTo) =
+    FormConstraintCheckLast()
 ReactiveMP.default_prod_constraint(::ProjectedTo) = GenericProd()
 
 mutable struct ProjectionContext{T}
@@ -21,10 +22,10 @@ function ReactiveMP.prepare_context(constraint::ProjectedTo)
 end
 
 function ReactiveMP.constrain_form(
-    constraint::ProjectedTo,
-    context::ProjectionContext,
-    something::Union{Distribution, ExponentialFamilyDistribution},
-)
+        constraint::ProjectedTo,
+        context::ProjectionContext,
+        something::Union{Distribution, ExponentialFamilyDistribution},
+    )
     T = ExponentialFamilyProjection.get_projected_to_type(constraint)
     D = ExponentialFamily.exponential_family_typetag(something)
     if T === D
@@ -39,16 +40,16 @@ function ReactiveMP.constrain_form(
 end
 
 function ReactiveMP.constrain_form(
-    constraint::ProjectedTo, context::ProjectionContext, something::ProductOf
-)
+        constraint::ProjectedTo, context::ProjectionContext, something::ProductOf
+    )
     return ReactiveMP.constrain_form(
         constraint::ProjectedTo, context, (x) -> logpdf(something, x)
     )
 end
 
 function ReactiveMP.constrain_form(
-    constraint::ProjectedTo, context::ProjectionContext, fn
-)
+        constraint::ProjectedTo, context::ProjectionContext, fn
+    )
     initialpoint = nothing
     if !isnothing(context.previous)
         initialη = getnaturalparameters(

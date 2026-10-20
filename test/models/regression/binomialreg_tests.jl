@@ -1,11 +1,12 @@
 @testitem "Linear regression with BinomialPolya node" begin
     using BenchmarkTools, Plots, Dates, LinearAlgebra, StableRNGs
+    using PolyaMessagePassingRules
 
     include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
     function generate_synthetic_binomial_data(
-        n_samples::Int, true_beta::Vector{Float64}; seed::Int = 42
-    )
+            n_samples::Int, true_beta::Vector{Float64}; seed::Int = 42
+        )
         rng = StableRNG(seed)
         n_features = length(true_beta)
         # Generate design matrix X
@@ -32,25 +33,27 @@
     @model function binomial_model(prior_xi, prior_precision, n_trials, X, y)
         β ~ MvNormalWeightedMeanPrecision(prior_xi, prior_precision)
         for i in eachindex(y)
-            y[i] ~ BinomialPolya(
-                X[i], n_trials[i], β
-            ) where {
-                dependencies = RequireMessageFunctionalDependencies(
-                    β = MvNormalWeightedMeanPrecision(prior_xi, prior_precision)
-                ),
-            }
+            y[i] ~ BinomialPolya(X[i], n_trials[i], β)
         end
     end
 
+    # The node reads the message on `β`'s own edge, which starts from the prior
+    @initialization function binomial_initialization(prior_xi, prior_precision)
+        μ(β) = MvNormalWeightedMeanPrecision(prior_xi, prior_precision)
+    end
+
     function binomial_inference(
-        binomial_model, iterations, X, y, n_trials, n_features
-    )
+            binomial_model, iterations, X, y, n_trials, n_features
+        )
         return infer(
             model = binomial_model(
                 prior_xi = zeros(n_features),
                 prior_precision = diageye(n_features),
             ),
             data = (X = X, y = y, n_trials = n_trials),
+            initialization = binomial_initialization(
+                zeros(n_features), diageye(n_features)
+            ),
             iterations = iterations,
             free_energy = true,
             options = (limit_stack_depth = 100,),
@@ -58,11 +61,11 @@
     end
 
     function run_simulation(
-        n_sims::Int,
-        n_samples::Int,
-        true_beta::Vector{Float64};
-        iterations = n_iterations,
-    )
+            n_sims::Int,
+            n_samples::Int,
+            true_beta::Vector{Float64};
+            iterations = n_iterations,
+        )
         # Storage for results
         n_features = length(true_beta)
         coverage = Vector{Vector{Float64}}(undef, n_sims)
@@ -108,4 +111,44 @@
     @test_benchmark "models" "binomialreg" binomial_inference(
         binomial_model, $n_iterations, $X, $y, $n_trials
     )
+end
+
+@testitem "BinomialPolya draws from the rng the context option gives" begin
+    using StableRNGs, LinearAlgebra
+    using PolyaMessagePassingRules
+
+    # `samples = k` averages over draws from `ctx.rng`, which `options = (context = (rng = …,),)`
+    # supplies: two seeds give different posteriors, one seed the same twice. Without sampling the
+    # rules use means, and the seed changes nothing.
+    @model function binomial_model(X, n, y, algorithm)
+        β ~ MvNormalWeightedMeanPrecision(zeros(2), diageye(2))
+        for i in eachindex(y)
+            y[i] ~ BinomialPolya(X[i], n[i], β) where {algorithm = algorithm}
+        end
+    end
+
+    rng = StableRNG(42)
+    X = [randn(rng, 2) for _ in 1:30]
+    n = fill(10, 30)
+    y = [rand(rng, Binomial(10, 1 / (1 + exp(x[2] - x[1])))) for x in X]
+    initialization = @initialization(
+        begin
+            μ(β) = MvNormalWeightedMeanPrecision(zeros(2), diageye(2))
+        end
+    )
+    posterior(algorithm, seed) = mean(
+        infer(
+            model = binomial_model(algorithm = algorithm),
+            data = (X = X, n = n, y = y),
+            initialization = initialization,
+            iterations = 5,
+            options = (context = (rng = StableRNG(seed),),),
+        ).posteriors[:β][end],
+    )
+
+    sampling = BinomialPolyaApproximation(samples = 50)
+    @test posterior(sampling, 1) != posterior(sampling, 2)
+    @test posterior(sampling, 1) == posterior(sampling, 1)
+    @test posterior(BinomialPolyaApproximation(), 1) ==
+        posterior(BinomialPolyaApproximation(), 2)
 end

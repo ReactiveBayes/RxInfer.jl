@@ -63,7 +63,7 @@
     ## Test inference results
     @test isapprox(mean(result.posteriors[:m]), m, atol = 0.05)
     @test isapprox(mean(result.posteriors[:P]), P, atol = 0.07)
-    @test all(<(0), filter(e -> abs(e) > 1e-10, diff(result.free_energy)))
+    @test all(<(0), filter(e -> abs(e) > 1.0e-10, diff(result.free_energy)))
 
     @test_plot "models" "iid_mv_precision" begin
         X = range(-5, 5, length = 200)

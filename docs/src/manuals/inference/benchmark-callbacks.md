@@ -93,6 +93,8 @@ The `RxInferBenchmarkCallbacks` structure collects timestamps at the following s
 | Each iteration (`before`/`after`) | yes | — |
 | Autostart (`before`/`after`) | — | yes |
 
+`RxInferBenchmarkCallbacks` declares these events to the engine with `ReactiveMP.listens`, so the engine builds no other event objects for it: the message rule calls, products and marginal computations cost nothing extra under `benchmark = true`. To inspect individual rule calls, with the algorithm each node ran under and the log scale of each message, use the [Trace callbacks](@ref manual-inference-trace-callbacks).
+
 ## Buffer capacity
 
 By default, the structure uses circular buffers with a capacity of [`RxInfer.DEFAULT_BENCHMARK_CALLBACKS_BUFFER_CAPACITY`](@ref) entries.

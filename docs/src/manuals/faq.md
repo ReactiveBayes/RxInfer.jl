@@ -24,16 +24,12 @@ See [Installation](@ref user-guide-getting-started-installation) for details.
 
 Try `Pkg.resolve()` to resolve conflicts. See [Pkg.jl](https://pkgdocs.julialang.org/v1/getting-started/) for more details.
 
-### Can I use RxInfer from Python?
-
-Yes! See our guide on [Using RxInfer from Python](@ref python-usage).
-
 ## Model Specification
 
 ### What's the difference between `=` and `:=` in model specification?
 
 - `=` is a regular Julia assignment operator, use it only for regular Julia variables
-- `:=` creates a random variable node, use it to create latent variables in your model
+- `:=` creates a deterministic node, use it to define deterministic relationships between latent variables in your model
 
 See [Sharp Bits: Using `=` instead of `:=`](@ref usage-colon-equality) for details.
 
@@ -43,7 +39,7 @@ RxInfer supports missing data through the `missing` value in Julia. The inferenc
 
 ### How do I create custom nodes and message update rules?
 
-See [Understanding Rules](@ref what-is-a-rule) for an explanation of what rules are and why they use different input prefixes (`m_` vs `q_`). See [Custom Node and Rules](@ref create-node) for detailed guidance on extending RxInfer.
+See [Understanding Rules](@ref what-is-a-rule) for an explanation of what rules are and why they read messages, `m[:x]`, or marginals, `q[:x]`, of their inputs. See [Custom Node and Rules](@ref create-node) for detailed guidance on extending RxInfer.
 
 ## Inference Issues
 

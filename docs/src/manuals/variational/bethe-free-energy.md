@@ -48,7 +48,7 @@ The Bethe Free Energy (BFE) substitutes the Bethe approximation in the VFE, whic
 $$F_B[q](\hat{y}) = \sum_a U_a[q_a](\hat{y}_a) - \sum_a H[q_a] + \sum_i (d_i - 1) H[q_i]\,.$$
 The first term of the BFE specifies an average energy, 
 $$U_a[q_a](\hat{y}_a) = -\mathbb{E}_{q_a(x_a)}\left[\log f_a(y_a=\hat{y}_a, x_a)\right]\,,$$
-which internalizes the factors of the  model. The last two terms specify entropies.
+which internalizes the factors of the model. The last two terms specify entropies.
 
 Crucially, the BFE can be iteratively optimized for each individual variational distribution in turn. Optimization of the BFE is thus more manageable than direct optimization of the VFE.
 
@@ -67,7 +67,7 @@ For disambiguation, note that the initialization of the variational distribution
 ## Implementation details 
 
 `RxInfer` implements Bethe Free Energy optimization in an implicit way via the message passing technique. That means that the inference engine does not compute BFE values explicitly, 
-unless specified explicitly. The [`infer`](@ref) function has `free_energy` flag, which indicates whether BFE values must be computed explicitly or not. Note, however, that due to the reactive nature of the message passing implementation in `RxInfer` the computed BFE value may not represent its actual state. This may happen when updates for certain posteriors arriving more often than updates for other posteriors and usually tend to happen in models with loops in its structure. To circumvent this, instead of checking if BFE value is being minimized it is advised to check if it __converges__.
+unless specified explicitly. The [`infer`](@ref) function has a `free_energy` flag, which indicates whether BFE values must be computed explicitly or not. Note, however, that due to the reactive nature of the message passing implementation in `RxInfer` the computed BFE value may not represent its actual state. This may happen when updates for certain posteriors arrive more often than updates for other posteriors, and usually tends to happen in models with loops in their structure. To circumvent this, instead of checking if the BFE value is being minimized it is advised to check if it __converges__.
 
 ```@docs
 RxInfer.BetheFreeEnergy
@@ -76,7 +76,7 @@ RxInfer.ReactiveMPFreeEnergyPlugin
 
 ### Extra diagnostic checks
 
-`RxInfer` verifies intermediate computations of BFE on each iteration. By default, `RxInfer` will throw an exception, if local factor node or variable node computations result in either `NaN` or `Inf`. Note, that the verification happens only if the computation of BFE has been requested explicitly.
+`RxInfer` verifies intermediate computations of BFE on each iteration. By default, `RxInfer` will throw an exception, if local factor node or variable node computations result in either `NaN` or `Inf`. Note that the verification happens only if the computation of BFE has been requested explicitly.
 
 ```@docs
 RxInfer.apply_diagnostic_check

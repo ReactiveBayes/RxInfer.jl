@@ -20,9 +20,8 @@ end
 
 TracedEvent(event::Event) = TracedEvent(event, time_ns())
 
-Base.show(io::IO, te::TracedEvent) = print(
-    io, "TracedEvent(:$(event_name(typeof(te.event))))"
-)
+Base.show(io::IO, te::TracedEvent) =
+    print(io, "TracedEvent(:$(event_name(typeof(te.event))))")
 
 """
     RxInferTraceCallbacks()
@@ -69,16 +68,15 @@ struct RxInferTraceCallbacks
 end
 
 RxInferTraceCallbacks() = RxInferTraceCallbacks(TracedEvent[], nothing)
-RxInferTraceCallbacks(include::NTuple{N, Symbol}) where {N} = RxInferTraceCallbacks(
-    TracedEvent[], Set{Symbol}(include)
-)
+RxInferTraceCallbacks(include::NTuple{N, Symbol}) where {N} =
+    RxInferTraceCallbacks(TracedEvent[], Set{Symbol}(include))
 
 """
     is_trace_event_included(callbacks::RxInferTraceCallbacks, event_name::Symbol)
 
 Checks whether the specified event is not filtered and should be traced.
 
-```@jldoctest 
+```jldoctest
 julia> callbacks = RxInfer.RxInferTraceCallbacks((:event1, :event2));
 
 julia> RxInfer.is_trace_event_included(callbacks, :event1)
@@ -92,8 +90,8 @@ false
 ```
 """
 function is_trace_event_included(
-    callbacks::RxInferTraceCallbacks, event_name::Symbol
-)
+        callbacks::RxInferTraceCallbacks, event_name::Symbol
+    )
     if isnothing(callbacks.include)
         return true
     else
@@ -117,9 +115,8 @@ Returns the vector of [`TracedEvent`](@ref) recorded by the trace callbacks filt
 
 See also: [`RxInferTraceCallbacks`](@ref).
 """
-tracedevents(event::Symbol, callbacks::RxInferTraceCallbacks) = filter(
-    e -> event_name(typeof(e.event)) == event, callbacks.events
-)
+tracedevents(event::Symbol, callbacks::RxInferTraceCallbacks) =
+    filter(e -> event_name(typeof(e.event)) == event, callbacks.events)
 
 Base.isempty(callbacks::RxInferTraceCallbacks) = isempty(callbacks.events)
 
@@ -128,7 +125,7 @@ function _event_name_to_type_name(name::Symbol)
 end
 
 function Base.show(io::IO, callbacks::RxInferTraceCallbacks)
-    if isempty(callbacks)
+    return if isempty(callbacks)
         print(io, "RxInferTraceCallbacks (empty, no events recorded)")
     else
         events = callbacks.events
@@ -165,13 +162,13 @@ end
 
 # Special handling for :after_model_creation to save to metadata
 function ReactiveMP.handle_event(
-    callbacks::RxInferTraceCallbacks, event::AfterModelCreationEvent
-)
+        callbacks::RxInferTraceCallbacks, event::AfterModelCreationEvent
+    )
     if haskey(event.model.metadata, :trace)
         error(
             "The model's metadata already contains a `:trace` key. " *
-            "This can happen if you pass `trace = true` (or a tuple of event names) while also providing " *
-            "`RxInferTraceCallbacks` in the `callbacks` argument. Use one or the other, not both.",
+                "This can happen if you pass `trace = true` (or a tuple of event names) while also providing " *
+                "`RxInferTraceCallbacks` in the `callbacks` argument. Use one or the other, not both.",
         )
     end
     event.model.metadata[:trace] = callbacks
@@ -231,3 +228,9 @@ function convert_to_tensorboard(args...)
         "`convert_to_tensorboard` method with the specified arguments were not found. Did you load the `TensorBoardLogger.jl` in the current session? Otherwise consult the documentation.",
     )
 end
+
+# The events the trace records: with an `include` filter the engine builds no other event for it
+# (`ReactiveMP.listens`); `AfterModelCreationEvent` always, since it saves the trace to the model.
+ReactiveMP.listens(callbacks::RxInferTraceCallbacks, ::Type{T}) where {T} =
+    T <: AfterModelCreationEvent ||
+    is_trace_event_included(callbacks, event_name(T))

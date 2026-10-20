@@ -91,7 +91,7 @@
     @test length(sbuffer) === 20 && all(b -> length(b) === 100, sbuffer)
     @test length(Abuffer) === 20
     @test length(Bbuffer) === 20
-    @test length(fe) === 20 && all(filter(e -> abs(e) > 1e-3, diff(fe)) .< 0)
+    @test length(fe) === 20 && all(filter(e -> abs(e) > 1.0e-3, diff(fe)) .< 0)
     @test abs(last(fe) - 60.614480654) < 0.01
 
     ## Create output plots

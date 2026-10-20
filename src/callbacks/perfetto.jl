@@ -27,7 +27,7 @@ function _to_perfetto_event(te::TracedEvent; time_delta::Int64 = 0)
     original_name = string(typeof(e).name.name)
     nice_name = replace(original_name, r"(^Before)|(^After)|(Event$)" => "")
     ph = _event_phase(e)
-    (
+    return (
         pid = 1,
         tid = 1,
         name = nice_name,
@@ -36,7 +36,7 @@ function _to_perfetto_event(te::TracedEvent; time_delta::Int64 = 0)
         # Timestamps are in microseconds for Perfetto.
         # Add 1 ns to End events so zero-duration spans are visible.
         ts = Float64(Int64(te.time_ns) + time_delta + (ph == "E" ? 1 : 0)) /
-             1000,
+            1000,
         # id = string(_get_trace_id(e)),
         args = _struct_to_simple_dict(e),
     )
@@ -46,7 +46,7 @@ end
     struct_field_names = fieldnames(x)
     # This is a very optimised function because this is performance critical.
     # It is a generated function that compiles down to a literal named tuple with field names matching the struct fields.
-    if isempty(struct_field_names)
+    return if isempty(struct_field_names)
         :((;))
     else
         Expr(
@@ -55,11 +55,13 @@ end
                 Expr(
                     Symbol("="),
                     field_name,
-                    :(_to_observability_string(
-                        getfield(x, $(QuoteNode(field_name))),
-                        $(QuoteNode(field_name)),
-                    )),
-                ) for field_name in struct_field_names# if field_name !== :trace_id
+                    :(
+                        _to_observability_string(
+                            getfield(x, $(QuoteNode(field_name))),
+                            $(QuoteNode(field_name)),
+                        )
+                    ),
+                ) for field_name in struct_field_names # if field_name !== :trace_id
             )...,
         )
     end
@@ -77,11 +79,11 @@ end
 end
 
 # _to_observability_string converts a field of an event object to a string to view in Perfetto. This should be high performance and give useful info.
-# The default is to call `string(...)`, but uou can add methods for fields to override their behaviour.
+# The default is to call `string(...)`, but you can add methods for fields to override their behaviour.
 
 # Default fallback
 function _to_observability_string(z::Any, _keyname::Symbol)
-    string(z)
+    return string(z)
 
     ## Uncomment this to find fields that take a long time to convert to string:
     # tstart = time()
@@ -110,9 +112,9 @@ _to_observability_string(::ProbabilisticModel, _keyname::Symbol) = "<omitted>"
 # Converts a `time_ns()` timestamp to a wall-clock `DateTime` by computing the
 # drift between Julia's monotonic clock and the Unix epoch at the moment of the call.
 function _time_ns_to_datetime(t::UInt64)::Dates.DateTime
-    now_real_ns = round(Int64, Dates.datetime2unix(Dates.now()) * 1e9)
+    now_real_ns = round(Int64, Dates.datetime2unix(Dates.now()) * 1.0e9)
     drift = now_real_ns - Int64(time_ns())
-    return Dates.unix2datetime((Int64(t) + drift) / 1e9)
+    return Dates.unix2datetime((Int64(t) + drift) / 1.0e9)
 end
 
 function _default_trace_name(traces::Vector{TracedEvent})
@@ -146,11 +148,11 @@ struct PerfettoDisplay
 end
 
 function Base.show(io::IO, ::MIME"text/html", p::PerfettoDisplay)
-    print(io, p.html)
+    return print(io, p.html)
 end
 
 function Base.show(io::IO, ::MIME"juliavscode/html", p::PerfettoDisplay)
-    show(io, MIME"text/html"(), p)
+    return show(io, MIME"text/html"(), p)
 end
 
 Base.show(io::IO, ::PerfettoDisplay) = print(
@@ -159,15 +161,15 @@ Base.show(io::IO, ::PerfettoDisplay) = print(
 )
 
 const _overlay_html = """<div id="overlay" style="
-          position:fixed;top:0;left:0;width:100vw;height:100vh;
-          background:rgba(255,255,255,0.5);
-          display:flex;align-items:center;justify-content:center;
-          transition:opacity 0.4s ease;">
-          <div style="text-align:left">
-           <span style="font:bold 3rem system-ui;white-space:nowrap">Loading...</span><br>
-           <span style="font:1rem system-ui;opacity:0.7">Click <strong>Yes</strong> in the next dialog</span>
-         </div>
-        </div>"""
+  position:fixed;top:0;left:0;width:100vw;height:100vh;
+  background:rgba(255,255,255,0.5);
+  display:flex;align-items:center;justify-content:center;
+  transition:opacity 0.4s ease;">
+  <div style="text-align:left">
+   <span style="font:bold 3rem system-ui;white-space:nowrap">Loading...</span><br>
+   <span style="font:1rem system-ui;opacity:0.7">Click <strong>Yes</strong> in the next dialog</span>
+ </div>
+</div>"""
 
 """
     perfetto_view(traces::Vector{TracedEvent}; name = "\$(Time(now())) RxInfer trace")
@@ -193,42 +195,42 @@ perfetto_view(traces)   # display in a notebook cell
 _Pluto tip: combine this with `PlutoUI.WideCell` for a bigger view, so `perfetto_view(traces) |> WideCell`._
 """
 function perfetto_view(
-    traces::Vector{TracedEvent}; name::String = _default_trace_name(traces)
-)
+        traces::Vector{TracedEvent}; name::String = _default_trace_name(traces)
+    )
     @warn "`perfetto_view` is experimental and its API may change in future releases." maxlog =
         1
     json_contents = _traces_to_perfetto_json(traces)
     b64 = Base64.base64encode(json_contents)
     id = String(rand('a':'z', 10))
     html = """
-        <div style="width: 100%; height: clamp(650px, 90vh, 1000px);">
-        <iframe id="$id" src="https://ui.perfetto.dev"
-          style="width:100%;height:100%;border:7px solid yellow;border-radius: 12px; box-sizing: border-box;"></iframe>
-          $(_overlay_html)
-        <script>
-        const b64 = "$b64";
-        const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
-        const iframe = document.getElementById('$id');
-        const overlay = document.getElementById('overlay');
+    <div style="width: 100%; height: clamp(650px, 90vh, 1000px);">
+    <iframe id="$id" src="https://ui.perfetto.dev"
+      style="width:100%;height:100%;border:7px solid yellow;border-radius: 12px; box-sizing: border-box;"></iframe>
+      $(_overlay_html)
+    <script>
+    const b64 = "$b64";
+    const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+    const iframe = document.getElementById('$id');
+    const overlay = document.getElementById('overlay');
 
-        const interval = setInterval(() => {
-          iframe.contentWindow.postMessage('PING', 'https://ui.perfetto.dev');
-        }, 50);
+    const interval = setInterval(() => {
+      iframe.contentWindow.postMessage('PING', 'https://ui.perfetto.dev');
+    }, 50);
 
-        window.addEventListener('message', (e) => {
-          if (e.data !== 'PONG') return;
-          clearInterval(interval);
-          iframe.contentWindow.postMessage({
-            perfetto: {
-              buffer: bytes.buffer,
-              title: "$(name)",
-            }
-          }, 'https://ui.perfetto.dev');
-          overlay.style.opacity = '0';
-          setTimeout(() => overlay.remove(), 400);
-        });
-        </script>
-        </div>"""
+    window.addEventListener('message', (e) => {
+      if (e.data !== 'PONG') return;
+      clearInterval(interval);
+      iframe.contentWindow.postMessage({
+        perfetto: {
+          buffer: bytes.buffer,
+          title: "$(name)",
+        }
+      }, 'https://ui.perfetto.dev');
+      overlay.style.opacity = '0';
+      setTimeout(() => overlay.remove(), 400);
+    });
+    </script>
+    </div>"""
     return PerfettoDisplay(html)
 end
 
@@ -253,40 +255,40 @@ perfetto_open(traces)
 ```
 """
 function perfetto_open(
-    traces::Vector{TracedEvent}; name::String = _default_trace_name(traces)
-)
+        traces::Vector{TracedEvent}; name::String = _default_trace_name(traces)
+    )
     @warn "`perfetto_open` is experimental and its API may change in future releases." maxlog =
         1
     json_contents = _traces_to_perfetto_json(traces)
     b64 = Base64.base64encode(json_contents)
     html = """<!DOCTYPE html><html><body style="margin:0">
-        <iframe id="pf" src="https://ui.perfetto.dev"
-          style="width:100vw;height:100vh;border:none;position:fixed;top:0;left:0"></iframe>
-        $(_overlay_html)
-        <script>
-        const b64 = "$b64";
-        const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
-        const iframe = document.getElementById('pf');
-        const overlay = document.getElementById('overlay');
+    <iframe id="pf" src="https://ui.perfetto.dev"
+      style="width:100vw;height:100vh;border:none;position:fixed;top:0;left:0"></iframe>
+    $(_overlay_html)
+    <script>
+    const b64 = "$b64";
+    const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+    const iframe = document.getElementById('pf');
+    const overlay = document.getElementById('overlay');
 
-        const interval = setInterval(() => {
-          iframe.contentWindow.postMessage('PING', 'https://ui.perfetto.dev');
-        }, 50);
+    const interval = setInterval(() => {
+      iframe.contentWindow.postMessage('PING', 'https://ui.perfetto.dev');
+    }, 50);
 
-        window.addEventListener('message', (e) => {
-          if (e.data !== 'PONG') return;
-          clearInterval(interval);
-          iframe.contentWindow.postMessage({
-            perfetto: {
-              buffer: bytes.buffer,
-              title: "$(name)",
-            }
-          }, 'https://ui.perfetto.dev');
-          overlay.style.opacity = '0';
-          setTimeout(() => overlay.remove(), 400);
-        });
-        </script>
-        </body></html>"""
+    window.addEventListener('message', (e) => {
+      if (e.data !== 'PONG') return;
+      clearInterval(interval);
+      iframe.contentWindow.postMessage({
+        perfetto: {
+          buffer: bytes.buffer,
+          title: "$(name)",
+        }
+      }, 'https://ui.perfetto.dev');
+      overlay.style.opacity = '0';
+      setTimeout(() => overlay.remove(), 400);
+    });
+    </script>
+    </body></html>"""
     filename = tempname(; cleanup = false) * ".html"
     write(filename, html)
     if Sys.isapple()

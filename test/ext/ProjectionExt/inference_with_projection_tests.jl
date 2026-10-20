@@ -24,8 +24,12 @@
     BayesBase.logpdf(d::MyBernoulli, x) = logpdf(Bernoulli(d.p), x)
     BayesBase.insupport(d::MyBernoulli, x::Real) = true
 
-    @node MyBeta Stochastic [out, a, b]
-    @node MyBernoulli Stochastic [out, p]
+    @define_factor_node(
+        node = MyBeta, type = Stochastic, interfaces = [:out, :a, :b]
+    )
+    @define_factor_node(
+        node = MyBernoulli, type = Stochastic, interfaces = [:out, :p]
+    )
 
     @constraints function projection_constraints()
         q(p)::ProjectedTo(Beta)
@@ -55,7 +59,7 @@
         analytical, projected = run_experiment(y)
 
         @test mean(analytical.posteriors[:p]) ≈ mean(projected.posteriors[:p]) rtol =
-            1e-1
+            1.0e-1
     end
 
     @test_plot "projection" "simple-beta-bernoulli" begin
@@ -98,7 +102,7 @@ end
         q(t, r) = q(t)q(r)
     end
 
-    for realt in (0.15, 0.67), realr in (0.23, 0.90), n in (5000, 10000)
+    for realt in (0.15, 0.67), realr in (0.23, 0.9), n in (5000, 10000)
         ydata = rand(StableRNG(43), NormalMeanPrecision(realt, realr), n)
 
         result = infer(
@@ -112,10 +116,10 @@ end
             options = (limit_stack_depth = 500,),
         )
 
-        @test mean(result.posteriors[:r]) ≈ realr atol = 1e-2
-        @test mean(result.posteriors[:t]) ≈ realt atol = 1e-1
+        @test mean(result.posteriors[:r]) ≈ realr atol = 1.0e-2
+        @test mean(result.posteriors[:t]) ≈ realt atol = 1.0e-1
         @test result.free_energy[1] > result.free_energy[end]
-        @test all(d -> d < 0 || abs(d) < 1e-3, diff(result.free_energy))
+        @test all(d -> d < 0 || abs(d) < 1.0e-3, diff(result.free_energy))
     end
 
     @test_plot "projection" "non_conjugate_iid" begin
@@ -271,19 +275,18 @@ end
         initialization = init,
         data = (y = dataset,),
         free_energy = true,
-        options = (
-            rulefallback = NodeFunctionRuleFallback(), limit_stack_depth = 500
-        ),
+        options = (limit_stack_depth = 500,),
     )
 
     @test all(<(0), diff(result.free_energy))
 
-    test_deviation =
-        count(zip(result.posteriors[:z][end], dataset)) do (posterior_i, data_i)
-            return mean(posterior_i) - 5std(posterior_i) <
-                   data_i <
-                   mean(posterior_i) + 5std(posterior_i)
-        end
+    test_deviation = count(
+        zip(result.posteriors[:z][end], dataset)
+    ) do (posterior_i, data_i)
+        return mean(posterior_i) - 5std(posterior_i) <
+            data_i <
+            mean(posterior_i) + 5std(posterior_i)
+    end
 
     @test test_deviation / length(dataset) > 0.8
     foreach(result.posteriors[:γ]) do posteriorγ
@@ -348,7 +351,7 @@ end
         q(precision)::ProjectedTo(Gamma)
     end
 
-    @meta function iid_with_delta_transforms_meta()
+    @algorithm function iid_with_delta_transforms_algorithm()
         foo() -> CVIProjection()
         bar() -> CVIProjection()
     end
@@ -372,7 +375,7 @@ end
             model = iid_with_delta_transforms(),
             data = (y = y,),
             constraints = iid_with_delta_transforms_constraints(),
-            meta = iid_with_delta_transforms_meta(),
+            algorithm = iid_with_delta_transforms_algorithm(),
             initialization = iid_with_delta_transforms_initialization(),
             iterations = 15,
             returnvars = KeepLast(),
@@ -386,10 +389,10 @@ end
         ra, rb, rmean, rprecision, y, result = run_experiment(ra, rb)
 
         @test result.free_energy[end] < result.free_energy[begin]
-        @test mean(result.posteriors[:a]) ≈ ra atol = 2e-1
-        @test mean(result.posteriors[:b]) ≈ rb atol = 2e-1
-        @test mean(result.posteriors[:mean]) ≈ rmean atol = 2e-1
-        @test mean(result.posteriors[:precision]) ≈ rprecision atol = 3e-1
+        @test mean(result.posteriors[:a]) ≈ ra atol = 2.0e-1
+        @test mean(result.posteriors[:b]) ≈ rb atol = 2.0e-1
+        @test mean(result.posteriors[:mean]) ≈ rmean atol = 2.0e-1
+        @test mean(result.posteriors[:precision]) ≈ rprecision atol = 3.0e-1
     end
 
     @test_plot "projection" "iid_delta" begin
@@ -435,8 +438,8 @@ end
     end
 end
 
-# This is quite a challenge for the inference 
-# and the test is fragile. Turing.jl cannot solve this reliably, we neither, but this test 
+# This is quite a challenge for the inference
+# and the test is fragile. Turing.jl cannot solve this reliably, we neither, but this test
 # has been fine-tuned in order to pass. If case of the failure the test could be re-designed
 # the point of the test is to check that multi-variable functions are supported
 @testitem "Inference with CVI projection, multiple univariate inputs, univariate output" begin
@@ -444,8 +447,8 @@ end
 
     include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
 
-    a = 0.60
-    b = 1.20
+    a = 0.6
+    b = 1.2
 
     function foo(a, b)
         return a
@@ -477,7 +480,7 @@ end
         q(μ) = NormalMeanVariance(2.0, 1.0)
     end
 
-    @meta function mymeta()
+    @algorithm function myalgorithm()
         foo() -> CVIProjection(
             out_prjparams = ProjectionParameters(niterations = 500),
             in_prjparams = (
@@ -490,7 +493,7 @@ end
     result = infer(
         model = mymodel(C = C),
         data = (y = y,),
-        meta = mymeta(),
+        algorithm = myalgorithm(),
         constraints = myconstraints(),
         initialization = myinitialization(),
         free_energy = true,
@@ -507,11 +510,11 @@ end
         b <
         mean(result.posteriors[:b][end]) + conf_bound_b
 
-    @test mean(result.posteriors[:a][end]) ≈ a atol = 1e-2
+    @test mean(result.posteriors[:a][end]) ≈ a atol = 1.0e-2
     @test foo(
         mean(result.posteriors[:a][end]), mean(result.posteriors[:b][end])
-    ) ≈ foo(a, b) atol = 1e-2
-    @test mean(result.posteriors[:μ][end]) ≈ foo(a, b) atol = 2e-2
+    ) ≈ foo(a, b) atol = 1.0e-2
+    @test mean(result.posteriors[:μ][end]) ≈ foo(a, b) atol = 2.0e-2
     @test first(result.free_energy) > last(result.free_energy)
     @test count(<(0), diff(result.free_energy)) > 0.95
 
@@ -578,22 +581,21 @@ end
         q(μ) = MvNormalMeanCovariance([0.5, 1.0], [1.0 0.0; 0.0 1.0])
     end
 
-    @meta function mymeta()
-        foo() -> CVIProjection(
-            rng = StableRNG(42),
-            sampling_strategy = FullSampling(10),
-            outsamples = 5,
-        )
+    # `CVIProjection` samples from the generator the engine gives its rules, `options.rng`
+    @algorithm function myalgorithm()
+        foo() ->
+        CVIProjection(sampling_strategy = FullSampling(10), outsamples = 5)
     end
 
     result = infer(
         model = mymodel(C = C),
         data = (y = y,),
-        meta = mymeta(),
+        algorithm = myalgorithm(),
         constraints = myconstraints(),
         initialization = myinitialization(),
         free_energy = true,
         iterations = 15,
+        options = (context = (rng = StableRNG(42),),),
     )
 
     @test mean(result.posteriors[:a][end]) ≈ a atol = 0.05
@@ -632,15 +634,28 @@ end
     struct NodePrior end
     struct NodeLikelihood end
 
-    @node NodePrior Stochastic [out, in]
-    @node NodeLikelihood Stochastic [out, in]
-
-    @rule NodePrior(:out, Marginalisation) (q_in::Any,) = NodePrior()
-    @rule NodeLikelihood(:in, Marginalisation) (q_out::Any,) = NodeLikelihood()
-
-    BayesBase.prod(::GenericProd, ::NodePrior, ::NodeLikelihood) = convert(
-        ExponentialFamilyDistribution, Beta(1, 1)
+    @define_factor_node(
+        node = NodePrior, type = Stochastic, interfaces = [:out, :in]
     )
+    @define_factor_node(
+        node = NodeLikelihood, type = Stochastic, interfaces = [:out, :in]
+    )
+
+    @define_message_update_rule(
+        node = NodePrior,
+        target = :out,
+        args = (q[:in]::Any,),
+        body = (args) -> NodePrior(),
+    )
+    @define_message_update_rule(
+        node = NodeLikelihood,
+        target = :in,
+        args = (q[:out]::Any,),
+        body = (args) -> NodeLikelihood(),
+    )
+
+    BayesBase.prod(::GenericProd, ::NodePrior, ::NodeLikelihood) =
+        convert(ExponentialFamilyDistribution, Beta(1, 1))
 
     @model function mymodel(y)
         a ~ NodePrior(1)

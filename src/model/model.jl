@@ -16,8 +16,8 @@ import GraphPPL: ModelGenerator, getmodel, getkwargs, create_model
     UnfactorizedData{D}
 
 A wrapper struct to wrap data that should not be factorized out by default during inference.
-When performing Bayesian Inference with message passing, every factor node contains a local
-factorization constraint on the variational posterior distribution. For data, we usually regarding
+When performing Bayesian inference with message passing, every factor node contains a local
+factorization constraint on the variational posterior distribution. For data, we usually regard
 data as an independent component in the variational posterior distribution. However, in some cases,
 for example when we are predicting data, we do not want to factorize out the data. In such cases,
 we can wrap the data with `UnfactorizedData` struct to prevent the factorization and craft a custom
@@ -43,7 +43,7 @@ struct ProbabilisticModel{M}
 end
 
 function Base.show(io::IO, ::ProbabilisticModel)
-    print(io, "ProbabilisticModel()")
+    return print(io, "ProbabilisticModel()")
 end
 
 ProbabilisticModel(model) = ProbabilisticModel(model, Dict{Any, Any}())
@@ -56,6 +56,9 @@ getreturnval(model::ProbabilisticModel) = getreturnval(getmodel(model))
 
 "Returns the (nested) dictionary of random variables from the model specification."
 getvardict(model::ProbabilisticModel) = getvardict(getmodel(model))
+gettoplevelvardict(model::ProbabilisticModel) =
+    gettoplevelvardict(getmodel(model))
+nodes_by_kind(model::ProbabilisticModel) = nodes_by_kind(getmodel(model))
 
 "Returns the random variables from the model specification."
 getrandomvars(model::ProbabilisticModel) = getrandomvars(getmodel(model))
@@ -77,7 +80,7 @@ getvarref(model::ProbabilisticModel, label) = getvarref(getmodel(model), label)
 
 Accepts a model generator and data to condition on. 
 The `generator` must be `GraphPPL.ModelGenerator` object.
-The `conditioned_on` must be named tuple or a dictionary with keys corresponding to the names of the input arguments in the model.
+The `conditioned_on` must be a named tuple or a dictionary with keys corresponding to the names of the input arguments in the model.
 """
 struct ConditionedModelGenerator{G, D}
     generator::G
@@ -138,7 +141,7 @@ function Base.show(io::IO, generator::ConditionedModelGenerator)
         ),
     )
     print(io, ")")
-    if !isnothing(getconditioned_on(generator))
+    return if !isnothing(getconditioned_on(generator))
         println(io, " conditioned on: ")
         foreach(keys(getconditioned_on(generator))) do key
             println(io, "  ", key, " = ", getconditioned_on(generator)[key])
@@ -166,12 +169,12 @@ end
 
 # This function works for static data, such as `NamedTuple` or a `Dict`
 function __infer_create_factor_graph_model(
-    generator::ModelGenerator, conditioned_on::Union{NamedTuple, Dict}
-)
-    # If the data is already a `NamedTuple` this should not really matter 
+        generator::ModelGenerator, conditioned_on::Union{NamedTuple, Dict}
+    )
+    # If the data is already a `NamedTuple` this should not really matter
     # But it makes it easier to deal with the `Dict` type, which is unordered by default
     ntdata = NamedTuple(conditioned_on)::NamedTuple
-    model  = create_model(generator) do model, ctx
+    model = create_model(generator) do model, ctx
         ikeys = keys(ntdata)
         interfaces = map(ikeys) do key
             return __infer_create_data_interface(model, ctx, key, ntdata[key])
@@ -182,20 +185,63 @@ function __infer_create_factor_graph_model(
 end
 
 """
-An object that is used to condition on unknown data. That may be necessary to create a model from a `ModelGenerator` object
-for which data is not known at the time of the model creation. 
+An object that is used to condition on unknown data. This may be necessary to create a model from a `ModelGenerator` object
+for which the data is not known at the time of model creation.
 """
 struct DeferredDataHandler end
 
 function Base.show(io::IO, ::DeferredDataHandler)
-    print(io, "[ deffered data ]")
+    return print(io, "[ deferred data ]")
+end
+
+# __normalize_data_indexing(data)
+#
+# Conditioned data may use non-standard (offset) indexing, e.g. an `OffsetArray` whose axes
+# start at `0`. GraphPPL's variable arrays are 1-based and the model's subscripts are bounds-checked
+# against the data's axes, so offset-indexed data would otherwise fail at model construction.
+#
+# This presents such data to the model with standard 1-based axes, preserving the values and their
+# iteration order. Models therefore index 1-based (via `1:n`, `eachindex`, `axes`, …) regardless of
+# the data's native axes. Standard (already 1-based) arrays — and non-array data — are returned
+# unchanged, with no copy. Indexing the model with a literal offset index (e.g. `y[0]`) remains
+# unsupported.
+__normalize_data_indexing(data) = data
+function __normalize_data_indexing(data::AbstractArray)
+    Base.has_offset_axes(data) || return data
+    normalized = Array{eltype(data)}(undef, size(data))
+    @inbounds for (i, value) in enumerate(data)
+        normalized[i] = value
+    end
+    return normalized
+end
+
+# `true` exactly when `__normalize_data_indexing` would allocate a 1-based copy.
+__incurs_offset_copy(data) =
+    data isa AbstractArray && Base.has_offset_axes(data)
+
+# Shared text for the (cost) warning emitted when offset data is rebased to 1-based indexing.
+# The warning itself is emitted — gated by the `warn` keyword of `infer` — at the batch and
+# streaming entry points, where the copy actually occurs (see `batch_inference` / the streaming feed).
+function __offset_data_copy_warning(name)
+    prefix = if isnothing(name)
+        "Conditioned data"
+    else
+        string("Conditioned data `", name, "`")
+    end
+    return string(
+        prefix,
+        " uses non-standard (offset) indexing and is copied to standard 1-based indexing for ",
+        "inference — this incurs an allocation (in streaming inference the copy recurs per tick). ",
+        "Pass a 1-based array (e.g. `collect(x)` or `OffsetArrays.no_offset_view(x)`) to avoid the ",
+        "copy, or set `warn = false` to suppress this warning.",
+    )
 end
 
 # We use the `datalabel` to instantiate the data interface for the model, in case of `DeferredDataHandler`
 # the data is not known at the time of the model creation
 function __infer_create_data_interface(
-    model, context, key::Symbol, ::DeferredDataHandler
-)
+        model, context, key::Symbol, ::DeferredDataHandler
+    )
     return GraphPPL.datalabel(
         model,
         context,
@@ -205,16 +251,16 @@ function __infer_create_data_interface(
     )
 end
 
-# In all other cases we use the `datalabel` to instantiate the data interface for the model and the data is known at the time of the model creation
+# For `UnfactorizedData` we use the `datalabel` to instantiate the data interface for the model with factorization disabled; the data is known at the time of the model creation
 function __infer_create_data_interface(
-    model, context, key::Symbol, data::UnfactorizedData{D}
-) where {D}
+        model, context, key::Symbol, data::UnfactorizedData{D}
+    ) where {D}
     return GraphPPL.datalabel(
         model,
         context,
         GraphPPL.NodeCreationOptions(; kind = :data, factorized = false),
         key,
-        get_data(data),
+        __normalize_data_indexing(get_data(data)),
     )
 end
 
@@ -225,20 +271,17 @@ function __infer_create_data_interface(model, context, key::Symbol, data)
         context,
         GraphPPL.NodeCreationOptions(; kind = :data, factorized = true),
         key,
-        data,
+        __normalize_data_indexing(data),
     )
 end
 
 merge_data_handlers(data::Dict, newdata::Dict) = merge(data, newdata)
-merge_data_handlers(data::Dict, newdata::NamedTuple) = merge(
-    data, convert(Dict, newdata)
-)
-merge_data_handlers(data::NamedTuple, newdata::Dict) = merge(
-    convert(Dict, data), newdata
-)
-merge_data_handlers(data::NamedTuple, newdata::NamedTuple) = merge(
-    data, newdata
-)
+merge_data_handlers(data::Dict, newdata::NamedTuple) =
+    merge(data, convert(Dict, newdata))
+merge_data_handlers(data::NamedTuple, newdata::Dict) =
+    merge(convert(Dict, data), newdata)
+merge_data_handlers(data::NamedTuple, newdata::NamedTuple) =
+    merge(data, newdata)
 
 # This function creates a named tuple of `DeferredDataHandler` objects from a tuple of symbols
 function create_deferred_data_handlers(symbols::NTuple{N, Symbol}) where {N}

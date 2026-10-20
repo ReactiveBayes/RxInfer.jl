@@ -24,11 +24,11 @@
     end
 
     ## Data creation
-    rng      = StableRNG(123)
-    P        = 100.0
-    n        = 500
-    hidden   = collect(1:n)
-    data     = hidden + rand(rng, Normal(0.0, sqrt(P)), n)
+    rng = StableRNG(123)
+    P = 100.0
+    n = 500
+    hidden = collect(1:n)
+    data = hidden + rand(rng, Normal(0.0, sqrt(P)), n)
     x0_prior = NormalMeanVariance(0.0, 10000.0)
 
     ## Inference execution
@@ -40,8 +40,8 @@
     @test length(x_estimated) === n
     @test all(
         (mean.(x_estimated) .- 3 .* std.(x_estimated)) .<
-        hidden .<
-        (mean.(x_estimated) .+ 3 .* std.(x_estimated)),
+            hidden .<
+            (mean.(x_estimated) .+ 3 .* std.(x_estimated)),
     )
     @test all(var.(x_estimated) .> 0.0)
     @test length(fe) === 1

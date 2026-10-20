@@ -173,7 +173,7 @@ indicates that `x₁` is distributed as [Normal](https://en.wikipedia.org/wiki/N
 
 In probabilistic models based on graphs, factor nodes are used to define a relationship between random variables and/or constants and data variables.
 A factor node defines a probability distribution over selected latent or data variables. The `~` operator not only creates a latent variable but also 
-defines a functional relatinship of it with other variables and creates a factor node as a result.
+defines a functional relationship of it with other variables and creates a factor node as a result.
 
 In the example above
 ```julia
@@ -188,7 +188,7 @@ not only creates a latent variable `x₁` but also a factor node `Normal`.
 
 ### [Deterministic relationships](@id user-guide-model-specification-node-creation-deterministic)
 
-Unlike other probabilistic programming languages in Julia, `RxInfer` does not allow use of the `=` operator for creating deterministic relationships between (latent)variables. 
+Unlike other probabilistic programming languages in Julia, `RxInfer` does not allow use of the `=` operator for creating deterministic relationships between (latent) variables. 
 Instead, we can use the `:=` operator for this purpose. For example:
 
 ```julia
@@ -231,7 +231,7 @@ tmp2 ~ Gamma(shape = 1.0, rate = 1.0)
 y    ~ Normal(mean = tmp1, precision = tmp2)
 ```
 
-The inference backend still performs inference for anonymous latent variables, however, there it does not provide an easy way to obtain posteriors for them.
+The inference backend still performs inference for anonymous latent variables; however, it does not provide an easy way to obtain posteriors for them.
 Note that the inference backend will try to optimize deterministic function calls in the case where all arguments are known in advance.
 For example:
 ```julia
@@ -254,7 +254,7 @@ Technically, in Julia, the `x[i]` call is translated to a function call `getinde
 
 ### [Broadcasting syntax](@id user-guide-model-specification-node-creation-broadcasting)
 
-`GraphPPL` support broadcasting for the `~` operator in the exact same way as Julia itself. 
+`GraphPPL` supports broadcasting for the `~` operator in the exact same way as Julia itself. 
 A user is free to write an expression of the following form:
 ```julia
 m  ~ Normal(mean = 0.0, precision = 0.0001)
@@ -275,7 +275,7 @@ use broadcasting with [deferred data](@ref user-guide-model-specification-condit
 
 ### [`Distributions.jl` compatibility](@id user-guide-model-specification-distributions)
 
-For some factor nodes we rely on the syntax from `Distributions.jl` to make it easy to adopt `RxInfer.jl` for these users. These nodes include for example the [`Beta`](https://en.wikipedia.org/wiki/Beta_distribution) and [`Wishart`](https://en.wikipedia.org/wiki/Wishart_distribution) distributions. These nodes can be created using the `~` syntax with the arguments as specified in `Distributions.jl`. Unfortunately, we `RxInfer.jl` is not yet compatible with all possible distributions that can be used as factor nodes. If you feel that you would like to see another node implemented, please file an issue.
+For some factor nodes we rely on the syntax from `Distributions.jl` to make it easy to adopt `RxInfer.jl` for these users. These nodes include for example the [`Beta`](https://en.wikipedia.org/wiki/Beta_distribution) and [`Wishart`](https://en.wikipedia.org/wiki/Wishart_distribution) distributions. These nodes can be created using the `~` syntax with the arguments as specified in `Distributions.jl`. Unfortunately, `RxInfer.jl` is not yet compatible with all possible distributions that can be used as factor nodes. If you feel that you would like to see another node implemented, please file an issue.
 
 !!! note
     To quickly check the list of all available factor nodes that can be used in the model specification language call `?ReactiveMP.is_predefined_node` or `Base.doc(ReactiveMP.is_predefined_node)`.
@@ -283,8 +283,8 @@ For some factor nodes we rely on the syntax from `Distributions.jl` to make it e
 
 Specifically for the Gaussian/Normal case we have custom implementations that yield a higher computational efficiency and improved stability in comparison to `Distributions.jl` as these are optimized for sampling operations. Our aliases for these distributions therefore do not correspond to the implementations from `Distributions.jl`. However, our model specification language is compatible with syntax from `Distributions.jl` for normal distributions, which will be automatically converted. `RxInfer` has its own implementation because of the following 3 reasons:
 1. `Distributions.jl` constructs normal distributions by saving the corresponding covariance matrices in a `PDMat` object from `PDMats.jl`. This construction always computes the Cholesky decompositions of the covariance matrices, which is very convenient for sampling-based procedures. However, in `RxInfer.jl` we mostly base our computations on analytical expressions which do not always need to compute the Cholesky decomposition. In order to reduce the overhead that `Distributions.jl` introduces, we therefore have custom implementations.
-2. Depending on the update rules, we might favor different parameterizations of the normal distributions. `ReactiveMP.jl` has quite a variety in parameterizations that allow us to efficient computations where we convert between parameterizations as little as possible.
-3. In certain situations we value stability a lot, especially when inverting matrices. `PDMats.jl`, and hence `Distributions.jl`, is not capable to fulfill all needs that we have here. Therefore we use `PositiveFactorizations.jl` to cope with the corner-cases.
+2. Depending on the update rules, we might favor different parameterizations of the normal distributions. `ReactiveMP.jl` has quite a variety of parameterizations that allow us to perform efficient computations where we convert between parameterizations as little as possible.
+3. In certain situations we value stability a lot, especially when inverting matrices. `PDMats.jl`, and hence `Distributions.jl`, is not capable of fulfilling all the needs that we have here. Therefore we use `PositiveFactorizations.jl` to cope with the corner-cases.
 
 ## [Model structure visualisation](@id user-guide-model-specification-visualization)
 
@@ -377,11 +377,14 @@ Now, let's create an optimized version of the `ShiftedNormal` submodel as a stan
     Creating correct message passing update rules is beyond the scope of this section. For more information about what rules are and how they work, see [Understanding Rules](@ref what-is-a-rule). For details on implementing custom message passing update rules, refer to the [Custom Node](@ref create-node) section.
 
 ```@example node-contraction
-@node typeof(ShiftedNormal) Stochastic [ data, mean, precision, shift ]
+@define_factor_node(node = ShiftedNormal, type = Stochastic, interfaces = [:data, :mean, :precision, :shift])
 
-@rule typeof(ShiftedNormal)(:mean, Marginalisation) (q_data::PointMass, q_precision::PointMass, q_shift::PointMass, ) = begin 
-    return @call_rule NormalMeanPrecision(:μ, Marginalisation) (q_out = PointMass(mean(q_data) - mean(q_shift)), q_τ = q_precision)
-end
+@define_message_update_rule(
+    node = ShiftedNormal,
+    target = :mean,
+    args = (q[:data]::PointMass, q[:precision]::PointMass, q[:shift]::PointMass),
+    body = (args) -> NormalMeanPrecision(mean(args.q[:data]) - mean(args.q[:shift]), mean(args.q[:precision])),
+)
 
 result_with_contraction = infer(
     model = Model(precision = 1.0, shift = 1.0),
@@ -448,36 +451,87 @@ This performance improvement is reflected in reduced execution time and fewer me
 
 ### [Node creation options](@id user-guide-model-specification-node-creation-options)
 
-`GraphPPL` allows to pass optional arguments to the node creation constructor with the `where { options...  }` options specification syntax.
-
-Example:
-```julia
-y ~ Normal(mean = y_mean, var = y_var) where { meta = ... }
-```
-
-A list of the available options specific to the `ReactiveMP` inference engine is presented below.
-
-#### Metadata option
-
-It is possible to pass any extra metadata to a factor node with the `meta` option. Metadata can be later accessed in message computation rules.
-```julia
-z ~ f(x, y) where { meta = Linearization() }
-d ~ g(a, b) where { meta = Unscented() }
-```
-This option might be useful to change message passing rules around a specific factor node. Read more about this feature in [Meta Specification](@ref user-guide-meta-specification) section.
-
-#### Dependencies option
-
-A user can modify the default functional dependencies of a node with the `dependencies` option.
-Read more about the available policies in the [`ReactiveMP.jl` documentation](https://reactivebayes.github.io/ReactiveMP.jl/stable/).
+`GraphPPL` passes optional arguments to the node creation constructor with the `where { options...  }` syntax:
 
 ```julia
-y[k - 1] ~ Probit(x[k]) where {
-    # This specification indicates that in order to compute an outbound message from the `in` interface
-    # We need an inbound message from the same edge initialized to `NormalMeanPrecision(0.0, 1.0)`
-    dependencies = RequireMessageFunctionalDependencies(in = NormalMeanPrecision(0.0, 1.0))
-}
+y ~ Normal(mean = y_mean, var = y_var) where { algorithm = ... }
 ```
+
+The options specific to the `ReactiveMP` inference engine are listed below.
+
+#### Algorithm option
+
+The `algorithm` option gives a factor node the [algorithm](@extref MessagePassingRulesBase glossary-algorithm) its rules run under. An algorithm selects which rules run and carries their parameters, such as the approximation method of a deterministic node:
+
+```@example node-creation-options
+using RxInfer
+
+f(x) = x^2 + 1
+g(a, b) = a * b
+
+@model function nonlinear_model(z)
+    x ~ Normal(mean = 1.0, variance = 1.0)
+    a ~ Normal(mean = 1.0, variance = 1.0)
+    y := f(x) where { algorithm = DeltaApproximation(method = Linearization()) }
+    d := g(a, y) where { algorithm = DeltaApproximation(method = Unscented()) }
+    z ~ Normal(mean = d, variance = 1.0)
+end
+
+result = infer(model = nonlinear_model(), data = (z = 3.0,))
+
+result.posteriors[:x]
+```
+
+The two deterministic nodes approximate their messages with different methods. The [`@algorithm`](@ref) macro gives algorithms to many nodes at once, from outside the model; read more in the [Algorithm specification](@ref user-guide-algorithm-specification) section. The `meta` option is the old name of `algorithm`, and it still works with a deprecation warning.
+
+#### Initial messages
+
+What a node's rules read is part of the node's declaration, not an option of the model. Some nodes read the message on their own edge, and need an initial message on it to start. The `Probit` node, one of the standard nodes, is one of them: its rule towards `in` reads the message on `in`, and the node declares `NormalMeanPrecision(0.0, 100.0)` as its initial value. The [`@initialization`](@ref) macro sets another one, `μ(x) = ...`, which takes precedence over the node's own:
+
+```@example node-creation-options
+@model function probit_model(y)
+    x_prev ~ Normal(mean = 0.0, variance = 1.0)
+    for k in eachindex(y)
+        x[k] ~ Normal(mean = x_prev, variance = 0.1)
+        y[k] ~ Probit(x[k])
+        x_prev = x[k]
+    end
+end
+
+probit_initialization = @initialization begin
+    μ(x) = NormalMeanPrecision(0.0, 1.0)
+end
+
+result = infer(
+    model          = probit_model(),
+    data           = (y = [1.0, 1.0, 0.0, 1.0, 1.0],),
+    initialization = probit_initialization,
+    iterations     = 5,
+)
+
+mean.(result.posteriors[:x][end])
+```
+
+`@initialization` sets the message on every edge of `x`. The `initial_messages` option of a node
+sets it on that node's own edges only, keyed by the node's interface, and takes precedence over
+both the node's declared message and `@initialization`:
+
+```@example node-creation-options
+@model function probit_model_per_node(y)
+    x_prev ~ Normal(mean = 0.0, variance = 1.0)
+    for k in eachindex(y)
+        x[k] ~ Normal(mean = x_prev, variance = 0.1)
+        y[k] ~ Probit(x[k]) where { initial_messages = (in = NormalMeanPrecision(0.0, 1.0),) }
+        x_prev = x[k]
+    end
+end
+
+result = infer(model = probit_model_per_node(), data = (y = [1.0, 1.0, 0.0, 1.0, 1.0],), iterations = 5)
+
+mean.(result.posteriors[:x][end])
+```
+
+Read more about initial messages in the [Initialization](@ref initialization) section.
 
 ## [Relation to GraphPPL](@id user-guide-model-specification-relation-to-graphppl)
 
@@ -488,7 +542,7 @@ Model creation in `RxInfer` largely depends on [`GraphPPL`](https://github.com/R
     The model creation and construction were largely refactored in `GraphPPL` v4. 
     Read [_Migration Guide_](https://reactivebayes.github.io/GraphPPL.jl/stable/migration_3_to_4/) for more details.
 
-Note, that `GraphPPL` also implements `@model` macro, but does **not** export it by default. This was a deliberate choice to allow inference backends (such as `RxInfer`) to implement [custom functionality](@ref user-guide-model-specification-pipelines) on top of the default `GraphPPL.@model` macro. This is done with a custom  _backend_ for `GraphPPL.@model` macro. Read more about backends in the corresponding section of `GraphPPL` [documentation](https://github.com/ReactiveBayes/GraphPPL.jl).
+Note, that `GraphPPL` also implements `@model` macro, but does **not** export it by default. This was a deliberate choice to allow inference backends (such as `RxInfer`) to implement [custom functionality](@ref user-guide-model-specification-pipelines) on top of the default `GraphPPL.@model` macro. This is done with a custom _backend_ for the `GraphPPL.@model` macro. Read more about backends in the corresponding section of `GraphPPL` [documentation](https://github.com/ReactiveBayes/GraphPPL.jl).
 
 ```@docs
 RxInfer.ReactiveMPGraphPPLBackend
@@ -508,10 +562,10 @@ RxInfer.inject_tilderhs_aliases
 RxInfer.ReactiveMPNodeAliases
 ```
 
-## [Getting access to an internal variable data structures](@id user-guide-model-specification-internal-variable-access)
+## [Getting access to internal variable data structures](@id user-guide-model-specification-internal-variable-access)
 
-To get an access to an internal `ReactiveMP` data structure of a variable in `RxInfer` model, it is possible to return 
-a so called _label_ of the variable from the model macro, and access it later on as the following:
+To get access to the internal `ReactiveMP` data structure of a variable in an `RxInfer` model, it is possible to return 
+a so-called _label_ of the variable from the model macro, and access it later on as follows:
 
 ```@example internal-access
 using RxInfer
@@ -542,6 +596,6 @@ ReactiveMP.israndom(variable)
 ## Read also
 
 - [Constraints specification](@ref user-guide-constraints-specification)
-- [Meta specification](@ref user-guide-meta-specification)
+- [Algorithm specification](@ref user-guide-algorithm-specification)
 - [Inference execution](@ref user-guide-inference-execution)
 - [Debugging inference](@ref user-guide-debugging)

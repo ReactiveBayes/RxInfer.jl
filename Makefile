@@ -18,16 +18,23 @@ TEST_OUTPUT_FILES = _output test$(PATH_SEP)_output
 # Includes all the above
 ALL_TMP_FILES = $(DOCS_BUILD_FILES) $(TEST_OUTPUT_FILES)
 
-.PHONY: lint format
+.PHONY: check-format lint format scripts_init scripts_update
 
+# `scripts_init` only instantiates `scripts/Manifest.toml`, so every `make format` and
+# `make check-format` runs the same pinned Runic; `make scripts_update` bumps it deliberately.
 scripts_init:
-	julia --startup-file=no --project=scripts/ -e 'using Pkg; Pkg.instantiate(); Pkg.update(); Pkg.precompile();'
+	julia --startup-file=no --project=scripts/ -e 'using Pkg; Pkg.instantiate(); Pkg.precompile();'
 
-lint: scripts_init ## Code formating check
-	julia --startup-file=no --project=scripts/ scripts/format.jl
+scripts_update: ## Re-resolve scripts/Manifest.toml (bumps Runic within its compat bound)
+	julia --startup-file=no --project=scripts/ -e 'using Pkg; Pkg.update(); Pkg.precompile();'
 
-format: scripts_init ## Code formating run
-	julia --startup-file=no --project=scripts/ scripts/format.jl --overwrite
+check-format: scripts_init ## Check the formatting (Runic), without modifying files
+	julia --startup-file=no --project=scripts/ scripts/formatter.jl
+
+lint: check-format ## Same as `make check-format`
+
+format: scripts_init ## Format the code with Runic; this overwrites files
+	julia --startup-file=no --project=scripts/ scripts/formatter.jl --overwrite
 
 .PHONY: docs
 
@@ -52,10 +59,14 @@ docs-serve: doc_init ## Serve documentation locally for preview in browser
 devdocs: dev_doc_init ## Same as `make docs` but uses `dev-ed` versions of core packages
 	julia --startup-file=no --project=docs/ docs/make.jl
 
-.PHONY: test
+.PHONY: test test-reactant
 
 test: ## Run tests
 	julia -e 'import Pkg; Pkg.activate("."); Pkg.test(test_args = split("$(test_args)") .|> string)'	
+
+test-reactant: ## Compile an unrolled model with Reactant (ReactantExt), from test/reactant's own environment
+	julia --startup-file=no --project=test/reactant -e 'using Pkg; Pkg.develop(path = "."); Pkg.instantiate()'
+	julia --startup-file=no --project=test/reactant test/reactant/runtests.jl
 
 clean: ## Clean documentation build, benchmark output from tests
 	$(foreach file, $(ALL_TMP_FILES), $(RM) $(file))
