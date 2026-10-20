@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.0.1] - 2026-10-19
+
+### Fixed
+- `infer` compiles with Reactant on Julia 1.10. `ReactantExt` also marks `with_option`, which reads the inference options' `fieldnames`: Reactant's rewrite of `fieldnames` on a `UnionAll` recursed there until the stack overflowed. It marks `getvarref` too, which collects the references of the model's variables: on Julia 1.10 its `map` reached Reactant's walk of Rocket's linked lists.
+
+### Changed
+- The *Reactant check* runs on Julia 1.10 as well as the latest, and `make test-reactant` develops this checkout of RxInfer instead of relying on `[sources]`, which Julia 1.10 ignores.
+
 ## [6.0.0] - 2026-10-19
 
 RxInfer 6 runs on ReactiveMP 7, whose message passing rules live in registered rule packages declared with MessagePassingRulesBase. Models that use the nodes RxInfer loads run as before; code that defines its own nodes or rules needs porting, which ReactiveMP's [v6 → v7 migration guide](https://reactivebayes.github.io/ReactiveMP.jl/stable/migration-guides/v6-to-v7/) explains.
