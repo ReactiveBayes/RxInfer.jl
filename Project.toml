@@ -107,7 +107,6 @@ Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 BIFMMessagePassingRules = "3092217e-9fde-41d8-8729-057ea730fd7c"
 ContinuousTransitionMessagePassingRules = "be169b08-8551-4d4c-a46b-881478acc6d9"
-Coverage = "a2441757-f6aa-5fb2-8edb-039e3f45d037"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
@@ -131,4 +130,4 @@ TestItemRunner = "f8b46487-2199-4994-9208-9a1283c18c0a"
 TOML = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
 
 [targets]
-test = ["Optim", "BIFMMessagePassingRules", "ContinuousTransitionMessagePassingRules", "FlowMessagePassingRules", "PolyaMessagePassingRules", "Test", "Pkg", "Logging", "InteractiveUtils", "TOML", "Coverage", "Dates", "Distributed", "Documenter", "ExponentialFamilyProjection", "Plots", "BenchmarkTools", "PkgBenchmark", "Aqua", "StableRNGs", "StatsFuns", "Optimisers", "TestItemRunner", "TensorBoardLogger", "OffsetArrays", "PrettyTables"]
+test = ["Optim", "BIFMMessagePassingRules", "ContinuousTransitionMessagePassingRules", "FlowMessagePassingRules", "PolyaMessagePassingRules", "Test", "Pkg", "Logging", "InteractiveUtils", "TOML", "Dates", "Distributed", "Documenter", "ExponentialFamilyProjection", "Plots", "BenchmarkTools", "PkgBenchmark", "Aqua", "StableRNGs", "StatsFuns", "Optimisers", "TestItemRunner", "TensorBoardLogger", "OffsetArrays", "PrettyTables"]
