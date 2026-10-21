@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- The benchmark in `benchmarks/` runs on RxInfer 6.1, Julia 1.13 and Turing 0.49 (its samples are a FlexiChains chain), and the README's figures are regenerated from it, on the Apple M4 Max the previous figures came from.
+
 ## [6.1.0] - 2026-10-20
 
 ### Added
