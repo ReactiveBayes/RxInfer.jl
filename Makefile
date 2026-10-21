@@ -65,7 +65,7 @@ test: ## Run tests
 	julia -e 'import Pkg; Pkg.activate("."); Pkg.test(test_args = split("$(test_args)") .|> string)'	
 
 test-reactant: ## Compile an unrolled model with Reactant (ReactantExt), from test/reactant's own environment
-	julia --startup-file=no --project=test/reactant -e 'using Pkg; Pkg.instantiate()'
+	julia --startup-file=no --project=test/reactant -e 'using Pkg; Pkg.develop(path = "."); Pkg.instantiate()'
 	julia --startup-file=no --project=test/reactant test/reactant/runtests.jl
 
 clean: ## Clean documentation build, benchmark output from tests

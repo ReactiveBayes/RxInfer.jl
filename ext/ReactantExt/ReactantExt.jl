@@ -14,19 +14,25 @@ using RxInfer, Reactant
 # They collect the model's variables, their streams and the results, and never compute with a
 # variable's value, so they need no overlay and run as plain Julia under tracing. The rules, which do
 # compute with the values, are not marked and stay traced. `getvariable` finds the engine's variables
-# of the model's nodes, `isanonymous` tells whether a variable has a name, `obtain_marginal` and
-# `obtain_prediction` collect the streams of posteriors and predictions, and
-# `inference_postprocess_or_missing` unpacks the results. The marks can go once Reactant's walk
+# of the model's nodes, `getvarref` the references of the model's variables, `isanonymous` tells
+# whether a variable has a name, `obtain_marginal` and `obtain_prediction` collect the streams of
+# posteriors and predictions, and `inference_postprocess_or_missing` unpacks the results. The marks can go once Reactant's walk
 # tolerates undefined fields and cycles (EnzymeAD/Reactant.jl#3506).
+#
+# `with_option` sets one field of the inference options and reads their `fieldnames`. On Julia 1.10,
+# Reactant's rewrite of `fieldnames` on a `UnionAll` calls itself until the stack overflows, so it is
+# marked too; it never sees a traced value.
 #
 # The marks go into a set in Reactant, which precompilation does not keep, so they are made when the
 # extension loads.
 function __init__()
     Reactant.@skip_rewrite_func RxInfer.getvariable
+    Reactant.@skip_rewrite_func RxInfer.getvarref
     Reactant.@skip_rewrite_func RxInfer.isanonymous
     Reactant.@skip_rewrite_func RxInfer.obtain_marginal
     Reactant.@skip_rewrite_func RxInfer.obtain_prediction
     Reactant.@skip_rewrite_func RxInfer.inference_postprocess_or_missing
+    Reactant.@skip_rewrite_func RxInfer.with_option
     return nothing
 end
 

@@ -136,3 +136,174 @@ end
     @test probvec(result.posteriors[:x]) ≈
         vec(sum(joint; dims = 1)) ./ sum(joint)
 end
+
+@testitem "An algorithm names variables of the model, resolved to the node's interfaces" begin
+    using RxInfer
+    import RxInfer: getmodel, node_algorithm
+    import GraphPPL: factor_nodes, fform, getproperties
+
+    struct Roles{C, P} <: DefaultAlgorithmExtension
+        control::C
+        parameter::P
+    end
+    RxInfer.resolve_variables(roles::Roles, interface) =
+        Roles(interface(roles.control), interface(roles.parameter))
+
+    normalised(A) = A ./ sum(A; dims = 1)
+    A = normalised(reshape(Float64.(1:8), 2, 2, 2))
+    B = normalised(reshape(Float64.(1:12), 3, 2, 2))
+
+    # `u[t]` and `x[t]` are members of collections and arrive as their labels, `θ` and `y` as
+    # references to them
+    @model function planner(A, B, goal)
+        θ ~ Categorical([0.4, 0.6])
+        x[1] ~ Categorical([1.0, 0.0])
+        for t in 1:2
+            u[t] ~ Categorical([0.5, 0.5])
+            x[t + 1] ~ DiscreteTransition(x[t], A, u[t]) where {
+                algorithm = Roles(u[t], x[t]),
+            }
+        end
+        y ~ DiscreteTransition(x[3], B, θ) where {algorithm = Roles(θ, y)}
+        y ~ Categorical(goal)
+    end
+
+    # `Roles` adds no rules, so the model runs as it does without them, the free energy, which
+    # reads the algorithm too, included
+    @model function plain(A, B, goal)
+        θ ~ Categorical([0.4, 0.6])
+        x[1] ~ Categorical([1.0, 0.0])
+        for t in 1:2
+            u[t] ~ Categorical([0.5, 0.5])
+            x[t + 1] ~ DiscreteTransition(x[t], A, u[t])
+        end
+        y ~ DiscreteTransition(x[3], B, θ)
+        y ~ Categorical(goal)
+    end
+
+    data = (goal = [0.2, 0.3, 0.5],)
+    result = infer(model = planner(A = A, B = B), data = data, free_energy = true)
+    reference = infer(model = plain(A = A, B = B), data = data, free_energy = true)
+
+    algorithms = []
+    factor_nodes(getmodel(result.model)) do _, nodedata
+        fform(getproperties(nodedata)) === DiscreteTransition &&
+            push!(algorithms, node_algorithm(nodedata))
+    end
+    @test count(==(Roles((:T, 1), :in)), algorithms) == 2
+    @test count(==(Roles((:T, 1), :out)), algorithms) == 1
+    @test probvec(result.posteriors[:u][1]) ≈ probvec(reference.posteriors[:u][1])
+    @test result.free_energy ≈ reference.free_energy
+end
+
+@testitem "An algorithm is given a value that is not a variable of the model as it is" begin
+    using RxInfer
+    import RxInfer: getmodel, node_algorithm
+    import GraphPPL: factor_nodes, fform, getproperties
+
+    # `Plain` names no variables, `Roles` resolves its field
+    struct Plain{C} <: DefaultAlgorithmExtension
+        value::C
+    end
+    struct Roles{C} <: DefaultAlgorithmExtension
+        control::C
+    end
+    RxInfer.resolve_variables(roles::Roles, interface) =
+        Roles(interface(roles.control))
+
+    function algorithms_of(result, node)
+        algorithms = []
+        factor_nodes(getmodel(result.model)) do _, nodedata
+            fform(getproperties(nodedata)) === node &&
+                push!(algorithms, node_algorithm(nodedata))
+        end
+        return algorithms
+    end
+
+    # `u[t] = 1.0` makes `u[t]` a value, not a variable of the model, whatever the name suggests
+    @model function constants(y, algorithm)
+        u = zeros(2)
+        x ~ NormalMeanVariance(0.0, 1.0)
+        for t in 1:2
+            u[t] = 1.0
+            y[t] ~ NormalMeanVariance(x, u[t]) where {algorithm = algorithm(u[t])}
+        end
+    end
+
+    for algorithm in (Plain, Roles)
+        result = infer(model = constants(algorithm = algorithm), data = (y = [0.1, 0.2],))
+        @test count(==(algorithm(1.0)), algorithms_of(result, NormalMeanVariance)) == 2
+    end
+
+    # `@algorithm` is evaluated outside the model, where there are no variables to name: it gives
+    # the keys of the interfaces instead
+    normalised(A) = A ./ sum(A; dims = 1)
+    A = normalised(reshape(Float64.(1:8), 2, 2, 2))
+
+    @model function transition(goal)
+        x0 ~ Categorical([1.0, 0.0])
+        u ~ Categorical([0.5, 0.5])
+        x ~ DiscreteTransition(x0, A, u)
+        x ~ Categorical(goal)
+    end
+
+    roles = @algorithm begin
+        DiscreteTransition() -> Roles((:T, 1))
+    end
+    result = infer(model = transition(), data = (goal = [0.3, 0.7],), algorithm = roles)
+    @test algorithms_of(result, DiscreteTransition) == [Roles((:T, 1))]
+end
+
+@testitem "An algorithm that names a variable the node is not connected to is an error" begin
+    using RxInfer
+
+    struct Held{V} <: DefaultAlgorithmExtension
+        variable::V
+    end
+    RxInfer.resolve_variables(held::Held, interface) = Held(interface(held.variable))
+
+    @model function unconnected(y, w)
+        z ~ NormalMeanVariance(0.0, 1.0)
+        w ~ NormalMeanVariance(z, 1.0)
+        x ~ NormalMeanVariance(0.0, 1.0)
+        y ~ NormalMeanVariance(x, 1.0) where {algorithm = Held(z)}
+    end
+
+    @test_throws "names the variable `z`, which the node is not connected to" infer(
+        model = unconnected(), data = (y = 1.0, w = 0.0)
+    )
+end
+
+@testitem "The inputs of a Delta node are the members of `in`" begin
+    using RxInfer
+    import RxInfer: getmodel, node_interface_key
+    import GraphPPL: factor_nodes, fform, getproperties, getcontext
+
+    f(a) = 2a
+    g(a, b) = a + b
+
+    @model function deltas(y)
+        a ~ NormalMeanVariance(0.0, 1.0)
+        b ~ NormalMeanVariance(0.0, 1.0)
+        c := f(a)
+        d := g(a, b)
+        y ~ NormalMeanVariance(c + d, 1.0)
+    end
+
+    model = getmodel(RxInfer.create_model(deltas() | (y = 1.0,)))
+    context = getcontext(model)
+    keys = Dict()
+    factor_nodes(model) do _, nodedata
+        properties = getproperties(nodedata)
+        fform(properties) === f &&
+            (keys[f] = (node_interface_key(properties, context[:a]),))
+        fform(properties) === g && (
+            keys[g] = (
+                node_interface_key(properties, context[:a]),
+                node_interface_key(properties, context[:b]),
+            )
+        )
+    end
+    @test keys[f] == ((:in, 1),)
+    @test keys[g] == ((:in, 1), (:in, 2))
+end
