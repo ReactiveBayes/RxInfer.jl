@@ -159,6 +159,11 @@ ys = [[cos(t / 10), sin(t / 10)] .* 10 for t in 1:5]
     end
 end
 
+struct Gaussian{M, V} <: ContinuousMultivariateDistribution
+    μ::M
+    v::V
+end
+
 BayesBase.default_prod_rule(::Type{<:Gaussian}, ::Type{<:Gaussian}) = ClosedProd()
 BayesBase.prod(::ClosedProd, a::Gaussian, b::Gaussian) =
     Gaussian((b.v .* a.μ .+ a.v .* b.μ) ./ (a.v .+ b.v), a.v .* b.v ./ (a.v .+ b.v))
@@ -190,5 +195,5 @@ end
     Reactant.set_default_backend("cpu")
     y, ma, va, mb, vb = Reactant.to_rarray.(([2.0], [0.0], [1.0], [0.0], [3.0]))
     compiled = Reactant.@compile sync = true posterior(y, ma, va, mb, vb)
-    @assert Array.(compiled(y, ma, va, mb, vb)) == ([0.5], [0.75])
+    @test Array.(compiled(y, ma, va, mb, vb)) == ([0.5], [0.75])
 end
