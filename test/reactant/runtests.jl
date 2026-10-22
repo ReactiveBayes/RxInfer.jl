@@ -158,3 +158,37 @@ ys = [[cos(t / 10), sin(t / 10)] .* 10 for t in 1:5]
         @test all(isapprox.(Array.(computed), expected; atol = 1.0e-10))
     end
 end
+
+BayesBase.default_prod_rule(::Type{<:Gaussian}, ::Type{<:Gaussian}) = ClosedProd()
+BayesBase.prod(::ClosedProd, a::Gaussian, b::Gaussian) =
+    Gaussian((b.v .* a.μ .+ a.v .* b.μ) ./ (a.v .+ b.v), a.v .* b.v ./ (a.v .+ b.v))
+
+@define_message_update_rule(
+    node = +, target = (:in, k), args = (m[:out]::PointMass, m[:in][!k]::Gaussian),
+    body = args -> begin
+        other = args.m[:in][3 - k]
+        Gaussian(mean(args.m[:out]) .- other.μ, other.v)
+    end,
+)
+
+@model function sum_model(y, prior_a, prior_b)
+    a ~ prior_a
+    b ~ prior_b
+    y ~ a + b
+end
+
+function posterior(y, ma, va, mb, vb)
+    result = infer(
+        model = sum_model(prior_a = Gaussian(ma, va), prior_b = Gaussian(mb, vb)),
+        data = (; y), returnvars = (a = KeepLast(),), session = nothing
+    )
+    q = result.posteriors[:a]
+    return q.μ, q.v
+end
+
+@testset "RxInfer compiled with Reactant for a node with variable number of interfaces" begin
+    Reactant.set_default_backend("cpu")
+    y, ma, va, mb, vb = Reactant.to_rarray.(([2.0], [0.0], [1.0], [0.0], [3.0]))
+    compiled = Reactant.@compile sync = true posterior(y, ma, va, mb, vb)
+    @assert Array.(compiled(y, ma, va, mb, vb)) == ([0.5], [0.75])
+end
