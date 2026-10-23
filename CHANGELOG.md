@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Allow models with nodes with variable number of interfaces to compile with Reactant.
+
 ### Changed
 - The benchmark in `benchmarks/` runs on RxInfer 6.1, Julia 1.13 and Turing 0.49 (its samples are a FlexiChains chain), and the README's figures are regenerated from it, on the Apple M4 Max the previous figures came from.
 

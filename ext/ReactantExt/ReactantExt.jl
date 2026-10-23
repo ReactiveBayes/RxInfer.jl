@@ -23,6 +23,14 @@ using RxInfer, Reactant
 # Reactant's rewrite of `fieldnames` on a `UnionAll` calls itself until the stack overflows, so it is
 # marked too; it never sees a traced value.
 #
+# Grouped interfaces also resolve and cache their dependency positions during activation.
+# Dependency resolution and the position cache only inspect graph structure, including Rocket
+# observables. Their `count`/`map`/`any` operations otherwise walk undefined linked-list fields.
+# Mark the helpers themselves: `planned_dependencies` and `resolve_dependencies` can be inlined
+# before Reactant rewrites their caller. Joint clusters (such as addition inputs) also call
+# `input_label` directly during activation. It only labels interfaces and counts group members.
+# Message evaluation remains outside these helpers.
+#
 # The marks go into a set in Reactant, which precompilation does not keep, so they are made when the
 # extension loads.
 function __init__()
