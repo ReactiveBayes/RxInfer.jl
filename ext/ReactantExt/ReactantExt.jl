@@ -41,7 +41,6 @@ function __init__()
     Reactant.@skip_rewrite_func RxInfer.obtain_prediction
     Reactant.@skip_rewrite_func RxInfer.inference_postprocess_or_missing
     Reactant.@skip_rewrite_func RxInfer.with_option
-    Reactant.@skip_rewrite_func RxInfer.ReactiveMP.group_length
     return nothing
 end
 
