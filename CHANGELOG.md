@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.1.1] - 2026-10-23
+
 ### Fixed
 - Allow models with nodes with variable number of interfaces to compile with Reactant.
 
@@ -338,7 +340,8 @@ The last release of the 5.x series; RxInfer 6 runs on ReactiveMP 7.
 
 ---
 
-[Unreleased]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v6.1.0...HEAD
+[Unreleased]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v6.1.1...HEAD
+[6.1.1]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v6.1.0...v6.1.1
 [6.1.0]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v6.0.2...v6.1.0
 [6.0.2]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v6.0.1...v6.0.2
 [6.0.1]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v6.0.0...v6.0.1
