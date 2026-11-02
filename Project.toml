@@ -54,12 +54,11 @@ ProjectionExt = "ExponentialFamilyProjection"
 ReactantExt = "Reactant"
 TensorBoardLoggerExt = "TensorBoardLogger"
 
-# TEMPORARY: the branches of U3 (universal inference), until they are released. The paths are
-# switched to the pushed branches before anything is pushed.
+# TEMPORARY: the branches of U3 (universal inference), until they are released
 [sources]
 BayesBase = {url = "https://github.com/ReactiveBayes/BayesBase.jl", rev = "universal-inference"}
-MessagePassingRulesBase = {path = "../MessagePassingRulesBase.jl"}
-ReactiveMP = {path = "../ReactiveMP.jl"}
+MessagePassingRulesBase = {url = "https://github.com/ReactiveBayes/MessagePassingRulesBase.jl", rev = "universal-inference"}
+ReactiveMP = {url = "https://github.com/ReactiveBayes/ReactiveMP.jl", rev = "universal-inference"}
 
 [compat]
 AutoregressiveMessagePassingRules = "1"
