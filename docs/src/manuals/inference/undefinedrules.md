@@ -114,7 +114,20 @@ result = infer(
 ```
 
 !!! note 
-    For `rulefallback = NodeFunctionRuleFallback()` to apply, the node must be declared as `Stochastic` without interface groups, and calling the node with its inputs, as `BernoulliDistribution(p)`, must return an object with a `logpdf`. The fallback does not apply to a member of a group or to an input that is a joint marginal, and a rule of the node, where one fits, takes precedence over it.
+    For `rulefallback = NodeFunctionRuleFallback()` to apply, calling a `Stochastic` node with its inputs, as `BernoulliDistribution(p)`, must return an object with a `logpdf`; a node with interface groups needs a node function of its own. A `Deterministic` node, such as a Delta node without an approximation method, sends the message on its output pulled back through its function towards an input, and its function of the inputs' means towards its output. The fallback does not apply to an input that is a joint marginal, and a rule of the node, where one fits, takes precedence over it.
+
+The constraint can also be given once for every random variable that has none of its own, with the option `default_form_constraint`; `(q = …,)` applies it to the marginals only:
+
+```@example inference-undefinedrules
+result_by_default = infer(
+    model = simple_model(prior = BetaDistribution(1, 1), likelihood = BernoulliDistribution),
+    data = (y = dataset, ),
+    options = (
+        rulefallback = NodeFunctionRuleFallback(),
+        default_form_constraint = (q = ProjectedTo(Beta),),
+    )
+)
+```
 
 ### Result analysis
 

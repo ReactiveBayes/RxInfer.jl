@@ -331,6 +331,27 @@ Pass `nothing` to disable any checks.
 RxInfer.ReactiveMPInferenceOptions
 ```
 
+`stream_postprocessors = ReactiveMP.DampingPostprocessor(β)` damps the messages of every node: each is mixed with the previous message on its edge, `β` of the previous and `1 - β` of the new one in natural parameters. Damping keeps the fixed point of the iterations and takes smaller steps towards it, which can make a schedule that oscillates converge:
+
+```@example inference-overview-damping
+using RxInfer, StableRNGs #hide
+@model function iid_normal(y)
+    μ ~ NormalMeanVariance(0.0, 100.0)
+    τ ~ GammaShapeRate(1.0, 1.0)
+    y .~ NormalMeanPrecision(μ, τ)
+end
+
+result = infer(
+    model          = iid_normal(),
+    data           = (y = randn(StableRNG(1), 20) .+ 1.5,),
+    constraints    = @constraints(begin q(μ, τ) = q(μ)q(τ) end),
+    initialization = @initialization(begin q(τ) = GammaShapeRate(1.0, 1.0) end),
+    iterations     = 50,
+    options        = (stream_postprocessors = ReactiveMP.DampingPostprocessor(0.5),),
+)
+mean(last(result.posteriors[:μ]))
+```
+
 - ### `catch_exception`
 
 The `catch_exception` keyword argument specifies whether exceptions during the batch inference procedure should be caught in the `error` field of the 

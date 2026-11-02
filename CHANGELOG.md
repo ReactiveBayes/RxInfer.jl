@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- The inference option `default_form_constraint`: the form constraint of every random variable
+  that the constraints give none, such as a projection, or `(q = …, μ = …)` for the marginals and
+  the messages apart. A variable's own constraint replaces it.
+- The rule fallback gives joint marginals and average energies too (ReactiveMP 7.1): with
+  `context = (expectation = backend,)`, `NodeFunctionRuleFallback()` gives a free energy for a
+  mean-field node without an average energy, and it serves Delta nodes without an approximation
+  method.
+- Damping, `options = (stream_postprocessors = ReactiveMP.DampingPostprocessor(β),)`, documented
+  in the inference overview.
+
+### Changed
+- ReactiveMP 7.1, MessagePassingRulesBase 1.2 and BayesBase 1.7 are required.
+
 ## [6.1.1] - 2026-10-23
 
 ### Fixed
