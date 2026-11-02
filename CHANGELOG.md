@@ -18,9 +18,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   method.
 - Damping, `options = (stream_postprocessors = ReactiveMP.DampingPostprocessor(β),)`, documented
   in the inference overview.
+- Universal Laplace inference (U4): DeltaMessagePassingRules' `LaplaceForm` is a form constraint,
+  whose projection reports the product's normaliser and starts at the variable's last mode. With
+  `options = (rulefallback = ExpectationRuleFallback(), default_form_constraint = LaplaceForm(),
+  context = (expectation = backend,))`, a model whose nodes have no rules is inferred with no
+  method per node or variable, its free energy and log evidence included; documented in
+  "Inference without explicit message update rules".
 
 ### Changed
-- ReactiveMP 7.1, MessagePassingRulesBase 1.2 and BayesBase 1.7 are required.
+- ReactiveMP 7.1, MessagePassingRulesBase 1.2, DeltaMessagePassingRules 1.1 and BayesBase 1.7 are
+  required.
 
 ## [6.1.1] - 2026-10-23
 

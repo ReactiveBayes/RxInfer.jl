@@ -143,6 +143,41 @@ vline!([ hidden_p ], label = "hidden p")
 
 As shown, the estimated posterior is quite close to the actual hidden value of `p` used during the inference procedure.
 
+## [Universal Laplace inference](@id inference-undefinedrules-laplace)
+
+`NodeFunctionRuleFallback` collapses every other input to its mean, and needs a projection chosen per variable. DeltaMessagePassingRules gives a fallback and a projection that need neither:
+
+- `DeltaMessagePassingRules.ExpectationRuleFallback()` sends the node's expected log-density, `x ↦ E_q[log f(x, ·)]` over every other input, computed with the expectation backend of the rule context, such as `ExpectationApproximations.EADefault()`. It also serves Delta nodes without an approximation method, joint marginals and average energies, so the free energy is available;
+- `DeltaMessagePassingRules.LaplaceForm()` projects every belief with no closed form by Laplace's approximation, in the unconstrained coordinates of the variable's domain, which it reads from the support of its prior, and leaves closed forms as they are.
+
+The projection reads the domain from the prior's `minimum` and `maximum`, so the prior says them:
+
+```@example inference-undefinedrules
+Base.minimum(::BetaDistribution) = 0.0
+Base.maximum(::BetaDistribution) = 1.0
+nothing #hide
+```
+
+Given once for every random variable with the option `default_form_constraint`, they need no constraint and no method per variable:
+
+```@example inference-undefinedrules
+using ExpectationApproximations
+
+result_laplace = infer(
+    model = simple_model(prior = BetaDistribution(1, 1), likelihood = BernoulliDistribution),
+    data = (y = dataset, ),
+    options = (
+        rulefallback = DeltaMessagePassingRules.ExpectationRuleFallback(),
+        default_form_constraint = DeltaMessagePassingRules.LaplaceForm(),
+        context = (expectation = ExpectationApproximations.EADefault(),),
+    )
+)
+@test isapprox(mean(result_laplace.posteriors[:p]), mean(Beta(1 + count(dataset), 1 + length(dataset) - count(dataset))), rtol=1e-3) #hide
+mean(result_laplace.posteriors[:p]), std(result_laplace.posteriors[:p])
+```
+
+The posterior of `p` is a logit-normal distribution, a Gaussian in logit coordinates pushed forward onto the unit interval. Its mean is that of the exact posterior, `Beta(1 + 307, 1 + 693)` by conjugacy, to a relative `1e-3`. A rule that exists still takes precedence over the fallback, and a closed form passes the projection, so a conjugate model is inferred as without these options.
+
 ## [Fusing deterministic transformations with stochastic nodes](@id inference-undefinedrules-fusedelta)
 
 One of the limitations of the `NodeFunctionRuleFallback` implementation is that it does not support [`Deterministic` or `Delta` nodes](@ref delta-node-manual). However, it is possible to combine a deterministic transformation with a stochastic node, such as `Gaussian`. For instance, consider a dataset drawn from the `Normal` distribution, where the `mean` parameter has been transformed by a known function, and the true hidden variable is `h`.

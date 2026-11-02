@@ -54,9 +54,10 @@ ProjectionExt = "ExponentialFamilyProjection"
 ReactantExt = "Reactant"
 TensorBoardLoggerExt = "TensorBoardLogger"
 
-# TEMPORARY: the branches of U3 (universal inference), until they are released
+# TEMPORARY: the branches of U3 and U4 (universal inference), until they are released
 [sources]
 BayesBase = {url = "https://github.com/ReactiveBayes/BayesBase.jl", rev = "universal-inference"}
+DeltaMessagePassingRules = {url = "https://github.com/ReactiveBayes/DeltaMessagePassingRules.jl", rev = "universal-inference"}
 MessagePassingRulesBase = {url = "https://github.com/ReactiveBayes/MessagePassingRulesBase.jl", rev = "universal-inference"}
 ReactiveMP = {url = "https://github.com/ReactiveBayes/ReactiveMP.jl", rev = "universal-inference"}
 
@@ -73,7 +74,7 @@ SoftDotMessagePassingRules = "1"
 Base64 = "1"
 BayesBase = "1.7"
 DataStructures = "0.18, 0.19"
-DeltaMessagePassingRules = "1"
+DeltaMessagePassingRules = "1.1"
 Dates = "1.10"
 Distributions = "0.25"
 DomainSets = "0.5.2, 0.6, 0.7, 0.8"
