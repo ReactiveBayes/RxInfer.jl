@@ -55,6 +55,10 @@ include("callbacks/perfetto.jl")
 include("callbacks/stop_early.jl")
 
 include("report/report.jl")
+include("report/tables.jl")
+include("report/approximations.jl")
+include("report/diagnostics.jl")
+include("report/timings.jl")
 
 include("inference/postprocess.jl")
 include("inference/inference.jl")

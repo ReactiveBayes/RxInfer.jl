@@ -174,6 +174,8 @@ The posterior of `p` is a logit-normal distribution, a Gaussian in logit coordin
 - the expectation backend, `context = (expectation = …,)`. By default, the backends loaded in the session, frozen once per call of `infer` into a type-stable router that takes exact ones first: ExpectationApproximations' quadrature rules, which RxInfer loads, and any other package's that registers its own. `LaplaceApproximation(expectation = ExpectationApproximations.EADefault())` pins one;
 - the initialization, [`FromPriors`](@ref), which starts every variable the `initialization` leaves out from its prior. See [Initialization from priors](@ref initialization-from-priors).
 
+`report = true` records what the keyword approximated and how: which posteriors, by which nodes' messages, whether each Laplace approximation converged, and what is likely to be inaccurate. See [What was approximated: the inference report](@ref user-guide-inference-report).
+
 The same inference with the options:
 
 ```julia

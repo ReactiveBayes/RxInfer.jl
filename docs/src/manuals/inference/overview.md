@@ -413,35 +413,7 @@ Automatically changes the default value of the `postprocess` argument to `NoopPo
 
 - ### `report`
 
-`report = true` records an [`InferenceReport`](@ref) of the inference, read as `result.report`, or `engine.model.metadata[:report]` for streaming inference. Its section `result.report.approximations` says which nodes ran exact rules and which the rule fallback, which expectation backend each input of the fallback went to, and how each variable was projected: for [`LaplaceApproximation`](@ref), whether Laplace's iterations converged and the normaliser they found. The report is collected from the engine's events, which are not built when it is off, the default. `report = (:approximations,)` names the sections to record.
-
-```@example inference-overview-report
-using RxInfer #hide
-# A Bernoulli observation through the logistic function, a node with no rules
-struct LogisticBernoulli{X}
-    x::X
-end
-BayesBase.logpdf(d::LogisticBernoulli, y) = logpdf(Bernoulli(1 / (1 + exp(-d.x))), y)
-@define_factor_node(node = LogisticBernoulli, type = Stochastic, interfaces = [:out, :x])
-
-@model function classifier(y)
-    x ~ NormalMeanVariance(0.0, 4.0)
-    y .~ LogisticBernoulli(x)
-end
-
-result = infer(model = classifier(), data = (y = [1.0, 1.0, 0.0, 1.0],), fallback = LaplaceApproximation(), report = true)
-result.report
-```
-
-```@docs
-InferenceReport
-ApproximationsReport
-RxInfer.NodeRecord
-RxInfer.VariableRecord
-RxInfer.ProjectionRecord
-RxInfer.form_outcome
-RxInfer.RxInferReportCallbacks
-```
+`report = true` records an [`InferenceReport`](@ref) of the inference, read as `result.report`, or `engine.model.metadata[:report]` for streaming inference. Its section `result.report.approximations` says which posteriors were approximated and how, which nodes ran exact rules and which the rule fallback, and what is likely to be inaccurate ([`RxInfer.diagnostics`](@ref)); its section `result.report.timings` where the time went. The report is collected from the engine's events, which are not built when it is off, the default. `report = (:approximations,)` names the sections to record. See [What was approximated: the inference report](@ref user-guide-inference-report).
 
 - ### `postprocess`
 

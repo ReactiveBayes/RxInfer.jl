@@ -42,6 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   when off.
 - The hints of a missing rule and of variables never updated name `fallback =
   LaplaceApproximation()` and `initialization = FromPriors()`.
+- The inference report is a product (U8). `result.report.approximations` is shown by posterior: how each approximated posterior was projected and which node instances' messages formed it, named as the model writes them (`y[1:8] ~ LogisticBernoulli(x)`, folded by shape), exact or by the rule fallback, with the expectations. `RxInfer.diagnostics(report)` returns `ReportDiagnostic`s for the parts most likely to be inaccurate, such as a Laplace approximation that did not converge or a fallback averaging over a message under belief propagation. The section `result.report.timings`, a `TimingsReport`, records where the time went, exclusive per kind and by node. `report_tables` gives the tables as `ReportTable`s, which print as aligned text, or through PrettyTables.jl when it is loaded. A manual page, "What was approximated: the inference report".
 - `LaplaceApproximation` leaves a message it finds no mode for unprojected, `default_form_constraint
   = (q = LaplaceForm(), μ = LaplaceForm(nomode = :leave))`: a model whose deterministic nodes,
   `p := logistic(dot(a, θ))`, have exact rules is no longer fed an uninformative Gaussian from a

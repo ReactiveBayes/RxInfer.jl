@@ -94,6 +94,7 @@ makedocs(;
                 "Deterministic nodes" => "manuals/inference/delta-node.md",
                 "Non-conjugate inference" => "manuals/inference/nonconjugate.md",
                 "Undefined message update rules" => "manuals/inference/undefinedrules.md",
+                "The inference report" => "manuals/inference/report.md",
                 "Inference results postprocessing" => "manuals/inference/postprocess.md",
                 "Creating your own custom nodes" => "manuals/inference/create-node.md",
             ],
