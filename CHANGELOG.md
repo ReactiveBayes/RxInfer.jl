@@ -24,6 +24,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   context = (expectation = backend,))`, a model whose nodes have no rules is inferred with no
   method per node or variable, its free energy and log evidence included; documented in
   "Inference without explicit message update rules".
+- Initialization strategies (U5): `initialization` takes a strategy as well as a specification.
+  `FromPriors()` starts every random variable a specification leaves out from its prior, at its
+  parents' initial means, down chains and hierarchies, and `FromPriors(@initialization …)` applies
+  the block first. A package adds its own with `RxInfer.InitializationStrategy` and
+  `RxInfer.initial_marginal`.
 
 ### Changed
 - ReactiveMP 7.1, MessagePassingRulesBase 1.2, DeltaMessagePassingRules 1.1 and BayesBase 1.7 are

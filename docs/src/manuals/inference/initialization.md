@@ -113,6 +113,40 @@ Inline initialization applies only to the specific submodel invocation it is att
     ```
     Without the parentheses the parser will raise a syntax error.
 
+## [Initialization from priors](@id initialization-from-priors)
+
+Instead of a specification, `initialization` takes a strategy, which initialises every random variable a specification leaves out. [`FromPriors`](@ref) starts each from its prior, the distribution of the node whose output it is, at its parents' initial means:
+
+```julia
+@model function hierarchy(y)
+    τ ~ Gamma(shape = 2.0, rate = 1.0)
+    μ ~ Normal(mean = 1.0, precision = τ)
+    y .~ Normal(mean = μ, precision = τ)
+end
+
+# q(τ) = GammaShapeRate(2.0, 1.0), and q(μ) = NormalMeanPrecision(1.0, 2.0), 2.0 being the mean of τ
+infer(model = hierarchy(), data = (y = y,), constraints = MeanField(), initialization = FromPriors(), iterations = 10)
+```
+
+A chain or a hierarchy is initialised from its root down. A variable whose prior cannot be formed, because its parent is data or its node is not a distribution, is left out. Only marginals are set, never messages, so belief propagation is unchanged.
+
+A specification wrapped in `FromPriors` comes first and is never overwritten. This is how to break the symmetry of a mixture, whose components have equal priors:
+
+```julia
+initialization = FromPriors(@initialization begin
+    q(m) = [NormalMeanVariance(-1.0, 1.0), NormalMeanVariance(1.0, 1.0)]
+end)
+```
+
+A package defines its own strategy as a subtype of `RxInfer.InitializationStrategy`, with a method of `RxInfer.initial_marginal`:
+
+```@docs
+FromPriors
+RxInfer.InitializationStrategy
+RxInfer.initial_marginal
+RxInfer.initialization_specification
+```
+
 ## Part 1. Framing the problem 
 
 John has recently acquired a new car and is keenly interested in its `fuel consumption` rate. He holds the belief that this rate follows a linear relationship with the variable `speed`. To validate this hypothesis, he plans to conduct tests by driving his car on the urban roads close to his home, recording both the `fuel consumption` and `speed` data. To ascertain the fuel consumption rate, John has opted for Bayesian linear regression as his analytical method.

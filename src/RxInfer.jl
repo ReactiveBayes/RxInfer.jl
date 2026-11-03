@@ -38,6 +38,7 @@ include("model/plugins/reactivemp_inference.jl")
 include("model/plugins/reactivemp_free_energy.jl")
 include("model/plugins/reactivemp_force_marginal_computation_plugin.jl")
 include("model/plugins/initialization_plugin.jl")
+include("model/plugins/initialization_strategy.jl")
 
 include("constraints/form/form_ensure_supported.jl")
 include("constraints/form/form_fixed_marginal.jl")

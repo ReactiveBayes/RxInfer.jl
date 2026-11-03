@@ -607,7 +607,7 @@ Check the official documentation for more information about some of the argument
 - `data`: `NamedTuple` or `Dict` with data, required (or `datastream` or `predictvars`)
 - `datastream`: A stream of `NamedTuple` with data, required (or `data`)
 - `autoupdates = nothing`: auto-updates specification, required for streamline inference, see [`@autoupdates`](@ref)
-- `initialization = nothing`: initialization specification object, optional, see [`@initialization`](@ref)
+- `initialization = nothing`: initialization specification object, optional, see [`@initialization`](@ref), or a strategy that initialises what the specification leaves out, such as [`FromPriors`](@ref)
 - `constraints = nothing`: constraints specification object, or an alias such as `MeanField`, optional, see `@constraints`
 - `algorithm = nothing`: the algorithm specification, which algorithm each node runs under, optional, may be required for some models, see [`@algorithm`](@ref)
 - `meta = nothing`: deprecated, the old name of `algorithm`; a `@meta` specification is still accepted as one
