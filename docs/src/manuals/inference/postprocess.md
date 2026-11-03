@@ -57,7 +57,7 @@ result = infer(
     postprocess = CustomPostprocess()
 )
 
-@test occursin("Beta{Float64}(α=2.0, β=1.0)", result.posteriors[:θ]) #hide
+@test result.posteriors[:θ] == string(Beta(2.0, 1.0)) #hide
 result.posteriors[:θ] # should be a `String`
 ```
 
