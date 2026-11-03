@@ -588,6 +588,8 @@ function streaming_inference(;
         data = nothing,
         datastream = nothing,
         initialization = nothing,
+        # How to approximate where the model has no exact rules, a `FallbackScheme`
+        fallback = nothing,
         autoupdates = nothing,
         constraints = nothing,
         meta = nothing,
@@ -666,12 +668,17 @@ function streaming_inference(;
         _options = setcallbacks(_options, callbacks)
     end
 
+    # The fallback scheme fills what the options leave unset, its expectation backend chosen once
+    # among the session's here, before the options reach the model
+    _options = apply_fallback(_options, fallback)
+    _initialization = fallback_initialization(initialization, fallback)
+
     # We create a model with the `GraphPPL` package and insert a certain RxInfer related
     # plugins which include the VI plugin, meta plugin and the ReactiveMP integration plugin
     modelplugins = GraphPPL.PluginsCollection(
         GraphPPL.VariationalConstraintsPlugin(constraints),
         GraphPPL.MetaPlugin(meta),
-        RxInfer.InitializationPlugin(initialization),
+        RxInfer.InitializationPlugin(_initialization),
         RxInfer.ReactiveMPInferencePlugin(_options),
     )
 

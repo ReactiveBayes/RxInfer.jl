@@ -111,6 +111,14 @@ init = @initialization begin
 end
 ```
 
+`initialization` also takes a strategy that initialises what a specification leaves out, such as [`FromPriors`](@ref), which starts each variable from its prior; see [Initialization from priors](@ref initialization-from-priors).
+
+- ### `fallback`
+
+Also read the [Universal Laplace inference](@ref inference-undefinedrules-laplace) section.
+
+How to approximate wherever the model has no exact rules. `fallback = LaplaceApproximation()` approximates every node without rules by Laplace's method: it sets the rule fallback, the default form constraint of every random variable, the expectation backend and the initialization strategy, [`FromPriors`](@ref), each unless `options` or `initialization` set it. A node with a rule runs it, so a conjugate model is inferred as without the keyword.
+
 - ### `algorithm`
 
 Also read the [Algorithm specification](@ref user-guide-algorithm-specification) section.
@@ -331,6 +339,27 @@ Pass `nothing` to disable any checks.
 RxInfer.ReactiveMPInferenceOptions
 ```
 
+`stream_postprocessors = ReactiveMP.DampingPostprocessor(β)` damps the messages of every node: each is mixed with the previous message on its edge, `β` of the previous and `1 - β` of the new one in natural parameters. Damping keeps the fixed point of the iterations and takes smaller steps towards it, which can make a schedule that oscillates converge:
+
+```@example inference-overview-damping
+using RxInfer, StableRNGs #hide
+@model function iid_normal(y)
+    μ ~ NormalMeanVariance(0.0, 100.0)
+    τ ~ GammaShapeRate(1.0, 1.0)
+    y .~ NormalMeanPrecision(μ, τ)
+end
+
+result = infer(
+    model          = iid_normal(),
+    data           = (y = randn(StableRNG(1), 20) .+ 1.5,),
+    constraints    = @constraints(begin q(μ, τ) = q(μ)q(τ) end),
+    initialization = @initialization(begin q(τ) = GammaShapeRate(1.0, 1.0) end),
+    iterations     = 50,
+    options        = (stream_postprocessors = ReactiveMP.DampingPostprocessor(0.5),),
+)
+mean(last(result.posteriors[:μ]))
+```
+
 - ### `catch_exception`
 
 The `catch_exception` keyword argument specifies whether exceptions during the batch inference procedure should be caught in the `error` field of the 
@@ -381,6 +410,10 @@ Automatically changes the default value of the `postprocess` argument to `NoopPo
 `logscales = true` makes messages and marginals carry log scales: the log of the constant each rule's result leaves out, where the rule can compute it, combined through every product of messages. The `Mixture` node needs them, and in a model inferred exactly by belief propagation a posterior's log scale, `getlogscale(result.posteriors[:x])`, is the log evidence of the data, which is useful for Bayes factors and model comparison. Where a log scale cannot be computed, for instance after a variational rule, it is a `ReactiveMP.UndefinedLogScale` that says why. It can also be given as `options = (logscales = true,)`.
 
 Automatically changes the default value of the `postprocess` argument to `NoopPostprocess`, so the results keep the `Marginal` wrapper that carries the log scale.
+
+- ### `report`
+
+`report = true` records an [`InferenceReport`](@ref) of the inference, read as `result.report`, or `engine.model.metadata[:report]` for streaming inference. Its section `result.report.approximations` says which posteriors were approximated and how, which nodes ran exact rules and which the rule fallback, and what is likely to be inaccurate ([`RxInfer.diagnostics`](@ref)); its section `result.report.timings` where the time went. The report is collected from the engine's events, which are not built when it is off, the default. `report = (:approximations,)` names the sections to record. See [What was approximated: the inference report](@ref user-guide-inference-report).
 
 - ### `postprocess`
 

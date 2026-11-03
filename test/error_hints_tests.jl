@@ -47,7 +47,7 @@ end
     end
     # The pointer is a hint, shown unless hints are disabled.
     err = withenv("THROW_ON_INFERENCE_ERROR_HINT" => "false") do
-        @test_logs (:error, r"No message passing rule fits a node of the model") match_mode =
+        @test_logs (:error, r"No message passing rule fits a node of the model(.|\n)*fallback = LaplaceApproximation\(\)") match_mode =
             :any try
             infer(model = no_rule_model(), data = (y = 1.0,))
         catch e
@@ -90,7 +90,8 @@ end
     end
     @test err isa ErrorException
     @test contains(err.msg, "have not been updated") &&
-        contains(err.msg, "`@initialization`")
+        contains(err.msg, "`@initialization`") &&
+        contains(err.msg, "`initialization = FromPriors()`")
 end
 
 @testitem "a failed prediction with free energy keeps its error" begin

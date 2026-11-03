@@ -9,7 +9,7 @@
     "downloadUrl": "https://github.com/reactivebayes/RxInfer.jl/releases",
     "issueTracker": "https://github.com/reactivebayes/RxInfer.jl/issues",
     "name": "RxInfer.jl",
-    "version": "6.1.1",
+    "version": "6.2.0",
     "description": "Julia package for automated, scalable and efficient Bayesian inference on factor graphs with reactive message passing. ",
     "applicationCategory": "Statistics",
     "developmentStatus": "active",

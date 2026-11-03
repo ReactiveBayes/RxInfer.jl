@@ -101,7 +101,8 @@ function check_and_reset_updated!(updates)
             Variables [ $(names) ] have not been updated after an update event. Their posteriors were never computed.
             A rule runs only when all its inputs have arrived, so something these variables depend on never did. The usual causes:
             - a loop in the graph, or a variational factorisation from `@constraints`: the rules wait for each other until a message or
-              a marginal is given to start from, with `@initialization` and the `initialization` keyword of `infer`;
+              a marginal is given to start from, with `@initialization` and the `initialization` keyword of `infer`, or from every
+              variable's prior with `initialization = FromPriors()`;
             - a node that has no rule for the inputs it receives: if the loop is started, the error names the rule.
             See the documentation: https://docs.rxinfer.com/stable/manuals/inference/initialization/
             """,
@@ -366,8 +367,9 @@ function inference_process_error(
         The inputs a rule receives follow from the model's `@constraints`, and the rules a node has
         from the packages loaded (RxInfer loads the standard nodes, Delta, AR, DiscreteTransition,
         GCV, GaussianCoupling and SoftDot; another node needs its package, such as
-        `using PolyaMessagePassingRules`). The Rule Not Found guide explains the options:
-        https://docs.rxinfer.com/stable/manuals/sharpbits/rule-not-found/
+        `using PolyaMessagePassingRules`). A node without rules can be approximated, as every node
+        without rules is by `infer(...; fallback = LaplaceApproximation())`. The Rule Not Found
+        guide explains the options: https://docs.rxinfer.com/stable/manuals/sharpbits/rule-not-found/
         """
     end
     if preference_inference_error_hint && !disable_inference_error_hint
@@ -542,9 +544,13 @@ options_without_callbacks(options::NamedTuple) =
     Base.structdiff(options, NamedTuple{(:callbacks,)})
 options_without_callbacks(options) = options
 
-# The callbacks `infer` runs with: the user's, merged with the benchmark and trace callbacks when
-# those are enabled.
-function infer_callbacks(callbacks, benchmark, trace)
+# The callbacks `infer` runs with: the user's, merged with the benchmark, trace and report
+# callbacks when those are enabled.
+function infer_callbacks(callbacks, benchmark, trace, report = false)
+    recorded = inference_report(report)
+    if !isnothing(recorded)
+        callbacks = merge_callbacks(callbacks, RxInferReportCallbacks(recorded))
+    end
     if benchmark
         callbacks = merge_callbacks(callbacks, RxInferBenchmarkCallbacks())
     end
@@ -568,6 +574,7 @@ end
         datastream = nothing,
         autoupdates = nothing,
         initialization = nothing,
+        fallback = nothing,
         constraints = nothing,
         meta = nothing,
         options = nothing,
@@ -590,6 +597,7 @@ end
         catch_exception = false,
         benchmark = false,
         trace = false,
+        report = false,
         session = RxInfer.default_session()
     )
 
@@ -607,7 +615,8 @@ Check the official documentation for more information about some of the argument
 - `data`: `NamedTuple` or `Dict` with data, required (or `datastream` or `predictvars`)
 - `datastream`: A stream of `NamedTuple` with data, required (or `data`)
 - `autoupdates = nothing`: auto-updates specification, required for streamline inference, see [`@autoupdates`](@ref)
-- `initialization = nothing`: initialization specification object, optional, see [`@initialization`](@ref)
+- `initialization = nothing`: initialization specification object, optional, see [`@initialization`](@ref), or a strategy that initialises what the specification leaves out, such as [`FromPriors`](@ref)
+- `fallback = nothing`: how to approximate wherever the model has no exact rules, optional, such as [`LaplaceApproximation`](@ref): it sets the rule fallback, the default form constraint, the expectation backend and the initialization strategy, unless `options` or `initialization` set them. See [Inference without explicit message update rules](@ref inference-undefinedrules)
 - `constraints = nothing`: constraints specification object, or an alias such as `MeanField`, optional, see `@constraints`
 - `algorithm = nothing`: the algorithm specification, which algorithm each node runs under, optional, may be required for some models, see [`@algorithm`](@ref)
 - `meta = nothing`: deprecated, the old name of `algorithm`; a `@meta` specification is still accepted as one
@@ -631,6 +640,7 @@ Check the official documentation for more information about some of the argument
 - `warn = true`: enables/disables warnings
 - `benchmark = false`: when set to `true`, automatically merges a [`RxInferBenchmarkCallbacks`](@ref) instance with the user-provided `callbacks`. The benchmark results are accessible via `result.model.metadata[:benchmark]`. See [Benchmark callbacks](@ref manual-inference-benchmark-callbacks).
 - `trace = false`: when set to `true`, automatically merges a [`RxInferTraceCallbacks`](@ref) instance with the user-provided `callbacks`. Can also be a `Tuple` of `Symbol`s to trace only specific event types (e.g., `trace = (:before_iteration, :after_iteration)`). The trace results are accessible via `result.model.metadata[:trace]`. See [Trace callbacks](@ref manual-inference-trace-callbacks).
+- `report = false`: when set to `true`, records an [`InferenceReport`](@ref) of the inference, read as `result.report`: `result.report.approximations` says which posteriors were approximated and how, which nodes ran exact rules and which the rule fallback, and what is likely to be inaccurate ([`RxInfer.diagnostics`](@ref)); `result.report.timings` where the time went. Can also be a `Tuple` of the sections to record, `report = (:approximations,)`. See [What was approximated: the inference report](@ref user-guide-inference-report).
 - `session = RxInfer.default_session()`: current logging session for the RxInfer invokes, see `Session` for more details, pass `nothing` to disable logging
 
 ## Error hints
@@ -649,6 +659,7 @@ function infer(;
         datastream = nothing, # streamline specific
         autoupdates = nothing, # streamline specific
         initialization = nothing,
+        fallback = nothing,
         initmessages = nothing, # removed, the error is thrown below for easier migration
         initmarginals = nothing, # removed, the error is thrown below for easier migration
         constraints = nothing,
@@ -676,6 +687,7 @@ function infer(;
         warn = true,
         benchmark = false,
         trace = false,
+        report = false,
         session = RxInfer.default_session(),
     )
     # v6's `meta` is the node's algorithm now, and its old name stays for one release. The
@@ -723,13 +735,14 @@ function infer(;
     end
 
     infer_check_dicttype(:data, data)
+    check_fallback_scheme(fallback)
 
     # The callbacks are given as the keyword or in `options`, the keyword winning. Either way they are
     # one handler, which RxInfer's events and the engine's both reach, with the benchmark and trace
     # callbacks merged into it; `options` is passed on without them.
     # A single assignment: the callbacks are captured below, and a reassigned captured variable is boxed
     _callbacks = infer_callbacks(
-        given_callbacks(callbacks, options, warn), benchmark, trace
+        given_callbacks(callbacks, options, warn), benchmark, trace, report
     )
     _options = options_without_callbacks(options)
 
@@ -747,6 +760,7 @@ function infer(;
             !isnothing(autoupdates) && (ctx[:autoupdates] = repr(autoupdates))
             !isnothing(initialization) &&
                 (ctx[:initialization] = repr(initialization))
+            !isnothing(fallback) && (ctx[:fallback] = repr(fallback))
             ctx[:returnvars] = log_dictnt_entries(returnvars)
             ctx[:predictvars] = log_dictnt_entries(predictvars)
             ctx[:historyvars] = log_dictnt_entries(historyvars)
@@ -774,6 +788,7 @@ function infer(;
                 model = model,
                 data = data,
                 initialization = initialization,
+                fallback = fallback,
                 constraints = constraints,
                 meta = meta,
                 options = _options,
@@ -805,6 +820,7 @@ function infer(;
                 datastream = datastream,
                 autoupdates = autoupdates,
                 initialization = initialization,
+                fallback = fallback,
                 constraints = constraints,
                 meta = meta,
                 options = _options,

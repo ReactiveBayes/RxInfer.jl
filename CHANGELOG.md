@@ -8,6 +8,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- The inference option `default_form_constraint`: the form constraint of every random variable
+  that the constraints give none, such as a projection, or `(q = …, μ = …)` for the marginals and
+  the messages apart. A variable's own constraint replaces it.
+- The rule fallback gives joint marginals and average energies too (ReactiveMP 7.1): with
+  `context = (expectation = backend,)`, `NodeFunctionRuleFallback()` gives a free energy for a
+  mean-field node without an average energy, and it serves Delta nodes without an approximation
+  method.
+- Damping, `options = (stream_postprocessors = ReactiveMP.DampingPostprocessor(β),)`, documented
+  in the inference overview.
+- Universal Laplace inference (U4): DeltaMessagePassingRules' `LaplaceForm` is a form constraint,
+  whose projection reports the product's normaliser and starts at the variable's last mode. With
+  `options = (rulefallback = ExpectationRuleFallback(), default_form_constraint = LaplaceForm(),
+  context = (expectation = backend,))`, a model whose nodes have no rules is inferred with no
+  method per node or variable, its free energy and log evidence included; documented in
+  "Inference without explicit message update rules".
+- Initialization strategies (U5): `initialization` takes a strategy as well as a specification.
+  `FromPriors()` starts every random variable a specification leaves out from its prior, at its
+  parents' initial means, down chains and hierarchies, and `FromPriors(@initialization …)` applies
+  the block first. A package adds its own with `RxInfer.InitializationStrategy` and
+  `RxInfer.initial_marginal`.
+- `infer(...; fallback = LaplaceApproximation())` (U5): one keyword for universal Laplace
+  inference. A `FallbackScheme` sets the rule fallback, the default form constraint, the
+  expectation backend and the initialization strategy, `FromPriors()` for Laplace; what `options`
+  sets explicitly wins. Its default backend is the session's: the backends registered with
+  BayesBase, frozen once per call into a type-stable `ExpectationFirstOf`.
+- The inference report (U5), `infer(...; report = true)` and `result.report`: a composite
+  `InferenceReport`, whose first section, `ApproximationsReport`, records from the engine's events
+  which nodes ran exact rules and which the rule fallback, the expectation backend each input of
+  the fallback went to, and each variable's projections with their outcome (`LaplaceForm`'s
+  method, normaliser and convergence, through `RxInfer.form_outcome`). Off by default, and free
+  when off.
+- The hints of a missing rule and of variables never updated name `fallback =
+  LaplaceApproximation()` and `initialization = FromPriors()`.
+- The inference report is a product (U8). `result.report.approximations` is shown by posterior: how each approximated posterior was projected and which node instances' messages formed it, named as the model writes them (`y[1:8] ~ LogisticBernoulli(x)`, folded by shape), exact or by the rule fallback, with the expectations. `RxInfer.diagnostics(report)` returns `ReportDiagnostic`s for the parts most likely to be inaccurate, such as a Laplace approximation that did not converge or a fallback averaging over a message under belief propagation. The section `result.report.timings`, a `TimingsReport`, records where the time went, exclusive per kind and by node. `report_tables` gives the tables as `ReportTable`s, which print as aligned text, or through PrettyTables.jl when it is loaded. A manual page, "What was approximated: the inference report".
+- `LaplaceApproximation` leaves a message it finds no mode for unprojected, `default_form_constraint
+  = (q = LaplaceForm(), μ = LaplaceForm(nomode = :leave))`: a model whose deterministic nodes,
+  `p := logistic(dot(a, θ))`, have exact rules is no longer fed an uninformative Gaussian from a
+  likelihood's message alone.
+
+### Changed
+- ReactiveMP 7.1, MessagePassingRulesBase 1.2, DeltaMessagePassingRules 1.1 and BayesBase 1.7 are
+  required.
+
 ## [6.1.1] - 2026-10-23
 
 ### Fixed

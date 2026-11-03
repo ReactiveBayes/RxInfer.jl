@@ -87,7 +87,13 @@ function Base.showerror(io::IO, result::InferenceResult)
 end
 
 function Base.getproperty(result::InferenceResult, property::Symbol)
-    if property === :free_energy && getfield(result, :free_energy) === nothing
+    if property === :report
+        metadata = getfield(result, :model).metadata
+        haskey(metadata, :report) || error(
+            "The inference report has not been recorded. Use the `report = true` keyword argument of the `infer` function to record it.",
+        )
+        return metadata[:report]
+    elseif property === :free_energy && getfield(result, :free_energy) === nothing
         error(
             """
             Bethe Free Energy has not been computed. 
@@ -122,6 +128,8 @@ function batch_inference(;
         data = nothing,
         # Initialization specification object
         initialization = nothing,
+        # How to approximate where the model has no exact rules, a `FallbackScheme`
+        fallback = nothing,
         # Constraints specification object
         constraints = nothing,
         # Meta specification object
@@ -196,12 +204,17 @@ function batch_inference(;
         _options = setcallbacks(_options, callbacks)
     end
 
+    # The fallback scheme fills what the options leave unset, its expectation backend chosen once
+    # among the session's here, before the options reach the model
+    _options = apply_fallback(_options, fallback)
+    _initialization = fallback_initialization(initialization, fallback)
+
     # We create a model with the `GraphPPL` package and insert a certain RxInfer related
     # plugins which include the VI plugin, meta plugin and the ReactiveMP integration plugin
     modelplugins = GraphPPL.PluginsCollection(
         GraphPPL.VariationalConstraintsPlugin(constraints),
         GraphPPL.MetaPlugin(meta),
-        RxInfer.InitializationPlugin(initialization),
+        RxInfer.InitializationPlugin(_initialization),
         RxInfer.ReactiveMPInferencePlugin(_options),
     )
 
