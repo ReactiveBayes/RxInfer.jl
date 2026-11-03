@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
-- Make the custom postprocessing docs example independent of how Distributions prints distributions, which changed in Distributions v0.25.133.
+- Make the custom postprocessing docs example and the postprocessing and initialization tests independent of how Distributions prints distributions, which changed in Distributions v0.25.133.
 
 ## [6.1.1] - 2026-10-23
 
