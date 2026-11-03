@@ -1,6 +1,6 @@
-export LaplaceApproximation
+export LaplaceApproximation, CVI
 
-import DeltaMessagePassingRules: ExpectationRuleFallback
+import DeltaMessagePassingRules: ExpectationRuleFallback, VariationalForm
 import Random
 
 """
@@ -34,10 +34,15 @@ function fallback_rule end
 
 """
     RxInfer.fallback_form(scheme::FallbackScheme)
+    RxInfer.fallback_form(scheme::FallbackScheme, backend)
 
-The form constraint of `scheme`, the `default_form_constraint` option it sets.
+The form constraint of `scheme`, the `default_form_constraint` option it sets. The second method
+receives the expectation backend the inference runs with, for a form that computes expectations
+itself, such as [`CVI`](@ref)'s; by default it is the first.
 """
 function fallback_form end
+
+fallback_form(scheme::FallbackScheme, backend) = fallback_form(scheme)
 
 """
     RxInfer.fallback_expectation(scheme::FallbackScheme)
@@ -101,6 +106,51 @@ function Base.show(io::IO, scheme::LaplaceApproximation)
     return print(io, "LaplaceApproximation(tol = ", scheme.form.tol, ", maxiters = ", scheme.form.maxiters, ")")
 end
 
+"""
+    CVI(; tol = 1e-10, maxiters = 100, expectation = nothing, initialization = FromPriors())
+
+A [`FallbackScheme`](@ref), conjugate-computation variational inference wherever a model has no
+exact rules. As for [`LaplaceApproximation`](@ref), DeltaMessagePassingRules'
+`ExpectationRuleFallback` computes the missing messages from the nodes' log-densities. But
+`VariationalForm` projects every belief that has no closed form onto the Gaussian that minimises
+`KL(q ‖ p)`, in the unconstrained coordinates of its domain, rather than onto Laplace's Gaussian
+at its mode. Under mean field that is the optimal Gaussian, the fixed point of CVI's natural
+gradient, and the free energy is the negative evidence lower bound, never above Laplace's. The
+expectations of the projection, as of the rules, go to the session's backends, or to
+`expectation`.
+
+```julia
+infer(model = bioassay(x = x, n = n), data = (y = y,), fallback = CVI())
+```
+
+# Keywords
+- `tol`, `maxiters`: of the Newton iterations on the evidence lower bound of each projection;
+- `expectation`: the expectation backend, such as `ExpectationApproximations.EADefault()`;
+  `nothing`, the default, for the backends loaded in the session;
+- `initialization`: the initialization strategy, [`FromPriors`](@ref) by default; `nothing` for none.
+"""
+struct CVI{F <: VariationalForm, E, I} <: FallbackScheme
+    form::F
+    expectation::E
+    initialization::I
+end
+
+function CVI(; tol::Real = 1.0e-10, maxiters::Integer = 100, expectation = nothing, initialization = FromPriors())
+    return CVI(VariationalForm(; tol, maxiters), expectation, initialization)
+end
+
+fallback_rule(::CVI) = ExpectationRuleFallback()
+# The marginals and the messages through the inference's backend; a message with no mode is left
+fallback_form(scheme::CVI, backend) = (
+    q = VariationalForm(scheme.form.tol, scheme.form.maxiters, :project, backend),
+    μ = VariationalForm(scheme.form.tol, scheme.form.maxiters, :leave, backend),
+)
+fallback_form(scheme::CVI) = fallback_form(scheme, nothing)
+fallback_expectation(scheme::CVI) = scheme.expectation
+fallback_initialization(scheme::CVI) = scheme.initialization
+
+Base.show(io::IO, scheme::CVI) = print(io, "CVI(tol = ", scheme.form.tol, ", maxiters = ", scheme.form.maxiters, ")")
+
 # The backends loaded in the session, frozen into a type-stable router: the one call that depends
 # on them is here, before the options reach the model, so everything downstream is static.
 function session_expectation_backend(rng)
@@ -127,13 +177,15 @@ apply_fallback(options::ReactiveMPInferenceOptions, ::Nothing) = options
 function apply_fallback(options::ReactiveMPInferenceOptions, scheme::FallbackScheme)
     with_rule = isnothing(getrulefallback(options)) ?
         setrulefallback(options, fallback_rule(scheme)) : options
-    with_form = isnothing(getdefault_form_constraint(with_rule)) ?
-        setdefault_form_constraint(with_rule, fallback_form(scheme)) : with_rule
-    context = something(getcontext(with_form), NamedTuple())
-    isnothing(get(context, :expectation, nothing)) || return with_form
-    given = fallback_expectation(scheme)
+    # the backend first: a form that computes expectations takes it too
+    context = something(getcontext(with_rule), NamedTuple())
+    given_in_options = get(context, :expectation, nothing)
+    given = something(given_in_options, Some(fallback_expectation(scheme)))
     backend = isnothing(given) ?
         session_expectation_backend(get(context, :rng, Random.default_rng())) : given
+    with_form = isnothing(getdefault_form_constraint(with_rule)) ?
+        setdefault_form_constraint(with_rule, fallback_form(scheme, backend)) : with_rule
+    isnothing(given_in_options) || return with_form
     return setcontext(with_form, merge(context, (expectation = backend,)))
 end
 

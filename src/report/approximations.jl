@@ -448,17 +448,24 @@ function projection_display(records)
     outcome = first(outcomes)
     outcome isa NamedTuple && haskey(outcome, :method) || return string(nameof(typeof(record.constraint)), ", ", outcome_display(outcome))
     method = outcome.method
+    if method === :projection
+        text = string("projected onto ", get(outcome, :family, "a family"))
+        bound = get(outcome, :logZ, nothing)
+        isnothing(bound) || (text *= string(", ELBO = ", round(bound; sigdigits = 4)))
+        return text
+    end
     method === :closed_form && return "closed form"
     method === :discrete && return "normalised exactly"
     method === :point_mass && return "a point mass"
     method === :unprojected && return "left unprojected"
     converged = count(o -> get(o, :converged, true) === true, outcomes)
     iterations = [o.iterations for o in outcomes if haskey(o, :iterations)]
-    name = method === :laplace ? "Laplace" : string(method)
+    name = method === :laplace ? "Laplace" : method === :variational ? "CVI" : string(method)
+    bound = method === :variational ? "ELBO" : "log Z"
     if length(outcomes) == 1
         steps = string(only(iterations), only(iterations) == 1 ? " iteration" : " iterations")
         text = converged == 1 ? string(name, ", converged in ", steps) : string(name, ", did not converge in ", steps)
-        haskey(outcome, :logZ) && !isnothing(outcome.logZ) && (text *= string(", log Z = ", round(outcome.logZ; sigdigits = 4)))
+        haskey(outcome, :logZ) && !isnothing(outcome.logZ) && (text *= string(", ", bound, " = ", round(outcome.logZ; sigdigits = 4)))
         return text
     end
     span = minimum(iterations) == maximum(iterations) ? string(minimum(iterations)) : string(minimum(iterations), " to ", maximum(iterations))

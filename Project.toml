@@ -58,6 +58,7 @@ TensorBoardLoggerExt = "TensorBoardLogger"
 [sources]
 BayesBase = {url = "https://github.com/ReactiveBayes/BayesBase.jl", rev = "universal-inference"}
 DeltaMessagePassingRules = {url = "https://github.com/ReactiveBayes/DeltaMessagePassingRules.jl", rev = "universal-inference"}
+ExponentialFamilyProjection = {url = "https://github.com/ReactiveBayes/ExponentialFamilyProjection.jl", rev = "universal-inference"}
 MessagePassingRulesBase = {url = "https://github.com/ReactiveBayes/MessagePassingRulesBase.jl", rev = "universal-inference"}
 ReactiveMP = {url = "https://github.com/ReactiveBayes/ReactiveMP.jl", rev = "universal-inference"}
 
@@ -79,7 +80,7 @@ Dates = "1.10"
 Distributions = "0.25"
 DomainSets = "0.5.2, 0.6, 0.7, 0.8"
 ExponentialFamily = "2.1.0"
-ExponentialFamilyProjection = "3.0.0"
+ExponentialFamilyProjection = "3.5"
 FastCholesky = "1.3.0"
 GraphPPL = "4.7.0"
 HTTP = "1.10, 2"

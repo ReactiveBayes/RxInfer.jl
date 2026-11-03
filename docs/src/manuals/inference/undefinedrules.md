@@ -203,6 +203,36 @@ RxInfer.fallback_initialization
 RxInfer.with_specification
 ```
 
+### [Conjugate-computation variational inference](@id inference-undefinedrules-cvi)
+
+`fallback = CVI()` keeps the same rules and changes the projection. A belief with no closed form
+becomes the Gaussian that minimises `KL(q ‖ p)`, in the unconstrained coordinates of its domain,
+instead of Laplace's Gaussian at the mode: `DeltaMessagePassingRules.VariationalForm` in place of
+`LaplaceForm`.
+- Under mean field, a variable's belief is the product of its prior and the rule fallback's
+  expected log-densities, and this Gaussian is the optimal one. It is the fixed point of the
+  natural gradient of conjugate-computation variational inference.
+- The free energy is then the negative evidence lower bound, never above Laplace's.
+- The expectations of the projection go to the same backend as those of the rules.
+
+```@example inference-undefinedrules
+result_cvi = infer(
+    model = simple_model(prior = BetaDistribution(1, 1), likelihood = BernoulliDistribution),
+    data = (y = dataset, ),
+    fallback = CVI(),
+)
+@test isapprox(mean(result_cvi.posteriors[:p]), mean(Beta(1 + count(dataset), 1 + length(dataset) - count(dataset))), rtol=1e-3) #hide
+mean(result_cvi.posteriors[:p]), std(result_cvi.posteriors[:p])
+```
+
+With a thousand observations, the posterior is close to Gaussian in logit coordinates, so both
+schemes agree. On a skewed posterior the variational Gaussian is shifted towards the heavier tail,
+where Laplace's stays at the mode.
+
+```@docs
+CVI
+```
+
 ## [Fusing deterministic transformations with stochastic nodes](@id inference-undefinedrules-fusedelta)
 
 One of the limitations of the `NodeFunctionRuleFallback` implementation is that it does not support [`Deterministic` or `Delta` nodes](@ref delta-node-manual). However, it is possible to combine a deterministic transformation with a stochastic node, such as `Gaussian`. For instance, consider a dataset drawn from the `Normal` distribution, where the `mean` parameter has been transformed by a known function, and the true hidden variable is `h`.

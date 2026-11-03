@@ -95,7 +95,8 @@ stopped.report
 ```
 
 The warnings:
-- a posterior's Laplace approximation that did not converge, `:laplace_not_converged`;
+- a posterior's Laplace approximation that did not converge, `:laplace_not_converged`, or its
+  variational Gaussian under [`CVI`](@ref), `:variational_not_converged`;
 - a joint computed by the fallback that did not converge, `:joint_not_converged`;
 - under belief propagation, a fallback's message that is an expectation over another random
   variable's message, `:expectation_over_messages`. Such a message is the variational one, an

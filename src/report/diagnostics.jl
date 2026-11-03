@@ -10,6 +10,8 @@ a part of the inference that is likely to be inaccurate or `:note` for one worth
 The kinds:
 - `:laplace_not_converged` (warning): a posterior's Laplace approximation did not converge, so its
   Gaussian is the last iterate of Newton's method, its curvature floored;
+- `:variational_not_converged` (warning): a posterior's variational Gaussian, [`CVI`](@ref)'s, did
+  not converge;
 - `:joint_not_converged` (warning): a joint the rule fallback computed by Laplace's method did not
   converge;
 - `:expectation_over_messages` (warning): under belief propagation, the rule fallback took an
@@ -55,21 +57,25 @@ function diagnostics(report::ApproximationsReport)
 end
 
 function variable_diagnostics!(found, report::ApproximationsReport)
-    notconverged = Dict{Symbol, Vector{Tuple{Symbol, Any}}}()
+    notconverged = Dict{Tuple{Symbol, Symbol}, Vector{Tuple{Symbol, Any}}}()
     unprojected = Dict{Symbol, Vector{Tuple{Symbol, Any}}}()
     unprojected_count = Dict{Symbol, Int}()
     for (key, record) in report.variables
         outcome = record.marginal.outcome
-        if record.marginal.projections > 0 && outcome isa NamedTuple && get(outcome, :method, nothing) === :laplace && get(outcome, :converged, true) === false
-            push!(get!(notconverged, first(key), Tuple{Symbol, Any}[]), key)
+        method = outcome isa NamedTuple ? get(outcome, :method, nothing) : nothing
+        if record.marginal.projections > 0 && method in (:laplace, :variational) && get(outcome, :converged, true) === false
+            push!(get!(notconverged, (first(key), method), Tuple{Symbol, Any}[]), key)
         end
         if record.messages.unprojected > 0
             push!(get!(unprojected, first(key), Tuple{Symbol, Any}[]), key)
             unprojected_count[first(key)] = get(unprojected_count, first(key), 0) + record.messages.unprojected
         end
     end
-    for (name, keys) in notconverged
-        push!(found, ReportDiagnostic(:laplace_not_converged, :warning, variables_display(keys), "Laplace did not converge: the Gaussian is at the last iterate. A prior, or `LaplaceApproximation(maxiters = …)`, may help"))
+    for ((name, method), keys) in notconverged
+        found_one = method === :laplace ?
+            ReportDiagnostic(:laplace_not_converged, :warning, variables_display(keys), "Laplace did not converge: the Gaussian is at the last iterate. A prior, or `LaplaceApproximation(maxiters = …)`, may help") :
+            ReportDiagnostic(:variational_not_converged, :warning, variables_display(keys), "CVI did not converge: the Gaussian is the last iterate of its bound's maximisation. `CVI(maxiters = …)` may help")
+        push!(found, found_one)
     end
     for (name, keys) in unprojected
         n = unprojected_count[name]
