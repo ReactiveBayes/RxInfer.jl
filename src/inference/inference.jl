@@ -640,7 +640,7 @@ Check the official documentation for more information about some of the argument
 - `warn = true`: enables/disables warnings
 - `benchmark = false`: when set to `true`, automatically merges a [`RxInferBenchmarkCallbacks`](@ref) instance with the user-provided `callbacks`. The benchmark results are accessible via `result.model.metadata[:benchmark]`. See [Benchmark callbacks](@ref manual-inference-benchmark-callbacks).
 - `trace = false`: when set to `true`, automatically merges a [`RxInferTraceCallbacks`](@ref) instance with the user-provided `callbacks`. Can also be a `Tuple` of `Symbol`s to trace only specific event types (e.g., `trace = (:before_iteration, :after_iteration)`). The trace results are accessible via `result.model.metadata[:trace]`. See [Trace callbacks](@ref manual-inference-trace-callbacks).
-- `report = false`: when set to `true`, records an [`InferenceReport`](@ref) of the inference, read as `result.report`, such as `result.report.approximations`, which says what was computed by exact rules and what was approximated, and how. Can also be a `Tuple` of the sections to record, `report = (:approximations,)`. See [The inference report](@ref manual-inference-report).
+- `report = false`: when set to `true`, records an [`InferenceReport`](@ref) of the inference, read as `result.report`, such as `result.report.approximations`, which says what was computed by exact rules and what was approximated, and how. Can also be a `Tuple` of the sections to record, `report = (:approximations,)`. See [Inference execution](@ref user-guide-inference-execution).
 - `session = RxInfer.default_session()`: current logging session for the RxInfer invokes, see `Session` for more details, pass `nothing` to disable logging
 
 ## Error hints

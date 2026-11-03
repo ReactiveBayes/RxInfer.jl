@@ -411,7 +411,7 @@ Automatically changes the default value of the `postprocess` argument to `NoopPo
 
 Automatically changes the default value of the `postprocess` argument to `NoopPostprocess`, so the results keep the `Marginal` wrapper that carries the log scale.
 
-- ### [`report`](@id manual-inference-report)
+- ### `report`
 
 `report = true` records an [`InferenceReport`](@ref) of the inference, read as `result.report`, or `engine.model.metadata[:report]` for streaming inference. Its section `result.report.approximations` says which nodes ran exact rules and which the rule fallback, which expectation backend each input of the fallback went to, and how each variable was projected: for [`LaplaceApproximation`](@ref), whether Laplace's iterations converged and the normaliser they found. The report is collected from the engine's events, which are not built when it is off, the default. `report = (:approximations,)` names the sections to record.
 
