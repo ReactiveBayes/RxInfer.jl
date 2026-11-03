@@ -111,6 +111,14 @@ init = @initialization begin
 end
 ```
 
+`initialization` also takes a strategy that initialises what a specification leaves out, such as [`FromPriors`](@ref), which starts each variable from its prior; see [Initialization from priors](@ref initialization-from-priors).
+
+- ### `fallback`
+
+Also read the [Universal Laplace inference](@ref inference-undefinedrules-laplace) section.
+
+How to approximate wherever the model has no exact rules. `fallback = LaplaceApproximation()` approximates every node without rules by Laplace's method: it sets the rule fallback, the default form constraint of every random variable, the expectation backend and the initialization strategy, [`FromPriors`](@ref), each unless `options` or `initialization` set it. A node with a rule runs it, so a conjugate model is inferred as without the keyword.
+
 - ### `algorithm`
 
 Also read the [Algorithm specification](@ref user-guide-algorithm-specification) section.
@@ -402,6 +410,38 @@ Automatically changes the default value of the `postprocess` argument to `NoopPo
 `logscales = true` makes messages and marginals carry log scales: the log of the constant each rule's result leaves out, where the rule can compute it, combined through every product of messages. The `Mixture` node needs them, and in a model inferred exactly by belief propagation a posterior's log scale, `getlogscale(result.posteriors[:x])`, is the log evidence of the data, which is useful for Bayes factors and model comparison. Where a log scale cannot be computed, for instance after a variational rule, it is a `ReactiveMP.UndefinedLogScale` that says why. It can also be given as `options = (logscales = true,)`.
 
 Automatically changes the default value of the `postprocess` argument to `NoopPostprocess`, so the results keep the `Marginal` wrapper that carries the log scale.
+
+- ### [`report`](@id manual-inference-report)
+
+`report = true` records an [`InferenceReport`](@ref) of the inference, read as `result.report`, or `engine.model.metadata[:report]` for streaming inference. Its section `result.report.approximations` says which nodes ran exact rules and which the rule fallback, which expectation backend each input of the fallback went to, and how each variable was projected: for [`LaplaceApproximation`](@ref), whether Laplace's iterations converged and the normaliser they found. The report is collected from the engine's events, which are not built when it is off, the default. `report = (:approximations,)` names the sections to record.
+
+```@example inference-overview-report
+using RxInfer #hide
+# A Bernoulli observation through the logistic function, a node with no rules
+struct LogisticBernoulli{X}
+    x::X
+end
+BayesBase.logpdf(d::LogisticBernoulli, y) = logpdf(Bernoulli(1 / (1 + exp(-d.x))), y)
+@define_factor_node(node = LogisticBernoulli, type = Stochastic, interfaces = [:out, :x])
+
+@model function classifier(y)
+    x ~ NormalMeanVariance(0.0, 4.0)
+    y .~ LogisticBernoulli(x)
+end
+
+result = infer(model = classifier(), data = (y = [1.0, 1.0, 0.0, 1.0],), fallback = LaplaceApproximation(), report = true)
+result.report
+```
+
+```@docs
+InferenceReport
+ApproximationsReport
+RxInfer.NodeRecord
+RxInfer.VariableRecord
+RxInfer.ProjectionRecord
+RxInfer.form_outcome
+RxInfer.RxInferReportCallbacks
+```
 
 - ### `postprocess`
 

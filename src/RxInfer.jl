@@ -54,6 +54,8 @@ include("callbacks/trace.jl")
 include("callbacks/perfetto.jl")
 include("callbacks/stop_early.jl")
 
+include("report/report.jl")
+
 include("inference/postprocess.jl")
 include("inference/inference.jl")
 

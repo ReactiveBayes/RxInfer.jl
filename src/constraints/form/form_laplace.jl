@@ -10,15 +10,20 @@ ReactiveMP.default_prod_constraint(::LaplaceForm) = GenericProd()
 
 mutable struct LaplaceFormContext
     previous::Any
+    # how the last projection went, for the approximation report
+    last::Any
 end
 
-ReactiveMP.prepare_context(::LaplaceForm) = LaplaceFormContext(nothing)
+ReactiveMP.prepare_context(::LaplaceForm) = LaplaceFormContext(nothing, nothing)
 
 function ReactiveMP.constrain_form_logscale(form::LaplaceForm, context::LaplaceFormContext, density)
     result = laplace_form(form, density, context.previous)
     isnothing(result.logZ) || (context.previous = result.mode)
+    context.last = (; result.method, result.logZ, result.converged, result.iterations)
     return result.distribution, result.logZ
 end
+
+form_outcome(::LaplaceForm, context::LaplaceFormContext, distribution, result) = context.last
 
 ReactiveMP.constrain_form(form::LaplaceForm, context::LaplaceFormContext, density) =
     first(ReactiveMP.constrain_form_logscale(form, context, density))

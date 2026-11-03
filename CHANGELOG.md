@@ -34,6 +34,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   expectation backend and the initialization strategy, `FromPriors()` for Laplace; what `options`
   sets explicitly wins. Its default backend is the session's: the backends registered with
   BayesBase, frozen once per call into a type-stable `ExpectationFirstOf`.
+- The inference report (U5), `infer(...; report = true)` and `result.report`: a composite
+  `InferenceReport`, whose first section, `ApproximationsReport`, records from the engine's events
+  which nodes ran exact rules and which the rule fallback, the expectation backend each input of
+  the fallback went to, and each variable's projections with their outcome (`LaplaceForm`'s
+  method, normaliser and convergence, through `RxInfer.form_outcome`). Off by default, and free
+  when off.
 
 ### Changed
 - ReactiveMP 7.1, MessagePassingRulesBase 1.2, DeltaMessagePassingRules 1.1 and BayesBase 1.7 are

@@ -87,7 +87,13 @@ function Base.showerror(io::IO, result::InferenceResult)
 end
 
 function Base.getproperty(result::InferenceResult, property::Symbol)
-    if property === :free_energy && getfield(result, :free_energy) === nothing
+    if property === :report
+        metadata = getfield(result, :model).metadata
+        haskey(metadata, :report) || error(
+            "The inference report has not been recorded. Use the `report = true` keyword argument of the `infer` function to record it.",
+        )
+        return metadata[:report]
+    elseif property === :free_energy && getfield(result, :free_energy) === nothing
         error(
             """
             Bethe Free Energy has not been computed. 
