@@ -568,6 +568,7 @@ end
         datastream = nothing,
         autoupdates = nothing,
         initialization = nothing,
+        fallback = nothing,
         constraints = nothing,
         meta = nothing,
         options = nothing,
@@ -608,6 +609,7 @@ Check the official documentation for more information about some of the argument
 - `datastream`: A stream of `NamedTuple` with data, required (or `data`)
 - `autoupdates = nothing`: auto-updates specification, required for streamline inference, see [`@autoupdates`](@ref)
 - `initialization = nothing`: initialization specification object, optional, see [`@initialization`](@ref), or a strategy that initialises what the specification leaves out, such as [`FromPriors`](@ref)
+- `fallback = nothing`: how to approximate wherever the model has no exact rules, optional, such as [`LaplaceApproximation`](@ref): it sets the rule fallback, the default form constraint, the expectation backend and the initialization strategy, unless `options` or `initialization` set them. See [Inference without explicit message update rules](@ref inference-undefinedrules)
 - `constraints = nothing`: constraints specification object, or an alias such as `MeanField`, optional, see `@constraints`
 - `algorithm = nothing`: the algorithm specification, which algorithm each node runs under, optional, may be required for some models, see [`@algorithm`](@ref)
 - `meta = nothing`: deprecated, the old name of `algorithm`; a `@meta` specification is still accepted as one
@@ -649,6 +651,7 @@ function infer(;
         datastream = nothing, # streamline specific
         autoupdates = nothing, # streamline specific
         initialization = nothing,
+        fallback = nothing,
         initmessages = nothing, # removed, the error is thrown below for easier migration
         initmarginals = nothing, # removed, the error is thrown below for easier migration
         constraints = nothing,
@@ -723,6 +726,7 @@ function infer(;
     end
 
     infer_check_dicttype(:data, data)
+    check_fallback_scheme(fallback)
 
     # The callbacks are given as the keyword or in `options`, the keyword winning. Either way they are
     # one handler, which RxInfer's events and the engine's both reach, with the benchmark and trace
@@ -747,6 +751,7 @@ function infer(;
             !isnothing(autoupdates) && (ctx[:autoupdates] = repr(autoupdates))
             !isnothing(initialization) &&
                 (ctx[:initialization] = repr(initialization))
+            !isnothing(fallback) && (ctx[:fallback] = repr(fallback))
             ctx[:returnvars] = log_dictnt_entries(returnvars)
             ctx[:predictvars] = log_dictnt_entries(predictvars)
             ctx[:historyvars] = log_dictnt_entries(historyvars)
@@ -774,6 +779,7 @@ function infer(;
                 model = model,
                 data = data,
                 initialization = initialization,
+                fallback = fallback,
                 constraints = constraints,
                 meta = meta,
                 options = _options,
@@ -805,6 +811,7 @@ function infer(;
                 datastream = datastream,
                 autoupdates = autoupdates,
                 initialization = initialization,
+                fallback = fallback,
                 constraints = constraints,
                 meta = meta,
                 options = _options,

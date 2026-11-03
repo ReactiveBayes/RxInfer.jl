@@ -68,6 +68,10 @@ end
     @test all(mean.(universal.posteriors[:x]) .≈ mean.(exact.posteriors[:x]))
     @test all(var.(universal.posteriors[:x]) .≈ var.(exact.posteriors[:x]))
     @test only(universal.free_energy) ≈ only(exact.free_energy)
+    # One switch gives the same
+    switched = infer(model = chain(observation = Observed), data = (y = y,), free_energy = true, fallback = LaplaceApproximation())
+    @test mean.(switched.posteriors[:x]) == mean.(universal.posteriors[:x])
+    @test switched.free_energy == universal.free_energy
 end
 
 @testitem "universal Laplace: logistic regression equals the Laplace fit of the posterior" setup = [UniversalLaplace] begin
@@ -100,6 +104,9 @@ end
     @test cov(posterior) ≈ cov(reference.distribution) rtol = 1.0e-8
     # Every likelihood message is exact, so the posterior's log scale is Laplace's evidence.
     @test getlogscale(posterior) ≈ reference.logZ rtol = 1.0e-8
+    switched = infer(model = bioassay(x = x, n = n), data = (y = y,), fallback = LaplaceApproximation(), logscales = true)
+    @test mean(switched.posteriors[:θ]) == mean(posterior)
+    @test getlogscale(switched.posteriors[:θ]) == getlogscale(posterior)
 end
 
 @testitem "universal Laplace: a Delta node without an approximation method, every variable returned" setup = [UniversalLaplace] begin
@@ -119,6 +126,9 @@ end
     @test mean(result.posteriors[:x]) ≈ mean(reference.distribution) rtol = 1.0e-8
     @test var(result.posteriors[:x]) ≈ var(reference.distribution) rtol = 1.0e-8
     @test result.posteriors[:z] isa ExponentialFamily.UnivariateNormalDistributionsFamily
+    switched = infer(model = warped(), data = (y = 0.5,), fallback = LaplaceApproximation())
+    @test switched.posteriors[:x] == result.posteriors[:x]
+    @test switched.posteriors[:z] == result.posteriors[:z]
 end
 
 @testitem "universal Laplace: a two-input Delta node has a free energy under belief propagation" setup = [UniversalLaplace] begin
@@ -166,6 +176,13 @@ end
         @test calls[] == 0
         @test plain.posteriors == universal.posteriors
         @test plain.free_energy == universal.free_energy
+        # One switch: the same, when the priors initialise both
+        calls, callbacks = U.fallback_calls()
+        from_priors = infer(; model, data, kwargs..., initialization = FromPriors(get(kwargs, :initialization, nothing)))
+        switched = infer(; model, data, kwargs..., fallback = LaplaceApproximation(), callbacks)
+        @test calls[] == 0
+        @test switched.posteriors == from_priors.posteriors
+        @test switched.free_energy == from_priors.free_energy
     end
 end
 
@@ -220,6 +237,10 @@ end
     # Today the means are within half a posterior standard deviation of the grid's.
     @test abs(mean(qp) - grid_p) < 0.5 * sd_p
     @test abs(mean(qλ) - grid_λ) < 0.5 * sd_λ
+    # One switch and no initialization: the priors are the initial marginals written above
+    switched = infer(; model = drunk_monks(), data = (y = counts,), constraints, iterations = 20, free_energy = true, fallback = LaplaceApproximation())
+    @test last(switched.posteriors[:p]) == qp && last(switched.posteriors[:λ]) == qλ
+    @test switched.free_energy == result.free_energy
 end
 
 @testitem "universal Laplace: Poisson regression equals the Laplace fit of the posterior" setup = [UniversalLaplace] begin
@@ -247,6 +268,7 @@ end
     reference = U.EA.laplace(θ -> logpdf(prior, θ) + sum(logpdf(PoissonLogLinear(θ, x[i]), y[i]) for i in eachindex(y)), [0.0, 0.0])
     @test mean(result.posteriors[:θ]) ≈ mean(reference.distribution) rtol = 1.0e-8
     @test cov(result.posteriors[:θ]) ≈ cov(reference.distribution) rtol = 1.0e-8
+    @test infer(model = counts(x = x), data = (y = y,), fallback = LaplaceApproximation()).posteriors[:θ] == result.posteriors[:θ]
 end
 
 @testitem "universal Laplace: stochastic volatility, against the global Laplace approximation" setup = [UniversalLaplace] begin
@@ -291,4 +313,5 @@ end
     @info "stochastic volatility: RMSE of the means against the global Laplace" gap
     # 0.19 today, with T = 50, ϕ = 0.9 and s = 0.3
     @test gap < 0.25
+    @test infer(model = volatility(), data = (y = y,), fallback = LaplaceApproximation()).posteriors[:x] == result.posteriors[:x]
 end

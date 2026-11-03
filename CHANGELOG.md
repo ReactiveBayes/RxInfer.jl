@@ -29,6 +29,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   parents' initial means, down chains and hierarchies, and `FromPriors(@initialization …)` applies
   the block first. A package adds its own with `RxInfer.InitializationStrategy` and
   `RxInfer.initial_marginal`.
+- `infer(...; fallback = LaplaceApproximation())` (U5): one keyword for universal Laplace
+  inference. A `FallbackScheme` sets the rule fallback, the default form constraint, the
+  expectation backend and the initialization strategy, `FromPriors()` for Laplace; what `options`
+  sets explicitly wins. Its default backend is the session's: the backends registered with
+  BayesBase, frozen once per call into a type-stable `ExpectationFirstOf`.
 
 ### Changed
 - ReactiveMP 7.1, MessagePassingRulesBase 1.2, DeltaMessagePassingRules 1.1 and BayesBase 1.7 are
