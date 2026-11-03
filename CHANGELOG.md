@@ -42,6 +42,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   when off.
 - The hints of a missing rule and of variables never updated name `fallback =
   LaplaceApproximation()` and `initialization = FromPriors()`.
+- `LaplaceApproximation` leaves a message it finds no mode for unprojected, `default_form_constraint
+  = (q = LaplaceForm(), μ = LaplaceForm(nomode = :leave))`: a model whose deterministic nodes,
+  `p := logistic(dot(a, θ))`, have exact rules is no longer fed an uninformative Gaussian from a
+  likelihood's message alone.
 
 ### Changed
 - ReactiveMP 7.1, MessagePassingRulesBase 1.2, DeltaMessagePassingRules 1.1 and BayesBase 1.7 are

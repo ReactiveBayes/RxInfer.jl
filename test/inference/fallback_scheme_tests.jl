@@ -33,7 +33,7 @@ end
     scheme = LaplaceApproximation(tol = 1.0e-8, maxiters = 50)
     options = apply_fallback(convert(ReactiveMPInferenceOptions, nothing), scheme)
     @test getrulefallback(options) === ExpectationRuleFallback()
-    @test getdefault_form_constraint(options) === LaplaceForm(1.0e-8, 50)
+    @test getdefault_form_constraint(options) === (q = LaplaceForm(1.0e-8, 50), μ = LaplaceForm(1.0e-8, 50, :leave))
     # the session's backends, frozen into a type-stable router that chooses as EA's default does
     backend = getcontext(options).expectation
     @test backend isa BayesBase.ExpectationFirstOf

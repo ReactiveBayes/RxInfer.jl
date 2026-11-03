@@ -62,8 +62,10 @@ fallback_initialization(::FallbackScheme) = nothing
 A [`FallbackScheme`](@ref), Laplace's approximation wherever a model has no exact rules:
 DeltaMessagePassingRules' `ExpectationRuleFallback` computes the missing messages from the nodes'
 log-densities, and `LaplaceForm(; tol, maxiters)` projects every belief that has no closed form
-onto a Gaussian in the unconstrained coordinates of its domain. The log evidence and the free
-energy are computed too.
+onto a Gaussian in the unconstrained coordinates of its domain. A message whose product has no
+mode, such as a likelihood's message alone, is left unprojected (`nomode = :leave`), so that an
+exact rule downstream is not fed a Gaussian Laplace did not find; the fallback then pulls it back
+through the node. The log evidence and the free energy are computed too.
 
 ```julia
 infer(model = bioassay(x = x, n = n), data = (y = y,), fallback = LaplaceApproximation())
@@ -89,7 +91,9 @@ function LaplaceApproximation(;
 end
 
 fallback_rule(::LaplaceApproximation) = ExpectationRuleFallback()
-fallback_form(scheme::LaplaceApproximation) = scheme.form
+# The marginals take the projection as it is; a message Laplace finds no mode for is left
+fallback_form(scheme::LaplaceApproximation) =
+    (q = scheme.form, μ = LaplaceForm(scheme.form.tol, scheme.form.maxiters, :leave))
 fallback_expectation(scheme::LaplaceApproximation) = scheme.expectation
 fallback_initialization(scheme::LaplaceApproximation) = scheme.initialization
 

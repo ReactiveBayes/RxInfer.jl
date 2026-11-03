@@ -170,7 +170,7 @@ The posterior of `p` is a logit-normal distribution, a Gaussian in logit coordin
 `LaplaceApproximation()` sets four things, each of which the options can set instead:
 
 - the rule fallback, `DeltaMessagePassingRules.ExpectationRuleFallback()`, the option `rulefallback`. It sends a node's expected log-density, `x ↦ E_q[log f(x, ·)]` over every other input. It also serves Delta nodes without an approximation method, joint marginals and average energies, so the free energy is available;
-- the default form constraint, `DeltaMessagePassingRules.LaplaceForm()`, the option `default_form_constraint`. It projects every belief with no closed form by Laplace's approximation, in the unconstrained coordinates of the variable's domain, and leaves closed forms as they are;
+- the default form constraint, `DeltaMessagePassingRules.LaplaceForm()`, the option `default_form_constraint`. It projects every belief with no closed form by Laplace's approximation, in the unconstrained coordinates of the variable's domain, and leaves closed forms as they are. A message whose product has no mode, such as a likelihood's message alone, is left as it is, `LaplaceForm(nomode = :leave)`, so that an exact rule downstream is never fed a Gaussian Laplace did not find;
 - the expectation backend, `context = (expectation = …,)`. By default, the backends loaded in the session, frozen once per call of `infer` into a type-stable router that takes exact ones first: ExpectationApproximations' quadrature rules, which RxInfer loads, and any other package's that registers its own. `LaplaceApproximation(expectation = ExpectationApproximations.EADefault())` pins one;
 - the initialization, [`FromPriors`](@ref), which starts every variable the `initialization` leaves out from its prior. See [Initialization from priors](@ref initialization-from-priors).
 
@@ -185,7 +185,7 @@ infer(
     initialization = FromPriors(),
     options = (
         rulefallback = DeltaMessagePassingRules.ExpectationRuleFallback(),
-        default_form_constraint = DeltaMessagePassingRules.LaplaceForm(),
+        default_form_constraint = (q = DeltaMessagePassingRules.LaplaceForm(), μ = DeltaMessagePassingRules.LaplaceForm(nomode = :leave)),
         context = (expectation = ExpectationApproximations.EADefault(),),
     ),
 )
