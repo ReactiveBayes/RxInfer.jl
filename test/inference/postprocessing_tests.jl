@@ -39,7 +39,7 @@ end
         postprocess = CustomPostprocess(),
     )
 
-    @test occursin("Beta{Float64}(α=2.0, β=1.0)", result.posteriors[:θ])
+    @test result.posteriors[:θ] == string(Beta(2.0, 1.0))
 end
 
 @testitem "Postprocessing should not be invoked when error occurs immediately" begin

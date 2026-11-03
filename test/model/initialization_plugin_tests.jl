@@ -1244,10 +1244,8 @@ end
     @test GraphPPL.hasextra(model[node], RxInfer.InitMarExtraKey)
     @test GraphPPL.getextra(model[node], RxInfer.InitMarExtraKey) ==
         Distributions.Gamma(1.0, 1.0)
-    @test occursin(
-        "Gamma{Float64}(α=1.0, θ=1.0)",
-        repr(GraphPPL.getextra(model[node], RxInfer.InitMarExtraKey)),
-    )
+    @test GraphPPL.getextra(model[node], RxInfer.InitMarExtraKey) isa
+        Distributions.Gamma{Float64}
 
     # GammaShapeScale without kwargs
     init_gss = @initialization begin
@@ -1264,10 +1262,8 @@ end
     @test GraphPPL.hasextra(model[node], RxInfer.InitMarExtraKey)
     @test GraphPPL.getextra(model[node], RxInfer.InitMarExtraKey) ==
         Distributions.Gamma(1.0, 1.0)
-    @test occursin(
-        "Gamma{Float64}(α=1.0, θ=1.0)",
-        repr(GraphPPL.getextra(model[node], RxInfer.InitMarExtraKey)),
-    )
+    @test GraphPPL.getextra(model[node], RxInfer.InitMarExtraKey) isa
+        Distributions.Gamma{Float64}
 end
 
 @testitem "Full initialization macro with function" begin
