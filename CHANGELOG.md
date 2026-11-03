@@ -40,6 +40,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the fallback went to, and each variable's projections with their outcome (`LaplaceForm`'s
   method, normaliser and convergence, through `RxInfer.form_outcome`). Off by default, and free
   when off.
+- The hints of a missing rule and of variables never updated name `fallback =
+  LaplaceApproximation()` and `initialization = FromPriors()`.
 
 ### Changed
 - ReactiveMP 7.1, MessagePassingRulesBase 1.2, DeltaMessagePassingRules 1.1 and BayesBase 1.7 are

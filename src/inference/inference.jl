@@ -101,7 +101,8 @@ function check_and_reset_updated!(updates)
             Variables [ $(names) ] have not been updated after an update event. Their posteriors were never computed.
             A rule runs only when all its inputs have arrived, so something these variables depend on never did. The usual causes:
             - a loop in the graph, or a variational factorisation from `@constraints`: the rules wait for each other until a message or
-              a marginal is given to start from, with `@initialization` and the `initialization` keyword of `infer`;
+              a marginal is given to start from, with `@initialization` and the `initialization` keyword of `infer`, or from every
+              variable's prior with `initialization = FromPriors()`;
             - a node that has no rule for the inputs it receives: if the loop is started, the error names the rule.
             See the documentation: https://docs.rxinfer.com/stable/manuals/inference/initialization/
             """,
@@ -366,8 +367,9 @@ function inference_process_error(
         The inputs a rule receives follow from the model's `@constraints`, and the rules a node has
         from the packages loaded (RxInfer loads the standard nodes, Delta, AR, DiscreteTransition,
         GCV, GaussianCoupling and SoftDot; another node needs its package, such as
-        `using PolyaMessagePassingRules`). The Rule Not Found guide explains the options:
-        https://docs.rxinfer.com/stable/manuals/sharpbits/rule-not-found/
+        `using PolyaMessagePassingRules`). A node without rules can be approximated, as every node
+        without rules is by `infer(...; fallback = LaplaceApproximation())`. The Rule Not Found
+        guide explains the options: https://docs.rxinfer.com/stable/manuals/sharpbits/rule-not-found/
         """
     end
     if preference_inference_error_hint && !disable_inference_error_hint
