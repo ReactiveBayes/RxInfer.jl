@@ -548,6 +548,8 @@ end
 
 function fallback_outcome_display(outcome, calls, nonconverged)
     outcome isa NamedTuple && haskey(outcome, :method) || return "expectation"
+    # a member's message times the node's own, with the other members known
+    outcome.method === :closed_form && return "closed form"
     name = outcome.method === :joint_laplace ? "joint Laplace" : string(outcome.method)
     nonconverged == 0 && return string(name, ", converged")
     return string(name, ", ", nonconverged, " of ", calls, " did not converge")

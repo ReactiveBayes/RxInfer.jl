@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- The report names a fallback joint computed in closed form, from a member's message and the
+  node's own rule with the other members known, as "closed form" (DeltaMessagePassingRules).
 - The inference option `default_form_constraint`: the form constraint of every random variable
   that the constraints give none, such as a projection, or `(q = …, μ = …)` for the marginals and
   the messages apart. A variable's own constraint replaces it.

@@ -147,6 +147,27 @@ end
     @test last(result.posteriors[:a]) isa ExponentialFamily.UnivariateNormalDistributionsFamily
 end
 
+@testitem "universal Laplace: a rate times a known exposure, its free energy exact" setup = [UniversalLaplace] begin
+    using BayesBase, Distributions, ExponentialFamily, SpecialFunctions
+
+    # `y ~ Poisson(λ * t)` with `t` known: every message has a rule, but the joint of `*` over
+    # (λ, t) has none. The fallback gives it as λ's marginal, its message times the node's own
+    # rule towards it, and t's point mass, so the Bethe free energy of this tree is -log p(y).
+    @model function exposure(y, t)
+        λ ~ Gamma(shape = 2.0, rate = 1.0)
+        y ~ Poisson(λ * t)
+    end
+    y, t = 7, 3.5
+    result = infer(model = exposure(t = t), data = (y = y,), free_energy = true, fallback = LaplaceApproximation(), report = true)
+    # the negative binomial evidence of a Gamma-Poisson count
+    logevidence = loggamma(y + 2.0) - loggamma(2.0) - loggamma(y + 1.0) + 2.0 * log(1.0 / (1.0 + t)) + y * log(t / (1.0 + t))
+    @test only(result.free_energy) ≈ -logevidence rtol = 1.0e-8
+    @test mean(result.posteriors[:λ]) ≈ (2.0 + y) / (1.0 + t)
+    tables = report_tables(result.report.approximations)
+    joints = first(table for table in tables if table.title == "Joints and energies by the fallback")
+    @test any(row -> row[4] == "closed form", joints.rows)
+end
+
 @testitem "universal Laplace: conjugate models never ask the fallback" setup = [UniversalLaplace] begin
     using BayesBase, Distributions, ExponentialFamily, StableRNGs
     U = UniversalLaplace
