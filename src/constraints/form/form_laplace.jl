@@ -1,12 +1,13 @@
-import DeltaMessagePassingRules: LaplaceForm, laplace_form, VariationalForm, variational_form
+import DeltaMessagePassingRules: LaplaceForm, laplace_form, VariationalForm, variational_form, MomentForm, moment_form
 
-# DeltaMessagePassingRules' `LaplaceForm` and `VariationalForm` as form constraints: their
-# projections, `laplace_form` and `variational_form`, report the log of the product's normaliser
-# (Laplace's evidence approximation, or the evidence lower bound), which completes the log scale of
+# DeltaMessagePassingRules' `LaplaceForm`, `VariationalForm` and `MomentForm` as form constraints:
+# their projections, `laplace_form`, `variational_form` and `moment_form`, report the log of the
+# product's normaliser (Laplace's evidence approximation, the evidence lower bound, or the moments'
+# quadrature), which completes the log scale of
 # a product whose normaliser was unknown, and each variable's context keeps the last point, where
 # the next projection starts.
 
-const ProjectionForm = Union{LaplaceForm, VariationalForm}
+const ProjectionForm = Union{LaplaceForm, VariationalForm, MomentForm}
 
 ReactiveMP.default_form_check_strategy(::ProjectionForm) = FormConstraintCheckLast()
 ReactiveMP.default_prod_constraint(::ProjectionForm) = GenericProd()
@@ -21,6 +22,7 @@ ReactiveMP.prepare_context(::ProjectionForm) = LaplaceFormContext(nothing, nothi
 
 project(form::LaplaceForm, density, previous) = laplace_form(form, density, previous)
 project(form::VariationalForm, density, previous) = variational_form(form, density, previous)
+project(form::MomentForm, density, previous) = moment_form(form, density, previous)
 
 function ReactiveMP.constrain_form_logscale(form::ProjectionForm, context::LaplaceFormContext, density)
     result = project(form, density, context.previous)

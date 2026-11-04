@@ -233,6 +233,57 @@ where Laplace's stays at the mode.
 CVI
 ```
 
+### [Cavity propagation: Laplace propagation and expectation propagation](@id inference-undefinedrules-propagation)
+
+`LaplaceApproximation()` and `CVI()` project each belief of a variable separately: the message to
+each neighbour and the marginal are each a product of messages, projected on its own. A message
+with no closed form, such as a likelihood's, is then approximated once per product, each time in
+a different context. The beliefs disagree with one another, and a message that has no Gaussian of
+its own, such as one pulled back through a nonlinear function, cannot be projected at all.
+
+`fallback = LaplacePropagation()` and `fallback = ExpectationPropagation()` approximate each such
+message once, against its context.
+- Every random variable keeps one site per edge: the edge's message times its cavity, projected,
+  divided by the cavity.
+- The cavity is the product of the other edges' sites, which is the variable's message out on that
+  edge.
+- Every belief of the variable is then a product of sites, one Gaussian seen from each edge.
+- The projection is Laplace's method for `LaplacePropagation()` and moment matching for
+  `ExpectationPropagation()`, with Gauss–Hermite points on the tilted density's own Laplace
+  approximation.
+- A deterministic node's message towards its output is projected the same way, against the
+  output's cavity.
+
+```julia
+result = infer(
+    model = state_space_model(),
+    data = (y = observations,),
+    iterations = 10,
+    fallback = ExpectationPropagation(),
+    free_energy = true,
+)
+```
+
+**Iterations and proper-ness.**
+- A site is computed when its edge's message arrives, so each iteration is a sweep over the sites;
+  a chain settles in a few.
+- Sites, cavities and messages may be improper, a Gaussian with a singular or an indefinite
+  precision. Nothing checks: each is passed as it is computed, in natural parameters, which the
+  Gaussian nodes' rules take.
+
+**The free energy** is expectation propagation's.
+- A node without rules takes its term from its inbound messages, the cavities, and every other
+  term is Bethe's.
+- It is read once an iteration, in batch inference only.
+- The first iteration's value can be partial, while the sites are still being formed.
+
+```@docs
+LaplacePropagation
+ExpectationPropagation
+RxInfer.fallback_site
+RxInfer.SitePolicy
+```
+
 ## [Fusing deterministic transformations with stochastic nodes](@id inference-undefinedrules-fusedelta)
 
 One of the limitations of the `NodeFunctionRuleFallback` implementation is that it does not support [`Deterministic` or `Delta` nodes](@ref delta-node-manual). However, it is possible to combine a deterministic transformation with a stochastic node, such as `Gaussian`. For instance, consider a dataset drawn from the `Normal` distribution, where the `mean` parameter has been transformed by a known function, and the true hidden variable is `h`.

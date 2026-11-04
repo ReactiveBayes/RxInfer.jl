@@ -47,6 +47,7 @@ include("constraints/form/form_sample_list.jl")
 include("constraints/form/form_laplace.jl")
 
 include("fallback/schemes.jl")
+include("fallback/propagation.jl")
 
 include("callbacks/events.jl")
 include("callbacks/benchmark.jl")

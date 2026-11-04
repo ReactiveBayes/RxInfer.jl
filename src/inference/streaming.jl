@@ -685,6 +685,7 @@ function streaming_inference(;
     is_free_energy, S = unwrap_free_energy_option(free_energy)
 
     if is_free_energy
+        isnothing(getsite_policy(_options)) || throw(ArgumentError("the free energy under cavity propagation, the schemes `LaplacePropagation()` and `ExpectationPropagation()`, is computed in batch inference only: set `free_energy = false`, or infer with `data`"))
         fe_objective = BetheFreeEnergy(S)
         modelplugins = modelplugins + ReactiveMPFreeEnergyPlugin(fe_objective)
     end

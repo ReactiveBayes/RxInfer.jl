@@ -5,6 +5,7 @@ import ReactiveMP:
     AfterMarginalRuleCallEvent,
     AfterFactorBoundFreeEnergyEvent,
     AfterFormConstraintAppliedEvent,
+    AfterSiteComputationEvent,
     BeforeMarginalComputationEvent,
     AfterMarginalComputationEvent,
     WrappedFormConstraint,
@@ -146,16 +147,18 @@ ProjectionRecord() = ProjectionRecord(0, nothing, 0, 0)
 What an [`ApproximationsReport`](@ref) records of a random variable: its form `constraint`, the
 [`RxInfer.ProjectionRecord`](@ref)s of its `marginal` and its `messages`, and how its posterior was
 formed, `incoming`: for each node and target whose messages reached the variable, how many came
-from an exact rule and how many from the rule fallback, `(rules, fallbacks)`.
+from an exact rule and how many from the rule fallback, `(rules, fallbacks)`. Under cavity
+propagation, `sites` records the sites projected on its edges.
 """
 mutable struct VariableRecord
     constraint::Any
     marginal::ProjectionRecord
     messages::ProjectionRecord
     incoming::Dict{Tuple{Any, Any}, Tuple{Int, Int}}
+    sites::ProjectionRecord
 end
 
-VariableRecord() = VariableRecord(nothing, ProjectionRecord(), ProjectionRecord(), Dict())
+VariableRecord() = VariableRecord(nothing, ProjectionRecord(), ProjectionRecord(), Dict(), ProjectionRecord())
 
 """
     ApproximationsReport
@@ -364,6 +367,18 @@ function record!(report::ApproximationsReport, event::AfterFormConstraintApplied
     return nothing
 end
 
+# A site projected on one of a variable's edges, under cavity propagation; a message that is its
+# own site, or passes, is not a projection
+function record!(report::ApproximationsReport, event::AfterSiteComputationEvent)
+    outcome = event.outcome
+    (outcome isa NamedTuple && get(outcome, :method, nothing) in (:laplace, :moment_matching)) || return nothing
+    sites = get!(VariableRecord, report.variables, variable_key(event.variable.label)).sites
+    sites.projections += 1
+    sites.outcome = outcome
+    sites.nonconverged += get(outcome, :converged, true) === false
+    return nothing
+end
+
 # The parts of a form constraint, each with its prepared context
 form_parts(constraint::CompositeFormConstraint) =
     foldl((parts, c) -> (parts..., form_parts(c)...), constraint.constraints; init = ())
@@ -388,6 +403,7 @@ ReactiveMP.listens(::ApproximationsReport, ::Type{T}) where {T} =
     T <: Union{
     AfterMessageRuleCallEvent, AfterMarginalRuleCallEvent, AfterFactorBoundFreeEnergyEvent,
     AfterFormConstraintAppliedEvent, BeforeMarginalComputationEvent, AfterMarginalComputationEvent,
+    AfterSiteComputationEvent,
 }
 
 """
@@ -402,6 +418,7 @@ node_types(report::ApproximationsReport) = report.nodes
 # changed it beyond normalising a closed form
 function is_approximated(record::VariableRecord)
     any(((rules, fallbacks),) -> fallbacks > 0, values(record.incoming)) && return true
+    record.sites.projections > 0 && return true
     return record.marginal.projections > 0 && projection_approximates(record.marginal.outcome)
 end
 
@@ -439,6 +456,7 @@ variables_display(keys) =
 
 function projection_display(records)
     record = first(records)
+    any(r -> r.sites.projections > 0, records) && return sites_display(records)
     projected = [r.marginal for r in records if r.marginal.projections > 0]
     if isempty(projected)
         isnothing(record.constraint) && return "no projection"
@@ -470,6 +488,18 @@ function projection_display(records)
     end
     span = minimum(iterations) == maximum(iterations) ? string(minimum(iterations)) : string(minimum(iterations), " to ", maximum(iterations))
     return string(name, ", ", converged, " of ", length(outcomes), " converged, ", span, " iterations")
+end
+
+# Under cavity propagation: the sites, by the projection of the scheme, and how they converged
+function sites_display(records)
+    sites = [r.sites for r in records if r.sites.projections > 0]
+    method = get(first(sites).outcome, :method, nothing)
+    name = method === :laplace ? "Laplace propagation" : "expectation propagation"
+    total = sum(s -> s.projections, sites)
+    nonconverged = sum(s -> s.nonconverged, sites)
+    text = string(name, ", ", total, total == 1 ? " site" : " sites")
+    nonconverged > 0 && (text *= string(", ", nonconverged, " not converged"))
+    return text
 end
 
 outcome_display(::Nothing) = "projected"

@@ -16,9 +16,10 @@ each through a method:
 - [`RxInfer.fallback_expectation`](@ref), the expectation backend, or `nothing` for the backends
   loaded in the session;
 - [`RxInfer.fallback_initialization`](@ref), an initialization strategy, or `nothing`.
+- [`RxInfer.fallback_site`](@ref), a site policy for cavity propagation, or `nothing`.
 
-What `options` sets explicitly wins over the scheme: `rulefallback`, `default_form_constraint` and
-`context = (expectation = …,)`. A node with a rule runs it, so the scheme changes nothing in a model
+What `options` sets explicitly wins over the scheme: `rulefallback`, `default_form_constraint`,
+`site_policy` and `context = (expectation = …,)`. A node with a rule runs it, so the scheme changes nothing in a model
 every node of which has rules, but its initialisation.
 
 See [`LaplaceApproximation`](@ref).
@@ -185,6 +186,7 @@ function apply_fallback(options::ReactiveMPInferenceOptions, scheme::FallbackSch
         session_expectation_backend(get(context, :rng, Random.default_rng())) : given
     with_form = isnothing(getdefault_form_constraint(with_rule)) ?
         setdefault_form_constraint(with_rule, fallback_form(scheme, backend)) : with_rule
+    with_form = isnothing(getsite_policy(with_form)) ? setsite_policy(with_form, fallback_site(scheme)) : with_form
     isnothing(given_in_options) || return with_form
     return setcontext(with_form, merge(context, (expectation = backend,)))
 end

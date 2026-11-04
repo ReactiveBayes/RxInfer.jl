@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Cavity propagation (U7a): the fallback schemes `LaplacePropagation()` and
+  `ExpectationPropagation()`.
+  - Every random variable keeps one site per edge, the edge's message projected against its
+    outbound message on that edge, by Laplace's method or by moment matching (DeltaMessagePassingRules'
+    `site`, `LaplaceForm` and `MomentForm`), and every belief is a product of sites.
+  - A deterministic node's message towards its output is projected the same way.
+  - Through the new option `site_policy`, an `RxInfer.SitePolicy`, which `RxInfer.fallback_site(scheme)`
+    gives and ReactiveMP's site stage calls.
+  - A raw message that arrives again unchanged, to `tol`, takes its last site without a projection.
+  - The free energy is expectation propagation's: a node without rules takes its term from its
+    cavities, and the terms are read once per iteration (`BetheFreeEnergy(T; cavity = true)`),
+    in batch inference only.
+  - The report records each variable's sites, shown as "expectation propagation" or "Laplace
+    propagation".
+  - `MomentForm` is a form constraint like `LaplaceForm`.
 - The report names a fallback joint computed in closed form, from a member's message and the
   node's own rule with the other members known, as "closed form" (DeltaMessagePassingRules).
 - The inference option `default_form_constraint`: the form constraint of every random variable

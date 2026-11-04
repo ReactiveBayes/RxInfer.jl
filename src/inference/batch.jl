@@ -221,7 +221,7 @@ function batch_inference(;
     is_free_energy, S = unwrap_free_energy_option(free_energy)
 
     if is_free_energy
-        fe_objective = BetheFreeEnergy(S)
+        fe_objective = BetheFreeEnergy(S; cavity = !isnothing(getsite_policy(_options)))
         modelplugins = modelplugins + ReactiveMPFreeEnergyPlugin(fe_objective)
     end
 
@@ -391,9 +391,14 @@ function batch_inference(;
             )
         end
 
+        # Under cavity propagation the terms update as the sites do, several times in an iteration:
+        # the free energy is the sum of the latest, read once the iteration's data has been given.
+        latest_free_energy = Ref{Any}(nothing)
         if is_free_energy
             fe_actor = ScoreActor(S, _iterations, 1)
-            fe_subscription = subscribe!(report_free_energy(score(fmodel, fe_objective, free_energy_diagnostics), fmodel, callbacks), fe_actor)
+            fe_stream = score(fmodel, fe_objective, free_energy_diagnostics)
+            fe_subscription = fe_objective.cavity ? subscribe!(fe_stream, (value) -> (latest_free_energy[] = value)) :
+                subscribe!(report_free_energy(fe_stream, fmodel, callbacks), fe_actor)
         end
 
         if isnothing(data) || isempty(data)
@@ -455,6 +460,11 @@ function batch_inference(;
                 callbacks,
                 AfterDataUpdateEvent(fmodel, data, data_update_span_id),
             )
+            if is_free_energy && fe_objective.cavity && !isnothing(latest_free_energy[])
+                value = convert(S, ReactiveMP.evaluate(latest_free_energy[]))
+                ReactiveMP.listens(callbacks, OnFreeEnergyUpdateEvent) && invoke_callback(callbacks, OnFreeEnergyUpdateEvent(fmodel, value))
+                Rocket.next!(fe_actor, value)
+            end
 
             # Check that all requested marginals have been updated and unset the `updated` flag
             # Throws an error if some were not updated
