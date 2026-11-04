@@ -52,7 +52,7 @@ make_actor(x::AbstractArray, ::KeepLast, capacity::Integer) =
 
 ## Inference ensure update
 
-import Rocket: Actor, on_next!, on_error!, on_complete!
+import Rocket: Actor, on_next!, on_error!, on_complete!, tap
 
 # We can use `MarginalHasBeenUpdated` both as an actor within the `ensure_update` operator
 mutable struct MarginalHasBeenUpdated <: Actor{Any}
