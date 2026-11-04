@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Import Rocket's `tap` explicitly so RxInfer loads on Julia 1.14, which exports a `Base.tap` that makes the bare name ambiguous.
+
 ## [6.1.2] - 2026-11-03
 
 ### Fixed
