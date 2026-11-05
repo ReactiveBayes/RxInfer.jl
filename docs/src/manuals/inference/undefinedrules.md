@@ -274,8 +274,9 @@ result = infer(
 **The free energy** is expectation propagation's.
 - A node without rules takes its term from its inbound messages, the cavities, and every other
   term is Bethe's.
-- It is read once an iteration, in batch inference only.
-- The first iteration's value can be partial, while the sites are still being formed.
+- It is computed once an iteration, in batch and in streaming inference, as Bethe's is, and every
+  way of reading it works as without sites: the stream, the histories, the
+  `OnFreeEnergyUpdateEvent` callbacks and [`StopEarlyIterationStrategy`](@ref).
 
 ```@docs
 LaplacePropagation

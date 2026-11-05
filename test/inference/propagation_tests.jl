@@ -196,6 +196,78 @@ end
     end
 end
 
+@testitem "propagation: the free energy in streaming inference is each event's evidence" setup = [Propagation] begin
+    using BayesBase, Distributions, StableRNGs
+    P = Propagation
+
+    # one step of a filter observed through a raw likelihood: each site is exact, so each event's
+    # final free energy is the Kalman filter's predictive evidence, -log p(y_t | y_1:t-1)
+    @model function filter_step(y, μ0, v0, φ, q, r)
+        xprev ~ NormalMeanVariance(μ0, v0)
+        x ~ NormalMeanVariance(φ * xprev, q)
+        y ~ P.GaussianObservation(x, r)
+    end
+    autoupdates = @autoupdates begin
+        μ0, v0 = mean_var(q(x))
+    end
+    φ, q, r, T, iterations = 0.9, 0.3, 0.5, 20, 3
+    rng = StableRNG(5)
+    x = zeros(T); x[1] = randn(rng)
+    for t in 2:T
+        x[t] = φ * x[t - 1] + sqrt(q) * randn(rng)
+    end
+    y = x .+ sqrt(r) .* randn(rng, T)
+    function kalman(y)
+        m, v = 0.0, 1.0
+        evidence = Float64[]
+        for yt in y
+            mp, vp = φ * m, φ^2 * v + q
+            push!(evidence, -logpdf(Normal(mp, sqrt(vp + r)), yt))
+            k = vp / (vp + r)
+            m, v = mp + k * (yt - mp), (1 - k) * vp
+        end
+        return evidence, m
+    end
+    evidence, m = kalman(y)
+    for scheme in (LaplacePropagation(), ExpectationPropagation())
+        stream, reported = Float64[], Float64[]
+        engine = infer(
+            model = filter_step(φ = φ, q = q, r = r), datastream = from(y) |> map(NamedTuple{(:y,), Tuple{Float64}}, (d) -> (y = d,)),
+            autoupdates = autoupdates, initialization = @initialization(q(x) = NormalMeanVariance(0.0, 1.0)), returnvars = (:x,),
+            historyvars = (x = KeepLast(),), keephistory = T, iterations = iterations, free_energy = Float64, fallback = scheme,
+            callbacks = (on_free_energy_update = (event) -> push!(reported, event.value),), autostart = false,
+        )
+        subscription = subscribe!(engine.free_energy, (value) -> push!(stream, value))
+        RxInfer.start(engine)
+        # one value per iteration of each event, on the stream, in the history and to the callbacks
+        @test length(stream) == T * iterations
+        @test engine.free_energy_raw_history ≈ stream
+        @test reported ≈ stream
+        @test maximum(abs, engine.free_energy_final_only_history - evidence) < 1.0e-10
+        @test mean(last(engine.history[:x])) ≈ m atol = 1.0e-10
+        unsubscribe!(subscription)
+        RxInfer.stop(engine)
+    end
+end
+
+@testitem "propagation: early stopping reads expectation propagation's free energy" setup = [Propagation] begin
+    using BayesBase, Distributions, StableRNGs
+    P = Propagation
+
+    φ, q, T = 0.9, 0.1, 40
+    rng = StableRNG(42)
+    x = zeros(T); x[1] = rand(rng, Normal(0.5, 1.0))
+    for t in 2:T
+        x[t] = φ * x[t - 1] + rand(rng, Normal(0.0, sqrt(q)))
+    end
+    y = [rand(rng, Poisson(exp(v))) for v in x]
+    full = infer(model = P.count_chain(φ = φ, q = q), data = (y = y,), iterations = 20, fallback = ExpectationPropagation(), free_energy = true)
+    stopped = infer(model = P.count_chain(φ = φ, q = q), data = (y = y,), iterations = 20, fallback = ExpectationPropagation(), free_energy = true, callbacks = (after_iteration = StopEarlyIterationStrategy(1.0e-10),))
+    @test length(stopped.free_energy) < 20
+    @test stopped.free_energy ≈ full.free_energy[1:length(stopped.free_energy)]
+    @test last(stopped.free_energy) ≈ last(full.free_energy) rtol = 1.0e-8
+end
+
 @testitem "propagation: the schemes set the site policy, and given options win" setup = [Propagation] begin
     import DeltaMessagePassingRules
     options = RxInfer.apply_fallback(convert(RxInfer.ReactiveMPInferenceOptions, (;)), ExpectationPropagation())

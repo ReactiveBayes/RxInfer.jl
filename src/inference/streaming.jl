@@ -228,9 +228,12 @@ function start(engine::RxInferenceEngine{T}) where {T}
             end
         end
 
-        if !isnothing(engine.fe_actor)
+        # The engine's own subscription to the free energy: it keeps the history and reports each
+        # value to the callbacks, once, however many others subscribe to `engine.free_energy`
+        if !isnothing(engine.fe_source) && (!isnothing(engine.fe_actor) || ReactiveMP.listens(engine.callbacks, OnFreeEnergyUpdateEvent))
             engine.fe_subscription = subscribe!(
-                engine.fe_source, engine.fe_actor
+                report_free_energy(engine.fe_source, engine.model, engine.callbacks),
+                something(engine.fe_actor, void()),
             )
         end
 
@@ -685,8 +688,7 @@ function streaming_inference(;
     is_free_energy, S = unwrap_free_energy_option(free_energy)
 
     if is_free_energy
-        isnothing(getsite_policy(_options)) || throw(ArgumentError("the free energy under cavity propagation, the schemes `LaplacePropagation()` and `ExpectationPropagation()`, is computed in batch inference only: set `free_energy = false`, or infer with `data`"))
-        fe_objective = BetheFreeEnergy(S)
+        fe_objective = BetheFreeEnergy(S; cavity = !isnothing(getsite_policy(_options)))
         modelplugins = modelplugins + ReactiveMPFreeEnergyPlugin(fe_objective)
     end
 
@@ -962,6 +964,7 @@ function available_callbacks(::typeof(streaming_inference))
             :after_factor_bound_free_energy,
             :before_variable_bound_entropy,
             :after_variable_bound_entropy,
+            :on_free_energy_update,
         )
     )
 end

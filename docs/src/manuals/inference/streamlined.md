@@ -471,7 +471,8 @@ using RxInfer, Test, Markdown
     :before_factor_bound_free_energy,
     :after_factor_bound_free_energy,
     :before_variable_bound_entropy,
-    :after_variable_bound_entropy
+    :after_variable_bound_entropy,
+    :on_free_energy_update
 ))
 nothing
 ```
@@ -511,6 +512,11 @@ Calls before the `RxInfer.start()` function, if `autostart` is set to `true`. Ac
 after_autostart(event::AfterAutostartEvent)
 ```
 Calls after the `RxInfer.start()` function, if `autostart` is set to `true`. Access the engine via `event.engine`.
+
+```julia
+on_free_energy_update(event::OnFreeEnergyUpdateEvent)
+```
+Calls each time the Bethe free energy is computed, with `free_energy = true`: at each iteration of each observation event, once, however many subscribe to the engine's `free_energy` stream. Access the model and the value via `event.model` and `event.value`.
 
 ---
 

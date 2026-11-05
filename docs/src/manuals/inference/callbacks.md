@@ -269,7 +269,8 @@ using RxInfer, Test
     :before_factor_bound_free_energy,
     :after_factor_bound_free_energy,
     :before_variable_bound_entropy,
-    :after_variable_bound_entropy
+    :after_variable_bound_entropy,
+    :on_free_energy_update
 ))
 nothing
 ```

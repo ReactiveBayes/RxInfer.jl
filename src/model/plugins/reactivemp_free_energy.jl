@@ -12,8 +12,8 @@ Must be used in combination with the `score` function of `ReactiveMP.jl`.
 
 # Keywords
 - `cavity`: the free energy under cavity propagation, the `site_policy` option: a node without
-  rules takes its term from its cavities, `ReactiveMP.FactorBoundFreeEnergy(cavity = true)`, and
-  the stream is the sum of the latest terms, which `infer` reads once per iteration.
+  rules takes its term from its cavities, `ReactiveMP.FactorBoundFreeEnergy(cavity = true)`. The
+  sums and the stream are as without sites, one value per iteration.
 """
 struct BetheFreeEnergy{T}
     cavity::Bool
@@ -88,29 +88,30 @@ function GraphPPL.postprocess_plugin(
 end
 
 function score(
-        model::ProbabilisticModel, objective::BetheFreeEnergy{T}, diagnostic_checks
+        model::ProbabilisticModel, ::BetheFreeEnergy{T}, diagnostic_checks
     ) where {T}
     nodes = nodes_by_kind(model)
-    # Under cavity propagation a node's term may be a `ReactiveMP.DeferredScore`, computed when the
-    # free energy is read, once per iteration: the checks are of that value.
-    checks = objective.cavity ? nothing : diagnostic_checks
     node_bound_free_energies = map(nodes.factors) do nodedata
         nodeproperties = getproperties(nodedata)::GraphPPL.FactorNodeProperties
         stream = getextra(nodedata, ReactiveMPExtraBetheFreeEnergyStreamKey)
-        return apply_diagnostic_check(checks, nodeproperties, stream)
+        return apply_diagnostic_check(diagnostic_checks, nodeproperties, stream)
     end
 
     variable_bound_entropies = map(nodes.randoms) do nodedata
         nodeproperties =
             getproperties(nodedata)::GraphPPL.VariableNodeProperties
         stream = getextra(nodedata, ReactiveMPExtraBetheFreeEnergyStreamKey)
-        return apply_diagnostic_check(checks, nodeproperties, stream)
+        return apply_diagnostic_check(diagnostic_checks, nodeproperties, stream)
     end
 
     CT = __as_counting_real_type(T)
 
-    node_bound_free_energies_sum = ReactiveMP.sum_of_terms(CT, node_bound_free_energies, sumreduce, objective.cavity)
-    variable_bound_entropies_sum = ReactiveMP.sum_of_terms(CT, variable_bound_entropies, sumreduce, objective.cavity)
+    node_bound_free_energies_sum = collectLatest(
+        CT, CT, node_bound_free_energies, sumreduce
+    )
+    variable_bound_entropies_sum = collectLatest(
+        CT, CT, variable_bound_entropies, sumreduce
+    )
 
     degree_fn =
         (nodedata::GraphPPL.NodeData) ->
@@ -126,12 +127,6 @@ function score(
             constant_point_entropies_n +
             hidden_point_entropies_n,
     )
-
-    if objective.cavity
-        total = (d) -> float(ReactiveMP.evaluate(d[1]) + ReactiveMP.evaluate(d[2]) - point_entropies)
-        return combineLatest((node_bound_free_energies_sum, variable_bound_entropies_sum), PushEach()) |>
-            map(ReactiveMP.DeferredScore, d -> ReactiveMP.DeferredScore(() -> total(d)))
-    end
 
     bfe_stream =
         combineLatest(

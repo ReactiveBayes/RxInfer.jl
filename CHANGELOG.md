@@ -16,14 +16,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     `site`, `LaplaceForm` and `MomentForm`), and every belief is a product of sites.
   - A deterministic node's message towards its output is projected the same way.
   - Through the new option `site_policy`, an `RxInfer.SitePolicy`, which `RxInfer.fallback_site(scheme)`
-    gives and ReactiveMP's site stage calls.
+    gives and ReactiveMP's random variables call for each site.
   - A raw message that arrives again unchanged, to `tol`, takes its last site without a projection.
   - The free energy is expectation propagation's: a node without rules takes its term from its
-    cavities, and the terms are read once per iteration (`BetheFreeEnergy(T; cavity = true)`),
-    in batch inference only.
+    cavities (`BetheFreeEnergy(T; cavity = true)`), and every other term is Bethe's. It is
+    computed once per iteration, in batch and streaming inference, through the stream, the
+    histories, the callbacks and `StopEarlyIterationStrategy` as without sites.
   - The report records each variable's sites, shown as "expectation propagation" or "Laplace
     propagation".
   - `MomentForm` is a form constraint like `LaplaceForm`.
+- Streaming inference reports each free-energy value to the `OnFreeEnergyUpdateEvent` callbacks,
+  as batch inference does, once however many subscribe to the engine's `free_energy` stream.
 - The report names a fallback joint computed in closed form, from a member's message and the
   node's own rule with the other members known, as "closed form" (DeltaMessagePassingRules).
 - The inference option `default_form_constraint`: the form constraint of every random variable
