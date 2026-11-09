@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Static vs. Streamlined · RxInfer.jl</title><meta name="title" content="Static vs. Streamlined · RxInfer.jl"/><meta property="og:title" content="Static vs. Streamlined · RxInfer.jl"/><meta property="twitter:title" content="Static vs. Streamlined · RxInfer.jl"/><meta name="description" content="Julia package for automated Bayesian inference on a factor graph with reactive message passing"/><meta property="og:description" content="Julia package for automated Bayesian inference on a factor graph with reactive message passing"/><meta property="twitter:description" content="Julia package for automated Bayesian inference on a factor graph with reactive message passing"/><meta property="og:url" content="https://docs.rxinfer.com/stable/manuals/inference/static-vs-streamlined/"/><meta property="twitter:url" content="https://docs.rxinfer.com/stable/manuals/inference/static-vs-streamlined/"/><link rel="canonical" href="https://docs.rxinfer.com/stable/manuals/inference/static-vs-streamlined/"/><script async src="https://www.googletagmanager.com/gtag/js?id=G-X4PH160GMF"></script><script>  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-X4PH160GMF', {'page_path': location.pathname + location.search + location.hash});
+</script><script data-outdated-warner src="../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../search_index.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><link href="../../../assets/theme.css" rel="stylesheet" type="text/css"/><link href="../../../assets/header.css" rel="stylesheet" type="text/css"/><script src="../../../assets/header.js"></script><script src="../../../assets/chat.js"></script><link href="../../../assets/favicon.ico" rel="icon" type="image/x-icon"/><meta name="keywords" content="Julia, Bayesian inference, factor graph, message passing, probabilistic programming, reactive programming, RxInfer">
+<link rel="sitemap" type="application/xml" title="Sitemap" href="https://docs.rxinfer.com/stable/sitemap.xml"></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img class="docs-light-only" src="../../../assets/logo.svg" alt="RxInfer.jl logo"/><img class="docs-dark-only" src="../../../assets/logo-dark.svg" alt="RxInfer.jl logo"/></a><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../../">Home</a></li><li><span class="tocitem">User guide</span><ul><li><a class="tocitem" href="../../getting-started/">Getting started</a></li><li><a class="tocitem" href="../../comparison/">RxInfer.jl vs. Others</a></li><li><a class="tocitem" href="../../how-to-use-rxinfer-from-python/">Using RxInfer from Python</a></li><li><a class="tocitem" href="../../model-specification/">Model specification</a></li><li><a class="tocitem" href="../../constraints-specification/">Constraints specification</a></li><li><a class="tocitem" href="../../meta-specification/">Meta specification</a></li><li><input class="collapse-toggle" id="menuitem-2-7" type="checkbox" checked/><label class="tocitem" for="menuitem-2-7"><span class="docs-label">Inference specification</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../overview/">Overview</a></li><li><a class="tocitem" href="../static/">Static inference</a></li><li><a class="tocitem" href="../streamlined/">Streamline inference</a></li><li class="is-active"><a class="tocitem" href>Static vs. Streamlined</a><ul class="internal"><li><a class="tocitem" href="#manual-static-vs-streamlined-overview"><span>Overview of Inference Approaches</span></a></li><li><a class="tocitem" href="#manual-static-vs-streamlined-comparison"><span>Comparison Table</span></a></li><li><a class="tocitem" href="#manual-static-vs-streamlined-example"><span>Practical Example: Linear Gaussian State Space Model</span></a></li><li><a class="tocitem" href="#manual-static-vs-streamlined-summary"><span>Summary</span></a></li></ul></li><li><a class="tocitem" href="../initialization/">Initialization</a></li><li><a class="tocitem" href="../autoupdates/">Auto-updates</a></li><li><a class="tocitem" href="../delta-node/">Deterministic nodes</a></li><li><a class="tocitem" href="../nonconjugate/">Non-conjugate inference</a></li><li><a class="tocitem" href="../undefinedrules/">Undefined message update rules</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-8" type="checkbox"/><label class="tocitem" for="menuitem-2-8"><span class="docs-label">Inference customization</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../customization/custom-node/">Defining a custom node and rules</a></li><li><a class="tocitem" href="../../customization/postprocess/">Inference results postprocessing</a></li></ul></li><li><a class="tocitem" href="../../performance-tips/">Performance Tips</a></li><li><a class="tocitem" href="../../faq/">FAQ</a></li><li><a class="tocitem" href="../../debugging/">Debugging</a></li><li><a class="tocitem" href="../../session_summary/">Session summary</a></li><li><a class="tocitem" href="../../telemetry/">Sharing sessions &amp; telemetry</a></li><li><a class="tocitem" href="../../migration-guide-v2-v3/">Migration from v2 to v3</a></li><li><input class="collapse-toggle" id="menuitem-2-15" type="checkbox"/><label class="tocitem" for="menuitem-2-15"><span class="docs-label">Sharp bits of RxInfer</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../sharpbits/overview/">Overview</a></li><li><a class="tocitem" href="../../sharpbits/rule-not-found/">Rule Not Found Error</a></li><li><a class="tocitem" href="../../sharpbits/stack-overflow-inference/">Stack Overflow in Message Computations</a></li><li><a class="tocitem" href="../../sharpbits/usage-colon-equality/">Using <code>=</code> instead of <code>:=</code> for deterministic nodes</a></li></ul></li></ul></li><li><span class="tocitem">Library</span><ul><li><a class="tocitem" href="../../../library/model-construction/">Model construction</a></li><li><a class="tocitem" href="../../../library/bethe-free-energy/">Bethe Free Energy</a></li><li><a class="tocitem" href="../../../library/functional-forms/">Functional form constraints</a></li><li><a class="tocitem" href="../../../library/exported-methods/">Exported methods</a></li></ul></li><li><a class="tocitem" href="../../../examples/overview/">Examples</a></li><li><span class="tocitem">Contributing</span><ul><li><a class="tocitem" href="../../../contributing/guide/">Contribution guide</a></li><li><a class="tocitem" href="../../../contributing/guidelines/">Contribution guidelines</a></li><li><a class="tocitem" href="../../../contributing/new-documentation/">Contributing to the documentation</a></li><li><a class="tocitem" href="../../../contributing/new-example/">Contributing to the examples</a></li><li><a class="tocitem" href="../../../contributing/new-release/">Publishing a new release</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">User guide</a></li><li><a class="is-disabled">Inference specification</a></li><li class="is-active"><a href>Static vs. Streamlined</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Static vs. Streamlined</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/ReactiveBayes/RxInfer.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/ReactiveBayes/RxInfer.jl/blob/main/docs/src/manuals/inference/static-vs-streamlined.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="manual-static-vs-streamlined-inference"><a class="docs-heading-anchor" href="#manual-static-vs-streamlined-inference">Static vs. Streaming vs. Batched Inference</a><a id="manual-static-vs-streamlined-inference-1"></a><a class="docs-heading-anchor-permalink" href="#manual-static-vs-streamlined-inference" title="Permalink"></a></h1><p>This guide explains the key differences between the three main inference approaches in <code>RxInfer</code>: <strong>Static Inference</strong>, <strong>Streaming (Online) Inference</strong>, and <strong>Batched Inference</strong>. We&#39;ll explore when to use each approach, their pros and cons, and demonstrate how to convert a model between these approaches using a Linear Gaussian State Space Model (LGSSM) as an example.</p><p>Also read about <a href="../static/#manual-static-inference">Static Inference</a> and <a href="../streamlined/#manual-online-inference">Streaming Inference</a> for detailed information about each approach.</p><h2 id="manual-static-vs-streamlined-overview"><a class="docs-heading-anchor" href="#manual-static-vs-streamlined-overview">Overview of Inference Approaches</a><a id="manual-static-vs-streamlined-overview-1"></a><a class="docs-heading-anchor-permalink" href="#manual-static-vs-streamlined-overview" title="Permalink"></a></h2><h3 id="manual-static-vs-streamlined-static"><a class="docs-heading-anchor" href="#manual-static-vs-streamlined-static">Static Inference</a><a id="manual-static-vs-streamlined-static-1"></a><a class="docs-heading-anchor-permalink" href="#manual-static-vs-streamlined-static" title="Permalink"></a></h3><p><strong>Static inference</strong> processes a complete dataset all at once. It&#39;s the traditional approach where you have all your data available upfront and want to compute posterior distributions for all latent variables simultaneously.</p><p><strong>Key characteristics:</strong></p><ul><li>Processes entire dataset in one go</li><li>Returns <code>InferenceResult</code> with final posteriors</li><li>Best for offline analysis and batch processing</li><li>Memory usage scales with dataset size</li><li>No real-time updates</li></ul><p><strong>When to use:</strong></p><ul><li>You have a complete dataset</li><li>Offline analysis and exploration</li><li>Batch processing workflows</li><li>When you need all posteriors at once</li></ul><h3 id="manual-static-vs-streamlined-streaming"><a class="docs-heading-anchor" href="#manual-static-vs-streamlined-streaming">Streaming (Online) Inference</a><a id="manual-static-vs-streamlined-streaming-1"></a><a class="docs-heading-anchor-permalink" href="#manual-static-vs-streamlined-streaming" title="Permalink"></a></h3><p><strong>Streaming inference</strong> processes data points one at a time as they arrive, continuously updating beliefs. It&#39;s designed for real-time applications where data comes in sequentially.</p><p><strong>Key characteristics:</strong></p><ul><li>Processes one observation at a time</li><li>Returns <code>RxInferenceEngine</code> with reactive streams</li><li>Real-time belief updates</li><li>Memory usage can be controlled with history buffers</li><li>Supports autoupdates for dynamic priors</li></ul><p><strong>When to use:</strong></p><ul><li>Real-time data streams</li><li>Online learning scenarios</li><li>When you need immediate updates</li><li>Interactive applications</li></ul><h3 id="manual-static-vs-streamlined-batched"><a class="docs-heading-anchor" href="#manual-static-vs-streamlined-batched">Batched Inference</a><a id="manual-static-vs-streamlined-batched-1"></a><a class="docs-heading-anchor-permalink" href="#manual-static-vs-streamlined-batched" title="Permalink"></a></h3><p><strong>Batched inference</strong> is a hybrid approach that processes data in chunks or batches, offering a middle ground between static and streaming approaches.</p><p><strong>Key characteristics:</strong></p><ul><li>Processes data in configurable batch sizes</li><li>Balances memory usage and update frequency</li><li>Can be more efficient than streaming for large datasets</li><li>Allows for batch-level autoupdates</li></ul><p><strong>When to use:</strong></p><ul><li>Large datasets that don&#39;t fit in memory</li><li>When you want regular but not real-time updates</li><li>Batch processing with some streaming benefits</li><li>Memory-constrained environments</li></ul><h2 id="manual-static-vs-streamlined-comparison"><a class="docs-heading-anchor" href="#manual-static-vs-streamlined-comparison">Comparison Table</a><a id="manual-static-vs-streamlined-comparison-1"></a><a class="docs-heading-anchor-permalink" href="#manual-static-vs-streamlined-comparison" title="Permalink"></a></h2><table><tr><th style="text-align: right">Aspect</th><th style="text-align: right">Static</th><th style="text-align: right">Streaming</th><th style="text-align: right">Batched</th></tr><tr><td style="text-align: right"><strong>Data Processing</strong></td><td style="text-align: right">All at once</td><td style="text-align: right">One at a time</td><td style="text-align: right">In chunks</td></tr><tr><td style="text-align: right"><strong>Memory Usage</strong></td><td style="text-align: right">High (scales with dataset)</td><td style="text-align: right">Low (controlled)</td><td style="text-align: right">Medium (configurable)</td></tr><tr><td style="text-align: right"><strong>Update Frequency</strong></td><td style="text-align: right">Once (final result)</td><td style="text-align: right">Real-time</td><td style="text-align: right">Batch-level</td></tr><tr><td style="text-align: right"><strong>Latency</strong></td><td style="text-align: right">High (wait for all data)</td><td style="text-align: right">Low (immediate)</td><td style="text-align: right">Medium (batch-dependent)</td></tr><tr><td style="text-align: right"><strong>Use Case</strong></td><td style="text-align: right">Offline analysis</td><td style="text-align: right">Real-time systems</td><td style="text-align: right">Hybrid scenarios</td></tr><tr><td style="text-align: right"><strong>Return Type</strong></td><td style="text-align: right"><code>InferenceResult</code></td><td style="text-align: right"><code>RxInferenceEngine</code></td><td style="text-align: right"><code>RxInferenceEngine</code></td></tr><tr><td style="text-align: right"><strong>Autoupdates</strong></td><td style="text-align: right">No</td><td style="text-align: right">Yes</td><td style="text-align: right">Yes</td></tr><tr><td style="text-align: right"><strong>History Tracking</strong></td><td style="text-align: right">No</td><td style="text-align: right">Yes</td><td style="text-align: right">Yes</td></tr></table><h2 id="manual-static-vs-streamlined-example"><a class="docs-heading-anchor" href="#manual-static-vs-streamlined-example">Practical Example: Linear Gaussian State Space Model</a><a id="manual-static-vs-streamlined-example-1"></a><a class="docs-heading-anchor-permalink" href="#manual-static-vs-streamlined-example" title="Permalink"></a></h2><p>Let&#39;s demonstrate the differences between these approaches using a Linear Gaussian State Space Model (LGSSM). This model is commonly used in time series analysis, signal processing, and robotics.</p><h3 id="manual-static-vs-streamlined-model"><a class="docs-heading-anchor" href="#manual-static-vs-streamlined-model">Model Definition</a><a id="manual-static-vs-streamlined-model-1"></a><a class="docs-heading-anchor-permalink" href="#manual-static-vs-streamlined-model" title="Permalink"></a></h3><p>Our LGSSM has the following structure:</p><ul><li><strong>State transition</strong>: <code>xₜ ~ Normal(Axₜ₋₁, Q)</code></li><li><strong>Observation</strong>: <code>yₜ ~ Normal(Cxₜ, R)</code></li><li><strong>Initial state</strong>: <code>x₀ ~ Normal(μ₀, Σ₀)</code></li></ul><p>Where:</p><ul><li><code>xₜ</code> is the hidden state at time <code>t</code></li><li><code>yₜ</code> is the observation at time <code>t</code></li><li><code>A</code> is the state transition matrix</li><li><code>Q</code> is the state noise covariance</li><li><code>C</code> is the observation matrix</li><li><code>R</code> is the observation noise covariance</li></ul><pre><code class="language-julia hljs">using RxInfer, Distributions, Plots, StableRNGs
+
+# Set random seed for reproducibility
+rng = StableRNG(42)
+
+# Model parameters
+n_states = 2
+n_obs = 1
+T = 256  # Number of time steps
+
+# State transition matrix (simple random walk + trend)
+A = [1.0 1.0; 0.0 0.9]
+# State noise covariance
+Q = [0.1 0.0; 0.0 0.1]
+# Observation matrix
+C = [1.0, 0.0]
+# Observation noise variance
+R = 5.0
+# Initial state distribution
+μ₀ = [0.0, 0.0]
+Σ₀ = [1.0 0.0; 0.0 1.0]
+
+# Generate synthetic data
+function generate_lgssm_data(rng, A, Q, C, R, μ₀, Σ₀, T)
+    x = Vector{Float64}[]
+    y = Float64[]
+
+    # Initial state
+    push!(x, rand(rng, MvNormal(μ₀, Σ₀)))
+
+    # Generate states and observations
+    for t in 1:T
+        if t &gt; 1
+            push!(x, A * x[end] + rand(rng, MvNormal(zeros(n_states), Q)))
+        end
+        push!(y, dot(C, x[end]) + rand(rng, NormalMeanVariance(0, R)))
+    end
+
+    return x, y
+end
+
+# Generate data
+true_states, observations = generate_lgssm_data(rng, A, Q, C, R, μ₀, Σ₀, T)
+
+p = plot(getindex.(true_states, 1), label=&quot;True state 1&quot;)
+scatter!(getindex.(observations, 1), label=&quot;Observations&quot;)</code></pre><img src="548dcded.svg" alt="Example block output"/><h3 id="manual-static-vs-streamlined-static-impl"><a class="docs-heading-anchor" href="#manual-static-vs-streamlined-static-impl">1. Static Inference Implementation</a><a id="manual-static-vs-streamlined-static-impl-1"></a><a class="docs-heading-anchor-permalink" href="#manual-static-vs-streamlined-static-impl" title="Permalink"></a></h3><p>First, let&#39;s implement the static version that processes all data at once:</p><pre><code class="language-julia hljs">@model function lgssm_static(y, A, Q, C, R, μ₀, Σ₀)
+    # Initial state
+    x₀ ~ MvNormal(mean=μ₀, cov=Σ₀)
+
+    # State sequence
+    x[1] ~ MvNormal(mean=A * x₀, cov=Q)
+
+    # Observations
+    y[1] ~ Normal(mean=dot(C, x[1]), var=R)
+
+    # Subsequent states and observations
+    for t in 2:length(y)
+        x[t] ~ MvNormal(mean=A * x[t-1], cov=Q)
+        y[t] ~ Normal(mean=dot(C, x[t]), var=R)
+    end
+end
+
+# Run static inference
+static_results = infer(
+    model=lgssm_static(A=A, Q=Q, C=C, R=R, μ₀=μ₀, Σ₀=Σ₀),
+    data=(y=observations,)
+)
+
+plot(getindex.(true_states, 1), label=&quot;True state 1&quot;)
+scatter!(observations, label=&quot;Observations&quot;)
+plot!(getindex.(mean.(static_results.posteriors[:x]), 1), ribbon=3 .* getindex.(std.(static_results.posteriors[:x]), 1, 1), label=&quot;Static inference&quot;)</code></pre><img src="2f5b437d.svg" alt="Example block output"/><h3 id="manual-static-vs-streamlined-streaming-impl"><a class="docs-heading-anchor" href="#manual-static-vs-streamlined-streaming-impl">2. Streaming Inference Implementation</a><a id="manual-static-vs-streamlined-streaming-impl-1"></a><a class="docs-heading-anchor-permalink" href="#manual-static-vs-streamlined-streaming-impl" title="Permalink"></a></h3><p>Now let&#39;s convert this to a streaming version that processes observations one at a time:</p><pre><code class="language-julia hljs">@model function lgssm_streaming(y, x_prev, A, Q, C, R)
+    # State transition from previous state
+    x ~ MvNormal(mean=A * x_prev, cov=Q)
+
+    # Observation
+    y ~ Normal(mean=dot(C, x), var=R)
+end
+
+# Autoupdates for the previous state
+lgssm_autoupdates = @autoupdates begin
+    x_prev = mean(q(x))
+end
+
+# Initialization
+lgssm_init = @initialization begin
+    q(x) = MvNormal(μ₀, Σ₀)
+end
+
+# Run streaming inference
+streaming_engine = infer(
+    model=lgssm_streaming(A=A, Q=Q, C=C, R=R),
+    data=(y=observations,),
+    autoupdates=lgssm_autoupdates,
+    initialization=lgssm_init,
+    keephistory=T,
+    autostart=true
+)
+
+plot(getindex.(true_states, 1), label=&quot;True state 1&quot;)
+scatter!(observations, label=&quot;Observations&quot;)
+plot!(getindex.(mean.(streaming_engine.history[:x]), 1), ribbon=3 .* getindex.(std.(streaming_engine.history[:x]), 1, 1), label=&quot;Streaming inference&quot;)</code></pre><img src="ab5253b6.svg" alt="Example block output"/><h3 id="manual-static-vs-streamlined-batched-impl"><a class="docs-heading-anchor" href="#manual-static-vs-streamlined-batched-impl">3. Batched Inference Implementation</a><a id="manual-static-vs-streamlined-batched-impl-1"></a><a class="docs-heading-anchor-permalink" href="#manual-static-vs-streamlined-batched-impl" title="Permalink"></a></h3><p>Finally, let&#39;s implement a batched version that processes data in chunks:</p><pre><code class="language-julia hljs"># Define batch size
+batch_size = 2
+n_batches = ceil(Int, T / batch_size)
+
+# Create batched datastream
+function create_batched_observations(data, batch_size)
+    batches = []
+    for i in 1:batch_size:length(data)
+        end_idx = min(i + batch_size - 1, length(data))
+        push!(batches, data[i:end_idx])
+    end
+    return batches
+end
+
+batched_observations = create_batched_observations(observations, batch_size)
+
+# Batched model (processes a batch of observations)
+@model function lgssm_batched(y, x_prev, A, Q, C, R, batch_size)
+    # First state in batch
+    x[1] ~ MvNormal(mean=A * x_prev, cov=Q)
+    y[1] ~ Normal(mean=dot(C, x[1]), var=R)
+
+    # Subsequent states in batch
+    for t in 2:batch_size
+        x[t] ~ MvNormal(mean=A * x[t-1], cov=Q)
+        y[t] ~ Normal(mean=dot(C, x[t]), var=R)
+    end
+end
+
+# Autoupdates for batched processing
+lgssm_batched_autoupdates = @autoupdates begin
+    x_prev = mean(q(x[batch_size]))  # Use last state from previous batch
+end
+
+# Run batched inference
+println(&quot;Running batched inference...&quot;)
+batched_engine = infer(
+    model=lgssm_batched(A=A, Q=Q, C=C, R=R, batch_size=batch_size),
+    data=(y=batched_observations,),
+    autoupdates=lgssm_batched_autoupdates,
+    initialization=lgssm_init,
+    returnvars=(:x,),
+    keephistory=n_batches,
+    autostart=true,
+    free_energy=true
+)
+
+
+merged_history = vcat(batched_engine.history[:x]...)
+
+plot(getindex.(true_states, 1), label=&quot;True state 1&quot;)
+scatter!(observations, label=&quot;Observations&quot;)
+plot!(getindex.(mean.(merged_history), 1), ribbon=3 .* getindex.(std.(merged_history), 1, 1), label=&quot;Batched inference&quot;)</code></pre><img src="17b7a279.svg" alt="Example block output"/><h2 id="manual-static-vs-streamlined-summary"><a class="docs-heading-anchor" href="#manual-static-vs-streamlined-summary">Summary</a><a id="manual-static-vs-streamlined-summary-1"></a><a class="docs-heading-anchor-permalink" href="#manual-static-vs-streamlined-summary" title="Permalink"></a></h2><p>The choice between static, streaming, and batched inference depends on your specific requirements:</p><ul><li><strong>Static inference</strong> is best for offline analysis with complete datasets</li><li><strong>Streaming inference</strong> excels at real-time applications with continuous data</li><li><strong>Batched inference</strong> provides a middle ground for large datasets with memory constraints</li></ul><p>The Linear Gaussian State Space Model example demonstrates how the same underlying model can be adapted to different inference paradigms. All three approaches should produce different results and they differ significantly in their computational characteristics and use cases.</p><p>Remember that you can always start with static inference to validate your model and then convert to streaming or batched approaches based on your deployment requirements.</p><script type="module">import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+mermaid.initialize({
+    startOnLoad: true,
+    theme: "neutral"
+});
+</script></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../streamlined/">« Streamline inference</a><a class="docs-footer-nextpage" href="../initialization/">Initialization »</a><div class="flexbox-break"></div><p class="footer-message">Created in <a href="https://biaslab.github.io/">BIASlab</a>, maintained by <a href="https://github.com/ReactiveBayes">ReactiveBayes</a>, powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.14.1 on <span class="colophon-date" title="Friday 29 August 2025 17:10">Friday 29 August 2025</span>. Using Julia version 1.11.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
