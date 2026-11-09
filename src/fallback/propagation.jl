@@ -98,7 +98,7 @@ Base.show(io::IO, scheme::LaplacePropagation) =
     print(io, "LaplacePropagation(tol = ", scheme.form.tol, ", maxiters = ", scheme.form.maxiters, ")")
 
 """
-    ExpectationPropagation(; points = 20, tol = 1e-10, maxiters = 100, expectation = nothing, initialization = FromPriors())
+    ExpectationPropagation(; points = 20, backend = nothing, tol = 1e-10, maxiters = 100, expectation = nothing, initialization = FromPriors())
 
 A [`FallbackScheme`](@ref), expectation propagation wherever a model has no exact rules: as
 [`LaplacePropagation`](@ref), with each site from the moments of its tilted density, the edge's
@@ -113,7 +113,10 @@ infer(model = counts(φ = φ, σ² = σ²), data = (y = y,), iterations = 10, fa
 ```
 
 # Keywords
-- `points`: Gauss–Hermite points per dimension of each projection;
+- `points`: Gauss–Hermite points per dimension of each projection, `points`ᵈ in d dimensions;
+- `backend`: another quadrature for the projections, any backend of ExpectationApproximations
+  with a point set for a Gaussian: `SphericalRadialCubature()` takes 2d points, exact to degree
+  3, where a product grid grows as `points`ᵈ; `nothing` is `GaussHermite(points)`;
 - `tol`, `maxiters`: of the Newton iterations that place them;
 - `expectation`, `initialization`: as for [`LaplacePropagation`](@ref).
 """
@@ -123,16 +126,16 @@ struct ExpectationPropagation{F <: MomentForm, E, I} <: FallbackScheme
     initialization::I
 end
 
-function ExpectationPropagation(; points::Integer = 20, tol::Real = 1.0e-10, maxiters::Integer = 100, expectation = nothing, initialization = FromPriors())
-    return ExpectationPropagation(MomentForm(; tol, maxiters, points), expectation, initialization)
+function ExpectationPropagation(; points::Integer = 20, backend = nothing, tol::Real = 1.0e-10, maxiters::Integer = 100, expectation = nothing, initialization = FromPriors())
+    return ExpectationPropagation(MomentForm(; tol, maxiters, points, backend), expectation, initialization)
 end
 
 fallback_rule(scheme::ExpectationPropagation) = ExpectationRuleFallback(scheme.form)
 fallback_form(scheme::ExpectationPropagation) =
-    (q = scheme.form, μ = MomentForm(scheme.form.tol, scheme.form.maxiters, :leave, scheme.form.points))
+    (q = scheme.form, μ = MomentForm(scheme.form.tol, scheme.form.maxiters, :leave, scheme.form.points, scheme.form.backend))
 fallback_site(scheme::ExpectationPropagation) = SitePolicy(scheme.form)
 fallback_expectation(scheme::ExpectationPropagation) = scheme.expectation
 fallback_initialization(scheme::ExpectationPropagation) = scheme.initialization
 
 Base.show(io::IO, scheme::ExpectationPropagation) =
-    print(io, "ExpectationPropagation(points = ", scheme.form.points, ", tol = ", scheme.form.tol, ", maxiters = ", scheme.form.maxiters, ")")
+    print(io, "ExpectationPropagation(backend = ", scheme.form.backend, ", tol = ", scheme.form.tol, ", maxiters = ", scheme.form.maxiters, ")")

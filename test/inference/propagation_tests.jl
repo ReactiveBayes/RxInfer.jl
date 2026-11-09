@@ -280,3 +280,24 @@ end
     @test RxInfer.getsite_policy(options) === given
     @test isnothing(RxInfer.getsite_policy(RxInfer.apply_fallback(convert(RxInfer.ReactiveMPInferenceOptions, (;)), LaplaceApproximation())))
 end
+
+@testitem "propagation: EP's quadrature, Gauss–Hermite or a given backend" setup = [Propagation] begin
+    using Distributions, StableRNGs
+    import ExpectationApproximations as EA
+    @test ExpectationPropagation(points = 7).form.backend == EA.GaussHermite(7)
+    scheme = ExpectationPropagation(backend = EA.SphericalRadialCubature())
+    @test RxInfer.fallback_site(scheme).form.backend isa EA.SphericalRadialCubature
+    @test RxInfer.fallback_form(scheme).μ.backend isa EA.SphericalRadialCubature
+    @test repr(ExpectationPropagation(points = 7)) == "ExpectationPropagation(backend = GaussHermite(7), tol = 1.0e-10, maxiters = 100)"
+    # the count chain with three points per projection, near the twenty points'
+    P = Propagation
+    φ, q, T = 0.9, 0.1, 30
+    rng = StableRNG(42)
+    x = zeros(T); x[1] = rand(rng, Normal(0.5, 1.0))
+    for t in 2:T
+        x[t] = φ * x[t - 1] + rand(rng, Normal(0.0, sqrt(q)))
+    end
+    y = [rand(rng, Poisson(exp(v))) for v in x]
+    run(scheme) = mean.(infer(model = P.count_chain(φ = φ, q = q), data = (y = y,), iterations = 10, fallback = scheme, returnvars = (x = KeepLast(),)).posteriors[:x])
+    @test P.rms(run(ExpectationPropagation(backend = EA.GenUnscented())) - run(ExpectationPropagation())) < 0.01
+end
