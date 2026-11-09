@@ -61,6 +61,7 @@ DeltaMessagePassingRules = {url = "https://github.com/ReactiveBayes/DeltaMessage
 ExponentialFamilyProjection = {url = "https://github.com/ReactiveBayes/ExponentialFamilyProjection.jl", rev = "universal-inference"}
 MessagePassingRulesBase = {url = "https://github.com/ReactiveBayes/MessagePassingRulesBase.jl", rev = "universal-inference"}
 ReactiveMP = {url = "https://github.com/ReactiveBayes/ReactiveMP.jl", rev = "universal-inference"}
+StandardMessagePassingRules = {url = "https://github.com/ReactiveBayes/StandardMessagePassingRules.jl", rev = "universal-inference"}
 
 [compat]
 AutoregressiveMessagePassingRules = "1"
