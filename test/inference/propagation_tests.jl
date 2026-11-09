@@ -52,6 +52,24 @@
         end
     end
 
+    # `y ~ LogPrecisionNormal(μ, z)`: a Gaussian with mean μ and precision exp(z), a node with two
+    # random inputs and no rules
+    struct LogPrecisionNormal{M, Z} <: ContinuousUnivariateDistribution
+        μ::M
+        z::Z
+    end
+    BayesBase.logpdf(d::LogPrecisionNormal, y::Real) = (d.z - log(2π) - exp(d.z) * (y - d.μ)^2) / 2
+    BayesBase.insupport(::LogPrecisionNormal, y) = true
+    @define_factor_node(node = LogPrecisionNormal, type = Stochastic, interfaces = [:out, :μ, :z])
+
+    @model function unknown_mean_precision(y)
+        μ ~ NormalMeanVariance(0.0, 4.0)
+        z ~ NormalMeanVariance(0.0, 1.0)
+        for i in eachindex(y)
+            y[i] ~ LogPrecisionNormal(μ, z)
+        end
+    end
+
     rms(a) = sqrt(sum(abs2, a) / length(a))
 end
 
@@ -300,4 +318,35 @@ end
     y = [rand(rng, Poisson(exp(v))) for v in x]
     run(scheme) = mean.(infer(model = P.count_chain(φ = φ, q = q), data = (y = y,), iterations = 10, fallback = scheme, returnvars = (x = KeepLast(),)).posteriors[:x])
     @test P.rms(run(ExpectationPropagation(backend = EA.GenUnscented())) - run(ExpectationPropagation())) < 0.01
+end
+
+@testitem "propagation: a node with two random inputs sends belief propagation's message" setup = [Propagation] begin
+    using BayesBase, Distributions, StableRNGs
+    P = Propagation
+
+    # an unknown mean and log-precision from 20 observations: expectation propagation with a site
+    # per factor and variable, against the exact posterior on a grid
+    rng = StableRNG(5)
+    y = 1.0 .+ randn(rng, 20) ./ sqrt(exp(0.7))
+    μs, zs = range(-3, 5; length = 801), range(-4, 4; length = 801)
+    logp = [logpdf(Normal(0, 2), μ) + logpdf(Normal(0, 1), z) + sum(yi -> logpdf(P.LogPrecisionNormal(μ, z), yi), y) for μ in μs, z in zs]
+    top = maximum(logp)
+    w = exp.(logp .- top)
+    evidence = top + log(sum(w) * step(μs) * step(zs))
+    w ./= sum(w)
+    mμ, mz = sum(w .* μs), sum(w .* zs')
+    sμ, sz = sqrt(sum(w .* (μs .- mμ) .^ 2)), sqrt(sum(w .* (zs' .- mz) .^ 2))
+
+    # the loop through the factors needs a first message, as loopy belief propagation does
+    result = infer(
+        model = P.unknown_mean_precision(), data = (y = y,), iterations = 10, fallback = ExpectationPropagation(),
+        initialization = @initialization(begin
+            μ(z) = NormalMeanVariance(0.0, 1.0)
+        end), free_energy = true, returnvars = (μ = KeepLast(), z = KeepLast()),
+    )
+    qμ, qz = result.posteriors[:μ], result.posteriors[:z]
+    @test abs(mean(qμ) - mμ) < 0.01 && abs(mean(qz) - mz) < 0.01
+    @test abs(std(qμ) / sμ - 1) < 0.02 && abs(std(qz) / sz - 1) < 0.02
+    @test abs(last(result.free_energy) + evidence) < 0.05
+    @test result.free_energy[end] ≈ result.free_energy[end - 1] atol = 1.0e-8
 end

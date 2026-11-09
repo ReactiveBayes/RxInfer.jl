@@ -15,6 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     outbound message on that edge, by Laplace's method or by moment matching (DeltaMessagePassingRules'
     `site`, `LaplaceForm` and `MomentForm`), and every belief is a product of sites.
   - A deterministic node's message towards its output is projected the same way.
+  - A node with several random inputs sends each belief propagation's message, the factor
+    integrated against the other inputs' messages, and its site is the input's block of their
+    joint projection (DeltaMessagePassingRules' `TiltedJointMessage`).
+  - `ExpectationPropagation(; backend)` sets the projections' quadrature, `GaussHermite(points)`
+    by default.
   - Through the new option `site_policy`, an `RxInfer.SitePolicy`, which `RxInfer.fallback_site(scheme)`
     gives and ReactiveMP's random variables call for each site.
   - A raw message that arrives again unchanged, to `tol`, takes its last site without a projection.
