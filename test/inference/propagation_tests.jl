@@ -70,6 +70,28 @@
         end
     end
 
+    # x with a heavy-tailed prior and two count observations, through nodes without rules: every
+    # edge of x is raw
+    struct WidePrior{S} <: ContinuousUnivariateDistribution
+        s::S
+    end
+    BayesBase.logpdf(d::WidePrior, x::Real) = -log1p((x / d.s)^2)
+    BayesBase.insupport(::WidePrior, x) = true
+    @define_factor_node(node = WidePrior, type = Stochastic, interfaces = [:out, :s])
+
+    @model function wide_prior_mean(y)
+        x ~ WidePrior(0.5)
+        for i in eachindex(y)
+            y[i] ~ NormalMeanVariance(x, 1.0)
+        end
+    end
+
+    @model function counts_only(y)
+        x ~ WidePrior(3.0)
+        y[1] ~ LogPoisson(x)
+        y[2] ~ LogPoisson(x)
+    end
+
     rms(a) = sqrt(sum(abs2, a) / length(a))
 end
 
@@ -349,4 +371,73 @@ end
     @test abs(std(qμ) / sμ - 1) < 0.02 && abs(std(qz) / sz - 1) < 0.02
     @test abs(last(result.free_energy) + evidence) < 0.05
     @test result.free_energy[end] ≈ result.free_energy[end - 1] atol = 1.0e-8
+end
+
+@testitem "propagation: an initial message is every edge's first cavity" setup = [Propagation] begin
+    using BayesBase, Distributions, StableRNGs
+    P = Propagation
+
+    # x with only raw edges: each raw message waits for a cavity, which only another edge's site
+    # gives, so nothing starts without μ(x)
+    y = [3, 5]
+    @test_throws Exception infer(model = P.counts_only(), data = (y = y,), iterations = 5, fallback = ExpectationPropagation())
+    grid = range(-10, 10; length = 20_001)
+    logp = [-log1p((u / 3)^2) + sum(k * u - exp(u) for k in y) for u in grid]
+    p = exp.(logp .- maximum(logp))
+    p ./= sum(p)
+    exact = sum(p .* grid)
+    posteriors = map((NormalMeanVariance(0.0, 1.0), NormalMeanVariance(3.0, 10.0))) do initial
+        result = infer(
+            model = P.counts_only(), data = (y = y,), iterations = 20, fallback = ExpectationPropagation(), returnvars = (x = KeepLast(),),
+            initialization = @initialization(begin
+                μ(x) = initial
+            end),
+        )
+        result.posteriors[:x]
+    end
+    # expectation propagation's fixed point, whichever message seeds it
+    @test mean(posteriors[1]) ≈ mean(posteriors[2]) atol = 1.0e-6
+    @test var(posteriors[1]) ≈ var(posteriors[2]) rtol = 1.0e-6
+    @test abs(mean(posteriors[1]) - exact) < 0.02
+
+    # a model that starts without one ends at the same fixed point with a broad one, which only
+    # slows the first sweeps
+    φ, q, T = 0.9, 0.1, 30
+    rng = StableRNG(42)
+    x = zeros(T); x[1] = rand(rng, Normal(0.5, 1.0))
+    for t in 2:T
+        x[t] = φ * x[t - 1] + rand(rng, Normal(0.0, sqrt(q)))
+    end
+    counts = [rand(rng, Poisson(exp(v))) for v in x]
+    plain = infer(model = P.count_chain(φ = φ, q = q), data = (y = counts,), iterations = 40, fallback = ExpectationPropagation(), returnvars = (x = KeepLast(),))
+    seeded = infer(
+        model = P.count_chain(φ = φ, q = q), data = (y = counts,), iterations = 40, fallback = ExpectationPropagation(), returnvars = (x = KeepLast(),),
+        initialization = @initialization(begin
+            μ(x) = NormalMeanVariance(0.0, 100.0)
+        end),
+    )
+    @test maximum(abs, mean.(plain.posteriors[:x]) - mean.(seeded.posteriors[:x])) < 1.0e-6
+end
+
+@testitem "propagation: a prior without rules on constants is projected again each round" setup = [Propagation] begin
+    using BayesBase, Distributions
+    P = Propagation
+
+    # x ~ WidePrior(0.5), with Gaussian observations: the prior's message, from a constant, arrives
+    # once, before the observations give it a cavity, and its site is projected again each round.
+    # One raw site against a Gaussian cavity: expectation propagation is exact, and Laplace
+    # propagation is the global Laplace approximation, LaplaceApproximation()'s.
+    y = [2.0, 2.5, 1.5, 3.0]
+    grid = range(-10, 10; length = 20_001)
+    logp = [-log1p((u / 0.5)^2) + sum(yi -> -(yi - u)^2 / 2, y) for u in grid]
+    p = exp.(logp .- maximum(logp))
+    p ./= sum(p)
+    m = sum(p .* grid)
+    run(scheme) = infer(model = P.wide_prior_mean(), data = (y = y,), iterations = 10, fallback = scheme, returnvars = (x = KeepLast(),)).posteriors[:x]
+    ep = run(ExpectationPropagation())
+    @test mean(ep) ≈ m atol = 1.0e-5
+    @test var(ep) ≈ sum(p .* (grid .- m) .^ 2) rtol = 1.0e-4
+    lp, laplace = run(LaplacePropagation()), run(LaplaceApproximation())
+    @test mean(lp) ≈ mean(laplace) atol = 1.0e-8
+    @test var(lp) ≈ var(laplace) rtol = 1.0e-6
 end

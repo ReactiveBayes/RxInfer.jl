@@ -19,7 +19,9 @@ The site policy of the cavity schemes: each random variable's site on an edge is
 `site(form, message, cavity)`, the inbound message projected against its cavity, the variable's
 outbound message on the edge, by `form`'s projection, a `LaplaceForm` (Laplace propagation) or a
 `MomentForm` (expectation propagation). A closed message is its own site; a raw one waits for a
-cavity, but a deterministic node's pushforward, which starts against a flat one; against a cavity
+cavity, but a deterministic node's pushforward, which starts against a flat one, and every
+message of a variable with an initial message, `@initialization`'s `μ(x)`, which is each edge's
+first cavity while the other edges have no site (`ReactiveMP.seeded_cavity`); against a cavity
 that is not a Gaussian a raw message passes, so that the variable's beliefs are
 projected as products, as under [`LaplaceApproximation`](@ref). Nothing checks that a site, a
 cavity or a marginal is proper: each is passed as it is computed. The next projection of an edge
@@ -46,6 +48,17 @@ function ReactiveMP.compute_site(policy::SitePolicy, variable, index, message, c
     mode = previous isa NamedTuple ? get(previous, :mode, nothing) : nothing
     result = DeltaMessagePassingRules.site(policy.form, message, cavity, mode)
     return (result.site, merge(result.outcome, (; message, cavity, result.site)))
+end
+
+# An initial message, `@initialization`'s `μ(x)`, as every edge's first cavity: its natural
+# parameters, shared among the other edges, for each that has no site yet
+function ReactiveMP.seeded_cavity(::SitePolicy, cavity, initial, waiting, degree)
+    initial isa DeltaMessagePassingRules.GaussianMessage || return cavity
+    (ismissing(cavity) || cavity isa DeltaMessagePassingRules.GaussianMessage) || return cavity
+    ξ0, W0 = weightedmean_precision(initial)
+    share = waiting / (degree - 1)
+    ξ, W = ismissing(cavity) ? (zero(ξ0), zero(W0)) : weightedmean_precision(cavity)
+    return DeltaMessagePassingRules.weighted_mean_precision(ξ + share * ξ0, W + share * W0)
 end
 
 """

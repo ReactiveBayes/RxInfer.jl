@@ -20,6 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     joint projection (DeltaMessagePassingRules' `TiltedJointMessage`).
   - `ExpectationPropagation(; backend)` sets the projections' quadrature, `GaussHermite(points)`
     by default.
+  - `@initialization`'s `μ(x)` is also every edge's first cavity (`ReactiveMP.seeded_cavity`), so
+    a variable whose edges all carry raw messages starts; the fixed point does not depend on it.
+  - A prior without rules on constants, whose message arrives once, has its site projected again
+    each round (ReactiveMP); it was dropped before.
   - Through the new option `site_policy`, an `RxInfer.SitePolicy`, which `RxInfer.fallback_site(scheme)`
     gives and ReactiveMP's random variables call for each site.
   - A raw message that arrives again unchanged, to `tol`, takes its last site without a projection.

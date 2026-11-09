@@ -250,9 +250,19 @@ message once, against its context.
 - Every belief of the variable is then a product of sites, one Gaussian seen from each edge.
 - The projection is Laplace's method for `LaplacePropagation()` and moment matching for
   `ExpectationPropagation()`, with Gauss–Hermite points on the tilted density's own Laplace
-  approximation.
+  approximation. `ExpectationPropagation(backend = SphericalRadialCubature())`, from
+  ExpectationApproximations, takes 2d points in d dimensions instead of a product grid.
 - A deterministic node's message towards its output is projected the same way, against the
   output's cavity.
+- A node with several random inputs sends each of them belief propagation's message, the node's
+  factor integrated against the other inputs' messages, and the input's site is its block of
+  their joint projection.
+
+**Initial messages.** An initial message, `μ(x)` in [`@initialization`](@ref), is also each
+edge's first cavity, while the variable's other edges have no site. A variable whose edges all
+carry messages without a closed form needs one to start: each such message waits for a cavity,
+which only another edge's site gives. So does a loop through nodes with several random inputs, as
+in loopy belief propagation. The fixed point does not depend on it.
 
 ```julia
 result = infer(
@@ -266,7 +276,8 @@ result = infer(
 
 **Iterations and proper-ness.**
 - A site is computed when its edge's message arrives, so each iteration is a sweep over the sites;
-  a chain settles in a few.
+  a chain settles in a few. A message that arrives only once, from a node whose inputs are all
+  constants, has its site projected again each iteration.
 - Sites, cavities and messages may be improper, a Gaussian with a singular or an indefinite
   precision. Nothing checks: each is passed as it is computed, in natural parameters, which the
   Gaussian nodes' rules take.
