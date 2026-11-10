@@ -14,7 +14,7 @@
     "applicationCategory": "Statistics",
     "developmentStatus": "active",
     "readme": "https://rxinfer.com",
-    "softwareVersion": "6.1.1",
+    "softwareVersion": "6.1.3",
     "keywords": [
         "Bayesian inference",
         "message passing",

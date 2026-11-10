@@ -82,6 +82,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ReactiveMP 7.1, MessagePassingRulesBase 1.2, DeltaMessagePassingRules 1.1 and BayesBase 1.7 are
   required.
 
+## [6.1.3] - 2026-11-04
+
+### Fixed
+- Import Rocket's `tap` explicitly so RxInfer loads on Julia 1.14, which exports a `Base.tap` that makes the bare name ambiguous.
+
+## [6.1.2] - 2026-11-03
+
+### Fixed
+- Make the custom postprocessing docs example and the postprocessing and initialization tests independent of how Distributions prints distributions, which changed in Distributions v0.25.133.
+
 ## [6.1.1] - 2026-10-23
 
 ### Fixed
@@ -414,7 +424,9 @@ The last release of the 5.x series; RxInfer 6 runs on ReactiveMP 7.
 
 ---
 
-[Unreleased]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v6.1.1...HEAD
+[Unreleased]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v6.1.3...HEAD
+[6.1.3]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v6.1.2...v6.1.3
+[6.1.2]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v6.1.1...v6.1.2
 [6.1.1]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v6.1.0...v6.1.1
 [6.1.0]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v6.0.2...v6.1.0
 [6.0.2]: https://github.com/ReactiveBayes/RxInfer.jl/compare/v6.0.1...v6.0.2
