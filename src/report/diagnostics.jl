@@ -10,13 +10,15 @@ a part of the inference that is likely to be inaccurate or `:note` for one worth
 The kinds:
 - `:laplace_not_converged` (warning): a posterior's Laplace approximation did not converge, so its
   Gaussian is the last iterate of Newton's method, its curvature floored;
-- `:variational_not_converged` (warning): a posterior's variational Gaussian, [`CVI`](@ref)'s, did
-  not converge;
+- `:variational_not_converged` (warning): a posterior's variational Gaussian, the projection of a
+  belief without sites under [`NaturalGradientPropagation`](@ref), did not converge;
 - `:moment_matching_not_converged` (warning): a posterior's moment matching, under
   [`ExpectationPropagation`](@ref), did not converge, so its Gaussian is the one its quadrature
   points were placed on;
 - `:sites_not_converged` (warning): under [`LaplacePropagation`](@ref) or
   [`ExpectationPropagation`](@ref), the projections of some of a variable's sites did not converge;
+  under [`NaturalGradientPropagation`](@ref), the natural-gradient steps of some of its sites had
+  not settled at the last sweep, so they are not yet at their targets;
 - `:joint_not_converged` (warning): a joint the rule fallback computed by Laplace's method did not
   converge;
 - `:expectation_over_messages` (warning): under belief propagation, the rule fallback took an
@@ -76,7 +78,9 @@ function variable_diagnostics!(found, report::ApproximationsReport)
         if record.sites.nonconverged > 0
             push!(get!(sites, first(key), Tuple{Symbol, Any}[]), key)
             (failed, total, _) = get(sites_count, first(key), (0, 0, nothing))
-            sites_count[first(key)] = (failed + record.sites.nonconverged, total + record.sites.projections, get(record.sites.outcome, :method, nothing))
+            method = get(record.sites.outcome, :method, nothing)
+            computed = method === :natural_gradient ? length(record.settled) : record.sites.projections
+            sites_count[first(key)] = (failed + record.sites.nonconverged, total + computed, method)
         end
         if record.messages.unprojected > 0
             push!(get!(unprojected, first(key), Tuple{Symbol, Any}[]), key)
@@ -88,7 +92,7 @@ function variable_diagnostics!(found, report::ApproximationsReport)
         found_one = if method === :laplace
             ReportDiagnostic(:laplace_not_converged, :warning, variables_display(keys), string("Laplace did not converge: the Gaussian is at the last iterate. A prior, or ", hint, ", may help"))
         elseif method === :variational
-            ReportDiagnostic(:variational_not_converged, :warning, variables_display(keys), string("CVI did not converge: the Gaussian is the last iterate of its bound's maximization. ", uppercasefirst(hint), " may help"))
+            ReportDiagnostic(:variational_not_converged, :warning, variables_display(keys), string("the variational Gaussian did not converge: it is the last iterate of its bound's maximization. ", uppercasefirst(hint), " may help"))
         else
             ReportDiagnostic(:moment_matching_not_converged, :warning, variables_display(keys), string("moment matching did not converge: the Gaussian is the one its points were placed on. A prior, or ", hint, ", may help"))
         end
@@ -96,6 +100,10 @@ function variable_diagnostics!(found, report::ApproximationsReport)
     end
     for (name, keys) in sites
         (failed, total, method) = sites_count[name]
+        if method === :natural_gradient
+            push!(found, ReportDiagnostic(:sites_not_converged, :warning, variables_display(keys), string("the natural-gradient steps of ", failed, " of ", total, " sites had not settled at the last sweep: the sites are not yet at their targets. More `iterations`, or a smaller `alpha`, may help")))
+            continue
+        end
         projection = method === :moment_matching ? "moment matching" : "Laplace"
         push!(found, ReportDiagnostic(:sites_not_converged, :warning, variables_display(keys), string(failed, " of ", total, " site projections (", projection, ") did not converge. ", uppercasefirst(hint), " may help")))
     end

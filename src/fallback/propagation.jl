@@ -1,6 +1,6 @@
-export LaplacePropagation, ExpectationPropagation
+export LaplacePropagation, ExpectationPropagation, NaturalGradientPropagation
 
-import DeltaMessagePassingRules: MomentForm
+import DeltaMessagePassingRules: MomentForm, NaturalGradientForm
 import DeltaMessagePassingRules
 
 """
@@ -49,6 +49,17 @@ function ReactiveMP.compute_site(policy::SitePolicy, variable, index, message, c
     result = DeltaMessagePassingRules.site(policy.form, message, cavity, mode)
     return (result.site, merge(result.outcome, (; message, cavity, result.site)))
 end
+
+"""
+    RxInfer.cavity_free_energy(site_policy) -> Bool
+
+Whether the free energy under `site_policy`, the `site_policy` option, is expectation
+propagation's, `BetheFreeEnergy(cavity = true)`, in which a node without rules takes its term from
+its cavities: for any site policy but [`RxInfer.NaturalGradientSitePolicy`](@ref), whose fixed
+point is a stationary point of the Bethe free energy with average energies. `false` without one.
+"""
+cavity_free_energy(::Nothing) = false
+cavity_free_energy(policy) = true
 
 # An initial message, `@initialization`'s `μ(x)`, as every edge's first cavity: its natural
 # parameters, shared among the other edges, for each that has no site yet
@@ -157,3 +168,119 @@ fallback_initialization(scheme::ExpectationPropagation) = scheme.initialization
 
 Base.show(io::IO, scheme::ExpectationPropagation) =
     print(io, "ExpectationPropagation(backend = ", scheme.form.backend, ", tol = ", scheme.form.tol, ", maxiters = ", scheme.form.maxiters, ")")
+
+"""
+    RxInfer.NaturalGradientSitePolicy(form::NaturalGradientForm)
+
+The site policy of [`NaturalGradientPropagation`](@ref): each random variable's site on an edge is
+DeltaMessagePassingRules' `site(form, message, cavity, previous)`, a damped natural-gradient step
+of the edge's last site, `previous.η` with its velocity `previous.velocity`, both in the outcome
+the engine keeps for the edge, towards the message's natural-gradient target at the variable's
+marginal, in the family of the cavity: a Gaussian, a Gamma, any exponential family with a
+deterministic expectation. A closed message of the cavity's family is its own site; a raw one
+waits for a cavity, and a cavity in no such family lets the message pass, so that the variable's
+beliefs are projected as products, by the scheme's `VariationalForm`.
+
+Unlike [`RxInfer.SitePolicy`](@ref), it projects a message that arrives again unchanged anew:
+with momentum, the same message and cavity take the site a step further. An initial message,
+`@initialization`'s `μ(x)`, seeds each edge's first cavity as for the other cavity schemes,
+within its family.
+"""
+struct NaturalGradientSitePolicy{F <: NaturalGradientForm}
+    form::F
+end
+
+function ReactiveMP.compute_site(policy::NaturalGradientSitePolicy, variable, index, message, cavity, previous)
+    result = DeltaMessagePassingRules.site(policy.form, message, cavity, previous)
+    return (result.site, result.outcome)
+end
+
+# The initial message's natural parameters, shared among the other edges, added to the cavity's
+# where both are of one family
+function ReactiveMP.seeded_cavity(::NaturalGradientSitePolicy, cavity, initial, waiting, degree)
+    seed = DeltaMessagePassingRules.family_parameters(initial)
+    isnothing(seed) && return cavity
+    family, η0, conditioner = seed
+    share = waiting / (degree - 1)
+    ismissing(cavity) && return DeltaMessagePassingRules.family_site(family, share .* η0, conditioner)
+    current = DeltaMessagePassingRules.family_parameters(cavity)
+    (isnothing(current) || current[1] !== family) && return cavity
+    return DeltaMessagePassingRules.family_site(family, current[2] .+ share .* η0, conditioner)
+end
+
+# Bethe's free energy with average energies, the objective whose stationary point is the fixed point
+cavity_free_energy(::NaturalGradientSitePolicy) = false
+
+"""
+    NaturalGradientPropagation(; alpha = 0.5, beta = 0.2, max_step = Inf, tol = 1e-8, expectation = nothing, initialization = FromPriors())
+
+A [`FallbackScheme`](@ref), natural-gradient propagation (Lukashchuk et al., *Information Geometry
+of Message Passing*) wherever a model has no exact rules. The rule fallback sends belief
+propagation's messages unprojected, as under [`LaplacePropagation`](@ref): a node's log-density,
+its pushforward towards a deterministic node's output, its factor integrated against the other
+edges' messages. Every random variable keeps one site per edge, in the family of the rest of its
+belief, the cavity: a Gaussian, a Gamma, a Beta. A raw message's site moves at each sweep by a
+damped heavy-ball step towards its natural-gradient target,
+
+```math
+\\eta^\\star = G(q)^{-1} \\operatorname{Cov}_q[T, \\ell], \\qquad
+v \\leftarrow \\beta v + \\alpha (\\eta^\\star - \\eta), \\quad \\eta \\leftarrow \\eta + v,
+```
+
+with `ℓ` the message's log-density and `q` the variable's marginal, in natural parameters, the
+step halved until the marginal is proper. At a fixed point each site is its target, and each
+marginal a stationary point of the variational free energy over its family: under Gaussian
+cavities, the fixed point of conjugate-computation variational inference, the variational Gaussian
+of the joint where a model has one latent variable; under a Gamma one, the best Gamma.
+
+A belief that has no site, a variable with one connection or whose cavity is in no family, is
+projected onto its variational Gaussian, `VariationalForm`, in the unconstrained coordinates of
+its domain. The free energy is Bethe's with the average energies of the nodes without rules: the
+negative evidence lower bound on a Gaussian tree whose only non-conjugate factors are leaves, and
+a diagnostic elsewhere, which need not decrease from one iteration to the next.
+
+```julia
+infer(model = bioassay(x = x, n = n), data = (y = y,), iterations = 50, fallback = NaturalGradientPropagation())
+```
+
+# Keywords
+- `alpha`, `beta`: the step size and the momentum of every site, `0 < alpha`, `0 ≤ beta < 1`;
+  `alpha = 1`, `beta = 0` jumps to the target at each sweep, which can oscillate;
+- `max_step`: the longest step in natural parameters, `Inf` for none;
+- `tol`: a site has settled when `‖η⋆ - η‖ ≤ tol (1 + ‖η‖)`, which the report reads;
+- `expectation`: the expectation backend of the rules and of the variational Gaussians, such as
+  `ExpectationApproximations.EADefault()`; `nothing`, the default, for the backends loaded in the
+  session. The targets take Gauss–Hermite points for a Gaussian and Gauss–Legendre points in the
+  unconstrained coordinate of any other family;
+- `initialization`: the initialization strategy, [`FromPriors`](@ref) by default; `nothing` for none.
+
+A site moves one step per sweep, so each iteration is a sweep: give `iterations`, a few tens. A raw
+message's first step starts from the flat site, against its cavity, which must be proper: a prior,
+or `@initialization`'s `μ(x)` for a variable with only raw messages.
+"""
+struct NaturalGradientPropagation{F <: NaturalGradientForm, E, I} <: FallbackScheme
+    form::F
+    expectation::E
+    initialization::I
+end
+
+function NaturalGradientPropagation(; alpha::Real = 0.5, beta::Real = 0.2, max_step::Real = Inf, tol::Real = 1.0e-8, expectation = nothing, initialization = FromPriors())
+    return NaturalGradientPropagation(NaturalGradientForm(; alpha, beta, max_step, tol), expectation, initialization)
+end
+
+fallback_rule(scheme::NaturalGradientPropagation) = ExpectationRuleFallback(scheme.form)
+# The beliefs without sites through the inference's backend; a message with no mode is left
+fallback_form(scheme::NaturalGradientPropagation, backend) =
+    (q = VariationalForm(1.0e-10, 100, :project, backend), μ = VariationalForm(1.0e-10, 100, :leave, backend))
+fallback_form(scheme::NaturalGradientPropagation) = fallback_form(scheme, nothing)
+fallback_site(scheme::NaturalGradientPropagation) = NaturalGradientSitePolicy(scheme.form)
+fallback_expectation(scheme::NaturalGradientPropagation) = scheme.expectation
+fallback_initialization(scheme::NaturalGradientPropagation) = scheme.initialization
+
+# The variational Gaussians take their iterations from a form given in the options
+maxiters_hint(::NaturalGradientPropagation) = "a `VariationalForm(maxiters = …)` given as the option `default_form_constraint`"
+
+Base.show(io::IO, scheme::NaturalGradientPropagation) = print(
+    io, "NaturalGradientPropagation(alpha = ", scheme.form.alpha, ", beta = ", scheme.form.beta,
+    ", max_step = ", scheme.form.max_step, ", tol = ", scheme.form.tol, ")",
+)

@@ -148,7 +148,10 @@ What an [`ApproximationsReport`](@ref) records of a random variable: its form `c
 [`RxInfer.ProjectionRecord`](@ref)s of its `marginal` and its `messages`, and how its posterior was
 formed, `incoming`: for each node and target whose messages reached the variable, how many came
 from an exact rule and how many from the rule fallback, `(rules, fallbacks)`. Under cavity
-propagation, `sites` records the sites projected on its edges.
+propagation, `sites` records the sites projected on its edges. Under natural-gradient
+propagation, where a site moves a step at each sweep, `settled` says, for each edge by its index,
+whether its latest step had settled, and `sites.nonconverged` counts the edges whose latest had
+not.
 """
 mutable struct VariableRecord
     constraint::Any
@@ -156,9 +159,10 @@ mutable struct VariableRecord
     messages::ProjectionRecord
     incoming::Dict{Tuple{Any, Any}, Tuple{Int, Int}}
     sites::ProjectionRecord
+    settled::Dict{Int, Bool}
 end
 
-VariableRecord() = VariableRecord(nothing, ProjectionRecord(), ProjectionRecord(), Dict(), ProjectionRecord())
+VariableRecord() = VariableRecord(nothing, ProjectionRecord(), ProjectionRecord(), Dict(), ProjectionRecord(), Dict{Int, Bool}())
 
 """
     ApproximationsReport
@@ -373,14 +377,22 @@ function record!(report::ApproximationsReport, event::AfterFormConstraintApplied
 end
 
 # A site projected on one of a variable's edges, under cavity propagation; a message that is its
-# own site, or passes, is not a projection
+# own site, or passes, is not a projection. A natural-gradient step settles over the sweeps, so
+# only each edge's latest counts.
 function record!(report::ApproximationsReport, event::AfterSiteComputationEvent)
     outcome = event.outcome
-    (outcome isa NamedTuple && get(outcome, :method, nothing) in (:laplace, :moment_matching)) || return nothing
-    sites = get!(VariableRecord, report.variables, variable_key(event.variable.label)).sites
+    method = outcome isa NamedTuple ? get(outcome, :method, nothing) : nothing
+    method in (:laplace, :moment_matching, :natural_gradient) || return nothing
+    record = get!(VariableRecord, report.variables, variable_key(event.variable.label))
+    sites = record.sites
     sites.projections += 1
     sites.outcome = outcome
-    sites.nonconverged += get(outcome, :converged, true) === false
+    if method === :natural_gradient
+        record.settled[event.index] = get(outcome, :converged, true) === true
+        sites.nonconverged = count(!, values(record.settled))
+    else
+        sites.nonconverged += get(outcome, :converged, true) === false
+    end
     return nothing
 end
 
@@ -483,7 +495,7 @@ function projection_display(records)
     method === :unprojected && return "left unprojected"
     converged = count(o -> get(o, :converged, true) === true, outcomes)
     iterations = [o.iterations for o in outcomes if haskey(o, :iterations)]
-    name = method === :laplace ? "Laplace" : method === :variational ? "CVI" : method === :moment_matching ? "moment matching" : string(method)
+    name = method === :laplace ? "Laplace" : method === :variational ? "variational Gaussian" : method === :moment_matching ? "moment matching" : string(method)
     bound = method === :variational ? "ELBO" : "log Z"
     if length(outcomes) == 1
         steps = string(only(iterations), only(iterations) == 1 ? " iteration" : " iterations")
@@ -495,10 +507,19 @@ function projection_display(records)
     return string(name, ", ", converged, " of ", length(outcomes), " converged, ", span, " iterations")
 end
 
-# Under cavity propagation: the sites, by the projection of the scheme, and how they converged
+# Under cavity propagation: the sites, by the projection of the scheme, and how they converged;
+# under natural-gradient propagation, the edges' sites, their steps, and how many have not settled
 function sites_display(records)
     sites = [r.sites for r in records if r.sites.projections > 0]
     method = get(first(sites).outcome, :method, nothing)
+    if method === :natural_gradient
+        edges = sum(r -> length(r.settled), records)
+        steps = sum(s -> s.projections, sites)
+        unsettled = sum(s -> s.nonconverged, sites)
+        text = string("natural-gradient propagation, ", edges, edges == 1 ? " site, " : " sites, ", steps, steps == 1 ? " step" : " steps")
+        unsettled > 0 && (text *= string(", ", unsettled, " not settled"))
+        return text
+    end
     name = method === :laplace ? "Laplace propagation" : "expectation propagation"
     total = sum(s -> s.projections, sites)
     nonconverged = sum(s -> s.nonconverged, sites)

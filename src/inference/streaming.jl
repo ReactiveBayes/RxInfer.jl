@@ -688,7 +688,7 @@ function streaming_inference(;
     is_free_energy, S = unwrap_free_energy_option(free_energy)
 
     if is_free_energy
-        fe_objective = BetheFreeEnergy(S; cavity = !isnothing(getsite_policy(_options)))
+        fe_objective = BetheFreeEnergy(S; cavity = cavity_free_energy(getsite_policy(_options)))
         modelplugins = modelplugins + ReactiveMPFreeEnergyPlugin(fe_objective)
     end
 
