@@ -318,7 +318,7 @@ end
     given = RxInfer.SitePolicy(DeltaMessagePassingRules.LaplaceForm(); tol = 1.0e-6)
     options = RxInfer.apply_fallback(convert(RxInfer.ReactiveMPInferenceOptions, (site_policy = given,)), ExpectationPropagation())
     @test RxInfer.getsite_policy(options) === given
-    @test isnothing(RxInfer.getsite_policy(RxInfer.apply_fallback(convert(RxInfer.ReactiveMPInferenceOptions, (;)), LaplaceApproximation())))
+    @test isnothing(RxInfer.getsite_policy(RxInfer.apply_fallback(convert(RxInfer.ReactiveMPInferenceOptions, (;)), LocalLaplace())))
 end
 
 @testitem "propagation: EP's quadrature, Gauss–Hermite or a given backend" setup = [Propagation] begin
@@ -426,7 +426,7 @@ end
     # x ~ WidePrior(0.5), with Gaussian observations: the prior's message, from a constant, arrives
     # once, before the observations give it a cavity, and its site is projected again each round.
     # One raw site against a Gaussian cavity: expectation propagation is exact, and Laplace
-    # propagation is the global Laplace approximation, LaplaceApproximation()'s.
+    # propagation is the global Laplace approximation, LocalLaplace()'s.
     y = [2.0, 2.5, 1.5, 3.0]
     grid = range(-10, 10; length = 20_001)
     logp = [-log1p((u / 0.5)^2) + sum(yi -> -(yi - u)^2 / 2, y) for u in grid]
@@ -437,7 +437,7 @@ end
     ep = run(ExpectationPropagation())
     @test mean(ep) ≈ m atol = 1.0e-5
     @test var(ep) ≈ sum(p .* (grid .- m) .^ 2) rtol = 1.0e-4
-    lp, laplace = run(LaplacePropagation()), run(LaplaceApproximation())
+    lp, laplace = run(LaplacePropagation()), run(LocalLaplace())
     @test mean(lp) ≈ mean(laplace) atol = 1.0e-8
     @test var(lp) ≈ var(laplace) rtol = 1.0e-6
 end

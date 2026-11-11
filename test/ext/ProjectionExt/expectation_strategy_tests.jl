@@ -23,7 +23,7 @@
     strategy = ExpectationStrategy(EA.EADefault())
     projection = ProjectedTo(Beta; parameters = ProjectionParameters(strategy = strategy, niterations = 2000, tolerance = 1.0e-10))
     result = infer(
-        model = coin(), data = (y = flips,), fallback = LaplaceApproximation(),
+        model = coin(), data = (y = flips,), fallback = LocalLaplace(),
         options = (default_form_constraint = (q = projection,),), report = (:approximations,), logscales = true,
     )
     q = result.posteriors[:p]

@@ -58,7 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   parents' initial means, down chains and hierarchies, and `FromPriors(@initialization …)` applies
   the block first. A package adds its own with `RxInfer.InitializationStrategy` and
   `RxInfer.initial_marginal`.
-- `infer(...; fallback = LaplaceApproximation())` (U5): one keyword for universal Laplace
+- `infer(...; fallback = LocalLaplace())` (U5): one keyword for universal Laplace
   inference. A `FallbackScheme` sets the rule fallback, the default form constraint, the
   expectation backend and the initialization strategy, `FromPriors()` for Laplace; what `options`
   sets explicitly wins. Its default backend is the session's: the backends registered with
@@ -70,10 +70,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   method, normaliser and convergence, through `RxInfer.form_outcome`). Off by default, and free
   when off.
 - The hints of a missing rule and of variables never updated name `fallback =
-  LaplaceApproximation()` and `initialization = FromPriors()`.
-- `fallback = CVI()`, conjugate-computation variational inference (U7b): the rules of `LaplaceApproximation`, with every belief that has no closed form projected onto its variational Gaussian, the one minimising `KL(q ‖ p)` in the unconstrained coordinates of its domain (DeltaMessagePassingRules' `VariationalForm`), through the inference's expectation backend. The free energy is the negative evidence lower bound. `RxInfer.fallback_form(scheme, backend)` gives a scheme's form the backend. The report names CVI's projections and warns of one that did not converge, `:variational_not_converged`.
+  LocalLaplace()` and `initialization = FromPriors()`.
+- `fallback = CVI()`, conjugate-computation variational inference (U7b): the rules of `LocalLaplace`, with every belief that has no closed form projected onto its variational Gaussian, the one minimising `KL(q ‖ p)` in the unconstrained coordinates of its domain (DeltaMessagePassingRules' `VariationalForm`), through the inference's expectation backend. The free energy is the negative evidence lower bound. `RxInfer.fallback_form(scheme, backend)` gives a scheme's form the backend. The report names CVI's projections and warns of one that did not converge, `:variational_not_converged`.
 - The inference report is a product (U8). `result.report.approximations` is shown by posterior: how each approximated posterior was projected and which node instances' messages formed it, named as the model writes them (`y[1:8] ~ LogisticBernoulli(x)`, folded by shape), exact or by the rule fallback, with the expectations. `RxInfer.diagnostics(report)` returns `ReportDiagnostic`s for the parts most likely to be inaccurate, such as a Laplace approximation that did not converge or a fallback averaging over a message under belief propagation. The section `result.report.timings`, a `TimingsReport`, records where the time went, exclusive per kind and by node. `report_tables` gives the tables as `ReportTable`s, which print as aligned text, or through PrettyTables.jl when it is loaded. A manual page, "What was approximated: the inference report".
-- `LaplaceApproximation` leaves a message it finds no mode for unprojected, `default_form_constraint
+- `LocalLaplace` leaves a message it finds no mode for unprojected, `default_form_constraint
   = (q = LaplaceForm(), μ = LaplaceForm(nomode = :leave))`: a model whose deterministic nodes,
   `p := logistic(dot(a, θ))`, have exact rules is no longer fed an uninformative Gaussian from a
   likelihood's message alone.

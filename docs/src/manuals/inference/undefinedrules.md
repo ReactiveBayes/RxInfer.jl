@@ -145,7 +145,7 @@ As shown, the estimated posterior is quite close to the actual hidden value of `
 
 ## [Universal Laplace inference](@id inference-undefinedrules-laplace)
 
-`NodeFunctionRuleFallback` collapses every other input to its mean, and needs a projection chosen per variable. One keyword of [`infer`](@ref), `fallback = LaplaceApproximation()`, needs neither: wherever the model has no exact rule, it approximates by Laplace's method, with no method per node or variable.
+`NodeFunctionRuleFallback` collapses every other input to its mean, and needs a projection chosen per variable. One keyword of [`infer`](@ref), `fallback = LocalLaplace()`, needs neither: wherever the model has no exact rule, it approximates by Laplace's method, with no method per node or variable.
 
 The projection reads a variable's domain from its prior's `minimum` and `maximum`, so the prior says them:
 
@@ -159,7 +159,7 @@ nothing #hide
 result_laplace = infer(
     model = simple_model(prior = BetaDistribution(1, 1), likelihood = BernoulliDistribution),
     data = (y = dataset, ),
-    fallback = LaplaceApproximation(),
+    fallback = LocalLaplace(),
 )
 @test isapprox(mean(result_laplace.posteriors[:p]), mean(Beta(1 + count(dataset), 1 + length(dataset) - count(dataset))), rtol=1e-3) #hide
 mean(result_laplace.posteriors[:p]), std(result_laplace.posteriors[:p])
@@ -167,11 +167,11 @@ mean(result_laplace.posteriors[:p]), std(result_laplace.posteriors[:p])
 
 The posterior of `p` is a logit-normal distribution, a Gaussian in logit coordinates pushed forward onto the unit interval. Its mean is that of the exact posterior, `Beta(1 + 307, 1 + 693)` by conjugacy, to a relative `1e-3`. A rule that exists still takes precedence over the fallback, and a closed form passes the projection, so a conjugate model is inferred as without the keyword.
 
-`LaplaceApproximation()` sets four things, each of which the options can set instead:
+`LocalLaplace()` sets four things, each of which the options can set instead:
 
 - the rule fallback, `DeltaMessagePassingRules.ExpectationRuleFallback()`, the option `rulefallback`. It sends a node's expected log-density, `x ↦ E_q[log f(x, ·)]` over every other input. It also serves Delta nodes without an approximation method, joint marginals and average energies, so the free energy is available;
 - the default form constraint, `DeltaMessagePassingRules.LaplaceForm()`, the option `default_form_constraint`. It projects every belief with no closed form by Laplace's approximation, in the unconstrained coordinates of the variable's domain, and leaves closed forms as they are. A message whose product has no mode, such as a likelihood's message alone, is left as it is, `LaplaceForm(nomode = :leave)`, so that an exact rule downstream is never fed a Gaussian Laplace did not find;
-- the expectation backend, `context = (expectation = …,)`. By default, the backends loaded in the session, frozen once per call of `infer` into a type-stable router that takes exact ones first: ExpectationApproximations' quadrature rules, which RxInfer loads, and any other package's that registers its own. `LaplaceApproximation(expectation = ExpectationApproximations.EADefault())` pins one;
+- the expectation backend, `context = (expectation = …,)`. By default, the backends loaded in the session, frozen once per call of `infer` into a type-stable router that takes exact ones first: ExpectationApproximations' quadrature rules, which RxInfer loads, and any other package's that registers its own. `LocalLaplace(expectation = ExpectationApproximations.EADefault())` pins one;
 - the initialization, [`FromPriors`](@ref), which starts every variable the `initialization` leaves out from its prior. See [Initialization from priors](@ref initialization-from-priors).
 
 `report = true` records what the keyword approximated and how: which posteriors, by which nodes' messages, whether each Laplace approximation converged, and what is likely to be inaccurate. See [What was approximated: the inference report](@ref user-guide-inference-report).
@@ -194,7 +194,7 @@ infer(
 ```
 
 ```@docs
-LaplaceApproximation
+LocalLaplace
 RxInfer.FallbackScheme
 RxInfer.fallback_rule
 RxInfer.fallback_form
@@ -235,7 +235,7 @@ CVI
 
 ### [Cavity propagation: Laplace propagation and expectation propagation](@id inference-undefinedrules-propagation)
 
-`LaplaceApproximation()` and `CVI()` project each belief of a variable separately: the message to
+`LocalLaplace()` and `CVI()` project each belief of a variable separately: the message to
 each neighbour and the marginal are each a product of messages, projected on its own. A message
 with no closed form, such as a likelihood's, is then approximated once per product, each time in
 a different context. The beliefs disagree with one another, and a message that has no Gaussian of

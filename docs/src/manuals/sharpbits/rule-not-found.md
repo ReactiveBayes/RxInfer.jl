@@ -154,7 +154,7 @@ If you need specific message computations, you can define your own update rules.
 When exact message updates aren't available, consider:
 
 - Using simpler distribution pairs that have defined rules
-- Passing `fallback = LaplaceApproximation()` to [`infer`](@ref): every node without rules, and every Delta node without an approximation method, is approximated by Laplace's method, with no method per node or variable (see [Universal Laplace inference](@ref inference-undefinedrules-laplace)); `report = true` then says which nodes it approximated (see [the inference report](@ref user-guide-inference-report))
+- Passing `fallback = LocalLaplace()` to [`infer`](@ref): every node without rules, and every Delta node without an approximation method, is approximated by Laplace's method, with no method per node or variable (see [Universal Laplace inference](@ref inference-undefinedrules-laplace)); `report = true` then says which nodes it approximated (see [the inference report](@ref user-guide-inference-report))
 - Choosing a node's approximation through its algorithm, as described in [Algorithm specification](@ref user-guide-algorithm-specification); a deterministic transformation takes `DeltaApproximation(method = Linearization())`, `Unscented()` or `CVIProjection()` (see [Deterministic nodes](@ref delta-node-manual))
 - Passing `options = (rulefallback = NodeFunctionRuleFallback(),)` to [`infer`](@ref): where no rule matches, a stochastic node sends its own log-density with every other input collapsed to its mean, an unnormalized [`NodeFunctionLogPdf`](@extref MessagePassingRulesBase.NodeFunctionLogPdf); a functional form constraint (see [Built-in Functional Forms](@ref lib-forms)) turns the resulting posterior into a proper distribution
 

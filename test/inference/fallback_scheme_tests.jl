@@ -30,7 +30,7 @@ end
     import RxInfer: apply_fallback, ReactiveMPInferenceOptions, getrulefallback, getdefault_form_constraint, getcontext
     import DeltaMessagePassingRules: ExpectationRuleFallback, LaplaceForm
 
-    scheme = LaplaceApproximation(tol = 1.0e-8, maxiters = 50)
+    scheme = LocalLaplace(tol = 1.0e-8, maxiters = 50)
     options = apply_fallback(convert(ReactiveMPInferenceOptions, nothing), scheme)
     @test getrulefallback(options) === ExpectationRuleFallback()
     @test getdefault_form_constraint(options) === (q = LaplaceForm(1.0e-8, 50), μ = LaplaceForm(1.0e-8, 50, :leave))
@@ -53,10 +53,10 @@ end
     @test getdefault_form_constraint(options) isa PointMassFormConstraint
     @test getcontext(options).expectation === pinned
     # a pinned backend, and another service of the context kept
-    options = apply_fallback(convert(ReactiveMPInferenceOptions, (context = (matrix_correction = 1.0,),)), LaplaceApproximation(expectation = pinned))
+    options = apply_fallback(convert(ReactiveMPInferenceOptions, (context = (matrix_correction = 1.0,),)), LocalLaplace(expectation = pinned))
     @test getcontext(options) === (matrix_correction = 1.0, expectation = pinned)
     @test apply_fallback(given, nothing) === given
-    @test repr(scheme) == "LaplaceApproximation(tol = 1.0e-8, maxiters = 50)"
+    @test repr(scheme) == "LocalLaplace(tol = 1.0e-8, maxiters = 50)"
 end
 
 @testitem "fallback: the initialization a scheme gives" setup = [FallbackSchemes] begin
@@ -66,12 +66,12 @@ end
     block = @initialization begin
         q(x) = NormalMeanVariance(1.0, 1.0)
     end
-    @test fallback_initialization(nothing, LaplaceApproximation()) === FromPriors()
-    @test fallback_initialization(block, LaplaceApproximation()) == FromPriors(block)
+    @test fallback_initialization(nothing, LocalLaplace()) === FromPriors()
+    @test fallback_initialization(block, LocalLaplace()) == FromPriors(block)
     # a strategy given wins, and a scheme without one keeps the block
-    @test fallback_initialization(FromPriors(block), LaplaceApproximation(initialization = nothing)) == FromPriors(block)
-    @test fallback_initialization(block, LaplaceApproximation(initialization = nothing)) === block
-    @test fallback_initialization(nothing, LaplaceApproximation(initialization = nothing)) === nothing
+    @test fallback_initialization(FromPriors(block), LocalLaplace(initialization = nothing)) == FromPriors(block)
+    @test fallback_initialization(block, LocalLaplace(initialization = nothing)) === block
+    @test fallback_initialization(nothing, LocalLaplace(initialization = nothing)) === nothing
     @test fallback_initialization(block, nothing) === block
 end
 
@@ -82,7 +82,7 @@ end
     y = Float64[1, 1, 0, 1, 1, 0, 1, 1]
     contexts = Any[]
     record(event) = (push!(contexts, event.mapping.context); nothing)
-    result = infer(model = classifier(), data = (y = y,), fallback = LaplaceApproximation(), callbacks = (after_message_rule_call = record,))
+    result = infer(model = classifier(), data = (y = y,), fallback = LocalLaplace(), callbacks = (after_message_rule_call = record,))
     reference = EA.laplace(x -> logpdf(Normal(0.0, 2.0), x) + sum(logpdf(LogisticBernoulli(x), yi) for yi in y), 0.0)
     @test mean(result.posteriors[:x]) ≈ mean(reference.distribution) rtol = 1.0e-8
     @test var(result.posteriors[:x]) ≈ var(reference.distribution) rtol = 1.0e-8
@@ -113,7 +113,7 @@ end
         )
         return engine.history[:x]
     end
-    switched = filtered(fallback = LaplaceApproximation())
+    switched = filtered(fallback = LocalLaplace())
     by_options = filtered(
         options = (
             rulefallback = DeltaMessagePassingRules.ExpectationRuleFallback(), default_form_constraint = DeltaMessagePassingRules.LaplaceForm(),

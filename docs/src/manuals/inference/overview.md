@@ -117,7 +117,7 @@ end
 
 Also read the [Universal Laplace inference](@ref inference-undefinedrules-laplace) section.
 
-How to approximate wherever the model has no exact rules. `fallback = LaplaceApproximation()` approximates every node without rules by Laplace's method: it sets the rule fallback, the default form constraint of every random variable, the expectation backend and the initialization strategy, [`FromPriors`](@ref), each unless `options` or `initialization` set it. A node with a rule runs it, so a conjugate model is inferred as without the keyword.
+How to approximate wherever the model has no exact rules. `fallback = LocalLaplace()` approximates every node without rules by Laplace's method: it sets the rule fallback, the default form constraint of every random variable, the expectation backend and the initialization strategy, [`FromPriors`](@ref), each unless `options` or `initialization` set it. A node with a rule runs it, so a conjugate model is inferred as without the keyword.
 
 - ### `algorithm`
 

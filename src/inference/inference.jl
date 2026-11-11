@@ -368,7 +368,7 @@ function inference_process_error(
         from the packages loaded (RxInfer loads the standard nodes, Delta, AR, DiscreteTransition,
         GCV, GaussianCoupling and SoftDot; another node needs its package, such as
         `using PolyaMessagePassingRules`). A node without rules can be approximated, as every node
-        without rules is by `infer(...; fallback = LaplaceApproximation())`. The Rule Not Found
+        without rules is by `infer(...; fallback = LocalLaplace())`. The Rule Not Found
         guide explains the options: https://docs.rxinfer.com/stable/manuals/sharpbits/rule-not-found/
         """
     end
@@ -616,7 +616,7 @@ Check the official documentation for more information about some of the argument
 - `datastream`: A stream of `NamedTuple` with data, required (or `data`)
 - `autoupdates = nothing`: auto-updates specification, required for streamline inference, see [`@autoupdates`](@ref)
 - `initialization = nothing`: initialization specification object, optional, see [`@initialization`](@ref), or a strategy that initialises what the specification leaves out, such as [`FromPriors`](@ref)
-- `fallback = nothing`: how to approximate wherever the model has no exact rules, optional, such as [`LaplaceApproximation`](@ref) or [`CVI`](@ref): it sets the rule fallback, the default form constraint, the expectation backend and the initialization strategy, unless `options` or `initialization` set them. See [Inference without explicit message update rules](@ref inference-undefinedrules)
+- `fallback = nothing`: how to approximate wherever the model has no exact rules, optional, such as [`LocalLaplace`](@ref) or [`CVI`](@ref): it sets the rule fallback, the default form constraint, the expectation backend and the initialization strategy, unless `options` or `initialization` set them. See [Inference without explicit message update rules](@ref inference-undefinedrules)
 - `constraints = nothing`: constraints specification object, or an alias such as `MeanField`, optional, see `@constraints`
 - `algorithm = nothing`: the algorithm specification, which algorithm each node runs under, optional, may be required for some models, see [`@algorithm`](@ref)
 - `meta = nothing`: deprecated, the old name of `algorithm`; a `@meta` specification is still accepted as one

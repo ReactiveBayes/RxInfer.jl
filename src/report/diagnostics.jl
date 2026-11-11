@@ -42,7 +42,7 @@ Each is a [`ReportDiagnostic`](@ref); variables and nodes of the same name are f
 `x[1:200]`. Empty for an inference without a report section of approximations.
 
 ```julia
-result = infer(model = model(), data = data, fallback = LaplaceApproximation(), report = true)
+result = infer(model = model(), data = data, fallback = LocalLaplace(), report = true)
 filter(d -> d.level === :warning, RxInfer.diagnostics(result.report))
 ```
 """
@@ -73,7 +73,7 @@ function variable_diagnostics!(found, report::ApproximationsReport)
     end
     for ((name, method), keys) in notconverged
         found_one = method === :laplace ?
-            ReportDiagnostic(:laplace_not_converged, :warning, variables_display(keys), "Laplace did not converge: the Gaussian is at the last iterate. A prior, or `LaplaceApproximation(maxiters = …)`, may help") :
+            ReportDiagnostic(:laplace_not_converged, :warning, variables_display(keys), "Laplace did not converge: the Gaussian is at the last iterate. A prior, or `LocalLaplace(maxiters = …)`, may help") :
             ReportDiagnostic(:variational_not_converged, :warning, variables_display(keys), "CVI did not converge: the Gaussian is the last iterate of its bound's maximisation. `CVI(maxiters = …)` may help")
         push!(found, found_one)
     end

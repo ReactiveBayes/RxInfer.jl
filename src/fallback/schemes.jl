@@ -1,4 +1,4 @@
-export LaplaceApproximation, CVI
+export LocalLaplace, CVI
 
 import DeltaMessagePassingRules: ExpectationRuleFallback, VariationalForm
 import Random
@@ -22,7 +22,7 @@ What `options` sets explicitly wins over the scheme: `rulefallback`, `default_fo
 `site_policy` and `context = (expectation = …,)`. A node with a rule runs it, so the scheme changes nothing in a model
 every node of which has rules, but its initialisation.
 
-See [`LaplaceApproximation`](@ref).
+See [`LocalLaplace`](@ref).
 """
 abstract type FallbackScheme end
 
@@ -63,7 +63,7 @@ given to `infer` is applied first.
 fallback_initialization(::FallbackScheme) = nothing
 
 """
-    LaplaceApproximation(; tol = 1e-10, maxiters = 100, expectation = nothing, initialization = FromPriors())
+    LocalLaplace(; tol = 1e-10, maxiters = 100, expectation = nothing, initialization = FromPriors())
 
 A [`FallbackScheme`](@ref), Laplace's approximation wherever a model has no exact rules:
 DeltaMessagePassingRules' `ExpectationRuleFallback` computes the missing messages from the nodes'
@@ -74,7 +74,7 @@ exact rule downstream is not fed a Gaussian Laplace did not find; the fallback t
 through the node. The log evidence and the free energy are computed too.
 
 ```julia
-infer(model = bioassay(x = x, n = n), data = (y = y,), fallback = LaplaceApproximation())
+infer(model = bioassay(x = x, n = n), data = (y = y,), fallback = LocalLaplace())
 ```
 
 # Keywords
@@ -83,35 +83,35 @@ infer(model = bioassay(x = x, n = n), data = (y = y,), fallback = LaplaceApproxi
   `nothing`, the default, for the backends loaded in the session;
 - `initialization`: the initialization strategy, [`FromPriors`](@ref) by default; `nothing` for none.
 """
-struct LaplaceApproximation{F <: LaplaceForm, E, I} <: FallbackScheme
+struct LocalLaplace{F <: LaplaceForm, E, I} <: FallbackScheme
     form::F
     expectation::E
     initialization::I
 end
 
-function LaplaceApproximation(;
+function LocalLaplace(;
         tol::Real = 1.0e-10, maxiters::Integer = 100, expectation = nothing,
         initialization = FromPriors(),
     )
-    return LaplaceApproximation(LaplaceForm(; tol, maxiters), expectation, initialization)
+    return LocalLaplace(LaplaceForm(; tol, maxiters), expectation, initialization)
 end
 
-fallback_rule(::LaplaceApproximation) = ExpectationRuleFallback()
+fallback_rule(::LocalLaplace) = ExpectationRuleFallback()
 # The marginals take the projection as it is; a message Laplace finds no mode for is left
-fallback_form(scheme::LaplaceApproximation) =
+fallback_form(scheme::LocalLaplace) =
     (q = scheme.form, μ = LaplaceForm(scheme.form.tol, scheme.form.maxiters, :leave))
-fallback_expectation(scheme::LaplaceApproximation) = scheme.expectation
-fallback_initialization(scheme::LaplaceApproximation) = scheme.initialization
+fallback_expectation(scheme::LocalLaplace) = scheme.expectation
+fallback_initialization(scheme::LocalLaplace) = scheme.initialization
 
-function Base.show(io::IO, scheme::LaplaceApproximation)
-    return print(io, "LaplaceApproximation(tol = ", scheme.form.tol, ", maxiters = ", scheme.form.maxiters, ")")
+function Base.show(io::IO, scheme::LocalLaplace)
+    return print(io, "LocalLaplace(tol = ", scheme.form.tol, ", maxiters = ", scheme.form.maxiters, ")")
 end
 
 """
     CVI(; tol = 1e-10, maxiters = 100, expectation = nothing, initialization = FromPriors())
 
 A [`FallbackScheme`](@ref), conjugate-computation variational inference wherever a model has no
-exact rules. As for [`LaplaceApproximation`](@ref), DeltaMessagePassingRules'
+exact rules. As for [`LocalLaplace`](@ref), DeltaMessagePassingRules'
 `ExpectationRuleFallback` computes the missing messages from the nodes' log-densities. But
 `VariationalForm` projects every belief that has no closed form onto the Gaussian that minimises
 `KL(q ‖ p)`, in the unconstrained coordinates of its domain, rather than onto Laplace's Gaussian
@@ -163,12 +163,12 @@ check_fallback_scheme(::Nothing) = nothing
 check_fallback_scheme(::FallbackScheme) = nothing
 check_fallback_scheme(fallback::ExpectationRuleFallback) = throw(
     ArgumentError(
-        "`fallback` takes a fallback scheme, such as `LaplaceApproximation()`; `ExpectationRuleFallback()` is a rule fallback, the `rulefallback` option: `options = (rulefallback = ExpectationRuleFallback(),)`",
+        "`fallback` takes a fallback scheme, such as `LocalLaplace()`; `ExpectationRuleFallback()` is a rule fallback, the `rulefallback` option: `options = (rulefallback = ExpectationRuleFallback(),)`",
     ),
 )
 check_fallback_scheme(fallback) = throw(
     ArgumentError(
-        "`fallback` takes a fallback scheme, such as `LaplaceApproximation()`; got `$(fallback)`. A rule fallback alone is the `rulefallback` option",
+        "`fallback` takes a fallback scheme, such as `LocalLaplace()`; got `$(fallback)`. A rule fallback alone is the `rulefallback` option",
     ),
 )
 

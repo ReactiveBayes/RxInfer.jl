@@ -23,7 +23,7 @@ cavity, but a deterministic node's pushforward, which starts against a flat one,
 message of a variable with an initial message, `@initialization`'s `μ(x)`, which is each edge's
 first cavity while the other edges have no site (`ReactiveMP.seeded_cavity`); against a cavity
 that is not a Gaussian a raw message passes, so that the variable's beliefs are
-projected as products, as under [`LaplaceApproximation`](@ref). Nothing checks that a site, a
+projected as products, as under [`LocalLaplace`](@ref). Nothing checks that a site, a
 cavity or a marginal is proper: each is passed as it is computed. The next projection of an edge
 starts at its last mode.
 
@@ -65,7 +65,7 @@ end
     LaplacePropagation(; tol = 1e-10, maxiters = 100, expectation = nothing, initialization = FromPriors())
 
 A [`FallbackScheme`](@ref), Laplace propagation wherever a model has no exact rules. The rule
-fallback computes the missing messages as under [`LaplaceApproximation`](@ref), and every random
+fallback computes the missing messages as under [`LocalLaplace`](@ref), and every random
 variable keeps one site per edge, the edge's inbound message times its cavity projected by
 Laplace's method, divided by the cavity. The cavity is the product of the other edges' sites, the
 variable's outbound message on the edge. Every belief of a variable is then a product of sites:

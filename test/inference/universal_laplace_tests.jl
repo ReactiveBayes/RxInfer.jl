@@ -69,7 +69,7 @@ end
     @test all(var.(universal.posteriors[:x]) .≈ var.(exact.posteriors[:x]))
     @test only(universal.free_energy) ≈ only(exact.free_energy)
     # One switch gives the same
-    switched = infer(model = chain(observation = Observed), data = (y = y,), free_energy = true, fallback = LaplaceApproximation())
+    switched = infer(model = chain(observation = Observed), data = (y = y,), free_energy = true, fallback = LocalLaplace())
     @test mean.(switched.posteriors[:x]) == mean.(universal.posteriors[:x])
     @test switched.free_energy == universal.free_energy
 end
@@ -104,7 +104,7 @@ end
     @test cov(posterior) ≈ cov(reference.distribution) rtol = 1.0e-8
     # Every likelihood message is exact, so the posterior's log scale is Laplace's evidence.
     @test getlogscale(posterior) ≈ reference.logZ rtol = 1.0e-8
-    switched = infer(model = bioassay(x = x, n = n), data = (y = y,), fallback = LaplaceApproximation(), logscales = true)
+    switched = infer(model = bioassay(x = x, n = n), data = (y = y,), fallback = LocalLaplace(), logscales = true)
     @test mean(switched.posteriors[:θ]) == mean(posterior)
     @test getlogscale(switched.posteriors[:θ]) == getlogscale(posterior)
 end
@@ -126,7 +126,7 @@ end
     @test mean(result.posteriors[:x]) ≈ mean(reference.distribution) rtol = 1.0e-8
     @test var(result.posteriors[:x]) ≈ var(reference.distribution) rtol = 1.0e-8
     @test result.posteriors[:z] isa ExponentialFamily.UnivariateNormalDistributionsFamily
-    switched = infer(model = warped(), data = (y = 0.5,), fallback = LaplaceApproximation())
+    switched = infer(model = warped(), data = (y = 0.5,), fallback = LocalLaplace())
     @test switched.posteriors[:x] == result.posteriors[:x]
     @test switched.posteriors[:z] == result.posteriors[:z]
 end
@@ -158,7 +158,7 @@ end
         y ~ Poisson(λ * t)
     end
     y, t = 7, 3.5
-    result = infer(model = exposure(t = t), data = (y = y,), free_energy = true, fallback = LaplaceApproximation(), report = true)
+    result = infer(model = exposure(t = t), data = (y = y,), free_energy = true, fallback = LocalLaplace(), report = true)
     # the negative binomial evidence of a Gamma-Poisson count
     logevidence = loggamma(y + 2.0) - loggamma(2.0) - loggamma(y + 1.0) + 2.0 * log(1.0 / (1.0 + t)) + y * log(t / (1.0 + t))
     @test only(result.free_energy) ≈ -logevidence rtol = 1.0e-8
@@ -200,7 +200,7 @@ end
         # One switch: the same, when the priors initialise both
         calls, callbacks = U.fallback_calls()
         from_priors = infer(; model, data, kwargs..., initialization = FromPriors(get(kwargs, :initialization, nothing)))
-        switched = infer(; model, data, kwargs..., fallback = LaplaceApproximation(), callbacks)
+        switched = infer(; model, data, kwargs..., fallback = LocalLaplace(), callbacks)
         @test calls[] == 0
         @test switched.posteriors == from_priors.posteriors
         @test switched.free_energy == from_priors.free_energy
@@ -259,7 +259,7 @@ end
     @test abs(mean(qp) - grid_p) < 0.5 * sd_p
     @test abs(mean(qλ) - grid_λ) < 0.5 * sd_λ
     # One switch and no initialization: the priors are the initial marginals written above
-    switched = infer(; model = drunk_monks(), data = (y = counts,), constraints, iterations = 20, free_energy = true, fallback = LaplaceApproximation())
+    switched = infer(; model = drunk_monks(), data = (y = counts,), constraints, iterations = 20, free_energy = true, fallback = LocalLaplace())
     @test last(switched.posteriors[:p]) == qp && last(switched.posteriors[:λ]) == qλ
     @test switched.free_energy == result.free_energy
 end
@@ -289,7 +289,7 @@ end
     reference = U.EA.laplace(θ -> logpdf(prior, θ) + sum(logpdf(PoissonLogLinear(θ, x[i]), y[i]) for i in eachindex(y)), [0.0, 0.0])
     @test mean(result.posteriors[:θ]) ≈ mean(reference.distribution) rtol = 1.0e-8
     @test cov(result.posteriors[:θ]) ≈ cov(reference.distribution) rtol = 1.0e-8
-    @test infer(model = counts(x = x), data = (y = y,), fallback = LaplaceApproximation()).posteriors[:θ] == result.posteriors[:θ]
+    @test infer(model = counts(x = x), data = (y = y,), fallback = LocalLaplace()).posteriors[:θ] == result.posteriors[:θ]
 end
 
 @testitem "universal Laplace: stochastic volatility, against the global Laplace approximation" setup = [UniversalLaplace] begin
@@ -334,5 +334,5 @@ end
     @info "stochastic volatility: RMSE of the means against the global Laplace" gap
     # 0.19 today, with T = 50, ϕ = 0.9 and s = 0.3
     @test gap < 0.25
-    @test infer(model = volatility(), data = (y = y,), fallback = LaplaceApproximation()).posteriors[:x] == result.posteriors[:x]
+    @test infer(model = volatility(), data = (y = y,), fallback = LocalLaplace()).posteriors[:x] == result.posteriors[:x]
 end

@@ -1,4 +1,4 @@
-# `infer(...; fallback = CVI())`: the rules of `LaplaceApproximation`, with every belief that has no
+# `infer(...; fallback = CVI())`: the rules of `LocalLaplace`, with every belief that has no
 # closed form projected onto its variational Gaussian, the one minimising KL(q ‖ p), rather than
 # Laplace's at the mode.
 
@@ -75,7 +75,7 @@ end
     @test cov(q) ≈ cov(reference.distribution) rtol = 1.0e-8
     # one latent variable: the free energy is the negative bound, below Laplace's
     @test only(result.free_energy) ≈ -reference.logZ rtol = 1.0e-6
-    laplace = infer(model = bioassay(x = doses, n = animals), data = (y = deaths,), fallback = LaplaceApproximation(), free_energy = true)
+    laplace = infer(model = bioassay(x = doses, n = animals), data = (y = deaths,), fallback = LocalLaplace(), free_energy = true)
     @test only(result.free_energy) < only(laplace.free_energy)
     # the posterior of β is skewed to the right: the variational mean is above the mode
     @test mean(q)[2] > mean(laplace.posteriors[:θ])[2]
@@ -85,7 +85,7 @@ end
     using .CVIModels
     y = [3, 0, 1, 4, 2, 0, 1]
     run(fallback) = infer(model = counts(), data = (y = y,), constraints = MeanField(), iterations = 30, fallback = fallback, free_energy = true)
-    cvi, laplace = run(CVI()), run(LaplaceApproximation())
+    cvi, laplace = run(CVI()), run(LocalLaplace())
     @test last(cvi.free_energy) < last(laplace.free_energy)
     @test abs(cvi.free_energy[end] - cvi.free_energy[end - 1]) < 1.0e-6 * abs(cvi.free_energy[end])
     @test isempty(RxInfer.diagnostics(infer(model = counts(), data = (y = y,), constraints = MeanField(), iterations = 5, fallback = CVI(), report = true).report))

@@ -1,6 +1,6 @@
 # [What was approximated: the inference report](@id user-guide-inference-report)
 
-An inference that mixes exact rules with approximations, such as [`LaplaceApproximation`](@ref)
+An inference that mixes exact rules with approximations, such as [`LocalLaplace`](@ref)
 for the nodes without rules, raises a question its result alone does not answer: which parts of
 the posterior are exact, and which were approximated, and how? `infer(...; report = true)` records
 the answer as an [`InferenceReport`](@ref), read as `result.report`, or as
@@ -18,7 +18,7 @@ The report is collected from the engine's events, which are not built when it is
 ## A model with an approximation
 
 The classifier below observes Bernoulli outcomes through the logistic function, a node with no
-rules, so `fallback = LaplaceApproximation()` approximates it:
+rules, so `fallback = LocalLaplace()` approximates it:
 
 ```@example inference-report
 using RxInfer
@@ -36,7 +36,7 @@ BayesBase.logpdf(d::LogisticBernoulli, y) = logpdf(Bernoulli(1 / (1 + exp(-d.x))
 end
 
 y = [1.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0]
-result = infer(model = classifier(), data = (y = y,), fallback = LaplaceApproximation(), report = true, free_energy = true)
+result = infer(model = classifier(), data = (y = y,), fallback = LocalLaplace(), report = true, free_energy = true)
 result.report
 ```
 
@@ -75,7 +75,7 @@ form as it is. So a conjugate model under the same keyword reports no approximat
     y .~ Bernoulli(p)
 end
 
-infer(model = coin(), data = (y = y,), fallback = LaplaceApproximation(), report = (:approximations,)).report
+infer(model = coin(), data = (y = y,), fallback = LocalLaplace(), report = (:approximations,)).report
 ```
 
 ## Diagnostics
@@ -86,7 +86,7 @@ its level, the variable or node it is about, and a sentence. The display shows t
 Laplace's method is allowed two iterations only, so it stops before it converges:
 
 ```@example inference-report
-stopped = infer(model = classifier(), data = (y = y,), fallback = LaplaceApproximation(maxiters = 2), report = (:approximations,))
+stopped = infer(model = classifier(), data = (y = y,), fallback = LocalLaplace(maxiters = 2), report = (:approximations,))
 RxInfer.diagnostics(stopped.report)
 ```
 

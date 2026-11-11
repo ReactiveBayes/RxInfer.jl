@@ -47,7 +47,7 @@ end
     end
     # The pointer is a hint, shown unless hints are disabled.
     err = withenv("THROW_ON_INFERENCE_ERROR_HINT" => "false") do
-        @test_logs (:error, r"No message passing rule fits a node of the model(.|\n)*fallback = LaplaceApproximation\(\)") match_mode =
+        @test_logs (:error, r"No message passing rule fits a node of the model(.|\n)*fallback = LocalLaplace\(\)") match_mode =
             :any try
             infer(model = no_rule_model(), data = (y = 1.0,))
         catch e

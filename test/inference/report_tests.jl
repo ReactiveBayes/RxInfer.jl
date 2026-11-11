@@ -55,7 +55,7 @@ end
 @testitem "report: the nodes the fallback ran, and the projections" setup = [InferenceReports] begin
     using .InferenceReports
     y = Float64[1, 1, 0, 1, 1, 0, 1, 1]
-    result = infer(model = classifier(), data = (y = y,), fallback = LaplaceApproximation(), report = true, logscales = true, free_energy = true)
+    result = infer(model = classifier(), data = (y = y,), fallback = LocalLaplace(), report = true, logscales = true, free_energy = true)
     report = result.report
     @test report isa InferenceReport
     @test propertynames(report) == (:approximations, :timings)
@@ -86,7 +86,7 @@ end
 @testitem "report: node instances and the provenance of a posterior" setup = [InferenceReports] begin
     using .InferenceReports
     y = Float64[1, 1, 0, 1, 1, 0, 1, 1]
-    approximations = infer(model = classifier(), data = (y = y,), fallback = LaplaceApproximation(), report = (:approximations,)).report.approximations
+    approximations = infer(model = classifier(), data = (y = y,), fallback = LocalLaplace(), report = (:approximations,)).report.approximations
 
     # one instance per node, labelled as the model writes it
     labels = sort!([instance.label for instance in values(approximations.instances)])
@@ -120,7 +120,7 @@ end
         end
     end
     doses, deaths = [-0.86, -0.3, -0.05, 0.73], [0.0, 1.0, 1.0, 1.0]
-    approximations = infer(model = trials(doses = doses), data = (y = deaths,), fallback = LaplaceApproximation(), report = (:approximations,)).report.approximations
+    approximations = infer(model = trials(doses = doses), data = (y = deaths,), fallback = LocalLaplace(), report = (:approximations,)).report.approximations
 
     labels = Set(RxInfer.instances_label([i]) for i in values(approximations.instances))
     @test "p[1] := logistic(·)" in labels && "· := dot([1.0, -0.86], θ)" in labels
@@ -147,7 +147,7 @@ end
     @test RxInfer.report_summary(approximations) == "Approximations: 0 of 1 posteriors approximated (exact: p), no warnings"
     @test isempty(report_tables(approximations))
     # under the switch too, the projection passes the closed form
-    switched = infer(model = coin(), data = (y = flips,), report = true, fallback = LaplaceApproximation())
+    switched = infer(model = coin(), data = (y = flips,), report = true, fallback = LocalLaplace())
     @test all(record -> record.fallbacks == 0, values(switched.report.approximations.nodes))
     @test switched.report.approximations.variables[(:p, nothing)].marginal.outcome.method === :closed_form
 end
@@ -157,11 +157,11 @@ end
     y = Float64[1, 1, 0, 1, 1, 0, 1, 1]
 
     # Laplace stopped after two iterations
-    found = RxInfer.diagnostics(infer(model = classifier(), data = (y = y,), fallback = LaplaceApproximation(maxiters = 2), report = true).report)
+    found = RxInfer.diagnostics(infer(model = classifier(), data = (y = y,), fallback = LocalLaplace(maxiters = 2), report = true).report)
     @test [(d.kind, d.level, d.subject) for d in found] == [(:laplace_not_converged, :warning, "x")]
 
     # a fallback between two random variables under belief propagation, by a stochastic backend
-    result = infer(model = product(), data = (y = 2.0,), fallback = LaplaceApproximation(expectation = Noisy()), report = true)
+    result = infer(model = product(), data = (y = 2.0,), fallback = LocalLaplace(expectation = Noisy()), report = true)
     found = RxInfer.diagnostics(result.report)
     @test [(d.kind, d.level) for d in found] == [(:expectation_over_messages, :warning), (:stochastic_expectation, :note)]
     @test all(d -> d.subject == "y ~ Product(a, b)", found)
@@ -170,19 +170,19 @@ end
     @test first(tables).title == "Diagnostics" && first(tables).levels == [:warning, :note]
 
     # the free energy takes the joint of a and b by Laplace, which converged
-    tables = report_tables(infer(model = product(), data = (y = 2.0,), fallback = LaplaceApproximation(), report = true, free_energy = true).report.approximations)
+    tables = report_tables(infer(model = product(), data = (y = 2.0,), fallback = LocalLaplace(), report = true, free_energy = true).report.approximations)
     joints = first(t for t in tables if t.title == "Joints and energies by the fallback")
     @test any(row -> row[2] == "joint of (a, b)" && row[4] == "joint Laplace, converged", joints.rows)
 
     # the same model under mean field takes expectations over marginals: no warning
-    meanfield = infer(model = product(), data = (y = 2.0,), constraints = MeanField(), iterations = 5, fallback = LaplaceApproximation(), report = true)
+    meanfield = infer(model = product(), data = (y = 2.0,), constraints = MeanField(), iterations = 5, fallback = LocalLaplace(), report = true)
     @test isempty(RxInfer.diagnostics(meanfield.report))
 end
 
 @testitem "report: the display, plain and with PrettyTables" setup = [InferenceReports] begin
     using .InferenceReports
     y = Float64[1, 1, 0, 1, 1, 0, 1, 1]
-    result = infer(model = classifier(), data = (y = y,), fallback = LaplaceApproximation(maxiters = 2), report = true)
+    result = infer(model = classifier(), data = (y = y,), fallback = LocalLaplace(maxiters = 2), report = true)
     shown_report = shown(result.report)
     @test startswith(shown_report, "Inference report\n  Approximations: 1 of 1 posteriors approximated, 1 warning")
     @test contains(shown_report, "Expectations: ") && contains(shown_report, "Timings: model ")
@@ -201,7 +201,7 @@ end
 @testitem "report: timings" setup = [InferenceReports] begin
     using .InferenceReports
     y = Float64[1, 1, 0, 1, 1, 0, 1, 1]
-    report = infer(model = classifier(), data = (y = y,), fallback = LaplaceApproximation(), iterations = 3, report = true).report
+    report = infer(model = classifier(), data = (y = y,), fallback = LocalLaplace(), iterations = 3, report = true).report
     timings = report.timings
     @test timings isa TimingsReport
     @test timings.model > 0 && timings.inference > 0 && length(timings.iterations) == 3
