@@ -195,6 +195,11 @@ function ReactiveMP.compute_site(policy::NaturalGradientSitePolicy, variable, in
     return (result.site, result.outcome)
 end
 
+# A closed message is its own site, in whatever representation the form keeps it: a Gamma as a
+# `GammaShapeRate`, or a cached site equal to the message
+ReactiveMP.is_own_site(::Union{SitePolicy, NaturalGradientSitePolicy}, message, site, outcome) =
+    site === message || (outcome isa NamedTuple && get(outcome, :method, nothing) === :closed_form)
+
 # The initial message's natural parameters, shared among the other edges, added to the cavity's
 # where both are of one family
 function ReactiveMP.seeded_cavity(::NaturalGradientSitePolicy, cavity, initial, waiting, degree)
