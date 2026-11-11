@@ -31,15 +31,17 @@ Creates model inference options object. The list of available options is present
 
 ### Advanced options
 
-- `stream_postprocessors`: changes the postprocessor of reactive streams, see ReactiveMP.jl for more info, defaults to `nothing`, unless the `limit_stack_depth` option is set, in which case will be set to `ReactiveMP.ScheduleOnStreamPostprocessor` together with `RxInfer.LimitStackScheduler`.
+- `stream_postprocessors`: changes the postprocessor of reactive streams, such as `ReactiveMP.DampingPostprocessor(β)`, which damps every node's messages, see ReactiveMP.jl for more info, defaults to `nothing`, unless the `limit_stack_depth` option is set, in which case will be set to `ReactiveMP.ScheduleOnStreamPostprocessor` together with `RxInfer.LimitStackScheduler`.
 - `diagnostics`: the engine's audits of the rules the model runs, a `ReactiveMP.EngineDiagnostics` (`check_everything_pure`, `check_everything_inplace`, `checked_buffers`), all off by default; or, shorter, a `NamedTuple` of the audits to switch on, `(check_everything_pure = true,)`, which builds one.
-- `context`: services for the rules, a `NamedTuple` merged over the engine's defaults: `rng`, the random number generator the rules draw from, the task's own by default; `matrix_correction`, the correction rules apply to the matrices they build, each rule's own by default; and any service a rule declares.
-- `rulefallback`: the message where no rule matches, such as `NodeFunctionRuleFallback()`; by default none, and a missing rule is an error that lists the closest candidates.
+- `context`: services for the rules, a `NamedTuple` merged over the engine's defaults: `rng`, the random number generator the rules draw from, the task's own by default; `matrix_correction`, the correction rules apply to the matrices they build, each rule's own by default; `expectation`, the backend of BayesBase's expectation protocol a rule or a rule fallback computes expectations with, none by default; and any service a rule declares.
+- `rulefallback`: the message, joint marginal or average energy where no rule matches, such as `NodeFunctionRuleFallback()`; by default none, and a missing rule is an error that lists the closest candidates. With an `expectation` backend in the `context`, `NodeFunctionRuleFallback()` also gives the average energy of a mean-field node, and so a free energy.
 - `logscales`: whether messages and marginals carry log scales, the log of the constant a rule's result leaves out (see `ReactiveMP.getlogscale`); `false` by default. The `Mixture` node reads them, and a posterior's log scale is the log evidence of a model inferred exactly by belief propagation.
+- `site_policy`: cavity propagation, a policy that gives every random variable with more than one connection a site per edge, its inbound message projected against the outbound one (see `ReactiveMP.compute_site`); by default none. The schemes `LaplacePropagation()`, `ExpectationPropagation()` and `NaturalGradientPropagation()` of `infer(...; fallback = …)` set it.
+- `default_form_constraint`: the form constraint of every random variable's messages and marginal that the constraints give none, such as a projection, `ProjectedTo(NormalMeanVariance)`, or a `NamedTuple` for the marginals and the messages apart, `(q = ProjectedTo(NormalMeanVariance),)`, where `μ` names the messages; by default none. A variable's own form constraint replaces it, and the check that the form is supported runs after either.
 
 See also: [`infer`](@ref)
 """
-struct ReactiveMPInferenceOptions{S, A, R, E, C, B}
+struct ReactiveMPInferenceOptions{S, A, R, E, C, B, F, P}
     stream_postprocessors::S
     annotations::A
     warn::Bool
@@ -49,6 +51,8 @@ struct ReactiveMPInferenceOptions{S, A, R, E, C, B}
     context::C
     rulefallback::B
     logscales::Bool
+    default_form_constraint::F
+    site_policy::P
 end
 
 ReactiveMPInferenceOptions(
@@ -69,6 +73,8 @@ ReactiveMPInferenceOptions(
     context,
     nothing,
     false,
+    nothing,
+    nothing,
 )
 
 # The options with one field replaced.
@@ -101,6 +107,10 @@ setrulefallback(options::ReactiveMPInferenceOptions, rulefallback) =
     with_option(options, :rulefallback, rulefallback)
 setlogscales(options::ReactiveMPInferenceOptions, logscales) =
     with_option(options, :logscales, logscales)
+setdefault_form_constraint(options::ReactiveMPInferenceOptions, constraint) =
+    with_option(options, :default_form_constraint, constraint)
+setsite_policy(options::ReactiveMPInferenceOptions, policy) =
+    with_option(options, :site_policy, policy)
 
 import Base: convert
 
@@ -122,6 +132,8 @@ function Base.convert(
         :context,
         :rulefallback,
         :logscales,
+        :default_form_constraint,
+        :site_policy,
     )
 
     for key in keys
@@ -141,6 +153,8 @@ function Base.convert(
     rulefallback =
         haskey(options, :rulefallback) ? options.rulefallback : nothing
     logscales = haskey(options, :logscales) ? options.logscales : false
+    default_form_constraint = haskey(options, :default_form_constraint) ? options.default_form_constraint : nothing
+    site_policy = haskey(options, :site_policy) ? options.site_policy : nothing
     force_marginal_computation = if haskey(options, :force_marginal_computation)
         options.force_marginal_computation
     else
@@ -174,6 +188,8 @@ function Base.convert(
         context,
         rulefallback,
         logscales,
+        default_form_constraint,
+        site_policy,
     )
 end
 
@@ -209,6 +225,20 @@ getdiagnostics(options::ReactiveMPInferenceOptions) =
 getcontext(options::ReactiveMPInferenceOptions) = options.context
 getrulefallback(options::ReactiveMPInferenceOptions) = options.rulefallback
 getlogscales(options::ReactiveMPInferenceOptions) = options.logscales
+getdefault_form_constraint(options::ReactiveMPInferenceOptions) = options.default_form_constraint
+getsite_policy(options::ReactiveMPInferenceOptions) = options.site_policy
+
+# The default form constraints of a random variable's messages and marginal, `(μ, q)`, from the
+# option `default_form_constraint`: one for both, or a `NamedTuple` of either or both.
+default_form_constraints(::Nothing) = (ReactiveMP.UnspecifiedFormConstraint(), ReactiveMP.UnspecifiedFormConstraint())
+default_form_constraints(constraint) = (constraint, constraint)
+function default_form_constraints(constraints::NamedTuple)
+    for key in keys(constraints)
+        key ∈ (:μ, :q) || error("Unknown key of the `default_form_constraint` option: $(key). Available keys are `μ`, for the messages, and `q`, for the marginal.")
+    end
+    unspecified = ReactiveMP.UnspecifiedFormConstraint()
+    return (get(constraints, :μ, unspecified), get(constraints, :q, unspecified))
+end
 ReactiveMP.getcallbacks(options::ReactiveMPInferenceOptions) = options.callbacks
 ReactiveMP.getpostprocessor(options::ReactiveMPInferenceOptions) =
     options.stream_postprocessors
@@ -415,7 +445,10 @@ function activate_rmp_variable!(
         # Fetch "form-constraint" for messages and marginals. The form-constraint usually defines the form of the resulting distribution
         # By default it is `UnspecifiedFormConstraint` which means that the form of the resulting distribution is not specified in advance
         # and follows from the computation, but users may override it with other form constraints, e.g. `PointMassFormConstraint`, which
-        # constrains the resulting distribution to be of a point mass form
+        # constrains the resulting distribution to be of a point mass form. The option
+        # `default_form_constraint` stands in for a variable that has none of its own.
+        default_messages_form_constraint, default_marginal_form_constraint =
+            default_form_constraints(getdefault_form_constraint(getoptions(plugin)))
         messages_form_constraint =
             ReactiveMP.preprocess_form_constraints(
             plugin,
@@ -423,7 +456,7 @@ function activate_rmp_variable!(
             getextra(
                 nodedata,
                 GraphPPL.VariationalConstraintsMessagesFormConstraintKey,
-                ReactiveMP.UnspecifiedFormConstraint(),
+                default_messages_form_constraint,
             ),
         ) + EnsureSupportedFunctionalForm(
             :μ,
@@ -437,7 +470,7 @@ function activate_rmp_variable!(
             getextra(
                 nodedata,
                 GraphPPL.VariationalConstraintsMarginalFormConstraintKey,
-                ReactiveMP.UnspecifiedFormConstraint(),
+                default_marginal_form_constraint,
             ),
         ) + EnsureSupportedFunctionalForm(
             :q,
@@ -489,6 +522,7 @@ function activate_rmp_variable!(
             getpostprocessor(getoptions(plugin)),
             prod_context_for_messages_computation,
             prod_context_for_marginal_computation,
+            getsite_policy(getoptions(plugin)),
         )
         return ReactiveMP.activate!(
             getextra(nodedata, ReactiveMPExtraVariableKey)::RandomVariable,

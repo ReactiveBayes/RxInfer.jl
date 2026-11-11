@@ -161,6 +161,32 @@ result = infer(
 
 ![Coin Flip](docs/src/assets/img/coin-flip.svg?raw=true&sanitize=true "Coin-Flip readme results")
 
+### Inference without rules
+
+The coin model is conjugate, so every message has an exact rule. A model without one, such as a logistic regression, runs with one more keyword, `fallback`, which approximates every node that has no exact rule:
+
+```julia
+using LinearAlgebra
+
+logistic(z) = 1 / (1 + exp(-z))
+
+@model function logistic_regression(y, x)
+    θ ~ MvNormalMeanCovariance(zeros(2), diageye(2))
+    for i in eachindex(y)
+        p[i] := logistic(dot([1.0, x[i]], θ))
+        y[i] ~ Bernoulli(p[i])
+    end
+end
+
+result = infer(
+    model    = logistic_regression(x = x),
+    data     = (y = y, ),
+    fallback = LocalLaplace(),
+)
+```
+
+The schemes are `LocalLaplace()`, `LaplacePropagation()`, `ExpectationPropagation()` and `NaturalGradientPropagation()`, and `report = true` says what was approximated and how. See [Inference without explicit message update rules](https://docs.rxinfer.com/stable/manuals/inference/undefinedrules/) in the documentation.
+
 # Where to go next?
 
 There are a set of [examples](https://examples.rxinfer.com/) available in the `RxInferExamples.jl` repository that demonstrate the more advanced features of the package. Alternatively, you can head to the [documentation](https://docs.rxinfer.com) that provides more detailed information of how to use `RxInfer` to specify more complex probabilistic models.

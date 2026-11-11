@@ -2,17 +2,23 @@ import BayesBase: CountingReal
 import ReactiveMP: score
 
 """
-    BetheFreeEnergy(T)
+    BetheFreeEnergy(T; cavity = false)
 
 Implements a reactive stream for Bethe Free Energy values. 
 Must be used in combination with the `score` function of `ReactiveMP.jl`.
 
 # Arguments
 - `::Type{T}`: a type of the counting real number, e.g. `Float64`. Set to `Real` by default, otherwise the inference procedure is not automatically differentiable.
+
+# Keywords
+- `cavity`: the free energy under cavity propagation, the `site_policy` option: a node without
+  rules takes its term from its cavities, `ReactiveMP.FactorBoundFreeEnergy(cavity = true)`. The
+  sums and the stream are as without sites, one value per iteration.
 """
 struct BetheFreeEnergy{T}
-    function BetheFreeEnergy(::Type{T}) where {T}
-        return new{T}()
+    cavity::Bool
+    function BetheFreeEnergy(::Type{T}; cavity::Bool = false) where {T}
+        return new{T}(cavity)
     end
 end
 
@@ -56,7 +62,7 @@ function GraphPPL.postprocess_plugin(
         factornode = getextra(node, ReactiveMPExtraFactorNodeKey)
         bfe_stream = score(
             __as_counting_real_type(T),
-            FactorBoundFreeEnergy(),
+            FactorBoundFreeEnergy(cavity = objective.cavity),
             factornode,
             node_algorithm(node),
             nothing,

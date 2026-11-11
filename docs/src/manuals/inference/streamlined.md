@@ -468,17 +468,20 @@ using RxInfer, Test, Markdown
     :after_marginal_computation,
     :before_marginal_rule_call,
     :after_marginal_rule_call,
+    :before_site_computation,
+    :after_site_computation,
     :before_factor_bound_free_energy,
     :after_factor_bound_free_energy,
     :before_variable_bound_entropy,
-    :after_variable_bound_entropy
+    :after_variable_bound_entropy,
+    :on_free_energy_update
 ))
 nothing
 ```
 
 ---
 
-Below we list `RxInfer` specific callbacks. In addition to these, `ReactiveMP` provides lower-level callbacks for the message passing procedure itself, such as `before_message_rule_call`, `after_message_rule_call`, `before_product_of_messages`, `after_product_of_messages`, `before_marginal_computation`, `after_marginal_computation`, the marginal rule calls (`after_marginal_rule_call`) and the free energy's terms (`after_factor_bound_free_energy`, `after_variable_bound_entropy`), and others. For a full list and detailed descriptions of these callbacks, refer to the official documentation of `ReactiveMP`.
+Below we list `RxInfer` specific callbacks. In addition to these, `ReactiveMP` provides lower-level callbacks for the message passing procedure itself, such as `before_message_rule_call`, `after_message_rule_call`, `before_product_of_messages`, `after_product_of_messages`, `before_marginal_computation`, `after_marginal_computation`, the marginal rule calls (`after_marginal_rule_call`), the sites of cavity propagation (`before_site_computation`, `after_site_computation`) and the free energy's terms (`after_factor_bound_free_energy`, `after_variable_bound_entropy`), and others. For a full list and detailed descriptions of these callbacks, refer to the official documentation of `ReactiveMP`.
 
 ```julia
 before_inference(event::BeforeInferenceEvent)
@@ -511,6 +514,11 @@ Calls before the `RxInfer.start()` function, if `autostart` is set to `true`. Ac
 after_autostart(event::AfterAutostartEvent)
 ```
 Calls after the `RxInfer.start()` function, if `autostart` is set to `true`. Access the engine via `event.engine`.
+
+```julia
+on_free_energy_update(event::OnFreeEnergyUpdateEvent)
+```
+Calls each time the Bethe free energy is computed, with `free_energy = true`: at each iteration of each observation event, once, however many subscribe to the engine's `free_energy` stream. Access the model and the value via `event.model` and `event.value`.
 
 ---
 

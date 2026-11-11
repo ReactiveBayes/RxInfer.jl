@@ -87,7 +87,13 @@ function Base.showerror(io::IO, result::InferenceResult)
 end
 
 function Base.getproperty(result::InferenceResult, property::Symbol)
-    if property === :free_energy && getfield(result, :free_energy) === nothing
+    if property === :report
+        metadata = getfield(result, :model).metadata
+        haskey(metadata, :report) || error(
+            "The inference report has not been recorded. Use the `report = true` keyword argument of the `infer` function to record it.",
+        )
+        return metadata[:report]
+    elseif property === :free_energy && getfield(result, :free_energy) === nothing
         error(
             """
             Bethe Free Energy has not been computed. 
@@ -122,6 +128,8 @@ function batch_inference(;
         data = nothing,
         # Initialization specification object
         initialization = nothing,
+        # How to approximate where the model has no exact rules, a `FallbackScheme`
+        fallback = nothing,
         # Constraints specification object
         constraints = nothing,
         # Meta specification object
@@ -196,19 +204,24 @@ function batch_inference(;
         _options = setcallbacks(_options, callbacks)
     end
 
+    # The fallback scheme fills what the options leave unset, its expectation backend chosen once
+    # among the session's here, before the options reach the model
+    _options = apply_fallback(_options, fallback)
+    _initialization = fallback_initialization(initialization, fallback)
+
     # We create a model with the `GraphPPL` package and insert a certain RxInfer related
     # plugins which include the VI plugin, meta plugin and the ReactiveMP integration plugin
     modelplugins = GraphPPL.PluginsCollection(
         GraphPPL.VariationalConstraintsPlugin(constraints),
         GraphPPL.MetaPlugin(meta),
-        RxInfer.InitializationPlugin(initialization),
+        RxInfer.InitializationPlugin(_initialization),
         RxInfer.ReactiveMPInferencePlugin(_options),
     )
 
     is_free_energy, S = unwrap_free_energy_option(free_energy)
 
     if is_free_energy
-        fe_objective = BetheFreeEnergy(S)
+        fe_objective = BetheFreeEnergy(S; cavity = cavity_free_energy(getsite_policy(_options)))
         modelplugins = modelplugins + ReactiveMPFreeEnergyPlugin(fe_objective)
     end
 
@@ -528,6 +541,8 @@ function available_callbacks(::typeof(batch_inference))
             :after_marginal_computation,
             :before_marginal_rule_call,
             :after_marginal_rule_call,
+            :before_site_computation,
+            :after_site_computation,
             :before_factor_bound_free_energy,
             :after_factor_bound_free_energy,
             :before_variable_bound_entropy,
