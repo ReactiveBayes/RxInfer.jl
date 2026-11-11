@@ -36,6 +36,22 @@
         y ~ Product(a, b)
     end
 
+    # `y ~ Scaled(a, τ)`, `y` Gaussian around `a` with precision `τ`: a node with two random inputs,
+    # one of them under a Gamma prior
+    struct Scaled{A, T} <: ContinuousUnivariateDistribution
+        a::A
+        τ::T
+    end
+    BayesBase.logpdf(d::Scaled, y) = (log(d.τ) - d.τ * (y - d.a)^2) / 2
+    BayesBase.insupport(::Scaled, y) = true
+    @define_factor_node(node = Scaled, type = Stochastic, interfaces = [:out, :a, :τ])
+
+    @model function scaled(y)
+        a ~ NormalMeanVariance(1.0, 1.0)
+        τ ~ Gamma(2.0, 1.0)
+        y ~ Scaled(a, τ)
+    end
+
     # A backend labelled stochastic that answers with points, for the diagnostic of one
     struct Noisy end
     const Answerable = Union{NormalMeanVariance, PointMass}
@@ -49,7 +65,7 @@
 
     shown(x) = sprint(show, MIME"text/plain"(), x)
 
-    export LogisticBernoulli, classifier, coin, Product, product, Noisy, shown
+    export LogisticBernoulli, classifier, coin, Product, product, Scaled, scaled, Noisy, shown
 end
 
 @testitem "report: the nodes the fallback ran, and the projections" setup = [InferenceReports] begin
@@ -159,6 +175,9 @@ end
     # Laplace stopped after two iterations
     found = RxInfer.diagnostics(infer(model = classifier(), data = (y = y,), fallback = LocalLaplace(maxiters = 2), report = true).report)
     @test [(d.kind, d.level, d.subject) for d in found] == [(:laplace_not_converged, :warning, "x")]
+    # the hint names the scheme given, and a neutral keyword without one
+    @test contains(only(found).text, "`LocalLaplace(maxiters = …)`")
+    @test RxInfer.maxiters_hint(nothing) == "a larger `maxiters` of the projection"
 
     # a fallback between two random variables under belief propagation, by a stochastic backend
     result = infer(model = product(), data = (y = 2.0,), fallback = LocalLaplace(expectation = Noisy()), report = true)
@@ -177,6 +196,23 @@ end
     # the same model under mean field takes expectations over marginals: no warning
     meanfield = infer(model = product(), data = (y = 2.0,), constraints = MeanField(), iterations = 5, fallback = LocalLaplace(), report = true)
     @test isempty(RxInfer.diagnostics(meanfield.report))
+
+    # under the cavity schemes, a node whose other input carries a Gaussian message sends belief
+    # propagation's message: no warning
+    for scheme in (ExpectationPropagation(), LaplacePropagation())
+        propagated = infer(model = product(), data = (y = 2.0,), iterations = 5, fallback = scheme, report = true)
+        @test !any(d -> d.kind === :expectation_over_messages, RxInfer.diagnostics(propagated.report))
+    end
+    # but towards `a`, the other input's message is a Gamma, so the message is still the expected
+    # log-density; towards `τ`, `a`'s message is a Gaussian
+    gamma = infer(model = scaled(), data = (y = 2.0,), iterations = 5, fallback = ExpectationPropagation(), report = true)
+    over = [d for d in RxInfer.diagnostics(gamma.report) if d.kind === :expectation_over_messages]
+    @test length(over) == 1 && contains(only(over).text, "towards a") && !contains(only(over).text, "τ")
+
+    # sites whose projections stopped before they converged
+    stopped = infer(model = product(), data = (y = 2.0,), iterations = 3, fallback = LaplacePropagation(maxiters = 1), report = true)
+    sites = [d for d in RxInfer.diagnostics(stopped.report) if d.kind === :sites_not_converged]
+    @test !isempty(sites) && all(d -> d.level === :warning && contains(d.text, "(Laplace) did not converge"), sites)
 end
 
 @testitem "report: the display, plain and with PrettyTables" setup = [InferenceReports] begin

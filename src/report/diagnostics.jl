@@ -12,6 +12,11 @@ The kinds:
   Gaussian is the last iterate of Newton's method, its curvature floored;
 - `:variational_not_converged` (warning): a posterior's variational Gaussian, [`CVI`](@ref)'s, did
   not converge;
+- `:moment_matching_not_converged` (warning): a posterior's moment matching, under
+  [`ExpectationPropagation`](@ref), did not converge, so its Gaussian is the one its quadrature
+  points were placed on;
+- `:sites_not_converged` (warning): under [`LaplacePropagation`](@ref) or
+  [`ExpectationPropagation`](@ref), the projections of some of a variable's sites did not converge;
 - `:joint_not_converged` (warning): a joint the rule fallback computed by Laplace's method did not
   converge;
 - `:expectation_over_messages` (warning): under belief propagation, the rule fallback took an
@@ -58,24 +63,41 @@ end
 
 function variable_diagnostics!(found, report::ApproximationsReport)
     notconverged = Dict{Tuple{Symbol, Symbol}, Vector{Tuple{Symbol, Any}}}()
+    sites = Dict{Symbol, Vector{Tuple{Symbol, Any}}}()
+    sites_count = Dict{Symbol, Tuple{Int, Int, Any}}()
     unprojected = Dict{Symbol, Vector{Tuple{Symbol, Any}}}()
     unprojected_count = Dict{Symbol, Int}()
     for (key, record) in report.variables
         outcome = record.marginal.outcome
         method = outcome isa NamedTuple ? get(outcome, :method, nothing) : nothing
-        if record.marginal.projections > 0 && method in (:laplace, :variational) && get(outcome, :converged, true) === false
+        if record.marginal.projections > 0 && method in (:laplace, :variational, :moment_matching) && get(outcome, :converged, true) === false
             push!(get!(notconverged, (first(key), method), Tuple{Symbol, Any}[]), key)
+        end
+        if record.sites.nonconverged > 0
+            push!(get!(sites, first(key), Tuple{Symbol, Any}[]), key)
+            (failed, total, _) = get(sites_count, first(key), (0, 0, nothing))
+            sites_count[first(key)] = (failed + record.sites.nonconverged, total + record.sites.projections, get(record.sites.outcome, :method, nothing))
         end
         if record.messages.unprojected > 0
             push!(get!(unprojected, first(key), Tuple{Symbol, Any}[]), key)
             unprojected_count[first(key)] = get(unprojected_count, first(key), 0) + record.messages.unprojected
         end
     end
+    hint = maxiters_hint(report.scheme)
     for ((name, method), keys) in notconverged
-        found_one = method === :laplace ?
-            ReportDiagnostic(:laplace_not_converged, :warning, variables_display(keys), "Laplace did not converge: the Gaussian is at the last iterate. A prior, or `LocalLaplace(maxiters = …)`, may help") :
-            ReportDiagnostic(:variational_not_converged, :warning, variables_display(keys), "CVI did not converge: the Gaussian is the last iterate of its bound's maximisation. `CVI(maxiters = …)` may help")
+        found_one = if method === :laplace
+            ReportDiagnostic(:laplace_not_converged, :warning, variables_display(keys), string("Laplace did not converge: the Gaussian is at the last iterate. A prior, or ", hint, ", may help"))
+        elseif method === :variational
+            ReportDiagnostic(:variational_not_converged, :warning, variables_display(keys), string("CVI did not converge: the Gaussian is the last iterate of its bound's maximization. ", uppercasefirst(hint), " may help"))
+        else
+            ReportDiagnostic(:moment_matching_not_converged, :warning, variables_display(keys), string("moment matching did not converge: the Gaussian is the one its points were placed on. A prior, or ", hint, ", may help"))
+        end
         push!(found, found_one)
+    end
+    for (name, keys) in sites
+        (failed, total, method) = sites_count[name]
+        projection = method === :moment_matching ? "moment matching" : "Laplace"
+        push!(found, ReportDiagnostic(:sites_not_converged, :warning, variables_display(keys), string(failed, " of ", total, " site projections (", projection, ") did not converge. ", uppercasefirst(hint), " may help")))
     end
     for (name, keys) in unprojected
         n = unprojected_count[name]
@@ -83,6 +105,10 @@ function variable_diagnostics!(found, report::ApproximationsReport)
     end
     return found
 end
+
+# How to give a projection more iterations: through the scheme the inference was given
+maxiters_hint(::Nothing) = "a larger `maxiters` of the projection"
+maxiters_hint(scheme) = string("`", nameof(typeof(scheme)), "(maxiters = …)`")
 
 function node_diagnostics!(found, report::ApproximationsReport)
     joints, over, stochastic, lastresort = (Dict{Any, Vector{NodeInstance}}() for _ in 1:4)

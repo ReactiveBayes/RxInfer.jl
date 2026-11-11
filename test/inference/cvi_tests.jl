@@ -17,7 +17,7 @@
     BayesBase.insupport(::BinomialLogistic, y) = true
     @define_factor_node(node = BinomialLogistic, type = Stochastic, interfaces = [:out, :θ, :x, :n])
 
-    const doses, animals, deaths = [-0.86, -0.30, -0.05, 0.73], [5, 5, 5, 5], [0, 1, 3, 5]
+    const doses, animals, deaths = [-0.86, -0.3, -0.05, 0.73], [5, 5, 5, 5], [0, 1, 3, 5]
     const prior_θ = MvNormalMeanCovariance(zeros(2), diagm([16.0, 400.0]))
 
     @model function bioassay(y, x, n)

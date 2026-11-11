@@ -72,10 +72,15 @@ variable's outbound message on the edge. Every belief of a variable is then a pr
 its marginal and its messages are one Gaussian seen from each edge, and a message without a
 Gaussian of its own, such as one pulled back through a nonlinear function, is projected against
 the cavity that gives it one. On a chain like stochastic volatility, the fixed point is the
-global Laplace approximation.
+global Laplace approximation, the Gaussian at the joint mode of the posterior.
+
+Unlike [`LocalLaplace`](@ref), which projects each product of messages on its own, it
+approximates each message without a closed form once, in the context of the rest of the
+variable's belief, at the cost of keeping a site per edge and of a few iterations.
 
 The free energy is expectation propagation's: a node without rules takes its term from its
-cavities, every other term is Bethe's.
+cavities, every other term is Bethe's. It approximates `-log p(y)` at a fixed point but is not a
+bound, so a lower value is not a better fit.
 
 ```julia
 infer(model = sv(μ = μ, φ = φ, σ = σ), data = (y = y,), iterations = 10, fallback = LaplacePropagation())
@@ -119,7 +124,7 @@ message times its cavity, rather than its mode. The moments come from Gauss–He
 on the tilted density's own Laplace approximation and weighted by the density against it, so a
 message much sharper than its cavity is resolved. A belief outside the sites, a variable with
 one connection or whose cavity is not a Gaussian, is moment-matched in the same way, and the free
-energy is expectation propagation's.
+energy is expectation propagation's, which is not a bound.
 
 ```julia
 infer(model = counts(φ = φ, σ² = σ²), data = (y = y,), iterations = 10, fallback = ExpectationPropagation())

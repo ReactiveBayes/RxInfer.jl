@@ -175,7 +175,8 @@ then the joints and energies the fallback computed, after the warnings of
 - `nodes`, the same by node type, keyed by `(node, kind, target)`;
 - `variables`, for each random variable by its name and index, a [`RxInfer.VariableRecord`](@ref):
   the form constraint that projected its beliefs, how, and the messages that formed its posterior;
-- `expectation`, the expectation backend of the nodes' rule context, chosen once per inference.
+- `expectation`, the expectation backend of the nodes' rule context, chosen once per inference;
+- `scheme`, the [`RxInfer.FallbackScheme`](@ref) given to `infer` as `fallback`, or `nothing`.
 
 [`report_tables`](@ref) gives the tables it is shown as.
 """
@@ -184,11 +185,12 @@ mutable struct ApproximationsReport
     instances::IdDict{Any, NodeInstance}
     variables::Dict{Tuple{Symbol, Any}, VariableRecord}
     expectation::Any
+    scheme::Any
     # the variables whose marginal is being computed, whose projections are the marginal's
     computing::Set{Any}
 end
 
-ApproximationsReport() = ApproximationsReport(Dict(), IdDict(), Dict(), nothing, Set())
+ApproximationsReport() = ApproximationsReport(Dict(), IdDict(), Dict(), nothing, nothing, Set())
 
 # The node a rule event is about, its type and its factor node
 event_node(event::AfterMessageRuleCallEvent) = ReactiveMP.message_mapping_fform(event.mapping)
@@ -292,9 +294,12 @@ foreach_distribution(f, input) = f(ReactiveMP.getdata(input))
 # Whether a fallback's message took an expectation over another random variable's message, as
 # under belief propagation: the expected log-density then approximates the message. A
 # deterministic node's message towards `out` is its pushforward, and towards an input the message
-# on `out` is what is pulled back, so only its other inputs count.
+# on `out` is what is pulled back, so only its other inputs count. Under cavity propagation, a
+# `TiltedJointMessage` integrates the factor against the other inputs' messages: belief
+# propagation's message, not an expectation of the log-density.
 function expects_over_messages(event::AfterMessageRuleCallEvent, node)
     isnothing(event.messages) && return false
+    event.result isa DeltaMessagePassingRules.TiltedJointMessage && return false
     deterministic = MessagePassingRulesBase.sdtype(node) isa MessagePassingRulesBase.Deterministic
     deterministic && event_target(event) === :out && return false
     names = ReactiveMP.unval(event.mapping.msgs_names)
@@ -473,12 +478,12 @@ function projection_display(records)
         return text
     end
     method === :closed_form && return "closed form"
-    method === :discrete && return "normalised exactly"
+    method === :discrete && return "normalized exactly"
     method === :point_mass && return "a point mass"
     method === :unprojected && return "left unprojected"
     converged = count(o -> get(o, :converged, true) === true, outcomes)
     iterations = [o.iterations for o in outcomes if haskey(o, :iterations)]
-    name = method === :laplace ? "Laplace" : method === :variational ? "CVI" : string(method)
+    name = method === :laplace ? "Laplace" : method === :variational ? "CVI" : method === :moment_matching ? "moment matching" : string(method)
     bound = method === :variational ? "ELBO" : "log Z"
     if length(outcomes) == 1
         steps = string(only(iterations), only(iterations) == 1 ? " iteration" : " iterations")

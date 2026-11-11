@@ -44,6 +44,13 @@ inference_report(report::Bool) = report ? InferenceReport() : nothing
 inference_report(report::Tuple) = InferenceReport(report)
 inference_report(report::Symbol) = InferenceReport((report,))
 
+# The fallback scheme of the inference, for the hints of the diagnostics
+function record_scheme!(report::InferenceReport, scheme)
+    :approximations in propertynames(report) && (report.approximations.scheme = scheme)
+    return report
+end
+record_scheme!(::Nothing, scheme) = nothing
+
 Base.getproperty(report::InferenceReport, name::Symbol) =
     name === :sections ? getfield(report, :sections) :
     getproperty(getfield(report, :sections), name)

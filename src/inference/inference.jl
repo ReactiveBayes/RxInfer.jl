@@ -367,8 +367,8 @@ function inference_process_error(
         The inputs a rule receives follow from the model's `@constraints`, and the rules a node has
         from the packages loaded (RxInfer loads the standard nodes, Delta, AR, DiscreteTransition,
         GCV, GaussianCoupling and SoftDot; another node needs its package, such as
-        `using PolyaMessagePassingRules`). A node without rules can be approximated, as every node
-        without rules is by `infer(...; fallback = LocalLaplace())`. The Rule Not Found
+        `using PolyaMessagePassingRules`). Every node without rules can be approximated with one
+        keyword, such as `infer(...; fallback = LocalLaplace())`. The Rule Not Found
         guide explains the options: https://docs.rxinfer.com/stable/manuals/sharpbits/rule-not-found/
         """
     end
@@ -546,8 +546,8 @@ options_without_callbacks(options) = options
 
 # The callbacks `infer` runs with: the user's, merged with the benchmark, trace and report
 # callbacks when those are enabled.
-function infer_callbacks(callbacks, benchmark, trace, report = false)
-    recorded = inference_report(report)
+function infer_callbacks(callbacks, benchmark, trace, report = false, fallback = nothing)
+    recorded = record_scheme!(inference_report(report), fallback)
     if !isnothing(recorded)
         callbacks = merge_callbacks(callbacks, RxInferReportCallbacks(recorded))
     end
@@ -615,8 +615,8 @@ Check the official documentation for more information about some of the argument
 - `data`: `NamedTuple` or `Dict` with data, required (or `datastream` or `predictvars`)
 - `datastream`: A stream of `NamedTuple` with data, required (or `data`)
 - `autoupdates = nothing`: auto-updates specification, required for streamline inference, see [`@autoupdates`](@ref)
-- `initialization = nothing`: initialization specification object, optional, see [`@initialization`](@ref), or a strategy that initialises what the specification leaves out, such as [`FromPriors`](@ref)
-- `fallback = nothing`: how to approximate wherever the model has no exact rules, optional, such as [`LocalLaplace`](@ref) or [`CVI`](@ref): it sets the rule fallback, the default form constraint, the expectation backend and the initialization strategy, unless `options` or `initialization` set them. See [Inference without explicit message update rules](@ref inference-undefinedrules)
+- `initialization = nothing`: initialization specification object, optional, see [`@initialization`](@ref), or a strategy that initializes what the specification leaves out, such as [`FromPriors`](@ref)
+- `fallback = nothing`: how to approximate wherever the model has no exact rules, optional: a [`RxInfer.FallbackScheme`](@ref), [`LocalLaplace`](@ref), [`CVI`](@ref), [`LaplacePropagation`](@ref) or [`ExpectationPropagation`](@ref). It sets the rule fallback, the default form constraint, the expectation backend, the initialization strategy and, for the two cavity schemes, the site policy, unless `options` or `initialization` set them. See [Choosing a scheme](@ref inference-undefinedrules-schemes)
 - `constraints = nothing`: constraints specification object, or an alias such as `MeanField`, optional, see `@constraints`
 - `algorithm = nothing`: the algorithm specification, which algorithm each node runs under, optional, may be required for some models, see [`@algorithm`](@ref)
 - `meta = nothing`: deprecated, the old name of `algorithm`; a `@meta` specification is still accepted as one
@@ -742,7 +742,7 @@ function infer(;
     # callbacks merged into it; `options` is passed on without them.
     # A single assignment: the callbacks are captured below, and a reassigned captured variable is boxed
     _callbacks = infer_callbacks(
-        given_callbacks(callbacks, options, warn), benchmark, trace, report
+        given_callbacks(callbacks, options, warn), benchmark, trace, report, fallback
     )
     _options = options_without_callbacks(options)
 
