@@ -120,10 +120,10 @@ Also read the [Universal inference](@ref inference-undefinedrules-universal) sec
 How to approximate wherever the model has no exact rules, with no rule, method or initialization to write. The keyword takes a scheme:
 
 - `LocalLaplace()`, Laplace's approximation of each belief on its own: the cheapest;
-- `CVI()`, the variational Gaussian of each belief, whose free energy is the negative evidence lower bound;
-- `LaplacePropagation()` and `ExpectationPropagation()`, cavity propagation: each message without a closed form is approximated once, against the rest of its variable's belief, which suits nonlinear state-space models.
+- `LaplacePropagation()` and `ExpectationPropagation()`, cavity propagation: each message without a closed form is approximated once, against the rest of its variable's belief, which suits nonlinear state-space models;
+- `NaturalGradientPropagation()`, natural-gradient propagation: a site per edge in the variable's own family, a Gaussian, a Gamma or a Beta, moved by damped natural-gradient steps to the variational optimum over that family.
 
-A scheme sets the rule fallback, the default form constraint of every random variable, the expectation backend, the initialization strategy, [`FromPriors`](@ref), and, for the cavity schemes, the site policy, each unless `options` or `initialization` set it. A node with a rule runs it, so a conjugate model is inferred as without the keyword. [Choosing a scheme](@ref inference-undefinedrules-schemes) compares them.
+A scheme sets the rule fallback, the default form constraint of every random variable, the expectation backend, the initialization strategy, [`FromPriors`](@ref), and, for the schemes with sites, the site policy, each unless `options` or `initialization` set it. A node with a rule runs it, so a conjugate model is inferred as without the keyword. [Choosing a scheme](@ref inference-undefinedrules-schemes) compares them.
 
 - ### `algorithm`
 

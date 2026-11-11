@@ -52,7 +52,9 @@ How to read it:
     expectation is an exact sum.
   - Under [`LaplacePropagation`](@ref) and [`ExpectationPropagation`](@ref), the header names the
     scheme, "Laplace propagation" or "expectation propagation", with the number of sites projected
-    on the variable's edges and how many did not converge.
+    on the variable's edges and how many did not converge. Under
+    [`NaturalGradientPropagation`](@ref) it is "natural-gradient propagation", with the number of
+    sites, the steps they took, and how many had not settled at the last sweep.
 - **Joints and energies by the fallback.** The average energies that the free energy needed, also
   computed by the fallback.
 - **Timings.** How the inference's time divides among the exact rules, the fallback, the
@@ -99,10 +101,13 @@ stopped.report
 
 The warnings:
 - a posterior's Laplace approximation that did not converge, `:laplace_not_converged`, its
-  variational Gaussian under [`CVI`](@ref), `:variational_not_converged`, or its moment matching
+  variational Gaussian, the projection of a belief without sites under
+  [`NaturalGradientPropagation`](@ref), `:variational_not_converged`, or its moment matching
   under [`ExpectationPropagation`](@ref), `:moment_matching_not_converged`;
 - under [`LaplacePropagation`](@ref) or [`ExpectationPropagation`](@ref), sites of a variable
-  whose projection did not converge, `:sites_not_converged`;
+  whose projection did not converge, and under [`NaturalGradientPropagation`](@ref), sites whose
+  last natural-gradient step had not settled, so that they are not yet at their targets,
+  `:sites_not_converged`;
 - a joint computed by the fallback that did not converge, `:joint_not_converged`;
 - under belief propagation, a fallback's message that is an expectation over another random
   variable's message, `:expectation_over_messages`. Such a message is the variational one, an

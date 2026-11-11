@@ -185,7 +185,7 @@ result = infer(
 )
 ```
 
-The schemes are `LocalLaplace()`, `CVI()`, `LaplacePropagation()` and `ExpectationPropagation()`, and `report = true` says what was approximated and how. See [Inference without explicit message update rules](https://docs.rxinfer.com/stable/manuals/inference/undefinedrules/) in the documentation.
+The schemes are `LocalLaplace()`, `LaplacePropagation()`, `ExpectationPropagation()` and `NaturalGradientPropagation()`, and `report = true` says what was approximated and how. See [Inference without explicit message update rules](https://docs.rxinfer.com/stable/manuals/inference/undefinedrules/) in the documentation.
 
 # Where to go next?
 

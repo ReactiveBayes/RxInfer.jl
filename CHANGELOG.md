@@ -13,18 +13,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   no exact rules, with no rule, method or initialization to write. A node with a rule runs it, so a
   conjugate model is inferred as without the keyword. A scheme, a `FallbackScheme`, sets the rule
   fallback, the default form constraint, the expectation backend, the initialization strategy and,
-  for the cavity schemes, the site policy; what `options` sets explicitly wins. Its default
+  for the schemes with sites, the site policy; what `options` sets explicitly wins. Its default
   expectation backend is the session's: the backends registered with BayesBase, frozen once per
   call into a type-stable `ExpectationFirstOf`. The schemes:
   - `LocalLaplace()`, Laplace's approximation of each belief on its own, at the mode of its product
     of messages, through DeltaMessagePassingRules' `ExpectationRuleFallback` and `LaplaceForm`. A
     message it finds no mode for, such as a likelihood's message alone, is left unprojected, so an
     exact rule downstream is not fed an uninformative Gaussian.
-  - `CVI()`, conjugate-computation variational inference: each belief without a closed form
-    becomes the Gaussian minimizing `KL(q ‖ p)` in the unconstrained coordinates of its domain
-    (DeltaMessagePassingRules' `VariationalForm`). Under mean field the free energy is the negative
-    evidence lower bound. `RxInfer.fallback_form(scheme, backend)` gives a scheme's form the
-    inference's backend.
   - `LaplacePropagation()` and `ExpectationPropagation(; points, backend)`, cavity propagation.
     Every random variable keeps one site per edge, the edge's message projected against its
     cavity, the variable's outbound message on that edge, by Laplace's method or by moment
@@ -48,6 +43,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
       cavities (`BetheFreeEnergy(T; cavity = true)`), and every other term is Bethe's. It is not a
       bound. It is computed once per iteration, in batch and streaming inference, through the
       stream, the histories, the callbacks and `StopEarlyIterationStrategy`.
+  - `NaturalGradientPropagation(; alpha, beta, max_step, tol)`, natural-gradient propagation
+    (Lukashchuk et al., *Information Geometry of Message Passing*). Every random variable keeps one
+    site per edge, as under the cavity schemes, in the family of its cavity: a Gaussian, a Gamma, a
+    Beta, any exponential family of one dimension (DeltaMessagePassingRules' `NaturalGradientForm`).
+    - A raw message's site moves at each sweep by a damped heavy-ball step towards its
+      natural-gradient target, `G(q)⁻¹ Cov_q[T, ℓ]` at the variable's marginal, halved until the
+      marginal is proper; its state, the natural parameters and the velocity, is the site's
+      outcome, which `RxInfer.NaturalGradientSitePolicy` threads through.
+    - The fixed point is the stationary point of the variational free energy over each
+      variable's family: under Gaussian sites, conjugate-computation variational inference, the
+      variational Gaussian of the joint for a model with one latent variable; a positive variable
+      with a Gamma prior keeps a Gamma posterior.
+    - A belief without sites is projected onto its variational Gaussian, `VariationalForm`, through
+      the inference's backend (`RxInfer.fallback_form(scheme, backend)`).
+    - The free energy is Bethe's with the average energies of the nodes without rules, chosen by
+      the site policy, `RxInfer.cavity_free_energy`: the negative evidence lower bound on a Gaussian
+      tree whose non-conjugate factors are leaves, a diagnostic elsewhere.
   - Documented in "Inference without explicit message update rules", whose section "Universal
     inference" compares the schemes.
 - The inference option `default_form_constraint`: the form constraint of every random variable
@@ -68,8 +80,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The inference report, `infer(...; report = true)` and `result.report`, an `InferenceReport` of
   two sections, off by default and free when off:
   - `result.report.approximations`, an `ApproximationsReport`, shown by posterior: how each
-    approximated posterior was projected, by Laplace's method, CVI, moment matching, a
-    `ProjectedTo` projection or its sites under a cavity scheme, and which node instances'
+    approximated posterior was projected, by Laplace's method, its variational Gaussian, moment
+    matching, a `ProjectedTo` projection or its sites under a cavity scheme or natural-gradient
+    propagation, with the steps that have not settled, and which node instances'
     messages formed it, named as the model writes them (`y[1:8] ~ LogisticBernoulli(x)`, folded by
     shape), exact or by the rule fallback, with the expectation backends. A fallback joint computed
     from a member's message and the node's own rule is shown as "closed form".

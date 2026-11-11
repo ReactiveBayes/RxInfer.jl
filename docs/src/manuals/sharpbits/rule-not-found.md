@@ -155,7 +155,7 @@ When exact message updates aren't available, consider:
 
 - Using simpler distribution pairs that have defined rules
 - Passing a scheme as `fallback` to [`infer`](@ref), such as `fallback = LocalLaplace()`: every node without rules, and every Delta node without an approximation method, is approximated, with no method per node or variable (see [Choosing a scheme](@ref inference-undefinedrules-schemes)); `report = true` then says which nodes it approximated (see [the inference report](@ref user-guide-inference-report))
-- Choosing a node's approximation through its algorithm, as described in [Algorithm specification](@ref user-guide-algorithm-specification); a deterministic transformation takes `DeltaApproximation(method = Linearization())`, `Unscented()` or `CVIProjection()` (see [Deterministic nodes](@ref delta-node-manual))
+- Choosing a node's approximation through its algorithm, as described in [Algorithm specification](@ref user-guide-algorithm-specification); a deterministic transformation takes `DeltaApproximation(method = Linearization())` or `Unscented()`, or no method under `fallback = NaturalGradientPropagation()` for messages that are not Gaussian (see [Deterministic nodes](@ref delta-node-manual))
 - Passing `options = (rulefallback = NodeFunctionRuleFallback(),)` to [`infer`](@ref): where no rule matches, a stochastic node sends its own log-density with every other input collapsed to its mean, an unnormalized [`NodeFunctionLogPdf`](@extref MessagePassingRulesBase.NodeFunctionLogPdf); a functional form constraint (see [Built-in Functional Forms](@ref lib-forms)) turns the resulting posterior into a proper distribution
 
 ### [5. Use variational inference](@id rule-not-found-solutions-vmp)
