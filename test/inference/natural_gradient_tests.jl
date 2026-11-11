@@ -48,6 +48,15 @@
         end
     end
 
+    # A Gaussian observation of the first coordinate of a vector state, through a node with no rules
+    struct PositionObservation{X, R} <: ContinuousUnivariateDistribution
+        x::X
+        r::R
+    end
+    BayesBase.logpdf(d::PositionObservation, y) = -(log2π + log(d.r) + (y - d.x[1])^2 / d.r) / 2
+    BayesBase.insupport(::PositionObservation, y) = true
+    @define_factor_node(node = PositionObservation, type = Stochastic, interfaces = [:out, :x, :r])
+
     # A rate λ = exp(z) with a Poisson count: the count's message towards λ is a Gamma, the
     # pushforward of z's prior a log-normal, so λ's site is a Gamma
     @model function count_rate(y, m, v)
@@ -91,7 +100,7 @@
         end
     end
 
-    export EA, BinomialLogistic, bioassay, doses, animals, deaths, logposterior, GaussianObservation, chain, count_rate, LogPoisson, count_chain, PrecisionObservation, unknown_precision
+    export EA, BinomialLogistic, bioassay, doses, animals, deaths, logposterior, GaussianObservation, PositionObservation, chain, count_rate, LogPoisson, count_chain, PrecisionObservation, unknown_precision
 end
 
 @testitem "NaturalGradientPropagation: the bioassay's posterior is the variational Gaussian of the joint" setup = [NaturalGradientModels] begin
@@ -289,4 +298,39 @@ end
     posterior = last.(engine.history[:x])
     @test mean.(posterior) ≈ first.(filtered) rtol = 1.0e-8
     @test var.(posterior) ≈ last.(filtered) rtol = 1.0e-8
+
+    # a filter through a function without rules: nothing asks for the message back towards the
+    # predicted state, the function's output, so its pushforward has no cavity until an initial
+    # message gives it one; its site then reaches the pushforward's moment-matched Gaussian,
+    # whatever the seed, exact for a linear function: the Kalman filter
+    rotate(x) = [x[1] + 0.1 * x[2], x[2] - 0.1 * x[1]]
+    @model function predicted(m, V, y)
+        x_prev ~ MvNormalMeanCovariance(m, V)
+        x_pred := rotate(x_prev)
+        x ~ MvNormalMeanCovariance(x_pred, [0.3 0.0; 0.0 0.3])
+        y ~ PositionObservation(x, 0.5)
+    end
+    tracker = infer(
+        model = predicted(), datastream = from(observations) |> map(NamedTuple{(:y,), Tuple{Float64}}, (y) -> (y = y,)),
+        autoupdates = @autoupdates(
+            begin
+                m, V = mean_cov(q(x))
+            end
+        ), initialization = @initialization(
+            begin
+                q(x) = MvNormalMeanCovariance([0.0, 0.0], [1.0 0.0; 0.0 1.0])
+                μ(x_pred) = MvNormalMeanCovariance([5.0, -5.0], [2.0 0.0; 0.0 2.0])
+            end
+        ), fallback = NaturalGradientPropagation(), iterations = 40, keephistory = 3, returnvars = (:x,), report = true,
+    )
+    A, H = [1.0 0.1; -0.1 1.0], [1.0 0.0]
+    kalman = accumulate(observations; init = ([0.0, 0.0], [1.0 0.0; 0.0 1.0])) do (m, V), y
+        mp, Vp = A * m, A * V * A' + [0.3 0.0; 0.0 0.3]
+        S = only(H * Vp * H') + 0.5
+        K = Vp * H' / S
+        return (mp + vec(K) * (y - only(H * mp)), Vp - K * K' * S)
+    end
+    @test all(isapprox.(mean.(last.(tracker.history[:x])), first.(kalman); rtol = 1.0e-8))
+    @test all(isapprox.(cov.(last.(tracker.history[:x])), last.(kalman); rtol = 1.0e-8))
+    @test isempty(RxInfer.diagnostics(tracker.model.metadata[:report]))
 end

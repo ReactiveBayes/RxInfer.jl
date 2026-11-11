@@ -256,7 +256,16 @@ infer(model = bioassay(x = x, n = n), data = (y = y,), iterations = 50, fallback
 
 A site moves one step per sweep, so each iteration is a sweep: give `iterations`, a few tens. A raw
 message's first step starts from the flat site, against its cavity, which must be proper: a prior,
-or `@initialization`'s `μ(x)` for a variable with only raw messages.
+or `@initialization`'s `μ(x)` for a variable with only raw messages. A deterministic node's
+output whose other edge never sends a message, such as a filter's predicted state
+`x_pred := f(x_prev)` before `x ~ N(x_pred, Q)`, which the filter asks nothing of, has no cavity
+either: give it one with `μ(x_pred)`. Its pushforward's site then steps from the flat one towards
+its target, the pushforward's moment-matched Gaussian whatever the seed, where `f` is not monotone
+or `x_prev` is a vector.
+
+In streaming inference each data update's `iterations` move the sites on from where the last
+update left them, their velocities included: give each update enough sweeps for its sites to
+settle, which the report reads.
 """
 struct NaturalGradientPropagation{F <: NaturalGradientForm, E, I} <: FallbackScheme
     form::F

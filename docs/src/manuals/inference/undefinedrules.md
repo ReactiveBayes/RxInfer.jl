@@ -358,7 +358,12 @@ posterior_ngmp, Beta(1 + count(dataset), 1 + length(dataset) - count(dataset))
 **Iterations.** A site moves one step per sweep, so give `iterations`, a few tens. The report
 says whether each edge's last step had settled to `tol`, and warns with `:sites_not_converged`
 where it had not. A raw message's first step starts from the flat site, against its cavity, which
-must be proper: a prior, or an initial message `μ(x)` for a variable whose edges are all raw.
+must be proper: a prior, or an initial message `μ(x)` for a variable whose edges are all raw. That
+includes a filter's predicted state through a nonlinear transition, `x_pred := f(x_prev)` before
+`x ~ N(x_pred, Q)`: nothing asks for the message back towards it, so its pushforward has no cavity
+until `μ(x_pred)` gives it one. A variable's family is that of its prior or its initial message,
+never of the order in which its messages arrive. In streaming inference, each data update's `iterations` move the sites on from
+where the last update left them: give each update enough sweeps for its sites to settle.
 
 **Non-Gaussian sites** come from the messages the cavity schemes send: a node's log-density, a
 deterministic node's pushforward, the log-normal of `exp` towards a Gamma, belief propagation's

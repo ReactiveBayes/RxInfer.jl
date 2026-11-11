@@ -57,6 +57,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
       with a Gamma prior keeps a Gamma posterior.
     - A belief without sites is projected onto its variational Gaussian, `VariationalForm`, through
       the inference's backend (`RxInfer.fallback_form(scheme, backend)`).
+    - In streaming inference each data update's iterations move the sites on from where the last
+      update left them. A filter's predicted state through a nonlinear transition, which has no
+      cavity, takes one from `@initialization`'s `μ`.
     - The free energy is Bethe's with the average energies of the nodes without rules, chosen by
       the site policy, `RxInfer.cavity_free_energy`: the negative evidence lower bound on a Gaussian
       tree whose non-conjugate factors are leaves, a diagnostic elsewhere.
