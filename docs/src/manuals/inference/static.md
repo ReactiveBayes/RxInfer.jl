@@ -354,6 +354,8 @@ using RxInfer, Test, Markdown
     :after_marginal_computation,
     :before_marginal_rule_call,
     :after_marginal_rule_call,
+    :before_site_computation,
+    :after_site_computation,
     :before_factor_bound_free_energy,
     :after_factor_bound_free_energy,
     :before_variable_bound_entropy,

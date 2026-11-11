@@ -44,12 +44,15 @@ How to read it:
 - **The summary line.** One posterior, `x`'s, was approximated, and nothing calls for a warning.
 - **Approximated posteriors.** Each approximated posterior is a group of rows. Its header says how
   it was projected: here Laplace's method, how many Newton iterations it took and the
-  log-normaliser it found, which is the posterior's log evidence. Each row is a node instance as
+  log-normalizer it found, Laplace's approximation of the log evidence. Each row is a node instance as
   the model writes it, `y[1:8] ~ LogisticBernoulli(x)`, with instances of one shape folded.
   - The columns say how many of its messages towards the variable came from an exact rule and how
     many from the rule fallback, and where the fallback's expectations went.
   - Here every message from the likelihood is exact: the other input is an observation, so the
     expectation is an exact sum.
+  - Under [`LaplacePropagation`](@ref) and [`ExpectationPropagation`](@ref), the header names the
+    scheme, "Laplace propagation" or "expectation propagation", with the number of sites projected
+    on the variable's edges and how many did not converge.
 - **Joints and energies by the fallback.** The average energies that the free energy needed, also
   computed by the fallback.
 - **Timings.** How the inference's time divides among the exact rules, the fallback, the
@@ -95,13 +98,17 @@ stopped.report
 ```
 
 The warnings:
-- a posterior's Laplace approximation that did not converge, `:laplace_not_converged`, or its
-  variational Gaussian under [`CVI`](@ref), `:variational_not_converged`;
+- a posterior's Laplace approximation that did not converge, `:laplace_not_converged`, its
+  variational Gaussian under [`CVI`](@ref), `:variational_not_converged`, or its moment matching
+  under [`ExpectationPropagation`](@ref), `:moment_matching_not_converged`;
+- under [`LaplacePropagation`](@ref) or [`ExpectationPropagation`](@ref), sites of a variable
+  whose projection did not converge, `:sites_not_converged`;
 - a joint computed by the fallback that did not converge, `:joint_not_converged`;
 - under belief propagation, a fallback's message that is an expectation over another random
   variable's message, `:expectation_over_messages`. Such a message is the variational one, an
-  approximation of the belief propagation message. Cavity methods, such as expectation
-  propagation, are exact there.
+  approximation of the belief propagation message. Under the cavity schemes, a node whose other
+  inputs carry Gaussian messages or point masses sends belief propagation's message instead, and
+  is not flagged; an input with another message, such as a Gamma, still is.
 
 The notes:
 - messages left unprojected because Laplace found no mode for them, `:unprojected_messages`,

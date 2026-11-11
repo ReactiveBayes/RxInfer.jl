@@ -468,6 +468,8 @@ using RxInfer, Test, Markdown
     :after_marginal_computation,
     :before_marginal_rule_call,
     :after_marginal_rule_call,
+    :before_site_computation,
+    :after_site_computation,
     :before_factor_bound_free_energy,
     :after_factor_bound_free_energy,
     :before_variable_bound_entropy,
@@ -479,7 +481,7 @@ nothing
 
 ---
 
-Below we list `RxInfer` specific callbacks. In addition to these, `ReactiveMP` provides lower-level callbacks for the message passing procedure itself, such as `before_message_rule_call`, `after_message_rule_call`, `before_product_of_messages`, `after_product_of_messages`, `before_marginal_computation`, `after_marginal_computation`, the marginal rule calls (`after_marginal_rule_call`) and the free energy's terms (`after_factor_bound_free_energy`, `after_variable_bound_entropy`), and others. For a full list and detailed descriptions of these callbacks, refer to the official documentation of `ReactiveMP`.
+Below we list `RxInfer` specific callbacks. In addition to these, `ReactiveMP` provides lower-level callbacks for the message passing procedure itself, such as `before_message_rule_call`, `after_message_rule_call`, `before_product_of_messages`, `after_product_of_messages`, `before_marginal_computation`, `after_marginal_computation`, the marginal rule calls (`after_marginal_rule_call`), the sites of cavity propagation (`before_site_computation`, `after_site_computation`) and the free energy's terms (`after_factor_bound_free_energy`, `after_variable_bound_entropy`), and others. For a full list and detailed descriptions of these callbacks, refer to the official documentation of `ReactiveMP`.
 
 ```julia
 before_inference(event::BeforeInferenceEvent)

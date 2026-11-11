@@ -111,13 +111,19 @@ init = @initialization begin
 end
 ```
 
-`initialization` also takes a strategy that initialises what a specification leaves out, such as [`FromPriors`](@ref), which starts each variable from its prior; see [Initialization from priors](@ref initialization-from-priors).
+`initialization` also takes a strategy that initializes what a specification leaves out, such as [`FromPriors`](@ref), which starts each variable from its prior; see [Initialization from priors](@ref initialization-from-priors).
 
 - ### `fallback`
 
-Also read the [Universal Laplace inference](@ref inference-undefinedrules-laplace) section.
+Also read the [Universal inference](@ref inference-undefinedrules-universal) section.
 
-How to approximate wherever the model has no exact rules. `fallback = LocalLaplace()` approximates every node without rules by Laplace's method: it sets the rule fallback, the default form constraint of every random variable, the expectation backend and the initialization strategy, [`FromPriors`](@ref), each unless `options` or `initialization` set it. A node with a rule runs it, so a conjugate model is inferred as without the keyword.
+How to approximate wherever the model has no exact rules, with no rule, method or initialization to write. The keyword takes a scheme:
+
+- `LocalLaplace()`, Laplace's approximation of each belief on its own: the cheapest;
+- `CVI()`, the variational Gaussian of each belief, whose free energy is the negative evidence lower bound;
+- `LaplacePropagation()` and `ExpectationPropagation()`, cavity propagation: each message without a closed form is approximated once, against the rest of its variable's belief, which suits nonlinear state-space models.
+
+A scheme sets the rule fallback, the default form constraint of every random variable, the expectation backend, the initialization strategy, [`FromPriors`](@ref), and, for the cavity schemes, the site policy, each unless `options` or `initialization` set it. A node with a rule runs it, so a conjugate model is inferred as without the keyword. [Choosing a scheme](@ref inference-undefinedrules-schemes) compares them.
 
 - ### `algorithm`
 

@@ -9,78 +9,92 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Cavity propagation (U7a): the fallback schemes `LaplacePropagation()` and
-  `ExpectationPropagation()`.
-  - Every random variable keeps one site per edge, the edge's message projected against its
-    outbound message on that edge, by Laplace's method or by moment matching (DeltaMessagePassingRules'
-    `site`, `LaplaceForm` and `MomentForm`), and every belief is a product of sites.
-  - A deterministic node's message towards its output is projected the same way.
-  - A node with several random inputs sends each belief propagation's message, the factor
-    integrated against the other inputs' messages, and its site is the input's block of their
-    joint projection (DeltaMessagePassingRules' `TiltedJointMessage`).
-  - `ExpectationPropagation(; backend)` sets the projections' quadrature, `GaussHermite(points)`
-    by default.
-  - `@initialization`'s `μ(x)` is also every edge's first cavity (`ReactiveMP.seeded_cavity`), so
-    a variable whose edges all carry raw messages starts; the fixed point does not depend on it.
-  - A prior without rules on constants, whose message arrives once, has its site projected again
-    each round (ReactiveMP); it was dropped before.
-  - Through the new option `site_policy`, an `RxInfer.SitePolicy`, which `RxInfer.fallback_site(scheme)`
-    gives and ReactiveMP's random variables call for each site.
-  - A raw message that arrives again unchanged, to `tol`, takes its last site without a projection.
-  - The free energy is expectation propagation's: a node without rules takes its term from its
-    cavities (`BetheFreeEnergy(T; cavity = true)`), and every other term is Bethe's. It is
-    computed once per iteration, in batch and streaming inference, through the stream, the
-    histories, the callbacks and `StopEarlyIterationStrategy` as without sites.
-  - The report records each variable's sites, shown as "expectation propagation" or "Laplace
-    propagation".
-  - `MomentForm` is a form constraint like `LaplaceForm`.
-- Streaming inference reports each free-energy value to the `OnFreeEnergyUpdateEvent` callbacks,
-  as batch inference does, once however many subscribe to the engine's `free_energy` stream.
-- The report names a fallback joint computed in closed form, from a member's message and the
-  node's own rule with the other members known, as "closed form" (DeltaMessagePassingRules).
+- Universal inference: `infer(...; fallback = scheme)` approximates every node of a model that has
+  no exact rules, with no rule, method or initialization to write. A node with a rule runs it, so a
+  conjugate model is inferred as without the keyword. A scheme, a `FallbackScheme`, sets the rule
+  fallback, the default form constraint, the expectation backend, the initialization strategy and,
+  for the cavity schemes, the site policy; what `options` sets explicitly wins. Its default
+  expectation backend is the session's: the backends registered with BayesBase, frozen once per
+  call into a type-stable `ExpectationFirstOf`. The schemes:
+  - `LocalLaplace()`, Laplace's approximation of each belief on its own, at the mode of its product
+    of messages, through DeltaMessagePassingRules' `ExpectationRuleFallback` and `LaplaceForm`. A
+    message it finds no mode for, such as a likelihood's message alone, is left unprojected, so an
+    exact rule downstream is not fed an uninformative Gaussian.
+  - `CVI()`, conjugate-computation variational inference: each belief without a closed form
+    becomes the Gaussian minimizing `KL(q ‖ p)` in the unconstrained coordinates of its domain
+    (DeltaMessagePassingRules' `VariationalForm`). Under mean field the free energy is the negative
+    evidence lower bound. `RxInfer.fallback_form(scheme, backend)` gives a scheme's form the
+    inference's backend.
+  - `LaplacePropagation()` and `ExpectationPropagation(; points, backend)`, cavity propagation.
+    Every random variable keeps one site per edge, the edge's message projected against its
+    cavity, the variable's outbound message on that edge, by Laplace's method or by moment
+    matching (DeltaMessagePassingRules' `site`, `LaplaceForm` and `MomentForm`), and every belief
+    is a product of sites.
+    - A deterministic node's message towards its output is projected the same way.
+    - A node with several random inputs sends each of them belief propagation's message, the factor
+      integrated against the other inputs' messages, and the input's site is its block of their
+      joint projection (DeltaMessagePassingRules' `TiltedJointMessage`).
+    - `backend` sets the quadrature of the projections, `GaussHermite(points)` by default;
+      `SphericalRadialCubature()` takes 2d points in d dimensions.
+    - `@initialization`'s `μ(x)` is also every edge's first cavity (`ReactiveMP.seeded_cavity`), so
+      a variable whose edges all carry messages without a closed form starts; the fixed point does
+      not depend on it.
+    - A message that arrives once, from a node whose inputs are all constants, has its site
+      projected again each iteration.
+    - The new option `site_policy` takes an `RxInfer.SitePolicy`, which `RxInfer.fallback_site(scheme)`
+      gives and ReactiveMP's random variables call for each site. A message that arrives again
+      unchanged, to `tol`, takes its last site without a projection.
+    - The free energy is expectation propagation's: a node without rules takes its term from its
+      cavities (`BetheFreeEnergy(T; cavity = true)`), and every other term is Bethe's. It is not a
+      bound. It is computed once per iteration, in batch and streaming inference, through the
+      stream, the histories, the callbacks and `StopEarlyIterationStrategy`.
+  - Documented in "Inference without explicit message update rules", whose section "Universal
+    inference" compares the schemes.
 - The inference option `default_form_constraint`: the form constraint of every random variable
   that the constraints give none, such as a projection, or `(q = …, μ = …)` for the marginals and
   the messages apart. A variable's own constraint replaces it.
+- DeltaMessagePassingRules' `LaplaceForm`, `VariationalForm` and `MomentForm` are form
+  constraints. Each projection reports the normalizer of the product, which completes its log
+  scale, and starts at the variable's last mode.
 - The rule fallback gives joint marginals and average energies too (ReactiveMP 7.1): with
   `context = (expectation = backend,)`, `NodeFunctionRuleFallback()` gives a free energy for a
   mean-field node without an average energy, and it serves Delta nodes without an approximation
   method.
-- Damping, `options = (stream_postprocessors = ReactiveMP.DampingPostprocessor(β),)`, documented
-  in the inference overview.
-- Universal Laplace inference (U4): DeltaMessagePassingRules' `LaplaceForm` is a form constraint,
-  whose projection reports the product's normaliser and starts at the variable's last mode. With
-  `options = (rulefallback = ExpectationRuleFallback(), default_form_constraint = LaplaceForm(),
-  context = (expectation = backend,))`, a model whose nodes have no rules is inferred with no
-  method per node or variable, its free energy and log evidence included; documented in
-  "Inference without explicit message update rules".
-- Initialization strategies (U5): `initialization` takes a strategy as well as a specification.
+- Initialization strategies: `initialization` takes a strategy as well as a specification.
   `FromPriors()` starts every random variable a specification leaves out from its prior, at its
   parents' initial means, down chains and hierarchies, and `FromPriors(@initialization …)` applies
   the block first. A package adds its own with `RxInfer.InitializationStrategy` and
   `RxInfer.initial_marginal`.
-- `infer(...; fallback = LocalLaplace())` (U5): one keyword for universal Laplace
-  inference. A `FallbackScheme` sets the rule fallback, the default form constraint, the
-  expectation backend and the initialization strategy, `FromPriors()` for Laplace; what `options`
-  sets explicitly wins. Its default backend is the session's: the backends registered with
-  BayesBase, frozen once per call into a type-stable `ExpectationFirstOf`.
-- The inference report (U5), `infer(...; report = true)` and `result.report`: a composite
-  `InferenceReport`, whose first section, `ApproximationsReport`, records from the engine's events
-  which nodes ran exact rules and which the rule fallback, the expectation backend each input of
-  the fallback went to, and each variable's projections with their outcome (`LaplaceForm`'s
-  method, normaliser and convergence, through `RxInfer.form_outcome`). Off by default, and free
-  when off.
-- The hints of a missing rule and of variables never updated name `fallback =
-  LocalLaplace()` and `initialization = FromPriors()`.
-- `fallback = CVI()`, conjugate-computation variational inference (U7b): the rules of `LocalLaplace`, with every belief that has no closed form projected onto its variational Gaussian, the one minimising `KL(q ‖ p)` in the unconstrained coordinates of its domain (DeltaMessagePassingRules' `VariationalForm`), through the inference's expectation backend. The free energy is the negative evidence lower bound. `RxInfer.fallback_form(scheme, backend)` gives a scheme's form the backend. The report names CVI's projections and warns of one that did not converge, `:variational_not_converged`.
-- The inference report is a product (U8). `result.report.approximations` is shown by posterior: how each approximated posterior was projected and which node instances' messages formed it, named as the model writes them (`y[1:8] ~ LogisticBernoulli(x)`, folded by shape), exact or by the rule fallback, with the expectations. `RxInfer.diagnostics(report)` returns `ReportDiagnostic`s for the parts most likely to be inaccurate, such as a Laplace approximation that did not converge or a fallback averaging over a message under belief propagation. The section `result.report.timings`, a `TimingsReport`, records where the time went, exclusive per kind and by node. `report_tables` gives the tables as `ReportTable`s, which print as aligned text, or through PrettyTables.jl when it is loaded. A manual page, "What was approximated: the inference report".
-- `LocalLaplace` leaves a message it finds no mode for unprojected, `default_form_constraint
-  = (q = LaplaceForm(), μ = LaplaceForm(nomode = :leave))`: a model whose deterministic nodes,
-  `p := logistic(dot(a, θ))`, have exact rules is no longer fed an uninformative Gaussian from a
-  likelihood's message alone.
+- The inference report, `infer(...; report = true)` and `result.report`, an `InferenceReport` of
+  two sections, off by default and free when off:
+  - `result.report.approximations`, an `ApproximationsReport`, shown by posterior: how each
+    approximated posterior was projected, by Laplace's method, CVI, moment matching, a
+    `ProjectedTo` projection or its sites under a cavity scheme, and which node instances'
+    messages formed it, named as the model writes them (`y[1:8] ~ LogisticBernoulli(x)`, folded by
+    shape), exact or by the rule fallback, with the expectation backends. A fallback joint computed
+    from a member's message and the node's own rule is shown as "closed form".
+  - `RxInfer.diagnostics(report)` returns `ReportDiagnostic`s for the parts most likely to be
+    inaccurate, such as a projection or a site that did not converge, or a fallback averaging over
+    a message under belief propagation.
+  - `result.report.timings`, a `TimingsReport`: where the time went, exclusive per kind and by node.
+  - `report_tables` gives the tables as `ReportTable`s, which print as aligned text, or through
+    PrettyTables.jl when it is loaded.
+  - With ExponentialFamilyProjection loaded, a `ProjectedTo` constraint whose strategy is its
+    `ExpectationStrategy` reports the evidence lower bound of its projection, through the
+    strategy's own expectation backend.
+  - A manual page, "What was approximated: the inference report".
+- The callbacks `before_site_computation` and `after_site_computation`, ReactiveMP's events of
+  cavity propagation, in batch and streaming inference.
+- Streaming inference reports each free-energy value to the `OnFreeEnergyUpdateEvent` callbacks,
+  as batch inference does, once however many subscribe to the engine's `free_energy` stream.
+- Damping, `options = (stream_postprocessors = ReactiveMP.DampingPostprocessor(β),)`, documented
+  in the inference overview.
+- The hints of a missing rule and of variables never updated name `fallback = LocalLaplace()` and
+  `initialization = FromPriors()`.
 
 ### Changed
 - ReactiveMP 7.1, MessagePassingRulesBase 1.2, DeltaMessagePassingRules 1.1 and BayesBase 1.7 are
-  required.
+  required, and ExponentialFamilyProjection 3.5 when it is loaded.
 
 ## [6.1.3] - 2026-11-04
 

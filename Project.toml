@@ -54,7 +54,7 @@ ProjectionExt = "ExponentialFamilyProjection"
 ReactantExt = "Reactant"
 TensorBoardLoggerExt = "TensorBoardLogger"
 
-# TEMPORARY: the branches of U3 and U4 (universal inference), until they are released
+# TEMPORARY: the `universal-inference` branches of these packages, until they are released
 [sources]
 BayesBase = {url = "https://github.com/ReactiveBayes/BayesBase.jl", rev = "universal-inference"}
 DeltaMessagePassingRules = {url = "https://github.com/ReactiveBayes/DeltaMessagePassingRules.jl", rev = "universal-inference"}

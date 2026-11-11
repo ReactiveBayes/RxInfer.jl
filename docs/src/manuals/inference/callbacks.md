@@ -239,6 +239,8 @@ using RxInfer, Test
     :after_marginal_computation,
     :before_marginal_rule_call,
     :after_marginal_rule_call,
+    :before_site_computation,
+    :after_site_computation,
     :before_factor_bound_free_energy,
     :after_factor_bound_free_energy,
     :before_variable_bound_entropy,
@@ -266,6 +268,8 @@ using RxInfer, Test
     :after_marginal_computation,
     :before_marginal_rule_call,
     :after_marginal_rule_call,
+    :before_site_computation,
+    :after_site_computation,
     :before_factor_bound_free_energy,
     :after_factor_bound_free_energy,
     :before_variable_bound_entropy,
@@ -327,6 +331,7 @@ These lower-level events are fired by the `ReactiveMP` message passing engine du
 - `BeforeFormConstraintAppliedEvent` / `AfterFormConstraintAppliedEvent` — fired around form constraint application
 - `BeforeMarginalComputationEvent` / `AfterMarginalComputationEvent` — fired around marginal computations
 - `BeforeMarginalRuleCallEvent` / `AfterMarginalRuleCallEvent` — fired around the marginal rule calls that compute the joint marginals of a node's clusters
+- `BeforeSiteComputationEvent` / `AfterSiteComputationEvent` — fired around the computation of a site, a variable's projected message on one edge, under the cavity schemes [`LaplacePropagation`](@ref) and [`ExpectationPropagation`](@ref)
 - `BeforeFactorBoundFreeEnergyEvent` / `AfterFactorBoundFreeEnergyEvent` — fired around a factor node's term of the free energy, with `free_energy = true`
 - `BeforeVariableBoundEntropyEvent` / `AfterVariableBoundEntropyEvent` — fired around a random variable's term of the free energy, with `free_energy = true`
 
