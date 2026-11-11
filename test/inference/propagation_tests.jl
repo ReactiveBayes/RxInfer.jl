@@ -1,4 +1,4 @@
-# Cavity propagation (U7a): `LaplacePropagation()` and `ExpectationPropagation()`, each random
+# Cavity propagation: `LaplacePropagation()` and `ExpectationPropagation()`, each random
 # variable keeping one site per edge against its outbound message on the edge. Exact where the
 # model is Gaussian, Laplace propagation's fixed point the global Laplace approximation, and
 # expectation propagation against an exact grid, its free energy included.
@@ -92,7 +92,39 @@
         y[2] ~ LogPoisson(x)
     end
 
+    @model function sv(y, μ, φ, σ)
+        x[1] ~ NormalMeanVariance(0.0, σ^2 / (1 - φ^2))
+        y[1] ~ SVObservation(x[1], μ)
+        for t in 2:length(y)
+            x[t] ~ NormalMeanVariance(φ * x[t - 1], σ^2)
+            y[t] ~ SVObservation(x[t], μ)
+        end
+    end
+
     rms(a) = sqrt(sum(abs2, a) / length(a))
+
+    # The smoothing means and the log evidence of a scalar chain, x[1] ~ prior and
+    # x[t] ~ N(φ x[t - 1], q), observed through the log-likelihoods `loglik(t, u)`: forward-backward
+    # on a grid, the reference of the nonlinear chains
+    function grid_smoother(grid, prior, φ, q, loglik, T)
+        h = step(grid)
+        K = [pdf(Normal(φ * u, sqrt(q)), v) * h for u in grid, v in grid]
+        likelihood(t) = [exp(loglik(t, u)) for u in grid]
+        α, c = zeros(length(grid), T), zeros(T)
+        a = [pdf(prior, u) * h for u in grid] .* likelihood(1)
+        c[1] = sum(a); α[:, 1] = a ./ c[1]
+        for t in 2:T
+            a = (K' * α[:, t - 1]) .* likelihood(t)
+            c[t] = sum(a); α[:, t] = a ./ c[t]
+        end
+        β = ones(length(grid), T)
+        for t in (T - 1):-1:1
+            β[:, t] = K * (likelihood(t + 1) .* β[:, t + 1]) ./ c[t + 1]
+        end
+        posterior = α .* β
+        posterior ./= sum(posterior; dims = 1)
+        return [sum(posterior[:, t] .* grid) for t in 1:T], sum(log, c)
+    end
 end
 
 @testitem "propagation: a linear-Gaussian chain with raw observations is exact" setup = [Propagation] begin
@@ -141,15 +173,7 @@ end
         return s + sum(logpdf(P.SVObservation(x[t], μ), y[t]) for t in 1:T)
     end
     reference = P.EA.laplace(logjoint, zeros(T)).distribution
-    @model function sv(y, μ, φ, σ)
-        x[1] ~ NormalMeanVariance(0.0, σ^2 / (1 - φ^2))
-        y[1] ~ P.SVObservation(x[1], μ)
-        for t in 2:length(y)
-            x[t] ~ NormalMeanVariance(φ * x[t - 1], σ^2)
-            y[t] ~ P.SVObservation(x[t], μ)
-        end
-    end
-    result = infer(model = sv(μ = μ, φ = φ, σ = σ), data = (y = y,), iterations = 10, fallback = LaplacePropagation(), returnvars = (x = KeepLast(),))
+    result = infer(model = P.sv(μ = μ, φ = φ, σ = σ), data = (y = y,), iterations = 10, fallback = LaplacePropagation(), returnvars = (x = KeepLast(),))
     @test maximum(abs, mean.(result.posteriors[:x]) - mean(reference)) < 1.0e-6
     @test maximum(abs, std.(result.posteriors[:x]) - sqrt.(diag(cov(reference)))) < 1.0e-6
 end
@@ -362,9 +386,11 @@ end
     # the loop through the factors needs a first message, as loopy belief propagation does
     result = infer(
         model = P.unknown_mean_precision(), data = (y = y,), iterations = 10, fallback = ExpectationPropagation(),
-        initialization = @initialization(begin
-            μ(z) = NormalMeanVariance(0.0, 1.0)
-        end), free_energy = true, returnvars = (μ = KeepLast(), z = KeepLast()),
+        initialization = @initialization(
+            begin
+                μ(z) = NormalMeanVariance(0.0, 1.0)
+            end
+        ), free_energy = true, returnvars = (μ = KeepLast(), z = KeepLast()),
     )
     qμ, qz = result.posteriors[:μ], result.posteriors[:z]
     @test abs(mean(qμ) - mμ) < 0.01 && abs(mean(qz) - mz) < 0.01
@@ -389,9 +415,11 @@ end
     posteriors = map((NormalMeanVariance(0.0, 1.0), NormalMeanVariance(3.0, 10.0))) do initial
         result = infer(
             model = P.counts_only(), data = (y = y,), iterations = 20, fallback = ExpectationPropagation(), returnvars = (x = KeepLast(),),
-            initialization = @initialization(begin
-                μ(x) = initial
-            end),
+            initialization = @initialization(
+                begin
+                    μ(x) = initial
+                end
+            ),
         )
         result.posteriors[:x]
     end
@@ -412,9 +440,11 @@ end
     plain = infer(model = P.count_chain(φ = φ, q = q), data = (y = counts,), iterations = 40, fallback = ExpectationPropagation(), returnvars = (x = KeepLast(),))
     seeded = infer(
         model = P.count_chain(φ = φ, q = q), data = (y = counts,), iterations = 40, fallback = ExpectationPropagation(), returnvars = (x = KeepLast(),),
-        initialization = @initialization(begin
-            μ(x) = NormalMeanVariance(0.0, 100.0)
-        end),
+        initialization = @initialization(
+            begin
+                μ(x) = NormalMeanVariance(0.0, 100.0)
+            end
+        ),
     )
     @test maximum(abs, mean.(plain.posteriors[:x]) - mean.(seeded.posteriors[:x])) < 1.0e-6
 end
@@ -426,7 +456,8 @@ end
     # x ~ WidePrior(0.5), with Gaussian observations: the prior's message, from a constant, arrives
     # once, before the observations give it a cavity, and its site is projected again each round.
     # One raw site against a Gaussian cavity: expectation propagation is exact, and Laplace
-    # propagation is the global Laplace approximation, LocalLaplace()'s.
+    # propagation is the global Laplace approximation, which LocalLaplace() also gives here, the
+    # prior being the only message without a closed form.
     y = [2.0, 2.5, 1.5, 3.0]
     grid = range(-10, 10; length = 20_001)
     logp = [-log1p((u / 0.5)^2) + sum(yi -> -(yi - u)^2 / 2, y) for u in grid]
@@ -440,4 +471,100 @@ end
     lp, laplace = run(LaplacePropagation()), run(LocalLaplace())
     @test mean(lp) ≈ mean(laplace) atol = 1.0e-8
     @test var(lp) ≈ var(laplace) rtol = 1.0e-6
+end
+
+@testitem "propagation: expectation propagation on stochastic volatility, against the exact grid" setup = [Propagation] begin
+    using BayesBase, Distributions, StableRNGs
+    P = Propagation
+
+    T, μ, φ, σ = 40, -1.0, 0.95, 0.3
+    rng = StableRNG(1234)
+    x = zeros(T); x[1] = rand(rng, Normal(0, σ / sqrt(1 - φ^2)))
+    for t in 2:T
+        x[t] = φ * x[t - 1] + σ * randn(rng)
+    end
+    y = [exp((μ + x[t]) / 2) * randn(rng) for t in 1:T]
+    prior = Normal(0.0, σ / sqrt(1 - φ^2))
+    exact, logevidence = P.grid_smoother(range(-5, 5; length = 801), prior, φ, σ^2, (t, u) -> logpdf(P.SVObservation(u, μ), y[t]), T)
+
+    run(scheme) = infer(model = P.sv(μ = μ, φ = φ, σ = σ), data = (y = y,), iterations = 10, fallback = scheme, free_energy = true, returnvars = (x = KeepLast(),))
+    ep, lp = run(ExpectationPropagation()), run(LaplacePropagation())
+    gap_ep, gap_lp = P.rms(mean.(ep.posteriors[:x]) - exact), P.rms(mean.(lp.posteriors[:x]) - exact)
+    @info "stochastic volatility: RMSE of the means against the grid" gap_ep gap_lp
+    @test gap_ep < 1.0e-3
+    # moment matching is much closer to the exact posterior than Laplace's method at the modes
+    @test gap_ep < gap_lp / 10
+    @test abs(last(ep.free_energy) + logevidence) < 0.05
+end
+
+@testitem "propagation: a conjugate model is inferred as without the scheme" setup = [Propagation] begin
+    using BayesBase, Distributions, StableRNGs
+    P = Propagation
+
+    # Every node has its exact rule, so every message is its own site and nothing is projected
+    T, φ, q, r = 20, 0.9, 0.3, 0.5
+    rng = StableRNG(5)
+    x = zeros(T); x[1] = randn(rng)
+    for t in 2:T
+        x[t] = φ * x[t - 1] + sqrt(q) * randn(rng)
+    end
+    y = x .+ sqrt(r) .* randn(rng, T)
+    model = P.chain(φ = φ, q = q, observation = NormalMeanVariance, parameter = r)
+    plain = infer(model = model, data = (y = y,), initialization = FromPriors(), free_energy = true)
+    for scheme in (LaplacePropagation(), ExpectationPropagation())
+        projections = Ref(0)
+        count(event) = (event.outcome isa NamedTuple && get(event.outcome, :method, nothing) in (:laplace, :moment_matching) && (projections[] += 1); nothing)
+        propagated = infer(model = model, data = (y = y,), fallback = scheme, free_energy = true, callbacks = (after_site_computation = count,))
+        @test projections[] == 0
+        @test mean.(propagated.posteriors[:x]) ≈ mean.(plain.posteriors[:x]) rtol = 1.0e-12
+        @test var.(propagated.posteriors[:x]) ≈ var.(plain.posteriors[:x]) rtol = 1.0e-12
+        @test propagated.free_energy ≈ plain.free_energy rtol = 1.0e-12
+    end
+end
+
+@testitem "propagation: at the fixed point, every site's projection is the marginal" setup = [Propagation] begin
+    using BayesBase, Distributions, StableRNGs, ExponentialFamily
+    import ReactiveMP
+    P = Propagation
+
+    # The site events are callbacks of batch and streaming inference
+    callback_names(inference) = only(typeof(RxInfer.available_callbacks(inference)).parameters)
+    for inference in (RxInfer.batch_inference, RxInfer.streaming_inference)
+        @test :before_site_computation in callback_names(inference)
+        @test :after_site_computation in callback_names(inference)
+    end
+
+    # The beliefs of a variable agree: the projection of each edge's message against its cavity,
+    # the site times the cavity, is the variable's marginal, whichever edge it is seen from
+    φ, q, T = 0.9, 0.1, 20
+    rng = StableRNG(7)
+    x = zeros(T); x[1] = rand(rng, Normal(0.5, 1.0))
+    for t in 2:T
+        x[t] = φ * x[t - 1] + rand(rng, Normal(0.0, sqrt(q)))
+    end
+    y = [rand(rng, Poisson(exp(v))) for v in x]
+    for scheme in (LaplacePropagation(), ExpectationPropagation())
+        last_sites = Dict{Tuple{Any, Int}, Any}()
+        function record(event)
+            data = event.result
+            (data === nothing || ismissing(data) || ismissing(ReactiveMP.getdata(event.cavity))) && return nothing
+            last_sites[(event.variable.label, event.index)] = (data, ReactiveMP.getdata(event.cavity))
+            return nothing
+        end
+        result = infer(
+            model = P.count_chain(φ = φ, q = q), data = (y = y,), iterations = 15, fallback = scheme,
+            returnvars = (x = KeepLast(),), callbacks = (after_site_computation = record,), warn = true,
+        )
+        @test !isempty(last_sites)
+        # the x's, not the anonymous products φ x[t - 1] between them
+        states = [(RxInfer.variable_key(label)[2], entry) for ((label, index), entry) in last_sites if RxInfer.variable_key(label)[1] === :x]
+        @test length(states) >= 2T
+        for (t, (site, cavity)) in states
+            ξ_site, W_site = weightedmean_precision(site)
+            ξ_cavity, W_cavity = weightedmean_precision(cavity)
+            ξ, W = weightedmean_precision(result.posteriors[:x][t])
+            @test ξ_site + ξ_cavity ≈ ξ rtol = 1.0e-6
+            @test W_site + W_cavity ≈ W rtol = 1.0e-6
+        end
+    end
 end

@@ -1,4 +1,4 @@
-# Universal Laplace inference (U4) through `infer`: no rules and no methods for the nodes that
+# Universal Laplace inference through `infer`: no rules and no methods for the nodes that
 # lack them, only DeltaMessagePassingRules' `ExpectationRuleFallback`, its `LaplaceForm` for every
 # random variable and an expectation backend in the context.
 
@@ -109,6 +109,44 @@ end
     @test getlogscale(switched.posteriors[:θ]) == getlogscale(posterior)
 end
 
+@testitem "universal Laplace: the bioassay as Bernoulli trials, through `dot` and through a Delta node" setup = [UniversalLaplace] begin
+    using BayesBase, Distributions, ExponentialFamily, LinearAlgebra, StatsFuns
+    U = UniversalLaplace
+
+    # The bioassay of BDA3 §3.7, its Binomials expanded into Bernoulli trials and written as it reads
+    # on paper. The deterministic nodes, RxInfer's `dot` and a Delta node, go through the rule
+    # fallback wherever their own rules do not apply. Each trial's likelihood is exact, so the
+    # posterior must be Laplace's approximation of the joint, as with one fused likelihood node.
+    x, n, y = [-0.86, -0.3, -0.05, 0.73], [5, 5, 5, 5], [0, 1, 3, 5]
+    doses = reduce(vcat, [fill(x[i], n[i]) for i in eachindex(x)])
+    outcomes = reduce(vcat, [[ones(y[i]); zeros(n[i] - y[i])] for i in eachindex(x)])
+    prior = MvNormalMeanCovariance([0.0, 0.0], [16.0 0.0; 0.0 400.0])
+
+    @model function bioassay_dot(y, doses)
+        θ ~ prior
+        for j in eachindex(y)
+            p[j] := logistic(dot([1.0, doses[j]], θ))
+            y[j] ~ Bernoulli(p[j])
+        end
+    end
+    dose_response(θ, dose) = logistic(θ[1] + θ[2] * dose)
+    @model function bioassay_delta(y, doses)
+        θ ~ prior
+        for j in eachindex(y)
+            p[j] := dose_response(θ, doses[j])
+            y[j] ~ Bernoulli(p[j])
+        end
+    end
+
+    logposterior(θ) = logpdf(prior, θ) + sum(logpdf(Binomial(n[i], logistic(θ[1] + θ[2] * x[i])), y[i]) for i in eachindex(x))
+    reference = U.EA.laplace(logposterior, [0.0, 0.0]).distribution
+    for model in (bioassay_dot(doses = doses), bioassay_delta(doses = doses))
+        posterior = infer(model = model, data = (y = outcomes,), fallback = LocalLaplace()).posteriors[:θ]
+        @test mean(posterior) ≈ mean(reference) rtol = 1.0e-8
+        @test cov(posterior) ≈ cov(reference) rtol = 1.0e-8
+    end
+end
+
 @testitem "universal Laplace: a Delta node without an approximation method, every variable returned" setup = [UniversalLaplace] begin
     using BayesBase, Distributions, ExponentialFamily
     U = UniversalLaplace
@@ -214,7 +252,8 @@ end
     # Zero-inflated Poisson with natural priors, p ~ Beta(1, 1) and λ ~ Gamma(2, 1): the
     # projection finds the domains from the priors, and Laplace runs in logit and log
     # coordinates. A year of counts; the reference is the posterior on a grid. Mean field misses
-    # the strong correlation of p and λ, so the gap is reported and guarded, not tight (D17).
+    # the strong correlation of p and λ, so the gap is reported and guarded, not tight: these tests
+    # check that the inference runs and is close; how close mean field can be is a separate question.
     struct ZeroInflatedPoisson{P, L}
         p::P
         λ::L
@@ -298,7 +337,8 @@ end
 
     # y[t] ~ N(0, exp(x[t])) with an AR(1) log-volatility: the observation has no rules, the
     # transitions their exact ones. Projecting each message on its own is not the global Laplace
-    # approximation (U7 brings Laplace propagation), so the gap is reported and guarded.
+    # approximation, which `LaplacePropagation()` reaches (see propagation_tests.jl), so the gap is
+    # reported and guarded.
     struct Volatility{X}
         x::X
     end
@@ -332,7 +372,7 @@ end
     reference = U.EA.laplace(logposterior, zeros(T))
     gap = sqrt(sum(abs2, mean.(result.posteriors[:x]) .- mean(reference.distribution)) / T)
     @info "stochastic volatility: RMSE of the means against the global Laplace" gap
-    # 0.19 today, with T = 50, ϕ = 0.9 and s = 0.3
+    # about 0.19, with T = 50, ϕ = 0.9 and s = 0.3
     @test gap < 0.25
     @test infer(model = volatility(), data = (y = y,), fallback = LocalLaplace()).posteriors[:x] == result.posteriors[:x]
 end
