@@ -568,3 +568,39 @@ end
         end
     end
 end
+
+@testitem "propagation: the fixed point does not depend on which beliefs are read" setup = [Propagation] begin
+    using BayesBase, Distributions
+    P = Propagation
+
+    # each site is in the other edges' cavities: computed whether or not the variable's marginal
+    # or its outbound messages are read, so that `returnvars` only chooses what is returned
+    @model function counts_through(y, c)
+        b ~ NormalMeanVariance(0.0, 1.0)
+        for i in eachindex(y)
+            z[i] := c[i] * b
+            λ[i] := exp(z[i])
+            y[i] ~ Poisson(λ[i])
+        end
+    end
+    c, y = [1.0, 0.5, -0.3, 1.2], [3, 1, 0, 4]
+    initialization = @initialization(
+        begin
+            μ(z) = NormalMeanVariance(0.0, 1.0)
+        end
+    )
+    run(fallback, returnvars) = infer(
+        model = counts_through(c = c), data = (y = y,), iterations = 60, initialization = initialization, fallback = fallback, returnvars = returnvars,
+    ).posteriors[:b]
+    for fallback in (LaplacePropagation(), ExpectationPropagation(), NaturalGradientPropagation())
+        alone = run(fallback, (b = KeepLast(),))
+        read = run(fallback, (b = KeepLast(), z = KeepLast(), λ = KeepLast()))
+        @test mean(alone) ≈ mean(read) atol = 1.0e-8
+        @test var(alone) ≈ var(read) rtol = 1.0e-8
+    end
+    # natural-gradient propagation's fixed point is the Gaussian closest to the posterior in KL(q ‖ p)
+    best = P.EA.gaussian_variational(b -> -b^2 / 2 + sum(y[i] * c[i] * b - exp(c[i] * b) for i in eachindex(y)), 0.0).distribution
+    q = run(NaturalGradientPropagation(), (b = KeepLast(),))
+    @test mean(q) ≈ mean(best) atol = 1.0e-6
+    @test var(q) ≈ var(best) rtol = 1.0e-5
+end
