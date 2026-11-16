@@ -256,7 +256,8 @@ infer(model = bioassay(x = x, n = n), data = (y = y,), iterations = 50, fallback
 - `expectation`: the expectation backend of the rules and of the variational Gaussians, such as
   `ExpectationApproximations.EADefault()`; `nothing`, the default, for the backends loaded in the
   session. The targets take Gauss–Hermite points for a Gaussian and Gauss–Legendre points in the
-  unconstrained coordinate of any other family;
+  unconstrained coordinate of any other family, or a closed form where ClosedFormExpectations has
+  one, once it is loaded (`using ClosedFormExpectations`);
 - `initialization`: the initialization strategy, [`FromPriors`](@ref) by default; `nothing` for none.
 
 A site moves one step per sweep, so each iteration is a sweep: give `iterations`, a few tens. A raw

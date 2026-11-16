@@ -371,6 +371,16 @@ message of a node with several Gaussian inputs, or a closed message of another f
 a Gaussian family uses Gauss–Hermite points, and in another family Gauss–Legendre points in the
 unconstrained coordinate of its domain.
 
+**Closed-form targets.** Load [ClosedFormExpectations](https://github.com/biaslab/ClosedFormExpectations.jl)
+next to RxInfer, `using ClosedFormExpectations`, and a target is in closed form, without quadrature,
+wherever that package has one for the message and the variable's family. That includes the
+messages above whose log-density is a distribution's: a Poisson count's message pulled back through
+`exp` towards its log-rate, at a Gaussian; a log-normal, at a Gamma; a Laplace likelihood, at a
+Gaussian, whose kink quadrature resolves only slowly. Elsewhere the quadrature is used, so nothing
+else changes; on smooth messages the two agree to about `1e-9`, and the closed form is faster.
+NaturalGradientMessagePassingRules depends on ClosedFormExpectations, so its rules always get
+these closed forms.
+
 **The free energy** is Bethe's, with the average energy `-E_q[log f]` of each node without rules
 under the marginals, not expectation propagation's: its stationary point is the fixed point. On a
 Gaussian tree whose only non-conjugate factors are leaves, such as a regression, it is the
