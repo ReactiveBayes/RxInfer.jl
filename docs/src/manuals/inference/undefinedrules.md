@@ -368,8 +368,8 @@ where the last update left them: give each update enough sweeps for its sites to
 **Non-Gaussian sites** come from the messages the cavity schemes send: a node's log-density, a
 deterministic node's pushforward, the log-normal of `exp` towards a Gamma, belief propagation's
 message of a node with several Gaussian inputs, or a closed message of another family. A target in
-a Gaussian family uses Gauss–Hermite points, and in another family Gauss–Legendre points in the
-unconstrained coordinate of its domain.
+a Gaussian family uses 16 Gauss–Hermite points per dimension, and in another family 128
+Gauss–Legendre points in the unconstrained coordinate of its domain.
 
 **Closed-form targets.** Load [ClosedFormExpectations](https://github.com/biaslab/ClosedFormExpectations.jl)
 next to RxInfer, `using ClosedFormExpectations`, and a target is in closed form, without quadrature,

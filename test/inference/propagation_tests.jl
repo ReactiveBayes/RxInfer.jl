@@ -347,7 +347,8 @@ end
 
 @testitem "propagation: EP's quadrature, Gauss–Hermite or a given backend" setup = [Propagation] begin
     using Distributions, StableRNGs
-    import ExpectationApproximations as EA
+    # ExpectationApproximations comes with DeltaMessagePassingRules, not as a dependency of RxInfer
+    const EA = Propagation.EA
     @test ExpectationPropagation(points = 7).form.backend == EA.GaussHermite(7)
     scheme = ExpectationPropagation(backend = EA.SphericalRadialCubature())
     @test RxInfer.fallback_site(scheme).form.backend isa EA.SphericalRadialCubature

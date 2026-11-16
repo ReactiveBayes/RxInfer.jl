@@ -112,8 +112,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `initialization = FromPriors()`.
 
 ### Changed
-- ReactiveMP 7.1, MessagePassingRulesBase 1.2, DeltaMessagePassingRules 1.1 and BayesBase 1.7 are
-  required, and ExponentialFamilyProjection 3.5 when it is loaded.
+- ReactiveMP 7.1, MessagePassingRulesBase 1.2, DeltaMessagePassingRules 1.1,
+  StandardMessagePassingRules 1.1 and BayesBase 1.7 are required, and ExponentialFamilyProjection
+  3.5 when it is loaded.
 
 ## [6.1.3] - 2026-11-04
 
