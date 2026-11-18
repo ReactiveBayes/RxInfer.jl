@@ -54,15 +54,6 @@ ProjectionExt = "ExponentialFamilyProjection"
 ReactantExt = "Reactant"
 TensorBoardLoggerExt = "TensorBoardLogger"
 
-# TEMPORARY: the `universal-inference` branches of these packages, until they are released
-[sources]
-BayesBase = {url = "https://github.com/ReactiveBayes/BayesBase.jl", rev = "universal-inference"}
-DeltaMessagePassingRules = {url = "https://github.com/ReactiveBayes/DeltaMessagePassingRules.jl", rev = "universal-inference"}
-ExponentialFamilyProjection = {url = "https://github.com/ReactiveBayes/ExponentialFamilyProjection.jl", rev = "universal-inference"}
-MessagePassingRulesBase = {url = "https://github.com/ReactiveBayes/MessagePassingRulesBase.jl", rev = "universal-inference"}
-ReactiveMP = {url = "https://github.com/ReactiveBayes/ReactiveMP.jl", rev = "universal-inference"}
-StandardMessagePassingRules = {url = "https://github.com/ReactiveBayes/StandardMessagePassingRules.jl", rev = "universal-inference"}
-
 [compat]
 AutoregressiveMessagePassingRules = "1"
 BIFMMessagePassingRules = "1"
