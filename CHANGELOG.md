@@ -115,6 +115,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ReactiveMP 7.1, MessagePassingRulesBase 1.2, DeltaMessagePassingRules 1.1,
   StandardMessagePassingRules 1.1 and BayesBase 1.7 are required, and ExponentialFamilyProjection
   3.5 when it is loaded.
+- The contributing guidelines no longer say that `make test` takes ReactiveMP from a local
+  checkout: they say how to test against one, and give `test_args` examples that match the test
+  files.
 
 ## [6.1.3] - 2026-11-04
 
