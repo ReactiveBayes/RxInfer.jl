@@ -6,31 +6,34 @@ import DeltaMessagePassingRules
 """
     RxInfer.fallback_site(scheme::FallbackScheme)
 
-The site policy of `scheme`, the `site_policy` option it sets: cavity propagation, where each
-random variable keeps a site per edge (see `ReactiveMP.compute_site`). `nothing` by default, for a
-scheme that projects each product of messages as it is.
+The site policy of `scheme`, which `infer` uses as the `site_policy` option. With a site policy,
+each random variable keeps a site per edge (cavity propagation, see `ReactiveMP.compute_site`).
+The default is `nothing`, for a scheme that projects each product of messages separately.
 """
 fallback_site(::FallbackScheme) = nothing
 
 """
     RxInfer.SitePolicy(form; tol = 1e-10)
 
-The site policy of the cavity schemes: each random variable's site on an edge is DeltaMessagePassingRules'
-`site(form, message, cavity)`, the inbound message projected against its cavity, the variable's
-outbound message on the edge, by `form`'s projection, a `LaplaceForm` (Laplace propagation) or a
-`MomentForm` (expectation propagation). A closed message is its own site; a raw one waits for a
-cavity, but a deterministic node's pushforward, which starts against a flat one, and every
-message of a variable with an initial message, `@initialization`'s `μ(x)`, which is each edge's
-first cavity while the other edges have no site (`ReactiveMP.seeded_cavity`); against a cavity
-that is not a Gaussian a raw message passes, so that the variable's beliefs are
-projected as products, as under [`LocalLaplace`](@ref). Nothing checks that a site, a
-cavity or a marginal is proper: each is passed as it is computed. The next projection of an edge
-starts at its last mode.
+The site policy of the cavity schemes. The site of a random variable on an edge is
+DeltaMessagePassingRules' `site(form, message, cavity)`: the inbound message projected against its
+cavity, which is the variable's outbound message on that edge, with the projection of `form`. The
+form is a `LaplaceForm` for Laplace propagation or a `MomentForm` for expectation propagation.
 
-A raw message that arrives again unchanged, against the same cavity, both to `tol` relative in
-natural parameters, as messages through deterministic nodes do while the variables around them
-settle, takes its last site without a projection (DeltaMessagePassingRules' `same_message`). The
-site is still sent: the rules downstream wait for each of their inputs anew.
+A closed-form message is its own site. A raw message waits for a cavity, with two exceptions: the
+pushforward of a deterministic node, which starts against a flat cavity, and the messages of a
+variable with an initial message, `μ(x)` from `@initialization`, which is the first cavity of
+each edge while the other edges have no site (`ReactiveMP.seeded_cavity`). Against a cavity that is
+not Gaussian, a raw message passes through unchanged, and the variable's beliefs are projected as
+products, as under [`LocalLaplace`](@ref). Sites, cavities and marginals are not checked for
+properness: each is passed on as computed. The next projection on an edge starts at its last
+mode.
+
+A raw message that arrives again unchanged, against the same cavity, both to a relative `tol` in
+natural parameters, reuses its last site without a new projection (DeltaMessagePassingRules'
+`same_message`). This happens to messages through deterministic nodes while the variables around
+them settle. The site is still sent, because the rules downstream wait for each of their inputs
+again.
 """
 struct SitePolicy{F, T <: Real}
     form::F
@@ -53,10 +56,11 @@ end
 """
     RxInfer.cavity_free_energy(site_policy) -> Bool
 
-Whether the free energy under `site_policy`, the `site_policy` option, is expectation
-propagation's, `BetheFreeEnergy(cavity = true)`, in which a node without rules takes its term from
-its cavities: for any site policy but [`RxInfer.NaturalGradientSitePolicy`](@ref), whose fixed
-point is a stationary point of the Bethe free energy with average energies. `false` without one.
+Return whether the free energy under `site_policy` (the `site_policy` option) is that of
+expectation propagation, `BetheFreeEnergy(cavity = true)`, in which a node without rules takes its
+term from its cavities. This is `true` for every site policy except
+[`RxInfer.NaturalGradientSitePolicy`](@ref), whose fixed point is a stationary point of the Bethe
+free energy with average energies, and `false` without a site policy.
 """
 cavity_free_energy(::Nothing) = false
 cavity_free_energy(policy) = true
@@ -75,36 +79,38 @@ end
 """
     LaplacePropagation(; tol = 1e-10, maxiters = 100, expectation = nothing, initialization = FromPriors())
 
-A [`FallbackScheme`](@ref), Laplace propagation wherever a model has no exact rules. The rule
-fallback computes the missing messages as under [`LocalLaplace`](@ref), and every random
-variable keeps one site per edge, the edge's inbound message times its cavity projected by
-Laplace's method, divided by the cavity. The cavity is the product of the other edges' sites, the
-variable's outbound message on the edge. Every belief of a variable is then a product of sites:
-its marginal and its messages are one Gaussian seen from each edge, and a message without a
-Gaussian of its own, such as one pulled back through a nonlinear function, is projected against
-the cavity that gives it one. On a chain like stochastic volatility, the fixed point is the
-global Laplace approximation, the Gaussian at the joint mode of the posterior.
+A [`FallbackScheme`](@ref) that runs Laplace propagation wherever a model has no exact rules.
+The rule fallback computes the missing messages as under [`LocalLaplace`](@ref). Every random
+variable keeps one site per edge: the edge's inbound message times its cavity, projected by
+Laplace's method, divided by the cavity. The cavity of an edge is the product of the sites of the
+other edges, which is the variable's outbound message on that edge. Every belief of a variable is
+then a product of the same sites, so its marginal and its messages agree. A message that has no
+Gaussian approximation by itself, such as one pulled back through a nonlinear function, is
+projected as its product with the cavity, which has one. On a chain such as a stochastic
+volatility model, the fixed point is the global Laplace approximation, the Gaussian at the joint
+mode of the posterior.
 
-Unlike [`LocalLaplace`](@ref), which projects each product of messages on its own, it
+Compared with [`LocalLaplace`](@ref), which projects each product of messages separately, it
 approximates each message without a closed form once, in the context of the rest of the
-variable's belief, at the cost of keeping a site per edge and of a few iterations.
+variable's belief. The cost is a site per edge and a few iterations.
 
-The free energy is expectation propagation's: a node without rules takes its term from its
-cavities, every other term is Bethe's. It approximates `-log p(y)` at a fixed point but is not a
-bound, so a lower value is not a better fit.
+The free energy is that of expectation propagation: a node without rules takes its term from its
+cavities, and all other terms are Bethe terms. At a fixed point it approximates `-log p(y)`, but
+it is not a bound, so a lower value does not mean a better fit.
 
 ```julia
 infer(model = sv(μ = μ, φ = φ, σ = σ), data = (y = y,), iterations = 10, fallback = LaplacePropagation())
 ```
 
 # Keywords
-- `tol`, `maxiters`: of the Newton iterations of each projection;
+- `tol`, `maxiters`: the tolerance and the maximum number of Newton iterations of each
+  projection;
 - `expectation`: the expectation backend, such as `ExpectationApproximations.EADefault()`;
-  `nothing`, the default, for the backends loaded in the session;
+  `nothing`, the default, uses the backends loaded in the session;
 - `initialization`: the initialization strategy, [`FromPriors`](@ref) by default; `nothing` for none.
 
-A site is computed as its edge's message arrives, so each iteration is a sweep over the sites:
-give `iterations`, a few for a chain.
+A site is computed when the message on its edge arrives, so each iteration is one sweep over the
+sites. Set `iterations`; a few are enough for a chain.
 """
 struct LaplacePropagation{F <: LaplaceForm, E, I} <: FallbackScheme
     form::F
@@ -129,24 +135,28 @@ Base.show(io::IO, scheme::LaplacePropagation) =
 """
     ExpectationPropagation(; points = 20, backend = nothing, tol = 1e-10, maxiters = 100, expectation = nothing, initialization = FromPriors())
 
-A [`FallbackScheme`](@ref), expectation propagation wherever a model has no exact rules: as
-[`LaplacePropagation`](@ref), with each site from the moments of its tilted density, the edge's
-message times its cavity, rather than its mode. The moments come from Gauss–Hermite points placed
-on the tilted density's own Laplace approximation and weighted by the density against it, so a
-message much sharper than its cavity is resolved. A belief outside the sites, a variable with
-one connection or whose cavity is not a Gaussian, is moment-matched in the same way, and the free
-energy is expectation propagation's, which is not a bound.
+A [`FallbackScheme`](@ref) that runs expectation propagation wherever a model has no exact
+rules. It works as [`LaplacePropagation`](@ref), but each site comes from the moments of its
+tilted density, the edge's message times its cavity, instead of from its mode. The moments are
+computed with Gauss–Hermite points placed on the Laplace approximation of the tilted density and
+weighted by the ratio of the density to that approximation, so a message that is much sharper than
+its cavity is resolved. A belief without sites, of a variable with one connection or whose cavity
+is not Gaussian, is moment-matched in the same way. The free energy is that of expectation
+propagation, which is not a bound.
 
 ```julia
 infer(model = counts(φ = φ, σ² = σ²), data = (y = y,), iterations = 10, fallback = ExpectationPropagation())
 ```
 
 # Keywords
-- `points`: Gauss–Hermite points per dimension of each projection, `points`ᵈ in d dimensions;
-- `backend`: another quadrature for the projections, any backend of ExpectationApproximations
-  with a point set for a Gaussian: `SphericalRadialCubature()` takes 2d points, exact to degree
-  3, where a product grid grows as `points`ᵈ; `nothing` is `GaussHermite(points)`;
-- `tol`, `maxiters`: of the Newton iterations that place them;
+- `points`: the number of Gauss–Hermite points per dimension of each projection, `points`ᵈ in
+  d dimensions;
+- `backend`: a different quadrature for the projections, any backend of ExpectationApproximations
+  with a point set for a Gaussian. For example, `SphericalRadialCubature()` uses 2d points and is
+  exact to degree 3, where a product grid grows as `points`ᵈ. `nothing` means
+  `GaussHermite(points)`;
+- `tol`, `maxiters`: the tolerance and the maximum number of Newton iterations that place the
+  points;
 - `expectation`, `initialization`: as for [`LaplacePropagation`](@ref).
 """
 struct ExpectationPropagation{F <: MomentForm, E, I} <: FallbackScheme
@@ -172,19 +182,21 @@ Base.show(io::IO, scheme::ExpectationPropagation) =
 """
     RxInfer.NaturalGradientSitePolicy(form::NaturalGradientForm)
 
-The site policy of [`NaturalGradientPropagation`](@ref): each random variable's site on an edge is
-DeltaMessagePassingRules' `site(form, message, cavity, previous)`, a damped natural-gradient step
-of the edge's last site, `previous.η` with its velocity `previous.velocity`, both in the outcome
-the engine keeps for the edge, towards the message's natural-gradient target at the variable's
-marginal, in the family of the cavity: a Gaussian, a Gamma, any exponential family with a
-deterministic expectation. A closed message of the cavity's family is its own site; a raw one
-waits for a cavity, and a cavity in no such family lets the message pass, so that the variable's
-beliefs are projected as products, by the scheme's `VariationalForm`.
+The site policy of [`NaturalGradientPropagation`](@ref). The site of a random variable on an edge
+is DeltaMessagePassingRules' `site(form, message, cavity, previous)`: a damped natural-gradient
+step from the edge's last site towards the natural-gradient target of the message at the
+variable's marginal. The step stays in the family of the cavity, which is a Gaussian, a Gamma or
+another exponential family with a deterministic expectation. The last site, `previous.η`, and its
+velocity, `previous.velocity`, are part of the outcome that the engine keeps for the edge.
 
-Unlike [`RxInfer.SitePolicy`](@ref), it projects a message that arrives again unchanged anew:
-with momentum, the same message and cavity take the site a step further. An initial message,
-`@initialization`'s `μ(x)`, seeds each edge's first cavity as for the other cavity schemes,
-within its family.
+A closed-form message in the family of the cavity is its own site. A raw message waits for a
+cavity. Against a cavity that is in no such family, the message passes through unchanged, and the
+variable's beliefs are projected as products by the scheme's `VariationalForm`.
+
+Unlike [`RxInfer.SitePolicy`](@ref), it updates the site again when a message arrives unchanged:
+with momentum, the same message and cavity move the site a step further. An initial message,
+`μ(x)` from `@initialization`, gives the first cavity of each edge as for the other cavity
+schemes, within its family.
 """
 struct NaturalGradientSitePolicy{F <: NaturalGradientForm}
     form::F
@@ -219,59 +231,61 @@ cavity_free_energy(::NaturalGradientSitePolicy) = false
 """
     NaturalGradientPropagation(; alpha = 0.5, beta = 0.2, max_step = Inf, tol = 1e-8, expectation = nothing, initialization = FromPriors())
 
-A [`FallbackScheme`](@ref), natural-gradient propagation (Lukashchuk et al., *Information Geometry
-of Message Passing*) wherever a model has no exact rules. The rule fallback sends belief
-propagation's messages unprojected, as under [`LaplacePropagation`](@ref): a node's log-density,
-its pushforward towards a deterministic node's output, its factor integrated against the other
-edges' messages. Every random variable keeps one site per edge, in the family of the rest of its
-belief, the cavity: a Gaussian, a Gamma, a Beta. A raw message's site moves at each sweep by a
-damped heavy-ball step towards its natural-gradient target,
+A [`FallbackScheme`](@ref) that runs natural-gradient propagation (Lukashchuk et al.,
+*Information Geometry of Message Passing*) wherever a model has no exact rules. As under
+[`LaplacePropagation`](@ref), the rule fallback sends the belief propagation messages unprojected:
+the log-density of a node, the pushforward of a deterministic node towards its output, or the
+factor integrated against the messages of the other edges. Every random variable keeps one site
+per edge, in the family of its cavity, the rest of its belief: a Gaussian, a Gamma or a Beta. At
+each sweep, the site of a raw message moves by a damped heavy-ball step towards its
+natural-gradient target,
 
 ```math
 \\eta^\\star = G(q)^{-1} \\operatorname{Cov}_q[T, \\ell], \\qquad
 v \\leftarrow \\beta v + \\alpha (\\eta^\\star - \\eta), \\quad \\eta \\leftarrow \\eta + v,
 ```
 
-with `ℓ` the message's log-density and `q` the variable's marginal, in natural parameters, the
-step halved until the marginal is proper. At a fixed point each site is its target, and each
-marginal a stationary point of the variational free energy over its family: under Gaussian
-cavities, the fixed point of conjugate-computation variational inference, the variational Gaussian
-of the joint where a model has one latent variable; under a Gamma one, the best Gamma.
+where `ℓ` is the log-density of the message and `q` is the marginal of the variable, in natural
+parameters. The step is halved until the marginal is proper. At a fixed point, each site equals
+its target and each marginal is a stationary point of the variational free energy over its
+family. With Gaussian cavities, this is the fixed point of conjugate-computation variational
+inference, which for a model with one latent variable is the variational Gaussian of the joint;
+with a Gamma cavity, it is the best Gamma.
 
-A belief that has no site, a variable with one connection or whose cavity is in no family, is
-projected onto its variational Gaussian, `VariationalForm`, in the unconstrained coordinates of
-its domain. The free energy is Bethe's with the average energies of the nodes without rules: the
-negative evidence lower bound on a Gaussian tree whose only non-conjugate factors are leaves, and
-a diagnostic elsewhere, which need not decrease from one iteration to the next.
+A belief without sites, of a variable with one connection or whose cavity is in no family, is
+projected onto its variational Gaussian, `VariationalForm`, in the unconstrained coordinates of its
+domain. The free energy is the Bethe free energy with the average energies of the nodes without
+rules. On a Gaussian tree whose only non-conjugate factors are leaves, it is the negative evidence
+lower bound; elsewhere it is a diagnostic and need not decrease from one iteration to the next.
 
 ```julia
 infer(model = bioassay(x = x, n = n), data = (y = y,), iterations = 50, fallback = NaturalGradientPropagation())
 ```
 
 # Keywords
-- `alpha`, `beta`: the step size and the momentum of every site, `0 < alpha`, `0 ≤ beta < 1`;
-  `alpha = 1`, `beta = 0` jumps to the target at each sweep, which can oscillate;
-- `max_step`: the longest step in natural parameters, `Inf` for none;
-- `tol`: a site has settled when `‖η⋆ - η‖ ≤ tol (1 + ‖η‖)`, which the report reads;
+- `alpha`, `beta`: the step size and the momentum of every site, with `0 < alpha` and
+  `0 ≤ beta < 1`; `alpha = 1`, `beta = 0` jumps to the target at each sweep, which can oscillate;
+- `max_step`: the largest step in natural parameters, `Inf` for no limit;
+- `tol`: a site has settled when `‖η⋆ - η‖ ≤ tol (1 + ‖η‖)`; the report uses this test;
 - `expectation`: the expectation backend of the rules and of the variational Gaussians, such as
-  `ExpectationApproximations.EADefault()`; `nothing`, the default, for the backends loaded in the
-  session. The targets take Gauss–Hermite points for a Gaussian and Gauss–Legendre points in the
+  `ExpectationApproximations.EADefault()`; `nothing`, the default, uses the backends loaded in the
+  session. The targets use Gauss–Hermite points for a Gaussian and Gauss–Legendre points in the
   unconstrained coordinate of any other family, or a closed form where ClosedFormExpectations has
   one, once it is loaded (`using ClosedFormExpectations`);
 - `initialization`: the initialization strategy, [`FromPriors`](@ref) by default; `nothing` for none.
 
-A site moves one step per sweep, so each iteration is a sweep: give `iterations`, a few tens. A raw
-message's first step starts from the flat site, against its cavity, which must be proper: a prior,
-or `@initialization`'s `μ(x)` for a variable with only raw messages. A deterministic node's
-output whose other edge never sends a message, such as a filter's predicted state
-`x_pred := f(x_prev)` before `x ~ N(x_pred, Q)`, which the filter asks nothing of, has no cavity
-either: give it one with `μ(x_pred)`. Its pushforward's site then steps from the flat one towards
-its target, the pushforward's moment-matched Gaussian whatever the seed, where `f` is not monotone
-or `x_prev` is a vector.
+A site moves one step per sweep, and each iteration is one sweep, so set `iterations` to a few
+tens. The first step for a raw message starts from a flat site and needs a proper cavity: a prior,
+or `μ(x)` from `@initialization` for a variable with only raw messages. The output of a
+deterministic node whose other edge never sends a message has no cavity either. An example is the
+predicted state of a filter, `x_pred := f(x_prev)` before `x ~ N(x_pred, Q)`, from which the filter
+requests nothing. Give it a cavity with `μ(x_pred)`. Where `f` is not monotone or `x_prev` is a
+vector, the site of the pushforward then steps from the flat site towards its target, the
+moment-matched Gaussian of the pushforward, whatever the initial message.
 
-In streaming inference each data update's `iterations` move the sites on from where the last
-update left them, their velocities included: give each update enough sweeps for its sites to
-settle, which the report reads.
+In streaming inference, the `iterations` of each data update continue from the sites, including
+their velocities, that the previous update left. Give each update enough sweeps for its sites to
+settle; the report shows whether they did.
 """
 struct NaturalGradientPropagation{F <: NaturalGradientForm, E, I} <: FallbackScheme
     form::F

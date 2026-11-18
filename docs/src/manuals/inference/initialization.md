@@ -115,7 +115,7 @@ Inline initialization applies only to the specific submodel invocation it is att
 
 ## [Initialization from priors](@id initialization-from-priors)
 
-Instead of a specification, `initialization` takes a strategy, which initialises every random variable a specification leaves out. [`FromPriors`](@ref) starts each from its prior, the distribution of the node whose output it is, at its parents' initial means:
+The `initialization` keyword also accepts a strategy, which initializes every random variable that a specification leaves out. [`FromPriors`](@ref) initializes each such variable from its prior: the distribution of the node whose output the variable is, evaluated at the initial means of the variable's parents:
 
 ```julia
 @model function hierarchy(y)
@@ -124,13 +124,13 @@ Instead of a specification, `initialization` takes a strategy, which initialises
     y .~ Normal(mean = μ, precision = τ)
 end
 
-# q(τ) = GammaShapeRate(2.0, 1.0), and q(μ) = NormalMeanPrecision(1.0, 2.0), 2.0 being the mean of τ
+# q(τ) = GammaShapeRate(2.0, 1.0) and q(μ) = NormalMeanPrecision(1.0, 2.0), where 2.0 is the mean of τ
 infer(model = hierarchy(), data = (y = y,), constraints = MeanField(), initialization = FromPriors(), iterations = 10)
 ```
 
-A chain or a hierarchy is initialised from its root down. A variable whose prior cannot be formed, because its parent is data or its node is not a distribution, is left out. Only marginals are set, never messages, so belief propagation is unchanged.
+Chains and hierarchies are initialized from the root down. A variable whose prior cannot be formed, because a parent is data or its node is not a distribution, is not initialized. The strategy sets only marginals and no messages, so belief propagation is unchanged.
 
-A specification wrapped in `FromPriors` comes first and is never overwritten. This is how to break the symmetry of a mixture, whose components have equal priors:
+A specification wrapped in `FromPriors` is applied first, and the strategy does not overwrite it. Use this to break the symmetry of a mixture whose components have equal priors:
 
 ```julia
 initialization = FromPriors(@initialization begin
@@ -138,7 +138,7 @@ initialization = FromPriors(@initialization begin
 end)
 ```
 
-A package defines its own strategy as a subtype of `RxInfer.InitializationStrategy`, with a method of `RxInfer.initial_marginal`:
+A package can define its own strategy as a subtype of `RxInfer.InitializationStrategy` with a method of `RxInfer.initial_marginal`:
 
 ```@docs
 FromPriors

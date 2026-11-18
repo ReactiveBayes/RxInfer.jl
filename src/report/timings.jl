@@ -9,18 +9,21 @@ import ReactiveMP:
 """
     TimingsReport
 
-The section of an [`InferenceReport`](@ref) that says where the time of one inference went,
-collected from the same events as the approximations, `report = (:timings,)`:
+The section of an [`InferenceReport`](@ref) that records where the time of one inference went. It
+is collected from the same events as the approximations; `report = (:timings,)` records it alone.
+Its fields are:
 
-- `model`, the nanoseconds the model's creation took, and `inference`, the inference's;
-- `iterations`, the nanoseconds of each iteration;
-- `kinds`, for each kind of work, `:rules` (exact rules), `:fallback` (the rule fallback),
-  `:projections` (form constraints) and `:free_energy` (its terms), the nanoseconds spent and the
-  number of calls, `(time, calls)`; each call's time is its own, what it called is counted where
-  it belongs, so the kinds add up;
-- `nodes`, the same by `(node type, kind)`, and `variables`, the projections' by variable name.
+- `model`: the time that creating the model took, in nanoseconds, and `inference`: the time of the
+  inference;
+- `iterations`: the time of each iteration, in nanoseconds;
+- `kinds`: for each kind of work, `:rules` (exact rules), `:fallback` (the rule fallback),
+  `:projections` (form constraints) and `:free_energy` (its terms), the time spent in nanoseconds
+  and the number of calls, `(time, calls)`. Each call is counted with its own time only, and the
+  calls it makes are counted under their own kinds, so the kinds add up;
+- `nodes`: the same by `(node type, kind)`, and `variables`: the time of the projections by
+  variable name.
 
-What is left of the inference's time went to the engine itself: the products of messages and the
+The rest of the inference's time went to the engine itself: the products of messages and the
 streams. For statistics over many runs, use [`RxInferBenchmarkCallbacks`](@ref).
 """
 mutable struct TimingsReport

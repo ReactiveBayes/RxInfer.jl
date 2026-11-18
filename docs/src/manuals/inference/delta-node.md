@@ -9,16 +9,16 @@ applies.
 
 ## Features and supported inference scenarios
 
-The delta node supports two approximation methods, and a node without one runs under a fallback
-scheme. Which one fits depends on the nodes around the delta node:
+The delta node supports two approximation methods, and a node without a method can run under a
+fallback scheme. Which option fits depends on the nodes around the delta node:
 
 1. **Gaussian nodes**: for a delta node connected only to univariate or multivariate Gaussian
    distributions, use [`Linearization`](@extref MessagePassingRulesApproximations.Linearization)
    or [`Unscented`](@extref MessagePassingRulesApproximations.Unscented).
 2. **Exponential family nodes**: for a delta node connected to other members of the exponential
-   family, give it no method and infer with `fallback = NaturalGradientPropagation()`, which
-   approximates each variable around it in its own family, a Gamma or a Beta (see
-   [Exponential family case](@ref delta-node-exponential-family)).
+   family, give it no method and run the inference with `fallback = NaturalGradientPropagation()`.
+   This scheme approximates each variable around the node within its own family, such as a Gamma
+   or a Beta (see [Exponential family case](@ref delta-node-exponential-family)).
 3. **Stacked delta nodes**: for delta nodes connected to each other, any of them applies.
 4. **Inverse functions**: when the inverse of `f` is known, `Linearization` and `Unscented` use it.
 
@@ -153,10 +153,10 @@ result = infer(model = delta_node_example(), algorithm = delta_algorithm, data =
 
 When the delta node is connected to nodes of the exponential family other than Gaussians,
 `Linearization` and `Unscented` do not apply. Give the node no method, and run the inference with
-the fallback scheme [`NaturalGradientPropagation`](@ref): every variable around the node keeps a
-site per edge in its own family, the family of the rest of its belief, which moves by damped
-natural-gradient steps to the variational optimum over that family. Here is a modified example,
-with a Gamma prior on `x` and Bernoulli observations of `tanh(x)`:
+the fallback scheme [`NaturalGradientPropagation`](@ref). Every variable around the node then keeps
+one site per edge in its own family, the family of the rest of its belief. The sites move by damped
+natural-gradient steps towards the variational optimum over that family. Here is a modified
+example, with a Gamma prior on `x` and Bernoulli observations of `tanh(x)`:
 
 ```@example delta_node_example_ngmp
 using RxInfer
@@ -178,10 +178,12 @@ result = infer(
 (x = last(result.posteriors[:x]), y = last(result.posteriors[:y]))
 ```
 
-The Bernoulli observations send Beta messages towards `y`, so `y`'s sites are Betas: the
-pushforward of `x`'s prior through `tanh`, the node's message towards `y`, takes a Beta site. The
-node's message towards `x`, the Beta pulled back through `tanh`, takes a Gamma site, as `x`'s prior
-is a Gamma. The posteriors are a Gamma and a Beta, close to the exact posterior on a grid:
+The Bernoulli observations send Beta messages towards `y`, so the sites of `y` are Beta
+distributions. The message of the node towards `y`, which is the prior of `x` pushed forward through
+`tanh`, gets a Beta site. The message of the node towards `x`, which is the Beta message pulled back
+through `tanh`, gets a Gamma site, because the prior of `x` is a Gamma. The posteriors are a Gamma
+and a Beta distribution, and their means are close to those of the exact posterior computed on a
+grid:
 
 ```@example delta_node_example_ngmp
 grid = range(1e-6, 30; length = 100_000)
@@ -196,10 +198,10 @@ using Test #hide
 (mean(last(result.posteriors[:x])), exact.x), (mean(last(result.posteriors[:y])), exact.y)
 ```
 
-Nothing is sampled, and no constraint or initialization is needed: the sites start from the
-priors. [Natural-gradient propagation](@ref inference-undefinedrules-ngmp) explains the scheme.
-The method `CVIProjection` of DeltaMessagePassingRules, which projected the node's messages by
-sampling, is deprecated in its favor.
+The scheme does not sample, and it needs no constraints or initialization, because the sites start
+from the priors. [Natural-gradient propagation](@ref inference-undefinedrules-ngmp) describes the
+scheme. The `CVIProjection` method of DeltaMessagePassingRules, which projected the node's messages
+by sampling, is deprecated in favor of this scheme.
 
 ## Fuse deterministic nodes with stochastic nodes
 

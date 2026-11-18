@@ -3,33 +3,35 @@ export ReportDiagnostic
 """
     ReportDiagnostic(kind, level, subject, text)
 
-One finding of [`RxInfer.diagnostics`](@ref): its `kind`, a `Symbol`, its `level`, `:warning` for
-a part of the inference that is likely to be inaccurate or `:note` for one worth knowing, the
-`subject` it is about, a variable or a node as the model writes it, and a sentence, `text`.
+One finding of [`RxInfer.diagnostics`](@ref). It has a `kind`, a `Symbol`; a `level`, `:warning`
+for a part of the inference that is likely to be inaccurate or `:note` for one worth knowing; the
+`subject` it is about, a variable or a node as the model writes it; and a one-sentence
+description, `text`.
 
-The kinds:
-- `:laplace_not_converged` (warning): a posterior's Laplace approximation did not converge, so its
-  Gaussian is the last iterate of Newton's method, its curvature floored;
-- `:variational_not_converged` (warning): a posterior's variational Gaussian, the projection of a
-  belief without sites under [`NaturalGradientPropagation`](@ref), did not converge;
-- `:moment_matching_not_converged` (warning): a posterior's moment matching, under
+The kinds are:
+- `:laplace_not_converged` (warning): the Laplace approximation of a posterior did not converge, so
+  its Gaussian is the last iterate of Newton's method, with its curvature floored;
+- `:variational_not_converged` (warning): the variational Gaussian of a posterior did not
+  converge; under [`NaturalGradientPropagation`](@ref), this is the projection of a belief without
+  sites;
+- `:moment_matching_not_converged` (warning): the moment matching of a posterior, under
   [`ExpectationPropagation`](@ref), did not converge, so its Gaussian is the one its quadrature
   points were placed on;
 - `:sites_not_converged` (warning): under [`LaplacePropagation`](@ref) or
   [`ExpectationPropagation`](@ref), the projections of some of a variable's sites did not converge;
   under [`NaturalGradientPropagation`](@ref), the natural-gradient steps of some of its sites had
-  not settled at the last sweep, so they are not yet at their targets;
-- `:joint_not_converged` (warning): a joint the rule fallback computed by Laplace's method did not
-  converge;
+  not settled at the last sweep, so these sites are not yet at their targets;
+- `:joint_not_converged` (warning): a joint that the rule fallback computed by Laplace's method did
+  not converge;
 - `:expectation_over_messages` (warning): under belief propagation, the rule fallback took an
-  expectation over another random variable's message, so its message is the variational one, an
-  approximation of the belief propagation message;
-- `:unprojected_messages` (note): messages Laplace found no mode for were left as log-densities,
-  `LaplaceForm(nomode = :leave)`, and pulled back through the next node instead;
-- `:stochastic_expectation` (note): an expectation went to a stochastic backend, so results vary
-  with the random number generator;
-- `:last_resort_expectation` (note): an expectation went to a backend registered as a last resort,
-  at a negative priority, because no other applied.
+  expectation over the message of another random variable, so its message is the variational
+  message, an approximation of the belief propagation message;
+- `:unprojected_messages` (note): messages for which Laplace's method found no mode were left as
+  log-densities (`LaplaceForm(nomode = :leave)`) and pulled back through the next node;
+- `:stochastic_expectation` (note): an expectation was computed by a stochastic backend, so the
+  results depend on the random number generator;
+- `:last_resort_expectation` (note): an expectation was computed by a backend registered as a last
+  resort, with a negative priority, because no other backend applied.
 """
 struct ReportDiagnostic
     kind::Symbol
@@ -43,10 +45,11 @@ Base.show(io::IO, d::ReportDiagnostic) = print(io, d.level === :warning ? "warni
 """
     RxInfer.diagnostics(report) -> Vector{ReportDiagnostic}
 
-The parts of an inference most likely to be inaccurate, and others worth knowing, found in the
-records of an [`InferenceReport`](@ref) or of its [`ApproximationsReport`](@ref): warnings first.
-Each is a [`ReportDiagnostic`](@ref); variables and nodes of the same name are folded into one,
-`x[1:200]`. Empty for an inference without a report section of approximations.
+Return the parts of an inference that are most likely to be inaccurate, and other things worth
+knowing, from the records of an [`InferenceReport`](@ref) or of its
+[`ApproximationsReport`](@ref), with the warnings first. Each is a [`ReportDiagnostic`](@ref).
+Variables and nodes with the same name are folded into one entry, such as `x[1:200]`. The result is
+empty for an inference whose report has no approximations section.
 
 ```julia
 result = infer(model = model(), data = data, fallback = LocalLaplace(), report = true)

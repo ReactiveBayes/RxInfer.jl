@@ -15,18 +15,18 @@ import ReactiveMP:
 """
     RxInfer.NodeRecord
 
-What an [`ApproximationsReport`](@ref) records of one kind of computation of a node, of its type or
-of one [`RxInfer.NodeInstance`](@ref):
-- `rules`, how many times an exact rule ran, and `rule`, the last;
-- `fallbacks`, how many times the rule fallback ran, and `fallback`, which;
-- `backends`, the expectation backend each input's distribution type went to under the fallback,
+What an [`ApproximationsReport`](@ref) records about one kind of computation of a node, for a node
+type or for one [`RxInfer.NodeInstance`](@ref):
+- `rules`: how many times an exact rule ran, and `rule`: the last rule that ran;
+- `fallbacks`: how many times the rule fallback ran, and `fallback`: which fallback ran;
+- `backends`: for each input distribution type, the expectation backend that the fallback used,
   as `(backend, exact, stochastic, priority)`;
-- `outcome`, how the fallback computed its last answer, as it declared it (such as a joint
-  Laplace approximation's `(method, converged, iterations)`), and `nonconverged`, how many of its
-  answers did not converge;
-- `over_messages`, how many of the fallback's messages took an expectation over another random
-  variable's message, as under belief propagation, where the expected log-density approximates
-  the message.
+- `outcome`: how the fallback computed its last result, as the fallback reports it (such as
+  `(method, converged, iterations)` for a joint Laplace approximation), and `nonconverged`: how
+  many of its results did not converge;
+- `over_messages`: how many of the fallback's messages took an expectation over the message of
+  another random variable, as under belief propagation, where the expected log-density
+  approximates the message.
 """
 mutable struct NodeRecord
     rules::Int
@@ -44,9 +44,9 @@ NodeRecord() = NodeRecord(0, 0, nothing, nothing, Dict(), nothing, 0, 0)
 """
     RxInfer.NodeInstance
 
-One factor node of the model in an [`ApproximationsReport`](@ref): its type `node`, how the model
-writes it, its `label`, such as `y[3] ~ Bernoulli(p[3])` or `p[3] := logistic(·)`, and what it
-computed, `records`, a [`RxInfer.NodeRecord`](@ref) for each `(kind, target)`.
+One factor node of the model in an [`ApproximationsReport`](@ref): its type `node`, its `label` as
+the model writes it, such as `y[3] ~ Bernoulli(p[3])` or `p[3] := logistic(·)`, and its `records`,
+a [`RxInfer.NodeRecord`](@ref) for each `(kind, target)` it computed.
 """
 struct NodeInstance
     node::Any
@@ -128,9 +128,10 @@ single_index_display(index) = string(index)
 """
     RxInfer.ProjectionRecord
 
-How many times a form constraint projected a variable's marginal or messages, `projections`, and
-the last projection's `outcome`, as `RxInfer.form_outcome` reports it; of them, `nonconverged`
-did not converge and `unprojected` were left as they were (`LaplaceForm(nomode = :leave)`).
+How many times a form constraint projected a variable's marginal or messages (`projections`), and
+the `outcome` of the last projection, as `RxInfer.form_outcome` reports it. Of the projections,
+`nonconverged` did not converge and `unprojected` were left unchanged
+(`LaplaceForm(nomode = :leave)`).
 """
 mutable struct ProjectionRecord
     projections::Int
@@ -144,14 +145,14 @@ ProjectionRecord() = ProjectionRecord(0, nothing, 0, 0)
 """
     RxInfer.VariableRecord
 
-What an [`ApproximationsReport`](@ref) records of a random variable: its form `constraint`, the
+What an [`ApproximationsReport`](@ref) records about a random variable: its form `constraint`, the
 [`RxInfer.ProjectionRecord`](@ref)s of its `marginal` and its `messages`, and how its posterior was
-formed, `incoming`: for each node and target whose messages reached the variable, how many came
-from an exact rule and how many from the rule fallback, `(rules, fallbacks)`. Under cavity
-propagation, `sites` records the sites projected on its edges. Under natural-gradient
-propagation, where a site moves a step at each sweep, `settled` says, for each edge by its index,
-whether its latest step had settled, and `sites.nonconverged` counts the edges whose latest had
-not.
+formed, `incoming`. For each node and target whose messages reached the variable, `incoming` counts
+the messages from an exact rule and from the rule fallback, as `(rules, fallbacks)`. Under cavity
+propagation, `sites` records the sites projected on the variable's edges. Under natural-gradient
+propagation, where a site moves one step per sweep, `settled` maps each edge index to whether the
+latest step on that edge had settled, and `sites.nonconverged` counts the edges whose latest step
+had not.
 """
 mutable struct VariableRecord
     constraint::Any
@@ -167,22 +168,23 @@ VariableRecord() = VariableRecord(nothing, ProjectionRecord(), ProjectionRecord(
 """
     ApproximationsReport
 
-The section of an [`InferenceReport`](@ref) that says what was computed exactly and what was
-approximated, collected from the engine's events. Shown by posterior: each approximated posterior
-with how it was projected and the nodes whose messages formed it, exact or by the rule fallback,
-then the joints and energies the fallback computed, after the warnings of
-[`RxInfer.diagnostics`](@ref). Its records are plain data:
+The section of an [`InferenceReport`](@ref) that records what was computed exactly and what was
+approximated, collected from the events of the engine. Its display lists the warnings of
+[`RxInfer.diagnostics`](@ref), then each approximated posterior with how it was projected and the
+nodes whose messages formed it, by an exact rule or by the rule fallback, and then the joints and
+energies that the fallback computed. Its records are plain data:
 
-- `instances`, each [`RxInfer.NodeInstance`](@ref) that computed something, by its factor node:
-  its label in the model and a [`RxInfer.NodeRecord`](@ref) for each `(kind, target)`, `kind`
-  being `:message`, `:marginal` or `:energy`;
-- `nodes`, the same by node type, keyed by `(node, kind, target)`;
-- `variables`, for each random variable by its name and index, a [`RxInfer.VariableRecord`](@ref):
-  the form constraint that projected its beliefs, how, and the messages that formed its posterior;
-- `expectation`, the expectation backend of the nodes' rule context, chosen once per inference;
-- `scheme`, the [`RxInfer.FallbackScheme`](@ref) given to `infer` as `fallback`, or `nothing`.
+- `instances`: each [`RxInfer.NodeInstance`](@ref) that computed something, keyed by its factor
+  node, with its label in the model and a [`RxInfer.NodeRecord`](@ref) for each `(kind, target)`,
+  where `kind` is `:message`, `:marginal` or `:energy`;
+- `nodes`: the same records by node type, keyed by `(node, kind, target)`;
+- `variables`: a [`RxInfer.VariableRecord`](@ref) for each random variable, keyed by its name and
+  index, with the form constraint that projected its beliefs, how it projected them, and the
+  messages that formed its posterior;
+- `expectation`: the expectation backend of the nodes' rule context, chosen once per inference;
+- `scheme`: the [`RxInfer.FallbackScheme`](@ref) given to `infer` as `fallback`, or `nothing`.
 
-[`report_tables`](@ref) gives the tables it is shown as.
+[`report_tables`](@ref) returns the tables that the display shows.
 """
 mutable struct ApproximationsReport
     nodes::Dict{Tuple{Any, Symbol, Any}, NodeRecord}
@@ -410,9 +412,9 @@ is_reported_constraint(constraint) = true
 """
     RxInfer.form_outcome(constraint, context, distribution, result)
 
-What the form constraint `constraint`, with its prepared `context`, reports of its last projection,
-of `distribution` onto `result`, to the [`ApproximationsReport`](@ref): by default whether it
-changed the distribution, `(changed = …,)`.
+Return what the form constraint `constraint`, with its prepared `context`, reports to the
+[`ApproximationsReport`](@ref) about its last projection, of `distribution` onto `result`. By
+default this is whether the projection changed the distribution, `(changed = …,)`.
 """
 form_outcome(constraint, context, distribution, result) = (changed = result !== distribution,)
 
@@ -426,8 +428,8 @@ ReactiveMP.listens(::ApproximationsReport, ::Type{T}) where {T} =
 """
     RxInfer.node_types(report::ApproximationsReport)
 
-The records by node type, `(node, kind, target) => RxInfer.NodeRecord`, every instance of a type
-counted together.
+Return the records by node type, `(node, kind, target) => RxInfer.NodeRecord`, with all instances
+of a type counted together.
 """
 node_types(report::ApproximationsReport) = report.nodes
 

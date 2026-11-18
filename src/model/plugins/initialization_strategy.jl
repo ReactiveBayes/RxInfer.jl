@@ -3,11 +3,12 @@ export FromPriors
 """
     InitializationStrategy
 
-How the variables that an initialization specification leaves out are initialised: a strategy is
-given to `infer` as its `initialization`, and answers
-[`RxInfer.initial_marginal`](@ref)`(strategy, model, label)` for every random variable without an
-initial marginal. Its specification, [`RxInfer.initialization_specification`](@ref), applies
-first and is never overwritten.
+The abstract type of strategies that initialize the variables an initialization specification
+leaves out. A strategy is passed to `infer` as `initialization`, and
+[`RxInfer.initial_marginal`](@ref)`(strategy, model, label)` is called for every random variable
+without an initial marginal. The specification of the strategy,
+[`RxInfer.initialization_specification`](@ref), is applied first, and the strategy does not
+overwrite it.
 
 See [`FromPriors`](@ref).
 """
@@ -16,17 +17,17 @@ abstract type InitializationStrategy end
 """
     RxInfer.initial_marginal(strategy::InitializationStrategy, model, label)
 
-The initial marginal of the random variable `label` of the GraphPPL `model`, or `nothing` to leave
-it uninitialised. Asked once for each random variable without one, in the order the model
-created them.
+Return the initial marginal of the random variable `label` of the GraphPPL `model`, or `nothing`
+to leave it uninitialized. Called once for each random variable without an initial marginal, in
+the order in which the model created them.
 """
 function initial_marginal end
 
 """
     RxInfer.initialization_specification(strategy::InitializationStrategy)
 
-The `@initialization` specification `strategy` applies before it asks about the rest, or `nothing`
-for the model's default.
+Return the `@initialization` specification that `strategy` applies before it initializes the
+remaining variables, or `nothing` for the model's default.
 """
 initialization_specification(::InitializationStrategy) = nothing
 
@@ -56,18 +57,18 @@ end
 """
     FromPriors(specification = nothing)
 
-An [`InitializationStrategy`](@ref): each random variable that `specification`, an
-[`@initialization`](@ref) block, leaves out starts from its prior, the distribution of the node
-whose `out` it is, at its parents' initial means. Constants are their values, and a parent that is
-itself random has its own initial marginal, given or from its prior, so a chain or a hierarchy is
-initialised from its root down. A deterministic parent, `z := f(x)`, counts as `f` at its inputs'
-means, and is not initialised itself.
+An [`InitializationStrategy`](@ref) that initializes each random variable that `specification`,
+an [`@initialization`](@ref) block, leaves out from its prior: the distribution of the node whose
+`out` the variable is, evaluated at the initial means of its parents. A constant parent contributes
+its value, and a random parent contributes the mean of its own initial marginal, given or from its
+prior, so chains and hierarchies are initialized from the root down. A deterministic parent,
+`z := f(x)`, contributes `f` evaluated at the means of its inputs, and is not initialized itself.
 
 Only marginals are set, never messages, so belief propagation is unchanged. A variable whose prior
-cannot be formed, with no node of a distribution on its `out`, a data parent, or parameters its
-distribution does not take, is left uninitialised.
+cannot be formed is left uninitialized: a variable with no distribution node on its `out`, with a
+data parent, or with parameters that its distribution does not accept.
 
-The priors of a mixture's components are equal, so their initial marginals are too: break the
+The components of a mixture have equal priors, and therefore equal initial marginals; break the
 symmetry in `specification`.
 
 ```julia

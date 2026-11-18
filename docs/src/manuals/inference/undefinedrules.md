@@ -114,9 +114,9 @@ result = infer(
 ```
 
 !!! note 
-    For `rulefallback = NodeFunctionRuleFallback()` to apply, calling a `Stochastic` node with its inputs, as `BernoulliDistribution(p)`, must return an object with a `logpdf`; a node with interface groups needs a node function of its own. A `Deterministic` node, such as a Delta node without an approximation method, sends the message on its output pulled back through its function towards an input, and its function of the inputs' means towards its output. The fallback does not apply to an input that is a joint marginal, and a rule of the node, where one fits, takes precedence over it.
+    For `rulefallback = NodeFunctionRuleFallback()` to apply to a `Stochastic` node, calling the node with its inputs, for example `BernoulliDistribution(p)`, must return an object that has a `logpdf`. A node with interface groups needs its own node function. For a `Deterministic` node, such as a Delta node without an approximation method, the fallback sends towards an input the message on the output pulled back through the node's function, and towards the output the function evaluated at the means of the inputs. The fallback does not apply to an input that is a joint marginal. If one of the node's rules fits, that rule is used instead of the fallback.
 
-The constraint can also be given once for every random variable that has none of its own, with the option `default_form_constraint`; `(q = …,)` applies it to the marginals only:
+The option `default_form_constraint` sets a form constraint for every random variable that has no constraint of its own. Here `(q = …,)` applies it to the marginals only:
 
 ```@example inference-undefinedrules
 result_by_default = infer(
@@ -145,43 +145,46 @@ As shown, the estimated posterior is quite close to the actual hidden value of `
 
 ## [Universal inference](@id inference-undefinedrules-universal)
 
-`NodeFunctionRuleFallback` collapses every other input to its mean, and needs a projection chosen per variable. One keyword of [`infer`](@ref), `fallback`, needs neither: wherever the model has no exact rule, it approximates, with no rule, method or initialization to write. Where an exact rule exists, it runs unchanged, so a conjugate model is inferred as without the keyword.
+`NodeFunctionRuleFallback` replaces the other inputs of a node by their means, and it needs a projection for each variable. The `fallback` keyword of [`infer`](@ref) takes the distributions of the other inputs into account and sets the projections itself. It approximates the messages wherever the model has no exact rule, so no rules, approximation methods or initialization need to be written. Exact rules still run where they exist, and the projections leave closed forms unchanged, so a conjugate model gives the same result as without the keyword.
 
-The idea is that message passing can be automated if every belief is Gaussian. A variable's beliefs are its marginal and the messages it sends, each a product of the messages it receives. A node of any kind is then asked one question: given Gaussian beliefs about its neighbors, what should it send? Every node with a log-density, and every deterministic function, can answer it numerically. "Gaussian" is meant broadly:
+The approach relies on Gaussian beliefs. The beliefs of a variable are its marginal and the messages it sends, and each of them is a product of the messages the variable receives. When the beliefs about the neighbors of a node are Gaussian, the outgoing messages of any node with a log-density, and of any deterministic function, can be computed numerically. "Gaussian" is meant broadly here:
 
-- a variable with a constrained domain, such as a precision, a rate or a probability, is Gaussian in unconstrained coordinates (log, logit), read from its prior's support. The posterior is reported on the original domain, a log-normal for a precision;
-- a finite discrete variable stays categorical, its expectations exact sums;
-- a deterministic node pulls the message on its output back through its function, towards an input, and pushes its inputs forward, towards its output.
+- A variable with a constrained domain, such as a precision, a rate or a probability, is Gaussian in unconstrained coordinates (log or logit), which are read from the support of its prior. Its posterior is reported on the original domain, for example as a log-normal distribution for a precision.
+- A finite discrete variable stays categorical, and its expectations are exact sums.
+- A deterministic node pulls the message on its output back through its function towards an input, and pushes its inputs forward through the function towards its output.
 
-Out of scope: discrete variables with unbounded support, such as a Poisson count that is not observed, and posteriors with several modes, which one Gaussian cannot represent.
+The approach does not cover discrete variables with unbounded support, such as a Poisson count that is not observed, or posteriors with several modes, which a single Gaussian cannot represent.
 
-An approximation scheme is three independent choices, and each `fallback` scheme makes them:
+An approximation scheme makes three independent choices, and each `fallback` scheme fixes all three:
 
 | Choice | Options |
 |:-------|:--------|
-| How messages combine | each belief projected on its own, or one site per edge against its cavity (expectation propagation, natural-gradient propagation) |
-| The form of a belief | a Gaussian: Laplace's (mode and curvature), the variational one (minimizes `KL(q ‖ p)`), or moment matching; or, with natural-gradient sites, the variational optimum in the variable's own family, such as a Gamma or a Beta |
-| How expectations are computed | exact closed forms, deterministic quadrature, or sampling, through BayesBase's expectation protocol |
+| How messages are combined | each belief is projected separately, or each edge keeps one site fitted against its cavity (expectation propagation, natural-gradient propagation) |
+| The form of a belief | a Gaussian from Laplace's method (mode and curvature), the variational Gaussian (minimizes `KL(q ‖ p)`) or moment matching; with natural-gradient sites, the variational optimum within the variable's own family, such as a Gamma or a Beta |
+| How expectations are computed | closed forms, deterministic quadrature or sampling, through the expectation protocol of BayesBase |
 
 ### [Choosing a scheme](@id inference-undefinedrules-schemes)
 
-| Scheme | Each belief without a closed form | Free energy | Cost | Use it for |
-|:-------|:----------------------------------|:------------|:-----|:-----------|
-| [`LocalLaplace()`](@ref LocalLaplace) | Laplace's Gaussian at the mode of the product, each product on its own | Bethe's, with Laplace's normalizers | the lowest | regression and hierarchical models, a first try |
-| [`LaplacePropagation()`](@ref LaplacePropagation) | one site per edge by Laplace's method, against the rest of the belief | expectation propagation's, not a bound | a site per edge, a few iterations | state-space models and nonlinear transitions; reaches the global Laplace approximation on a chain |
-| [`ExpectationPropagation()`](@ref ExpectationPropagation) | one site per edge by moment matching, against the rest of the belief | expectation propagation's, not a bound | as Laplace propagation, times the quadrature points | state-space models where the posterior's mean and variance matter more than its mode |
-| [`NaturalGradientPropagation()`](@ref NaturalGradientPropagation) | one site per edge in the variable's own family, a Gaussian, a Gamma or a Beta, moved by damped natural-gradient steps | Bethe's with average energies: the negative evidence lower bound on a Gaussian tree with non-conjugate leaves, a diagnostic elsewhere | a site per edge, a few tens of iterations, a quadrature per step | skewed posteriors, positive and bounded variables, mean-field models, the variational Gaussian of a model |
+| Scheme | Beliefs without a closed form | Free energy | Cost | Suited to |
+|:-------|:------------------------------|:------------|:-----|:----------|
+| [`LocalLaplace()`](@ref LocalLaplace) | Laplace approximation at the mode of each product of messages, each product separately | Bethe, with Laplace approximations of the normalizers | lowest | regression and hierarchical models; a first try |
+| [`LaplacePropagation()`](@ref LaplacePropagation) | one site per edge, fitted by Laplace's method against the rest of the belief | expectation propagation, not a bound | a site per edge, a few iterations | state-space models and nonlinear transitions; on a chain it reaches the global Laplace approximation |
+| [`ExpectationPropagation()`](@ref ExpectationPropagation) | one site per edge, fitted by moment matching against the rest of the belief | expectation propagation, not a bound | as Laplace propagation, times the number of quadrature points | state-space models where the posterior mean and variance matter more than the mode |
+| [`NaturalGradientPropagation()`](@ref NaturalGradientPropagation) | one site per edge in the variable's own family (Gaussian, Gamma or Beta), updated by damped natural-gradient steps | Bethe, with average energies: the negative evidence lower bound on a Gaussian tree with non-conjugate leaves, otherwise a diagnostic | a site per edge, a few tens of iterations, a quadrature per step | skewed posteriors, positive and bounded variables, mean-field models, the variational Gaussian of a model |
 
-- **Start with `LocalLaplace()`.** Where it is accurate enough, it is the cheapest.
-- **A skewed posterior**, such as a variance with little data: Laplace's Gaussian sits at the mode, and the variational and moment-matched Gaussians move towards the heavier tail. Under `NaturalGradientPropagation()` a positive variable with a Gamma prior keeps a Gamma posterior.
-- **A message without a Gaussian of its own**, such as one pulled back through a nonlinear transition or observation function, needs the context of the rest of the belief: use a cavity scheme. Laplace's approximation of each belief on its own can lose track there, as a filter does at a turning point.
-- **The free energy.** Only `NaturalGradientPropagation()`'s, where the model is a Gaussian tree whose non-conjugate factors are leaves, such as a regression with one latent vector, or under mean field, is a bound on `-log p(y)`. The others approximate it, so comparing models by them is approximate, and a lower value is not always a better fit.
+Start with `LocalLaplace()`, the cheapest scheme, and switch to another one if it is not accurate enough.
 
-`report = true` records what the keyword approximated and how: which posteriors, by which nodes' messages, whether each projection converged, and what is likely to be inaccurate. See [What was approximated: the inference report](@ref user-guide-inference-report).
+On a skewed posterior, such as that of a variance estimated from little data, the Laplace approximation sits at the mode, while the variational and moment-matched Gaussians move towards the heavier tail. Under `NaturalGradientPropagation()`, a positive variable with a Gamma prior keeps a Gamma posterior.
+
+Some messages have no Gaussian approximation on their own, for example a message pulled back through a nonlinear transition or observation function. They can only be approximated in the context of the rest of the belief, so use a cavity scheme for them. Projecting each belief separately with Laplace's method can lose track in such models, as a filter can at a turning point.
+
+Only the free energy of `NaturalGradientPropagation()` is a bound on `-log p(y)`, and only when the model is a Gaussian tree whose non-conjugate factors are leaves, such as a regression with one latent vector, or under mean field. The free energies of the other schemes approximate `-log p(y)`, so model comparison based on them is approximate too, and a lower value does not always mean a better fit.
+
+With `report = true`, `infer` records which posteriors were approximated, which nodes' messages formed them, whether each projection converged, and which parts of the result are likely to be inaccurate. See [What was approximated: the inference report](@ref user-guide-inference-report).
 
 ### [Laplace's approximation of each belief](@id inference-undefinedrules-laplace)
 
-The projection reads a variable's domain from its prior's `minimum` and `maximum`, so the prior says them:
+The projection reads the domain of a variable from the `minimum` and `maximum` of its prior, so we define them for `BetaDistribution`:
 
 ```@example inference-undefinedrules
 Base.minimum(::BetaDistribution) = 0.0
@@ -199,16 +202,16 @@ result_laplace = infer(
 mean(result_laplace.posteriors[:p]), std(result_laplace.posteriors[:p])
 ```
 
-The posterior of `p` is a logit-normal distribution, a Gaussian in logit coordinates pushed forward onto the unit interval. Its mean is that of the exact posterior, `Beta(1 + 307, 1 + 693)` by conjugacy, to a relative `1e-3`. A rule that exists still takes precedence over the fallback, and a closed form passes the projection, so a conjugate model is inferred as without the keyword.
+The posterior of `p` is a logit-normal distribution: a Gaussian in logit coordinates, mapped onto the unit interval. Its mean matches the mean of the exact posterior, `Beta(1 + 307, 1 + 693)`, to a relative tolerance of `1e-3`.
 
-`LocalLaplace()` sets four things, each of which the options can set instead:
+`LocalLaplace()` sets four options. Each of them can also be set directly, and an option set explicitly takes precedence over the scheme:
 
-- the rule fallback, `DeltaMessagePassingRules.ExpectationRuleFallback()`, the option `rulefallback`. It sends a node's expected log-density, `x ↦ E_q[log f(x, ·)]` over every other input. It also serves Delta nodes without an approximation method, joint marginals and average energies, so the free energy is available;
-- the default form constraint, `DeltaMessagePassingRules.LaplaceForm()`, the option `default_form_constraint`. It projects every belief with no closed form by Laplace's approximation, in the unconstrained coordinates of the variable's domain, and leaves closed forms as they are. A message whose product has no mode, such as a likelihood's message alone, is left as it is, `LaplaceForm(nomode = :leave)`, so that an exact rule downstream is never fed a Gaussian Laplace did not find;
-- the expectation backend, `context = (expectation = …,)`. By default, the backends loaded in the session, frozen once per call of `infer` into a type-stable router that takes exact ones first: ExpectationApproximations' quadrature rules, which RxInfer loads, and any other package's that registers its own. `LocalLaplace(expectation = ExpectationApproximations.EADefault())` pins one;
-- the initialization, [`FromPriors`](@ref), which starts every variable the `initialization` leaves out from its prior. See [Initialization from priors](@ref initialization-from-priors).
+- The rule fallback (option `rulefallback`) is `DeltaMessagePassingRules.ExpectationRuleFallback()`. Its message is the expected log-density of the node, `x ↦ E_q[log f(x, ·)]`, with the expectation taken over all other inputs. It also computes the messages of Delta nodes without an approximation method, joint marginals and average energies, so the free energy can be computed.
+- The default form constraint (option `default_form_constraint`) is `DeltaMessagePassingRules.LaplaceForm()`. It replaces every belief that has no closed form by its Laplace approximation, computed in the unconstrained coordinates of the variable's domain, and leaves closed forms unchanged. A message whose product has no mode, such as the message of a single likelihood, is left as it is (`LaplaceForm(nomode = :leave)`), so that exact rules downstream do not receive a Gaussian that Laplace's method could not compute.
+- The expectation backend (option `context = (expectation = …,)`) defaults to the backends loaded in the session: the quadrature rules of ExpectationApproximations, which RxInfer loads, and the backends of any other package that registers them. Each call of `infer` collects them once into a type-stable router that tries exact backends first. `LocalLaplace(expectation = ExpectationApproximations.EADefault())` fixes the backend instead.
+- The initialization strategy is [`FromPriors`](@ref), which initializes every variable that `initialization` leaves out from its prior. See [Initialization from priors](@ref initialization-from-priors).
 
-The same inference with the options:
+The same inference with the options set explicitly:
 
 ```julia
 using ExpectationApproximations
@@ -237,44 +240,46 @@ RxInfer.with_specification
 
 ### [Cavity propagation: Laplace propagation and expectation propagation](@id inference-undefinedrules-propagation)
 
-`LocalLaplace()` projects each belief of a variable separately: the message to
-each neighbor and the marginal are each a product of messages, projected on its own. A message
-with no closed form, such as a likelihood's, is then approximated once per product, each time in
-a different context. The beliefs disagree with one another, and a message that has no Gaussian of
-its own, such as one pulled back through a nonlinear function, cannot be projected at all.
+`LocalLaplace()` projects each belief of a variable separately. The message to each neighbor and
+the marginal are products of messages, and each product is projected on its own. A message with
+no closed form, such as a likelihood message, is therefore approximated once for every product it
+enters, each time in a different context. The resulting beliefs do not agree with one another,
+and a message that has no Gaussian approximation by itself, such as one pulled back through a
+nonlinear function, cannot be projected at all.
 
 `fallback = LaplacePropagation()` and `fallback = ExpectationPropagation()` approximate each such
-message once, against its context.
-- Every random variable keeps one site per edge: the edge's message times its cavity, projected,
-  divided by the cavity.
-- The cavity is the product of the other edges' sites, which is the variable's message out on that
-  edge.
-- Every belief of the variable is then a product of sites, one Gaussian seen from each edge, so
-  the beliefs agree. A message that has a closed form is its own site, so exact rules and
-  conjugate products are unchanged.
-- The projection is Laplace's method for `LaplacePropagation()` and moment matching for
-  `ExpectationPropagation()`, with Gauss–Hermite points on the tilted density's own Laplace
-  approximation. Points placed on the cavity instead would miss a message much sharper than it.
-  `ExpectationPropagation(backend = SphericalRadialCubature())`, from ExpectationApproximations,
-  takes 2d points in d dimensions instead of a product grid of `points`ᵈ.
-- A deterministic node's message towards its output is projected the same way, against the
-  output's cavity.
-- A node with several random inputs sends each of them belief propagation's message, the node's
-  factor integrated against the other inputs' messages, and the input's site is its block of
-  their joint projection.
+message once, in the context of the rest of the variable's belief. Every random variable keeps
+one site per edge. The site of an edge is the edge's message multiplied by its cavity, projected,
+and divided by the cavity again. The cavity of an edge is the product of the sites of the
+variable's other edges, which is also the message the variable sends on that edge. Every belief
+of the variable is then a product of the same sites, so the beliefs agree. A message that has a
+closed form is its own site, so exact rules and conjugate products are unchanged.
 
-This is expectation propagation (Minka, 2001) with one Gaussian site per variable and node: for a
-node of one variable, such as an observation, it is expectation propagation exactly. Under
-Laplace's method in place of moment matching, it is Laplace propagation (Smola, Vishwanathan and
-Eskin, 2003). The sites live at the variables, not in the nodes, so rules and rule matching are
-unchanged, and a node with a rule of its own, such as Probit's expectation propagation rule,
-takes part as it is.
+`LaplacePropagation()` projects with Laplace's method, and `ExpectationPropagation()` with moment
+matching. Moment matching uses Gauss–Hermite points placed on the Laplace approximation of the
+tilted density, the message times the cavity. Points placed on the cavity would miss a message
+that is much sharper than the cavity. `ExpectationPropagation(backend = SphericalRadialCubature())`,
+with the backend from ExpectationApproximations, uses 2d points in d dimensions in place of a
+product grid of `points`ᵈ points.
 
-**Initial messages.** An initial message, `μ(x)` in [`@initialization`](@ref), is also each
-edge's first cavity, while the variable's other edges have no site. A variable whose edges all
-carry messages without a closed form needs one to start: each such message waits for a cavity,
-which only another edge's site gives. So does a loop through nodes with several random inputs, as
-in loopy belief propagation. The fixed point does not depend on it.
+The message of a deterministic node towards its output is projected the same way, against the
+cavity of the output. A node with several random inputs sends each of them the belief propagation
+message: the node's factor integrated against the messages of the other inputs. The site of each
+input is then its block of the joint projection.
+
+The method is expectation propagation (Minka, 2001) with one Gaussian site per pair of variable
+and node. For a node connected to a single variable, such as an observation, it is standard
+expectation propagation. With Laplace's method in place of moment matching, it is Laplace
+propagation (Smola, Vishwanathan and Eskin, 2003). The variables keep the sites, so the rules and
+rule matching are unchanged, and a node with its own rule, such as the expectation propagation
+rule of the `Probit` node, takes part as it is.
+
+An initial message, `μ(x)` in [`@initialization`](@ref), is used as the first cavity of each edge
+while the variable's other edges have no site yet. A variable whose edges all carry messages
+without a closed form needs an initial message to start: each of these messages waits for a
+cavity, and only a site on another edge can provide one. A loop through nodes with several random
+inputs, as in loopy belief propagation, also needs one. The fixed point does not depend on the
+initial message.
 
 ```julia
 result = infer(
@@ -286,26 +291,27 @@ result = infer(
 )
 ```
 
-**Iterations and properness.**
-- A site is computed when its edge's message arrives, so each iteration is a sweep over the sites;
-  a chain settles in a few. A message that arrives only once, from a node whose inputs are all
-  constants, has its site projected again each iteration.
-- Sites, cavities and messages may be improper, a Gaussian with a singular or an indefinite
-  precision: an observation through `sin(θ)` says nothing about a velocity, and gives a negative
-  precision where `sin` curves against the cavity. Nothing checks: each is passed as it is computed, in
-  natural parameters, which the Gaussian nodes' rules take.
+A site is computed when the message on its edge arrives, so each iteration is one sweep over the
+sites. On a chain, the sites settle within a few iterations. A message that arrives only once,
+from a node whose inputs are all constants, has its site projected again at each iteration.
 
-**The free energy** is expectation propagation's.
-- A node without rules takes its term from its inbound messages, the cavities, and every other
-  term is Bethe's.
-- It approximates `-log p(y)` at a fixed point, but it is not a bound: a lower value is not a
-  better fit, and it can lie below `-log p(y)`.
-- It is computed once an iteration, in batch and in streaming inference, as Bethe's is, and every
-  way of reading it works as without sites: the stream, the histories, the
-  `OnFreeEnergyUpdateEvent` callbacks and [`StopEarlyIterationStrategy`](@ref).
-- The beliefs settle only to the precision of their projections, set by their `tol`, so the free
-  energy keeps moving by about that much. Give [`StopEarlyIterationStrategy`](@ref) a tolerance
-  well above it, or it never stops early.
+Sites, cavities and messages may be improper, that is, Gaussians with a singular or indefinite
+precision. For example, an observation through `sin(θ)` carries no information about a velocity,
+and gives a negative precision where `sin` curves against the cavity. Properness is not checked:
+each site, cavity and message is passed on as computed, in natural parameters, which the rules of
+the Gaussian nodes accept.
+
+The free energy is that of expectation propagation. A node without rules contributes a term
+computed from its inbound messages, the cavities, and all other terms are the Bethe terms. At a
+fixed point it approximates `-log p(y)`, but it is not a bound: a lower value does not mean a
+better fit, and the value can lie below `-log p(y)`. It is computed once per iteration, in batch
+and in streaming inference, like the Bethe free energy, and it can be read in the same ways: the
+stream, the histories, the `OnFreeEnergyUpdateEvent` callbacks and
+[`StopEarlyIterationStrategy`](@ref).
+
+The beliefs settle only to the precision of their projections, set by `tol`, so the free energy
+keeps changing by about that much. Give [`StopEarlyIterationStrategy`](@ref) a tolerance well
+above it, or it will not stop early.
 
 ```@docs
 LaplacePropagation
@@ -317,29 +323,35 @@ RxInfer.cavity_free_energy
 
 ### [Natural-gradient propagation](@id inference-undefinedrules-ngmp)
 
-`fallback = NaturalGradientPropagation()` keeps the sites, one per edge against its cavity, and the
-messages of the cavity schemes, belief propagation's. It changes two things (Lukashchuk et al.,
-2026):
-- **A site lives in the variable's own family**, the family of its cavity: a Gaussian, a Gamma,
-  a Beta, any exponential family of one dimension. A conjugate message of that family is its own
-  site, so a positive variable with a Gamma prior keeps a Gamma posterior.
-- **A site moves by a damped natural-gradient step** at each sweep, rather than to a projection.
-  Its target is `η⋆ = G(q)⁻¹ Cov_q[T, ℓ]`, with `ℓ` the edge's log-message, `q` the variable's
-  marginal, `T` its family's sufficient statistics and `G` their Fisher information, in natural
-  parameters: the gradient of `E_q[ℓ]` in the mean parameters of `q`. The step is the heavy ball
-  `v ← βv + α(η⋆ − η)`, `η ← η + v`, with `alpha = 0.5` and `beta = 0.2` by default, halved until
-  the marginal is proper.
+`fallback = NaturalGradientPropagation()` uses the same sites as the cavity schemes, one per edge
+and fitted against the cavity, and the same belief propagation messages. It differs from them in
+two ways (Lukashchuk et al., 2026).
 
-At a fixed point each site is its target, and each marginal a stationary point of the variational
-free energy over its family. Under Gaussian sites this is conjugate-computation variational
-inference (Khan and Lin, 2017): the variational Gaussian, the one that minimizes `KL(q ‖ p)` of
-the joint, for a model with one latent variable. A belief with no sites, of a variable with one
-connection or whose cavity is in no family, is projected onto its variational Gaussian,
+First, a site belongs to the family of the variable's cavity: a Gaussian, a Gamma, a Beta or
+another one-dimensional exponential family. A conjugate message of that family is its own site, so
+a positive variable with a Gamma prior keeps a Gamma posterior.
+
+Second, at each sweep a site moves by a damped natural-gradient step, where the cavity schemes
+replace it by a projection. The target of the step is `η⋆ = G(q)⁻¹ Cov_q[T, ℓ]`, where `ℓ` is the
+log of the edge's message, `q` is the marginal of the variable, `T` are the sufficient statistics
+of its family and `G` is their Fisher information. In natural parameters, `η⋆` is the gradient of
+`E_q[ℓ]` with respect to the mean parameters of `q`. The step is a heavy-ball update,
+`v ← βv + α(η⋆ − η)`, `η ← η + v`, with `alpha = 0.5` and `beta = 0.2` by default, and it is
+halved until the marginal is proper.
+
+At a fixed point, each site equals its target, and each marginal is a stationary point of the
+variational free energy over its family. With Gaussian sites, the method is
+conjugate-computation variational inference (Khan and Lin, 2017). For a model with one latent
+variable, it finds the variational Gaussian, the Gaussian that minimizes `KL(q ‖ p)` with respect
+to the joint distribution. A belief without sites, of a variable with a single connection or whose
+cavity is in no supported family, is projected onto its variational Gaussian with
 `DeltaMessagePassingRules.VariationalForm`, in the unconstrained coordinates of its domain.
 
-Here the Beta prior of `p` is a distribution, so its message is a Beta, and every Bernoulli
-message, raw, takes a Beta site. The Bernoulli log-likelihood is of the Beta family, so each site
-reaches it exactly, and the posterior is the conjugate one:
+In the example below, the prior of `p` is `Beta` from Distributions.jl, so its message is a Beta
+distribution. The `BernoulliDistribution` nodes have no rules and send raw messages, log-densities
+without a closed form, and these get Beta sites. The Bernoulli log-likelihood is linear in the
+sufficient statistics of the Beta family, so each site reaches it exactly and the posterior is the
+conjugate one:
 
 ```@example inference-undefinedrules
 result_ngmp = infer(
@@ -355,43 +367,48 @@ posterior_ngmp = last(result_ngmp.posteriors[:p])
 posterior_ngmp, Beta(1 + count(dataset), 1 + length(dataset) - count(dataset))
 ```
 
-**Iterations.** A site moves one step per sweep, so give `iterations`, a few tens. The report
-says whether each edge's last step had settled to `tol`, and warns with `:sites_not_converged`
-where it had not. A raw message's first step starts from the flat site, against its cavity, which
-must be proper: a prior, or an initial message `μ(x)` for a variable whose edges are all raw. That
-includes a filter's predicted state through a nonlinear transition, `x_pred := f(x_prev)` before
-`x ~ N(x_pred, Q)`: nothing asks for the message back towards it, so its pushforward has no cavity
-until `μ(x_pred)` gives it one. A variable's family is that of its prior or its initial message,
-never of the order in which its messages arrive. In streaming inference, each data update's `iterations` move the sites on from
-where the last update left them: give each update enough sweeps for its sites to settle.
+A site moves one step per sweep, so set `iterations` to a few tens. The report says whether the
+last step on each edge had settled to `tol`, and warns with `:sites_not_converged` where it had
+not. The first step for a raw message starts from a flat site and needs a proper cavity: a prior,
+or an initial message `μ(x)` for a variable whose edges all carry raw messages. This includes the
+predicted state of a filter with a nonlinear transition, `x_pred := f(x_prev)` followed by
+`x ~ N(x_pred, Q)`. Nothing requests the message from `x ~ N(x_pred, Q)` back towards `x_pred`,
+so the pushforward towards `x_pred` has no cavity until `μ(x_pred)` provides one. The family of a
+variable is that of its prior or of its initial message, and does not depend on the order in which
+its messages arrive. In streaming inference, the `iterations` of each data update continue from
+the sites that the previous update left, so give each update enough sweeps for its sites to
+settle.
 
-**Non-Gaussian sites** come from the messages the cavity schemes send: a node's log-density, a
-deterministic node's pushforward, the log-normal of `exp` towards a Gamma, belief propagation's
-message of a node with several Gaussian inputs, or a closed message of another family. A target in
-a Gaussian family uses 16 Gauss–Hermite points per dimension, and in another family 128
+Sites in families other than the Gaussian are fitted to the same messages that the cavity schemes
+send: the log-density of a node, the pushforward of a deterministic node, such as the log-normal
+message of `exp` towards a Gamma variable, the belief propagation message of a node with several
+Gaussian inputs, or a closed-form message of another family. A target in a Gaussian family is
+computed with 16 Gauss–Hermite points per dimension, and a target in another family with 128
 Gauss–Legendre points in the unconstrained coordinate of its domain.
 
-**Closed-form targets.** Load [ClosedFormExpectations](https://github.com/biaslab/ClosedFormExpectations.jl)
-next to RxInfer, `using ClosedFormExpectations`, and a target is in closed form, without quadrature,
-wherever that package has one for the message and the variable's family. That includes the
-messages above whose log-density is a distribution's: a Poisson count's message pulled back through
-`exp` towards its log-rate, at a Gaussian; a log-normal, at a Gamma; a Laplace likelihood, at a
-Gaussian, whose kink quadrature resolves only slowly. Elsewhere the quadrature is used, so nothing
-else changes; on smooth messages the two agree to about `1e-9`, and the closed form is faster.
-NaturalGradientMessagePassingRules depends on ClosedFormExpectations, so its rules always get
+With [ClosedFormExpectations](https://github.com/biaslab/ClosedFormExpectations.jl) loaded
+(`using ClosedFormExpectations`), a target is computed in closed form, without quadrature,
+wherever that package has a closed form for the message and the variable's family. This covers
+several of the messages above whose log-density is that of a distribution: the message of a
+Poisson count pulled back through `exp` towards its log-rate, with a Gaussian site; a log-normal
+message, with a Gamma site; and a Laplace likelihood, with a Gaussian site, whose kink makes
+quadrature converge slowly. Other targets still use quadrature. On smooth messages, the closed form and
+the quadrature agree to about `1e-9`, and the closed form is faster.
+NaturalGradientMessagePassingRules depends on ClosedFormExpectations, so its rules always use
 these closed forms.
 
-**The free energy** is Bethe's, with the average energy `-E_q[log f]` of each node without rules
-under the marginals, not expectation propagation's: its stationary point is the fixed point. On a
-Gaussian tree whose only non-conjugate factors are leaves, such as a regression, it is the
-negative evidence lower bound; elsewhere it is a diagnostic, which need not decrease from one
-iteration to the next.
+The free energy is the Bethe free energy, in which each node without rules contributes its average
+energy `-E_q[log f]` under the marginals. Its stationary point is the fixed point of the
+iterations. On a Gaussian tree whose only non-conjugate factors are leaves, such as a regression,
+it is the negative evidence lower bound. Elsewhere it is a diagnostic, and it need not decrease
+from one iteration to the next.
 
-**Limits.** The momentum is carried from one marginal to the next without the vector transport of
-information geometry, and the iteration has no convergence guarantee: the defaults are damped,
-and the halving keeps every marginal proper on long chains. Towards an input of a node whose other
-inputs are not all Gaussian messages or point masses, such as a Gamma precision, the message is
-the expected log-density, and one step on it is non-conjugate variational message passing.
+The momentum is carried from one marginal to the next without the vector transport of information
+geometry, and the iteration has no convergence guarantee. The default `alpha` and `beta` damp the
+steps, and halving a step keeps every marginal proper on long chains. When the other inputs of a
+node are not all Gaussian messages or point masses, for example when one of them is a Gamma
+precision, the message towards an input is the expected log-density, and a step on it is a step of
+non-conjugate variational message passing.
 
 ```@docs
 NaturalGradientPropagation
@@ -400,19 +417,20 @@ RxInfer.NaturalGradientSitePolicy
 
 ### [Limits](@id inference-undefinedrules-limits)
 
-- **A node with several random inputs** sends belief propagation's message under the cavity
-  schemes only when its other inputs are Gaussian messages or point masses. An input with another
-  message, such as a Gamma precision, or one that comes as a mean-field marginal, still gets the
-  expected log-density, an approximation of that message. The report flags it as
-  `:expectation_over_messages`.
-- **Laplace and expectation propagation's sites are Gaussian.** A variable whose belief is
-  another family, such as a Gamma, has its beliefs projected per product, as under
-  `LocalLaplace()`; `NaturalGradientPropagation()` gives it sites of its own family.
-- **Laplace and expectation propagation's sites are not damped.** On the models tried, sweeping
-  the sites as their messages arrive converged without it. Natural-gradient sites are damped.
-- **Laplace's method is mode-seeking.** On a skewed posterior it sits at the mode, under
-  `LocalLaplace()` and `LaplacePropagation()` alike; the variational and moment-matched Gaussians
-  do not.
+- Under the cavity schemes, a node with several random inputs sends the belief propagation
+  message only when its other inputs are Gaussian messages or point masses. When another input
+  carries a different message, such as a Gamma precision, or arrives as a mean-field marginal, the
+  node sends the expected log-density instead, which approximates the belief propagation message.
+  The report flags this as `:expectation_over_messages`.
+- The sites of Laplace propagation and expectation propagation are Gaussian. The beliefs of a
+  variable in another family, such as a Gamma, are projected product by product, as under
+  `LocalLaplace()`. `NaturalGradientPropagation()` gives such a variable sites in its own family.
+- The sites of Laplace propagation and expectation propagation are not damped. On the models
+  tried, updating the sites as their messages arrive converged without damping. Natural-gradient
+  sites are damped.
+- Laplace's method is centered at the mode. On a skewed posterior, its Gaussian sits at the mode
+  under both `LocalLaplace()` and `LaplacePropagation()`, while the variational and moment-matched
+  Gaussians move away from it.
 
 ### [References](@id inference-undefinedrules-references)
 
@@ -426,7 +444,7 @@ RxInfer.NaturalGradientSitePolicy
 
 ## [Fusing deterministic transformations with stochastic nodes](@id inference-undefinedrules-fusedelta)
 
-Through a [`Deterministic` or `Delta` node](@ref delta-node-manual), `NodeFunctionRuleFallback` pulls the message on the output back towards an input, but sends the function of the inputs' means towards the output, which loses their uncertainty. Another way, without the universal schemes above, is to combine the deterministic transformation with the stochastic node that follows it, such as a `Gaussian`. For instance, consider a dataset drawn from the `Normal` distribution, where the `mean` parameter has been transformed by a known function, and the true hidden variable is `h`.
+For a [`Deterministic` or `Delta` node](@ref delta-node-manual), `NodeFunctionRuleFallback` pulls the message on the output back towards an input, but towards the output it sends the function evaluated at the means of the inputs, which discards their uncertainty. Besides the universal schemes above, another option is to combine the deterministic transformation with the stochastic node that follows it, such as a `Gaussian`. For instance, consider a dataset drawn from the `Normal` distribution, where the `mean` parameter has been transformed by a known function, and the true hidden variable is `h`.
 
 ```@example fusedelta
 using ExponentialFamily, Distributions, Plots, StableRNGs
@@ -455,7 +473,7 @@ using RxInfer
 end
 ```
 
-Here `known_transformation` is a factor node of its own, a Delta node, whose messages need an approximation method, covered in [a separate section](@ref delta-node-manual), or one of the universal schemes above. Instead, we change the model so that no message passes through a deterministic node.
+Here `known_transformation` becomes a separate Delta node, whose messages need either an approximation method, covered in [a separate section](@ref delta-node-manual), or one of the universal schemes above. Instead, we change the model so that no message passes through a deterministic node.
 
 First, we define our custom transformed `Normal` distribution:
 

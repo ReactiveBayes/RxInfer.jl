@@ -175,11 +175,12 @@ end
 """
     OnFreeEnergyUpdateEvent{M, V} <: ReactiveMP.Event{:on_free_energy_update}
 
-Fires each time the Bethe free energy is computed with `free_energy = true`: once per iteration
-when the data is given once per iteration, in batch inference, and in streaming inference at each
-iteration of each data event, once however many subscribe to the engine's `free_energy` stream. Each term of
-it is reported by the engine as `ReactiveMP.AfterFactorBoundFreeEnergyEvent` (a factor node's)
-and `ReactiveMP.AfterVariableBoundEntropyEvent` (a variable's).
+Fires each time the Bethe free energy is computed with `free_energy = true`. In batch inference,
+it fires once per iteration when the data is given once per iteration. In streaming inference, it
+fires at each iteration of each data event, once per value however many subscribers the engine's
+`free_energy` stream has. Each term of the free energy is reported by the engine as
+`ReactiveMP.AfterFactorBoundFreeEnergyEvent` (a factor node's) and
+`ReactiveMP.AfterVariableBoundEntropyEvent` (a variable's).
 
 # Fields
 - `model::M`: the [`ProbabilisticModel`](@ref) instance

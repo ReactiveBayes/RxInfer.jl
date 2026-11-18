@@ -163,7 +163,7 @@ result = infer(
 
 ### Inference without rules
 
-The coin model is conjugate, so every message has an exact rule. A model without one, such as a logistic regression, runs with one more keyword, `fallback`, which approximates every node that has no exact rule:
+The coin model is conjugate, so every message has an exact rule. For a model without exact rules, such as a logistic regression, add the `fallback` keyword, which approximates every node that has no exact rule:
 
 ```julia
 using LinearAlgebra
@@ -185,7 +185,7 @@ result = infer(
 )
 ```
 
-The schemes are `LocalLaplace()`, `LaplacePropagation()`, `ExpectationPropagation()` and `NaturalGradientPropagation()`, and `report = true` says what was approximated and how. See [Inference without explicit message update rules](https://docs.rxinfer.com/stable/manuals/inference/undefinedrules/) in the documentation.
+The available schemes are `LocalLaplace()`, `LaplacePropagation()`, `ExpectationPropagation()` and `NaturalGradientPropagation()`. With `report = true`, the result also records what was approximated and how. See [Inference without explicit message update rules](https://docs.rxinfer.com/stable/manuals/inference/undefinedrules/) in the documentation.
 
 # Where to go next?
 

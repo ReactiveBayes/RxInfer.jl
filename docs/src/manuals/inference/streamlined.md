@@ -518,7 +518,7 @@ Calls after the `RxInfer.start()` function, if `autostart` is set to `true`. Acc
 ```julia
 on_free_energy_update(event::OnFreeEnergyUpdateEvent)
 ```
-Calls each time the Bethe free energy is computed, with `free_energy = true`: at each iteration of each observation event, once, however many subscribe to the engine's `free_energy` stream. Access the model and the value via `event.model` and `event.value`.
+Calls each time the Bethe free energy is computed with `free_energy = true`, that is, at each iteration of each observation event. It is called once for each value, however many subscribers the engine's `free_energy` stream has. Access the model and the value via `event.model` and `event.value`.
 
 ---
 

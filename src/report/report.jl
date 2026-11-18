@@ -3,19 +3,19 @@ export InferenceReport
 """
     InferenceReport
 
-What `infer(...; report = true)` records about an inference, a section per subject, each read as a
-property:
-- `result.report.approximations`, the [`ApproximationsReport`](@ref): what was computed exactly
-  and what was approximated, and how;
+The record of an inference that `infer(...; report = true)` collects. It has one section per
+subject, each read as a property:
+- `result.report.approximations`, the [`ApproximationsReport`](@ref): what was computed exactly,
+  what was approximated, and how;
 - `result.report.timings`, the [`TimingsReport`](@ref): where the time went.
 
-`report` names the sections to record, `true` for all of them: `report = (:approximations,)`.
-[`RxInfer.diagnostics`](@ref) lists the parts most likely to be inaccurate, and
-[`report_tables`](@ref) gives each section's tables, which the display prints, with
-PrettyTables.jl when it is loaded.
+The `report` keyword selects the sections to record, for example `report = (:approximations,)`;
+`true` records all of them. [`RxInfer.diagnostics`](@ref) lists the parts most likely to be
+inaccurate, and [`report_tables`](@ref) returns the tables of each section, which the display
+prints, with PrettyTables.jl when it is loaded.
 
-The report is collected from the engine's events, and costs nothing when off, the default. Read it
-from the result of a batch inference, `result.report`, and from the engine of a streaming one,
+The report is collected from the events of the engine. It is off by default, and then these events
+are not created. For a batch inference, read it as `result.report`; for a streaming inference, as
 `engine.model.metadata[:report]`.
 """
 struct InferenceReport{S <: NamedTuple}
@@ -70,9 +70,9 @@ end
 """
     RxInferReportCallbacks(report::InferenceReport)
 
-The callbacks `infer(...; report = …)` records the `report` with: each event goes to the sections
-that listen to it, and the report is saved in the model's metadata, `model.metadata[:report]`,
-once the model is created.
+The callbacks with which `infer(...; report = …)` records `report`. Each event goes to the
+sections that listen to it. Once the model is created, the report is stored in the model's
+metadata as `model.metadata[:report]`.
 """
 struct RxInferReportCallbacks{R <: InferenceReport}
     report::R

@@ -3,13 +3,13 @@ export ReportTable, report_tables
 """
     ReportTable(title, header, rows; groups = Pair{Int, String}[], levels = fill(:none, length(rows)))
 
-A table of an inference report, plain strings ready to print or to read: a `title`, the column
-`header`, the `rows`, each a vector of strings as long as the header, the row groups, `groups`, as
-`first_row => label` pairs, and a `level` for each row, `:warning`, `:note` or `:none`, which a
-display may highlight.
+A table of an inference report, as plain strings ready to print or to read. It has a `title`,
+the column `header`, the `rows` (each a vector of strings as long as the header), the row groups
+`groups` as `first_row => label` pairs, and a level for each row in `levels`, `:warning`, `:note`
+or `:none`, which a display may highlight.
 
-[`report_tables`](@ref) gives a section's tables; [`RxInfer.render_report_table`](@ref) prints one,
-as aligned text, or with PrettyTables.jl when it is loaded.
+[`report_tables`](@ref) returns the tables of a section; [`RxInfer.render_report_table`](@ref)
+prints one as aligned text, or with PrettyTables.jl when it is loaded.
 """
 struct ReportTable
     title::String
@@ -29,17 +29,18 @@ Base.isempty(table::ReportTable) = isempty(table.rows)
 """
     report_tables(section) -> Vector{ReportTable}
 
-The tables a section of an [`InferenceReport`](@ref) is shown as, plain data: for the
-[`ApproximationsReport`](@ref), the warnings, the approximated posteriors with the messages that
-formed them, and the joints and energies the rule fallback computed; for the
-[`TimingsReport`](@ref), where the time went. A table with nothing to say is left out.
+Return the tables that show a section of an [`InferenceReport`](@ref), as plain data. For the
+[`ApproximationsReport`](@ref), these are the warnings, the approximated posteriors with the
+messages that formed them, and the joints and energies that the rule fallback computed. For the
+[`TimingsReport`](@ref), they show where the time went. Tables without rows are left out.
 """
 function report_tables end
 
 """
     RxInfer.report_summary(section) -> String
 
-The line a section of an [`InferenceReport`](@ref) starts with, such as
+Return the summary line that starts the display of a section of an [`InferenceReport`](@ref),
+such as
 `"Approximations: 1 of 3 posteriors approximated, no warnings"`.
 """
 function report_summary end
@@ -47,9 +48,9 @@ function report_summary end
 """
     RxInfer.render_report_table(io::IO, table::ReportTable)
 
-Print `table`: with PrettyTables.jl when it is loaded, rounded borders, row groups and warnings in
-red, and as aligned text otherwise. The display of an [`InferenceReport`](@ref) prints its tables
-with it.
+Print `table`. With PrettyTables.jl loaded, the table has rounded borders, row groups and
+warnings in red; otherwise it is printed as aligned text. The display of an
+[`InferenceReport`](@ref) prints its tables with this function.
 """
 render_report_table(io::IO, table::ReportTable) = render_report_table_with(render_report_table, io, table)
 

@@ -11,9 +11,10 @@ Must be used in combination with the `score` function of `ReactiveMP.jl`.
 - `::Type{T}`: a type of the counting real number, e.g. `Float64`. Set to `Real` by default, otherwise the inference procedure is not automatically differentiable.
 
 # Keywords
-- `cavity`: the free energy under cavity propagation, the `site_policy` option: a node without
-  rules takes its term from its cavities, `ReactiveMP.FactorBoundFreeEnergy(cavity = true)`. The
-  sums and the stream are as without sites, one value per iteration.
+- `cavity`: whether to compute the free energy of cavity propagation (the `site_policy` option),
+  in which a node without rules takes its term from its cavities,
+  `ReactiveMP.FactorBoundFreeEnergy(cavity = true)`. The sums and the stream are the same as
+  without sites, with one value per iteration.
 """
 struct BetheFreeEnergy{T}
     cavity::Bool

@@ -111,19 +111,19 @@ init = @initialization begin
 end
 ```
 
-`initialization` also takes a strategy that initializes what a specification leaves out, such as [`FromPriors`](@ref), which starts each variable from its prior; see [Initialization from priors](@ref initialization-from-priors).
+`initialization` also accepts a strategy that initializes the variables a specification leaves out, such as [`FromPriors`](@ref), which initializes each variable from its prior; see [Initialization from priors](@ref initialization-from-priors).
 
 - ### `fallback`
 
 Also read the [Universal inference](@ref inference-undefinedrules-universal) section.
 
-How to approximate wherever the model has no exact rules, with no rule, method or initialization to write. The keyword takes a scheme:
+The `fallback` keyword takes a scheme that approximates the messages wherever the model has no exact rules, so no rules, approximation methods or initialization need to be written. The schemes are:
 
-- `LocalLaplace()`, Laplace's approximation of each belief on its own: the cheapest;
-- `LaplacePropagation()` and `ExpectationPropagation()`, cavity propagation: each message without a closed form is approximated once, against the rest of its variable's belief, which suits nonlinear state-space models;
-- `NaturalGradientPropagation()`, natural-gradient propagation: a site per edge in the variable's own family, a Gaussian, a Gamma or a Beta, moved by damped natural-gradient steps to the variational optimum over that family.
+- `LocalLaplace()`, the Laplace approximation of each belief separately, which is the cheapest;
+- `LaplacePropagation()` and `ExpectationPropagation()`, cavity propagation: each message without a closed form is approximated once, in the context of the rest of the variable's belief, which suits nonlinear state-space models;
+- `NaturalGradientPropagation()`, natural-gradient propagation: each edge keeps a site in the variable's own family, such as a Gaussian, a Gamma or a Beta, and the sites move by damped natural-gradient steps towards the variational optimum over that family.
 
-A scheme sets the rule fallback, the default form constraint of every random variable, the expectation backend, the initialization strategy, [`FromPriors`](@ref), and, for the schemes with sites, the site policy, each unless `options` or `initialization` set it. A node with a rule runs it, so a conjugate model is inferred as without the keyword. [Choosing a scheme](@ref inference-undefinedrules-schemes) compares them.
+A scheme sets the rule fallback, the default form constraint of every random variable, the expectation backend, the initialization strategy ([`FromPriors`](@ref)) and, for the schemes with sites, the site policy. Values given in `options` or `initialization` take precedence. Nodes with rules still use them, so a conjugate model gives the same result as without the keyword. [Choosing a scheme](@ref inference-undefinedrules-schemes) compares the schemes.
 
 - ### `algorithm`
 
@@ -345,7 +345,7 @@ Pass `nothing` to disable any checks.
 RxInfer.ReactiveMPInferenceOptions
 ```
 
-`stream_postprocessors = ReactiveMP.DampingPostprocessor(β)` damps the messages of every node: each is mixed with the previous message on its edge, `β` of the previous and `1 - β` of the new one in natural parameters. Damping keeps the fixed point of the iterations and takes smaller steps towards it, which can make a schedule that oscillates converge:
+`stream_postprocessors = ReactiveMP.DampingPostprocessor(β)` damps the messages of every node. Each new message is mixed with the previous message on its edge in natural parameters, with weight `β` for the previous message and `1 - β` for the new one. Damping does not change the fixed point of the iterations, but it takes smaller steps towards it, which can make an oscillating schedule converge:
 
 ```@example inference-overview-damping
 using RxInfer, StableRNGs #hide
@@ -419,7 +419,7 @@ Automatically changes the default value of the `postprocess` argument to `NoopPo
 
 - ### `report`
 
-`report = true` records an [`InferenceReport`](@ref) of the inference, read as `result.report`, or `engine.model.metadata[:report]` for streaming inference. Its section `result.report.approximations` says which posteriors were approximated and how, which nodes ran exact rules and which the rule fallback, and what is likely to be inaccurate ([`RxInfer.diagnostics`](@ref)); its section `result.report.timings` where the time went. The report is collected from the engine's events, which are not built when it is off, the default. `report = (:approximations,)` names the sections to record. See [What was approximated: the inference report](@ref user-guide-inference-report).
+`report = true` records an [`InferenceReport`](@ref) of the inference, available as `result.report`, or as `engine.model.metadata[:report]` for streaming inference. The section `result.report.approximations` says which posteriors were approximated and how, which nodes used exact rules and which used the rule fallback, and which parts are likely to be inaccurate ([`RxInfer.diagnostics`](@ref)). The section `result.report.timings` shows where the time went. The report is collected from the events of the engine. It is off by default, and then these events are not created. `report = (:approximations,)` selects the sections to record. See [What was approximated: the inference report](@ref user-guide-inference-report).
 
 - ### `postprocess`
 
