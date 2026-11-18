@@ -9,23 +9,24 @@ applies.
 
 ## Features and supported inference scenarios
 
-The delta node supports three approximation methods. Which one fits depends on the nodes around
-the delta node:
+The delta node supports two approximation methods, and a node without a method can run under a
+fallback scheme. Which option fits depends on the nodes around the delta node:
 
 1. **Gaussian nodes**: for a delta node connected only to univariate or multivariate Gaussian
    distributions, use [`Linearization`](@extref MessagePassingRulesApproximations.Linearization)
    or [`Unscented`](@extref MessagePassingRulesApproximations.Unscented).
 2. **Exponential family nodes**: for a delta node connected to other members of the exponential
-   family, use [`CVIProjection`](@extref DeltaMessagePassingRules.CVIProjection).
-3. **Stacked delta nodes**: for delta nodes connected to each other, any of the three methods
-   applies.
+   family, give it no method and run the inference with `fallback = NaturalGradientPropagation()`.
+   This scheme approximates each variable around the node within its own family, such as a Gamma
+   or a Beta (see [Exponential family case](@ref delta-node-exponential-family)).
+3. **Stacked delta nodes**: for delta nodes connected to each other, any of them applies.
 4. **Inverse functions**: when the inverse of `f` is known, `Linearization` and `Unscented` use it.
 
 | Method        | Gaussian nodes | Exponential family nodes | Stacked delta nodes | Inverse functions |
 |---------------|----------------|--------------------------|---------------------|-------------------|
 | Linearization | ✓              | ✗                        | ✓                   | ✓                 |
 | Unscented     | ✓              | ✗                        | ✓                   | ✓                 |
-| CVIProjection | ✓              | ✓                        | ✓                   | ✗                 |
+| no method, `fallback = NaturalGradientPropagation()` | ✓ | ✓              | ✓                   | ✗                 |
 
 The node's [algorithm](@extref MessagePassingRulesBase glossary-algorithm) is
 [`DeltaApproximation`](@extref DeltaMessagePassingRules.DeltaApproximation), which carries the
@@ -148,65 +149,59 @@ end
 result = infer(model = delta_node_example(), algorithm = delta_algorithm, data = (z = 1.0,))
 ```
 
-## Exponential family case
+## [Exponential family case](@id delta-node-exponential-family)
 
 When the delta node is connected to nodes of the exponential family other than Gaussians,
-`Linearization` and `Unscented` do not apply. `CVIProjection` does: it projects the node's
-messages onto members of the exponential family by stochastic optimization. Here is a modified
-example:
+`Linearization` and `Unscented` do not apply. Give the node no method, and run the inference with
+the fallback scheme [`NaturalGradientPropagation`](@ref). Every variable around the node then keeps
+one site per edge in its own family, the family of the rest of its belief. The sites move by damped
+natural-gradient steps towards the variational optimum over that family. Here is a modified
+example, with a Gamma prior on `x` and Bernoulli observations of `tanh(x)`:
 
-!!! note
-    The `CVIProjection` method is available only when the `ExponentialFamilyProjection` package
-    is loaded in the current environment.
-
-```@example delta_node_example_cvi
-using RxInfer, ExponentialFamilyProjection, StableRNGs
+```@example delta_node_example_ngmp
+using RxInfer
 
 @model function delta_node_example1(z)
     x ~ Gamma(shape = 1.0, rate = 1.0)
     y := tanh(x)
     z .~ Bernoulli(y)
 end
-```
 
-`CVIProjection` projects onto the families that you name with `ProjectedTo` in `@constraints`,
-and its rules read the marginal of the output, which needs an initial value:
-
-```@example delta_node_example_cvi
-delta_algorithm = @algorithm begin
-    tanh() -> DeltaApproximation(method = CVIProjection())
-end
-
-delta_constraints = @constraints begin
-    q(x)::ProjectedTo(Gamma)
-    q(y)::ProjectedTo(Beta)
-end
-
-delta_initialization = @initialization begin
-    q(y) = Beta(1.0, 1.0)
-end
-nothing # hide
-```
-
-`CVIProjection` samples. It draws from the random number generator of the engine, which you
-choose with the `context` option of `infer`, here for reproducible results:
-
-```@example delta_node_example_cvi
+observations = [1.0, 1.0, 0.0, 1.0, 1.0, 1.0, 0.0, 1.0]
 result = infer(
-    model          = delta_node_example1(),
-    algorithm      = delta_algorithm,
-    constraints    = delta_constraints,
-    initialization = delta_initialization,
-    data           = (z = [1.0, 1.0, 0.0, 1.0, 1.0, 1.0, 0.0, 1.0],),
-    iterations     = 10,
-    options        = (context = (rng = StableRNG(42),),),
+    model      = delta_node_example1(),
+    data       = (z = observations,),
+    iterations = 50,
+    fallback   = NaturalGradientPropagation(),
 )
 
-(x = result.posteriors[:x][end], y = result.posteriors[:y][end])
+(x = last(result.posteriors[:x]), y = last(result.posteriors[:y]))
 ```
 
-The docstring of [`CVIProjection`](@extref DeltaMessagePassingRules.CVIProjection) explains its
-hyperparameters. Also read the [Non-conjugate Inference](@ref inference-nonconjugate) section.
+The Bernoulli observations send Beta messages towards `y`, so the sites of `y` are Beta
+distributions. The message of the node towards `y`, which is the prior of `x` pushed forward through
+`tanh`, gets a Beta site. The message of the node towards `x`, which is the Beta message pulled back
+through `tanh`, gets a Gamma site, because the prior of `x` is a Gamma. The posteriors are a Gamma
+and a Beta distribution, and their means are close to those of the exact posterior computed on a
+grid:
+
+```@example delta_node_example_ngmp
+grid = range(1e-6, 30; length = 100_000)
+logposterior = [logpdf(Gamma(1.0, 1.0), x) + sum(z == 1 ? log(tanh(x)) : log1p(-tanh(x)) for z in observations) for x in grid]
+weights = exp.(logposterior .- maximum(logposterior))
+weights ./= sum(weights)
+exact = (x = sum(weights .* grid), y = sum(weights .* tanh.(grid)))
+using Test #hide
+@test last(result.posteriors[:x]) isa GammaShapeRate && last(result.posteriors[:y]) isa Beta #hide
+@test isapprox(mean(last(result.posteriors[:x])), exact.x, rtol = 1e-2) #hide
+@test isapprox(mean(last(result.posteriors[:y])), exact.y, rtol = 1e-2) #hide
+(mean(last(result.posteriors[:x])), exact.x), (mean(last(result.posteriors[:y])), exact.y)
+```
+
+The scheme does not sample, and it needs no constraints or initialization, because the sites start
+from the priors. [Natural-gradient propagation](@ref inference-undefinedrules-ngmp) describes the
+scheme. The `CVIProjection` method of DeltaMessagePassingRules, which projected the node's messages
+by sampling, is deprecated in favor of this scheme.
 
 ## Fuse deterministic nodes with stochastic nodes
 

@@ -91,9 +91,11 @@ make test
 ```
 
 !!! note
-    `Project.toml` and `docs/Project.toml` resolve ReactiveMP and its rule packages from a
-    `ReactiveMP.jl` checkout next to this one, through `[sources]`, so `make test` and `make docs`
-    run against it.
+    `make test` and `make docs` take ReactiveMP and its rule packages from the registry. To run
+    the tests against a local `ReactiveMP.jl` checkout, develop it into the package's environment
+    first, for example `julia --project -e 'using Pkg; Pkg.develop(path = "../ReactiveMP.jl")'`;
+    the `Manifest.toml` it writes is not committed. `make devdocs` builds the docs against the
+    core packages in `Pkg.devdir()`.
 
 ### Makefile
 
@@ -101,10 +103,11 @@ make test
 
 - `make help`: Shows help snippet
 - `make test`: Run tests, supports extra arguments
-  - `make test test_args="distributions:normal_mean_variance"` would run tests only from `distributions/test_normal_mean_variance.jl`
-  - `make test test_args="distributions:normal_mean_variance models:lgssm"` would run tests both from `distributions/test_normal_mean_variance.jl` and `models/test_lgssm.jl`
+  - `make test test_args="inference:propagation"` would run tests only from `inference/propagation_tests.jl`
+  - `make test test_args="inference:propagation models:statespace:hmm"` would run tests both from `inference/propagation_tests.jl` and `models/statespace/hmm_tests.jl`
 - `make docs`: Compile documentation. It links the ReactiveMP ecosystem's sites through their
   local builds, so run `make docs-all` in the `ReactiveMP.jl` checkout first.
+- `make devdocs`: Same as `make docs`, with the core packages developed from `Pkg.devdir()`
 - `make check-format`: Check codestyle (Runic), as CI does; `make lint` is the same
 - `make format`: Fix codestyle; this overwrites files
 

@@ -228,9 +228,12 @@ function start(engine::RxInferenceEngine{T}) where {T}
             end
         end
 
-        if !isnothing(engine.fe_actor)
+        # The engine's own subscription to the free energy: it keeps the history and reports each
+        # value to the callbacks, once, however many others subscribe to `engine.free_energy`
+        if !isnothing(engine.fe_source) && (!isnothing(engine.fe_actor) || ReactiveMP.listens(engine.callbacks, OnFreeEnergyUpdateEvent))
             engine.fe_subscription = subscribe!(
-                engine.fe_source, engine.fe_actor
+                report_free_energy(engine.fe_source, engine.model, engine.callbacks),
+                something(engine.fe_actor, void()),
             )
         end
 
@@ -588,6 +591,8 @@ function streaming_inference(;
         data = nothing,
         datastream = nothing,
         initialization = nothing,
+        # How to approximate where the model has no exact rules, a `FallbackScheme`
+        fallback = nothing,
         autoupdates = nothing,
         constraints = nothing,
         meta = nothing,
@@ -666,19 +671,24 @@ function streaming_inference(;
         _options = setcallbacks(_options, callbacks)
     end
 
+    # The fallback scheme fills what the options leave unset, its expectation backend chosen once
+    # among the session's here, before the options reach the model
+    _options = apply_fallback(_options, fallback)
+    _initialization = fallback_initialization(initialization, fallback)
+
     # We create a model with the `GraphPPL` package and insert a certain RxInfer related
     # plugins which include the VI plugin, meta plugin and the ReactiveMP integration plugin
     modelplugins = GraphPPL.PluginsCollection(
         GraphPPL.VariationalConstraintsPlugin(constraints),
         GraphPPL.MetaPlugin(meta),
-        RxInfer.InitializationPlugin(initialization),
+        RxInfer.InitializationPlugin(_initialization),
         RxInfer.ReactiveMPInferencePlugin(_options),
     )
 
     is_free_energy, S = unwrap_free_energy_option(free_energy)
 
     if is_free_energy
-        fe_objective = BetheFreeEnergy(S)
+        fe_objective = BetheFreeEnergy(S; cavity = cavity_free_energy(getsite_policy(_options)))
         modelplugins = modelplugins + ReactiveMPFreeEnergyPlugin(fe_objective)
     end
 
@@ -950,10 +960,13 @@ function available_callbacks(::typeof(streaming_inference))
             :after_marginal_computation,
             :before_marginal_rule_call,
             :after_marginal_rule_call,
+            :before_site_computation,
+            :after_site_computation,
             :before_factor_bound_free_energy,
             :after_factor_bound_free_energy,
             :before_variable_bound_entropy,
             :after_variable_bound_entropy,
+            :on_free_energy_update,
         )
     )
 end
