@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url>
+    <loc>https://docs.rxinfer.com/stable/googlebd9cfe2856e26e83</loc>
+    <lastmod>2025-11-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://docs.rxinfer.com/stable/index</loc>
+    <lastmod>2025-11-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://docs.rxinfer.com/stable/contributing/examples/</loc>
+    <lastmod>2025-11-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://docs.rxinfer.com/stable/contributing/exported-methods/</loc>
+    <lastmod>2025-11-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://docs.rxinfer.com/stable/contributing/guide/</loc>
+    <lastmod>2025-11-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://docs.rxinfer.com/stable/contributing/guidelines/</loc>
+    <lastmod>2025-11-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://docs.rxinfer.com/stable/contributing/new-documentation/</loc>
+    <lastmod>2025-11-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://docs.rxinfer.com/stable/contributing/new-example/</loc>
+    <lastmod>2025-11-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://docs.rxinfer.com/stable/contributing/new-release/</loc>
+    <lastmod>2025-11-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://docs.rxinfer.com/stable/examples/overview/</loc>
+    <lastmod>2025-11-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://docs.rxinfer.com/stable/manuals/comparison/</loc>
+    <lastmod>2025-11-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://docs.rxinfer.com/stable/manuals/debugging/</loc>
+    <lastmod>2025-11-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://docs.rxinfer.com/stable/manuals/faq/</loc>
+    <lastmod>2025-11-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://docs.rxinfer.com/stable/manuals/getting-started/</loc>
+    <lastmod>2025-11-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://docs.rxinfer.com/stable/manuals/how-to-use-rxinfer-from-python/</loc>
+    <lastmod>2025-11-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://docs.rxinfer.com/stable/manuals/inference/autoupdates/</loc>
+    <lastmod>2025-11-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://docs.rxinfer.com/stable/manuals/inference/create-node/</loc>
+    <lastmod>2025-11-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://docs.rxinfer.com/stable/manuals/inference/delta-node/</loc>
+    <lastmod>2025-11-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://docs.rxinfer.com/stable/manuals/inference/initialization/</loc>
+    <lastmod>2025-11-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://docs.rxinfer.com/stable/manuals/inference/meta-specification/</loc>
+    <lastmod>2025-11-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://docs.rxinfer.com/stable/manuals/inference/nonconjugate/</loc>
+    <lastmod>2025-11-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://docs.rxinfer.com/stable/manuals/inference/overview/</loc>
+    <lastmod>2025-11-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://docs.rxinfer.com/stable/manuals/inference/postprocess/</loc>
+    <lastmod>2025-11-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://docs.rxinfer.com/stable/manuals/inference/static/</loc>
+    <lastmod>2025-11-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://docs.rxinfer.com/stable/manuals/inference/static-vs-streamlined/</loc>
+    <lastmod>2025-11-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://docs.rxinfer.com/stable/manuals/inference/streamlined/</loc>
+    <lastmod>2025-11-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://docs.rxinfer.com/stable/manuals/inference/undefinedrules/</loc>
+    <lastmod>2025-11-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://docs.rxinfer.com/stable/manuals/migration-guide-v2-v3/</loc>
+    <lastmod>2025-11-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://docs.rxinfer.com/stable/manuals/model-specification/</loc>
+    <lastmod>2025-11-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://docs.rxinfer.com/stable/manuals/performance-tips/</loc>
+    <lastmod>2025-11-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://docs.rxinfer.com/stable/manuals/rules_and_nodes/</loc>
+    <lastmod>2025-11-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://docs.rxinfer.com/stable/manuals/session_summary/</loc>
+    <lastmod>2025-11-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://docs.rxinfer.com/stable/manuals/sharpbits/overview/</loc>
+    <lastmod>2025-11-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://docs.rxinfer.com/stable/manuals/sharpbits/rule-not-found/</loc>
+    <lastmod>2025-11-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://docs.rxinfer.com/stable/manuals/sharpbits/stack-overflow-inference/</loc>
+    <lastmod>2025-11-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://docs.rxinfer.com/stable/manuals/sharpbits/usage-colon-equality/</loc>
+    <lastmod>2025-11-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://docs.rxinfer.com/stable/manuals/telemetry/</loc>
+    <lastmod>2025-11-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://docs.rxinfer.com/stable/manuals/variational/bethe-free-energy/</loc>
+    <lastmod>2025-11-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://docs.rxinfer.com/stable/manuals/variational/constraints-specification/</loc>
+    <lastmod>2025-11-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url><url>
+    <loc>https://docs.rxinfer.com/stable/manuals/variational/functional-forms/</loc>
+    <lastmod>2025-11-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+</url>
+</urlset>

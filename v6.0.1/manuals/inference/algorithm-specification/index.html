@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Algorithm specification · RxInfer.jl</title><meta name="title" content="Algorithm specification · RxInfer.jl"/><meta property="og:title" content="Algorithm specification · RxInfer.jl"/><meta property="twitter:title" content="Algorithm specification · RxInfer.jl"/><meta name="description" content="Julia package for automated Bayesian inference on a factor graph with reactive message passing"/><meta property="og:description" content="Julia package for automated Bayesian inference on a factor graph with reactive message passing"/><meta property="twitter:description" content="Julia package for automated Bayesian inference on a factor graph with reactive message passing"/><meta property="og:url" content="https://docs.rxinfer.com/stable/manuals/inference/algorithm-specification/"/><meta property="twitter:url" content="https://docs.rxinfer.com/stable/manuals/inference/algorithm-specification/"/><link rel="canonical" href="https://docs.rxinfer.com/stable/manuals/inference/algorithm-specification/"/><script async src="https://www.googletagmanager.com/gtag/js?id=G-X4PH160GMF"></script><script>  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-X4PH160GMF', {'page_path': location.pathname + location.search + location.hash});
+</script><script data-outdated-warner src="../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.63.2/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../search_index.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><link href="../../../assets/theme.css" rel="stylesheet" type="text/css"/><link href="../../../assets/header.css" rel="stylesheet" type="text/css"/><script src="../../../assets/header.js"></script><script src="../../../assets/chat.js"></script><link href="../../../assets/favicon.ico" rel="icon" type="image/x-icon"/><meta name="keywords" content="Julia, Bayesian inference, factor graph, message passing, probabilistic programming, reactive programming, RxInfer">
+<link rel="sitemap" type="application/xml" title="Sitemap" href="https://docs.rxinfer.com/stable/sitemap.xml"></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img class="docs-light-only" src="../../../assets/logo.svg" alt="RxInfer.jl logo"/><img class="docs-dark-only" src="../../../assets/logo-dark.svg" alt="RxInfer.jl logo"/></a><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../../">Home</a></li><li><span class="tocitem">Concepts</span><ul><li><a class="tocitem" href="../../../concepts/probability-distributions/">Probability Distributions</a></li><li><a class="tocitem" href="../../../concepts/bayesian-inference/">Bayesian Inference</a></li><li><a class="tocitem" href="../../../concepts/factor-graphs/">Factor Graphs</a></li><li><a class="tocitem" href="../../../concepts/message-passing/">Message Passing</a></li><li><a class="tocitem" href="../../../concepts/variational-inference/">Variational Inference</a></li><li><a class="tocitem" href="../../../concepts/constraints-specification/">Constraints Specification</a></li><li><a class="tocitem" href="../../../concepts/reactive-programming/">Reactive Programming</a></li></ul></li><li><span class="tocitem">User guide</span><ul><li><a class="tocitem" href="../../getting-started/">Getting started</a></li><li><a class="tocitem" href="../../comparison/">RxInfer.jl vs. Others</a></li><li><a class="tocitem" href="../../model-specification/">Model specification</a></li><li><input class="collapse-toggle" id="menuitem-3-4" type="checkbox"/><label class="tocitem" for="menuitem-3-4"><span class="docs-label">Variational inference</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../variational/bethe-free-energy/">Bethe Free Energy</a></li><li><a class="tocitem" href="../../variational/constraints-specification/">Constraints specification</a></li><li><a class="tocitem" href="../../variational/functional-forms/">Functional form constraints</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-3-5" type="checkbox"/><label class="tocitem" for="menuitem-3-5"><span class="docs-label">Message passing by hand</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../learning/messages-by-hand/">Messages by hand</a></li><li><a class="tocitem" href="../../learning/vmp-by-hand/">Variational message passing by hand</a></li></ul></li><li><a class="tocitem" href="../../rules_and_nodes/">Understanding Rules</a></li><li><input class="collapse-toggle" id="menuitem-3-7" type="checkbox" checked/><label class="tocitem" for="menuitem-3-7"><span class="docs-label">Inference specification</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../overview/">Overview</a></li><li><a class="tocitem" href="../static/">Static inference</a></li><li><a class="tocitem" href="../streamlined/">Streamline inference</a></li><li><a class="tocitem" href="../static-vs-streamlined/">Static vs. Streamlined</a></li><li><a class="tocitem" href="../initialization/">Initialization</a></li><li class="is-active"><a class="tocitem" href>Algorithm specification</a><ul class="internal"><li><a class="tocitem" href="#An-algorithm-in-the-model"><span>An algorithm in the model</span></a></li><li><a class="tocitem" href="#The-@algorithm-macro"><span>The <code>@algorithm</code> macro</span></a></li><li><a class="tocitem" href="#Selecting-nodes-by-their-variables"><span>Selecting nodes by their variables</span></a></li><li><a class="tocitem" href="#Algorithms-for-nodes-in-submodels"><span>Algorithms for nodes in submodels</span></a></li><li><a class="tocitem" href="#user-guide-algorithm-specification-custom"><span>A custom algorithm</span></a></li></ul></li><li><a class="tocitem" href="../autoupdates/">Auto-updates</a></li><li><a class="tocitem" href="../partial-data/">Partially-referenced (sparse) data</a></li><li><a class="tocitem" href="../callbacks/">Callbacks</a></li><li><a class="tocitem" href="../benchmark-callbacks/">Benchmark callbacks</a></li><li><a class="tocitem" href="../trace-callbacks/">Trace callbacks</a></li><li><a class="tocitem" href="../early-stopping/">Early stopping</a></li><li><a class="tocitem" href="../delta-node/">Deterministic nodes</a></li><li><a class="tocitem" href="../nonconjugate/">Non-conjugate inference</a></li><li><a class="tocitem" href="../undefinedrules/">Undefined message update rules</a></li><li><a class="tocitem" href="../postprocess/">Inference results postprocessing</a></li><li><a class="tocitem" href="../create-node/">Creating your own custom nodes</a></li></ul></li><li><a class="tocitem" href="../../performance-tips/">Performance Tips</a></li><li><a class="tocitem" href="../../faq/">FAQ</a></li><li><a class="tocitem" href="../../debugging/">Debugging</a></li><li><a class="tocitem" href="../../session_summary/">Session summary</a></li><li><a class="tocitem" href="../../telemetry/">Sharing sessions &amp; telemetry</a></li><li><input class="collapse-toggle" id="menuitem-3-13" type="checkbox"/><label class="tocitem" for="menuitem-3-13"><span class="docs-label">Migration guides</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../migration/v5-to-v6/">Migration from v5 to v6</a></li><li><a class="tocitem" href="../../migration/v2-to-v3/">Migration from v2 to v3</a></li><li><a class="tocitem" href="../../migration/v4-to-v5/">Migration from v4 to v5</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-3-14" type="checkbox"/><label class="tocitem" for="menuitem-3-14"><span class="docs-label">Sharp bits of RxInfer</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../sharpbits/overview/">Overview</a></li><li><a class="tocitem" href="../../sharpbits/rule-not-found/">Rule Not Found Error</a></li><li><a class="tocitem" href="../../sharpbits/stack-overflow-inference/">Stack Overflow in Message Computations</a></li><li><a class="tocitem" href="../../sharpbits/usage-colon-equality/">Using <code>=</code> instead of <code>:=</code> for deterministic nodes</a></li></ul></li></ul></li><li><a class="tocitem" href="../../../examples/overview/">Examples</a></li><li><span class="tocitem">Contributing</span><ul><li><a class="tocitem" href="../../../contributing/guide/">Contribution guide</a></li><li><a class="tocitem" href="../../../contributing/guidelines/">Contribution guidelines</a></li><li><a class="tocitem" href="../../../contributing/new-documentation/">Contributing to the documentation</a></li><li><a class="tocitem" href="../../../contributing/new-example/">Contributing to the examples</a></li><li><a class="tocitem" href="../../../contributing/exported-methods/">Exported methods</a></li><li><a class="tocitem" href="../../../contributing/new-release/">Publishing a new release</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">User guide</a></li><li><a class="is-disabled">Inference specification</a></li><li class="is-active"><a href>Algorithm specification</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Algorithm specification</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/ReactiveBayes/RxInfer.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/ReactiveBayes/RxInfer.jl/blob/main/docs/src/manuals/inference/algorithm-specification.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="user-guide-algorithm-specification"><a class="docs-heading-anchor" href="#user-guide-algorithm-specification">Algorithm specification</a><a id="user-guide-algorithm-specification-1"></a><a class="docs-heading-anchor-permalink" href="#user-guide-algorithm-specification" title="Permalink"></a></h1><p>Every rule of a node belongs to an <a href="https://reactivebayes.github.io/MessagePassingRulesBase.jl/stable/glossary/#glossary-algorithm">algorithm</a>. The algorithm selects which rules run and carries their parameters. Most nodes run under <a href="https://reactivebayes.github.io/MessagePassingRulesBase.jl/stable/algorithms/#MessagePassingRulesBase.DefaultAlgorithm"><code>DefaultAlgorithm</code></a>, and a model says nothing about them. Some nodes need a choice from you:</p><ul><li>the <code>AR</code> node, for autoregressive processes, needs the order of the process and whether it is univariate or multivariate: <a href="https://reactivebayes.github.io/AutoregressiveMessagePassingRules.jl/stable/ar/#AutoregressiveMessagePassingRules.ARVMP"><code>ARVMP</code></a>;</li><li>the <code>GCV</code> node, the <a href="https://ieeexplore.ieee.org/document/9173980">Gaussian controlled variance</a>, computes its messages with a cubature whose number of points you choose: <a href="https://reactivebayes.github.io/GCVMessagePassingRules.jl/stable/#GCVMessagePassingRules.GCVApproximation"><code>GCVApproximation</code></a>;</li><li>a deterministic node, such as <code>y := f(x)</code>, needs an approximation method: <a href="https://reactivebayes.github.io/DeltaMessagePassingRules.jl/stable/delta/#DeltaMessagePassingRules.DeltaApproximation"><code>DeltaApproximation</code></a>, see <a href="../delta-node/#delta-node-manual">Deterministic nodes</a>.</li></ul><p>You give a node its algorithm in the model, with <code>where { algorithm = ... }</code>, or for the whole model with the <a href="#RxInfer.@algorithm"><code>@algorithm</code></a> macro and the <code>algorithm</code> keyword of <a href="../overview/#RxInfer.infer"><code>infer</code></a>. The <code>meta</code> keyword, the <code>@meta</code> macro and <code>where { meta = ... }</code> still work, with a deprecation warning, as the old names of these three.</p><h2 id="An-algorithm-in-the-model"><a class="docs-heading-anchor" href="#An-algorithm-in-the-model">An algorithm in the model</a><a id="An-algorithm-in-the-model-1"></a><a class="docs-heading-anchor-permalink" href="#An-algorithm-in-the-model" title="Permalink"></a></h2><p>The <code>AR</code> node lives in the <code>AutoregressiveMessagePassingRules</code> package, which RxInfer loads. This model observes an autoregressive process of order 2 through noise:</p><pre><code class="language-julia hljs">using RxInfer, StableRNGs
+
+@model function ar_model(y, order)
+    γ  ~ Gamma(shape = 1.0, rate = 1.0)
+    θ  ~ MvNormal(mean = zeros(order), precision = diageye(order))
+    x0 ~ MvNormal(mean = zeros(order), precision = diageye(order))
+    c = [1.0; zeros(order - 1)]
+    x_prev = x0
+    for i in eachindex(y)
+        x[i] ~ AR(x_prev, θ, γ) where { algorithm = ARVMP(Multivariate, order, ARsafe()) }
+        y[i] ~ Normal(mean = dot(c, x[i]), precision = 10.0)
+        x_prev = x[i]
+    end
+end</code></pre><p><code>ARVMP(Multivariate, order, ARsafe())</code> is the algorithm of each <code>AR</code> node: a multivariate state of length <code>order</code>, with the numerically safe computation of the joint over the states. The node&#39;s rules are variational, so the model needs a factorization and initial marginals:</p><pre><code class="language-julia hljs">θ_real = [0.5, -0.3]
+series = zeros(102)
+rng    = StableRNG(42)
+for t in 3:102
+    series[t] = θ_real[1] * series[t - 1] + θ_real[2] * series[t - 2] + randn(rng)
+end
+dataset = series[3:end] .+ randn(rng, 100) ./ sqrt(10.0)
+
+ar_constraints = @constraints begin
+    q(x, x0, γ, θ) = q(x, x0)q(γ)q(θ)
+end
+
+ar_initialization = @initialization begin
+    q(γ) = GammaShapeRate(1.0, 1.0)
+    q(θ) = MvNormalMeanPrecision(zeros(2), diageye(2))
+end
+
+result = infer(
+    model          = ar_model(order = 2),
+    data           = (y = dataset,),
+    constraints    = ar_constraints,
+    initialization = ar_initialization,
+    iterations     = 20,
+)
+
+mean(result.posteriors[:θ][end])</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">2-element Vector{Float64}:
+  0.42590475897265156
+ -0.2972415427941784</code></pre><p>The posterior mean of the coefficients is close to <code>θ_real</code>. Without an algorithm, no rule of <code>AR</code> applies, and inference stops with an error that says so:</p><pre><code class="language-julia hljs">@model function ar_model_without_algorithm(y, order)
+    γ  ~ Gamma(shape = 1.0, rate = 1.0)
+    θ  ~ MvNormal(mean = zeros(order), precision = diageye(order))
+    x0 ~ MvNormal(mean = zeros(order), precision = diageye(order))
+    c = [1.0; zeros(order - 1)]
+    x_prev = x0
+    for i in eachindex(y)
+        x[i] ~ AR(x_prev, θ, γ)
+        y[i] ~ Normal(mean = dot(c, x[i]), precision = 10.0)
+        x_prev = x[i]
+    end
+end
+
+try
+    infer(
+        model          = ar_model_without_algorithm(order = 2),
+        data           = (y = dataset,),
+        constraints    = ar_constraints,
+        initialization = ar_initialization,
+        iterations     = 20,
+    )
+catch err
+    showerror(stdout, err)
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">RuleNotFoundError: no message rule for AR towards :y under DefaultAlgorithm() takes the inputs (m[:x]::MvNormalMeanPrecision{Float64, Vector{Float64}, Matrix{Float64}}, q[:γ]::GammaShapeRate{Float64}, q[:θ]::MvNormalMeanPrecision{Float64, Vector{Float64}, Matrix{Float64}})
+  rules of this shape exist under another algorithm (ARVMP)
+  what to try: give the node the algorithm these rules are defined for
+  near misses:
+    rule at ~/.julia/packages/AutoregressiveMessagePassingRules/5n5Ch/src/autoregressive.jl:304
+      ✗ algorithm ARVMP
+      ✓ m[:x]::Union{NormalDistributionsFamily{T}, GaussianDistributionsFamily{T}} where T  got MvNormalMeanPrecision{Float64, Vector{Float64}, Matrix{Float64}}
+      ✓ q[:θ]::Any  got MvNormalMeanPrecision{Float64, Vector{Float64}, Matrix{Float64}}
+      ✓ q[:γ]::Any  got GammaShapeRate{Float64}
+    rule at ~/.julia/packages/AutoregressiveMessagePassingRules/5n5Ch/src/autoregressive.jl:310
+      ✗ algorithm ARVMP
+      ✗ q[:x]::Any  not provided
+      ✓ q[:θ]::Any  got MvNormalMeanPrecision{Float64, Vector{Float64}, Matrix{Float64}}
+      ✓ q[:γ]::Any  got GammaShapeRate{Float64}
+      ✗ m[:x]::MvNormalMeanPrecision{Float64, Vector{Float64}, Matrix{Float64}}  provided but not consumed</code></pre><h2 id="The-@algorithm-macro"><a class="docs-heading-anchor" href="#The-@algorithm-macro">The <code>@algorithm</code> macro</a><a id="The-@algorithm-macro-1"></a><a class="docs-heading-anchor-permalink" href="#The-@algorithm-macro" title="Permalink"></a></h2><p><code>@algorithm</code> gives algorithms to nodes from outside the model. Each line selects nodes by their function and, optionally, by the variables they connect, and gives the algorithm after <code>-&gt;</code>:</p><pre><code class="language-julia hljs">ar_algorithm = @algorithm begin
+    AR() -&gt; ARVMP(Multivariate, 2, ARsafe())
+end
+
+result = infer(
+    model          = ar_model_without_algorithm(order = 2),
+    data           = (y = dataset,),
+    constraints    = ar_constraints,
+    initialization = ar_initialization,
+    algorithm      = ar_algorithm,
+    iterations     = 20,
+)
+
+mean(result.posteriors[:θ][end])</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">2-element Vector{Float64}:
+  0.42590475897265156
+ -0.2972415427941784</code></pre><p><code>AR()</code> selects every <code>AR</code> node of the model. The result is the same as with <code>where { algorithm = ... }</code>. An algorithm given in the model with <code>where</code> takes precedence over one from <code>@algorithm</code>.</p><p><code>@algorithm</code> also defines a function that returns a specification, so that the algorithm can depend on arguments:</p><pre><code class="language-julia hljs">@algorithm function ar_algorithm_of_order(order)
+    AR() -&gt; ARVMP(Multivariate, order, ARsafe())
+end
+
+ar_algorithm = ar_algorithm_of_order(2)</code></pre><article><details class="docstring" open="true"><summary id="RxInfer.@algorithm"><a class="docstring-binding" href="#RxInfer.@algorithm"><code>RxInfer.@algorithm</code></a> — <span class="docstring-category">Macro</span></summary><section><div><pre><code class="language-julia hljs">@algorithm begin
+    f(x, y) -&gt; DeltaApproximation(method = Unscented())
+    NormalMixture() -&gt; NormalMixtureVMP()
+end</code></pre><p>The algorithm each node of a model runs under, selected by the node&#39;s function and its variables: the value that picks a node&#39;s rules and carries their parameters, such as a Delta node&#39;s approximation method. Pass it to <code>infer</code> as <code>algorithm</code>. A single node takes one in the model, <code>x ~ Node(…) where { algorithm = … }</code>. See the manual&#39;s <em>Algorithm specification</em>.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/ReactiveBayes/RxInfer.jl/blob/4ee7c537931231f4516860891ee72e6fdda8f5a3/src/inference/inference.jl#L4-L14">source</a></section></details></article><h2 id="Selecting-nodes-by-their-variables"><a class="docs-heading-anchor" href="#Selecting-nodes-by-their-variables">Selecting nodes by their variables</a><a id="Selecting-nodes-by-their-variables-1"></a><a class="docs-heading-anchor-permalink" href="#Selecting-nodes-by-their-variables" title="Permalink"></a></h2><p>The <code>GCV</code> node lives in the <code>GCVMessagePassingRules</code> package, which RxInfer loads too. It models an observation whose log-variance is linear in a latent variable, <span>$y \sim \mathcal{N}(x, \exp(\kappa z + \omega))$</span>:</p><pre><code class="language-julia hljs">@model function volatility_model(y, κ, ω)
+    x ~ Normal(mean = 0.0, variance = 10.0)
+    z ~ Normal(mean = 0.0, variance = 1.0)
+    for i in eachindex(y)
+        y[i] ~ GCV(x, z, κ, ω)
+    end
+end</code></pre><p>Its default algorithm, <code>GCVApproximation()</code>, uses a Gauss–Hermite cubature with 20 points. The entry <code>GCV(x, z) -&gt; ...</code> selects the <code>GCV</code> nodes connected to both <code>x</code> and <code>z</code>, and gives them a cubature with 32 points:</p><pre><code class="language-julia hljs">volatility_algorithm = @algorithm begin
+    GCV(x, z) -&gt; GCVApproximation(method = GaussHermiteCubature(32))
+end
+
+volatility_initialization = @initialization begin
+    q(x) = NormalMeanVariance(0.0, 10.0)
+    q(z) = NormalMeanVariance(0.0, 1.0)
+end
+
+volatility_data = 1.0 .+ sqrt(exp(0.5)) .* randn(StableRNG(1), 200)
+
+result = infer(
+    model          = volatility_model(κ = 1.0, ω = 0.0),
+    data           = (y = volatility_data,),
+    constraints    = MeanField(),
+    initialization = volatility_initialization,
+    algorithm      = volatility_algorithm,
+    iterations     = 20,
+)
+
+(x = mean(result.posteriors[:x][end]), z = mean(result.posteriors[:z][end]))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(x = 0.9370954784155182, z = 0.5006426759837177)</code></pre><p>The data have mean 1 and log-variance 0.5, which the posteriors of <code>x</code> and <code>z</code> recover. A specification holds as many entries as you need, one per line:</p><pre><code class="language-julia hljs">combined_algorithm = @algorithm begin
+    GCV(x, z) -&gt; GCVApproximation(method = GaussHermiteCubature(32))
+    AR() -&gt; ARVMP(Multivariate, 2, ARsafe())
+end</code></pre><h2 id="Algorithms-for-nodes-in-submodels"><a class="docs-heading-anchor" href="#Algorithms-for-nodes-in-submodels">Algorithms for nodes in submodels</a><a id="Algorithms-for-nodes-in-submodels-1"></a><a class="docs-heading-anchor-permalink" href="#Algorithms-for-nodes-in-submodels" title="Permalink"></a></h2><p>As in <code>@constraints</code>, a <code>for meta in submodel</code> block gives algorithms to the nodes of a submodel:</p><pre><code class="language-julia hljs">@model function noisy_ar_step(y, x_next, x_prev, θ, γ, order)
+    x_next ~ AR(x_prev, θ, γ)
+    y ~ Normal(mean = dot([1.0; zeros(order - 1)], x_next), precision = 10.0)
+end
+
+@model function ar_model_with_submodel(y, order)
+    γ  ~ Gamma(shape = 1.0, rate = 1.0)
+    θ  ~ MvNormal(mean = zeros(order), precision = diageye(order))
+    x0 ~ MvNormal(mean = zeros(order), precision = diageye(order))
+    x_prev = x0
+    for i in eachindex(y)
+        x[i] ~ noisy_ar_step(y = y[i], x_prev = x_prev, θ = θ, γ = γ, order = order)
+        x_prev = x[i]
+    end
+end
+
+submodel_algorithm = @algorithm begin
+    for meta in noisy_ar_step
+        AR() -&gt; ARVMP(Multivariate, 2, ARsafe())
+    end
+end
+
+result = infer(
+    model          = ar_model_with_submodel(order = 2),
+    data           = (y = dataset,),
+    constraints    = ar_constraints,
+    initialization = ar_initialization,
+    algorithm      = submodel_algorithm,
+    iterations     = 20,
+)
+
+mean(result.posteriors[:θ][end])</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">2-element Vector{Float64}:
+  0.42590475897265156
+ -0.2972415427941784</code></pre><p>The block is written <code>for meta in …</code> in both macros. The entries inside it apply only to the nodes of <code>noisy_ar_step</code>, so the same node function can run under different algorithms in different submodels.</p><h2 id="user-guide-algorithm-specification-custom"><a class="docs-heading-anchor" href="#user-guide-algorithm-specification-custom">A custom algorithm</a><a id="user-guide-algorithm-specification-custom-1"></a><a class="docs-heading-anchor-permalink" href="#user-guide-algorithm-specification-custom" title="Permalink"></a></h2><p>An algorithm is a type, and its fields are the parameters of its rules. You can define one for a node you did not write, and give it rules of your own. This section tempers the likelihood of a Gaussian observation: it raises <span>$\mathcal{N}(y \mid x, v)$</span> to a power <span>$\beta \in (0, 1]$</span>, which widens its message towards the mean,</p><p class="math-container">\[\mathcal{N}(y \mid x, v)^{\beta} \propto \mathcal{N}(x \mid y, v / \beta).\]</p><p>A subtype of <a href="https://reactivebayes.github.io/MessagePassingRulesBase.jl/stable/algorithms/#MessagePassingRulesBase.DefaultAlgorithmExtension"><code>DefaultAlgorithmExtension</code></a> overrides some rules of the default algorithm and inherits the others:</p><pre><code class="language-julia hljs">using RxInfer
+
+struct Tempered{T} &lt;: DefaultAlgorithmExtension
+    β::T
+end
+
+@define_message_update_rule(
+    node = NormalMeanVariance,
+    target = :μ,
+    algorithm = Tempered,
+    args = (q[:out]::PointMass, q[:v]::PointMass),
+    body = (algo, args) -&gt; NormalMeanVariance(mean(args.q[:out]), mean(args.q[:v]) / algo.β),
+)
+
+@call_message_update_rule(
+    node = NormalMeanVariance, target = :μ,
+    q = (out = PointMass(4.0), v = PointMass(2.0)),
+    algorithm = Tempered(0.5),
+)</code></pre><div class="mprb-card" id="mprb-2"><style>.mprb-card{--mprb-fg:#1f2328;--mprb-muted:#6e7781;--mprb-bg:#ffffff;--mprb-border:#d0d7de;--mprb-target:#1a7f37;--mprb-message:#0969da;--mprb-marginal:#8250df;--mprb-warn:#9a6700;
+  font-family:system-ui,-apple-system,"Segoe UI",sans-serif;font-size:13px;color:var(--mprb-fg);background:var(--mprb-bg);border:1px solid var(--mprb-border);border-radius:8px;padding:12px 14px;margin:6px 0;max-width:960px}
+@media (prefers-color-scheme: dark){:root:not(:has(#documenter)) .mprb-card{--mprb-fg:#e6edf3;--mprb-muted:#8d96a0;--mprb-bg:#0d1117;--mprb-border:#30363d;--mprb-target:#3fb950;--mprb-message:#58a6ff;--mprb-marginal:#bc8cff;--mprb-warn:#d29922}}
+html.theme--documenter-dark .mprb-card,html.theme--catppuccin-frappe .mprb-card,html.theme--catppuccin-macchiato .mprb-card,html.theme--catppuccin-mocha .mprb-card{--mprb-fg:#e6edf3;--mprb-muted:#8d96a0;--mprb-bg:#0d1117;--mprb-border:#30363d;--mprb-target:#3fb950;--mprb-message:#58a6ff;--mprb-marginal:#bc8cff;--mprb-warn:#d29922}
+.mprb-card .mprb-head{font-weight:600;margin-bottom:8px}.mprb-card .mprb-mode{color:var(--mprb-muted);font-weight:400;margin-left:6px}
+.mprb-card .mprb-body{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start}.mprb-card .mprb-sections{flex:1;min-width:280px}
+.mprb-card .mprb-figure{margin:0}.mprb-card .mprb-figure figcaption{color:var(--mprb-muted);font-size:12px}
+.mprb-card details{margin:4px 0}.mprb-card summary{cursor:pointer;font-weight:600}
+.mprb-card table{border-collapse:collapse;margin:4px 0 6px 0;color:inherit;font-size:inherit;font-family:inherit;background:transparent}.mprb-card td,.mprb-card th{padding:2px 8px 2px 0;text-align:left;vertical-align:top;border:none;background:transparent}
+.mprb-card th{color:var(--mprb-muted);font-weight:500}.mprb-card code,.mprb-card pre{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;background:transparent;color:inherit;padding:0}
+.mprb-card pre{white-space:pre-wrap;margin:2px 0;border:none}.mprb-card .mprb-ok{color:var(--mprb-target)}.mprb-card .mprb-no{color:var(--mprb-warn)}.mprb-card .mprb-undefined{color:var(--mprb-warn)}
+.mprb-card svg{max-width:100%;height:auto}
+.mprb-card svg text{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;fill:var(--mprb-fg);stroke:none}
+.mprb-card svg text.note,.mprb-card svg tspan.note,.mprb-card svg text.kind{fill:var(--mprb-muted);font-size:11px}
+.mprb-card svg text.target{fill:var(--mprb-target)}.mprb-card svg marker path{stroke:none}
+.mprb-card svg marker path.target{fill:var(--mprb-target)}.mprb-card svg marker path.message{fill:var(--mprb-message)}
+.mprb-card svg marker path.marginal,.mprb-card svg marker path.joint{fill:var(--mprb-marginal)}
+.mprb-card svg line.edge{stroke-width:1.6;fill:none}.mprb-card svg line.target{stroke:var(--mprb-target);stroke-width:2.4}
+.mprb-card svg line.message{stroke:var(--mprb-message)}.mprb-card svg line.marginal,.mprb-card svg line.joint{stroke:var(--mprb-marginal);stroke-dasharray:5 3}
+.mprb-card svg line.interface{stroke:var(--mprb-fg)}.mprb-card svg line.default{stroke:var(--mprb-muted);stroke-dasharray:1 3}
+.mprb-card svg line.unused{stroke:var(--mprb-border);stroke-dasharray:2 3}.mprb-card svg text.unused,.mprb-card svg text.default{fill:var(--mprb-muted)}
+.mprb-card svg text.message{fill:var(--mprb-message)}.mprb-card svg text.marginal,.mprb-card svg text.joint{fill:var(--mprb-marginal)}
+.mprb-card svg .node{fill:var(--mprb-bg);stroke:var(--mprb-fg);stroke-width:1.6}
+.mprb-card .mprb-legend span{margin-right:12px;font-size:12px}.mprb-card .mprb-legend .message{color:var(--mprb-message)}.mprb-card .mprb-legend .marginal{color:var(--mprb-marginal)}.mprb-card .mprb-legend .target{color:var(--mprb-target)}
+.mprb-card .mprb-grid{display:flex;flex-wrap:wrap;gap:10px 24px;align-items:flex-start}
+</style><div class="mprb-head">RuleResult: message of NormalMeanVariance towards :μ<span class="mprb-mode">marginals</span></div><div class="mprb-body"><svg class="mprb-node" role="img" aria-label="message of NormalMeanVariance towards :μ" width="357" height="90" viewBox="0 0 357 90"><defs><marker id="mprb-2-target" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="target" fill="#1a7f37"/></marker><marker id="mprb-2-message" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="message" fill="#0969da"/></marker><marker id="mprb-2-marginal" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="marginal" fill="#8250df"/></marker><marker id="mprb-2-joint" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="joint" fill="#8250df"/></marker></defs><line class="edge marginal" x1="32" y1="35.0" x2="102" y2="35.0" stroke="#8250df" stroke-width="1.6" fill="none" stroke-dasharray="5 3" marker-end="url(#mprb-2-marginal)"/><text class="marginal" x="26" y="39.0" text-anchor="end" fill="#8250df" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="12">out</text><line class="edge marginal" x1="32" y1="55.0" x2="102" y2="55.0" stroke="#8250df" stroke-width="1.6" fill="none" stroke-dasharray="5 3" marker-end="url(#mprb-2-marginal)"/><text class="marginal" x="26" y="59.0" text-anchor="end" fill="#8250df" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="12">v</text><line class="edge target" x1="266" y1="45.0" x2="336" y2="45.0" stroke="#1a7f37" stroke-width="2.4" fill="none" marker-end="url(#mprb-2-target)"/><text class="target" x="344" y="49.0" fill="#1a7f37" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="12" font-weight="bold">μ</text><rect class="node" x="102" y="15" width="164" height="60" rx="4" fill="#ffffff" stroke="#1f2328" stroke-width="1.6"/><text x="184.0" y="49.0" text-anchor="middle" fill="#1f2328" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="12">NormalMeanVariance</text></svg><div class="mprb-sections"><details open class="mprb-result"><summary>Result</summary><table><tr><th>value</th><td><code>NormalMeanVariance{Float64}(μ=4.0, v=4.0)</code></td></tr><tr><th>type</th><td><code>NormalMeanVariance{Float64}</code></td></tr><tr><th>log scale</th><td><span class="mprb-undefined">undefined: the message rule for NormalMeanVariance towards :μ under Tempered declares no `logscale`</span></td></tr></table></details><details open class="mprb-inputs"><summary>Inputs</summary><table><tr><th>edge</th><th></th><th>value</th></tr><tr class="marginal"><td>out</td><td>q</td><td><code>PointMass{Float64}(4.0)</code></td></tr><tr class="marginal"><td>v</td><td>q</td><td><code>PointMass{Float64}(2.0)</code></td></tr></table></details><details class="mprb-rule"><summary>Rule</summary><table><tr><th>declared inputs</th><td><code>q[:out]::PointMass, q[:v]::PointMass</code></td></tr><tr><th>algorithm</th><td><code>Tempered{Float64}(0.5)</code></td></tr><tr><th>log scale</th><td>none</td></tr><tr><th>defined</th><td><code>algorithm-specification.md:269</code></td></tr><tr><th>body</th><td><pre>(algo, args)-&gt;NormalMeanVariance(mean(args.q[:out]), mean(args.q[:v]) / algo.β)</pre></td></tr></table></details><details class="mprb-others"><summary>Other rules for this target (9)</summary><div><code>src/gaussian_extension.jl:8</code><table><tr><td class="mprb-ok">✓</td><td><code>algorithm DefaultAlgorithm</code></td></tr><tr><td class="mprb-no">✗</td><td><code>m[:out]::ExponentialLinearQuadratic  not provided</code></td></tr><tr><td class="mprb-no">✗</td><td><code>m[:v]::PointMass  not provided</code></td></tr><tr><td class="mprb-no">✗</td><td><code>q[:out]::PointMass{Float64}  provided but not consumed</code></td></tr><tr><td class="mprb-no">✗</td><td><code>q[:v]::PointMass{Float64}  provided but not consumed</code></td></tr></table></div><div><code>src/gaussian_extension.jl:13</code><table><tr><td class="mprb-ok">✓</td><td><code>algorithm DefaultAlgorithm</code></td></tr><tr><td class="mprb-no">✗</td><td><code>m[:out]::ExponentialLinearQuadratic  not provided</code></td></tr><tr><td class="mprb-ok">✓</td><td><code>q[:v]::Any  got PointMass{Float64}</code></td></tr><tr><td class="mprb-no">✗</td><td><code>q[:out]::PointMass{Float64}  provided but not consumed</code></td></tr></table></div><div><code>normal_mean_variance/mean.jl:1</code><table><tr><td class="mprb-ok">✓</td><td><code>algorithm DefaultAlgorithm</code></td></tr><tr><td class="mprb-no">✗</td><td><code>m[:out]::PointMass  not provided</code></td></tr><tr><td class="mprb-no">✗</td><td><code>m[:v]::PointMass  not provided</code></td></tr><tr><td class="mprb-no">✗</td><td><code>q[:out]::PointMass{Float64}  provided but not consumed</code></td></tr><tr><td class="mprb-no">✗</td><td><code>q[:v]::PointMass{Float64}  provided but not consumed</code></td></tr></table></div><div><code>normal_mean_variance/mean.jl:8</code><table><tr><td class="mprb-ok">✓</td><td><code>algorithm DefaultAlgorithm</code></td></tr><tr><td class="mprb-no">✗</td><td><code>m[:out]::Union{UnivariateNormalDistributionsFamily{T}, UnivariateGaussianDistributionsFamily{T}} where T  not provided</code></td></tr><tr><td class="mprb-no">✗</td><td><code>m[:v]::PointMass  not provided</code></td></tr><tr><td class="mprb-no">✗</td><td><code>q[:out]::PointMass{Float64}  provided but not consumed</code></td></tr><tr><td class="mprb-no">✗</td><td><code>q[:v]::PointMass{Float64}  provided but not consumed</code></td></tr></table></div><div><code>normal_mean_variance/mean.jl:18</code><table><tr><td class="mprb-ok">✓</td><td><code>algorithm DefaultAlgorithm</code></td></tr><tr><td class="mprb-ok">✓</td><td><code>q[:out]::PointMass  got PointMass{Float64}</code></td></tr><tr><td class="mprb-ok">✓</td><td><code>q[:v]::PointMass  got PointMass{Float64}</code></td></tr></table></div><div><code>normal_mean_variance/mean.jl:25</code><table><tr><td class="mprb-ok">✓</td><td><code>algorithm DefaultAlgorithm</code></td></tr><tr><td class="mprb-ok">✓</td><td><code>q[:out]::Any  got PointMass{Float64}</code></td></tr><tr><td class="mprb-ok">✓</td><td><code>q[:v]::Any  got PointMass{Float64}</code></td></tr></table></div><div><code>normal_mean_variance/mean.jl:31</code><table><tr><td class="mprb-ok">✓</td><td><code>algorithm DefaultAlgorithm</code></td></tr><tr><td class="mprb-no">✗</td><td><code>m[:out]::PointMass  not provided</code></td></tr><tr><td class="mprb-ok">✓</td><td><code>q[:v]::Any  got PointMass{Float64}</code></td></tr><tr><td class="mprb-no">✗</td><td><code>q[:out]::PointMass{Float64}  provided but not consumed</code></td></tr></table></div><div><code>normal_mean_variance/mean.jl:38</code><table><tr><td class="mprb-ok">✓</td><td><code>algorithm DefaultAlgorithm</code></td></tr><tr><td class="mprb-no">✗</td><td><code>m[:out]::Union{UnivariateNormalDistributionsFamily{T}, UnivariateGaussianDistributionsFamily{T}} where T  not provided</code></td></tr><tr><td class="mprb-ok">✓</td><td><code>q[:v]::Any  got PointMass{Float64}</code></td></tr><tr><td class="mprb-no">✗</td><td><code>q[:out]::PointMass{Float64}  provided but not consumed</code></td></tr></table></div><div><code>normal_mean_variance/mean.jl:49</code><table><tr><td class="mprb-ok">✓</td><td><code>algorithm DefaultAlgorithm</code></td></tr><tr><td class="mprb-no">✗</td><td><code>m[:out]::Union{UnivariateNormalDistributionsFamily{T}, UnivariateGaussianDistributionsFamily{T}} where T  not provided</code></td></tr><tr><td class="mprb-ok">✓</td><td><code>q[:v]::PointMass  got PointMass{Float64}</code></td></tr><tr><td class="mprb-no">✗</td><td><code>q[:out]::PointMass{Float64}  provided but not consumed</code></td></tr></table></div></details></div></div></div><p>The body names the <code>algo</code> slot before <code>args</code>, and reads <span>$\beta$</span> from it. The rule takes marginals because <code>y</code> is observed and <code>v</code> is a constant: each is a cluster of its own. The <a href="https://reactivebayes.github.io/MessagePassingRulesBase.jl/stable/tutorials/algorithm/#tutorial-algorithm">tutorial on algorithms</a> of MessagePassingRulesBase covers algorithms that stand alone and declare what their rules take.</p><p><code>@algorithm</code> gives the new algorithm to the node connected to <code>y</code>:</p><pre><code class="language-julia hljs">@model function gaussian_model(y)
+    x ~ NormalMeanVariance(2.5, 0.5)
+    y ~ NormalMeanVariance(x, 2.0)
+end
+
+tempered = @algorithm begin
+    NormalMeanVariance(y) -&gt; Tempered(0.5)
+end
+
+result          = infer(model = gaussian_model(), data = (y = 4.0,))
+result_tempered = infer(model = gaussian_model(), data = (y = 4.0,), algorithm = tempered)
+
+(exact = mean_var(result.posteriors[:x]), tempered = mean_var(result_tempered.posteriors[:x]))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(exact = (2.8000000000000003, 0.4), tempered = (2.6666666666666665, 0.4444444444444444))</code></pre><p>The tempered posterior stays closer to the prior mean, 2.5, and has a larger variance. Its closed form is the product of the prior with <span>$\mathcal{N}(x \mid 4, 2 / 0.5)$</span>:</p><pre><code class="language-julia hljs">mean_var(prod(PreserveTypeProd(Distribution), NormalMeanVariance(2.5, 0.5), NormalMeanVariance(4.0, 4.0)))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(2.6666666666666665, 0.4444444444444444)</code></pre><p>The prior&#39;s node, <code>x ~ NormalMeanVariance(2.5, 0.5)</code>, keeps the default algorithm, because the entry selects only the node connected to <code>y</code>.</p><script type="module">import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/+esm';
+mermaid.initialize({
+    startOnLoad: true,
+    theme: "neutral"
+});
+</script></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../initialization/">« Initialization</a><a class="docs-footer-nextpage" href="../autoupdates/">Auto-updates »</a><div class="flexbox-break"></div><p class="footer-message">Created in <a href="https://biaslab.github.io/">BIASlab</a>, maintained by <a href="https://github.com/ReactiveBayes">ReactiveBayes</a>, powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.19.0 on <span class="colophon-date" title="Tuesday 20 October 2026 07:14">Tuesday 20 October 2026</span>. Using Julia version 1.13.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
