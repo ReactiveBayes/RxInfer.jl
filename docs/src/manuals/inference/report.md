@@ -41,7 +41,11 @@ result.report
 ```
 
 The first line of the approximations section is a summary: one posterior, that of `x`, was
-approximated, and there are no warnings.
+approximated, and there are no warnings. The summary also names the posteriors that are exact and,
+apart from them, those that exact rules computed from approximated messages: in
+`s1 → s2 → y`, where `y`'s likelihood has no rules, `s2` is approximated, and `s1`, whose messages
+come from the Gaussian node's exact rule but from `s2`'s belief, is listed under "exact rules on
+approximated inputs" ([`RxInfer.depends_on_approximation`](@ref)).
 
 In the table "Approximated posteriors", each approximated posterior is a group of rows. The group
 header says how the posterior was projected: here by Laplace's method, with the number of Newton
@@ -170,6 +174,7 @@ ReportDiagnostic
 report_tables
 ReportTable
 RxInfer.report_summary
+RxInfer.depends_on_approximation
 RxInfer.render_report_table
 RxInfer.NodeInstance
 RxInfer.NodeRecord

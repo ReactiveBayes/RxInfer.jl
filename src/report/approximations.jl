@@ -154,7 +154,8 @@ the messages from an exact rule and from the rule fallback, as `(rules, fallback
 propagation, `sites` records the sites projected on the variable's edges. Under natural-gradient
 propagation, where a site moves one step per sweep, `settled` maps each edge index to whether the
 latest step on that edge had settled, and `sites.nonconverged` counts the edges whose latest step
-had not.
+had not. `sources` holds the other random variables of the nodes whose messages reached the
+variable, which [`RxInfer.depends_on_approximation`](@ref) follows.
 """
 mutable struct VariableRecord
     constraint::Any
@@ -163,9 +164,10 @@ mutable struct VariableRecord
     incoming::Dict{Tuple{Any, Any}, Tuple{Int, Int}}
     sites::ProjectionRecord
     settled::Dict{Int, Bool}
+    sources::Set{Tuple{Symbol, Any}}
 end
 
-VariableRecord() = VariableRecord(nothing, ProjectionRecord(), ProjectionRecord(), Dict(), ProjectionRecord(), Dict{Int, Bool}())
+VariableRecord() = VariableRecord(nothing, ProjectionRecord(), ProjectionRecord(), Dict(), ProjectionRecord(), Dict{Int, Bool}(), Set{Tuple{Symbol, Any}}())
 
 """
     ApproximationsReport
@@ -329,6 +331,12 @@ function record_incoming!(report::ApproximationsReport, factornode, target, key,
     rules, fallbacks = get(record.incoming, (factornode, key), (0, 0))
     exact = rule isa MessagePassingRulesBase.RuleSpec
     record.incoming[(factornode, key)] = (rules + exact, fallbacks + !exact)
+    for interface in ReactiveMP.getinterfaces(factornode)
+        interface isa ReactiveMP.NodeInterface || continue
+        other = ReactiveMP.getvariable(interface)
+        (other === variable || !ReactiveMP.israndom(other)) && continue
+        push!(record.sources, variable_key(other.label))
+    end
     return nothing
 end
 
@@ -449,6 +457,31 @@ function is_approximated(record::VariableRecord)
     record.sites.projections > 0 && return true
     return record.marginal.projections > 0 && projection_approximates(record.marginal.outcome)
 end
+
+"""
+    RxInfer.depends_on_approximation(report::ApproximationsReport, key) -> Bool
+
+Whether the posterior of the variable `key`, `(name, index)`, was computed by exact rules from
+messages that an approximation formed: a variable reached through the nodes whose messages
+formed its posterior has an approximated posterior. Such a posterior is not approximated itself,
+but it is not exact either, as `s1` in `s1 → s2 → y`, where `y`'s likelihood has no rules and
+`s2` is approximated.
+"""
+function depends_on_approximation(report::ApproximationsReport, key)
+    seen, queue = Set{Tuple{Symbol, Any}}([key]), collect(sources_of(report, key))
+    while !isempty(queue)
+        source = pop!(queue)
+        source in seen && continue
+        push!(seen, source)
+        record = get(report.variables, source, nothing)
+        isnothing(record) && continue
+        is_approximated(record) && return true
+        append!(queue, record.sources)
+    end
+    return false
+end
+
+sources_of(report, key) = (record = get(report.variables, key, nothing); isnothing(record) ? () : record.sources)
 
 projection_approximates(outcome::NamedTuple) =
     haskey(outcome, :method) ? outcome.method ∉ (:closed_form, :point_mass, :discrete) : get(outcome, :changed, true)
@@ -625,19 +658,26 @@ end
 function report_summary(report::ApproximationsReport)
     approximated = sum(length, approximated_groups(report); init = 0)
     total = length(report.variables)
-    exact = [key for (key, record) in report.variables if !is_approximated(record)]
+    unapproximated = [key for (key, record) in report.variables if !is_approximated(record)]
+    downstream = filter(key -> depends_on_approximation(report, key), unapproximated)
+    exact = setdiff(unapproximated, downstream)
     found = diagnostics(report)
     warnings = count(d -> d.level === :warning, found)
     notes = length(found) - warnings
     text = string("Approximations: ", approximated, " of ", total, " posteriors approximated")
-    if !isempty(exact)
-        names = unique(first.(exact))
-        shown = [variables_display(filter(k -> first(k) === name, exact)) for name in sort!(names; by = string)]
-        text *= string(" (exact: ", join(shown[1:min(end, 5)], ", "), length(shown) > 5 ? ", …" : "", ")")
-    end
+    parts = String[]
+    isempty(exact) || push!(parts, string("exact: ", names_display(exact)))
+    isempty(downstream) || push!(parts, string("exact rules on approximated inputs: ", names_display(downstream)))
+    isempty(parts) || (text *= string(" (", join(parts, "; "), ")"))
     text *= warnings == 0 ? ", no warnings" : string(", ", warnings, warnings == 1 ? " warning" : " warnings")
     notes > 0 && (text *= string(", ", notes, notes == 1 ? " note" : " notes"))
     return text
+end
+
+function names_display(keys)
+    names = unique(first.(keys))
+    shown = [variables_display(filter(k -> first(k) === name, keys)) for name in sort!(names; by = string)]
+    return string(join(shown[1:min(end, 5)], ", "), length(shown) > 5 ? ", …" : "")
 end
 
 report_footer(report::ApproximationsReport) = string("Expectations: ", expectation_display(report.expectation))

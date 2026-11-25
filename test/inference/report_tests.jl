@@ -126,6 +126,28 @@ end
     @test RxInfer.report_summary(approximations) == "Approximations: 1 of 1 posteriors approximated, no warnings"
 end
 
+@testitem "report: a posterior from exact rules on approximated inputs is not called exact" setup = [InferenceReports] begin
+    using .InferenceReports
+    # s2's likelihood has no rules, so s2 is approximated; s1's messages come from the exact rule
+    # of the Gaussian node, but from s2's approximated belief, so s1 is not exact either
+    @model function chain(y)
+        s1 ~ NormalMeanVariance(0.0, 1.0)
+        s2 ~ NormalMeanVariance(s1, 1.0)
+        y .~ LogisticBernoulli(s2)
+    end
+    for scheme in (LocalLaplace(), LaplacePropagation(), ExpectationPropagation())
+        report = infer(model = chain(), data = (y = [1.0, 1.0, 0.0],), fallback = scheme, iterations = 10, report = true).report.approximations
+        @test RxInfer.is_approximated(report.variables[(:s2, nothing)])
+        @test !RxInfer.is_approximated(report.variables[(:s1, nothing)])
+        @test RxInfer.depends_on_approximation(report, (:s1, nothing))
+        summary = RxInfer.report_summary(report)
+        @test contains(summary, "exact rules on approximated inputs: s1") && !contains(summary, "exact: s1")
+    end
+    # a conjugate model depends on no approximation
+    report = infer(model = coin(), data = (y = [1.0, 0.0],), report = true).report.approximations
+    @test !RxInfer.depends_on_approximation(report, (:p, nothing))
+end
+
 @testitem "report: deterministic nodes, anonymous variables and messages left unprojected" setup = [InferenceReports] begin
     using .InferenceReports, LinearAlgebra, StatsFuns
     @model function trials(y, doses)
