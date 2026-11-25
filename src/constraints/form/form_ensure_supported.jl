@@ -30,8 +30,10 @@ ReactiveMP.default_prod_constraint(::EnsureSupportedFunctionalForm) =
 function ReactiveMP.constrain_form(
         constraint::EnsureSupportedFunctionalForm, something
     )
-    if !constraint.leaves_products && (typeof(something) <: ProductOf ||
-            typeof(something) <: LinearizedProductOf)
+    if !constraint.leaves_products && (
+            typeof(something) <: ProductOf ||
+                typeof(something) <: LinearizedProductOf
+        )
         expr = string(
             constraint.prefix,
             '(',
