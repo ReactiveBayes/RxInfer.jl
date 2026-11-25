@@ -332,8 +332,5 @@ end
     end
     @test all(isapprox.(mean.(last.(tracker.history[:x])), first.(kalman); rtol = 1.0e-8))
     @test all(isapprox.(cov.(last.(tracker.history[:x])), last.(kalman); rtol = 1.0e-8))
-    # the message back to the previous state arrives once per update, before its cavity, so its
-    # site takes one step per update, and the report says that it has not settled; nothing else
-    found = RxInfer.diagnostics(tracker.model.metadata[:report])
-    @test only(found).kind === :sites_not_converged && only(found).subject == "x_prev"
+    @test isempty(RxInfer.diagnostics(tracker.model.metadata[:report]))
 end

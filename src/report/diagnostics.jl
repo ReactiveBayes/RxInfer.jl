@@ -88,7 +88,7 @@ function variable_diagnostics!(found, report::ApproximationsReport)
         end
         # a variable with sites passes a raw message while its sites form, which is not a
         # product left without a mode
-        if record.messages.recent_unprojected > 0 && record.sites.projections == 0
+        if record.messages.recent_unprojected > 0 && !record.has_sites
             push!(get!(unprojected, first(key), Tuple{Symbol, Any}[]), key)
             unprojected_count[first(key)] = get(unprojected_count, first(key), 0) + record.messages.recent_unprojected
         end

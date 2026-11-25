@@ -154,7 +154,7 @@ the messages from an exact rule and from the rule fallback, as `(rules, fallback
 propagation, `sites` records the sites projected on the variable's edges. Under natural-gradient
 propagation, where a site moves one step per sweep, `settled` maps each edge index to whether the
 latest step on that edge had settled, and `sites.nonconverged` counts the edges whose latest step
-had not. `sources` holds the other random variables of the nodes whose messages reached the
+had not, and `has_sites` whether the variable has sites at all. `sources` holds the other random variables of the nodes whose messages reached the
 variable, which [`RxInfer.depends_on_approximation`](@ref) follows.
 """
 mutable struct VariableRecord
@@ -164,10 +164,11 @@ mutable struct VariableRecord
     incoming::Dict{Tuple{Any, Any}, Tuple{Int, Int}}
     sites::ProjectionRecord
     settled::Dict{Int, Bool}
+    has_sites::Bool
     sources::Set{Tuple{Symbol, Any}}
 end
 
-VariableRecord() = VariableRecord(nothing, ProjectionRecord(), ProjectionRecord(), Dict(), ProjectionRecord(), Dict{Int, Bool}(), Set{Tuple{Symbol, Any}}())
+VariableRecord() = VariableRecord(nothing, ProjectionRecord(), ProjectionRecord(), Dict(), ProjectionRecord(), Dict{Int, Bool}(), false, Set{Tuple{Symbol, Any}}())
 
 """
     ApproximationsReport
@@ -395,8 +396,9 @@ end
 function record!(report::ApproximationsReport, event::AfterSiteComputationEvent)
     outcome = event.outcome
     method = outcome isa NamedTuple ? get(outcome, :method, nothing) : nothing
-    method in (:laplace, :moment_matching, :natural_gradient, :nonfinite) || return nothing
     record = get!(VariableRecord, report.variables, variable_key(event.variable.label))
+    record.has_sites = true
+    method in (:laplace, :moment_matching, :natural_gradient, :nonfinite) || return nothing
     sites = record.sites
     sites.projections += 1
     sites.outcome = outcome
