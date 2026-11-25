@@ -395,12 +395,13 @@ end
 function record!(report::ApproximationsReport, event::AfterSiteComputationEvent)
     outcome = event.outcome
     method = outcome isa NamedTuple ? get(outcome, :method, nothing) : nothing
-    method in (:laplace, :moment_matching, :natural_gradient) || return nothing
+    method in (:laplace, :moment_matching, :natural_gradient, :nonfinite) || return nothing
     record = get!(VariableRecord, report.variables, variable_key(event.variable.label))
     sites = record.sites
     sites.projections += 1
     sites.outcome = outcome
-    if method === :natural_gradient
+    if method in (:natural_gradient, :nonfinite)
+        # a target that is not finite leaves the site where it was: not settled
         record.settled[event.index] = get(outcome, :converged, true) === true
         sites.nonconverged = count(!, values(record.settled))
     else
@@ -556,7 +557,7 @@ end
 function sites_display(records)
     sites = [r.sites for r in records if r.sites.projections > 0]
     method = get(first(sites).outcome, :method, nothing)
-    if method === :natural_gradient
+    if method in (:natural_gradient, :nonfinite)
         edges = sum(r -> length(r.settled), records)
         steps = sum(s -> s.projections, sites)
         unsettled = sum(s -> s.nonconverged, sites)

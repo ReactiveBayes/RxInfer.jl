@@ -376,3 +376,49 @@ end
     @test gap < 0.25
     @test infer(model = volatility(), data = (y = y,), fallback = LocalLaplace()).posteriors[:x] == result.posteriors[:x]
 end
+
+@testitem "universal Laplace: a Gaussian node under a likelihood with no mode, and the README's regression" setup = [UniversalLaplace] begin
+    using BayesBase, Distributions, StableRNGs, LinearAlgebra
+    # s2's likelihoods have no rules, and all-positive labels give their product no mode, so its
+    # message is left unprojected; the Gaussian node above takes it through the fallback, and its
+    # joint, for the free energy, by Laplace
+    struct LogitBern{X} <: DiscreteUnivariateDistribution
+        x::X
+    end
+    BayesBase.logpdf(d::LogitBern, y) = y == 1 ? -log1p(exp(-d.x)) : -log1p(exp(d.x))
+    BayesBase.insupport(::LogitBern, y) = true
+    @define_factor_node(node = LogitBern, type = Stochastic, interfaces = [:out, :x])
+    @model function two_levels(y)
+        s1 ~ NormalMeanVariance(0.0, 1.0)
+        s2 ~ NormalMeanVariance(s1, 1.0)
+        y .~ LogitBern(s2)
+    end
+    for y in ([1], [1, 1, 1])
+        result = infer(model = two_levels(), data = (y = y,), fallback = LocalLaplace(), iterations = 30, free_energy = true)
+        @test isfinite(last(result.free_energy))
+        @test isfinite(mean(last(result.posteriors[:s1]))) && var(last(result.posteriors[:s1])) > 0
+    end
+    # one positive label: the evidence is exactly 1/2 by symmetry, and expectation propagation
+    # gets it
+    ep = infer(model = two_levels(), data = (y = [1],), fallback = ExpectationPropagation(), iterations = 30, free_energy = true)
+    @test last(ep.free_energy) ≈ log(2) rtol = 1.0e-6
+
+    # the README's regression, through `dot` and a logistic: its output on (0, 1), and a finite
+    # free energy under every scheme
+    logistic(z) = 1 / (1 + exp(-z))
+    @model function readme(y, x)
+        θ ~ MvNormalMeanCovariance(zeros(2), diageye(2))
+        for i in eachindex(y)
+            p[i] := logistic(dot([1.0, x[i]], θ))
+            y[i] ~ Bernoulli(p[i])
+        end
+    end
+    rng = StableRNG(1)
+    x = randn(rng, 30)
+    y = [rand(rng) < logistic(0.5 + 1.5 * xi) for xi in x]
+    for scheme in (LocalLaplace(), LaplacePropagation(), ExpectationPropagation(), NaturalGradientPropagation())
+        result = infer(model = readme(x = x), data = (y = y,), fallback = scheme, iterations = 20, free_energy = true)
+        @test isfinite(last(result.free_energy))
+        @test all(q -> 0 < mean(q) < 1, last(result.posteriors[:p]))
+    end
+end

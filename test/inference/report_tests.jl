@@ -237,6 +237,23 @@ end
     @test !isempty(sites) && all(d -> d.level === :warning && contains(d.text, "(Laplace) did not converge"), sites)
 end
 
+@testitem "report: a natural-gradient target that is not finite is a warning" setup = [InferenceReports] begin
+    using .InferenceReports
+    import ReactiveMP
+    # the events of two edges of x: a step, then a target that was not finite, as the site policy
+    # reports them, the site kept where it was
+    report = ApproximationsReport()
+    x = ReactiveMP.randomvar(label = :x)
+    message = ReactiveMP.Message(NormalMeanVariance(0.0, 1.0), false, false)
+    step = (method = :natural_gradient, converged = true, iterations = 3, η = [0.0, -0.5], velocity = [0.0, 0.0])
+    nonfinite = (method = :nonfinite, converged = false, iterations = 3, η = [0.0, -0.5], velocity = [0.0, 0.0])
+    RxInfer.record!(report, ReactiveMP.AfterSiteComputationEvent(x, 1, message, message, NormalMeanVariance(0.0, 1.0), step, nothing))
+    RxInfer.record!(report, ReactiveMP.AfterSiteComputationEvent(x, 2, message, message, nothing, nonfinite, nothing))
+    found = only(RxInfer.diagnostics(report))
+    @test found.kind === :sites_not_converged && found.level === :warning
+    @test contains(found.text, "1 of 2 sites was not finite")
+end
+
 @testitem "report: the display, plain and with PrettyTables" setup = [InferenceReports] begin
     using .InferenceReports
     y = Float64[1, 1, 0, 1, 1, 0, 1, 1]

@@ -449,8 +449,7 @@ function activate_rmp_variable!(
         # `default_form_constraint` stands in for a variable that has none of its own.
         default_messages_form_constraint, default_marginal_form_constraint =
             default_form_constraints(getdefault_form_constraint(getoptions(plugin)))
-        messages_form_constraint =
-            ReactiveMP.preprocess_form_constraints(
+        messages_form = ReactiveMP.preprocess_form_constraints(
             plugin,
             model,
             getextra(
@@ -458,10 +457,12 @@ function activate_rmp_variable!(
                 GraphPPL.VariationalConstraintsMessagesFormConstraintKey,
                 default_messages_form_constraint,
             ),
-        ) + EnsureSupportedFunctionalForm(
+        )
+        messages_form_constraint = messages_form + EnsureSupportedFunctionalForm(
             :μ,
             GraphPPL.getname(nodeproperties),
             GraphPPL.index(nodeproperties),
+            leaves_products(messages_form),
         )
         marginal_form_constraint =
             ReactiveMP.preprocess_form_constraints(

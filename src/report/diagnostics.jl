@@ -83,7 +83,7 @@ function variable_diagnostics!(found, report::ApproximationsReport)
             push!(get!(sites, first(key), Tuple{Symbol, Any}[]), key)
             (failed, total, _) = get(sites_count, first(key), (0, 0, nothing))
             method = get(record.sites.outcome, :method, nothing)
-            computed = method === :natural_gradient ? length(record.settled) : record.sites.projections
+            computed = method in (:natural_gradient, :nonfinite) ? length(record.settled) : record.sites.projections
             sites_count[first(key)] = (failed + record.sites.nonconverged, total + computed, method)
         end
         # a variable with sites passes a raw message while its sites form, which is not a
@@ -106,7 +106,10 @@ function variable_diagnostics!(found, report::ApproximationsReport)
     end
     for (name, keys) in sites
         (failed, total, method) = sites_count[name]
-        if method === :natural_gradient
+        if method === :nonfinite
+            push!(found, ReportDiagnostic(:sites_not_converged, :warning, variables_display(keys), string("the natural-gradient target of ", failed, " of ", total, " sites was not finite at the last sweep, so those sites stayed where they were: the quadrature of the target failed, for example at a belief far in the tail of a likelihood")))
+            continue
+        elseif method === :natural_gradient
             push!(found, ReportDiagnostic(:sites_not_converged, :warning, variables_display(keys), string("the natural-gradient steps of ", failed, " of ", total, " sites had not settled at the last sweep: the sites are not yet at their targets. More `iterations`, or a smaller `alpha`, may help")))
             continue
         end
