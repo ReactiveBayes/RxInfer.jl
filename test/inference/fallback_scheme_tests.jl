@@ -124,3 +124,25 @@ end
     @test mean.(switched) == mean.(by_options)
     @test var.(switched) == var.(by_options)
 end
+
+@testitem "fallback: a rule fallback in the options must compute the free energy the scheme takes" setup = [FallbackSchemes] begin
+    using .FallbackSchemes
+    import DeltaMessagePassingRules: ExpectationRuleFallback, LaplaceForm
+    y = [1.0, 1.0, 0.0, 1.0]
+    scheme = LaplacePropagation()
+    reference = infer(model = classifier(), data = (y = y,), fallback = scheme, iterations = 20, free_energy = true)
+    # the average energy where expectation propagation's free energy needs the cavity's: an error,
+    # not a free energy that is silently another one
+    @test_throws "computes `:average`" infer(
+        model = classifier(), data = (y = y,), fallback = scheme, iterations = 20, free_energy = true,
+        options = (rulefallback = ExpectationRuleFallback(),),
+    )
+    # the same rule fallback without a free energy, and the matching one with it, are fine
+    plain = infer(model = classifier(), data = (y = y,), fallback = scheme, iterations = 20, options = (rulefallback = ExpectationRuleFallback(),))
+    @test mean(last(plain.posteriors[:x])) ≈ mean(last(reference.posteriors[:x]))
+    matching = infer(
+        model = classifier(), data = (y = y,), fallback = scheme, iterations = 20, free_energy = true,
+        options = (rulefallback = ExpectationRuleFallback(LaplaceForm(); energy = :cavity),),
+    )
+    @test last(matching.free_energy) ≈ last(reference.free_energy)
+end

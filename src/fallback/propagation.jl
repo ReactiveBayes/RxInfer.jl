@@ -65,6 +65,29 @@ free energy with average energies, and `false` without a site policy.
 cavity_free_energy(::Nothing) = false
 cavity_free_energy(policy) = true
 
+# Whether the free energy of the inference is expectation propagation's. Its terms of the nodes
+# without rules come from the rule fallback, whose energy must be the one the site policy's free
+# energy takes: a rule fallback given in the options, which take precedence over a scheme, may
+# compute the other one, and the free energy would then be silently wrong.
+function free_energy_mode(options)
+    policy = getsite_policy(options)
+    cavity = cavity_free_energy(policy)
+    check_fallback_energy(getrulefallback(options), policy, cavity)
+    return cavity
+end
+
+check_fallback_energy(fallback, policy, cavity) = nothing
+function check_fallback_energy(fallback::DeltaMessagePassingRules.ExpectationRuleFallback, policy, cavity)
+    isnothing(policy) && return nothing
+    expected = cavity ? :cavity : :average
+    fallback.energy === expected && return nothing
+    throw(
+        ArgumentError(
+            "the free energy under the site policy `$(policy)` takes the terms of the nodes without rules from the rule fallback's `:$(expected)` energy, but the `rulefallback` given in `options` computes `:$(fallback.energy)`. Pass `ExpectationRuleFallback(form; energy = :$(expected))`, or leave `rulefallback` to the scheme",
+        ),
+    )
+end
+
 # An initial message, `@initialization`'s `μ(x)`, as every edge's first cavity: its natural
 # parameters, shared among the other edges, for each that has no site yet
 function ReactiveMP.seeded_cavity(::SitePolicy, cavity, initial, waiting, degree)
