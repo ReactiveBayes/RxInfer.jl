@@ -96,12 +96,26 @@ function initial_marginal(::FromPriors, model::Model, label::NodeLabel)
     nodedata = model[label]
     hasextra(nodedata, InitMarExtraKey) &&
         return getextra(nodedata, InitMarExtraKey)
-    parent = out_factor(model, label)
-    isnothing(parent) && return nothing
-    prior = prior_at_means(model, getproperties(model[parent]))
+    prior = variable_prior(model, label)
     # a deterministic node's output is not initialised: its value is its children's business
-    prior isa PriorValue && return nothing
-    isnothing(prior) || setextra!(nodedata, InitMarExtraKey, prior)
+    prior isa Distribution || return nothing
+    setextra!(nodedata, InitMarExtraKey, prior)
+    return prior
+end
+
+# The prior of the random variable `label` at its parents' initial means, as `prior_at_means`
+# gives it, computed once per variable. A prior that cannot be formed is remembered too, so a chain
+# whose root has none is walked once, not once per descendant.
+const FromPriorsExtraKey = GraphPPL.NodeDataExtraKey{:from_priors, Any}()
+
+function variable_prior(model::Model, label::NodeLabel)
+    nodedata = model[label]
+    hasextra(nodedata, FromPriorsExtraKey) &&
+        return getextra(nodedata, FromPriorsExtraKey)
+    parent = out_factor(model, label)
+    prior = isnothing(parent) ? nothing :
+        prior_at_means(model, getproperties(model[parent]))
+    setextra!(nodedata, FromPriorsExtraKey, prior)
     return prior
 end
 
@@ -174,8 +188,6 @@ function initial_mean(model::Model, label::NodeLabel)
     is_random(properties) || return nothing
     marginal = initial_marginal(FromPriors(), model, label)
     isnothing(marginal) || return mean(marginal)
-    parent = out_factor(model, label)
-    isnothing(parent) && return nothing
-    prior = prior_at_means(model, getproperties(model[parent]))
+    prior = variable_prior(model, label)
     return prior isa PriorValue ? prior.value : nothing
 end

@@ -49,7 +49,18 @@
         y ~ Normal(mean = x, variance = 1.0)
     end
 
-    export initial_marginals, hierarchy, nonlinear_chain, coin, regression_on_data
+    # A chain whose root has a data parent, so no variable in it has a prior that can be formed
+    @model function chain_on_data(y, m0)
+        x[1] ~ Normal(mean = m0, variance = 1.0)
+        for t in 2:length(y)
+            x[t] ~ Normal(mean = 0.9 * x[t - 1], variance = 0.3)
+        end
+        for t in eachindex(y)
+            y[t] ~ Normal(mean = x[t], variance = 1.0)
+        end
+    end
+
+    export initial_marginals, hierarchy, nonlinear_chain, coin, regression_on_data, chain_on_data
 end
 
 @testitem "FromPriors: each variable starts from its prior at its parents' means" setup = [InitializationStrategies] begin
@@ -88,6 +99,19 @@ end
     using .InitializationStrategies
     marginals = initial_marginals(regression_on_data(), (y = 1.0, u = 0.0), FromPriors())
     @test !haskey(marginals, (:x, nothing))
+end
+
+@testitem "FromPriors: a chain whose root has no prior is walked once" setup = [InitializationStrategies] begin
+    using .InitializationStrategies
+    # Each variable's prior is computed once; before, every variable re-walked the chain above it,
+    # which took exponential time in the length of the chain
+    y = collect(range(0.0, 1.0; length = 200))
+    initial_marginals(chain_on_data(), (y = y[1:3], m0 = 0.0), FromPriors())
+    elapsed = @elapsed marginals = initial_marginals(chain_on_data(), (y = y, m0 = 0.0), FromPriors())
+    @test isempty(marginals)
+    @test elapsed < 10
+    result = infer(model = chain_on_data(), data = (y = y, m0 = 0.0), initialization = FromPriors())
+    @test length(result.posteriors[:x]) == 200
 end
 
 @testitem "FromPriors: inference without an initialization" setup = [InitializationStrategies] begin
