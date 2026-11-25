@@ -11,8 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Universal inference: `infer(...; fallback = scheme)` approximates every node of a model that has
   no exact rules, without any rules, approximation methods or initialization written by the user.
-  Nodes with rules still use them, so a conjugate model gives the same result as without the
-  keyword. A scheme is a `FallbackScheme`. It sets the rule fallback, the default form constraint,
+  Nodes with rules still use them, so a conjugate model under belief propagation gives the same
+  result as without the keyword. Under a variational factorisation, the scheme's initialization
+  from the priors and, for the schemes with sites, their schedule change the iterates but not the
+  fixed point. A scheme is a `FallbackScheme`. It sets the rule fallback, the default form constraint,
   the expectation backend, the initialization strategy and, for the schemes with sites, the site
   policy; values set explicitly in `options` take precedence. The default expectation backend is
   the set of backends registered with BayesBase in the session, collected once per call into a

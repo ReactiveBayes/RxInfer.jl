@@ -146,3 +146,29 @@ end
     )
     @test last(matching.free_energy) ≈ last(reference.free_energy)
 end
+
+@testitem "fallback: a conjugate model under mean field reaches the fixed point it reaches without a scheme" setup = [FallbackSchemes] begin
+    using .FallbackSchemes
+    using StableRNGs
+    # The scheme starts the marginals the specification leaves out from the priors, and the cavity
+    # schemes schedule the sites; the iterates differ, the fixed point does not
+    @model function normal_gamma(y)
+        μ ~ NormalMeanVariance(0.0, 100.0)
+        τ ~ GammaShapeRate(1.0, 1.0)
+        y .~ NormalMeanPrecision(μ, τ)
+    end
+    y = randn(StableRNG(3), 20) .+ 1.5
+    constraints = @constraints begin
+        q(μ, τ) = q(μ)q(τ)
+    end
+    initialization = @initialization begin
+        q(τ) = GammaShapeRate(1.0, 1.0)
+    end
+    plain = infer(model = normal_gamma(), data = (y = y,), constraints = constraints, initialization = initialization, iterations = 60, free_energy = true)
+    for scheme in (LocalLaplace(), LaplacePropagation(), ExpectationPropagation(), NaturalGradientPropagation())
+        result = infer(model = normal_gamma(), data = (y = y,), constraints = constraints, initialization = initialization, iterations = 60, free_energy = true, fallback = scheme)
+        @test mean(last(result.posteriors[:μ])) ≈ mean(last(plain.posteriors[:μ])) rtol = 1.0e-8
+        @test mean(last(result.posteriors[:τ])) ≈ mean(last(plain.posteriors[:τ])) rtol = 1.0e-8
+        @test last(result.free_energy) ≈ last(plain.free_energy) rtol = 1.0e-8
+    end
+end

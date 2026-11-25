@@ -123,7 +123,7 @@ The `fallback` keyword takes a scheme that approximates the messages wherever th
 - `LaplacePropagation()` and `ExpectationPropagation()`, cavity propagation: each message without a closed form is approximated once, in the context of the rest of the variable's belief, which suits nonlinear state-space models;
 - `NaturalGradientPropagation()`, natural-gradient propagation: each edge keeps a site in the variable's own family, such as a Gaussian, a Gamma or a Beta, and the sites move by damped natural-gradient steps towards the variational optimum over that family.
 
-A scheme sets the rule fallback, the default form constraint of every random variable, the expectation backend, the initialization strategy ([`FromPriors`](@ref)) and, for the schemes with sites, the site policy. Values given in `options` or `initialization` take precedence. Nodes with rules still use them, so a conjugate model gives the same result as without the keyword. [Choosing a scheme](@ref inference-undefinedrules-schemes) compares the schemes.
+A scheme sets the rule fallback, the default form constraint of every random variable, the expectation backend, the initialization strategy ([`FromPriors`](@ref)) and, for the schemes with sites, the site policy. Values given in `options` or `initialization` take precedence. Nodes with rules still use them, so a conjugate model under belief propagation gives the same result as without the keyword. Under a variational factorisation, the initialization from the priors and, for the schemes with sites, their schedule change the iterates but not the fixed point. [Choosing a scheme](@ref inference-undefinedrules-schemes) compares the schemes.
 
 - ### `algorithm`
 

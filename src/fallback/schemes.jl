@@ -19,8 +19,9 @@ a model is approximated wherever it has no exact rules, through the following me
 
 Values set explicitly in `options` take precedence over the scheme: `rulefallback`,
 `default_form_constraint`, `site_policy` and `context = (expectation = …,)`. Nodes with rules
-still use them, so in a model where every node has rules the scheme changes only the
-initialization.
+still use them, so in a model where every node has rules, under belief propagation, the scheme
+changes nothing. Under a variational factorisation, its initialization from the priors and, for
+the schemes with sites, their schedule change the iterates but not the fixed point.
 
 The schemes are [`LocalLaplace`](@ref), [`LaplacePropagation`](@ref),
 [`ExpectationPropagation`](@ref) and [`NaturalGradientPropagation`](@ref).
