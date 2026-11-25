@@ -46,8 +46,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
       projection.
     - The free energy is that of expectation propagation: a node without rules takes its term from
       its cavities (`BetheFreeEnergy(T; cavity = true)`), and all other terms are Bethe terms. It is
-      not a bound. It is computed once per iteration, in batch and streaming inference, and is
-      available through the stream, the histories, the callbacks and `StopEarlyIterationStrategy`.
+      not a bound. It is available through the stream, the histories, the callbacks and
+      `StopEarlyIterationStrategy`, which computes its own value at each iteration.
   - `NaturalGradientPropagation(; alpha, beta, max_step, tol)`: natural-gradient propagation
     (Lukashchuk et al., *Information Geometry of Message Passing*). As under the cavity schemes,
     every random variable keeps one site per edge, here in the family of its cavity: a Gaussian, a
@@ -110,7 +110,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     PrettyTables.jl when it is loaded.
   - With ExponentialFamilyProjection loaded, a `ProjectedTo` constraint whose strategy is an
     `ExpectationStrategy` reports the evidence lower bound of its projection, computed with the
-    strategy's own expectation backend.
+    strategy's own expectation backend when the report or a log scale asks for it. This is
+    `ReactiveMP.constrain_form_logscale(::ProjectedTo, …)`, so the bound also completes the log
+    scale of a product the projection normalises.
+  - `RxInfer.depends_on_approximation(report, key)` tells a posterior that exact rules computed
+    from approximated messages, which the summary lists apart from the exact ones.
   - A manual page, "What was approximated: the inference report".
 - The callbacks `before_site_computation` and `after_site_computation`, for ReactiveMP's site
   events in cavity propagation, in batch and streaming inference.
@@ -122,7 +126,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The hints for a missing rule and for variables that are never updated mention
   `fallback = LocalLaplace()` and `initialization = FromPriors()`.
 
+### Deprecated
+- DeltaMessagePassingRules' `CVIProjection`, which RxInfer reexports, warns that it is deprecated
+  in favour of `fallback = NaturalGradientPropagation()`, which has the same fixed point.
+
 ### Changed
+- `FallbackScheme`, `SitePolicy`, `NaturalGradientSitePolicy`, `fallback_site`,
+  `cavity_free_energy`, `diagnostics`, `depends_on_approximation`, `InitializationStrategy`,
+  `initial_marginal` and `with_specification` are declared public, with Compat, a new dependency.
+- A `rulefallback` given in `options` whose energy is not the one the free energy under the site
+  policy takes is an error when the free energy is computed, rather than a silently wrong value.
 - Requires ReactiveMP 7.1, MessagePassingRulesBase 1.2, DeltaMessagePassingRules 1.1,
   StandardMessagePassingRules 1.1 and BayesBase 1.7, and ExponentialFamilyProjection 3.5 when it is
   loaded.

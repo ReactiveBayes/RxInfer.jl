@@ -24,6 +24,13 @@ using Reexport
     BayesBase,
     FastCholesky
 
+using Compat: @compat
+
+# Not exported, part of the API: the fallback schemes' parts, the inference report's queries and
+# the initialization strategies' interface
+@compat public FallbackScheme, SitePolicy, NaturalGradientSitePolicy, fallback_site, cavity_free_energy
+@compat public diagnostics, depends_on_approximation, InitializationStrategy, initial_marginal, with_specification
+
 include("helpers.jl")
 include("rocket.jl")
 include("session.jl")
