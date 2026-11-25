@@ -101,8 +101,10 @@ function check_and_reset_updated!(updates)
             Variables [ $(names) ] have not been updated after an update event. Their posteriors were never computed.
             A rule runs only when all its inputs have arrived, so something these variables depend on never did. The usual causes:
             - a loop in the graph, or a variational factorisation from `@constraints`: the rules wait for each other until a message or
-              a marginal is given to start from, with `@initialization` and the `initialization` keyword of `infer`, or from every
-              variable's prior with `initialization = FromPriors()`;
+              a marginal is given to start from. A loop of belief propagation needs a message, `μ(x) = …` in `@initialization`,
+              passed as the `initialization` keyword of `infer`. A variational factorisation needs marginals, `q(x) = …`, which
+              `initialization = FromPriors()` sets from every variable's prior, or `FromPriors(@initialization begin … end)` for
+              the ones a block leaves out. The `fallback` schemes already start from `FromPriors()`;
             - a node that has no rule for the inputs it receives: if the loop is started, the error names the rule.
             See the documentation: https://docs.rxinfer.com/stable/manuals/inference/initialization/
             """,

@@ -131,16 +131,18 @@ single_index_display(index) = string(index)
 How many times a form constraint projected a variable's marginal or messages (`projections`), and
 the `outcome` of the last projection, as `RxInfer.form_outcome` reports it. Of the projections,
 `nonconverged` did not converge and `unprojected` were left unchanged
-(`LaplaceForm(nomode = :leave)`).
+(`LaplaceForm(nomode = :leave)`); `recent_unprojected` counts those of the last iteration, since
+a message that passes while a variable's sites form is left unchanged in the first sweeps only.
 """
 mutable struct ProjectionRecord
     projections::Int
     outcome::Any
     nonconverged::Int
     unprojected::Int
+    recent_unprojected::Int
 end
 
-ProjectionRecord() = ProjectionRecord(0, nothing, 0, 0)
+ProjectionRecord() = ProjectionRecord(0, nothing, 0, 0, 0)
 
 """
     RxInfer.VariableRecord
@@ -372,6 +374,7 @@ function record!(report::ApproximationsReport, event::AfterFormConstraintApplied
         if outcome isa NamedTuple
             unprojected = get(outcome, :method, nothing) === :unprojected
             projection.unprojected += unprojected
+            projection.recent_unprojected += unprojected
             projection.nonconverged += !unprojected && get(outcome, :converged, true) === false
         end
     end
@@ -422,8 +425,14 @@ ReactiveMP.listens(::ApproximationsReport, ::Type{T}) where {T} =
     T <: Union{
     AfterMessageRuleCallEvent, AfterMarginalRuleCallEvent, AfterFactorBoundFreeEnergyEvent,
     AfterFormConstraintAppliedEvent, BeforeMarginalComputationEvent, AfterMarginalComputationEvent,
-    AfterSiteComputationEvent,
+    AfterSiteComputationEvent, BeforeIterationEvent,
 }
+
+# Each iteration starts the count of the messages it leaves unprojected afresh
+function record!(report::ApproximationsReport, ::BeforeIterationEvent)
+    foreach(record -> (record.messages.recent_unprojected = 0), values(report.variables))
+    return nothing
+end
 
 """
     RxInfer.node_types(report::ApproximationsReport)

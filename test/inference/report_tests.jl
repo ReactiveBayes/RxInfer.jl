@@ -264,7 +264,7 @@ end
     @test_throws "already contains a `:report` key" infer(model = coin(), data = (y = flips,), report = true, callbacks = callbacks)
     # the events a section does not record are never built for it
     approximations = RxInfer.RxInferReportCallbacks(InferenceReport((:approximations,)))
-    @test !listens(approximations, RxInfer.BeforeIterationEvent) && !listens(approximations, ReactiveMP.BeforeMessageRuleCallEvent)
+    @test !listens(approximations, RxInfer.AfterIterationEvent) && !listens(approximations, ReactiveMP.BeforeMessageRuleCallEvent)
     @test listens(approximations, ReactiveMP.AfterMessageRuleCallEvent)
     @test listens(callbacks, RxInfer.BeforeIterationEvent) && listens(callbacks, ReactiveMP.BeforeMessageRuleCallEvent)
     @test_throws "as many cells as its header" ReportTable("t", ["a", "b"], [["1"]])

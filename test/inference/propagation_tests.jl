@@ -404,10 +404,10 @@ end
     using BayesBase, Distributions, StableRNGs
     P = Propagation
 
-    # x with only raw edges: each raw message waits for a cavity, which only another edge's site
-    # gives, so nothing starts without μ(x)
+    # x with only raw edges: each raw message passes until the others give it a cavity, as under
+    # belief propagation, and the cavities start from the Laplace approximation of the others
     y = [3, 5]
-    @test_throws Exception infer(model = P.counts_only(), data = (y = y,), iterations = 5, fallback = ExpectationPropagation())
+    unseeded = infer(model = P.counts_only(), data = (y = y,), iterations = 20, fallback = ExpectationPropagation(), returnvars = (x = KeepLast(),)).posteriors[:x]
     grid = range(-10, 10; length = 20_001)
     logp = [-log1p((u / 3)^2) + sum(k * u - exp(u) for k in y) for u in grid]
     p = exp.(logp .- maximum(logp))
@@ -424,9 +424,11 @@ end
         )
         result.posteriors[:x]
     end
-    # expectation propagation's fixed point, whichever message seeds it
+    # expectation propagation's fixed point, whichever message seeds it, or none
     @test mean(posteriors[1]) ≈ mean(posteriors[2]) atol = 1.0e-6
     @test var(posteriors[1]) ≈ var(posteriors[2]) rtol = 1.0e-6
+    @test mean(unseeded) ≈ mean(posteriors[1]) atol = 1.0e-6
+    @test var(unseeded) ≈ var(posteriors[1]) rtol = 1.0e-6
     @test abs(mean(posteriors[1]) - exact) < 0.02
 
     # a model that starts without one ends at the same fixed point with a broad one, which only
@@ -546,9 +548,12 @@ end
     y = [rand(rng, Poisson(exp(v))) for v in x]
     for scheme in (LaplacePropagation(), ExpectationPropagation())
         last_sites = Dict{Tuple{Any, Int}, Any}()
+        # a closed message is its own site, whatever the cavity it was computed against: a prior is
+        # computed once, against a cavity seeded by its variable's initial marginal
         function record(event)
             data = event.result
             (data === nothing || ismissing(data) || ismissing(ReactiveMP.getdata(event.cavity))) && return nothing
+            data === ReactiveMP.getdata(event.message) && ReactiveMP.is_initial(event.cavity) && return nothing
             last_sites[(event.variable.label, event.index)] = (data, ReactiveMP.getdata(event.cavity))
             return nothing
         end
@@ -559,7 +564,7 @@ end
         @test !isempty(last_sites)
         # the x's, not the anonymous products φ x[t - 1] between them
         states = [(RxInfer.variable_key(label)[2], entry) for ((label, index), entry) in last_sites if RxInfer.variable_key(label)[1] === :x]
-        @test length(states) >= 2T
+        @test length(states) >= 2T - 1
         for (t, (site, cavity)) in states
             ξ_site, W_site = weightedmean_precision(site)
             ξ_cavity, W_cavity = weightedmean_precision(cavity)
@@ -604,4 +609,87 @@ end
     q = run(NaturalGradientPropagation(), (b = KeepLast(),))
     @test mean(q) ≈ mean(best) atol = 1.0e-6
     @test var(q) ≈ var(best) rtol = 1.0e-5
+end
+
+@testitem "propagation: trees whose likelihoods have no rules start without an initialization" setup = [Propagation] begin
+    using BayesBase, Distributions, LinearAlgebra, StableRNGs
+    P = Propagation
+    # Each raw message passes until its variable's other edges give it a cavity, as under belief
+    # propagation, and is projected from then on. Without that, these models never started: the
+    # products through `*` and `dot` wait for the sites of the likelihoods, which waited for them.
+    logistic(x) = inv(one(x) + exp(-x))
+
+    # a logistic regression through `w * x[i]`, against expectation propagation and the global
+    # Laplace approximation by hand, and the variational Gaussian by Newton's method
+    @model function scalar_logistic(y, x)
+        w ~ Normal(mean = 0.0, variance = 4.0)
+        for i in eachindex(y)
+            y[i] ~ Bernoulli(logistic(w * x[i]))
+        end
+    end
+    x = [-2.0, -1.0, 0.5, 1.0, 2.0, 3.0]
+    y = [false, false, true, false, true, true]
+    loglik(w) = sum(yi ? log(logistic(w * xi)) : log(logistic(-w * xi)) for (xi, yi) in zip(x, y))
+    grid = range(-40, 40; length = 400_001)
+    ξ0, w0 = 0.0, 1 / 4
+    ξs, ws = zeros(length(y)), zeros(length(y))
+    for _ in 1:200, i in eachindex(y)
+        ξc, wc = ξ0 + sum(ξs) - ξs[i], w0 + sum(ws) - ws[i]
+        lt = @. -wc * grid^2 / 2 + ξc * grid + (y[i] ? log(logistic(grid * x[i])) : log(logistic(-grid * x[i])))
+        p = exp.(lt .- maximum(lt))
+        p ./= sum(p)
+        m = sum(grid .* p)
+        v = sum((grid .- m) .^ 2 .* p)
+        ξs[i], ws[i] = m / v - ξc, 1 / v - wc
+    end
+    ep = ((ξ0 + sum(ξs)) / (w0 + sum(ws)), 1 / (w0 + sum(ws)))
+    laplace = P.EA.laplace(w -> loglik(w) - w^2 / 8, 0.0).distribution
+    variational = P.EA.gaussian_variational(w -> loglik(w) - w^2 / 8, 0.0; backend = P.EA.GaussHermite(64)).distribution
+    for (scheme, (m, v), tol) in (
+            (ExpectationPropagation(), ep, 1.0e-4),
+            (LaplacePropagation(), (mean(laplace), var(laplace)), 1.0e-8),
+            (NaturalGradientPropagation(), (mean(variational), var(variational)), 1.0e-4),
+        )
+        q = last(infer(model = scalar_logistic(x = x), data = (y = y,), fallback = scheme, iterations = 50).posteriors[:w])
+        @test mean(q) ≈ m rtol = tol
+        @test var(q) ≈ v rtol = tol
+    end
+
+    # the regression of the README, through `dot`: the cavity schemes run, and Laplace
+    # propagation's fixed point is the global Laplace approximation, which LocalLaplace gives too
+    @model function readme_logistic(y, x)
+        θ ~ MvNormalMeanCovariance(zeros(2), diageye(2))
+        for i in eachindex(y)
+            p[i] := logistic(dot([1.0, x[i]], θ))
+            y[i] ~ Bernoulli(p[i])
+        end
+    end
+    rng = StableRNG(1)
+    xs = randn(rng, 30)
+    ys = [rand(rng) < logistic(0.5 + 1.5 * xi) for xi in xs]
+    local_laplace = last(infer(model = readme_logistic(x = xs), data = (y = ys,), fallback = LocalLaplace(), iterations = 20).posteriors[:θ])
+    for scheme in (LaplacePropagation(), ExpectationPropagation(), NaturalGradientPropagation())
+        q = last(infer(model = readme_logistic(x = xs), data = (y = ys,), fallback = scheme, iterations = 30).posteriors[:θ])
+        @test all(isfinite, mean(q)) && isposdef(cov(q))
+        scheme isa LaplacePropagation && @test mean(q) ≈ mean(local_laplace) rtol = 1.0e-6
+    end
+
+    # a parent with two branches whose leaves have no rules, against expectation propagation by hand
+    @model function branches(y, u)
+        z ~ NormalMeanVariance(0.0, 1.0)
+        a ~ NormalMeanVariance(z, 1.0)
+        b ~ NormalMeanVariance(z, 0.5)
+        for i in eachindex(y)
+            y[i] ~ Bernoulli(logistic(a))
+        end
+        for j in eachindex(u)
+            u[j] ~ Bernoulli(logistic(b))
+        end
+    end
+    result = infer(model = branches(), data = (y = [true, true, false, true, true], u = [false, false, true]), fallback = ExpectationPropagation(), iterations = 60)
+    # the reference: expectation propagation on a grid, each site against the other edges'
+    @test mean(last(result.posteriors[:z])) ≈ 0.1760996783042842 rtol = 1.0e-3
+    @test var(last(result.posteriors[:z])) ≈ 0.5035517056797625 rtol = 1.0e-3
+    @test mean(last(result.posteriors[:a])) ≈ 0.8157921082943318 rtol = 1.0e-3
+    @test mean(last(result.posteriors[:b])) ≈ -0.055696697538597476 rtol = 1.0e-2
 end

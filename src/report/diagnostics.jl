@@ -26,8 +26,9 @@ The kinds are:
 - `:expectation_over_messages` (warning): under belief propagation, the rule fallback took an
   expectation over the message of another random variable, so its message is the variational
   message, an approximation of the belief propagation message;
-- `:unprojected_messages` (note): messages for which Laplace's method found no mode were left as
-  log-densities (`LaplaceForm(nomode = :leave)`) and pulled back through the next node;
+- `:unprojected_messages` (note): in the last iteration, messages for which Laplace's method found
+  no mode were left as log-densities (`LaplaceForm(nomode = :leave)`) and pulled back through the
+  next node;
 - `:stochastic_expectation` (note): an expectation was computed by a stochastic backend, so the
   results depend on the random number generator;
 - `:last_resort_expectation` (note): an expectation was computed by a backend registered as a last
@@ -85,9 +86,11 @@ function variable_diagnostics!(found, report::ApproximationsReport)
             computed = method === :natural_gradient ? length(record.settled) : record.sites.projections
             sites_count[first(key)] = (failed + record.sites.nonconverged, total + computed, method)
         end
-        if record.messages.unprojected > 0
+        # a variable with sites passes a raw message while its sites form, which is not a
+        # product left without a mode
+        if record.messages.recent_unprojected > 0 && record.sites.projections == 0
             push!(get!(unprojected, first(key), Tuple{Symbol, Any}[]), key)
-            unprojected_count[first(key)] = get(unprojected_count, first(key), 0) + record.messages.unprojected
+            unprojected_count[first(key)] = get(unprojected_count, first(key), 0) + record.messages.recent_unprojected
         end
     end
     hint = maxiters_hint(report.scheme)
