@@ -698,3 +698,37 @@ end
     @test mean(last(result.posteriors[:a])) ≈ 0.8157921082943318 rtol = 1.0e-3
     @test mean(last(result.posteriors[:b])) ≈ -0.055696697538597476 rtol = 1.0e-2
 end
+
+@testitem "propagation: a long nonlinear chain without an initialization does not run away" setup = [Propagation] begin
+    using BayesBase, Distributions, LinearAlgebra, StableRNGs
+    # The pendulum of the examples: a state x = (θ, ω), observed through sin θ. A prior evaluated
+    # at its parents' means, as `FromPriors` gives, has the covariance Q of one step, far narrower
+    # than the belief; as the cavities of the sites, it sent the projections away from the data,
+    # and the raw messages of the failed sites nested along the chain until it no longer finished.
+    Δt, g, r = 0.05, 9.81, 0.1
+    transition(x) = [x[1] + x[2] * Δt, x[2] - g * sin(x[1]) * Δt]
+    sine(x) = sin(x[1])
+    Q = 0.5 * [Δt^3 / 3 Δt^2 / 2; Δt^2 / 2 Δt]
+    rng = StableRNG(7)
+    states = [[1.5, 0.0]]
+    for t in 2:100
+        push!(states, rand(rng, MvNormal(transition(states[end]), Q)))
+    end
+    y = [rand(rng, Normal(sine(x), sqrt(r))) for x in states]
+
+    @model function pendulum(y, Q, r)
+        x[1] ~ MvNormalMeanCovariance([1.5, 0.0], diagm([0.1, 0.1]))
+        y[1] ~ NormalMeanVariance(sine(x[1]), r)
+        for t in 2:length(y)
+            x[t] ~ MvNormalMeanCovariance(transition(x[t - 1]), Q)
+            y[t] ~ NormalMeanVariance(sine(x[t]), r)
+        end
+    end
+    angles = map((ExpectationPropagation(), LaplacePropagation())) do scheme
+        result = infer(model = pendulum(Q = Q, r = r), data = (y = y,), iterations = 10, fallback = scheme, free_energy = true, returnvars = (x = KeepLast(),), report = true)
+        @test isempty(RxInfer.diagnostics(result.report))
+        @test all(isfinite, result.free_energy)
+        first.(mean.(result.posteriors[:x]))
+    end
+    @test maximum(abs, angles[1] - angles[2]) < 0.1
+end

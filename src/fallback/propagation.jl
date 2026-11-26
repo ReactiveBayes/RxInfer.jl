@@ -20,10 +20,11 @@ DeltaMessagePassingRules' `site(form, message, cavity)`: the inbound message pro
 cavity, which is the variable's outbound message on that edge, with the projection of `form`. The
 form is a `LaplaceForm` for Laplace propagation or a `MomentForm` for expectation propagation.
 
-A closed-form message is its own site. A raw message waits for a cavity, with two exceptions: the
-pushforward of a deterministic node, which starts against a flat cavity, and the messages of a
-variable with an initial message, `μ(x)` from `@initialization`, which is the first cavity of
-each edge while the other edges have no site (`ReactiveMP.seeded_cavity`). Against a cavity that is
+A closed-form message is its own site. A raw message without a cavity passes as it is, as under
+belief propagation, and is projected once the other edges' sites give it one. The pushforward of
+a deterministic node starts against a flat cavity, and an initial message, `μ(x)` from
+`@initialization`, is the first cavity of each edge while the other edges have no site
+(`ReactiveMP.seeded_cavity`). An initial marginal, as `FromPriors` gives, is not a cavity. Against a cavity that is
 not Gaussian, a raw message passes through unchanged, and the variable's beliefs are projected as
 products, as under [`LocalLaplace`](@ref). Sites, cavities and marginals are not checked for
 properness: each is passed on as computed. The next projection on an edge starts at its last
