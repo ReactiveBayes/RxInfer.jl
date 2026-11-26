@@ -650,9 +650,14 @@ end
             (LaplacePropagation(), (mean(laplace), var(laplace)), 1.0e-8),
             (NaturalGradientPropagation(), (mean(variational), var(variational)), 1.0e-4),
         )
-        q = last(infer(model = scalar_logistic(x = x), data = (y = y,), fallback = scheme, iterations = 50).posteriors[:w])
+        # with the free energy and its default diagnostics, which throw on a NaN: the first natural
+        # gradient step leaves `logistic(w * x[i])` a broad logit-normal, whose E[log(1 - p)] once
+        # rounded to log(0)
+        result = infer(model = scalar_logistic(x = x), data = (y = y,), fallback = scheme, iterations = 50, free_energy = true)
+        q = last(result.posteriors[:w])
         @test mean(q) ≈ m rtol = tol
         @test var(q) ≈ v rtol = tol
+        @test all(isfinite, result.free_energy)
     end
 
     # the regression of the README, through `dot`: the cavity schemes run, and Laplace
