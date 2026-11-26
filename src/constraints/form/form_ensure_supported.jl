@@ -6,7 +6,20 @@ struct EnsureSupportedFunctionalForm <: AbstractFormConstraint
     prefix::Symbol
     name::Symbol
     index::Any
+    # whether the form before this check leaves a product it cannot project as it is, on
+    # purpose (`nomode = :leave`), for the rule fallback of the next node to take
+    leaves_products::Bool
 end
+
+EnsureSupportedFunctionalForm(prefix::Symbol, name::Symbol, index) =
+    EnsureSupportedFunctionalForm(prefix, name, index, false)
+
+# Whether a form constraint leaves the products it cannot project unprojected
+leaves_products(form) = false
+leaves_products(form::ReactiveMP.WrappedFormConstraint) = leaves_products(form.constraint)
+leaves_products(form::CompositeFormConstraint) = any(leaves_products, form.constraints)
+leaves_products(form::Union{DeltaMessagePassingRules.LaplaceForm, DeltaMessagePassingRules.MomentForm, DeltaMessagePassingRules.VariationalForm}) =
+    form.nomode === :leave
 
 ReactiveMP.default_form_check_strategy(::EnsureSupportedFunctionalForm) =
     FormConstraintCheckLast()
@@ -17,8 +30,10 @@ ReactiveMP.default_prod_constraint(::EnsureSupportedFunctionalForm) =
 function ReactiveMP.constrain_form(
         constraint::EnsureSupportedFunctionalForm, something
     )
-    if typeof(something) <: ProductOf ||
-            typeof(something) <: LinearizedProductOf
+    if !constraint.leaves_products && (
+            typeof(something) <: ProductOf ||
+                typeof(something) <: LinearizedProductOf
+        )
         expr = string(
             constraint.prefix,
             '(',

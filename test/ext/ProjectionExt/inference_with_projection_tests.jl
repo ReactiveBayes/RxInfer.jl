@@ -324,6 +324,9 @@ end
     end
 end
 
+# `CVIProjection` is deprecated in DeltaMessagePassingRules 1.1, in favour of
+# `fallback = NaturalGradientPropagation()`, and keeps working until 2.0: the three items below
+# test that it still does, and its constructor's deprecation warning is expected in their logs.
 @testitem "Inference with delta node and CVI projection" begin
     using StableRNGs,
         ExponentialFamilyProjection, ReactiveMP, Distributions, Plots

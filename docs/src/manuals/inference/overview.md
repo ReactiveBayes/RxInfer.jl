@@ -111,6 +111,20 @@ init = @initialization begin
 end
 ```
 
+`initialization` also accepts a strategy that initializes the variables a specification leaves out, such as [`FromPriors`](@ref), which initializes each variable from its prior; see [Initialization from priors](@ref initialization-from-priors).
+
+- ### `fallback`
+
+Also read the [Universal inference](@ref inference-undefinedrules-universal) section.
+
+The `fallback` keyword takes a scheme that approximates the messages wherever the model has no exact rules, so no rules, approximation methods or initialization need to be written. The schemes are:
+
+- `LocalLaplace()`, the Laplace approximation of each belief separately, which is the cheapest;
+- `LaplacePropagation()` and `ExpectationPropagation()`, cavity propagation: each message without a closed form is approximated once, in the context of the rest of the variable's belief, which suits nonlinear state-space models;
+- `NaturalGradientPropagation()`, natural-gradient propagation: each edge keeps a site in the variable's own family, such as a Gaussian, a Gamma or a Beta, and the sites move by damped natural-gradient steps towards the variational optimum over that family.
+
+A scheme sets the rule fallback, the default form constraint of every random variable, the expectation backend, the initialization strategy ([`FromPriors`](@ref)) and, for the schemes with sites, the site policy. Values given in `options` or `initialization` take precedence. Nodes with rules still use them, so a conjugate model under belief propagation gives the same result as without the keyword. Under a variational factorisation, the initialization from the priors and, for the schemes with sites, their schedule change the iterates but not the fixed point. [Choosing a scheme](@ref inference-undefinedrules-schemes) compares the schemes.
+
 - ### `algorithm`
 
 Also read the [Algorithm specification](@ref user-guide-algorithm-specification) section.
@@ -331,6 +345,27 @@ Pass `nothing` to disable any checks.
 RxInfer.ReactiveMPInferenceOptions
 ```
 
+`stream_postprocessors = ReactiveMP.DampingPostprocessor(β)` damps the messages of every node. Each new message is mixed with the previous message on its edge in natural parameters, with weight `β` for the previous message and `1 - β` for the new one. Damping does not change the fixed point of the iterations, but it takes smaller steps towards it, which can make an oscillating schedule converge:
+
+```@example inference-overview-damping
+using RxInfer, StableRNGs #hide
+@model function iid_normal(y)
+    μ ~ NormalMeanVariance(0.0, 100.0)
+    τ ~ GammaShapeRate(1.0, 1.0)
+    y .~ NormalMeanPrecision(μ, τ)
+end
+
+result = infer(
+    model          = iid_normal(),
+    data           = (y = randn(StableRNG(1), 20) .+ 1.5,),
+    constraints    = @constraints(begin q(μ, τ) = q(μ)q(τ) end),
+    initialization = @initialization(begin q(τ) = GammaShapeRate(1.0, 1.0) end),
+    iterations     = 50,
+    options        = (stream_postprocessors = ReactiveMP.DampingPostprocessor(0.5),),
+)
+mean(last(result.posteriors[:μ]))
+```
+
 - ### `catch_exception`
 
 The `catch_exception` keyword argument specifies whether exceptions during the batch inference procedure should be caught in the `error` field of the 
@@ -381,6 +416,10 @@ Automatically changes the default value of the `postprocess` argument to `NoopPo
 `logscales = true` makes messages and marginals carry log scales: the log of the constant each rule's result leaves out, where the rule can compute it, combined through every product of messages. The `Mixture` node needs them, and in a model inferred exactly by belief propagation a posterior's log scale, `getlogscale(result.posteriors[:x])`, is the log evidence of the data, which is useful for Bayes factors and model comparison. Where a log scale cannot be computed, for instance after a variational rule, it is a `ReactiveMP.UndefinedLogScale` that says why. It can also be given as `options = (logscales = true,)`.
 
 Automatically changes the default value of the `postprocess` argument to `NoopPostprocess`, so the results keep the `Marginal` wrapper that carries the log scale.
+
+- ### `report`
+
+`report = true` records an [`InferenceReport`](@ref) of the inference, available as `result.report`, or as `engine.model.metadata[:report]` for streaming inference. The section `result.report.approximations` says which posteriors were approximated and how, which nodes used exact rules and which used the rule fallback, and which parts are likely to be inaccurate ([`RxInfer.diagnostics`](@ref)). The section `result.report.timings` shows where the time went. The report is collected from the events of the engine. It is off by default, and then these events are not created. `report = (:approximations,)` selects the sections to record. See [What was approximated: the inference report](@ref user-guide-inference-report).
 
 - ### `postprocess`
 

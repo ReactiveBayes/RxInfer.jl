@@ -24,6 +24,13 @@ using Reexport
     BayesBase,
     FastCholesky
 
+using Compat: @compat
+
+# Not exported, part of the API: the fallback schemes' parts, the inference report's queries and
+# the initialization strategies' interface
+@compat public FallbackScheme, SitePolicy, NaturalGradientSitePolicy, fallback_site, cavity_free_energy
+@compat public diagnostics, depends_on_approximation, InitializationStrategy, initial_marginal, with_specification
+
 include("helpers.jl")
 include("rocket.jl")
 include("session.jl")
@@ -38,17 +45,28 @@ include("model/plugins/reactivemp_inference.jl")
 include("model/plugins/reactivemp_free_energy.jl")
 include("model/plugins/reactivemp_force_marginal_computation_plugin.jl")
 include("model/plugins/initialization_plugin.jl")
+include("model/plugins/initialization_strategy.jl")
 
 include("constraints/form/form_ensure_supported.jl")
 include("constraints/form/form_fixed_marginal.jl")
 include("constraints/form/form_point_mass.jl")
 include("constraints/form/form_sample_list.jl")
+include("constraints/form/form_projection.jl")
+
+include("fallback/schemes.jl")
+include("fallback/propagation.jl")
 
 include("callbacks/events.jl")
 include("callbacks/benchmark.jl")
 include("callbacks/trace.jl")
 include("callbacks/perfetto.jl")
 include("callbacks/stop_early.jl")
+
+include("report/report.jl")
+include("report/tables.jl")
+include("report/approximations.jl")
+include("report/diagnostics.jl")
+include("report/timings.jl")
 
 include("inference/postprocess.jl")
 include("inference/inference.jl")
